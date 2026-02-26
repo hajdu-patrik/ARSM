@@ -16,7 +16,7 @@ AutoService is a full-stack application using ASP.NET Core Web API for the backe
 ## Language
 
 - English: this file
-- Hungarian: `README(HU).md`
+- Hungarian: [README(HU).md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README(HU).md)
 
 ---
 
