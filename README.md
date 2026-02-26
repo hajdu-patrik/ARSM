@@ -7,42 +7,49 @@
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
 
-# AutoService - Időpontfoglaló és Erőforrás-kezelő Rendszer
+# AutoService - Appointment and Resource Management System
 
-Ez a projekt egy teljes stack alkalmazás, amely ASP.NET Core WebAPI-t használ a backendhez, React + TypeScript-et a frontendhez, és Microsoft SQL Server 2022-t az adatbázishoz. Az egész rendszer egy .NET Aspire alapú orkesztrációs rétegen fut, amely megkönnyíti a fejlesztést, a telemetria gyűjtést és a konténerizációt.
+AutoService is a full-stack application using ASP.NET Core Web API for the backend, React + TypeScript for the frontend, and Microsoft SQL Server 2022 as the database. The system runs on a .NET Aspire orchestration layer to simplify local development, observability, and container-based workflows.
 
 ---
 
-## Projekt Inicializálása (Visual Code-ban)
+## Language
 
-### A Solution létrehozása
+- English: this file
+- Hungarian: `README(HU).md`
+
+---
+
+## Project Initialization (VS Code)
+
+### 1) Create the solution
 
 ```Bash
 dotnet new sln -n AutoService
 ```
 
-A Solution fájl a logikai konténer. Ez fogja össze a backend, a frontend és az orkesztrációs projekteket, hogy a fordító (MSBuild) egy egységként kezelje őket.
+The solution file is the logical container that groups backend, frontend, and orchestration projects into one build unit.
 
-### A .NET Aspire alapok (Orkesztráció és Telemetria)
+### 2) Create .NET Aspire foundations (orchestration + telemetry)
 
 ```Bash
 dotnet new aspire-apphost -n AutoService.AppHost
 dotnet new aspire-servicedefaults -n AutoService.ServiceDefaults
 ```
 
-Az AppHost a karmester. Amikor elindítjuk az alkalmazást, ez a projekt indul el először, és ez húzza fel a Docker konténereket (pl. az MSSQL-t) és indítja el a WebAPI-t.
+`AppHost` is the orchestrator. It starts first, then starts infrastructure (for example SQL Server in Docker) and the API.
 
-A ServiceDefaults egy megosztott könyvtár, ami beállítja az OpenTelemetry-t (logolás, metrikák, tracing) és a Health Check-eket.
+`ServiceDefaults` is a shared library for OpenTelemetry (logs, metrics, traces) and health checks.
 
-### A Backend (WebAPI) létrehozása
+### 3) Create backend (Web API)
 
 ```Bash
 dotnet new webapi -n AutoService.ApiService
 ```
 
-Létrehozunk egy letisztult, modern ASP.NET Core REST API projektet (Minimal API vagy Controller alapokon). Ez lesz az üzleti logika központja és az MCP szerverünk helye, amely az adatbázissal kommunikál.
+This creates the ASP.NET Core REST API project that hosts the business logic and database access.
 
-### A Frontend (React + TS) létrehozása
+### 4) Create frontend (React + TypeScript)
 
 ```Bash
 npm create vite@latest AutoService.WebUI -- --template react-ts
@@ -50,8 +57,7 @@ cd AutoService.WebUI
 npm install
 ```
 
-Létrehozunk egy React alkalmazást TypeScript támogatással, a Vite építőeszközt használva.
-Majd telepítjük a szükséges npm csomagokat, hogy a frontendünk készen álljon a fejlesztésre.
+This creates a React + TS app with Vite and installs the required dependencies.
 
 ## Tailwind CSS integráció
 
@@ -60,25 +66,25 @@ cd AutoService.WebUI
 npm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
 ```
 
-Hozzuk létre a `postcss.config.js` fájlt az `AutoService.WebUI` gyökerében:
+Create `postcss.config.js` in `AutoService.WebUI`:
 
 ```js
 export default {
-	plugins: {
-		'@tailwindcss/postcss': {},
-	},
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
 }
 ```
 
-Majd a `src/index.css` elejére tegyük be:
+Then add this to the top of `src/index.css`:
 
 ```css
 @import "tailwindcss";
 ```
 
-Ezzel a Tailwind utility osztályok azonnal használhatók lesznek a React komponensekben.
+Tailwind utility classes are then available in your React components.
 
-### Projektek hozzáadása a Solution-höz
+### 5) Add projects to the solution
 
 ```Bash
 dotnet sln add AutoService.AppHost/AutoService.AppHost.csproj
@@ -88,29 +94,29 @@ dotnet sln add AutoService.ApiService/AutoService.ApiService.csproj
 
 ---
 
-## Csomagok (NuGet) és Hivatkozások beállítása
-Ahhoz, hogy a komponensek "lássák" egymást és a szükséges technológiákat használni tudják, referenciákat kell beállítanunk.
+## NuGet packages and project references
 
-### Függőségek (References) beállítása
+To connect projects and enable required features, add references and packages.
+
+### 1) Set project references
 
 ```Bash
 dotnet add AutoService.ApiService reference AutoService.ServiceDefaults
 dotnet add AutoService.AppHost reference AutoService.ApiService
 ```
 
-Az API megkapja a telemetria beállításokat a Defaults-ból.
-Az AppHost "tudni fogja", hogy el kell indítania az ApiService-t.
+The API receives shared telemetry defaults, and AppHost is able to start ApiService.
 
-### Aspire integrációs csomagok (AppHost)
+### 2) Aspire integration packages (AppHost)
 
 ```Bash
 dotnet add AutoService.AppHost package Aspire.Hosting.SqlServer
 dotnet add AutoService.AppHost package Aspire.Hosting.NodeJs
 ```
 
-Képessé teszi az orkesztrátort, hogy Docker konténerben elindítson egy Microsoft SQL Server 2022-t, illetve hogy natívan elindítsa az npm run dev parancsot a React frontendünk számára.
+These enable orchestrating SQL Server in Docker and starting the React app via Node.js.
 
-### Entity Framework Core csomagok (ApiService)
+### 3) Entity Framework Core packages (ApiService)
 
 ```Bash
 dotnet add AutoService.ApiService package Microsoft.EntityFrameworkCore.SqlServer
@@ -118,13 +124,15 @@ dotnet add AutoService.ApiService package Microsoft.EntityFrameworkCore.Design
 dotnet add AutoService.ApiService package Microsoft.EntityFrameworkCore.Tools
 ```
 
-Feltelepíti a Microsoft hivatalos ORM (Object-Relational Mapping) eszközét és a migrációkhoz szükséges tervezői csomagokat. Code-First megközelítést alkalmazunk! Azaz C# osztályokból generáljuk az adatbázis táblákat, így a verziókezelőben (Git) egyszerűbben követhető marad a séma minden változása.
+These install the official Microsoft ORM and migration tooling. The project uses a Code-First workflow, so schema changes are trackable in Git.
 
 ---
 
-## Aspire idnitása
+## Run with Aspire
 
 ```Bash
 cd AutoService.AppHost
 dotnet run
 ```
+
+This starts the orchestrated local environment (API + infrastructure + related services).
