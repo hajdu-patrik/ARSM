@@ -16,7 +16,7 @@ Az AutoService egy teljes stack alkalmazás, amely ASP.NET Core Web API-t haszn�
 ## Nyelv
 
 - Magyar: ez a fájl
-- Angol: `README.md`
+- Angol: [README.md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README.md)
 
 ---
 
