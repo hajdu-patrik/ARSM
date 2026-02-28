@@ -10,7 +10,7 @@ Ez az útmutató megmutatja, hogyan tudod ellenőrizni:
 ## Nyelv
 
 - Magyar: ez a fájl
-- Angol: [README.md]()
+- Angol: [Database-TL-DR.md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/AutoServiceApp/Database-TL-DR.md)
 
 ---
 
