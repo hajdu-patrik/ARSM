@@ -10,7 +10,7 @@ This guide shows how to verify:
 ## Language
 
 - English: this file
-- Hungarian: [Database-TL-DR(HU).md]()
+- Hungarian: [Database-TL-DR(HU).md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/AutoServiceApp/Database-TL-DR(HU).md)
 
 
 ---
