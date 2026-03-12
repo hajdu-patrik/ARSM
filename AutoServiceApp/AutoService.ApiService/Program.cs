@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional local overrides for running EF CLI/API outside AppHost.
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 // Service registration section (DI container).
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AutoServiceDbContext>(options =>

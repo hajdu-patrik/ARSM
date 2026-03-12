@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "Run AppHost (Aspire)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build: AppHost",
+            "program": "${workspaceFolder}/AutoServiceApp/AutoService.AppHost/bin/Debug/net10.0/AutoService.AppHost.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/AutoServiceApp/AutoService.AppHost",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "DOTNET_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}"
+            }
+        }
+    ]
+}

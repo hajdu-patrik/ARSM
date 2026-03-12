@@ -8900,7 +8900,18 @@
         },
         {
           "type": "rectangle",
-          "id": "rrjfy",
+          "cornerRadius": 220,
+          "id": "zHqPg",
+          "x": 260,
+          "y": 650.0023413440917,
+          "rotation": 8,
+          "fill": "#6A57CC22",
+          "width": 1400,
+          "height": 430
+        },
+        {
+          "type": "rectangle",
+          "id": "a7KwR",
           "x": 827,
           "y": 432,
           "opacity": 0.7,
@@ -8912,17 +8923,6 @@
           },
           "width": 265,
           "height": 215
-        },
-        {
-          "type": "rectangle",
-          "cornerRadius": 220,
-          "id": "zHqPg",
-          "x": 260,
-          "y": 650.0023413440917,
-          "rotation": 8,
-          "fill": "#6A57CC22",
-          "width": 1400,
-          "height": 430
         }
       ]
     },

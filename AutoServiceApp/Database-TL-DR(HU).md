@@ -94,10 +94,10 @@ psql -U postgres -d AutoServiceDb
 ## Tábla séma megtekintése
 
 ```sql
-\d "People"
-\d "Vehicles"
-\d "Appointments"
-\d "AppointmentMechanics"
+\d people
+\d vehicles
+\d appointments
+\d appointmentmechanics
 ```
 
 ---
@@ -105,8 +105,8 @@ psql -U postgres -d AutoServiceDb
 ## Példa sorok lekérése
 
 ```sql
-SELECT * FROM "People" LIMIT 20;
-SELECT * FROM "Vehicles" LIMIT 20;
+SELECT * FROM people LIMIT 20;
+SELECT * FROM vehicles LIMIT 20;
 ```
 
 ---
@@ -114,13 +114,13 @@ SELECT * FROM "Vehicles" LIMIT 20;
 ## Darabszám lekérés táblánként
 
 ```sql
-SELECT 'People' AS table_name, COUNT(*) AS row_count FROM "People"
+SELECT 'People' AS table_name, COUNT(*) AS row_count FROM people
 UNION ALL
-SELECT 'Vehicles', COUNT(*) FROM "Vehicles"
+SELECT 'Vehicles', COUNT(*) FROM vehicles
 UNION ALL
-SELECT 'Appointments', COUNT(*) FROM "Appointments"
+SELECT 'Appointments', COUNT(*) FROM appointments
 UNION ALL
-SELECT 'AppointmentMechanics', COUNT(*) FROM "AppointmentMechanics";
+SELECT 'AppointmentMechanics', COUNT(*) FROM appointmentmechanics;
 ```
 
 ---

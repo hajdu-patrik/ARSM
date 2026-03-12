@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build: AppHost",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/AutoServiceApp/AutoService.AppHost/AutoService.AppHost.csproj",
+                "--verbosity",
+                "minimal"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        },
+        {
+            "label": "watch: AppHost",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "--project",
+                "${workspaceFolder}/AutoServiceApp/AutoService.AppHost/AutoService.AppHost.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build: frontend",
+            "type": "npm",
+            "script": "build",
+            "path": "AutoServiceApp/AutoService.WebUI/",
+            "problemMatcher": [],
+            "group": "build"
+        }
+    ]
+}

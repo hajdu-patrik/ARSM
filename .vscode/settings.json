@@ -1,0 +1,31 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 100,
+            "server": "localhost",
+            "port": 55432,
+            "sshOptions": {
+                "port": 22
+            },
+            "driver": "PostgreSQL",
+            "name": "Onlab",
+            "username": "postgres",
+            "database": "AutoServiceDb",
+            "connectionTimeout": 15,
+            "askForPassword": true,
+            "pgOptions": {
+                "ssl": false
+            }
+        }
+    ],
+    "mcpServers": {
+        "pencil-design-tool": {
+            "command": "npx",
+            "args": [
+                "-y", 
+                "@pencil/mcp-server"
+            ]
+        }
+    }
+}
