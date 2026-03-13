@@ -33,33 +33,57 @@ Utána futtasd újra az EF parancsokat.
 
 Ezt akkor használd, ha mindent újra akarsz rakni.
 
+**A lehetőség — EF CLI-vel** (akkor működik, ha az AppHost le van állítva és az 55432-es port elérhető)
+
 ```bash
 # AutoServiceApp root mappából
-# Ez törli a jelenlegi adatbázist és minden adatot
+# Állítsd le az AppHost-ot (Ctrl+C), majd:
 dotnet ef database drop --force --project AutoService.ApiService --startup-project AutoService.ApiService
-```
-
-```bash
-# Ez létrehozza az adatbázist és alkalmazza a jelenlegi sémát
 dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService
-```
-
-```bash
-# Ez elindítja a stack-et, és a seed/initializer logika újratöltheti az adatokat
 dotnet run --project AutoService.AppHost
 ```
 
-### Csak sémafrissítés
+**B lehetőség — Docker-en keresztül** (AppHost futása közben is működik; Windows-on megbízhatóbb)
 
 ```bash
-# Ez létrehoz egy új migrációt a modellváltozások alapján
-dotnet ef migrations add <MigrationName> --project AutoService.ApiService --startup-project AutoService.ApiService --output-dir Data/Migrations
+# 1. Keresd meg a konténer nevét
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+
+# 2. Töröld az adatbázist a konténerben
+docker exec <KONTÉNER_NÉV> sh -c 'PGPASSWORD=$POSTGRES_PASSWORD psql -U postgres -c "DROP DATABASE IF EXISTS \"AutoServiceDb\";"'
+
+# 3. Indítsd újra az AppHost-ot — a MigrateAsync() újra létrehozza a sémát és betölti a demo adatokat
+dotnet run --project AutoService.AppHost
 ```
 
+A `DemoDataInitializer.EnsureSeededAsync()` automatikusan fut induláskor: meghívja a `MigrateAsync()`-t (létrehozza a sémát) és beilleszt minden demo adatot, ha a táblák üresek.
+
+### Csak sémafrissítés (új migráció az adatok megőrzésével)
+
 ```bash
-# Ez alkalmazza a függőben lévő migrációkat az adatbázisra, az adatok megőrzésével, ha lehetséges
-dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService
+# 1. Állítsd le az AppHost-ot (Ctrl+C) a build lock felszabadításához
+
+# 2. Ha még mindig be van ragadva, zárd be a folyamatokat
+cmd.exe /c "taskkill /IM AutoService.ApiService.exe /F 2>nul"
+cmd.exe /c "taskkill /IM dotnet.exe /F 2>nul"
+
+# 3. Hozz létre új migrációt a modell változásokhoz
+#    Cseréld ki a <MigrationName>-t egy leíró PascalCase névre, pl. AddVehicleColor
+dotnet ef migrations add <MigrationName> \
+  --project AutoService.ApiService \
+  --startup-project AutoService.ApiService \
+  --output-dir Data/Migrations
+
+# 4. Alkalmazza a migrációt (az adatok megmaradnak)
+dotnet ef database update \
+  --project AutoService.ApiService \
+  --startup-project AutoService.ApiService
+
+# 5. Indítsd újra az AppHost-ot
+dotnet run --project AutoService.AppHost
 ```
+
+> **Tipp:** a migrációs fájlok az `AutoService.ApiService/Data/Migrations/` mappában jönnek létre. Az alkalmazás előtt mindig nézd át a generált `Up()` / `Down()` metódusokat.
 
 ---
 
@@ -100,44 +124,23 @@ psql -U postgres -d AutoServiceDb
 \d appointmentmechanics
 ```
 
----
-
-## Példa sorok lekérése
+ASP.NET Core Identity táblák (az `AddIdentityAndIdentityUserId` migráció hozza létre):
 
 ```sql
-SELECT * FROM people LIMIT 20;
-SELECT * FROM vehicles LIMIT 20;
+\d "AspNetUsers"
+\d "AspNetRoles"
+\d "AspNetUserRoles"
+\d "AspNetUserClaims"
+\d "AspNetUserLogins"
+\d "AspNetUserTokens"
+\d "AspNetRoleClaims"
 ```
 
 ---
 
-## Darabszám lekérés táblánként
+## Adat ellenőrző lekérdezések
 
-```sql
-SELECT 'People' AS table_name, COUNT(*) AS row_count FROM people
-UNION ALL
-SELECT 'Vehicles', COUNT(*) FROM vehicles
-UNION ALL
-SELECT 'Appointments', COUNT(*) FROM appointments
-UNION ALL
-SELECT 'AppointmentMechanics', COUNT(*) FROM appointmentmechanics;
-```
-
----
-
-## Teljes oszlopszintű séma lekérése
-
-```sql
-SELECT
-    table_name,
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-ORDER BY table_name, ordinal_position;
-```
+Használd a root szinten: Test/PostgreSQLAccesValidation.sql fájl tartalmazza azokat a lekérdezéseket, amelyekkel ellenőrizheted, hogy az elvárt adatok jelennek-e meg az adatbázisban. Másolhatod őket a `psql` terminálba.
 
 ---
 

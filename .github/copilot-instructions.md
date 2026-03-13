@@ -22,6 +22,8 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Keep `People` inheritance as TPH (Table-Per-Hierarchy) at all times.
 - Keep `People` as abstract base and keep `Customer` + `Mechanic` as derived entities.
 - Keep one `people` table with discriminator; do not switch to TPT or TPC.
+- Keep authentication based on ASP.NET Core Identity with `IdentityUser`; do not replace the domain `People` model with Identity entities.
+- Link the domain model to Identity through `People.IdentityUserId`; do not duplicate password or credential fields on `People`, `Customer`, or `Mechanic`.
 - Preserve `FullName` as an owned value object mapping on `People`.
 - Preserve mechanic expertise rules:
 	- expertise list must contain 1..10 items,
@@ -37,6 +39,8 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
+- Current migrations: `InitialCreate` + `AddIdentityAndIdentityUserId`.
+- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts) and customers (plain records) when tables are empty.
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
 - Keep schema constraints and indexes aligned with domain invariants.
 - Use `ConnectionStrings:AutoServiceDb` as the canonical connection key.
@@ -47,6 +51,13 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 ## API Implementation Rules
 - Keep `Program.cs` focused on service registration, middleware, and endpoint mapping.
 - Place cross-cutting logic in dedicated files/folders (for example `Auth`, `Contracts`, extensions).
+- Keep auth endpoint mapping in dedicated auth files under `AutoService.ApiService/Auth`.
+- Configure authentication with ASP.NET Core Identity + JWT Bearer; read the signing secret from `JwtSettings:Secret`.
+- Only **mechanics** can register and log in; **customers are passive domain records** (vehicle owners, notification targets) with no login account and no `IdentityUserId`.
+- Keep registration logic transactional: create `IdentityUser` and linked `Mechanic` domain record together, linked by `People.IdentityUserId`.
+- Login endpoints should verify credentials through Identity and issue JWTs that include domain linkage claims such as person id and person type.
+- Keep JWT secrets out of committed config; use `appsettings.Local.json`, environment variables, or user secrets.
+- For local auth testing outside AppHost, keep `JwtSettings:Secret` in `appsettings.Local.json` (gitignored) or use the `JwtSettings__Secret` environment variable.
 - Use cancellation tokens for async flows where applicable.
 - Return accurate HTTP status codes and explicit validation errors.
 - Keep comments concise and only for non-obvious logic.

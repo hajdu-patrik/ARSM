@@ -82,7 +82,7 @@
                   "y": 18,
                   "name": "userText",
                   "fill": "#8B8398",
-                  "content": "Username / Email",
+                  "content": "Emai / Phone Numberl",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -4110,7 +4110,7 @@
                   "y": 18,
                   "name": "loginHuLUserT",
                   "fill": "#8B8398",
-                  "content": "Felhasználónév / E-mail",
+                  "content": "E-mail / Telefonszám",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -4319,7 +4319,7 @@
                   "y": 18,
                   "name": "enDUserT",
                   "fill": "#A9A1BB",
-                  "content": "Username / Email",
+                  "content": "Emai / Phone Numberl",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -4528,7 +4528,7 @@
                   "y": 18,
                   "name": "loginHuDUserT",
                   "fill": "#A9A1BB",
-                  "content": "Felhasználónév / E-mail",
+                  "content": "E-mail / Telefonszám",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "normal"

@@ -17,6 +17,7 @@
     <UserSecretsId>251e678a-5d1f-4579-8d82-85175558b81a</UserSecretsId>
   </PropertyGroup>
 
+  <!-- Target to kill the running API service before building to avoid conflicts with the new build -->
   <Target Name="KillRunningAppHost" BeforeTargets="PreBuildEvent" Condition="'$(OS)' == 'Windows_NT'">
     <Exec Command="taskkill /F /IM AutoService.AppHost.exe 2&gt;nul" IgnoreExitCode="true" />
   </Target>

@@ -1,9 +1,13 @@
 namespace AutoService.ApiService.Models.UniqueTypes;
 
+/**
+ * Tracks the lifecycle state of a service appointment.
+ * Persisted to the database as a string via EF Core value conversion.
+ */
 public enum ProgresStatus
 {
-    Scheduled,
-    InProgress,
-    Completed,
-    Cancelled
+    Scheduled,  // Appointment booked; work has not started yet.
+    InProgress, // Vehicle is currently being serviced.
+    Completed,  // Service work finished successfully.
+    Cancelled   // Appointment was cancelled before or during service.
 }

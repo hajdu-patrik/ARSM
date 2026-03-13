@@ -1,5 +1,7 @@
 using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,13 +10,12 @@ namespace AutoService.ApiService.Data;
 /**
  * Entity Framework Core DbContext for the AutoService domain.
  */
-public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : DbContext(options)
+public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
     // Entity sets.
     public DbSet<People> People => Set<People>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
-
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
@@ -34,11 +35,13 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
         {
             entity.ToTable("people");
             entity.HasDiscriminator<string>("PersonType")
-                .HasValue<Customer>("Customer")
-                .HasValue<Mechanic>("Mechanic");
+                  .HasValue<Customer>("Customer")
+                  .HasValue<Mechanic>("Mechanic");
 
             entity.Property(x => x.Email).HasMaxLength(150).IsRequired();
             entity.HasIndex(x => x.Email).IsUnique();
+            entity.Property(x => x.IdentityUserId).HasMaxLength(450);
+            entity.HasIndex(x => x.IdentityUserId).IsUnique();
             entity.Property(x => x.PhoneNumber).HasMaxLength(20);
 
             entity.OwnsOne(x => x.Name, name =>
@@ -53,9 +56,9 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
         modelBuilder.Entity<Customer>(entity =>
         {
             entity.HasMany(x => x.Vehicles)
-                .WithOne(x => x.Customer)
-                .HasForeignKey(x => x.CustomerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                  .WithOne(x => x.Customer)
+                  .HasForeignKey(x => x.CustomerId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Mechanic mapping.
@@ -67,12 +70,12 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
             });
 
             entity.Property(x => x.Specialization)
-                .HasConversion<string>()
-                .HasMaxLength(64)
-                .IsRequired();
+                  .HasConversion<string>()
+                  .HasMaxLength(64)
+                  .IsRequired();
 
             entity.Property(x => x.Expertise)
-                .HasConversion(
+                  .HasConversion(
                     list => string.Join(',', list.Distinct().Select(x => x.ToString())),
                     value => string.IsNullOrWhiteSpace(value)
                         ? new List<ExpertiseType>()
@@ -81,14 +84,14 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
                             .Select(Enum.Parse<ExpertiseType>)
                             .Distinct()
                             .ToList())
-                .Metadata.SetValueComparer(new ValueComparer<List<ExpertiseType>>(
+                  .Metadata.SetValueComparer(new ValueComparer<List<ExpertiseType>>(
                     (a, b) => a != null && b != null && a.SequenceEqual(b),
                     v => v.Aggregate(0, (hash, item) => HashCode.Combine(hash, item)),
                     v => v.ToList()));
 
             entity.Property(x => x.Expertise)
-                .HasMaxLength(256)
-                .IsRequired();
+                  .HasMaxLength(256)
+                  .IsRequired();
         });
 
         // Vehicle mapping.
@@ -113,9 +116,9 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
             entity.Property(x => x.EngineTorqueNm).IsRequired();
 
             entity.HasMany(x => x.Appointments)
-                .WithOne(x => x.Vehicle)
-                .HasForeignKey(x => x.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
+                  .WithOne(x => x.Vehicle)
+                  .HasForeignKey(x => x.VehicleId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Appointment mapping.
@@ -130,8 +133,8 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
             entity.HasIndex(x => x.ScheduledDate);
 
             entity.HasMany(x => x.Mechanics)
-                .WithMany(x => x.Appointments)
-                .UsingEntity<Dictionary<string, object>>(
+                  .WithMany(x => x.Appointments)
+                  .UsingEntity<Dictionary<string, object>>(
                     "appointmentmechanics",
                     j => j.HasOne<Mechanic>().WithMany().HasForeignKey("MechanicId").OnDelete(DeleteBehavior.Cascade),
                     j => j.HasOne<Appointment>().WithMany().HasForeignKey("AppointmentId").OnDelete(DeleteBehavior.Cascade),

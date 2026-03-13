@@ -32,33 +32,57 @@ Then run EF commands again.
 
 ### Full reset (delete current data, recreate schema, reload fresh content)
 
+**Option A — via EF CLI** (works when Aspire is stopped and port 55432 is reachable)
+
 ```bash
 # from AutoServiceApp root
-# This deletes the current database and all data
+# Stop AppHost first (Ctrl+C), then:
 dotnet ef database drop --force --project AutoService.ApiService --startup-project AutoService.ApiService
-```
-
-```bash
-# This creates the database and applies the current schema
 dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService
-```
-
-```bash
-# This starts the stack, and the seed/initializer logic can reload data
 dotnet run --project AutoService.AppHost
 ```
 
-### Schema-only refresh
+**Option B — via Docker** (works even while AppHost is running; more reliable on Windows)
 
 ```bash
-# This creates a new migration based on model changes
-dotnet ef migrations add <MigrationName> --project AutoService.ApiService --startup-project AutoService.ApiService --output-dir Data/Migrations
+# 1. Find the container name
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+
+# 2. Drop the database inside the container
+docker exec <CONTAINER_NAME> sh -c 'PGPASSWORD=$POSTGRES_PASSWORD psql -U postgres -c "DROP DATABASE IF EXISTS \"AutoServiceDb\";"'
+
+# 3. Restart AppHost — MigrateAsync() will recreate the schema and reseed
+dotnet run --project AutoService.AppHost
 ```
 
+The `DemoDataInitializer.EnsureSeededAsync()` runs automatically on startup: it calls `MigrateAsync()` (creates the schema) and inserts all demo data when the tables are empty.
+
+### Schema-only refresh (add a new migration without touching data)
+
 ```bash
-# This applies pending migrations to the database, keeping data when possible
-dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService
+# 1. Stop AppHost (Ctrl+C) to release build file locks
+
+# 2. Kill any stale dotnet processes if still locked
+cmd.exe /c "taskkill /IM AutoService.ApiService.exe /F 2>nul"
+cmd.exe /c "taskkill /IM dotnet.exe /F 2>nul"
+
+# 3. Create a new migration for your model changes
+#    Replace <MigrationName> with a descriptive PascalCase name, e.g. AddVehicleColor
+dotnet ef migrations add <MigrationName> \
+  --project AutoService.ApiService \
+  --startup-project AutoService.ApiService \
+  --output-dir Data/Migrations
+
+# 4. Apply the migration (data is preserved)
+dotnet ef database update \
+  --project AutoService.ApiService \
+  --startup-project AutoService.ApiService
+
+# 5. Restart AppHost
+dotnet run --project AutoService.AppHost
 ```
+
+> **Tip:** migration files are generated under `AutoService.ApiService/Data/Migrations/`. Always review the generated `Up()` / `Down()` methods before applying.
 
 ---
 
@@ -99,44 +123,23 @@ psql -U postgres -d AutoServiceDb
 \d appointmentmechanics
 ```
 
----
-
-## Query sample rows
+ASP.NET Core Identity tables (added by the `AddIdentityAndIdentityUserId` migration):
 
 ```sql
-SELECT * FROM people LIMIT 20;
-SELECT * FROM vehicles LIMIT 20;
+\d "AspNetUsers"
+\d "AspNetRoles"
+\d "AspNetUserRoles"
+\d "AspNetUserClaims"
+\d "AspNetUserLogins"
+\d "AspNetUserTokens"
+\d "AspNetRoleClaims"
 ```
 
 ---
 
-## Row counts by table
+## Data verification queries
 
-```sql
-SELECT 'People' AS table_name, COUNT(*) AS row_count FROM people
-UNION ALL
-SELECT 'Vehicles', COUNT(*) FROM vehicles
-UNION ALL
-SELECT 'Appointments', COUNT(*) FROM appointments
-UNION ALL
-SELECT 'AppointmentMechanics', COUNT(*) FROM appointmentmechanics;
-```
-
----
-
-## Full column-level schema overview
-
-```sql
-SELECT
-	table_name,
-	column_name,
-	data_type,
-	is_nullable,
-	column_default
-FROM information_schema.columns
-WHERE table_schema = 'public'
-ORDER BY table_name, ordinal_position;
-```
+Use on the root level: Test/PostgreSQLAccesValidation.sql file contains example queries to check if the expected data is present in the database. You can copy-paste these into the `psql` terminal.
 
 ---
 

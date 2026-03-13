@@ -126,6 +126,61 @@ dotnet add AutoService.ApiService package Microsoft.EntityFrameworkCore.Tools
 
 Ezek telepítik a Microsoft hivatalos ORM-jét és a migrációkhoz szükséges eszközöket. A projekt Code-First megközelítést használ, így a séma változásai jól követhetők Gitben.
 
+### 4) Hitelesítési csomagok (ApiService)
+
+```Bash
+dotnet add AutoService.ApiService package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+dotnet add AutoService.ApiService package Microsoft.AspNetCore.Authentication.JwtBearer
+```
+
+Az `Identity.EntityFrameworkCore` csomag hozzáadja az ASP.NET Core Identity sémát (felhasználók, szerepkörök, token táblák) és a `UserManager<IdentityUser>` szolgáltatást a DI tárolóhoz.  
+Az `Authentication.JwtBearer` csomag ellenőrzi a beérkező `Authorization: Bearer <token>` fejléceket a konfigurált aláírókulcshoz képest.
+
+---
+
+## Hitelesítés (JWT)
+
+Az API **ASP.NET Core Identity**-t használ a hitelesítő adatok tárolására és **JWT Bearer** tokeneket az állapotmentes hitelesítésre.
+
+- Csak a **szerelők** tud regisztrálni és bejelentkezni a dashboardon.
+- A **vásárlók** passzív domain rekordok (jármű tulajdonosok / értesítési célpontok) — nincs bejelentkezési fiókjuk.
+- A JWT tokenek a következő claimeket tartalmazzák: `sub`, `email`, `name`, `person_id`, `person_type`.
+- A tokenek **12 óra** elteltével lejárnak.
+- Bejelentkezési védelem: **10 login próbálkozás / perc / kliens IP**, utána **5 perc tiltás**.
+- A hitelesítő adatok küldése csak **HTTPS-en** történjen (TLS titkosított átvitel).
+
+### Szükséges helyi konfiguráció
+
+Hozd létre az `AutoServiceApp/AutoService.ApiService/appsettings.Local.json` fájlt (gitignored) az Aspire-en kívüli futtatáshoz:
+
+```json
+{
+  "ConnectionStrings": {
+    "AutoServiceDb": "Host=localhost;Port=55432;Database=AutoServiceDb;Username=postgres;Password=<jelszó>"
+  },
+  "JwtSettings": {
+    "Secret": "<legalább-32-bájt-hosszú-titkos-kulcs>"
+  },
+  "DemoData": {
+    "MechanicPassword": "<helyi-demo-jelszo>"
+  }
+}
+```
+
+Az AppHost-on keresztül futtatva az Aspire automatikusan injektálja a kapcsolati stringet. A JWT titkos kulcsot és a demo jelszót mindig kézzel kell beállítani.
+
+### Demo bejelentkezési fiókok (első indításkor jönnek létre)
+
+Csak a szerelők kapnak bejelentkezési fiókot:
+
+| Email |
+|---|
+| `gabor.kovacs@gmail.com` |
+| `peter.nagy@gmail.com` |
+| `mate.szabo@gmail.com` |
+
+A jelszó a helyi `DemoData:MechanicPassword` beállításból jön.
+
 ---
 
 ## Indítás Aspire-rel

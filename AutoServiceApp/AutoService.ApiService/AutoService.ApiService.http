@@ -1,2 +1,104 @@
-@AutoService.ApiService_HostAddress = http://localhost:5197
+@AutoService_ApiService_HostAddress = https://localhost:7176
+@NewMechanicEmail = test.mechanic@example.com
+@NewMechanicPhone = +36309876543
+@NewMechanicPassword = Test@1234
+@DemoMechanicPassword = Test_Jelszo.420
 
+# ─────────────────────────────────────────────────────────────
+#  AUTH – Register New Mechanic
+#  POST /api/auth/register
+# ─────────────────────────────────────────────────────────────
+#  Always test auth over HTTPS so credentials are protected in transit.
+
+# Customers are not registered via the API — they are managed internally by mechanics.
+
+### Register a new Mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "Mechanic",
+  "email": "{{NewMechanicEmail}}",
+  "password": "{{NewMechanicPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "{{NewMechanicPhone}}",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes", "Transmission"]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  AUTH – Login Newly Registered Mechanic
+#  POST /api/auth/login
+# ─────────────────────────────────────────────────────────────
+
+### Login as newly registered Mechanic (email)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NewMechanicEmail}}",
+  "password": "{{NewMechanicPassword}}"
+}
+
+###
+
+### Login as newly registered Mechanic (phone number)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{NewMechanicPhone}}",
+  "password": "{{NewMechanicPassword}}"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  AUTH – Login Demo Mechanics
+#  POST /api/auth/login
+#
+#  Demo seed credentials (available after first startup):
+#  Only mechanics have login accounts. Customers are passive records (vehicle
+#  owners / notification targets) and cannot log in to the dashboard.
+#  Login endpoint rate limit: 10 attempts / minute, then 3-minute cooldown.
+#
+#    Mechanic   gabor.kovacs@gmail.com
+#    Mechanic   peter.nagy@gmail.com
+#    Mechanic   mate.szabo@gmail.com
+# ─────────────────────────────────────────────────────────────
+
+### Login as demo Mechanic (Gabor Kovacs)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "gabor.kovacs@gmail.com",
+  "password": "{{DemoMechanicPassword}}"
+}
+
+###
+
+### Login as demo Mechanic (Peter Nagy)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "peter.nagy@gmail.com",
+  "password": "{{DemoMechanicPassword}}"
+}
+
+###
+
+### Login as demo Mechanic (Mate Szabo)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "mate.szabo@gmail.com",
+  "password": "{{DemoMechanicPassword}}"
+}
+
+###

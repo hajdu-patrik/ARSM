@@ -18,6 +18,14 @@ public static class Extensions
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
 
+    /**
+     * Registers the full set of Aspire service defaults: OpenTelemetry, health checks,
+     * service discovery, and standard HTTP resilience for outgoing requests.
+     * Call this once from each service project's Program.cs.
+     *
+     * @param builder The host application builder to configure.
+     * @return The same builder so calls can be chained.
+     */
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();
@@ -44,6 +52,13 @@ public static class Extensions
         return builder;
     }
 
+    /**
+     * Configures OpenTelemetry logging, metrics and distributed tracing.
+     * Health-check requests are excluded from traces to avoid noise.
+     *
+     * @param builder The host application builder to configure.
+     * @return The same builder so calls can be chained.
+     */
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Logging.AddOpenTelemetry(logging =>
@@ -78,6 +93,13 @@ public static class Extensions
         return builder;
     }
 
+    /**
+     * Adds an OTLP exporter when the OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set.
+     * This enables shipping telemetry to the Aspire dashboard and external collectors.
+     *
+     * @param builder The host application builder to configure.
+     * @return The same builder so calls can be chained.
+     */
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
@@ -97,6 +119,13 @@ public static class Extensions
         return builder;
     }
 
+    /**
+     * Adds a default liveness health check that returns Healthy as long as the
+     * process is responsive. Used by Aspire and container orchestrators.
+     *
+     * @param builder The host application builder to configure.
+     * @return The same builder so calls can be chained.
+     */
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
@@ -106,6 +135,13 @@ public static class Extensions
         return builder;
     }
 
+    /**
+     * Maps /health (all checks) and /alive (liveness-only checks) endpoints.
+     * Only exposed in Development to avoid unintended information disclosure in production.
+     *
+     * @param app The configured WebApplication.
+     * @return The same app so calls can be chained.
+     */
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
         // Adding health checks endpoints to applications in non-development environments has security implications.

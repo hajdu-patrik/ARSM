@@ -18,14 +18,5 @@
                 "ssl": false
             }
         }
-    ],
-    "mcpServers": {
-        "pencil-design-tool": {
-            "command": "npx",
-            "args": [
-                "-y", 
-                "@pencil/mcp-server"
-            ]
-        }
-    }
+    ]
 }

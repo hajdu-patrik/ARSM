@@ -3,8 +3,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 
 // Database definition (PostgreSQL)
-var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
-                            .WithHostPort(55432)
+var postgresServer = builder.AddPostgres("postgres", password: postgresPassword, port: 55432)
                             .WithDataVolume("autoservice-postgres-data")
                             .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent);
 
