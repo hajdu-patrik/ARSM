@@ -18,6 +18,36 @@ Az AutoService egy full-stack alkalmazás, amely ASP.NET Core Web API-t használ
 - Magyar: ez a fájl
 - Angol: [README.md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README.md)
 
+## Context Mode használat (VS Code Copilot)
+
+Ebben a repositoryban a Context Mode-ot alapvetően automatikus működésre használjuk.
+
+- Már beállítva a projektben:
+  - MCP regisztráció: `.vscode/mcp.json`
+  - Hook routing: `.github/hooks/context-mode.json`
+- MCP vagy hook módosítás után egyszer indítsd újra a VS Code-ot.
+
+### Mikor elég az automatikus működés
+
+- Általános fejlesztési flow (kisebb olvasás, szerkesztés, build, gyors hibakeresés).
+- Rövidebb parancskimenetek és célzott fájlszintű munka.
+
+### Mikor érdemes explicit Context Mode használatot kérni
+
+- Nagy kimenetű parancsoknál (hosszú logok, széles keresések, nagy CLI/API output).
+- Többlépéses repository-kutatásnál, ahol sok parancs futna egymás után.
+- Dokumentáció/webes tartalom feldolgozásnál, ahol indexelés + célzott keresés kell.
+- Hosszabb munkamenet után állapotellenőrzéshez.
+
+### Gyakorlati promptok és parancsok
+
+- Prompt példák:
+  - "Használd a `ctx_batch_execute` eszközt ehhez a repo kutatáshoz."
+  - "Indexeld ezt a dokumentációt, majd keress rá erre: X."
+- Terminál ellenőrzés:
+  - `context-mode --version`
+  - `context-mode doctor`
+
 ---
 
 ## Projekt inicializálása (VS Code)
@@ -144,9 +174,9 @@ Az API **ASP.NET Core Identity**-t használ a hitelesítő adatok tárolására 
 
 - Csak a **szerelők** tud regisztrálni és bejelentkezni a dashboardon.
 - A **vásárlók** passzív domain rekordok (jármű tulajdonosok / értesítési célpontok) — nincs bejelentkezési fiókjuk.
-- A JWT tokenek a következő claimeket tartalmazzák: `sub`, `email`, `name`, `person_id`, `person_type`.
-- A tokenek **12 óra** elteltével lejárnak.
-- Bejelentkezési védelem: **10 login próbálkozás / perc / kliens IP**, utána **5 perc tiltás**.
+- A JWT tokenek legalább a következő claimeket tartalmazzák: `sub`, `jti`, `nameidentifier`, `email`, `name`, `person_id`, `person_type`.
+- A tokenek jelenleg **10 perc** elteltével lejárnak.
+- Bejelentkezési védelem: **10 login próbálkozás / perc / kliens IP**, utána **3 perc tiltás**.
 - A hitelesítő adatok küldése csak **HTTPS-en** történjen (TLS titkosított átvitel).
 
 ### Szükséges helyi konfiguráció
@@ -174,7 +204,7 @@ Az AppHost-on keresztül futtatva az Aspire automatikusan injektálja a kapcsola
 Csak a szerelők kapnak bejelentkezési fiókot:
 
 | Email |
-|---|
+| --- |
 | `gabor.kovacs@gmail.com` |
 | `peter.nagy@gmail.com` |
 | `mate.szabo@gmail.com` |
@@ -192,3 +222,27 @@ dotnet run
 ```
 
 Ez elindítja a teljes helyi környezetet (API + infrastruktúra + kapcsolódó szolgáltatások).
+
+---
+
+## Aktuális implementációs állapot (kód audit)
+
+### Jelenleg elérhető endpointok
+
+- `POST /api/auth/register`
+- `POST /api/auth/login` (rate limit policy-val védve)
+- `GET /openapi/v1.json` (csak Development környezetben)
+
+Megjegyzés: jelenleg nincs külön CRUD endpoint `Customer`, `Vehicle` vagy `Appointment` entitásokhoz.
+
+### Aktív biztonsági mechanizmusok
+
+- ASP.NET Core Identity (`IdentityUser`) + EF Core store
+- Jelszó policy: minimum 8 karakter, kisbetű, nagybetű, szám, speciális karakter
+- Lockout policy: 5 hibás bejelentkezés után 15 perc zárolás
+- JWT validáció: kötelező aláírás, issuer/audience ellenőrzés, lejárat ellenőrzés, 1 perc clock skew
+- JWT titok: minimum 32 bájt; hiány/placeholder esetén az API startupnál hibát dob
+- HTTPS redirection minden környezetben, HSTS nem-development környezetben
+- Login rate limit: 10 kérés/perc/IP, túllépés után 3 perces ideiglenes tiltás (`429` + `Retry-After`)
+- Tranzakciós regisztráció: `IdentityUser` + kapcsolt `Mechanic` domain rekord egy tranzakcióban
+- Seed védelem: production-szerű környezetben csak explicit `DemoData:EnableSeeding=true` esetén seedel

@@ -18,6 +18,24 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - `AutoServiceApp/AutoService.ServiceDefaults`: shared defaults and cross-service settings.
 - `AutoServiceApp/AutoService.WebUI`: React client.
 
+## Team Coordination Rule (Merge-Conflict Prevention)
+- If someone starts working in a shared or high-churn area, they should post a short note in the team group first (scope + expected files).
+- For parallel work, prefer folder-level ownership during a work window (for example, one person on `ApiService/Auth`, another on `WebUI/src`).
+- Before pushing larger changes, sync in the group to avoid simultaneous edits on the same files.
+
+## MCP and Hook Policy (Workspace)
+- Keep MCP server setup intentionally minimal and project-focused.
+- Primary servers for this repository:
+	- `pencil-design-tool`
+	- `context-mode`
+- Do **not** add extra MCP servers unless they clearly reduce repeated manual work for this project.
+- MCP server workspace config file: `.vscode/mcp.json`.
+- Hook config file for context-mode lifecycle integration: `.github/hooks/context-mode.json`.
+- Default workflow: treat context-mode as automatic routing/enforcement. Do not require explicit context-mode prompts for routine small tasks.
+- Prefer explicit context-mode tool usage when output can be large (long logs, broad searches, large API/CLI output, large docs/web content).
+- For multi-step research, prefer batching/indexing patterns (`ctx_batch_execute`, indexing + search) over many separate high-output calls.
+- After editing MCP/hook config, restart VS Code to ensure hooks and routing instructions are reloaded.
+
 ## Backend Non-Negotiables
 - Keep `People` inheritance as TPH (Table-Per-Hierarchy) at all times.
 - Keep `People` as abstract base and keep `Customer` + `Mechanic` as derived entities.
@@ -61,6 +79,42 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Use cancellation tokens for async flows where applicable.
 - Return accurate HTTP status codes and explicit validation errors.
 - Keep comments concise and only for non-obvious logic.
+
+## Current API & Security Snapshot (Keep In Sync With Code)
+- Current mapped endpoints in `AutoService.ApiService`:
+	- `POST /api/auth/register`
+	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`)
+	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
+- No `Customer`, `Vehicle`, or `Appointment` CRUD endpoints are currently mapped.
+- Auth and login behavior currently implemented:
+	- registration is mechanic-only,
+	- login accepts email or phone number,
+	- lockout is enabled (`5` failed attempts, `15` minutes lockout),
+	- login rate limit is `10` requests per minute per client IP,
+	- temporary login ban window after rate-limit rejection is currently `3` minutes,
+	- login JWT lifetime is currently `10` minutes.
+- JWT validation requirements currently enforced:
+	- signed tokens only,
+	- issuer and audience validation enabled,
+	- lifetime validation enabled,
+	- clock skew set to `1` minute,
+	- secret must be configured and at least `32` bytes.
+- Security middleware currently active:
+	- `UseHttpsRedirection()` always,
+	- `UseHsts()` outside Development,
+	- `UseRateLimiter()`, `UseAuthentication()`, `UseAuthorization()`.
+- Seeding and credential safety:
+	- `DemoDataInitializer` runs migrations on startup,
+	- demo seeding outside Development requires `DemoData:EnableSeeding=true`,
+	- `DemoData:MechanicPassword` is required when seeding is enabled.
+
+## Current Known Gaps (As Of Current Code)
+- `AutoService.ApiService/Contracts` is empty.
+- `AutoService.WebUI/src/services` is empty.
+- Frontend currently does not call the API yet and does not consume `VITE_API_URL` in source.
+- No CORS policy is configured yet in `Program.cs`.
+- `AutoService.ServiceDefaults` health endpoint extensions exist, but API does not currently call `MapDefaultEndpoints()`.
+- No dedicated unit/integration test project exists yet.
 
 ## Aspire Rules
 - `AutoService.AppHost` is the default local entry point.

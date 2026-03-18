@@ -134,7 +134,7 @@ else
 // Middleware: redirects HTTP requests to HTTPS.
 app.UseHttpsRedirection();
 
-// Middleware: login ban check (5-minute cooldown after auth rate limit hit).
+// Middleware: login ban check (3-minute cooldown after auth rate limit hit).
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase))

@@ -18,6 +18,36 @@ AutoService is a full-stack application using ASP.NET Core Web API for the backe
 - English: this file
 - Hungarian: [README(HU).md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README(HU).md)
 
+## Context Mode Usage (VS Code Copilot)
+
+For this repository, Context Mode is intended to work mostly automatically.
+
+- Already configured in this repo:
+  - MCP registration: `.vscode/mcp.json`
+  - Hook routing: `.github/hooks/context-mode.json`
+- After changing MCP/hook config, restart VS Code once.
+
+### When automatic usage is enough
+
+- Normal coding flow (small reads, edits, builds, quick diagnostics).
+- Short command outputs and focused file-level changes.
+
+### When to ask for explicit Context Mode usage
+
+- Large command output (long logs, broad searches, large CLI/API output).
+- Multi-step repository research where many commands would otherwise flood context.
+- Documentation/web content processing where indexing and targeted search is useful.
+- Session health checks after long work sessions.
+
+### Practical prompts and commands
+
+- Prompt examples:
+  - "Use `ctx_batch_execute` for this repo research."
+  - "Fetch and index this doc, then search for X."
+- Terminal checks:
+  - `context-mode --version`
+  - `context-mode doctor`
+
 ---
 
 ## Project Initialization (VS Code)
@@ -144,9 +174,9 @@ The API uses **ASP.NET Core Identity** for credential storage and **JWT Bearer**
 
 - Only **mechanics** can register and log in via the dashboard.
 - **Customers** are passive domain records (vehicle owners / notification targets) — they have no login accounts.
-- JWT tokens contain the following claims: `sub`, `email`, `name`, `person_id`, `person_type`.
-- Tokens expire after **12 hours**.
-- Login endpoint protection: **10 login attempts per minute per client IP**, then a **5-minute cooldown**.
+- JWT tokens include at least the following claims: `sub`, `jti`, `nameidentifier`, `email`, `name`, `person_id`, `person_type`.
+- Tokens currently expire after **10 minutes**.
+- Login endpoint protection: **10 login attempts per minute per client IP**, then a **3-minute cooldown**.
 - Credentials must be sent over **HTTPS** only (TLS encrypted in transit).
 
 ### Required local configuration
@@ -174,7 +204,7 @@ When running through AppHost, Aspire injects the connection string automatically
 Only mechanics receive login accounts:
 
 | Email |
-|---|
+| --- |
 | `gabor.kovacs@gmail.com` |
 | `peter.nagy@gmail.com` |
 | `mate.szabo@gmail.com` |
@@ -192,3 +222,27 @@ dotnet run
 ```
 
 This starts the orchestrated local environment (API + infrastructure + related services).
+
+---
+
+## Current Implementation Status (Code Audit)
+
+### Currently Available Endpoints
+
+- `POST /api/auth/register`
+- `POST /api/auth/login` (protected by rate limiting policy)
+- `GET /openapi/v1.json` (Development environment only)
+
+Note: there are currently no dedicated CRUD endpoints for `Customer`, `Vehicle`, or `Appointment`.
+
+### Active Security Mechanisms
+
+- ASP.NET Core Identity (`IdentityUser`) with EF Core store
+- Password policy: minimum 8 chars with lowercase, uppercase, digit, and non-alphanumeric
+- Lockout policy: 5 failed sign-in attempts triggers 15-minute lockout
+- JWT validation: signed tokens required, issuer/audience validated, lifetime validated, 1-minute clock skew
+- JWT secret hardening: minimum 32 bytes; missing/placeholder values fail startup
+- HTTPS redirection in all environments, HSTS outside Development
+- Login rate limiting: 10 requests/minute/IP, then 3-minute temporary ban (`429` + `Retry-After`)
+- Transactional registration: `IdentityUser` + linked `Mechanic` domain record are created in one transaction
+- Seeding safety: outside Development, demo seeding requires explicit `DemoData:EnableSeeding=true`

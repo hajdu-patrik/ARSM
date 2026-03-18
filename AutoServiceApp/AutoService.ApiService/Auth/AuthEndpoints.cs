@@ -141,7 +141,7 @@ public static class AuthEndpoints
     /**
      * Handles POST /api/auth/login.
      * Verifies credentials via Identity, looks up the linked domain People record,
-     * and issues a 12-hour JWT containing identity and domain claims.
+     * and issues a 10-minute JWT containing identity and domain claims.
      *
     * @param request Login payload (email or phone number + password).
      * @param userManager ASP.NET Core Identity user manager.
