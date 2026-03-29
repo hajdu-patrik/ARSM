@@ -11,6 +11,18 @@
         },
         "context-mode": {
             "command": "context-mode"
+        },
+        "aspire": {
+            "type": "stdio",
+            "command": "dotnet",
+            "args": [
+                "tool",
+                "run",
+                "aspire",
+                "--",
+                "mcp",
+                "start"
+            ]
         }
     }
 }

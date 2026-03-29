@@ -75,6 +75,10 @@ packages/
 **/appsettings.Development.json
 **/appsettings.Local.json
 
+# Local private documentation (not for repository)
+/Private-Docs/
+*.private.md
+
 # User Secrets / certificates / keys
 secrets.json
 *.pfx
@@ -88,3 +92,5 @@ docker-compose.override.yml
 # Temporary files
 tmp/
 temp/
+.claude/settings.json
+.claude/projects/

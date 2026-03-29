@@ -1,9 +1,9 @@
+# Dashboard UI/UX Tervezési Folyamat (HU)
+
 ![UI/UX](https://img.shields.io/badge/Fókusz-UI%2FUX_Tervezés-8B5CF6?style=flat)
 ![AI](https://img.shields.io/badge/Módszer-AI_Támogatott-7C3AED?style=flat)
 ![MCP](https://img.shields.io/badge/Integráció-MCP_Szerver-4C1D95?style=flat)
 ![Pencil](https://img.shields.io/badge/Eszköz-Pencil_Designer-A78BFA?style=flat)
-
-# Dashboard UI/UX Tervezési Folyamat (HU)
 
 Ez a dokumentum röviden összefoglalja, hogyan készült el az AutoService dashboard UI/UX terve AI támogatással, MCP vezérléssel és a Pencil design környezetben.
 
@@ -51,7 +51,7 @@ A Pencil környezetben történt az összes variáns felépítése és finomít�
 - Login,
 - 404,
 - Dashboard,
-- naptár nézet,
+- Naptár nézet,
 - EN/HU és Light/Dark variánsok.
 
 ---

@@ -1,9 +1,9 @@
+# Dashboard UI/UX Design Process (EN)
+
 ![UI/UX](https://img.shields.io/badge/Focus-UI%2FUX_Design-8B5CF6?style=flat)
 ![AI](https://img.shields.io/badge/Workflow-AI_Assisted-7C3AED?style=flat)
 ![MCP](https://img.shields.io/badge/Integration-MCP_Server-4C1D95?style=flat)
 ![Pencil](https://img.shields.io/badge/Tool-Pencil_Designer-A78BFA?style=flat)
-
-# Dashboard UI/UX Design Process (EN)
 
 This document briefly summarizes how the AutoService dashboard UI/UX plan was produced with AI support, MCP orchestration, and the Pencil design environment.
 
@@ -51,7 +51,7 @@ All final variants were built and refined in Pencil:
 - Login,
 - 404,
 - Dashboard,
-- calendar layout,
+- Calendar layout,
 - EN/HU and Light/Dark versions.
 
 ---

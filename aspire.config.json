@@ -1,0 +1,5 @@
+{
+    "appHost": {
+        "path": "AutoServiceApp\\AutoService.AppHost\\AutoService.AppHost.csproj"
+    }
+}

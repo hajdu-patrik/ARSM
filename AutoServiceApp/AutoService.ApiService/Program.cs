@@ -16,7 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Optional local overrides for running EF CLI/API outside AppHost.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// Service registration section (DI container).
+// Service registration section.
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AutoServiceDbContext>(options =>
 {
@@ -111,6 +111,18 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// CORS policy for WebUI communication
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WebUIPolicy", corsPolicyBuilder =>
+    {
+        corsPolicyBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddAuthorization();
 
 // Application services.
@@ -162,6 +174,7 @@ app.Use(async (context, next) =>
 
 // Middleware: authentication and authorization.
 app.UseRateLimiter();
+app.UseCors("WebUIPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 

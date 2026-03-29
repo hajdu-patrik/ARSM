@@ -1,27 +1,53 @@
-import { useState } from 'react'
-import './App.css'
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useAuthStore } from './store/auth.store';
+import { authService } from './services/auth.service';
+import { LoadingPage } from './pages/LoadingPage';
+import { Login } from './pages/Login/page';
+import { Dashboard } from './pages/Dashboard/page';
+import { NotFound } from './pages/NotFound';
+import { PrivateRoute } from './router/PrivateRoute';
+import { Layout } from './components/layout/Layout';
+import './utils/i18n';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const setIsAuthenticated = useAuthStore((state) => state.setIsAuthenticated);
+
+  const dashboardElement = (
+    <PrivateRoute>
+      <Layout>
+        <Dashboard />
+      </Layout>
+    </PrivateRoute>
+  );
+
+  useEffect(() => {
+    // Restore auth state from localStorage
+    const user = authService.restoreAuth();
+    setIsAuthenticated(!!user);
+  }, [setIsAuthenticated]);
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-blue-600 mb-4 text-center">
-        Autószerviz Dashboard
-      </h1>
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
-        <p className="text-gray-700">A Tailwind CSS sikeresen beállítva!</p>
-        <div className="card">
-          <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-          </button>
-          <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-          </p>
-        </div>
-      </div>
+      {/* Show loading page on first app load */}
+      <LoadingPage />
+
+      {/* Main app */}
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Routes>
+          {/* Login Route */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Dashboard Route (Protected) */}
+          <Route path="/" element={dashboardElement} />
+          <Route path="/dashboard" element={dashboardElement} />
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

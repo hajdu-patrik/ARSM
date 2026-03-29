@@ -1,3 +1,5 @@
+> **Architecture Notice:** This project uses both GitHub Copilot and Claude Code as the primary agentic AI tools. To maintain consistency across the workspace, ensure that any architectural rules or domain constraints updated in this file are also synchronized with the `CLAUDE.md` and `.claude/skills/` files.
+
 # AutoService Copilot Instructions (Project-Specific)
 
 ## Goal
@@ -28,6 +30,8 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Primary servers for this repository:
 	- `pencil-design-tool`
 	- `context-mode`
+- Optional server when Aspire workflow support is needed:
+	- `aspire` (use workspace-local tool via `dotnet tool run aspire -- mcp start`)
 - Do **not** add extra MCP servers unless they clearly reduce repeated manual work for this project.
 - MCP server workspace config file: `.vscode/mcp.json`.
 - Hook config file for context-mode lifecycle integration: `.github/hooks/context-mode.json`.
@@ -35,6 +39,21 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Prefer explicit context-mode tool usage when output can be large (long logs, broad searches, large API/CLI output, large docs/web content).
 - For multi-step research, prefer batching/indexing patterns (`ctx_batch_execute`, indexing + search) over many separate high-output calls.
 - After editing MCP/hook config, restart VS Code to ensure hooks and routing instructions are reloaded.
+
+## Copilot Skill Entry Points
+- Use `/mcp-context-policy` for MCP server interaction policy and Context Mode usage decisions.
+- Use `/config-driven-endpoints` for URL/port changes to enforce config-driven addressing and avoid hardcoded fallback endpoints.
+- Use `/ef-migration` for EF migration execution and troubleshooting.
+- Keep README usage references concise; detailed policy/workflow logic belongs in skill files under `.github/skills/*/SKILL.md`.
+
+## Configuration-First Addressing Rule
+- Keep local ports and service endpoints in configuration files; do not hardcode runtime fallback URLs.
+- For service endpoint changes, update the relevant config sources consistently:
+	- `AutoServiceApp/AutoService.AppHost/appsettings.json` (ports)
+	- `AutoServiceApp/AutoService.ApiService/Properties/launchSettings.json` (API local URL)
+	- `AutoServiceApp/AutoService.WebUI/.env.development` (WebUI local env)
+- Keep frontend API base URL environment-driven (`VITE_API_URL`) and avoid code-level localhost fallback.
+- When adding new services, define addresses in config first, then wire via Aspire/environment injection.
 
 ## Backend Non-Negotiables
 - Keep `People` inheritance as TPH (Table-Per-Hierarchy) at all times.
@@ -70,6 +89,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Keep `Program.cs` focused on service registration, middleware, and endpoint mapping.
 - Place cross-cutting logic in dedicated files/folders (for example `Auth`, `Contracts`, extensions).
 - Keep auth endpoint mapping in dedicated auth files under `AutoService.ApiService/Auth`.
+- Prefer splitting oversized auth endpoint implementations into focused files (map/register/login/helpers/contracts) under `AutoService.ApiService/Auth`.
 - Configure authentication with ASP.NET Core Identity + JWT Bearer; read the signing secret from `JwtSettings:Secret`.
 - Only **mechanics** can register and log in; **customers are passive domain records** (vehicle owners, notification targets) with no login account and no `IdentityUserId`.
 - Keep registration logic transactional: create `IdentityUser` and linked `Mechanic` domain record together, linked by `People.IdentityUserId`.
@@ -89,6 +109,8 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Auth and login behavior currently implemented:
 	- registration is mechanic-only,
 	- login accepts email or phone number,
+	- unknown email/phone returns `404` with `identifier_not_found`,
+	- wrong password returns `401` with `password_incorrect`,
 	- lockout is enabled (`5` failed attempts, `15` minutes lockout),
 	- login rate limit is `10` requests per minute per client IP,
 	- temporary login ban window after rate-limit rejection is currently `3` minutes,
@@ -109,10 +131,10 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 	- `DemoData:MechanicPassword` is required when seeding is enabled.
 
 ## Current Known Gaps (As Of Current Code)
-- `AutoService.ApiService/Contracts` is empty.
-- `AutoService.WebUI/src/services` is empty.
-- Frontend currently does not call the API yet and does not consume `VITE_API_URL` in source.
-- No CORS policy is configured yet in `Program.cs`.
+- `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
+- `Customer`, `Vehicle`, and `Appointment` CRUD endpoints are still not mapped.
+- Frontend currently covers login/dashboard/404 flows only; no domain CRUD UI yet.
+- CORS policy is currently permissive (`AllowAnyOrigin`) and should be tightened for production.
 - `AutoService.ServiceDefaults` health endpoint extensions exist, but API does not currently call `MapDefaultEndpoints()`.
 - No dedicated unit/integration test project exists yet.
 
