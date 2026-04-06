@@ -36,6 +36,7 @@ Detailed agent policies are maintained as skills and prompts.
 - `/config-driven-endpoints` → Fixed config-driven ports/URLs policy, no hardcoded endpoint fallback.
 - `/ef-migration` → EF migration workflow and troubleshooting runbook.
 - `/docs-sync` → Documentation synchronization policy and workflow.
+- `/endpoint-tests-sync` → Endpoint HTTP/SQL test synchronization workflow after endpoint changes.
 
 Skill sources:
 
@@ -43,6 +44,7 @@ Skill sources:
 - `.github/skills/autoservice-config-driven-endpoints/SKILL.md`
 - `.github/skills/autoservice-ef-migration/SKILL.md`
 - `.github/skills/autoservice-docs-sync/SKILL.md`
+- `.github/skills/autoservice-endpoint-tests-sync/SKILL.md`
 
 ---
 

@@ -1,0 +1,59 @@
+@AutoService_ApiService_HostAddress = https://localhost:5200
+@AdminPassword = Test_Jelszo.420
+@NonAdminEmail = peter.nagy@gmail.com
+
+#  APPOINTMENTS
+# ─────────────────────────────────────────────────────────────
+
+@ApptId = 1
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] List month appointments (2026-04)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
+
+###
+
+### [Positive][Appointments] List today's appointments
+GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+###
+
+### [Positive][Appointments] Claim appointment by id
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Update appointment status to InProgress
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Negative][Appointments] Claim non-existent appointment (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+
+###
+
+### [Negative][Appointments] Update non-existent appointment status (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###

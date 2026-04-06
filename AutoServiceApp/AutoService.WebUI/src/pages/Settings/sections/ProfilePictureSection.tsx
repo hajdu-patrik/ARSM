@@ -1,0 +1,110 @@
+import { memo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { cardClass, buttonClass } from '../constants';
+
+interface ProfilePictureSectionProps {
+  readonly hasProfilePicture: boolean;
+  readonly pictureUrl: string;
+  readonly initials: string;
+  readonly fallbackColorClass: string;
+  readonly pictureKey: number;
+  readonly isUploading: boolean;
+  readonly onSelectFile: (file: File) => void;
+  readonly onRemove: () => void;
+}
+
+const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
+  hasProfilePicture,
+  pictureUrl,
+  initials,
+  fallbackColorClass,
+  pictureKey,
+  isUploading,
+  onSelectFile,
+  onRemove,
+}: ProfilePictureSectionProps) {
+  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        onSelectFile(file);
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [onSelectFile],
+  );
+
+  const handleUploadClick = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  return (
+    <div className={cardClass}>
+      <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+        {t('settings.profilePicture')}
+      </h2>
+
+      <div className="flex items-center gap-5">
+        {hasProfilePicture ? (
+          <img
+            key={pictureKey}
+            src={pictureUrl}
+            alt={t('settings.profilePictureAlt')}
+            className="h-20 w-20 rounded-full object-cover border-2 border-[#C9B3FF] dark:border-[#7A66C7]"
+          />
+        ) : (
+          <div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ${fallbackColorClass}`}>
+            {initials}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            className={buttonClass}
+          >
+            {isUploading ? t('settings.uploading') : t('settings.uploadPicture')}
+          </button>
+
+          {hasProfilePicture && (
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={isUploading}
+              className="inline-flex items-center justify-center rounded-xl border border-red-300 bg-transparent px-6 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-70 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus-visible:ring-red-700"
+            >
+              {t('settings.removePicture')}
+            </button>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
+          className="hidden"
+          aria-label={t('settings.uploadPicture')}
+        />
+      </div>
+
+      <p className="mt-3 text-xs text-[#8A829F] dark:text-[#8C83A8]">
+        {t('settings.pictureHint')}
+      </p>
+    </div>
+  );
+});
+
+ProfilePictureSectionComponent.displayName = 'ProfilePictureSection';
+
+export const ProfilePictureSection = ProfilePictureSectionComponent;

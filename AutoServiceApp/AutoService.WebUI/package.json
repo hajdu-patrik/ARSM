@@ -16,6 +16,7 @@
     "jwt-decode": "^4.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-easy-crop": "^5.5.7",
     "react-i18next": "^16.0.0",
     "react-router-dom": "^6.28.0",
     "zustand": "^5.0.0"

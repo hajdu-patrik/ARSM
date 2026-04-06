@@ -70,14 +70,14 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
       {/* Task description */}
       <div className="bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 text-sm border border-[#D8D2E9] dark:border-[#3A3154]">
-        <p className="text-xs text-[#6A627F] dark:text-[#B9B0D3] mb-0.5">Repair Task</p>
+        <p className="text-xs text-[#6A627F] dark:text-[#B9B0D3] mb-0.5">{t('scheduler.repairTask')}</p>
         <p className="text-[#2C2440] dark:text-[#EDE8FA]">{appointment.taskDescription}</p>
       </div>
 
       {/* Mechanics + License plate */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3] mr-1">Mechanics:</span>
+          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3] mr-1">{t('scheduler.mechanics')}</span>
           {appointment.mechanics.map((m) => (
             <div
               key={m.id}

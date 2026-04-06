@@ -21,7 +21,7 @@ public static partial class AuthEndpoints
         "92", "93", "94", "95", "96", "99"
     ];
 
-    private static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
+    internal static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
     {
         normalizedPhoneNumber = string.Empty;
 

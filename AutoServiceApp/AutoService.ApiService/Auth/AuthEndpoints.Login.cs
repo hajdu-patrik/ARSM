@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using Microsoft.AspNetCore.Identity;
@@ -170,7 +171,7 @@ public static partial class AuthEndpoints
         var accessTokenExpiresAtUtc = nowUtc.Add(accessTokenTtl);
         var refreshTokenExpiresAtUtc = nowUtc.Add(refreshTokenTtl);
 
-        var accessToken = CreateJwtToken(identityUser, mechanic, configuration, accessTokenExpiresAtUtc);
+        var accessToken = await CreateJwtTokenAsync(identityUser, mechanic, userManager, configuration, accessTokenExpiresAtUtc);
         var refreshTokenValue = GenerateRefreshTokenValue();
         var refreshTokenHash = HashRefreshToken(refreshTokenValue);
 
@@ -194,7 +195,8 @@ public static partial class AuthEndpoints
             refreshTokenValue,
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
-        return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email));
+        var isAdmin = (await userManager.GetRolesAsync(identityUser)).Contains("Admin");
+        return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 
     /**
@@ -221,19 +223,21 @@ public static partial class AuthEndpoints
     }
 
     /**
-     * Builds and serialises a signed JWT containing identity and domain claims.
+     * Builds and serialises a signed JWT containing identity, domain, and role claims.
      * Reads the signing secret from JwtSettings:Secret in configuration.
-     * Claims included: sub, nameidentifier, email, name, person_id, person_type.
+     * Claims included: sub, nameidentifier, email, name, person_id, person_type, role(s).
      *
      * @param identityUser ASP.NET Core Identity user (provides sub/email).
      * @param person Domain People record (provides person_id/person_type/name).
+     * @param userManager Identity UserManager used to retrieve roles.
      * @param configuration Application configuration root.
      * @param expiresAtUtc UTC expiry timestamp for the token.
      * @return A compact serialised JWT string.
      */
-    private static string CreateJwtToken(
+    private static async Task<string> CreateJwtTokenAsync(
         IdentityUser identityUser,
         People person,
+        UserManager<IdentityUser> userManager,
         IConfiguration configuration,
         DateTime expiresAtUtc)
     {
@@ -253,6 +257,12 @@ public static partial class AuthEndpoints
             new("person_id", person.Id.ToString()),
             new("person_type", GetPersonType(person))
         };
+
+        var roles = await userManager.GetRolesAsync(identityUser);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),

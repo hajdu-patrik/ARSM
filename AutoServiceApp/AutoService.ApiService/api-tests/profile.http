@@ -1,0 +1,113 @@
+@AutoService_ApiService_HostAddress = https://localhost:5200
+@TestPassword = Test@1234
+@AdminEmail = gabor.kovacs@gmail.com
+@AdminPassword = Test_Jelszo.420
+@MatrixRunSuffix = 20260403a
+@MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.com
+
+#  PROFILE
+# ─────────────────────────────────────────────────────────────
+
+@ProfileMechanicEmail = {{MatrixEmailOnly}}
+@ProfileCurrentPassword = {{TestPassword}}
+@ProfileNewPassword = Test@12345A
+
+### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{ProfileMechanicEmail}}",
+  "password": "{{ProfileCurrentPassword}}"
+}
+
+###
+
+### [Positive][Profile] Get own profile
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+###
+
+### [Positive][Profile] Update own profile
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "email": null,
+  "phoneNumber": null,
+  "middleName": "TestMiddle"
+}
+
+###
+
+### [Positive][Profile] Change password
+POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
+Content-Type: application/json
+
+{
+  "currentPassword": "{{ProfileCurrentPassword}}",
+  "newPassword": "{{ProfileNewPassword}}",
+  "confirmNewPassword": "{{ProfileNewPassword}}"
+}
+
+###
+
+### [Positive][Profile] Get profile picture (200 or 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+###
+
+### [Note][Profile] Multipart upload is not supported in .http reliably; use curl for PUT /api/profile/picture
+# curl example:
+# curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
+#   -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
+#   -F "file=@C:/path/to/profile-picture.png"
+
+###
+
+### [Positive][Profile] Remove profile picture
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+###
+
+### [Setup][Profile] Login as admin for self-delete negative test
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Profile] Admin self-delete forbidden (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{AdminPassword}}"
+}
+
+###
+
+### [Setup][Profile] Login back as non-admin for account deletion
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{ProfileMechanicEmail}}",
+  "password": "{{ProfileNewPassword}}"
+}
+
+###
+
+### [Positive][Profile] Non-admin deletes own account
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{ProfileNewPassword}}"
+}
+
+###

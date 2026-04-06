@@ -18,7 +18,7 @@ public static partial class AuthEndpoints
     {
         var group = endpoints.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/register", RegisterAsync);
+        group.MapPost("/register", RegisterAsync).RequireAuthorization("AdminOnly");
         group.MapPost("/login", LoginAsync).RequireRateLimiting("AuthLoginAttempts");
         group.MapPost("/refresh", RefreshAsync);
         group.MapPost("/logout", LogoutAsync).RequireAuthorization();

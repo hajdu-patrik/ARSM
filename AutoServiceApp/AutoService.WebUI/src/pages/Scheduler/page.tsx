@@ -1,15 +1,15 @@
 import { memo, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/auth.store';
 import { useSchedulerStore } from '../../store/scheduler.store';
+import { useToastStore } from '../../store/toast.store';
 import { appointmentService } from '../../services/appointment.service';
 import type { AppointmentStatus } from '../../types/scheduler.types';
 import { PlannerSpace } from './components/PlannerSpace';
 import { CalendarView } from './components/CalendarView';
 
 const SchedulerPageComponent = memo(function SchedulerPage() {
-  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
+  const showErrorToast = useToastStore((state) => state.showError);
   const store = useSchedulerStore();
 
   // Fetch today's appointments on mount
@@ -26,7 +26,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         }
       } catch {
         if (!cancelled) {
-          store.setError(t('scheduler.claimError'));
+          showErrorToast('scheduler.todayLoadError');
         }
       } finally {
         if (!cancelled) {
@@ -53,7 +53,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         }
       } catch {
         if (!cancelled) {
-          store.setError(t('scheduler.statusUpdateError'));
+          showErrorToast('scheduler.monthLoadError');
         }
       } finally {
         if (!cancelled) {
@@ -72,27 +72,21 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       const updated = await appointmentService.claim(id);
       store.upsertAppointment(updated);
     } catch {
-      store.setError(t('scheduler.claimError'));
+      showErrorToast('scheduler.claimError');
     }
-  }, [store, t]);
+  }, [showErrorToast, store]);
 
   const handleStatusChange = useCallback(async (id: number, status: AppointmentStatus) => {
     try {
       const updated = await appointmentService.updateStatus(id, { status });
       store.upsertAppointment(updated);
     } catch {
-      store.setError(t('scheduler.statusUpdateError'));
+      showErrorToast('scheduler.statusUpdateError');
     }
-  }, [store, t]);
+  }, [showErrorToast, store]);
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 h-full overflow-auto">
-      {store.error && (
-        <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm px-4 py-2 rounded-lg">
-          {store.error}
-        </div>
-      )}
-
       <PlannerSpace
         appointments={store.todayAppointments}
         isLoading={store.isLoadingToday}

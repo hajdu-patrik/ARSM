@@ -8,7 +8,7 @@ public static partial class AppointmentEndpoints
                              .WithTags("Appointments")
                              .RequireAuthorization();
 
-        group.MapGet("/", GetByMonthAsync);
+        group.MapGet(string.Empty, GetByMonthAsync);
         group.MapGet("/today", GetTodayAsync);
         group.MapPut("/{id}/claim", ClaimAsync);
         group.MapPut("/{id}/status", UpdateStatusAsync);

@@ -13,6 +13,7 @@ export interface LoginResponse {
   personId: number;
   personType: string;
   email: string;
+  isAdmin: boolean;
 }
 
 export interface RefreshResponse {
@@ -23,12 +24,14 @@ export interface ValidateTokenResponse {
   personId: number;
   personType: string;
   email: string;
+  isAdmin: boolean;
 }
 
 export interface AuthUser {
   personId: number;
   personType: string;
   email: string;
+  isAdmin: boolean;
   expiresAt?: Date;
 }
 

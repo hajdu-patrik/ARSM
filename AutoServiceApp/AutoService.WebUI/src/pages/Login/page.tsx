@@ -1,42 +1,34 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../../services/auth.service';
+import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
-import { parseIdentifierByMethod, resolveLoginError, type LoginError, type LoginMethod } from './login.helpers';
-
-type LoginUiError =
-  | { key: 'login.invalidFormat' }
-  | { key: 'login.wrongMethodEmailInPhone' }
-  | { key: 'login.wrongMethodPhoneInEmail' }
-  | { key: 'login.identifierNotFoundEmail' }
-  | { key: 'login.identifierNotFoundPhone' }
-  | LoginError;
+import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
 
 const LoginComponent = memo(function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const showErrorToast = useToastStore((state) => state.showError);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [showPassword, setShowPassword] = useState(false);
-  const [uiError, setUiError] = useState<LoginUiError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setUiError(null);
 
     const parsedIdentifier = parseIdentifierByMethod(identifier, loginMethod);
 
     if (parsedIdentifier.kind === 'invalid') {
       if (parsedIdentifier.reason === 'wrong_method_email') {
-        setUiError({ key: 'login.wrongMethodEmailInPhone' });
+        showErrorToast('login.wrongMethodEmailInPhone');
       } else if (parsedIdentifier.reason === 'wrong_method_phone') {
-        setUiError({ key: 'login.wrongMethodPhoneInEmail' });
+        showErrorToast('login.wrongMethodPhoneInEmail');
       } else {
-        setUiError({ key: 'login.invalidFormat' });
+        showErrorToast('login.invalidFormat');
       }
 
       return;
@@ -57,51 +49,22 @@ const LoginComponent = memo(function Login() {
       const resolvedError = resolveLoginError(err);
 
       if (resolvedError.key === 'login.identifierNotFound') {
-        setUiError({
-          key: loginMethod === 'email'
-            ? 'login.identifierNotFoundEmail'
-            : 'login.identifierNotFoundPhone',
-        });
+        showErrorToast(loginMethod === 'email' ? 'login.identifierNotFoundEmail' : 'login.identifierNotFoundPhone');
+      } else if (resolvedError.key === 'login.attemptsExceededWithDuration') {
+        showErrorToast(resolvedError.key, { minutes: resolvedError.minutes });
       } else {
-        setUiError(resolvedError);
+        showErrorToast(resolvedError.key);
       }
     } finally {
       setPassword('');
       setIsLoading(false);
     }
-  }, [identifier, loginMethod, password, navigate]);
+  }, [identifier, loginMethod, navigate, password, showErrorToast]);
 
   const handleLoginMethodChange = useCallback((method: LoginMethod) => {
     setLoginMethod(method);
     setIdentifier('');
-    setUiError(null);
   }, []);
-
-  const errorMessage = useMemo(() => {
-    if (!uiError) {
-      return null;
-    }
-
-    if (uiError.key === 'login.attemptsExceededWithDuration') {
-      return t(uiError.key, { minutes: uiError.minutes });
-    }
-
-    return t(uiError.key);
-  }, [uiError, t]);
-
-  useEffect(() => {
-    if (!uiError) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setUiError(null);
-    }, 5000);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [uiError]);
 
   const identifierLabel = useMemo(
     () => (loginMethod === 'email' ? t('login.email') : t('login.phone')),
@@ -167,7 +130,6 @@ const LoginComponent = memo(function Login() {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder={identifierPlaceholder}
-                aria-describedby={errorMessage ? 'login-error' : 'login-hint'}
                 className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
                 required
                 disabled={isLoading}
@@ -186,7 +148,6 @@ const LoginComponent = memo(function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('login.loginPassword')}
-                  aria-describedby={errorMessage ? 'login-error' : 'login-hint'}
                   className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 pr-12 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
                   required
                   disabled={isLoading}
@@ -213,12 +174,6 @@ const LoginComponent = memo(function Login() {
                 </button>
               </div>
             </div>
-
-            {errorMessage && (
-              <p id="login-error" role="alert" className="rounded-lg border border-[#F4C8CB] bg-[#FDF2F3] px-3 py-2 text-sm font-medium text-[#C13C45] dark:border-[#6A2D33] dark:bg-[#2B171A] dark:text-[#FF9AA0]">
-                {errorMessage}
-              </p>
-            )}
 
             <button
               type="submit"
@@ -264,7 +219,7 @@ const LoginComponent = memo(function Login() {
             </fieldset>
           </form>
 
-          <p id="login-hint" className="mt-4 text-xs text-[#6A627F] dark:text-[#B9B0D3] sm:mt-5 sm:text-sm">
+          <p className="mt-4 text-xs text-[#6A627F] dark:text-[#B9B0D3] sm:mt-5 sm:text-sm">
             {t('login.helpText')}
           </p>
         </div>

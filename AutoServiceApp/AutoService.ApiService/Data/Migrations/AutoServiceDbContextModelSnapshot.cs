@@ -81,6 +81,15 @@ namespace AutoService.ApiService.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<byte[]>("ProfilePicture")
+                        .HasColumnType("bytea")
+                        .HasColumnName("ProfilePicture");
+
+                    b.Property<string>("ProfilePictureContentType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ProfilePictureContentType");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")

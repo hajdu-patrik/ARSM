@@ -27,6 +27,7 @@ public static partial class AuthEndpoints
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        return Results.Ok(new ValidateTokenResponse(personId, personType, email));
+        var isAdmin = httpContext.User.IsInRole("Admin");
+        return Results.Ok(new ValidateTokenResponse(personId, personType, email, isAdmin));
     }
 }

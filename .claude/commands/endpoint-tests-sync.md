@@ -1,0 +1,1 @@
+Read the runbook at `.github/skills/autoservice-endpoint-tests-sync/SKILL.md` and execute the endpoint test synchronization workflow described there.

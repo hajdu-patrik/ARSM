@@ -14,7 +14,7 @@ const DARK_THEME_BUTTON_CLASS = 'bg-[#7A66C7] text-[#F5F2FF] shadow-[0_8px_20px_
 const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
   className = DEFAULT_WRAPPER_CLASS,
 }: ThemeLanguageControlsProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
 
@@ -28,14 +28,8 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
   const activeLanguage = (i18n.resolvedLanguage ?? i18n.language ?? 'en').toLowerCase();
   const isHungarian = activeLanguage.startsWith('hu');
   const themeButtonClass = isDark ? DARK_THEME_BUTTON_CLASS : LIGHT_THEME_BUTTON_CLASS;
-  const languageButtonTitle = isHungarian ? 'Váltás angolra' : 'Switch to Hungarian';
-  let themeButtonTitle: string;
-
-  if (isHungarian) {
-    themeButtonTitle = isDark ? 'Váltás világos módra' : 'Váltás sötét módra';
-  } else {
-    themeButtonTitle = isDark ? 'Switch to light mode' : 'Switch to dark mode';
-  }
+  const languageButtonTitle = isHungarian ? t('theme.switchToEnglish') : t('theme.switchToHungarian');
+  const themeButtonTitle = isDark ? t('theme.switchToLight') : t('theme.switchToDark');
 
   return (
     <div className={className}>

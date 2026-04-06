@@ -49,12 +49,32 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `POST /api/auth/login` accepts normalized email/phone identifier input and supports backward-compatible phone-in-email field fallback.
 - `POST /api/auth/login` failure semantics: generic `401 invalid_credentials` for unknown/wrong credentials, `403 mechanic_only_login` when an existing customer email/phone is used, `429` for lockout/rate-limit, `500` when linked domain record is missing.
 
+### Profile Endpoints (`/api/profile`) — all require authorization
+
+- `GET /api/profile` — Get current user's profile data (name, email, phone, picture status).
+- `PUT /api/profile` — Update email, phone number, middle name. Email/phone normalized and uniqueness-checked.
+- `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session.
+- `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
+- `GET /api/profile/picture` — Serve profile picture binary with content type header.
+- `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only.
+- `DELETE /api/profile/picture` — Remove profile picture.
+- Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
+- Profile DTOs: `ProfileResponse`, `UpdateProfileRequest`, `ChangePasswordRequest`, `DeleteProfileRequest`.
+- Endpoint files follow partial-class pattern in `Profile/` folder (mirroring `Appointments/` structure: contracts/helpers/queries/mutations/profilepicture).
+
+### Admin Endpoints (`/api/admin`) — all require AdminOnly authorization
+
+- `GET /api/admin/mechanics` — List all mechanics with admin flag.
+- `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is admin or caller is deleting themselves.
+- Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
+
 ### Appointment Endpoints (`/api/appointments`) — all require authorization
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) claims an unassigned appointment. Returns 409 if already claimed, 422 if cancelled.
 - `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum, returns 403 if not assigned.
+- Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 - Appointment DTOs: `AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`.
 - Endpoint files follow partial-class pattern in `Appointments/` folder (mirroring `Auth/` structure).
 

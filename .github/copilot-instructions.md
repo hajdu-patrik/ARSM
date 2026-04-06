@@ -30,6 +30,12 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - This keeps all `CLAUDE.md` files and `.github/instructions/` files in sync with the actual code.
 - Trigger sections: endpoints, migrations, middleware order, pages, components, routes, stores, services, dependencies, config keys, AppHost resources, security settings (lockout, rate limits, token lifetimes).
 
+## Endpoint Test Sync Rule (Mandatory)
+- After any API endpoint is added/changed/removed, run `/endpoint-tests-sync` before considering the task complete.
+- This keeps endpoint-level tests synchronized in:
+	- `AutoServiceApp/AutoService.ApiService/api-tests/*.http`
+	- `docs/Database Testing/*.sql`
+
 ## MCP and Hook Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
 - Primary servers for this repository:
@@ -50,6 +56,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Use `/config-driven-endpoints` for URL/port changes to enforce config-driven addressing and avoid hardcoded fallback endpoints.
 - Use `/ef-migration` for EF migration execution and troubleshooting.
 - Use `/docs-sync` to synchronize all CLAUDE.md and .github/instructions files with the actual codebase state after significant changes.
+- Use `/endpoint-tests-sync` to update endpoint HTTP/SQL test suites after endpoint changes.
 - Keep README usage references concise; detailed policy/workflow logic belongs in skill files under `.github/skills/*/SKILL.md`.
 
 ## Configuration-First Addressing Rule
@@ -82,7 +89,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts) and customers (plain records) when tables are empty.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
@@ -120,6 +127,15 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment
 	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status
+		- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
+		- `PUT /api/profile` (authorized) — update current user profile (email/phone/middle name)
+		- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
+		- `POST /api/profile/change-password` (authorized) — change password
+		- `GET /api/profile/picture` (authorized) — get profile picture binary
+		- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
+		- `DELETE /api/profile/picture` (authorized) — remove profile picture
+		- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
+		- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion)
 	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
 - Appointment endpoints use DTOs (`AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`) and follow partial-class pattern in `Appointments/` folder.
@@ -159,7 +175,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
 - `Customer` and `Vehicle` CRUD endpoints are still not mapped (Appointment read/claim/status endpoints now exist).
-- Frontend Scheduler page (planner + calendar) is implemented; other sidebar pages (Tools, Inventory, Settings) are placeholder stubs.
+- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), and Admin page (mechanic list with delete + registration form) are implemented; sidebar pages Tools and Inventory remain placeholder stubs.
 - Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
 - `AutoService.ServiceDefaults` health endpoint extensions exist, but API does not currently call `MapDefaultEndpoints()`.
 - No dedicated unit/integration test project exists yet.
@@ -187,7 +203,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Ensure layouts are responsive on desktop and mobile.
 - Keep API access logic in `src/services` and keep components focused on UI/state.
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
-- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`.
+- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`.
 
 ## Code Change Policy for Copilot
 - Make minimal, task-focused changes; avoid broad refactors unless requested.

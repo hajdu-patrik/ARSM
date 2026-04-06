@@ -32,12 +32,13 @@ export const authService = {
    */
   async login(request: LoginRequest): Promise<AuthUser> {
     const response = await apiClient.post<LoginResponse>('/api/auth/login', request);
-    const { expiresAtUtc, personId, personType, email } = response.data;
+    const { expiresAtUtc, personId, personType, email, isAdmin } = response.data;
 
     const authUser: AuthUser = {
       personId,
       personType,
       email,
+      isAdmin,
       expiresAt: new Date(expiresAtUtc),
     };
 
@@ -95,6 +96,7 @@ export const authService = {
           personId: response.data.personId,
           personType: response.data.personType,
           email: response.data.email,
+          isAdmin: response.data.isAdmin,
         };
 
         setAuthenticatedUser(validatedUser);

@@ -29,6 +29,7 @@ public static class DemoDataInitializer
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AutoServiceDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync();
 
@@ -43,6 +44,9 @@ public static class DemoDataInitializer
             throw new InvalidOperationException(
                 "Demo seeding requires 'DemoData:MechanicPassword'. Set it in appsettings.Local.json, user secrets, or environment variables.");
         }
+
+        // Ensure the Admin role and assignment exist on every startup (idempotent).
+        await EnsureAdminRoleAsync(userManager, roleManager);
 
         if (await db.Mechanics.AnyAsync() || await db.Customers.AnyAsync() || await db.Vehicles.AnyAsync() || await db.Appointments.AnyAsync())
             return;
@@ -200,6 +204,27 @@ public static class DemoDataInitializer
 
         db.Appointments.AddRange(appointments);
         await db.SaveChangesAsync();
+    }
+
+    /**
+     * Ensures the "Admin" Identity role exists and is assigned to the first mechanic
+     * (Gabor Kovacs). Runs on every startup and is idempotent — safe to call when the
+     * role and assignment already exist.
+     */
+    private static async Task EnsureAdminRoleAsync(
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager)
+    {
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        var adminUser = await userManager.FindByEmailAsync("gabor.kovacs@gmail.com");
+        if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
     }
 
     /**

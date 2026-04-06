@@ -8,6 +8,9 @@
 
 @TestPassword = Test@1234
 @TestWrongPassword = WrongPassword123!
+@AdminEmail = gabor.kovacs@gmail.com
+@AdminPassword = Test_Jelszo.420
+@NonAdminEmail = peter.nagy@gmail.com
 
 # Dedicated matrix users
 @MatrixRunSuffix = 20260403a
@@ -24,7 +27,39 @@
 # If a positive register/login test starts failing with 401 because the account
 # already exists from an earlier run with a different password, change MatrixRunSuffix.
 
-### [Positive][Register] Email-only mechanic registration
+### [Negative][Register] Unauthenticated registration (AdminOnly policy -> 401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "lastName": "Unauth",
+  "email": "blocked.unauth@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Setup][Admin Session] Login as admin before register matrix
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Admin Session] Validate authenticated admin session (expects IsAdmin=true)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+###
+
+### [Positive][Register][Admin] Email-only mechanic registration
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -40,7 +75,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Register] Mechanic registration with phone (spaced 06 format)
+### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -57,7 +92,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Register] Mechanic registration with Budapest landline (+36 1)
+### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -74,7 +109,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Register] Mechanic registration with leading/trailing whitespace in email and phone
+### [Positive][Register][Admin] Mechanic registration with leading/trailing whitespace in email and phone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -91,7 +126,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Duplicate email with different phone
+### [Negative][Register][Admin] Duplicate email with different phone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -108,7 +143,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Duplicate phone in another valid input format
+### [Negative][Register][Admin] Duplicate phone in another valid input format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -125,7 +160,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Duplicate phone with leading/trailing whitespace
+### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -142,7 +177,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Invalid email format
+### [Negative][Register][Admin] Invalid email format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -158,7 +193,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Invalid phone format
+### [Negative][Register][Admin] Invalid phone format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -175,7 +210,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Non-mechanic person type
+### [Negative][Register][Admin] Non-mechanic person type
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -189,7 +224,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] Invalid expertise list (duplicate item expected)
+### [Negative][Register][Admin] Invalid expertise list (duplicate item expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -201,6 +236,38 @@ Content-Type: application/json
   "personType": "Mechanic",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "engine"]
+}
+
+###
+
+### [Setup][Admin Session] Logout admin before non-admin authorization check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Non-Admin Session] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Register] Non-admin mechanic cannot register mechanics (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "lastName": "NonAdmin",
+  "email": "blocked.nonadmin@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
 }
 
 ###
@@ -423,3 +490,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 
 ### [Negative][Session] Logout without active access cookie (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+# ─────────────────────────────────────────────────────────────

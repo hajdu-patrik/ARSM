@@ -1,0 +1,52 @@
+@AutoService_ApiService_HostAddress = https://localhost:5200
+@TestPassword = Test@1234
+@AdminEmail = gabor.kovacs@gmail.com
+@AdminPassword = Test_Jelszo.420
+@MatrixRunSuffix = 20260403a
+@MatrixWhitespaceEmail = matrix.whitespace.user.{{MatrixRunSuffix}}@example.com
+
+#  ADMIN
+# ─────────────────────────────────────────────────────────────
+
+@AdminMechanicId = 2
+
+### [Setup][Admin] Login as admin (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Admin] List all mechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+###
+
+### [Negative][Admin] Try deleting self/admin mechanic (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AdminMechanicId}}
+
+###
+
+# Set @AdminMechanicId to a non-admin mechanic id before running this positive case.
+### [Positive][Admin] Delete non-admin mechanic
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AdminMechanicId}}
+
+###
+
+### [Setup][Admin] Login as non-admin for forbidden access check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{MatrixWhitespaceEmail}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Negative][Admin] Non-admin cannot list mechanics (403 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics

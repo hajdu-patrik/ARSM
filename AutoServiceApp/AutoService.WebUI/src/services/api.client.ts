@@ -56,9 +56,18 @@ function redactLoginPassword(error: AxiosError): void {
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData && config.headers) {
+    if (typeof (config.headers as { delete?: (name: string) => void }).delete === 'function') {
+      (config.headers as { delete: (name: string) => void }).delete('Content-Type');
+    } else {
+      delete (config.headers as Record<string, unknown>)['Content-Type'];
+    }
+  }
+
+  return config;
 });
 
 // Interceptor: redact login password from Axios error config data before propagation/logging.

@@ -36,6 +36,7 @@ A részletes agent policy külön skill és prompt fájlokba van szervezve.
 - `/config-driven-endpoints` → Fix, konfiguráció-alapú port/URL policy, hardcode fallback címek nélkül.
 - `/ef-migration` → EF migrációs workflow és hibaelhárítás.
 - `/docs-sync` → Dokumentáció szinkronizációs policy és workflow.
+- `/endpoint-tests-sync` → Endpoint HTTP/SQL teszt szinkronizáció endpoint változások után.
 
 Skill források:
 
@@ -43,6 +44,7 @@ Skill források:
 - `.github/skills/autoservice-config-driven-endpoints/SKILL.md`
 - `.github/skills/autoservice-ef-migration/SKILL.md`
 - `.github/skills/autoservice-docs-sync/SKILL.md`
+- `.github/skills/autoservice-endpoint-tests-sync/SKILL.md`
 
 ---
 

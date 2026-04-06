@@ -19,12 +19,16 @@ public abstract class People
     [MaxLength(150)]
     public required string Email { get; set; }
 
-    // Links this domain record to the ASP.NET Core Identity user account.
     // Null for customers, who do not have login accounts.
     public string? IdentityUserId { get; set; }
     
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
+
+    public byte[]? ProfilePicture { get; set; }
+
+    [MaxLength(50)]
+    public string? ProfilePictureContentType { get; set; }
 
 
     /**

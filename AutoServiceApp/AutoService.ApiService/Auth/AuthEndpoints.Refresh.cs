@@ -53,7 +53,7 @@ public static partial class AuthEndpoints
         var accessTokenExpiresAtUtc = nowUtc.Add(accessTokenTtl);
         var refreshTokenExpiresAtUtc = nowUtc.Add(refreshTokenTtl);
 
-        var newAccessToken = CreateJwtToken(identityUser, mechanic, configuration, accessTokenExpiresAtUtc);
+        var newAccessToken = await CreateJwtTokenAsync(identityUser, mechanic, userManager, configuration, accessTokenExpiresAtUtc);
         var newRefreshTokenValue = GenerateRefreshTokenValue();
         var newRefreshTokenHash = HashRefreshToken(newRefreshTokenValue);
 
@@ -79,6 +79,7 @@ public static partial class AuthEndpoints
             newRefreshTokenValue,
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
-        return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email));
+        var isAdmin = (await userManager.GetRolesAsync(identityUser)).Contains("Admin");
+        return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 }

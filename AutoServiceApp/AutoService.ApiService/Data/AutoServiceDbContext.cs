@@ -44,6 +44,8 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
             entity.Property(x => x.IdentityUserId).HasMaxLength(450);
             entity.HasIndex(x => x.IdentityUserId).IsUnique();
             entity.Property(x => x.PhoneNumber).HasMaxLength(20);
+            entity.Property(x => x.ProfilePicture).HasColumnName("ProfilePicture");
+            entity.Property(x => x.ProfilePictureContentType).HasMaxLength(50).HasColumnName("ProfilePictureContentType");
 
             entity.OwnsOne(x => x.Name, name =>
             {

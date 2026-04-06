@@ -80,7 +80,7 @@ const NotFoundComponent = memo(function NotFound() {
               <Image
                 src="/404Image.webp"
                 alt="AutoService 404 illustration"
-                className="relative z-10 h-auto w-[min(78%,360px)] select-none max-[320px]:w-[76%]"
+                className="relative z-10 h-auto w-[min(78%,404px)] select-none max-[404px]:w-[76%]"
                 draggable={false}
               />
             </div>
