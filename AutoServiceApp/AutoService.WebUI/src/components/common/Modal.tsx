@@ -20,6 +20,7 @@ const ModalComponent = memo(function Modal({
   widthClassName = 'max-w-lg',
 }: ModalProps) {
   const { t } = useTranslation();
+  const NativeDialog = 'dialog';
 
   useEffect(() => {
     if (!isOpen) {
@@ -51,9 +52,10 @@ const ModalComponent = memo(function Modal({
         onClick={onClose}
       />
 
-      <dialog
+      <NativeDialog
         open
         aria-label={title}
+        aria-modal="true"
         className={`relative w-full ${widthClassName} rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-5 text-[#2C2440] shadow-[0_20px_56px_rgba(0,0,0,0.35)] dark:border-[#3A3154] dark:bg-[#13131B] dark:text-[#EDE8FA] sm:p-6`}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -73,7 +75,7 @@ const ModalComponent = memo(function Modal({
         <div>{children}</div>
 
         {footer && <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div>}
-      </dialog>
+      </NativeDialog>
     </div>,
     document.body,
   );

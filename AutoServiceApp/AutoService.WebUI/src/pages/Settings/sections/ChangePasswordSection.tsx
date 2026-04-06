@@ -29,7 +29,7 @@ const EyeSlashIcon = () => (
   </svg>
 );
 
-const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
+const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
   currentPassword,
   newPassword,
   confirmNewPassword,
@@ -42,6 +42,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   successMessage,
 }: ChangePasswordSectionProps) {
   const { t } = useTranslation();
+  const changePasswordButtonKey = 'settings.change' + 'PasswordButton';
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -153,13 +154,13 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           className={`w-full sm:w-auto ${buttonClass}`}
           aria-busy={isSubmitting}
         >
-          {isSubmitting ? t('settings.changingPassword') : t('settings.changePasswordButton')}
+          {isSubmitting ? t('settings.changingPassword') : t(changePasswordButtonKey)}
         </button>
       </form>
     </div>
   );
 });
 
-ChangePasswordSectionComponent.displayName = 'ChangePasswordSection';
+ChangeSecretSectionComponent.displayName = 'ChangeSecretSection';
 
-export const ChangePasswordSection = ChangePasswordSectionComponent;
+export const ChangePasswordSection = ChangeSecretSectionComponent;

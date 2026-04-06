@@ -79,7 +79,7 @@ const LoginComponent = memo(function Login() {
   const identifierInputType = loginMethod === 'email' ? 'email' : 'tel';
   const identifierAutoComplete = loginMethod === 'email' ? 'username' : 'tel';
   const identifierInputMode = loginMethod === 'email' ? 'email' : 'tel';
-  const identifierPattern = loginMethod === 'email' ? undefined : String.raw`[0-9+()\-\s]+`;
+  const identifierPattern = loginMethod === 'email' ? undefined : String.raw`[0-9+()\s-]+`;
   const canSubmit = identifier.trim().length > 0 && password.trim().length > 0 && !isLoading;
 
   return (

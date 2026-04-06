@@ -101,7 +101,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
           step={0.01}
           value={zoom}
           onChange={(event) => setZoom(Number(event.target.value))}
-          className="w-full accent-[#7A66C7]"
+          className="crop-zoom-slider w-full"
           disabled={isSubmitting}
         />
       </div>

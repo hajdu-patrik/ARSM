@@ -11,6 +11,8 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: #8f83b8 #ece8f5;
   }
 
   body {
@@ -23,6 +25,10 @@
   .dark body {
     background-color: #09090F;
     color: #EDE8FA;
+  }
+
+  .dark {
+    scrollbar-color: #b8add8 #262136;
   }
 
   input,
@@ -52,5 +58,104 @@
 
   button {
     @apply transition-all duration-200;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ece8f5;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #8f83b8;
+  border: 2px solid #ece8f5;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #7f72a8;
+}
+
+.dark *::-webkit-scrollbar-track {
+  background: #262136;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #b8add8;
+  border: 2px solid #262136;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #cdc4e7;
+}
+
+@media (max-width: 768px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+@layer components {
+  .crop-zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: #d8d2e9;
+    outline: none;
+  }
+
+  .dark .crop-zoom-slider {
+    background: #3a3154;
+  }
+
+  .crop-zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: 2px solid #f6f4fb;
+    background: #7a66c7;
+    cursor: pointer;
+  }
+
+  .dark .crop-zoom-slider::-webkit-slider-thumb {
+    border-color: #13131b;
+    background: #c9b3ff;
+  }
+
+  .crop-zoom-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: #d8d2e9;
+  }
+
+  .dark .crop-zoom-slider::-moz-range-track {
+    background: #3a3154;
+  }
+
+  .crop-zoom-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: 2px solid #f6f4fb;
+    background: #7a66c7;
+    cursor: pointer;
+  }
+
+  .dark .crop-zoom-slider::-moz-range-thumb {
+    border-color: #13131b;
+    background: #c9b3ff;
   }
 }

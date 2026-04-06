@@ -64,6 +64,7 @@ export const en = {
     passwordChangeFailed: 'Failed to change password.',
     pictureUploaded: 'Profile picture updated successfully!',
     pictureUploadFailed: 'Failed to upload profile picture.',
+    pictureTooLarge: 'Selected image is too large. Maximum size is {{maxKb}} KB.',
     pictureRemoved: 'Profile picture removed successfully!',
     pictureRemoveFailed: 'Failed to remove profile picture.',
     pictureCropFailed: 'Failed to process selected image.',

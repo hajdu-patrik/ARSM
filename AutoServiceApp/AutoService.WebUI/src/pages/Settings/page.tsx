@@ -17,6 +17,8 @@ import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { fileToImageSource } from '../../utils/imageCrop';
 
+const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
+
 const SettingsPageComponent = memo(function SettingsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -270,6 +272,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
   ]);
 
   const handleSelectPicture = useCallback(async (file: File) => {
+    if (file.size > MAX_PROFILE_PICTURE_BYTES) {
+      showErrorToast('toast.pictureTooLarge', { maxKb: Math.floor(MAX_PROFILE_PICTURE_BYTES / 1024) });
+      return;
+    }
+
     try {
       const imageSource = await fileToImageSource(file);
       setPendingPictureFileName(file.name);

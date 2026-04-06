@@ -265,7 +265,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         <button
           onClick={toggleCollapse}
           title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-          className="flex items-center w-full pl- py-2 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] transition-colors gap-2"
+          className="flex items-center w-full pl-3.5 py-2 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] transition-colors gap-2"
         >
           <svg className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
