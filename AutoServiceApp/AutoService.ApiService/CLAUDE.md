@@ -73,6 +73,27 @@
 - `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only)
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 
+## Customer Endpoints (Current)
+
+- `GET /api/customers` (authorized) — list all customers (id, name, email, phone, vehicle count)
+- `GET /api/customers/{id}` (authorized) — get single customer with vehicle list
+- `POST /api/customers` (authorized, AdminOnly) — create customer record (firstName, middleName?, lastName, email, phoneNumber?)
+- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
+- `DELETE /api/customers/{id}` (authorized, AdminOnly) — delete customer and cascaded vehicles
+- Customer DTOs: `CustomerDto`, `CreateCustomerRequest`, `UpdateCustomerRequest`.
+- Endpoint files follow partial-class pattern in `Customers/` folder (CustomerEndpoints.cs / Contracts / Queries / Mutations).
+- Customers are passive records — no Identity account, no `IdentityUserId`.
+
+## Vehicle Endpoints (Current)
+
+- `GET /api/customers/{customerId}/vehicles` (authorized) — list all vehicles for a customer
+- `GET /api/vehicles/{id}` (authorized) — get single vehicle with customer summary
+- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer
+- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record
+- `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
+- Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
+- Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
+
 ## Profile Endpoints (Current)
 
 - `GET /api/profile` (authorized) — get current user's profile (name, email, phone, picture status)
@@ -109,11 +130,13 @@
 
 ## Code Layout
 
-- `Program.cs` — service registration, middleware, endpoint mapping only.
+- `Program.cs` — service registration, middleware, endpoint mapping only. Calls `builder.AddServiceDefaults()` at the top and `app.MapDefaultEndpoints()` last.
 - `Auth/` — all auth endpoint files (map/register/login/helpers/contracts).
 - `Appointments/` — appointment endpoint files (contracts/helpers/queries/mutations/registration), partial-class pattern mirroring `Auth/`.
 - `Profile/` — profile endpoint files (contracts/helpers/queries/mutations/profilepicture), partial-class pattern mirroring `Appointments/`.
 - `Admin/` — admin endpoint files (map/contracts/handlers), partial-class pattern. Mechanic list + delete.
+- `Customers/` — customer endpoint files (CustomerEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
+- `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
 - `Middleware/` — custom middleware classes (`LoginBanMiddleware`).
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.

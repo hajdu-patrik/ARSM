@@ -45,6 +45,9 @@ For each project, gather the current state by reading source files. Do NOT guess
 7. **Vite config**: Read `vite.config.ts` for plugins, server settings.
 8. **Dependencies**: Read `package.json` for runtime and dev dependencies.
 9. **i18n**: Read `src/utils/i18n.ts` for translation keys and supported languages.
+10. **SEO behavior**: Read `src/components/seo/SeoManager.tsx` and verify title/meta/canonical behavior.
+11. **Sidebar behavior**: Read `src/components/layout/SidebarLayout.tsx` for collapse persistence, mobile drawer, and profile footer behavior.
+12. **Icon usage**: Scan `src/**` for `lucide-react` usage and inline `<svg` markup; document the exact current state without guessing.
 
 ### AppHost — check these:
 1. **Resources**: Read `AppHost.cs` for all `builder.Add*` calls and wiring.
@@ -77,6 +80,8 @@ For each section in each doc file, compare the documented state against the anal
 - Do not add speculative content — only document what exists in the code.
 - Keep the `.github/copilot-instructions.md` "Current Known Gaps" section accurate.
 - Keep the `.github/copilot-instructions.md` "Current API & Security Snapshot" section accurate.
+- If root `README.md` or `README(HU).md` contains stale project-state claims, update both consistently.
+- For touched markdown files, fix basic quality issues (heading spacing, table separators, trailing newline) without changing meaning.
 - After all edits, report a summary of what changed and in which files.
 
 ## Validation checklist
@@ -89,3 +94,5 @@ After updates, confirm:
 - [ ] Key dependencies match `package.json` and `.csproj` files.
 - [ ] AppHost resource wiring matches `AppHost.cs`.
 - [ ] CLAUDE.md and .github counterpart agree on all facts.
+- [ ] WebUI SEO documentation states the current `SeoManager` title/meta behavior.
+- [ ] Sidebar and icon behavior documentation reflects current implementation.

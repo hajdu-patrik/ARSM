@@ -10,13 +10,22 @@
   - phone: accept Hungarian forms (`+36`, `36`, `06`, spaced/punctuated) and normalize to canonical backend-compatible format
 - Axios client uses `withCredentials: true` and automatic `POST /api/auth/refresh` retry on `401` for non-auth endpoints.
 - Logout calls `POST /api/auth/logout`, clears auth store state, then redirects to `/login`.
+- Successful logout response is `204 No Content`; frontend still clears local auth state in `finally` to handle network/interceptor edge cases.
 - Use `<PrivateRoute>` to guard authenticated pages.
 - Use `<AdminRoute>` to guard admin-only pages (redirects to `/` if not admin, `/login` if not authenticated).
 - `AuthUser` includes `isAdmin: boolean` — derived from backend `IsAdmin` field in login/validate/refresh responses.
 - Sidebar layout: main nav at top, admin nav (shield icon, admin-only) above collapse button, bottom section has profile → settings → logout.
+- Sidebar collapse preference persists in `localStorage['preferred-sidebar-collapsed']`; mobile mode uses a drawer with dismiss overlay.
 - Sidebar profile block shows uploaded profile picture immediately after successful upload/remove events; if no picture exists, it renders a generated initials avatar with a deterministic color selected from a fixed 10-color palette.
+- UI icons use `lucide-react` (navigation, actions, state indicators); avoid inline SVG icon markup in shared UI components.
 - New global toast system is mounted app-wide (`ToastViewport`) and uses i18n keys from state, so visible toasts update instantly when language/theme changes.
 - All UI strings (errors, hovers, aria-labels, placeholders) must use i18n — no hardcoded English text.
+
+## Input Validation (Client-Side)
+
+- Name fields (first, middle, last) filter input to Unicode letters, spaces, hyphens, and apostrophes only (via `filterNameInput` from `src/utils/validation.ts`). Applied in both admin registration (`BasicInfoSection`) and settings (`PersonalInfoSection`).
+- Phone number fields filter input to digits and phone special characters (`+`, `-`, `(`, `)`, space) only (via `filterPhoneInput`). Applied in both admin registration and settings.
+- Profile picture upload validates file extension against `.png`, `.jpg`, `.jpeg`, `.webp` before processing (via `isAllowedPictureExtension`). Invalid types show error toast (`toast.pictureInvalidType`).
 
 ## State & Services
 
@@ -33,9 +42,10 @@
 - `src/types/login.types.ts` — `LoginRequest`, `LoginResponse`, `AuthUser` (includes `isAdmin`), `ValidateTokenResponse`
 - `src/types/scheduler.types.ts` — `AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `AppointmentStatus`, `CalendarDay`, `UpdateStatusRequest`
 - `src/types/profile.types.ts` — `ProfileData`, `UpdateProfileRequest`, `ChangePasswordRequest`
-- `src/utils/i18n.ts` — i18next config; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, scheduler, admin, settings, placeholder, notFound)
+- `src/utils/i18n.ts` — i18next config; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound)
 - `src/utils/avatar.ts` — deterministic avatar fallback helpers (seeded color + initials)
 - `src/utils/imageCrop.ts` — image loading and canvas crop-to-blob helper for profile picture workflow
+- `src/utils/validation.ts` — shared input validation: `filterNameInput` (Unicode letters/spaces/hyphens only), `filterPhoneInput` (digits/phone-special-chars only), `isAllowedPictureExtension` (.png/.jpg/.jpeg/.webp)
 
 ## Component Map
 
@@ -52,13 +62,15 @@
 - `src/pages/Scheduler/components/AppointmentCard.tsx` — single appointment card (vehicle, specs, task, claim/status)
 - `src/pages/Scheduler/components/StatusBadge.tsx` — colored status pill
 - `src/pages/Scheduler/components/CalendarView.tsx` — monthly calendar with appointment badges
-- `src/pages/Dashboard/page.tsx` — legacy dashboard (unused, all dashboard routes render Scheduler)
-- `src/pages/Placeholder/page.tsx` — "coming soon" page for nav items not yet implemented
+- `src/pages/Tools/page.tsx` — tools management skeleton page (coming soon, uses `tools.*` i18n keys)
+- `src/pages/Inventory/page.tsx` — inventory management skeleton page (coming soon, uses `inventory.*` i18n keys)
 - `src/pages/LoadingPage.tsx` — initial animation, once per session
 - `src/pages/NotFound.tsx` — 404 with auto-redirect countdown
-- `src/components/layout/SidebarLayout.tsx` — collapsible sidebar layout (mobile drawer always shows expanded labels/icons via CSS responsive classes, tablet icon-only, desktop full/collapsed)
+- `src/components/layout/SidebarLayout.tsx` — collapsible sidebar layout (fixed-width icon column for consistent alignment, smooth cubic-bezier width transition, mobile drawer, desktop collapse/expand without icon resizing)
 - `src/components/layout/ThemeLanguageControls.tsx` — EN/HU + dark/light toggle (accepts className prop for repositioning)
+- `src/components/seo/SeoManager.tsx` — route-aware SEO manager (keeps `document.title` fixed to `ARSM`, updates meta description/robots/Open Graph/Twitter/canonical/html lang per route)
 - `src/components/common/Image.tsx` — reusable image wrapper
+- `src/components/common/FormErrorMessage.tsx` — inline form validation error display (i18n-aware, accepts message key + className)
 - `src/components/common/ToastViewport.tsx` — app-wide toast viewport with 5-second auto-dismiss
 - `src/components/common/Modal.tsx` — reusable dialog shell used by settings flows
 - `src/components/common/ProfilePictureCropModal.tsx` — image crop dialog for profile picture uploads
@@ -71,7 +83,8 @@
 - `/` and `/scheduler` and `/dashboard` — protected, renders Scheduler page inside SidebarLayout
 - `/admin/register` — admin-only, RegisterMechanicPage inside SidebarLayout
 - `/settings` — protected, SettingsPage inside SidebarLayout (profile picture crop/upload/remove, personal info, password change, delete profile — delete section hidden for admin users)
-- `/tools`, `/inventory` — protected, placeholder pages inside SidebarLayout
+- `/tools` — protected, ToolsPage inside SidebarLayout (skeleton page with coming-soon content)
+- `/inventory` — protected, InventoryPage inside SidebarLayout (skeleton page with coming-soon content)
 - `/*` — 404
 - Keep `future` flags on BrowserRouter (`v7_startTransition`, `v7_relativeSplatPath`).
 

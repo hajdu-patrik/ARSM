@@ -1,1 +1,0 @@
-Read the runbook at `.github/skills/autoservice-docs-sync/SKILL.md` and execute the documentation synchronization workflow described there.

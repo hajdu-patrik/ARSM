@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppointmentDto, CalendarDay } from '../../../types/scheduler.types';
 
 interface CalendarViewProps {
@@ -106,9 +107,7 @@ const CalendarViewComponent = memo(function CalendarView({
           title={t('scheduler.calendar.prevMonth')}
           className="p-1.5 rounded-lg hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] text-[#5E5672] dark:text-[#CFC5EA] transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <h3 className="text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA] capitalize">
           {monthLabel}
@@ -118,9 +117,7 @@ const CalendarViewComponent = memo(function CalendarView({
           title={t('scheduler.calendar.nextMonth')}
           className="p-1.5 rounded-lg hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] text-[#5E5672] dark:text-[#CFC5EA] transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 

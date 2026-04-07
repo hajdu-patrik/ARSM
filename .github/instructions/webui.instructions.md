@@ -15,6 +15,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
   3. After successful login, redirect to `/` (dashboard).
   4. Axios client sends credentialed requests (`withCredentials`) and retries once through `/api/auth/refresh` after `401` (except auth endpoints).
 - **Logout**: Call backend `POST /api/auth/logout`, clear auth store state, then redirect to `/login`.
+- **Logout response semantics**: Successful logout returns `204 No Content`; frontend should treat this as success and still clear local auth state in `finally`.
 - **Protected routes**: Use `<PrivateRoute>` wrapper to guard dashboard and other authenticated pages.
 - **Auth store**: Use Zustand (`useAuthStore`) to manage `isAuthenticated`, `user`, `error`, `isLoading`.
 - **Auth service**: Use `authService` from `src/services/auth.service.ts` for login/logout/validate-based restore.
@@ -49,12 +50,15 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/pages/Settings/sections/ProfilePictureSection.tsx`**: Upload/delete profile picture with avatar preview (crop modal opens before upload).
 - **`src/pages/Settings/sections/PersonalInfoSection.tsx`**: Update email, phone, middle name (first/last name read-only).
 - **`src/pages/Settings/sections/ChangePasswordSection.tsx`**: Change password with current/new/confirm fields and show/hide toggle.
-- **`src/pages/Dashboard/page.tsx`**: Legacy dashboard (route now renders scheduler).
-- **`src/pages/Placeholder/page.tsx`**: "Coming soon" placeholder for nav items not yet implemented.
+- **`src/pages/Tools/page.tsx`**: Tools management skeleton page (coming soon, uses `tools.*` i18n keys).
+- **`src/pages/Inventory/page.tsx`**: Inventory management skeleton page (coming soon, uses `inventory.*` i18n keys).
 - **`src/pages/LoadingPage.tsx`**: Initial loading animation (~3 seconds, shows only once per browser profile).
 - **`src/pages/NotFound.tsx`**: 404 error page (catches all undefined routes).
-- **`src/components/layout/SidebarLayout.tsx`**: Collapsible sidebar layout with nav items, logo, user section, theme controls in top bar. Responsive: mobile drawer always shows expanded layout with labels via CSS responsive classes (hamburger), tablet icon-only, desktop full/collapsed (persisted to localStorage).
+- **`src/components/layout/SidebarLayout.tsx`**: Collapsible sidebar layout with fixed-width icon column for consistent alignment, smooth cubic-bezier width transitions, mobile drawer with overlay close, desktop collapse/expand without icon resizing. Collapse preference is persisted in `localStorage` under `preferred-sidebar-collapsed`.
 - Sidebar profile area should immediately reflect profile-picture upload/remove changes; fallback avatar uses name-based initials with a deterministic color picked from a fixed 10-color palette.
+- **Icons**: Use `lucide-react` for UI icons (navigation, actions, status cues). Avoid inline SVG icon markup in shared UI components.
+- **`src/components/seo/SeoManager.tsx`**: Route-aware SEO manager — keeps `document.title` fixed to `ARSM` while updating route-specific meta description, robots, Open Graph, Twitter Card, canonical URL, and `html lang`.
+- **`src/components/common/FormErrorMessage.tsx`**: Inline form validation error display (i18n-aware, accepts message key + className).
 - **`src/components/common/ToastViewport.tsx`**: App-wide toast viewport (5-second auto-dismiss, green success, red error).
 - **`src/components/common/Modal.tsx`**: Shared dialog shell for confirmation/crop flows.
 - **`src/components/common/ProfilePictureCropModal.tsx`**: Crop-and-upload flow before profile picture submission.
@@ -77,7 +81,8 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/types/profile.types.ts`**: TypeScript interfaces for profile (ProfileData, UpdateProfileRequest, ChangePasswordRequest, DeleteProfileRequest).
 - **`src/utils/avatar.ts`**: Deterministic fallback avatar utilities.
 - **`src/utils/imageCrop.ts`**: Canvas crop helper for profile image workflow.
-- **`src/utils/i18n.ts`**: i18next configuration; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, scheduler, admin, settings, placeholder, notFound).
+- **`src/utils/validation.ts`**: Shared input validation — `filterNameInput` (Unicode letters/spaces/hyphens only), `filterPhoneInput` (digits/phone-special-chars only), `isAllowedPictureExtension` (.png/.jpg/.jpeg/.webp).
+- **`src/utils/i18n.ts`**: i18next configuration; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound).
 - **`src/components/common/Image.tsx`**: Reusable image wrapper component.
 - **`vite.config.ts`**: In serve mode, dev server runs over HTTPS (`vite-plugin-mkcert`) on port from `PORT` env var (`strictPort: true`).
 
@@ -87,8 +92,8 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - `/` → Scheduler page (protected, requires valid auth session).
 - `/scheduler` → Scheduler page (protected).
 - `/dashboard` → Scheduler page (backward compatibility alias).
-- `/tools` → Placeholder page (protected).
-- `/inventory` → Placeholder page (protected).
+- `/tools` → ToolsPage (protected, skeleton with coming-soon content).
+- `/inventory` → InventoryPage (protected, skeleton with coming-soon content).
 - `/settings` → Settings page (protected) — profile picture crop/upload/remove, personal info, password change, profile deletion.
 - `/*` → 404 Not Found page.
 - All protected routes render inside `<SidebarLayout>`.
@@ -99,7 +104,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **Auth endpoints**:
   - `POST /api/auth/login` – (email or phoneNumber) + password → cookie session + profile.
   - `POST /api/auth/refresh` – refresh token rotation + access cookie reissue.
-  - `POST /api/auth/logout` – refresh revoke + cookie clear.
+  - `POST /api/auth/logout` – refresh revoke + cookie clear; returns `204 No Content` on success.
   - `GET /api/auth/validate` – validate active authenticated session.
   - `POST /api/auth/login` failure semantics: generic `401 invalid_credentials`, `403 mechanic_only_login` for existing customer email/phone identifiers, `429` lockout/rate-limit, `500` linked domain-record issues.
 - **Appointment endpoints**:
@@ -122,6 +127,12 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **No URL hardcode fallback**: `VITE_API_URL` must come from env (AppHost or `.env.development`).
 - **Error handling**: Axios interceptor handles refresh-on-401 flow and login page maps `401/403/429/500` and network/database availability failures to dedicated EN/HU messages.
 - **Global toast handling**: Use message keys in toast state (not translated strings) so visible toasts update instantly on language/theme change.
+
+## Input Validation (Client-Side)
+
+- Name fields (first, middle, last) filter input to Unicode letters, spaces, hyphens, and apostrophes only (via `filterNameInput` from `src/utils/validation.ts`). Applied in both admin registration (`BasicInfoSection`) and settings (`PersonalInfoSection`).
+- Phone number fields filter input to digits and phone special characters (`+`, `-`, `(`, `)`, space) only (via `filterPhoneInput`). Applied in both admin registration and settings.
+- Profile picture upload validates file extension against `.png`, `.jpg`, `.jpeg`, `.webp` before processing (via `isAllowedPictureExtension`). Invalid types show error toast (`toast.pictureInvalidType`).
 
 ## Styling & Responsive Design
 

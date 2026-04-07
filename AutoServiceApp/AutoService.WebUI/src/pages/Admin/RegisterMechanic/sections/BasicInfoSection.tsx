@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
+import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 
 interface BasicInfoSectionProps {
   readonly firstName: string;
@@ -46,7 +47,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             id="firstName"
             type="text"
             value={firstName}
-            onChange={(e) => onFirstNameChange(e.target.value)}
+            onChange={(e) => onFirstNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.firstNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
@@ -63,7 +64,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             id="middleName"
             type="text"
             value={middleName}
-            onChange={(e) => onMiddleNameChange(e.target.value)}
+            onChange={(e) => onMiddleNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.middleNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
@@ -78,7 +79,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             id="lastName"
             type="text"
             value={lastName}
-            onChange={(e) => onLastNameChange(e.target.value)}
+            onChange={(e) => onLastNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.lastNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
@@ -114,7 +115,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           type="tel"
           inputMode="tel"
           value={phoneNumber}
-          onChange={(e) => onPhoneNumberChange(e.target.value)}
+          onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
           placeholder={t('admin.phonePlaceholder')}
           className={inputClass}
           disabled={isSubmitting}

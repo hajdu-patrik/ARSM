@@ -1,5 +1,6 @@
 import { memo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../types/scheduler.types';
 import { StatusBadge } from './StatusBadge';
 
@@ -112,9 +113,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       {/* Claim button or Assigned label */}
       {isAssigned && (
         <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-medium mt-1">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="w-4 h-4" />
           {t('scheduler.assigned')}
         </div>
       )}

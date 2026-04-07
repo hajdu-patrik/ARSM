@@ -2,10 +2,12 @@ using AutoService.ApiService.Admin;
 using AutoService.ApiService.Appointments;
 using AutoService.ApiService.Auth;
 using AutoService.ApiService.Configuration;
+using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile;
+using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -17,6 +19,8 @@ using System.Threading.RateLimiting;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 // Optional local overrides for running EF CLI/API outside AppHost.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
@@ -194,5 +198,8 @@ app.MapAuthEndpoints();
 app.MapAppointmentEndpoints();
 app.MapProfileEndpoints();
 app.MapAdminEndpoints();
+app.MapCustomerEndpoints();
+app.MapVehicleEndpoints();
+app.MapDefaultEndpoints();
 
 app.Run();

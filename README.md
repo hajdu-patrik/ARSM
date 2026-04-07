@@ -12,6 +12,7 @@
 **ARSM** is a mechanic-facing workshop management tool built for auto service businesses. It helps mechanics organize their daily repair schedules, claim appointments, and track job progress through a clean, responsive dashboard.
 
 **Use ARSM when you need to:**
+
 - View and manage repair's appointments at a glance
 - Claim unassigned appointments and update their status in real time
 - Browse a monthly calendar overview of all scheduled work
@@ -28,23 +29,58 @@ Built as a full-stack application with ASP.NET Core Web API (backend), React + T
 
 ---
 
-## Copilot Skills (Quick Use)
+## AI-Assisted Development
 
-Detailed agent policies are maintained as skills and prompts.
+This project uses two agentic AI tools side by side: **Claude Code** (CLI/desktop) and **GitHub Copilot** (VS Code). Both share aligned instruction sets and specialist agents so that either tool can work on any part of the codebase with identical constraints.
 
-- `/mcp-context-policy` → MCP server usage and Context Mode interaction policy.
-- `/config-driven-endpoints` → Fixed config-driven ports/URLs policy, no hardcoded endpoint fallback.
-- `/ef-migration` → EF migration workflow and troubleshooting runbook.
-- `/docs-sync` → Documentation synchronization policy and workflow.
-- `/endpoint-tests-sync` → Endpoint HTTP/SQL test synchronization workflow after endpoint changes.
+### Specialist Agents
 
-Skill sources:
+Every implementation task is delegated to specialist agents via an orchestrator. The orchestrator analyzes the request, creates a phased plan, and dispatches work to the appropriate specialists — which can run in parallel when independent.
 
-- `.github/skills/autoservice-mcp-context-policy/SKILL.md`
-- `.github/skills/autoservice-config-driven-endpoints/SKILL.md`
-- `.github/skills/autoservice-ef-migration/SKILL.md`
-- `.github/skills/autoservice-docs-sync/SKILL.md`
-- `.github/skills/autoservice-endpoint-tests-sync/SKILL.md`
+| Agent | Scope | Purpose |
+| ----- | ----- | ------- |
+| **Orchestrator** | Task decomposition | Analyzes every task first, decides which specialists work in which phases |
+| **Backend** | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
+| **Frontend** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
+| **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
+| **Docs** | Documentation | Syncs all instruction files with current code after every change |
+| **Test Endpoints** | .http/.sql tests | Updates endpoint test suites after API changes |
+| **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
+
+**Standard workflow:**
+
+1. Orchestrator decomposes the task into phases
+2. Backend + Frontend specialists execute in parallel
+3. Validate agent checks the build
+4. Docs agent syncs all documentation; Test Endpoints agent syncs test suites
+
+Agent definitions:
+
+- Claude Code: `.claude/agents/*.md`
+- GitHub Copilot: `.github/agents/*.agent.md`
+
+### Skills (Slash Commands)
+
+Reusable runbooks invoked via slash commands in both tools.
+
+| Command | Purpose |
+| ------- | ------- |
+| `/docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and ARSM-TL-DR.md with code |
+| `/endpoint-tests-sync` | Update .http and .sql test suites after endpoint changes |
+| `/ef-migration` | EF Core migration workflow and troubleshooting |
+| `/config-driven-endpoints` | Enforce config-driven URL/port policy |
+| `/mcp-context-policy` | MCP server interaction and Context Mode usage policy |
+
+Skill sources: `.github/skills/*/SKILL.md`
+
+### Instruction Files
+
+Domain rules are maintained in parallel for both tools:
+
+| Claude Code | GitHub Copilot |
+| ----------- | -------------- |
+| `CLAUDE.md` (root) | `.github/copilot-instructions.md` |
+| `AutoServiceApp/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
 
 ---
 

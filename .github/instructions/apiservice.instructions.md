@@ -68,6 +68,27 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is admin or caller is deleting themselves.
 - Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
 
+### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
+
+- `GET /api/customers` — List all customers (id, name, email, phone, vehicleCount).
+- `GET /api/customers/{id}` — Get single customer with embedded vehicle list.
+- `POST /api/customers` (AdminOnly) — Create a customer record (firstName, middleName?, lastName, email, phoneNumber?). Returns 201 Created. Returns 409 on duplicate email, 422 on missing required fields.
+- `PUT /api/customers/{id}` (AdminOnly) — Update customer record. Returns 204 No Content. Returns 404/409/422 as appropriate.
+- `DELETE /api/customers/{id}` (AdminOnly) — Delete customer and cascade vehicles. Returns 204 No Content, 404 if not found.
+- Customer DTOs: `CustomerDto`, `CreateCustomerRequest`, `UpdateCustomerRequest`.
+- Endpoint files follow partial-class pattern in `Customers/` folder (CustomerEndpoints.cs / Contracts / Queries / Mutations).
+- Customers are passive records — no Identity account, no `IdentityUserId`.
+
+### Vehicle Endpoints — all require authorization; write operations require AdminOnly
+
+- `GET /api/customers/{customerId}/vehicles` — List all vehicles for a customer. Returns 404 if customer not found.
+- `GET /api/vehicles/{id}` — Get single vehicle with customer summary. Returns 404 if not found.
+- `POST /api/customers/{customerId}/vehicles` (AdminOnly) — Create a vehicle for a customer. License plate normalized to uppercase. Returns 201 Created. Returns 404 if customer not found, 409 on duplicate plate, 422 on validation errors.
+- `PUT /api/vehicles/{id}` (AdminOnly) — Update vehicle record. Returns 204 No Content. Returns 404/409/422 as appropriate.
+- `DELETE /api/vehicles/{id}` (AdminOnly) — Delete vehicle and cascade appointments. Returns 204 No Content, 404 if not found.
+- Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
+- Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
+
 ### Appointment Endpoints (`/api/appointments`) — all require authorization
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
@@ -94,7 +115,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - `appsettings.json` – Production defaults.
   - `appsettings.Local.json` – Local overrides (gitignored).
   - Environment variables override both.
-- Health endpoints: Call `MapDefaultEndpoints()` in Program.cs when health checks are needed (optional).
+- Health endpoints: `app.MapDefaultEndpoints()` is called in Program.cs; maps `/health` and `/alive` in Development.
 
 ## EF Core Rules
 

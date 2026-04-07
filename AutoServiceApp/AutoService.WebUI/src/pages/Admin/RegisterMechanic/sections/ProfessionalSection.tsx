@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check } from 'lucide-react';
 import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS, inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
@@ -76,9 +77,7 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
                 }`}
               >
                 {expertise.includes(opt.value) && (
-                  <svg className="h-3 w-3 text-[#2C2440] dark:text-[#F5F2FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="h-3 w-3 text-[#2C2440] dark:text-[#F5F2FF]" strokeWidth={3} />
                 )}
               </span>
               <span className="min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">

@@ -16,6 +16,7 @@ import type { ProfileData } from '../../types/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { fileToImageSource } from '../../utils/imageCrop';
+import { isAllowedPictureExtension } from '../../utils/validation';
 
 const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
 
@@ -272,6 +273,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
   ]);
 
   const handleSelectPicture = useCallback(async (file: File) => {
+    if (!isAllowedPictureExtension(file.name)) {
+      showErrorToast('toast.pictureInvalidType');
+      return;
+    }
+
     if (file.size > MAX_PROFILE_PICTURE_BYTES) {
       showErrorToast('toast.pictureTooLarge', { maxKb: Math.floor(MAX_PROFILE_PICTURE_BYTES / 1024) });
       return;

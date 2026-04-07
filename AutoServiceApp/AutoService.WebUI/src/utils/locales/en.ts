@@ -68,6 +68,7 @@ export const en = {
     pictureRemoved: 'Profile picture removed successfully!',
     pictureRemoveFailed: 'Failed to remove profile picture.',
     pictureCropFailed: 'Failed to process selected image.',
+    pictureInvalidType: 'Only PNG, JPG, JPEG, and WebP images are allowed.',
     profileDeleted: 'Profile deleted successfully.',
     profileDeleteFailed: 'Failed to delete profile.',
   },
@@ -105,7 +106,7 @@ export const en = {
   admin: {
     pageTitle: 'Mechanic Management',
     registerMechanic: 'Register Mechanic',
-    mechanicList: 'Mechanics',
+    mechanicList: 'Registered Mechanics',
     noMechanics: 'No mechanics registered yet.',
     deleteMechanic: 'Delete mechanic',
     deleteMechanicModalTitle: 'Confirm mechanic deletion',
@@ -221,8 +222,15 @@ export const en = {
       currentPasswordInvalid: 'Current password is invalid.',
     },
   },
-  placeholder: {
-    comingSoon: 'Coming soon',
+  tools: {
+    pageTitle: 'Tools',
+    comingSoonTitle: 'Tools Management Coming Soon',
+    comingSoonDescription: 'This section is under development. Tools management features will be available in a future update.',
+  },
+  inventory: {
+    pageTitle: 'Inventory',
+    comingSoonTitle: 'Inventory Management Coming Soon',
+    comingSoonDescription: 'This section is under development. Inventory management features will be available in a future update.',
   },
   notFound: {
     pageNotFound: 'Page Not Found',

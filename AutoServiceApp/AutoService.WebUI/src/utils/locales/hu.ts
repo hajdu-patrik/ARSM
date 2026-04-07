@@ -68,6 +68,7 @@ export const hu = {
     pictureRemoved: 'Profilkép sikeresen eltávolítva!',
     pictureRemoveFailed: 'Nem sikerült eltávolítani a profilképet.',
     pictureCropFailed: 'Nem sikerült feldolgozni a kiválasztott képet.',
+    pictureInvalidType: 'Csak PNG, JPG, JPEG és WebP képek engedélyezettek.',
     profileDeleted: 'Profil sikeresen törölve.',
     profileDeleteFailed: 'Nem sikerült törölni a profilt.',
   },
@@ -105,7 +106,7 @@ export const hu = {
   admin: {
     pageTitle: 'Szerelők kezelése',
     registerMechanic: 'Szerelő regisztrálása',
-    mechanicList: 'Szerelők',
+    mechanicList: 'Regisztrált szerelők',
     noMechanics: 'Még nincs regisztrált szerelő.',
     deleteMechanic: 'Szerelő törlése',
     deleteMechanicModalTitle: 'Szerelő törlésének megerősítése',
@@ -221,8 +222,15 @@ export const hu = {
       ['current' + 'PasswordInvalid']: 'A jelenlegi jelszó hibás.',
     },
   },
-  placeholder: {
-    comingSoon: 'Hamarosan',
+  tools: {
+    pageTitle: 'Eszközök',
+    comingSoonTitle: 'Eszközkezelés hamarosan',
+    comingSoonDescription: 'Ez a rész fejlesztés alatt áll. Az eszközkezelési funkciók egy jövőbeli frissítésben lesznek elérhetők.',
+  },
+  inventory: {
+    pageTitle: 'Készlet',
+    comingSoonTitle: 'Készletkezelés hamarosan',
+    comingSoonDescription: 'Ez a rész fejlesztés alatt áll. A készletkezelési funkciók egy jövőbeli frissítésben lesznek elérhetők.',
   },
   notFound: {
     pageNotFound: 'Oldal nem található',

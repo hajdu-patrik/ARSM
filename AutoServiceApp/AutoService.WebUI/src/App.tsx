@@ -5,13 +5,15 @@ import { authService } from './services/auth.service';
 import { LoadingPage } from './pages/LoadingPage';
 import { Login } from './pages/Login/page';
 import { SchedulerPage } from './pages/Scheduler/page';
-import { PlaceholderPage } from './pages/Placeholder/page';
+import { ToolsPage } from './pages/Tools/page';
+import { InventoryPage } from './pages/Inventory/page';
 import { NotFound } from './pages/NotFound';
 import { PrivateRoute } from './router/PrivateRoute';
 import { AdminRoute } from './router/AdminRoute';
 import { PublicOnlyRoute } from './router/PublicOnlyRoute';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 import { ToastViewport } from './components/common/ToastViewport';
+import { SeoManager } from './components/seo/SeoManager';
 import { RegisterMechanicPage } from './pages/Admin/RegisterMechanic/page';
 import { SettingsPage } from './pages/Settings/page';
 import './utils/i18n';
@@ -60,6 +62,8 @@ function App() {
 
       {/* Main app */}
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <SeoManager />
+
         <Routes>
           {/* Login Route */}
           <Route
@@ -80,8 +84,8 @@ function App() {
           <Route path="/admin/register" element={<AdminRoute><SidebarLayout><RegisterMechanicPage /></SidebarLayout></AdminRoute>} />
 
           {/* Placeholder Routes (Protected) */}
-          <Route path="/tools" element={<PrivateRoute><SidebarLayout><PlaceholderPage title="tools" /></SidebarLayout></PrivateRoute>} />
-          <Route path="/inventory" element={<PrivateRoute><SidebarLayout><PlaceholderPage title="inventory" /></SidebarLayout></PrivateRoute>} />
+          <Route path="/tools" element={<PrivateRoute><SidebarLayout><ToolsPage /></SidebarLayout></PrivateRoute>} />
+          <Route path="/inventory" element={<PrivateRoute><SidebarLayout><InventoryPage /></SidebarLayout></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><SidebarLayout><SettingsPage /></SidebarLayout></PrivateRoute>} />
 
           {/* 404 Not Found */}

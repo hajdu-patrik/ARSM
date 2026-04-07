@@ -1,3 +1,5 @@
+# CLAUDE Guidelines
+
 > **Architecture Notice:** This project uses both Claude Code and GitHub Copilot as the primary agentic AI tools. When establishing new architectural patterns, ensure they remain compatible with the Copilot instructions located in the `.github/` directory.
 
 # ARSM (AutoService) Project - Global Guidelines
@@ -6,6 +8,7 @@ This repository hosts the **ARSM** (Appointment and Resource Scheduling Manageme
 **Goal:** Prioritize maintainable, domain-safe, and incremental changes that align strictly with the existing architecture.
 
 ## Technology Baseline
+
 - **Backend:** .NET 10 (C# 15) ASP.NET Core Web API + Entity Framework Core.
 - **Frontend:** React 19 + TypeScript + Vite.
 - **Styling:** Tailwind CSS exclusively.
@@ -13,13 +16,37 @@ This repository hosts the **ARSM** (Appointment and Resource Scheduling Manageme
 - **Database:** PostgreSQL managed via Aspire orchestration.
 
 ## Architecture Navigation
+
 Specific instructions and conventions are decentralized. Claude will automatically read these when navigating into the respective directories:
+
 - **Backend API & Domain:** See `@AutoServiceApp/AutoService.ApiService/CLAUDE.md`
 - **Aspire Orchestration:** See `@AutoServiceApp/AutoService.AppHost/CLAUDE.md`
 - **Frontend UI:** See `@AutoServiceApp/AutoService.WebUI/CLAUDE.md`
 - **Service Defaults:** See `@AutoServiceApp/AutoService.ServiceDefaults/CLAUDE.md`
 
+## Specialist Agents (Mandatory Delegation)
+
+This project uses specialist agents for both Claude Code (`.claude/agents/`) and GitHub Copilot (`.github/agents/`). **All implementation tasks must be delegated to specialist agents via the orchestrator** — never execute inline in the main conversation.
+
+| Agent | Model | Scope | When to use |
+| ----- | ----- | ----- | ----------- |
+| `orchestrator` | sonnet | Task decomposition | **Always first** — analyzes every task and decides which specialists work on it in which phases |
+| `backend` | sonnet | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
+| `frontend` | sonnet | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
+| `migration` | sonnet | EF Core migrations | Creating, validating, and troubleshooting migrations |
+| `docs` | sonnet | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
+| `test-endpoints` | sonnet | .http and .sql test files | After API endpoint add/change/remove |
+| `validate` | haiku | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
+
+**Mandatory workflow:**
+1. **Orchestrator first** — every task goes through the orchestrator for decomposition and phase planning.
+2. **Specialist execution** — identified agents execute in parallel where possible.
+3. **Validate** — always runs after code changes to catch build/type errors.
+4. **Docs sync (always)** — the `docs` agent must run after every change to synchronize all documentation files. If changes touch skills, agents, or instruction files, those are updated too.
+5. **Test endpoints** — runs after any API endpoint change.
+
 ## Team & Operations Core Rules
+
 - **Configuration-First Addressing:** Never hardcode runtime fallback URLs. Local ports and service endpoints must exclusively reside in configuration files (`appsettings.json`, `launchSettings.json`, `.env.development`).
 - **Conflict Prevention:** For parallel work, respect folder-level ownership to prevent merge conflicts.
 - **Documentation Sync (Mandatory):** After any change that affects API endpoints, EF migrations, middleware pipeline, WebUI pages/components/routes, dependencies (NuGet or npm), AppHost resource wiring, or configuration keys — run `/docs-sync` before considering the task complete. This keeps all `CLAUDE.md` and `.github/instructions/` files in sync with the actual code.

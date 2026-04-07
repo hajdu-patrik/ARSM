@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
@@ -47,16 +48,9 @@ const SecuritySectionComponent = memo(function SecuritySection({
           aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
         >
           {showPassword ? (
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+            <Eye className="h-5 w-5" aria-hidden="true" />
           ) : (
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12s3.5-7 10-7c2.9 0 5.2 1.4 7 3" />
-              <path d="M22 12s-3.5 7-10 7c-2.9 0-5.2-1.4-7-3" />
-              <path d="M3 3l18 18" />
-            </svg>
+            <EyeOff className="h-5 w-5" aria-hidden="true" />
           )}
         </button>
       </div>

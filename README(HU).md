@@ -12,6 +12,7 @@
 Az **ARSM** egy szerelőknek készült műhelykezelő eszköz autószerviz vállalkozások számára. Segíti a szerelőket a napi javítási ütemtervek áttekintésében, időpontok igénylésében és a munkák állapotának valós idejű követésében egy letisztult, reszponzív felületen.
 
 **Használd az ARSM-et, ha:**
+
 - Egy pillantással szeretnéd áttekinteni és kezelni a javítási időpontokat
 - Szabad időpontokat szeretnél igényelni és valós időben frissíteni az állapotukat
 - Havi naptárnézetben szeretnéd böngészni az összes ütemezett munkát
@@ -28,23 +29,58 @@ Full-stack alkalmazásként épült ASP.NET Core Web API (backend), React + Type
 
 ---
 
-## Copilot skillek (gyors használat)
+## MI-alapú fejlesztés
 
-A részletes agent policy külön skill és prompt fájlokba van szervezve.
+A projekt két ágensi MI-eszközt használ párhuzamosan: **Claude Code** (CLI/desktop) és **GitHub Copilot** (VS Code). Mindkettő azonos utasításkészlettel és specialista ágensekkel dolgozik, így bármelyik eszköz képes a kódolás bármely részén dolgozni ugyanazokkal a szabályokkal.
 
-- `/mcp-context-policy` → MCP szerverhasználat és Context Mode interakciós policy.
-- `/config-driven-endpoints` → Fix, konfiguráció-alapú port/URL policy, hardcode fallback címek nélkül.
-- `/ef-migration` → EF migrációs workflow és hibaelhárítás.
-- `/docs-sync` → Dokumentáció szinkronizációs policy és workflow.
-- `/endpoint-tests-sync` → Endpoint HTTP/SQL teszt szinkronizáció endpoint változások után.
+### Specialista ágensek
 
-Skill források:
+Minden implementációs feladatot az orkesztrátor delegál specialista ágenseknek. Az orkesztrátor elemzi a kérést, fázisokra bontott tervet készít, és a megfelelő specialistákhoz irányítja a munkát, amelyek párhuzamosan is futhatnak, ha függetlenek.
 
-- `.github/skills/autoservice-mcp-context-policy/SKILL.md`
-- `.github/skills/autoservice-config-driven-endpoints/SKILL.md`
-- `.github/skills/autoservice-ef-migration/SKILL.md`
-- `.github/skills/autoservice-docs-sync/SKILL.md`
-- `.github/skills/autoservice-endpoint-tests-sync/SKILL.md`
+| Ágens | Hatókör | Cél |
+| ----- | ------- | --- |
+| **Orkesztrátor** | Feladat-dekompozíció | Minden feladatot először elemez, eldönti, melyik specialista melyik fázisban dolgozik |
+| **Backend** | `AutoService.ApiService` | Endpointok, domain modell, DTO-k, auth, middleware, EF lekérdezések |
+| **Frontend** | `AutoService.WebUI` | Komponensek, oldalak, store-ok, szolgáltatások, i18n, routing, stílusok |
+| **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
+| **Docs** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
+| **Teszt Endpointok** | .http/.sql tesztek | Endpoint tesztcsomagok frissítése API-változások után |
+| **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
+
+**Standard workflow:**
+
+1. Orkesztrátor fázisokra bontja a feladatot
+2. Backend + Frontend specialisták párhuzamosan dolgoznak
+3. Validáló ágens ellenőrzi a buildet
+4. Docs ágens szinkronizálja a dokumentációt; Teszt Endpointok ágens szinkronizálja a teszteket
+
+Ágensdefiníciók:
+
+- Claude Code: `.claude/agents/*.md`
+- GitHub Copilot: `.github/agents/*.agent.md`
+
+### Skillek (slash parancsok)
+
+Újrahasználható runbookok, mindkét eszközből hívhatók slash parancsokkal.
+
+| Parancs | Cél |
+| ------- | --- |
+| `/docs-sync` | Összes CLAUDE.md, .github/instructions és ARSM-TL-DR.md szinkronizálása a kóddal |
+| `/endpoint-tests-sync` | .http és .sql tesztcsomagok frissítése endpointváltozások után |
+| `/ef-migration` | EF Core migrációs workflow és hibaelhárítás |
+| `/config-driven-endpoints` | Konfiguráció-alapú URL/port policy érvényesítése |
+| `/mcp-context-policy` | MCP szerver interakció és Context Mode használati policy |
+
+Skill források: `.github/skills/*/SKILL.md`
+
+### Utasításfájlok
+
+A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
+
+| Claude Code | GitHub Copilot |
+| ----------- | -------------- |
+| `CLAUDE.md` (gyökérben) | `.github/copilot-instructions.md` |
+| `AutoServiceApp/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
 
 ---
 
@@ -54,7 +90,7 @@ Skill források:
 - Az access és refresh tokenek biztonságos HttpOnly cookie-kban vannak, refresh token rotációval és szerveroldali (hash-elt) tárolással.
 - Auth endpointok: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
 - Időpont endpointok: `GET /api/appointments`, `GET /api/appointments/today`, `PUT /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`.
-- A dashboard hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, amely a napi időpontokat (Tervező Tér) és egy havi naptárnézetet tartalmaz.
+- A dashboard-hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, amely a napi időpontokat (Tervező Tér) és egy havi naptárnézetet tartalmaz.
 - Részletes biztonsági és üzemeltetési információk szándékosan nem publikusak ebben a README-ben.
 
 ---

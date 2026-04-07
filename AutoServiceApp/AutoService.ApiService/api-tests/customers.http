@@ -1,0 +1,322 @@
+@AutoService_ApiService_HostAddress = https://localhost:5200
+@AdminEmail = gabor.kovacs@gmail.com
+@AdminPassword = Test_Jelszo.420
+@NonAdminEmail = peter.nagy@gmail.com
+
+#  CUSTOMERS
+# ─────────────────────────────────────────────────────────────
+
+# Seed data: Anna Toth (anna.toth@gmail.com) is customer id 6 in a fresh DB
+# (mechanics are ids 1–5 in the TPH people table).
+# Adjust @SeedCustomerId and @NonExistentCustomerId as needed.
+@SeedCustomerId = 6
+@NonExistentCustomerId = 99999
+
+### [Setup][Customers] Login as admin (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  LIST CUSTOMERS
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Customers] List all customers (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for auth check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Non-admin can list customers (200 expected — read is authorized, not admin-only)
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+### [Negative][Customers] Unauthenticated list customers (401 expected)
+# NOTE: Run this after manually clearing cookies / in a fresh session.
+# Uncomment to use:
+# GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  GET CUSTOMER BY ID
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for single-customer queries
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Get seeded customer by id (200 expected, includes vehicle list)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Negative][Customers] Get non-existent customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  CREATE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Customers] Admin creates new customer (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "test.customer.new@example.com",
+  "phoneNumber": "+36301234567"
+}
+
+###
+
+### [Positive][Customers] Admin creates customer without optional fields (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Minimal",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "minimal.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with missing required fields (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "bad.create@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with duplicate email (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Duplicate",
+  "middleName": null,
+  "lastName": "Email",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden write check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot create customer (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "middleName": null,
+  "lastName": "ByPolicy",
+  "email": "blocked.by.policy@example.com",
+  "phoneNumber": null
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  UPDATE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for update tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Admin updates existing customer (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": "Maria",
+  "lastName": "Toth-Updated",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": "+36304445566"
+}
+
+###
+
+### [Negative][Customers] Update non-existent customer (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Ghost",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "ghost.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with missing required fields (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden update check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot update customer (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  DELETE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for delete tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Delete non-existent customer (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden delete check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot delete customer (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Setup][Customers] Login as admin before positive delete
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+# NOTE: Set @SeedCustomerId to a customer id that is safe to delete (not referenced by
+# running test data) before executing this positive case.
+### [Positive][Customers] Admin deletes customer (204 expected, cascades vehicles)
+# DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###

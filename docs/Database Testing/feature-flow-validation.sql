@@ -104,3 +104,67 @@ LEFT JOIN "AspNetRoles" r ON r."Id" = ur."RoleId"
 WHERE p."PersonType" = 'Mechanic'
 GROUP BY p."Id", p."Email", p."IdentityUserId"
 ORDER BY p."Id";
+
+
+-- ------------------------------------------------------------
+-- 7. CUSTOMER RECORD AUDIT
+--    Lists all customer records with vehicle counts.
+--    Use after POST/PUT/DELETE /api/customers to verify persistence.
+-- ------------------------------------------------------------
+SELECT c."Id" AS customer_id,
+       c."FirstName",
+       c."MiddleName",
+       c."LastName",
+       c."Email",
+       c."PhoneNumber",
+       COUNT(v."Id") AS vehicle_count
+FROM people c
+LEFT JOIN vehicles v ON v."CustomerId" = c."Id"
+WHERE c."PersonType" = 'Customer'
+GROUP BY c."Id", c."FirstName", c."MiddleName", c."LastName", c."Email", c."PhoneNumber"
+ORDER BY c."Id";
+
+
+-- ------------------------------------------------------------
+-- 8. VEHICLE RECORD AUDIT
+--    Lists all vehicles with their owning customer.
+--    Use after POST/PUT/DELETE /api/.../vehicles to verify persistence.
+-- ------------------------------------------------------------
+SELECT v."Id" AS vehicle_id,
+       v."LicensePlate",
+       v."Brand",
+       v."Model",
+       v."Year",
+       v."MileageKm",
+       v."EnginePowerHp",
+       v."EngineTorqueNm",
+       c."Id" AS customer_id,
+       c."Email" AS customer_email
+FROM vehicles v
+JOIN people c ON c."Id" = v."CustomerId"
+WHERE c."PersonType" = 'Customer'
+ORDER BY v."Id";
+
+
+-- ------------------------------------------------------------
+-- 9. CUSTOMER DELETION INTEGRITY
+--    Verifies no orphaned vehicles remain after customer deletion.
+--    Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT v."Id" AS orphaned_vehicle_id,
+       v."LicensePlate"
+FROM vehicles v
+LEFT JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
+WHERE c."Id" IS NULL;
+
+
+-- ------------------------------------------------------------
+-- 10. VEHICLE DELETION INTEGRITY
+--     Verifies no orphaned appointments remain after vehicle deletion.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS orphaned_appointment_id,
+       a."ScheduledDate"
+FROM appointments a
+LEFT JOIN vehicles v ON v."Id" = a."VehicleId"
+WHERE v."Id" IS NULL;

@@ -51,6 +51,28 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - For multi-step research, prefer batching/indexing patterns (`ctx_batch_execute`, indexing + search) over many separate high-output calls.
 - After editing MCP/hook config, restart VS Code to ensure hooks and routing instructions are reloaded.
 
+## Specialist Agents (`.github/agents/`, Mandatory Delegation)
+This project uses specialist agents for task decomposition and delegation. **All implementation tasks must be delegated to specialist agents via the orchestrator** — never execute inline.
+
+| Agent | Scope | When to use |
+|-------|-------|-------------|
+| **Task Orchestrator** | Task decomposition | **Always first** — analyzes every task and decides which specialists work on it in which phases |
+| **Backend Specialist** | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
+| **Frontend Specialist** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
+| **EF Migration** | EF Core migrations | Creating, validating, and troubleshooting migrations |
+| **Documentation Sync** | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
+| **Endpoint Test Sync** | .http and .sql test files | After API endpoint add/change/remove |
+| **Build Validator** | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
+
+**Agent files:** `.github/agents/*.agent.md` (Copilot) and `.claude/agents/*.md` (Claude Code) — both sets define the same specialist roles.
+
+**Mandatory workflow:**
+1. **Orchestrator first** — every task goes through the orchestrator for decomposition and phase planning.
+2. **Specialist execution** — identified agents execute in parallel where possible.
+3. **Validate** — always runs after code changes.
+4. **Docs sync (always)** — must run after every change. If changes touch skills, agents, or instruction files, those are updated too.
+5. **Test endpoints** — runs after any API endpoint change.
+
 ## Copilot Skill Entry Points
 - Use `/mcp-context-policy` for MCP server interaction policy and Context Mode usage decisions.
 - Use `/config-driven-endpoints` for URL/port changes to enforce config-driven addressing and avoid hardcoded fallback endpoints.
@@ -127,17 +149,28 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment
 	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status
-		- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
-		- `PUT /api/profile` (authorized) — update current user profile (email/phone/middle name)
-		- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
-		- `POST /api/profile/change-password` (authorized) — change password
-		- `GET /api/profile/picture` (authorized) — get profile picture binary
-		- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
-		- `DELETE /api/profile/picture` (authorized) — remove profile picture
-		- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
-		- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion)
+	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
+	- `PUT /api/profile` (authorized) — update current user profile (email/phone/middle name)
+	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
+	- `POST /api/profile/change-password` (authorized) — change password
+	- `GET /api/profile/picture` (authorized) — get profile picture binary
+	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
+	- `DELETE /api/profile/picture` (authorized) — remove profile picture
+	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
+	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion)
+	- `GET /api/customers` (authorized) — list all customers
+	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
+	- `POST /api/customers` (authorized, AdminOnly) — create customer record
+	- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
+	- `DELETE /api/customers/{id}` (authorized, AdminOnly) — delete customer and cascaded vehicles
+	- `GET /api/customers/{customerId}/vehicles` (authorized) — list vehicles for a customer
+	- `GET /api/vehicles/{id}` (authorized) — get single vehicle with customer summary
+	- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer
+	- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record
+	- `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
 	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
+	- `GET /health` and `GET /alive` in Development (`app.MapDefaultEndpoints()`)
 - Appointment endpoints use DTOs (`AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`) and follow partial-class pattern in `Appointments/` folder.
 - Auth and login behavior currently implemented:
 	- registration is mechanic-only,
@@ -167,6 +200,7 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 	- `UseHsts()` outside Development,
 	- custom login ban middleware (3-minute IP cooldown),
 	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseAuthentication()`, `UseAuthorization()`.
+- Service defaults: `builder.AddServiceDefaults()` is called at startup (registers OpenTelemetry, health checks, service discovery). `app.MapDefaultEndpoints()` maps `/health` and `/alive` in Development.
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
 	- demo seeding outside Development requires `DemoData:EnableSeeding=true`,
@@ -174,17 +208,14 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- `Customer` and `Vehicle` CRUD endpoints are still not mapped (Appointment read/claim/status endpoints now exist).
-- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), and Admin page (mechanic list with delete + registration form) are implemented; sidebar pages Tools and Inventory remain placeholder stubs.
+- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields (letters only) and phone fields (digits/special chars only); profile picture upload validates file extension (.png/.jpg/.jpeg/.webp). UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
 - Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
-- `AutoService.ServiceDefaults` health endpoint extensions exist, but API does not currently call `MapDefaultEndpoints()`.
-- No dedicated unit/integration test project exists yet.
 
 ## API Test Coverage Snapshot
-- `AutoService.ApiService.http` includes an auth full matrix for:
+- `AutoService.ApiService/api-tests/auth-and-session.http` includes an auth full matrix for:
 	- register (email-only, email+phone, duplicates, invalid email/phone, invalid person type/expertise),
 	- login (email normalization and phone format matrix),
-	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups),
+	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
 
 ## Aspire Rules

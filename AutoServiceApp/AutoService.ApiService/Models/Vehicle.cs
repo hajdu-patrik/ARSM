@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AutoService.ApiService.Models;
 
@@ -53,6 +54,7 @@ public class Vehicle
      * @param enginePowerHp Engine power in horsepower.
      * @param engineTorqueNm Engine torque in newton-meters.
      */
+    [SetsRequiredMembers]
     public Vehicle(string licensePlate, string brand, string model, int year, int mileageKm, int enginePowerHp, int engineTorqueNm)
     {
         LicensePlate = licensePlate;

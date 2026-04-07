@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { inputClass, readonlyInputClass, labelClass, cardClass, buttonClass } from '../constants';
+import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
 interface PersonalInfoSectionProps {
   readonly firstName: string;
@@ -72,7 +73,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-middleName"
               type="text"
               value={middleName}
-              onChange={(e) => onMiddleNameChange(e.target.value)}
+              onChange={(e) => onMiddleNameChange(filterNameInput(e.target.value))}
               placeholder={t('settings.middleNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
@@ -118,7 +119,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             type="tel"
             inputMode="tel"
             value={phoneNumber}
-            onChange={(e) => onPhoneNumberChange(e.target.value)}
+            onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
             placeholder={t('settings.phonePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}

@@ -184,12 +184,16 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="mb-6 text-2xl font-bold text-[#2C2440] dark:text-[#EDE8FA]">
+      <h1 className="mb-6 text-2xl font-bold text-[#2C2440] dark:text-[#EDE8FA] ">
         {t('admin.pageTitle')}
       </h1>
 
+      <h2 className="mb-4 mt-8 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+        {t('admin.mechanicList')}
+      </h2>
+      
       <MechanicListSection refreshKey={mechanicListRefreshKey} />
-
+      
       <h2 className="mb-4 mt-8 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
         {t('admin.registerMechanic')}
       </h2>
