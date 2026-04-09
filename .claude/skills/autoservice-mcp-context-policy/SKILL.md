@@ -1,6 +1,6 @@
 ---
 name: autoservice-mcp-context-policy
-description: AutoService MCP and Context Mode interaction policy. Use this when working with MCP servers, context-mode tools, hook routing, large command output, or deciding automatic vs explicit context-mode usage.
+description: AutoService MCP and Context Mode interaction policy. Use this when working with MCP servers, context-mode tools, MCP templates/runtime config, large command output, or deciding automatic vs explicit context-mode usage.
 disable-model-invocation: true
 ---
 
@@ -12,15 +12,16 @@ Policy goals:
 - Use explicit context-mode workflows for high-output and multi-step research.
 
 Workspace MCP baseline:
-- MCP registration file: .vscode/mcp.json
-- Hook routing file: .github/hooks/context-mode.json
-- Local tool manifest: .config/dotnet-tools.json
+- Template files (tracked): .vscode/mcp.template.json and .claude/.mcp.template.json
+- Runtime files (local/ignored): .vscode/mcp.json and .claude/.mcp.json
+- Keep .vscode and .claude MCP server sets aligned
+- Local tool manifest: dotnet-tools.json (repository root)
 - Aspire MCP startup command: dotnet tool run aspire -- mcp start
 
 Server policy:
-- Primary servers: pencil-design-tool, context-mode
-- Optional server: aspire (only when Aspire workflow support is needed)
-- Do not add extra MCP servers unless there is clear repeated-work reduction value
+- Shared server set: pencil-design-tool, context-mode, aspire, postgres, docker
+- pencil-design-tool uses a bash wrapper that starts openpencil HTTP server and bridges via mcp-remote
+- Keep server additions intentional and project-focused
 
 When automatic usage is enough:
 - Small reads/edits/builds and short diagnostics
@@ -38,7 +39,7 @@ Recommended patterns:
 - Prefer concise summaries over dumping large raw output
 
 Operational reminders:
-- After MCP/hook config changes, restart VS Code once
+- After MCP template/runtime config changes, restart VS Code once
 - On fresh clone, run dotnet tool restore before starting Aspire MCP
 
 Quick checks:

@@ -21,8 +21,8 @@
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL` — use `options.UseNpgsql(...)`.
 - Model config centralized in `Data/AutoServiceDbContext.cs`.
 - New migrations go in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`.
-- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts) + customers (plain records) when tables are empty.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`.
+- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Admin role seeding is idempotent and runs on every startup (before the "is data already seeded?" guard), ensuring the `"Admin"` Identity role exists and is assigned to the first mechanic (Gabor Kovacs).
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Prefer async EF methods (`SaveChangesAsync`, `ToListAsync`, etc.) with cancellation tokens.
@@ -73,11 +73,12 @@
 
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
+- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment; returns 422 if appointment is Cancelled
-- `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns 422 if appointment is Cancelled
-- `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only); auto-sets CompletedAt/CanceledAt timestamps on status change
+- `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns 422 if appointment is Cancelled or if unassign would leave the appointment without mechanics
+- `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only); auto-sets CompletedAt/CanceledAt timestamps on status change and allows moving Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 - `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns 422 if appointment is Cancelled
-- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns 422 if appointment is Cancelled
+- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns 422 if appointment is Cancelled or if removal would leave the appointment without mechanics
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 
 ## Customer Endpoints (Current)
@@ -117,7 +118,7 @@
 ## Admin Endpoints (Current)
 
 - `GET /api/admin/mechanics` (authorized, AdminOnly policy) — list all mechanics with admin flag
-- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly policy) — delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is an admin or if caller tries to delete themselves.
+- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly policy) — delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is an admin or if caller tries to delete themselves, and 422 if deleting the mechanic would leave zero mechanics globally or leave any appointment without an assigned mechanic.
 
 ## API Documentation
 

@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "context-mode": {
+      "type": "stdio",
+      "command": "context-mode",
+      "args": [],
+      "env": {}
+    },
+    "aspire": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "tool",
+        "run",
+        "aspire",
+        "--",
+        "mcp",
+        "start"
+      ],
+      "env": {}
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgres://postgres:YOUR_PASSWORD_HERE@localhost:5432/AutoServiceDb"
+      ],
+      "env": {}
+    },
+    "docker": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@alisaitteke/docker-mcp"
+      ],
+      "env": {}
+    }
+  }
+}

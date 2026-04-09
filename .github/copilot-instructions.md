@@ -36,20 +36,22 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 	- `AutoServiceApp/AutoService.ApiService/api-tests/*.http`
 	- `docs/Database Testing/*.sql`
 
-## MCP and Hook Policy (Workspace)
+## MCP Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
-- Primary servers for this repository:
-	- `pencil-design-tool`
+- Track MCP config via templates: `.vscode/mcp.template.json` and `.claude/.mcp.template.json`.
+- Runtime MCP files stay local/ignored: `.vscode/mcp.json` and `.claude/.mcp.json`.
+- Keep `.vscode` and `.claude` MCP server sets aligned.
+- Current shared server set:
+	- `pencil-design-tool` (bash wrapper starts `openpencil` HTTP server and bridges through `mcp-remote`)
 	- `context-mode`
-- Optional server when Aspire workflow support is needed:
-	- `aspire` (use workspace-local tool via `dotnet tool run aspire -- mcp start`)
-- Do **not** add extra MCP servers unless they clearly reduce repeated manual work for this project.
-- MCP server workspace config file: `.vscode/mcp.json`.
-- Hook config file for context-mode lifecycle integration: `.github/hooks/context-mode.json`.
+	- `aspire` (workspace-local tool via `dotnet tool run aspire -- mcp start`)
+	- `postgres`
+	- `docker`
+- Local tool manifest for Aspire CLI: `dotnet-tools.json` at repository root.
 - Default workflow: treat context-mode as automatic routing/enforcement. Do not require explicit context-mode prompts for routine small tasks.
 - Prefer explicit context-mode tool usage when output can be large (long logs, broad searches, large API/CLI output, large docs/web content).
 - For multi-step research, prefer batching/indexing patterns (`ctx_batch_execute`, indexing + search) over many separate high-output calls.
-- After editing MCP/hook config, restart VS Code to ensure hooks and routing instructions are reloaded.
+- After editing MCP templates or runtime MCP config, restart VS Code to ensure routing instructions are reloaded.
 
 ## Specialist Agents (`.github/agents/`, Mandatory Delegation)
 This project uses specialist agents for task decomposition and delegation. **All implementation tasks must be delegated to specialist agents via the orchestrator** — never execute inline.
@@ -111,8 +113,8 @@ This project uses specialist agents for task decomposition and delegation. **All
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`.
-- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts) and customers (plain records) when tables are empty.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`.
+- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
 - Keep schema constraints and indexes aligned with domain invariants.
@@ -147,11 +149,12 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
+	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment (422 if Cancelled)
-	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled)
+	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled or if unassign would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (422 if Cancelled)
-	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (422 if Cancelled)
-	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps
+	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (422 if Cancelled or if removal would leave appointment without mechanics)
+	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
 	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
@@ -162,7 +165,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
 	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
-	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion)
+	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics)
 	- `GET /api/customers` (authorized) — list all customers
 	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
 	- `POST /api/customers` (authorized, AdminOnly) — create customer record
@@ -208,12 +211,13 @@ This project uses specialist agents for task decomposition and delegation. **All
 - Service defaults: `builder.AddServiceDefaults()` is called at startup (registers OpenTelemetry, health checks, service discovery). `app.MapDefaultEndpoints()` maps `/health` and `/alive` in Development.
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
+	- seed generation adds 30 additional appointments in the current UTC month (including today and multiple same-day entries),
 	- demo seeding outside Development requires `DemoData:EnableSeeding=true`,
 	- `DemoData:MechanicPassword` is required when seeding is enabled.
 
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
+- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
 - Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
 
 ## API Test Coverage Snapshot

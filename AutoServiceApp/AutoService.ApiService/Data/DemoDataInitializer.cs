@@ -202,6 +202,77 @@ public static class DemoDataInitializer
             }
         };
 
+        var nowUtc = DateTime.UtcNow;
+        var monthStartUtc = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var daysInCurrentMonth = DateTime.DaysInMonth(nowUtc.Year, nowUtc.Month);
+        var generatedTaskTemplates = new[]
+        {
+            "Olajcsere es szurok ellenorzese",
+            "Fekrendszer diagnosztika",
+            "Futomu es gumi allapotfelmeres",
+            "Akkumulator es toltesi rendszer ellenorzes",
+            "Motor hibakod olvasas es teszt",
+            "Legkondicionalo rendszer karbantartas",
+            "Kipufogo rendszer atvizsgalas",
+            "Uzemanyag rendszer tisztitas"
+        };
+
+        for (var i = 0; i < 30; i++)
+        {
+            var dayOfMonth = i < 6
+                ? nowUtc.Day
+                : ((i * 2) % daysInCurrentMonth) + 1;
+
+            var scheduledDateUtc = new DateTime(
+                nowUtc.Year,
+                nowUtc.Month,
+                dayOfMonth,
+                8 + (i % 9),
+                i % 2 == 0 ? 0 : 30,
+                0,
+                DateTimeKind.Utc);
+
+            var assignedMechanics = new List<Mechanic>
+            {
+                mechanics[i % mechanics.Count]
+            };
+
+            if (i % 4 == 0)
+            {
+                var secondMechanic = mechanics[(i + 1) % mechanics.Count];
+                if (assignedMechanics.All(m => m.Id != secondMechanic.Id))
+                {
+                    assignedMechanics.Add(secondMechanic);
+                }
+            }
+
+            var status = ProgresStatus.InProgress;
+            DateTime? completedAt = null;
+            DateTime? canceledAt = null;
+
+            if (scheduledDateUtc < nowUtc.Date && i % 7 == 0)
+            {
+                status = ProgresStatus.Cancelled;
+                canceledAt = scheduledDateUtc.AddHours(1);
+            }
+            else if (scheduledDateUtc < nowUtc.Date && i % 5 == 0)
+            {
+                status = ProgresStatus.Completed;
+                completedAt = scheduledDateUtc.AddHours(2);
+            }
+
+            appointments.Add(new Appointment
+            {
+                ScheduledDate = scheduledDateUtc,
+                TaskDescription = $"{generatedTaskTemplates[i % generatedTaskTemplates.Length]} #{i + 1}",
+                Status = status,
+                CompletedAt = completedAt,
+                CanceledAt = canceledAt,
+                VehicleId = vehicles[i % vehicles.Count].Id,
+                Mechanics = assignedMechanics
+            });
+        }
+
         db.Appointments.AddRange(appointments);
         await db.SaveChangesAsync();
     }

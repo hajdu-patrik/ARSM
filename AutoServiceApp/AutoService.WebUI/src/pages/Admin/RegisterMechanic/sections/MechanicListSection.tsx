@@ -150,7 +150,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
           </>
         )}
       >
-        <p className="text-sm text-[#5E5672] dark:text-[#CFC5EA]">
+        <p className="break-words text-sm text-[#5E5672] dark:text-[#CFC5EA] [overflow-wrap:anywhere]">
           {t('admin.deleteMechanicWarning', {
             name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
             email: deleteTarget?.email ?? '',

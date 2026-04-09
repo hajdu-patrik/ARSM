@@ -49,7 +49,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/pages/Scheduler/components/MechanicAvatar.tsx`**: Shared mechanic avatar renderer; deterministic color fallback by mechanic ID and mechanic-specific profile picture endpoint (`/api/profile/picture/{personId}`) when available.
 - **`src/services/profile-picture-live.service.ts`**: Shared realtime profile-picture update channel using SSE (`/api/profile/picture/updates`) + window event fan-out (`autoservice:profile-picture-updated`) so navbar and scheduler avatars refresh immediately.
 - **`src/pages/Scheduler/components/MonthAppointmentList.tsx`**: Monthly appointment list rendered as one continuous sorted card grid with per-card date labels. Supports day filtering (`selectedDay` prop) with a "Show all" clear chip, displays loading skeletons while data loads. Filter bar includes status filter chips (toggleable, colored per status), a mechanic dropdown (populated dynamically from appointments), and a date sort toggle (asc/desc); all filters are combinable with each other and with `selectedDay`. Layout rule: mobile is single-column full width, non-mobile is two columns, and if exactly one appointment card is visible it spans full width.
-- **`src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx`**: Mechanic list with left-aligned profile avatar + existing mechanic details and delete button (hidden for admins) + confirmation modal. Reuses `MechanicAvatar` and keeps a responsive row layout. Refreshes after successful registration.
+- **`src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx`**: Mechanic list with left-aligned profile avatar + existing mechanic details and delete button (hidden for admins) + confirmation modal. Reuses `MechanicAvatar` and keeps a responsive row layout. Delete warning text in the modal wraps long email values to prevent overflow. Refreshes after successful registration.
 - **`src/pages/Settings/page.tsx`**: Settings page — data-fetching orchestrator, renders ProfilePictureSection + PersonalInfoSection + ChangePasswordSection. Delete profile section hidden for admin users.
 - **`src/pages/Settings/sections/ProfilePictureSection.tsx`**: Upload/delete profile picture with avatar preview (crop modal opens before upload).
 - **`src/pages/Settings/sections/PersonalInfoSection.tsx`**: Update first name, middle name, last name, email, and phone (all fields are editable).
@@ -132,7 +132,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
   - `DELETE /api/profile/picture` – delete profile picture (authorized).
 - **Admin endpoints**:
   - `GET /api/admin/mechanics` – list all mechanics with admin flag (authorized, admin-only).
-  - `DELETE /api/admin/mechanics/{id}` – delete a mechanic (authorized, admin-only, returns 403 for admin targets or self-deletion).
+  - `DELETE /api/admin/mechanics/{id}` – delete a mechanic (authorized, admin-only, returns 403 for admin targets or self-deletion; returns 422 if deleting would leave zero mechanics globally or leave an appointment with zero assigned mechanics).
 - **VITE_API_URL**: AppHost injects the API base URL as an environment variable.
 - **No URL hardcode fallback**: `VITE_API_URL` must come from env (AppHost or `.env.development`).
 - **Error handling**: Axios interceptor handles refresh-on-401 flow and login page maps `401/403/429/500` and network/database availability failures to dedicated EN/HU messages.

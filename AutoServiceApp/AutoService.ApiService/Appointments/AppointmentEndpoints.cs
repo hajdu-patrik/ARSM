@@ -16,6 +16,12 @@ public static partial class AppointmentEndpoints
         group.MapPut("/{id}/assign/{mechanicId}", AdminAssignAsync).RequireAuthorization("AdminOnly");
         group.MapDelete("/{id}/assign/{mechanicId}", AdminUnassignAsync).RequireAuthorization("AdminOnly");
 
+        var customerAppointments = endpoints.MapGroup("/api/customers/{customerId:int}/appointments")
+            .WithTags("Appointments")
+            .RequireAuthorization("AdminOnly");
+
+        customerAppointments.MapPost(string.Empty, CreateForCustomerAsync);
+
         return endpoints;
     }
 }

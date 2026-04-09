@@ -1,0 +1,38 @@
+{
+    "servers": {
+        "context-mode": {
+            "command": "context-mode",
+            "type": "stdio"
+        },
+        "aspire": {
+            "type": "stdio",
+            "command": "dotnet",
+            "args": [
+                "tool",
+                "run",
+                "aspire",
+                "--",
+                "mcp",
+                "start"
+            ]
+        },
+        "postgres": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgres://postgres:YOUR_PASSWORD_HERE@localhost:5432/AutoServiceDb"
+            ],
+            "type": "stdio"
+        },
+		"docker": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@alisaitteke/docker-mcp"
+            ],
+            "type": "stdio"
+        }
+    },
+    "inputs": []
+}

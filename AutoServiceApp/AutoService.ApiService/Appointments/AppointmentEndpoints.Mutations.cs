@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,125 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    private static async Task<IResult> CreateForCustomerAsync(
+        int customerId,
+        CreateCustomerAppointmentRequest request,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (request.VehicleId <= 0)
+        {
+            return Results.Problem(
+                detail: "VehicleId must be a positive integer.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var taskDescription = request.TaskDescription?.Trim();
+        if (string.IsNullOrWhiteSpace(taskDescription))
+        {
+            return Results.Problem(
+                detail: "TaskDescription is required.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (taskDescription.Length > 200)
+        {
+            return Results.Problem(
+                detail: "TaskDescription must be at most 200 characters.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (request.MechanicIds is null || request.MechanicIds.Count == 0)
+        {
+            return Results.Problem(
+                detail: "At least one mechanic must be assigned.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (request.MechanicIds.Any(id => id <= 0))
+        {
+            return Results.Problem(
+                detail: "MechanicIds must contain positive values only.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var uniqueMechanicIds = request.MechanicIds.Distinct().ToArray();
+        if (uniqueMechanicIds.Length != request.MechanicIds.Count)
+        {
+            return Results.Problem(
+                detail: "MechanicIds must be unique.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (request.ScheduledDate == default)
+        {
+            return Results.Problem(
+                detail: "ScheduledDate is required.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var customerExists = await db.Customers
+            .AnyAsync(c => c.Id == customerId, cancellationToken);
+
+        if (!customerExists)
+        {
+            return Results.Problem(
+                detail: "Customer not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var vehicle = await db.Vehicles
+            .Include(v => v.Customer)
+            .FirstOrDefaultAsync(v => v.Id == request.VehicleId, cancellationToken);
+
+        if (vehicle is null)
+        {
+            return Results.Problem(
+                detail: "Vehicle not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (vehicle.CustomerId != customerId)
+        {
+            return Results.Problem(
+                detail: "Vehicle does not belong to the specified customer.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var mechanics = await db.Mechanics
+            .Where(m => uniqueMechanicIds.Contains(m.Id))
+            .ToListAsync(cancellationToken);
+
+        if (mechanics.Count != uniqueMechanicIds.Length)
+        {
+            return Results.Problem(
+                detail: "One or more mechanicIds are invalid.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var scheduledDateUtc = request.ScheduledDate.Kind switch
+        {
+            DateTimeKind.Utc => request.ScheduledDate,
+            DateTimeKind.Local => request.ScheduledDate.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(request.ScheduledDate, DateTimeKind.Utc)
+        };
+
+        var appointment = new Appointment
+        {
+            ScheduledDate = scheduledDateUtc,
+            TaskDescription = taskDescription,
+            Status = ProgresStatus.InProgress,
+            VehicleId = vehicle.Id,
+            Vehicle = vehicle,
+            Mechanics = mechanics
+        };
+
+        db.Appointments.Add(appointment);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
+    }
+
     private static async Task<IResult> ClaimAsync(
         int id,
         ClaimsPrincipal user,
@@ -92,6 +212,11 @@ public static partial class AppointmentEndpoints
             return Results.Conflict(new { code = "not_assigned" });
         }
 
+        if (appointment.Mechanics.Count <= 1)
+        {
+            return Results.UnprocessableEntity(new { code = "last_assigned_mechanic" });
+        }
+
         appointment.Mechanics.Remove(mechanic);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -169,6 +294,11 @@ public static partial class AppointmentEndpoints
         if (mechanic is null)
         {
             return Results.Conflict(new { code = "not_assigned" });
+        }
+
+        if (appointment.Mechanics.Count <= 1)
+        {
+            return Results.UnprocessableEntity(new { code = "last_assigned_mechanic" });
         }
 
         appointment.Mechanics.Remove(mechanic);

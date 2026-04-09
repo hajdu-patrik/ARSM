@@ -34,7 +34,7 @@
 - `src/store/scheduler.store.ts` — Zustand: `todayAppointments`, `monthAppointments`, `calendarYear`, `calendarMonth`, loading states, `upsertAppointment` for optimistic sync
 - `src/store/toast.store.ts` — Zustand: global toast queue (`showSuccess`, `showError`, auto-dismiss metadata)
 - `src/services/auth.service.ts` — login/logout/session restore via `/api/auth/login`, `/api/auth/logout`, `/api/auth/validate`
-- `src/services/admin.service.ts` — registerMechanic() via `POST /api/auth/register`, listMechanics() via `GET /api/admin/mechanics`, deleteMechanic() via `DELETE /api/admin/mechanics/{id}` (all admin-only)
+- `src/services/admin.service.ts` — registerMechanic() via `POST /api/auth/register`, listMechanics() via `GET /api/admin/mechanics`, deleteMechanic() via `DELETE /api/admin/mechanics/{id}` (all admin-only; delete can return 422 when backend mechanic-deletion invariants would be violated)
 - `src/services/appointment.service.ts` — getByMonth, getToday, claim, unclaim, updateStatus, adminAssign, adminUnassign via `/api/appointments`
 - `src/services/profile.service.ts` — getProfile, updateProfile, changePassword, uploadProfilePicture, deleteProfilePicture, deleteProfile via `/api/profile`
 - `src/services/profile.service.ts` upload sends multipart `FormData`; axios request interceptor clears inherited JSON content-type for FormData so browser boundary headers are used.
@@ -51,7 +51,7 @@
 ## Component Map
 
 - `src/pages/Admin/RegisterMechanic/page.tsx` — admin-only mechanic management page (mechanic list with delete + registration form)
-- `src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx` — mechanic list with left-aligned profile avatar (reuses `MechanicAvatar`), existing name/email/admin-badge content, delete button (hidden for admin accounts), and confirmation modal; responsive row layout
+- `src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx` — mechanic list with left-aligned profile avatar (reuses `MechanicAvatar`), existing name/email/admin-badge content, delete button (hidden for admin accounts), and confirmation modal; responsive row layout. Delete warning text in the modal wraps long email values to prevent overflow.
 - `src/pages/Settings/page.tsx` — settings page (profile picture with crop modal, personal info, change password, delete profile modal — delete section hidden for admin users)
 - `src/pages/Settings/sections/ProfilePictureSection.tsx` — upload/delete profile picture with deterministic fallback preview
 - `src/pages/Settings/sections/PersonalInfoSection.tsx` — update first name, middle name, last name, email, phone

@@ -36,5 +36,11 @@ public static partial class AppointmentEndpoints
         VehicleDto Vehicle,
         IReadOnlyList<MechanicSummaryDto> Mechanics);
 
+    internal sealed record CreateCustomerAppointmentRequest(
+        int VehicleId,
+        DateTime ScheduledDate,
+        string TaskDescription,
+        IReadOnlyList<int> MechanicIds);
+
     internal sealed record UpdateStatusRequest(string Status);
 }

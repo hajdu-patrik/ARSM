@@ -10,7 +10,11 @@ Desktop.ini
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
-!.vscode/mcp.json
+!.vscode/mcp.template.json
+
+# Claude MCP: keep runtime local, allow template
+.claude/.mcp.json
+!.claude/.mcp.template.json
 
 .idea/
 *.suo

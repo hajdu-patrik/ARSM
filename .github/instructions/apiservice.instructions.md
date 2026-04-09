@@ -72,7 +72,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ### Admin Endpoints (`/api/admin`) — all require AdminOnly authorization
 
 - `GET /api/admin/mechanics` — List all mechanics with admin flag.
-- `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is admin or caller is deleting themselves.
+- `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is admin or caller is deleting themselves, and 422 if deleting would leave zero mechanics globally or would leave any appointment without assigned mechanics.
 - Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
 
 ### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
@@ -100,11 +100,12 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
+- `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment. Returns 409 if already claimed, 422 if appointment is Cancelled.
-- `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, 422 if appointment is Cancelled.
-- `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum (`InProgress`, `Completed`, `Cancelled`), returns 403 if not assigned. Auto-sets `CompletedAt` when transitioning to Completed, `CanceledAt` when transitioning to Cancelled; clears both when transitioning back to InProgress.
+- `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, 422 if appointment is Cancelled or if unassign would leave the appointment without assigned mechanics.
+- `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum (`InProgress`, `Completed`, `Cancelled`), returns 403 if not assigned. Auto-sets `CompletedAt` when transitioning to Completed, `CanceledAt` when transitioning to Cancelled; clears both when transitioning back to InProgress. Cancelled appointments can be moved back to `InProgress` or `Completed`, including for past-dated appointments.
 - `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned, 422 if appointment is Cancelled.
-- `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, 422 if appointment is Cancelled.
+- `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, 422 if appointment is Cancelled or if removal would leave the appointment without assigned mechanics.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 - Appointment DTOs: `AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`.
 - Endpoint files follow partial-class pattern in `Appointments/` folder (mirroring `Auth/` structure).
@@ -132,4 +133,4 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Use `options.UseNpgsql(...)` for PostgreSQL.
 - Model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Keep schema constraints and indexes aligned with domain invariants.
-- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts) and customers (plain records) when tables are empty.
+- `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).

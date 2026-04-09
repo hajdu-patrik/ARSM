@@ -4,11 +4,13 @@
 @AdminPassword = Test_Jelszo.420
 @MatrixRunSuffix = 20260403a
 @MatrixWhitespaceEmail = matrix.whitespace.user.{{MatrixRunSuffix}}@example.com
+@CurrentAdminMechanicId = 1
+@MechanicIdWithSoleAssignments = 2
+@MechanicIdCandidateForDeletion = 3
+@UnknownMechanicId = 99999
 
 #  ADMIN
 # ─────────────────────────────────────────────────────────────
-
-@AdminMechanicId = 2
 
 ### [Setup][Admin] Login as admin (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -26,14 +28,30 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 
 ###
 
-### [Negative][Admin] Try deleting self/admin mechanic (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AdminMechanicId}}
+### [Negative][Admin] Try deleting self mechanic (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{CurrentAdminMechanicId}}
 
 ###
 
-# Set @AdminMechanicId to a non-admin mechanic id before running this positive case.
-### [Positive][Admin] Delete non-admin mechanic
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AdminMechanicId}}
+### [Negative][Admin] Cannot delete mechanic if it would leave appointments unassigned (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdWithSoleAssignments}}
+
+###
+
+# Preconditions: database has exactly one mechanic left and target is that mechanic.
+### [Negative][Admin] Cannot delete last remaining mechanic globally (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+
+###
+
+# Preconditions: target is non-admin, not self, and all its appointments are reassigned.
+### [Positive][Admin] Delete non-admin mechanic when invariants hold
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+
+###
+
+### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 
 ###
 

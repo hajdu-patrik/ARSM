@@ -57,6 +57,22 @@ ORDER BY a."Id";
 
 
 -- ------------------------------------------------------------
+-- 4. APPOINTMENT ASSIGNMENT INVARIANT (NO ZERO-MECHANIC APPOINTMENTS)
+--    Verifies no appointment exists without at least one assigned mechanic.
+--    Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."Status",
+       a."TaskDescription"
+FROM appointments a
+LEFT JOIN appointmentmechanics am ON am."AppointmentId" = a."Id"
+GROUP BY a."Id", a."ScheduledDate", a."Status", a."TaskDescription"
+HAVING COUNT(am."MechanicId") = 0
+ORDER BY a."Id";
+
+
+-- ------------------------------------------------------------
 -- 5. PROFILE PICTURE STORAGE CHECK
 --    Counts mechanics with and without stored profile pictures.
 -- ------------------------------------------------------------
@@ -196,3 +212,30 @@ SELECT a."Id" AS orphaned_appointment_id,
 FROM appointments a
 LEFT JOIN vehicles v ON v."Id" = a."VehicleId"
 WHERE v."Id" IS NULL;
+
+
+-- ------------------------------------------------------------
+-- 13. CUSTOMER APPOINTMENT CREATION COVERAGE
+--     Use after POST /api/customers/{customerId}/appointments to verify created rows.
+--     The taskDescription filter matches the api-tests/appointments.http payload.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."Status",
+       a."TaskDescription",
+       v."Id" AS vehicle_id,
+       v."LicensePlate",
+       c."Id" AS customer_id,
+       c."Email" AS customer_email,
+       COUNT(am."MechanicId") AS assigned_mechanic_count,
+       CASE
+           WHEN COUNT(am."MechanicId") = 0 THEN 'FAIL: created appointment has zero mechanics'
+           ELSE 'OK'
+       END AS assignment_integrity
+FROM appointments a
+JOIN vehicles v ON v."Id" = a."VehicleId"
+JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
+LEFT JOIN appointmentmechanics am ON am."AppointmentId" = a."Id"
+WHERE a."TaskDescription" ILIKE '%idopont felvetele admin oldalon%'
+GROUP BY a."Id", a."ScheduledDate", a."Status", a."TaskDescription", v."Id", v."LicensePlate", c."Id", c."Email"
+ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
