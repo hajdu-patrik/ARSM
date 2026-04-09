@@ -113,7 +113,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
@@ -142,13 +142,15 @@ This project uses specialist agents for task decomposition and delegation. **All
 
 ## Current API & Security Snapshot (Keep In Sync With Code)
 - Current mapped endpoints in `AutoService.ApiService`:
-	- `POST /api/auth/register`
+	- `POST /api/auth/register` (authorized, AdminOnly)
 	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`)
 	- `POST /api/auth/refresh`
 	- `POST /api/auth/logout` (authorized)
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
+	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback, past-date scheduled-date rejection, and due datetime validation
+	- `PUT /api/appointments/{id}` (authorized) — update appointment and related vehicle fields (customer fields unchanged); allowed for assigned mechanics or admins; rejects `ScheduledDate` changes when the appointment is already in the past
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment (422 if Cancelled)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled or if unassign would leave appointment without mechanics)
@@ -167,6 +169,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
 	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics)
 	- `GET /api/customers` (authorized) — list all customers
+	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles)
 	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
 	- `POST /api/customers` (authorized, AdminOnly) — create customer record
 	- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
@@ -179,9 +182,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
 	- `GET /health` and `GET /alive` in Development (`app.MapDefaultEndpoints()`)
-- Appointment endpoints use DTOs (`AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`) and follow partial-class pattern in `Appointments/` folder.
+- Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
 - Auth and login behavior currently implemented:
-	- registration is mechanic-only,
+	- registration is mechanic-only and admin-only,
 	- login accepts email or phone number,
 	- email inputs are trimmed and normalized to lowercase,
 	- Hungarian phone inputs accept common formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaces/punctuation) and normalize to canonical national form with strict prefix/length rules (`361xxxxxxx`, `36(20|21|30|31|50|70)xxxxxxx`, and approved 2-digit geographic area prefixes),
@@ -217,7 +220,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
+- Frontend Scheduler page (summary strip reflects selected day when selected, otherwise today + calendar + intake quick section + month list), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Scheduler supports selected-day intake flow (`POST /api/appointments/intake`) with auto-derived scheduled datetime and due-datetime-only input, email customer lookup (`GET /api/customers/by-email`) with create fallback, appointment/vehicle editing via `PUT /api/appointments/{id}` (in edit mode, past appointments keep scheduled datetime fixed as display-only while other fields remain editable), due/overdue display, overdue detail-modal behavior (claim button hidden, admin add-mechanic hidden), calendar badge density rules (mobile day cells show max 1 badge; desktop shows max 3 + overflow `+N`), and immediate viewed-month/today list updates after intake creation via store upsert; sidebar default main nav order starts with Scheduler. Intake create-customer labels indicate optional middle name and phone. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
 - Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
 
 ## API Test Coverage Snapshot

@@ -7,6 +7,8 @@ public static partial class AppointmentEndpoints
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
         appointment.ScheduledDate,
+        appointment.IntakeCreatedAt,
+        appointment.DueDateTime,
         appointment.TaskDescription,
         appointment.Status.ToString(),
         appointment.CompletedAt,

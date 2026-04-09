@@ -1,9 +1,10 @@
 import { memo, useState, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check } from 'lucide-react';
+import { Check, Clock3 } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../types/scheduler.types';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
+import { getDueState } from './due-date';
 
 interface AppointmentCardProps {
   readonly appointment: AppointmentDto;
@@ -29,6 +30,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((m) => m.id === currentMechanicId);
   const isCancelled = appointment.status === 'Cancelled';
+  const dueState = getDueState(appointment.dueDateTime);
 
   const handleClaim = useCallback(async () => {
     setIsClaiming(true);
@@ -77,6 +79,17 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       <div className="bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 text-sm border border-[#D8D2E9] dark:border-[#3A3154]">
         <p className="text-xs text-[#6A627F] dark:text-[#B9B0D3] mb-0.5">{t('scheduler.repairTask')}</p>
         <p className="break-words text-[#2C2440] dark:text-[#EDE8FA]">{appointment.taskDescription}</p>
+      </div>
+
+      {/* Due state */}
+      <div className="flex items-center justify-between rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 dark:border-[#3A3154] dark:bg-[#1A1A25]">
+        <span className="inline-flex items-center gap-1 text-xs text-[#6A627F] dark:text-[#B9B0D3]">
+          <Clock3 className="h-3.5 w-3.5" />
+          {t('scheduler.due.label')}
+        </span>
+        <span className={`text-xs font-semibold ${dueState.toneClassName}`}>
+          {t(dueState.labelKey, dueState.labelValues)}
+        </span>
       </div>
 
       {/* Mechanics + License plate */}
@@ -140,13 +153,13 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
   if (onClick) {
     return (
-      <button
-        type="button"
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+      <div
         onClick={onClick}
         className={`${cardClassName} w-full text-left`}
       >
         {cardContent}
-      </button>
+      </div>
     );
   }
 

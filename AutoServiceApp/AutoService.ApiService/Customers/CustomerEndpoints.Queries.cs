@@ -1,3 +1,4 @@
+using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +60,53 @@ public static partial class CustomerEndpoints
         return Results.Ok(dto);
     }
 
+    private static async Task<IResult> GetCustomerByEmailAsync(
+        string email,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (!ContactNormalization.TryNormalizeEmail(email, out var normalizedEmail))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidEmail,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var customer = await db.Customers
+            .AsNoTracking()
+            .Include(c => c.Vehicles)
+            .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
+
+        if (customer is null)
+        {
+            return Results.Problem(
+                detail: "Customer not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var dto = new SchedulerCustomerLookupDto(
+            customer.Id,
+            customer.Name.FirstName,
+            customer.Name.MiddleName,
+            customer.Name.LastName,
+            customer.Email,
+            customer.PhoneNumber,
+            customer.Vehicles
+                .OrderBy(v => v.LicensePlate)
+                .Select(v => new SchedulerVehicleLookupDto(
+                    v.Id,
+                    v.LicensePlate,
+                    v.Brand,
+                    v.Model,
+                    v.Year,
+                    v.MileageKm,
+                    v.EnginePowerHp,
+                    v.EngineTorqueNm))
+                .ToList());
+
+        return Results.Ok(dto);
+    }
+
     // Extended DTO for single-customer retrieval (includes vehicles).
     private sealed record CustomerWithVehiclesDto(
         int Id,
@@ -75,4 +123,23 @@ public static partial class CustomerEndpoints
         string Brand,
         string Model,
         int Year);
+
+    private sealed record SchedulerCustomerLookupDto(
+        int Id,
+        string FirstName,
+        string? MiddleName,
+        string LastName,
+        string Email,
+        string? PhoneNumber,
+        IReadOnlyList<SchedulerVehicleLookupDto> Vehicles);
+
+    private sealed record SchedulerVehicleLookupDto(
+        int Id,
+        string LicensePlate,
+        string Brand,
+        string Model,
+        int Year,
+        int MileageKm,
+        int EnginePowerHp,
+        int EngineTorqueNm);
 }

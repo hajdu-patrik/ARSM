@@ -114,6 +114,8 @@ public static partial class AppointmentEndpoints
         var appointment = new Appointment
         {
             ScheduledDate = scheduledDateUtc,
+            IntakeCreatedAt = DateTime.UtcNow,
+            DueDateTime = scheduledDateUtc,
             TaskDescription = taskDescription,
             Status = ProgresStatus.InProgress,
             VehicleId = vehicle.Id,

@@ -10,6 +10,8 @@ public static partial class AppointmentEndpoints
 
         group.MapGet(string.Empty, GetByMonthAsync);
         group.MapGet("/today", GetTodayAsync);
+        group.MapPost("/intake", CreateIntakeAsync);
+        group.MapPut("/{id}", UpdateAppointmentAsync);
         group.MapPut("/{id}/claim", ClaimAsync);
         group.MapDelete("/{id}/claim", UnclaimAsync);
         group.MapPut("/{id}/status", UpdateStatusAsync);

@@ -163,6 +163,8 @@ public static class DemoDataInitializer
             new()
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(2),
+                IntakeCreatedAt = DateTime.UtcNow,
+                DueDateTime = DateTime.UtcNow.AddDays(5),
                 TaskDescription = "Idoszakos olajcsere es altalanos atvizsgalas",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[0].Id,
@@ -171,6 +173,8 @@ public static class DemoDataInitializer
             new()
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(4),
+                IntakeCreatedAt = DateTime.UtcNow,
+                DueDateTime = DateTime.UtcNow.AddDays(7),
                 TaskDescription = "Fekrendszer ellenorzes es betetcsere",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[1].Id,
@@ -179,6 +183,8 @@ public static class DemoDataInitializer
             new()
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(-1),
+                IntakeCreatedAt = DateTime.UtcNow,
+                DueDateTime = DateTime.UtcNow.AddDays(2),
                 TaskDescription = "Motor diagnozis es kipufogo javitas",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[2].Id,
@@ -187,6 +193,8 @@ public static class DemoDataInitializer
             new()
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(-7),
+                IntakeCreatedAt = DateTime.UtcNow,
+                DueDateTime = DateTime.UtcNow.AddDays(-4),
                 TaskDescription = "Futomu beallitas es kormanygeometria",
                 Status = ProgresStatus.Completed,
                 VehicleId = vehicles[3].Id,
@@ -195,6 +203,8 @@ public static class DemoDataInitializer
             new()
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(-3),
+                IntakeCreatedAt = DateTime.UtcNow,
+                DueDateTime = DateTime.UtcNow,
                 TaskDescription = "Akkumulator csere es elektromos hiba keresese",
                 Status = ProgresStatus.Cancelled,
                 VehicleId = vehicles[4].Id,
@@ -264,6 +274,8 @@ public static class DemoDataInitializer
             appointments.Add(new Appointment
             {
                 ScheduledDate = scheduledDateUtc,
+                IntakeCreatedAt = scheduledDateUtc.AddHours(-2),
+                DueDateTime = scheduledDateUtc.AddDays(3),
                 TaskDescription = $"{generatedTaskTemplates[i % generatedTaskTemplates.Length]} #{i + 1}",
                 Status = status,
                 CompletedAt = completedAt,

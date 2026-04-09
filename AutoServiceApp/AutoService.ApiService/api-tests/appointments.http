@@ -9,7 +9,10 @@
 @SecondaryMechanicId = 3
 @UnknownMechanicId = 99999
 @UnknownVehicleId = 99999
+@KnownCustomerEmail = anna.toth@gmail.com
+@NewSchedulerCustomerEmail = scheduler.intake.new@example.com
 @PastCancelledApptId = 1
+@PastScheduledApptId = 4
 @SingleAssignedApptId = 2
 
 #  APPOINTMENTS
@@ -29,12 +32,119 @@ Content-Type: application/json
 ###
 
 ### [Positive][Appointments] List month appointments (2026-04)
+# Response items include intakeCreatedAt and dueDateTime.
 GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
 
 ###
 
 ### [Positive][Appointments] List today's appointments
 GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+###
+
+### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-21T08:30:00",
+  "dueDateTime": "2026-04-23T16:00:00",
+  "taskDescription": "Scheduler intake existing customer and vehicle"
+}
+
+###
+
+### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{NewSchedulerCustomerEmail}}",
+  "customerFirstName": "Scheduler",
+  "customerMiddleName": null,
+  "customerLastName": "New",
+  "customerPhoneNumber": "+36301239876",
+  "vehicle": {
+    "licensePlate": "SCH-2026",
+    "brand": "Skoda",
+    "model": "Octavia",
+    "year": 2020,
+    "mileageKm": 98500,
+    "enginePowerHp": 150,
+    "engineTorqueNm": 320
+  },
+  "scheduledDate": "2026-04-22T10:00:00",
+  "dueDateTime": "2026-04-25T15:00:00",
+  "taskDescription": "Scheduler intake new customer and vehicle"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-23T10:00:00",
+  "dueDateTime": "2026-04-24T10:00:00",
+  "taskDescription": "Scheduler status input should be blocked",
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake requires exactly one vehicle path (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "vehicle": {
+    "licensePlate": "BAD-000",
+    "brand": "Ford",
+    "model": "Focus",
+    "year": 2018,
+    "mileageKm": 120000,
+    "enginePowerHp": 125,
+    "engineTorqueNm": 200
+  },
+  "scheduledDate": "2026-04-23T10:00:00",
+  "dueDateTime": "2026-04-24T10:00:00",
+  "taskDescription": "Scheduler invalid vehicle path selection"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects dueDateTime earlier than scheduledDate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-24T09:59:59",
+  "taskDescription": "Scheduler invalid due date ordering"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects past scheduled date (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2020-01-01T09:00:00",
+  "dueDateTime": "2020-01-03T10:00:00",
+  "taskDescription": "Scheduler intake with past date should be rejected"
+}
 
 ###
 
@@ -152,6 +262,7 @@ Content-Type: application/json
 ###
 
 ### [Positive][Appointments] Admin creates appointment for customer
+# Response includes intakeCreatedAt and dueDateTime (dueDateTime defaults to scheduledDate for this path).
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Content-Type: application/json
 
@@ -160,6 +271,63 @@ Content-Type: application/json
   "scheduledDate": "2026-04-18T10:30:00",
   "taskDescription": "Uj idopont felvetele admin oldalon",
   "mechanicIds": [{{PrimaryMechanicId}}, {{SecondaryMechanicId}}]
+}
+
+###
+
+### [Positive][Appointments] Admin updates appointment and vehicle fields
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "scheduledDate": "2026-04-20T10:45:00",
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 112,
+  "engineTorqueNm": 252
+}
+
+###
+
+### [Negative][Appointments] Admin update fails when appointment does not exist (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
+Content-Type: application/json
+
+{
+  "scheduledDate": "2026-04-20T10:45:00",
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 112,
+  "engineTorqueNm": 252
+}
+
+###
+
+### [Negative][Appointments] Admin update cannot change ScheduledDate for past appointments (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
+Content-Type: application/json
+
+{
+  "scheduledDate": "2030-01-01T10:45:00",
+  "dueDateTime": "2030-01-03T16:15:00",
+  "taskDescription": "Past appointment scheduled date change should be rejected",
+  "licensePlate": "DEF-404",
+  "brand": "Ford",
+  "model": "Focus",
+  "year": 2016,
+  "mileageKm": 167800,
+  "enginePowerHp": 125,
+  "engineTorqueNm": 200
 }
 
 ###

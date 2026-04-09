@@ -221,6 +221,8 @@ WHERE v."Id" IS NULL;
 -- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
+       a."IntakeCreatedAt",
+       a."DueDateTime",
        a."Status",
        a."TaskDescription",
        v."Id" AS vehicle_id,
@@ -230,6 +232,8 @@ SELECT a."Id" AS appointment_id,
        COUNT(am."MechanicId") AS assigned_mechanic_count,
        CASE
            WHEN COUNT(am."MechanicId") = 0 THEN 'FAIL: created appointment has zero mechanics'
+           WHEN a."IntakeCreatedAt" IS NULL THEN 'FAIL: missing IntakeCreatedAt'
+           WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
            ELSE 'OK'
        END AS assignment_integrity
 FROM appointments a
@@ -237,5 +241,84 @@ JOIN vehicles v ON v."Id" = a."VehicleId"
 JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
 LEFT JOIN appointmentmechanics am ON am."AppointmentId" = a."Id"
 WHERE a."TaskDescription" ILIKE '%idopont felvetele admin oldalon%'
-GROUP BY a."Id", a."ScheduledDate", a."Status", a."TaskDescription", v."Id", v."LicensePlate", c."Id", c."Email"
+GROUP BY a."Id", a."ScheduledDate", a."IntakeCreatedAt", a."DueDateTime", a."Status", a."TaskDescription", v."Id", v."LicensePlate", c."Id", c."Email"
 ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
+
+
+-- ------------------------------------------------------------
+-- 16. INTAKE PAST-DATE REJECTION CHECK
+--     The negative intake payload with this task description must not persist.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS unexpected_persisted_appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription"
+FROM appointments a
+WHERE a."TaskDescription" = 'Scheduler intake with past date should be rejected';
+
+
+-- ------------------------------------------------------------
+-- 15. APPOINTMENT UPDATE COVERAGE
+--     Use after PUT /api/appointments/{id} to verify appointment + vehicle edits.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."DueDateTime",
+       a."TaskDescription",
+       v."LicensePlate",
+       v."Brand",
+       v."Model",
+       v."Year",
+       v."MileageKm",
+       v."EnginePowerHp",
+       v."EngineTorqueNm",
+       CASE
+           WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
+           WHEN v."Year" < 1886 OR v."Year" > 2100 THEN 'FAIL: vehicle year out of range'
+           WHEN v."MileageKm" < 0 OR v."EnginePowerHp" < 0 OR v."EngineTorqueNm" < 0 THEN 'FAIL: negative vehicle values'
+           ELSE 'OK'
+       END AS update_integrity
+FROM appointments a
+JOIN vehicles v ON v."Id" = a."VehicleId"
+WHERE a."TaskDescription" ILIKE '%Frissitett feladat leiras az admin szerkeszteshez%'
+ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
+
+
+-- ------------------------------------------------------------
+-- 14. SCHEDULER INTAKE COVERAGE
+--     Use after POST /api/appointments/intake to verify customer/vehicle intake writes.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."IntakeCreatedAt",
+       a."DueDateTime",
+       a."Status",
+       a."TaskDescription",
+       c."Email" AS customer_email,
+       v."LicensePlate",
+       COUNT(am."MechanicId") AS assigned_mechanic_count,
+       CASE
+           WHEN a."IntakeCreatedAt" IS NULL THEN 'FAIL: missing IntakeCreatedAt'
+           WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
+           WHEN COUNT(am."MechanicId") <> 1 THEN 'WARN: expected one auto-assigned mechanic from intake caller'
+           ELSE 'OK'
+       END AS intake_integrity
+FROM appointments a
+JOIN vehicles v ON v."Id" = a."VehicleId"
+JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
+LEFT JOIN appointmentmechanics am ON am."AppointmentId" = a."Id"
+WHERE a."TaskDescription" ILIKE '%Scheduler intake%'
+GROUP BY a."Id", a."ScheduledDate", a."IntakeCreatedAt", a."DueDateTime", a."Status", a."TaskDescription", c."Email", v."LicensePlate"
+ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
+
+
+-- ------------------------------------------------------------
+-- 17. PAST APPOINTMENT SCHEDULED-DATE UPDATE REJECTION CHECK
+--     The negative PUT /api/appointments/{id} payload with this task description must not persist.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS unexpectedly_updated_appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription"
+FROM appointments a
+WHERE a."TaskDescription" = 'Past appointment scheduled date change should be rejected';

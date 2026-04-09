@@ -13,6 +13,7 @@ public static partial class CustomerEndpoints
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();
 
         group.MapGet("/", ListCustomersAsync);
+        group.MapGet("/by-email", GetCustomerByEmailAsync);
         group.MapGet("/{id:int}", GetCustomerAsync);
         group.MapPost("/", CreateCustomerAsync).RequireAuthorization("AdminOnly");
         group.MapPut("/{id:int}", UpdateCustomerAsync).RequireAuthorization("AdminOnly");

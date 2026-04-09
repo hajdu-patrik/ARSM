@@ -29,6 +29,8 @@ public static partial class AppointmentEndpoints
     internal sealed record AppointmentDto(
         int Id,
         DateTime ScheduledDate,
+        DateTime IntakeCreatedAt,
+        DateTime DueDateTime,
         string TaskDescription,
         string Status,
         DateTime? CompletedAt,
@@ -41,6 +43,40 @@ public static partial class AppointmentEndpoints
         DateTime ScheduledDate,
         string TaskDescription,
         IReadOnlyList<int> MechanicIds);
+
+    internal sealed record SchedulerCreateIntakeRequest(
+        string CustomerEmail,
+        string? CustomerFirstName,
+        string? CustomerMiddleName,
+        string? CustomerLastName,
+        string? CustomerPhoneNumber,
+        int? VehicleId,
+        SchedulerNewVehicleRequest? Vehicle,
+        DateTime ScheduledDate,
+        DateTime DueDateTime,
+        string TaskDescription,
+        string? Status);
+
+    internal sealed record SchedulerNewVehicleRequest(
+        string LicensePlate,
+        string Brand,
+        string Model,
+        int Year,
+        int MileageKm,
+        int EnginePowerHp,
+        int EngineTorqueNm);
+
+    internal sealed record UpdateAppointmentRequest(
+        DateTime ScheduledDate,
+        DateTime DueDateTime,
+        string TaskDescription,
+        string LicensePlate,
+        string Brand,
+        string Model,
+        int Year,
+        int MileageKm,
+        int EnginePowerHp,
+        int EngineTorqueNm);
 
     internal sealed record UpdateStatusRequest(string Status);
 }

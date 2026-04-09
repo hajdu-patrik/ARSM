@@ -18,8 +18,8 @@ interface NavItem {
 }
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
-  { key: 'tools', labelKey: 'nav.tools', icon: Wrench, path: '/tools' },
   { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
+  { key: 'tools', labelKey: 'nav.tools', icon: Wrench, path: '/tools' },
   { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
 ];
 

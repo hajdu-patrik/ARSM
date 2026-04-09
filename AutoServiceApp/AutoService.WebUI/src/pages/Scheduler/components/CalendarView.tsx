@@ -156,43 +156,69 @@ const CalendarViewComponent = memo(function CalendarView({
             {calendarDays.map((day) => {
               const dayNum = day.date.getDate();
               const isSelected = day.isCurrentMonth && selectedDay === dayNum;
+              const dayContent = (
+                <>
+                  <div className="flex items-center justify-center mb-0.5">
+                    {day.isToday ? (
+                      <span className="bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF] rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
+                        {day.date.getDate()}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-medium">{day.date.getDate()}</span>
+                    )}
+                  </div>
+                  {/* Appointment badges */}
+                  <div className="flex flex-wrap gap-0.5 justify-center">
+                    {day.appointments.slice(0, 1).map((appt) => (
+                      <span
+                        key={appt.id}
+                        className={`w-5 h-5 rounded-full text-white text-[9px] flex items-center justify-center font-bold md:hidden ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                        title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
+                      >
+                        {appt.vehicle.brand[0]}
+                      </span>
+                    ))}
+                    {day.appointments.slice(0, 3).map((appt) => (
+                      <span
+                        key={`desktop-${appt.id}`}
+                        className={`hidden md:flex w-5 h-5 rounded-full text-white text-[9px] items-center justify-center font-bold ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                        title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
+                      >
+                        {appt.vehicle.brand[0]}
+                      </span>
+                    ))}
+                    {day.appointments.length > 3 && (
+                      <span className="hidden md:inline text-[9px] text-[#6A627F] dark:text-[#B9B0D3] font-medium">
+                        +{day.appointments.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+
+              const dayClassName = `min-h-[2.5rem] p-1 rounded-lg ${
+                day.isCurrentMonth
+                  ? 'text-[#2C2440] dark:text-[#EDE8FA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]'
+                  : 'text-[#B9B0D3] dark:text-[#5E5672]'
+              } ${day.isToday ? 'bg-[#EFEBFA] dark:bg-[#241F33]' : ''} ${isSelected ? 'ring-2 ring-[#C9B3FF] dark:ring-[#7A66C7]' : ''}`;
+
+              if (day.isCurrentMonth && onDayClick) {
+                return (
+                  <button
+                    type="button"
+                    key={day.date.toISOString()}
+                    onClick={() => onDayClick(dayNum)}
+                    className={`${dayClassName} cursor-pointer text-left`}
+                  >
+                    {dayContent}
+                  </button>
+                );
+              }
+
               return (
-              <div
-                key={day.date.toISOString()}
-                onClick={day.isCurrentMonth && onDayClick ? () => onDayClick(dayNum) : undefined}
-                className={`min-h-[2.5rem] p-1 rounded-lg ${
-                  day.isCurrentMonth
-                    ? 'text-[#2C2440] dark:text-[#EDE8FA] cursor-pointer hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]'
-                    : 'text-[#B9B0D3] dark:text-[#5E5672]'
-                  } ${day.isToday ? 'bg-[#EFEBFA] dark:bg-[#241F33]' : ''} ${isSelected ? 'ring-2 ring-[#C9B3FF] dark:ring-[#7A66C7]' : ''}`}
-              >
-                <div className="flex items-center justify-center mb-0.5">
-                  {day.isToday ? (
-                    <span className="bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF] rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
-                      {day.date.getDate()}
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium">{day.date.getDate()}</span>
-                  )}
+                <div key={day.date.toISOString()} className={dayClassName}>
+                  {dayContent}
                 </div>
-                {/* Appointment badges */}
-                <div className="flex flex-wrap gap-0.5 justify-center">
-                  {day.appointments.slice(0, 3).map((appt) => (
-                    <span
-                      key={appt.id}
-                      className={`w-5 h-5 rounded-full text-white text-[9px] flex items-center justify-center font-bold ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
-                      title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
-                    >
-                      {appt.vehicle.brand[0]}
-                    </span>
-                  ))}
-                  {day.appointments.length > 3 && (
-                    <span className="text-[9px] text-[#6A627F] dark:text-[#B9B0D3] font-medium">
-                      +{day.appointments.length - 3}
-                    </span>
-                  )}
-                </div>
-              </div>
               );
             })}
           </div>

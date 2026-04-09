@@ -1,12 +1,14 @@
 import { memo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, X, UserPlus, LogOut } from 'lucide-react';
-import type { AppointmentDto, AppointmentStatus } from '../../../types/scheduler.types';
+import { Check, Clock3, LogOut, UserPlus, X } from 'lucide-react';
+import type { AppointmentDto, AppointmentStatus, UpdateAppointmentRequest } from '../../../types/scheduler.types';
 import { adminService } from '../../../services/admin.service';
 import type { MechanicListItem } from '../../../services/admin.service';
 import { Modal } from '../../../components/common/Modal';
+import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
+import { getDueState } from './due-date';
 
 interface AppointmentDetailModalProps {
   readonly appointment: AppointmentDto | null;
@@ -19,9 +21,38 @@ interface AppointmentDetailModalProps {
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
+  readonly onUpdate: (id: number, request: UpdateAppointmentRequest) => Promise<void>;
 }
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
+
+interface EditFormState {
+  scheduledDate: string;
+  dueDateTime: string;
+  taskDescription: string;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  year: string;
+  mileageKm: string;
+  enginePowerHp: string;
+  engineTorqueNm: string;
+}
+
+function toDatetimeLocalValue(isoValue: string): string {
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
 
 const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   appointment,
@@ -34,6 +65,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   onUnclaim,
   onAdminAssign,
   onAdminUnassign,
+  onUpdate,
 }: AppointmentDetailModalProps) {
   const { t, i18n } = useTranslation();
   const [isClaiming, setIsClaiming] = useState(false);
@@ -43,6 +75,34 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const [isAssigning, setIsAssigning] = useState(false);
   const [allMechanics, setAllMechanics] = useState<MechanicListItem[]>([]);
   const [selectedNewMechanicId, setSelectedNewMechanicId] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editErrorKey, setEditErrorKey] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+
+  useEffect(() => {
+    if (!appointment) {
+      setEditForm(null);
+      setIsEditing(false);
+      setEditErrorKey(null);
+      return;
+    }
+
+    setEditForm({
+      scheduledDate: toDatetimeLocalValue(appointment.scheduledDate),
+      dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),
+      taskDescription: appointment.taskDescription,
+      licensePlate: appointment.vehicle.licensePlate,
+      brand: appointment.vehicle.brand,
+      model: appointment.vehicle.model,
+      year: String(appointment.vehicle.year),
+      mileageKm: String(appointment.vehicle.mileageKm),
+      enginePowerHp: String(appointment.vehicle.enginePowerHp),
+      engineTorqueNm: String(appointment.vehicle.engineTorqueNm),
+    });
+    setIsEditing(false);
+    setEditErrorKey(null);
+  }, [appointment]);
 
   // Fetch mechanic list for admin assign dropdown
   useEffect(() => {
@@ -117,13 +177,121 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     }
   }, [onAdminAssign, appointment, selectedNewMechanicId]);
 
+  const handleEditField = useCallback((field: keyof EditFormState, value: string) => {
+    setEditForm((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!appointment || !editForm) {
+      return;
+    }
+
+    const isPastAppointment = new Date(appointment.scheduledDate).getTime() < Date.now();
+
+    const taskDescription = editForm.taskDescription.trim();
+    if (!taskDescription) {
+      setEditErrorKey('scheduler.intake.errors.taskRequired');
+      return;
+    }
+
+    if (!isPastAppointment && !editForm.scheduledDate) {
+      setEditErrorKey('scheduler.intake.errors.scheduledRequired');
+      return;
+    }
+
+    if (!editForm.dueDateTime) {
+      setEditErrorKey('scheduler.intake.errors.dueRequired');
+      return;
+    }
+
+    const scheduledMs = isPastAppointment
+      ? Date.parse(appointment.scheduledDate)
+      : Date.parse(editForm.scheduledDate);
+
+    if (Number.isNaN(scheduledMs)) {
+      setEditErrorKey('scheduler.intake.errors.scheduledRequired');
+      return;
+    }
+
+    const dueMs = Date.parse(editForm.dueDateTime);
+    if (Number.isNaN(dueMs)) {
+      setEditErrorKey('scheduler.intake.errors.dueRequired');
+      return;
+    }
+
+    const effectiveScheduledDateIso = new Date(scheduledMs).toISOString();
+    const dueDateTimeIso = new Date(dueMs).toISOString();
+
+    if (dueMs < scheduledMs) {
+      setEditErrorKey('scheduler.intake.errors.dueBeforeScheduled');
+      return;
+    }
+
+    if (!editForm.licensePlate.trim() || !editForm.brand.trim() || !editForm.model.trim()) {
+      setEditErrorKey('scheduler.intake.errors.vehicleRequiredFields');
+      return;
+    }
+
+    const year = Number(editForm.year);
+    const mileageKm = Number(editForm.mileageKm);
+    const enginePowerHp = Number(editForm.enginePowerHp);
+    const engineTorqueNm = Number(editForm.engineTorqueNm);
+
+    if (!Number.isInteger(year) || year < 1886 || year > 2100) {
+      setEditErrorKey('scheduler.intake.errors.vehicleYearInvalid');
+      return;
+    }
+
+    if (
+      Number.isNaN(mileageKm) || mileageKm < 0 ||
+      Number.isNaN(enginePowerHp) || enginePowerHp < 0 ||
+      Number.isNaN(engineTorqueNm) || engineTorqueNm < 0
+    ) {
+      setEditErrorKey('scheduler.intake.errors.vehicleNumberInvalid');
+      return;
+    }
+
+    const request: UpdateAppointmentRequest = {
+      scheduledDate: effectiveScheduledDateIso,
+      dueDateTime: dueDateTimeIso,
+      taskDescription,
+      licensePlate: editForm.licensePlate.trim(),
+      brand: editForm.brand.trim(),
+      model: editForm.model.trim(),
+      year,
+      mileageKm,
+      enginePowerHp,
+      engineTorqueNm,
+    };
+
+    setIsSaving(true);
+    setEditErrorKey(null);
+    try {
+      await onUpdate(appointment.id, request);
+      setIsEditing(false);
+    } catch {
+      setEditErrorKey('scheduler.detail.updateError');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appointment, editForm, onUpdate]);
+
   if (!appointment) return null;
 
   const { vehicle } = appointment;
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((m) => m.id === currentMechanicId);
   const isCancelled = appointment.status === 'Cancelled';
-  const shouldShowClaimButton = !isAssigned && !isCancelled;
+  const canEdit = isAdmin || isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((m) => m.id));
   const availableMechanics = allMechanics.filter((m) => !assignedMechanicIds.has(m.personId));
@@ -137,8 +305,57 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     minute: '2-digit',
   }).format(new Date(appointment.scheduledDate));
 
+  const dueDateLabel = new Intl.DateTimeFormat(i18n.language, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(appointment.dueDateTime));
+
+  const dueState = getDueState(appointment.dueDateTime);
+  const isExpired = dueState.isOverdue;
+  const isPastAppointment = new Date(appointment.scheduledDate).getTime() < Date.now();
+  const shouldShowClaimButton = !isAssigned && !isCancelled && !isExpired;
+
   const footer = (
     <div className="flex w-full flex-wrap items-center gap-2">
+      {canEdit && !isEditing && (
+        <button
+          onClick={() => {
+            setIsEditing(true);
+            setEditErrorKey(null);
+          }}
+          className="rounded-xl border border-[#D8D2E9] px-3 py-1.5 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#E6DCF8] dark:border-[#3A3154] dark:text-[#EDE8FA] dark:hover:bg-[#322B47]"
+        >
+          {t('scheduler.detail.edit')}
+        </button>
+      )}
+
+      {isEditing && (
+        <>
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setEditErrorKey(null);
+            }}
+            disabled={isSaving}
+            className="rounded-xl border border-[#D8D2E9] px-3 py-1.5 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#E6DCF8] disabled:opacity-50 dark:border-[#3A3154] dark:text-[#EDE8FA] dark:hover:bg-[#322B47]"
+          >
+            {t('scheduler.intake.cancel')}
+          </button>
+          <button
+            onClick={() => {
+              void handleSave();
+            }}
+            disabled={isSaving}
+            className="rounded-xl bg-[#C9B3FF] px-3 py-1.5 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+          >
+            {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
+          </button>
+        </>
+      )}
+
       {isAssigned && (
         <select
           value={appointment.status}
@@ -182,35 +399,148 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       footer={footer}
     >
       <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1">
+        {editErrorKey && <FormErrorMessage message={editErrorKey} />}
+
         {/* Status + date row */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <StatusBadge status={appointment.status} />
-          <span className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">
-            {formattedDate}
-          </span>
+          {isEditing && editForm && !isPastAppointment ? (
+            <label className="flex min-w-[18rem] flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.scheduledDate')}</span>
+              <input
+                type="datetime-local"
+                value={editForm.scheduledDate}
+                onChange={(event) => handleEditField('scheduledDate', event.target.value)}
+                className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+              />
+            </label>
+          ) : (
+            <span className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+              {formattedDate}
+            </span>
+          )}
+        </div>
+
+        {/* Due state */}
+        <div className={`rounded-xl border px-4 py-3 ${dueState.isOverdue ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30' : 'border-[#D8D2E9] bg-[#EFEBFA] dark:border-[#3A3154] dark:bg-[#241F33]'}`}>
+          <div className="flex items-center gap-2 text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+            <Clock3 className="h-4 w-4" />
+            {t('scheduler.due.label')}
+          </div>
+          <p className={`mt-1 text-lg font-bold ${dueState.toneClassName}`}>
+            {t(dueState.labelKey, dueState.labelValues)}
+          </p>
+          <p className="mt-0.5 text-xs text-[#6A627F] dark:text-[#B9B0D3]">
+            {t('scheduler.due.exact', { date: dueDateLabel })}
+          </p>
+          {isEditing && editForm && (
+            <label className="mt-2 flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.dueDateTime')}</span>
+              <input
+                type="datetime-local"
+                value={editForm.dueDateTime}
+                onChange={(event) => handleEditField('dueDateTime', event.target.value)}
+                className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+              />
+            </label>
+          )}
         </div>
 
         {/* Vehicle section */}
         <div>
           <h4 className="text-base font-semibold text-[#2C2440] dark:text-[#EDE8FA] mb-2">
-            {vehicle.brand} {vehicle.model} ({vehicle.year})
+            {isEditing && editForm
+              ? `${editForm.brand} ${editForm.model} (${editForm.year})`
+              : `${vehicle.brand} ${vehicle.model} (${vehicle.year})`}
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
               <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.licensePlate')}</span>
-              <span className="truncate text-sm font-mono text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.licensePlate}</span>
+              {isEditing && editForm ? (
+                <input
+                  value={editForm.licensePlate}
+                  onChange={(event) => handleEditField('licensePlate', event.target.value.toUpperCase())}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm font-mono uppercase dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm font-mono text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.licensePlate}</span>
+              )}
             </div>
             <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
-              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.specs.mileage', { value: '' }).trim()}</span>
-              <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.mileageKm.toLocaleString()} km</span>
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleBrand')}</span>
+              {isEditing && editForm ? (
+                <input
+                  value={editForm.brand}
+                  onChange={(event) => handleEditField('brand', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.brand}</span>
+              )}
             </div>
             <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
-              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.specs.power', { value: '' }).trim()}</span>
-              <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.enginePowerHp} HP</span>
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleModel')}</span>
+              {isEditing && editForm ? (
+                <input
+                  value={editForm.model}
+                  onChange={(event) => handleEditField('model', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.model}</span>
+              )}
             </div>
             <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
-              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.specs.torque', { value: '' }).trim()}</span>
-              <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.engineTorqueNm} Nm</span>
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleYear')}</span>
+              {isEditing && editForm ? (
+                <input
+                  type="number"
+                  value={editForm.year}
+                  onChange={(event) => handleEditField('year', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.year}</span>
+              )}
+            </div>
+            <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleMileageKm')}</span>
+              {isEditing && editForm ? (
+                <input
+                  type="number"
+                  value={editForm.mileageKm}
+                  onChange={(event) => handleEditField('mileageKm', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.mileageKm.toLocaleString()} km</span>
+              )}
+            </div>
+            <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleEnginePowerHp')}</span>
+              {isEditing && editForm ? (
+                <input
+                  type="number"
+                  value={editForm.enginePowerHp}
+                  onChange={(event) => handleEditField('enginePowerHp', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.enginePowerHp} HP</span>
+              )}
+            </div>
+            <div className="flex min-w-0 items-center justify-between gap-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
+              <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleEngineTorqueNm')}</span>
+              {isEditing && editForm ? (
+                <input
+                  type="number"
+                  value={editForm.engineTorqueNm}
+                  onChange={(event) => handleEditField('engineTorqueNm', event.target.value)}
+                  className="w-40 rounded border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+                />
+              ) : (
+                <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]">{vehicle.engineTorqueNm} Nm</span>
+              )}
             </div>
           </div>
         </div>
@@ -219,7 +549,16 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         <div>
           <h4 className="text-sm font-medium text-[#6A627F] dark:text-[#B9B0D3] mb-1">{t('scheduler.detail.task')}</h4>
           <div className="bg-[#EFEBFA] dark:bg-[#241F33] rounded-lg px-3 py-2 border border-[#D8D2E9] dark:border-[#3A3154]">
-            <p className="break-words text-sm text-[#2C2440] dark:text-[#EDE8FA]">{appointment.taskDescription}</p>
+            {isEditing && editForm ? (
+              <textarea
+                value={editForm.taskDescription}
+                onChange={(event) => handleEditField('taskDescription', event.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm text-[#2C2440] dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA]"
+              />
+            ) : (
+              <p className="break-words text-sm text-[#2C2440] dark:text-[#EDE8FA]">{appointment.taskDescription}</p>
+            )}
           </div>
         </div>
 
@@ -312,7 +651,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           )}
 
           {/* Admin: Add mechanic section */}
-          {isAdmin && (
+          {isAdmin && !isExpired && (
             <div className="mt-3">
               <h5 className="text-xs font-medium text-[#6A627F] dark:text-[#B9B0D3] mb-1.5 flex items-center gap-1">
                 <UserPlus className="w-3.5 h-3.5" />

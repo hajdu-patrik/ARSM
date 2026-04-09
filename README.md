@@ -90,7 +90,7 @@ Domain rules are maintained in parallel for both tools:
 - Access and refresh tokens are stored in secure HttpOnly cookies, with refresh token rotation and server-side persistence (hashed).
 - Auth endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
 - Appointment endpoints: `GET /api/appointments`, `GET /api/appointments/today`, `PUT /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`.
-- Dashboard access is for mechanics only. After login, mechanics land on a Scheduler page with a planner space (today's appointments) and a monthly calendar view.
+- Dashboard access is for mechanics only. After login, mechanics land on a Scheduler page with a compact today summary strip, monthly calendar view, intake quick section, and monthly appointment list.
 - Sensitive operational/security details are intentionally not published in this README.
 
 ---

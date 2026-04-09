@@ -19,12 +19,28 @@ interface SchedulerState {
 }
 
 export const useSchedulerStore = create<SchedulerState>((set) => {
-  const now = new Date();
+  const initNow = new Date();
+
+  const isSameDay = (date: Date, year: number, month: number, day: number) => {
+    return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
+  };
+
+  const upsertById = (appointments: AppointmentDto[], updated: AppointmentDto): AppointmentDto[] => {
+    const existingIndex = appointments.findIndex((appointment) => appointment.id === updated.id);
+    if (existingIndex === -1) {
+      return [...appointments, updated];
+    }
+
+    const copy = [...appointments];
+    copy[existingIndex] = updated;
+    return copy;
+  };
+
   return {
     todayAppointments: [],
     monthAppointments: [],
-    calendarYear: now.getFullYear(),
-    calendarMonth: now.getMonth() + 1,
+    calendarYear: initNow.getFullYear(),
+    calendarMonth: initNow.getMonth() + 1,
     isLoadingToday: false,
     isLoadingMonth: false,
     error: null,
@@ -32,14 +48,30 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
     setMonthAppointments: (appts) => set({ monthAppointments: appts }),
     setCalendarMonth: (year, month) => set({ calendarYear: year, calendarMonth: month }),
     upsertAppointment: (updated) =>
-      set((state) => ({
-        todayAppointments: state.todayAppointments.map((a) =>
-          a.id === updated.id ? updated : a
-        ),
-        monthAppointments: state.monthAppointments.map((a) =>
-          a.id === updated.id ? updated : a
-        ),
-      })),
+      set((state) => {
+        const now = new Date();
+        const scheduled = new Date(updated.scheduledDate);
+
+        const shouldBeInToday = isSameDay(
+          scheduled,
+          now.getFullYear(),
+          now.getMonth() + 1,
+          now.getDate(),
+        );
+
+        const shouldBeInViewedMonth =
+          scheduled.getFullYear() === state.calendarYear &&
+          scheduled.getMonth() + 1 === state.calendarMonth;
+
+        return {
+          todayAppointments: shouldBeInToday
+            ? upsertById(state.todayAppointments, updated)
+            : state.todayAppointments,
+          monthAppointments: shouldBeInViewedMonth
+            ? upsertById(state.monthAppointments, updated)
+            : state.monthAppointments,
+        };
+      }),
     setIsLoadingToday: (isLoadingToday) => set({ isLoadingToday }),
     setIsLoadingMonth: (isLoadingMonth) => set({ isLoadingMonth }),
     setError: (error) => set({ error }),

@@ -12,8 +12,8 @@
   - `Vehicle` 1..* `Appointment`
   - `Appointment` *..*  `Mechanic` (join table)
 - `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress`.
-- `Appointment` entity has `DateTime? CompletedAt` and `DateTime? CanceledAt`; status transitions auto-set/clear these timestamps.
-- `AppointmentDto` includes `CompletedAt` and `CanceledAt` fields.
+- `Appointment` entity has `DateTime IntakeCreatedAt`, `DateTime DueDateTime`, `DateTime? CompletedAt`, and `DateTime? CanceledAt`; status transitions auto-set/clear the completion/cancel timestamps.
+- `AppointmentDto` includes `IntakeCreatedAt`, `DueDateTime`, `CompletedAt`, and `CanceledAt` fields.
 - Never expose EF entities directly from API boundaries — use DTO contracts.
 
 ## EF Core
@@ -21,7 +21,7 @@
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL` — use `options.UseNpgsql(...)`.
 - Model config centralized in `Data/AutoServiceDbContext.cs`.
 - New migrations go in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Admin role seeding is idempotent and runs on every startup (before the "is data already seeded?" guard), ensuring the `"Admin"` Identity role exists and is assigned to the first mechanic (Gabor Kovacs).
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
@@ -73,6 +73,8 @@
 
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
+- `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; rejects scheduled dates in the past, validates due datetime, resolves customer by email (create fallback), and auto-assigns the requesting mechanic
+- `PUT /api/appointments/{id}` (authorized) — update appointment and related vehicle fields (customer fields unchanged); allowed for assigned mechanics and admins; rejects ScheduledDate changes when the appointment is already in the past
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment; returns 422 if appointment is Cancelled
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns 422 if appointment is Cancelled or if unassign would leave the appointment without mechanics
@@ -84,6 +86,7 @@
 ## Customer Endpoints (Current)
 
 - `GET /api/customers` (authorized) — list all customers (id, name, email, phone, vehicle count)
+- `GET /api/customers/by-email?email=` (authorized) — scheduler customer lookup by normalized email; returns customer with vehicle list
 - `GET /api/customers/{id}` (authorized) — get single customer with vehicle list
 - `POST /api/customers` (authorized, AdminOnly) — create customer record (firstName, middleName?, lastName, email, phoneNumber?)
 - `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
@@ -128,7 +131,7 @@
 
 ## Security Middleware (must preserve order)
 
-`UseHttpsRedirection` → `UseHsts` (non-Dev) → login ban middleware → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`
+`UseHsts` (non-Dev) → `UseHttpsRedirection` → login ban middleware → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`
 
 ## Configuration
 

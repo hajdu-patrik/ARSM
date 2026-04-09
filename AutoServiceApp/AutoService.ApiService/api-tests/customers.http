@@ -53,6 +53,26 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers
 
 ###
 
+### [Positive][Customers] Lookup customer by email for scheduler flow (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=anna.toth@gmail.com
+
+###
+
+### [Positive][Customers] Lookup customer by email with casing/whitespace normalization (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20ANNA.TOTH@gmail.com%20
+
+###
+
+### [Negative][Customers] Lookup customer by invalid email format (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=not-an-email
+
+###
+
+### [Negative][Customers] Lookup customer by unknown email (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=unknown.scheduler.lookup@example.com
+
+###
+
 ### [Negative][Customers] Unauthenticated list customers (401 expected)
 # NOTE: Run this after manually clearing cookies / in a fresh session.
 # Uncomment to use:

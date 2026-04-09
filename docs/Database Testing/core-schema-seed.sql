@@ -103,9 +103,12 @@ ORDER BY v."Id";
 
 -- ------------------------------------------------------------
 -- 8. APPOINTMENTS — with vehicle and customer
+--    Includes intake and due timestamps.
 -- ------------------------------------------------------------
 SELECT a."Id"           AS appt_id,
        a."ScheduledDate",
+  a."IntakeCreatedAt",
+  a."DueDateTime",
        a."Status",
        a."TaskDescription",
        v."LicensePlate",

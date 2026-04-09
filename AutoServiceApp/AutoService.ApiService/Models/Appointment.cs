@@ -17,6 +17,12 @@ public class Appointment
 
     // UTC timestamp of the planned service date.
     public DateTime ScheduledDate { get; set; }
+
+    // UTC timestamp when the intake record was created.
+    public DateTime IntakeCreatedAt { get; set; } = DateTime.UtcNow;
+
+    // UTC deadline for completing the appointment.
+    public DateTime DueDateTime { get; set; }
     
     [MaxLength(200)]
     public required string TaskDescription { get; set; }

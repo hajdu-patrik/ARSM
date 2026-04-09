@@ -16,8 +16,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - `Vehicle` 1..* `Appointment`,
   - `Appointment` *..* `Mechanic` (join table).
 - `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress` (there is no `Scheduled` value).
-- `Appointment` entity has `DateTime? CompletedAt` and `DateTime? CanceledAt`; status transitions auto-set/clear these timestamps.
-- `AppointmentDto` includes `CompletedAt` and `CanceledAt` fields.
+- `Appointment` entity has `DateTime IntakeCreatedAt`, `DateTime DueDateTime`, `DateTime? CompletedAt`, and `DateTime? CanceledAt`; status transitions auto-set/clear completion/cancel timestamps.
+- `AppointmentDto` includes `IntakeCreatedAt`, `DueDateTime`, `CompletedAt`, and `CanceledAt` fields.
 - Use DTO contracts at API boundaries, do not expose EF entities directly.
 - Prefer async EF methods and cancellation tokens.
 - Place new migrations in Data/Migrations.
@@ -46,7 +46,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 ## API Endpoints (Current)
 
-- `POST /api/auth/register` – Mechanic-only registration; returns IdentityUserId + PersonId + PersonType + Email.
+- `POST /api/auth/register` – Mechanic registration endpoint (AdminOnly); returns IdentityUserId + PersonId + PersonType + Email.
 - `POST /api/auth/login` – Email or phone + password → sets access + refresh cookies and returns profile info + expiration time.
 - `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie.
 - `POST /api/auth/logout` – Revokes refresh token session, denylists current JWT `jti`, clears auth cookies.
@@ -78,6 +78,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
 
 - `GET /api/customers` — List all customers (id, name, email, phone, vehicleCount).
+- `GET /api/customers/by-email?email=` — Scheduler lookup by normalized customer email. Returns customer details with vehicles; `404` if not found, `422` for invalid email.
 - `GET /api/customers/{id}` — Get single customer with embedded vehicle list.
 - `POST /api/customers` (AdminOnly) — Create a customer record (firstName, middleName?, lastName, email, phoneNumber?). Returns 201 Created. Returns 409 on duplicate email, 422 on missing required fields.
 - `PUT /api/customers/{id}` (AdminOnly) — Update customer record. Returns 204 No Content. Returns 404/409/422 as appropriate.
@@ -100,6 +101,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
+- `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Rejects scheduled dates in the past. Looks up customer by normalized email (creates customer when missing), accepts either `vehicleId` or new `vehicle` payload, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
+- `PUT /api/appointments/{id}` — Update appointment and related vehicle fields (`scheduledDate`, `dueDateTime`, `taskDescription`, and vehicle fields). Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. Rejects `scheduledDate` changes when the appointment is already in the past.
 - `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment. Returns 409 if already claimed, 422 if appointment is Cancelled.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, 422 if appointment is Cancelled or if unassign would leave the appointment without assigned mechanics.
@@ -107,7 +110,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned, 422 if appointment is Cancelled.
 - `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, 422 if appointment is Cancelled or if removal would leave the appointment without assigned mechanics.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
-- Appointment DTOs: `AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`.
+- Appointment DTOs: `AppointmentDto` (includes `IntakeCreatedAt` and `DueDateTime`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `SchedulerCreateIntakeRequest`.
 - Endpoint files follow partial-class pattern in `Appointments/` folder (mirroring `Auth/` structure).
 
 ## API Documentation
