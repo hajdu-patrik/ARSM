@@ -9,6 +9,8 @@ public static partial class AppointmentEndpoints
         appointment.ScheduledDate,
         appointment.TaskDescription,
         appointment.Status.ToString(),
+        appointment.CompletedAt,
+        appointment.CanceledAt,
         new VehicleDto(
             appointment.Vehicle.Id,
             appointment.Vehicle.LicensePlate,
@@ -28,6 +30,7 @@ public static partial class AppointmentEndpoints
                 m.Name.ToString(),
                 m.Email,
                 m.Specialization.ToString(),
-                m.Expertise.Select(e => e.ToString()).ToList()))
+                m.Expertise.Select(e => e.ToString()).ToList(),
+                m.ProfilePicture is not null && m.ProfilePictureContentType is not null))
             .ToList());
 }

@@ -5,6 +5,7 @@ import { adminService } from '../../../../services/admin.service';
 import { useToastStore } from '../../../../store/toast.store';
 import { Modal } from '../../../../components/common/Modal';
 import type { MechanicListItem } from '../../../../services/admin.service';
+import { MechanicAvatar } from '../../../Scheduler/components/MechanicAvatar';
 
 interface MechanicListSectionProps {
   readonly refreshKey: number;
@@ -76,38 +77,50 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
           <p className="text-sm text-[#5E5672] dark:text-[#CFC5EA]">{t('admin.noMechanics')}</p>
         ) : (
           <div className="space-y-3">
-            {mechanics.map((mechanic) => (
-              <div
-                key={mechanic.personId}
-                className="flex items-center justify-between rounded-xl border border-[#D8D2E9] bg-white px-4 py-3 dark:border-[#3A3154] dark:bg-[#1A1A25]"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-[#2C2440] dark:text-[#EDE8FA] truncate">
-                      {mechanic.lastName} {mechanic.firstName}
-                      {mechanic.middleName ? ` ${mechanic.middleName}` : ''}
-                    </p>
-                    {mechanic.isAdmin && (
-                      <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-[#5E5672] dark:text-[#CFC5EA] truncate">{mechanic.email}</p>
-                </div>
+            {mechanics.map((mechanic) => {
+              const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
+                .filter(Boolean)
+                .join(' ');
 
-                {!mechanic.isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => openDeleteModal(mechanic)}
-                    title={t('admin.deleteMechanic')}
-                    className="ml-3 flex-shrink-0 rounded-lg p-2 text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+              return (
+                <div
+                  key={mechanic.personId}
+                  className="flex items-start gap-3 rounded-xl border border-[#D8D2E9] bg-white px-4 py-3 dark:border-[#3A3154] dark:bg-[#1A1A25] sm:items-center"
+                >
+                  <MechanicAvatar
+                    mechanicId={mechanic.personId}
+                    fullName={displayName}
+                    hasProfilePicture={true}
+                    sizeClassName="h-10 w-10 text-sm"
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-medium text-[#2C2440] dark:text-[#EDE8FA]">
+                        {displayName}
+                      </p>
+                      {mechanic.isAdmin && (
+                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-[#5E5672] dark:text-[#CFC5EA]">{mechanic.email}</p>
+                  </div>
+
+                  {!mechanic.isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => openDeleteModal(mechanic)}
+                      title={t('admin.deleteMechanic')}
+                      className="ml-auto flex-shrink-0 rounded-lg p-2 text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -131,6 +131,94 @@ Content-Type: application/json
 
 ###
 
+### [Negative][Customers] Create customer with firstName containing a space (422 expected)
+# "First name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "firstname.space.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with firstName containing a digit (422 expected)
+# "First name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "John2",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "firstname.digit.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with lastName containing a special character (422 expected)
+# "Last name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": null,
+  "lastName": "O'Brien",
+  "email": "lastname.apostrophe.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with middleName containing a space (422 expected)
+# "Middle name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": "Van Der",
+  "lastName": "Customer",
+  "email": "middlename.space.customer@example.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with invalid email format (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "middleName": null,
+  "lastName": "Email",
+  "email": "invalid-email-format",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with invalid Hungarian phone format (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "middleName": null,
+  "lastName": "Phone",
+  "email": "invalid.customer.phone@example.com",
+  "phoneNumber": "12345"
+}
+
+###
+
 ### [Negative][Customers] Create customer with duplicate email (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Content-Type: application/json
@@ -228,6 +316,79 @@ Content-Type: application/json
   "lastName": "Toth",
   "email": "anna.toth@gmail.com",
   "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with firstName containing a space (422 expected)
+# "First name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with lastName containing a digit (422 expected)
+# "Last name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth2",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with middleName containing an apostrophe (422 expected)
+# "Middle name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": "O'Maria",
+  "lastName": "Toth",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with invalid email format (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "invalid-email-format",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with invalid Hungarian phone format (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "anna.toth@gmail.com",
+  "phoneNumber": "12345"
 }
 
 ###

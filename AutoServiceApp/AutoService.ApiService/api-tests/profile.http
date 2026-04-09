@@ -11,6 +11,7 @@
 @ProfileMechanicEmail = {{MatrixEmailOnly}}
 @ProfileCurrentPassword = {{TestPassword}}
 @ProfileNewPassword = Test@12345A
+@MechanicPersonIdForPicture = 1
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -28,13 +29,112 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile
 
 ###
 
-### [Positive][Profile] Update own profile
+### [Positive][Profile] Update own profile (middle name only)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
 {
   "email": null,
   "phoneNumber": null,
+  "middleName": "TestMiddle"
+}
+
+###
+
+### [Positive][Profile] Update first and last name
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "firstName": "UpdatedFirst",
+  "lastName": "UpdatedLast"
+}
+
+###
+
+### [Positive][Profile] Update all name fields together
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "firstName": "UpdatedFirst",
+  "middleName": "UpdatedMiddle",
+  "lastName": "UpdatedLast"
+}
+
+###
+
+### [Negative][Profile] Update with empty firstName (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "firstName": "   "
+}
+
+###
+
+### [Negative][Profile] Update with empty lastName (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "lastName": ""
+}
+
+###
+
+### [Negative][Profile] Update firstName with space rejected (422 expected)
+# "First name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane"
+}
+
+###
+
+### [Negative][Profile] Update firstName with digit rejected (422 expected)
+# "First name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "firstName": "John2"
+}
+
+###
+
+### [Negative][Profile] Update lastName with apostrophe rejected (422 expected)
+# "Last name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "lastName": "O'Brien"
+}
+
+###
+
+### [Negative][Profile] Update middleName with space rejected (422 expected)
+# "Middle name may only contain letters and hyphens."
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "middleName": "Van Der"
+}
+
+###
+
+### [Positive][Profile] Update phone with local Hungarian format (no 36/06 prefix)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "email": null,
+  "phoneNumber": "301112233",
   "middleName": "TestMiddle"
 }
 
@@ -54,6 +154,16 @@ Content-Type: application/json
 
 ### [Positive][Profile] Get profile picture (200 or 404 if none)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+###
+
+### [Positive][Profile] Get mechanic profile picture by person id (200 or 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+
+###
+
+### [Manual][Profile] Open realtime profile picture updates stream (authorized SSE)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 
 ###
 

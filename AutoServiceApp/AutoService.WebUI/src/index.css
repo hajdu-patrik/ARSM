@@ -10,16 +10,24 @@
 
 @layer base {
   html {
+    height: 100%;
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     scrollbar-width: thin;
     scrollbar-color: #8f83b8 #ece8f5;
   }
 
   body {
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden;
     background-color: #ECECEF;
     color: #2C2440;
     font-family: inherit;
     line-height: 1.5;
+  }
+
+  #root {
+    height: 100%;
   }
 
   .dark body {
@@ -36,6 +44,47 @@
   select,
   button {
     font: inherit;
+  }
+
+  select,
+  option,
+  optgroup {
+    transition: none !important;
+  }
+
+  select option {
+    background-color: #f6f4fb;
+    color: #2c2440;
+  }
+
+  select option:hover,
+  select option:focus,
+  select option:checked {
+    color: #2c2440;
+    background: #efebfa linear-gradient(0deg, #efebfa, #efebfa);
+  }
+
+  .dark select option {
+    background-color: #1a1a25;
+    color: #ede8fa;
+  }
+
+  .dark select option:hover,
+  .dark select option:focus,
+  .dark select option:checked {
+    color: #ede8fa;
+    background: #241f33 linear-gradient(0deg, #241f33, #241f33);
+  }
+
+  select:focus {
+    outline: none;
+    border-color: #C9B3FF;
+    box-shadow: 0 0 0 2px rgba(201, 179, 255, 0.4);
+  }
+
+  .dark select:focus {
+    border-color: #C9B3FF;
+    box-shadow: 0 0 0 2px rgba(201, 179, 255, 0.24);
   }
 
   a {

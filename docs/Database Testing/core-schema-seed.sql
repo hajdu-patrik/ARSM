@@ -151,13 +151,14 @@ ORDER BY a."ScheduledDate", mech."LastName";
 
 -- ------------------------------------------------------------
 -- 11. FILTER — appointments by status
---     Change value to: 'InProgress', 'Completed', 'Cancelled'
+--     Valid values: 'InProgress', 'Completed', 'Cancelled'
+--     ('Scheduled' is no longer a valid status.)
 -- ------------------------------------------------------------
 SELECT a."Id", a."ScheduledDate", a."TaskDescription",
        v."LicensePlate", v."Brand" || ' ' || v."Model" AS car
 FROM appointments a
 JOIN vehicles v ON v."Id" = a."VehicleId"
-WHERE a."Status" = 'Scheduled'
+WHERE a."Status" = 'InProgress'
 ORDER BY a."ScheduledDate";
 
 

@@ -111,7 +111,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts) and customers (plain records) when tables are empty.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
@@ -147,13 +147,18 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
-	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment
-	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status
+	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment (422 if Cancelled)
+	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled)
+	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (422 if Cancelled)
+	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (422 if Cancelled)
+	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
-	- `PUT /api/profile` (authorized) — update current user profile (email/phone/middle name)
+	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
 	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
 	- `POST /api/profile/change-password` (authorized) — change password
 	- `GET /api/profile/picture` (authorized) — get profile picture binary
+	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
+	- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
 	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
 	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
@@ -176,7 +181,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- registration is mechanic-only,
 	- login accepts email or phone number,
 	- email inputs are trimmed and normalized to lowercase,
-	- Hungarian phone inputs accept common formats (`+36`, `36`, `06`, spaces/punctuation) and normalize to canonical national form with strict prefix/length rules (`361xxxxxxx`, `36(20|21|30|31|50|70)xxxxxxx`, and approved 2-digit geographic area prefixes),
+	- Hungarian phone inputs accept common formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaces/punctuation) and normalize to canonical national form with strict prefix/length rules (`361xxxxxxx`, `36(20|21|30|31|50|70)xxxxxxx`, and approved 2-digit geographic area prefixes),
 	- register rejects duplicate phone numbers even if input format differs,
 	- unknown/wrong credentials return generic `401` (`invalid_credentials`),
 	- existing customer email/phone identifiers return `403` (`mechanic_only_login`) because only mechanics can authenticate,
@@ -208,7 +213,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields (letters only) and phone fields (digits/special chars only); profile picture upload validates file extension (.png/.jpg/.jpeg/.webp). UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
+- Frontend Scheduler page (planner + calendar), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
 - Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
 
 ## API Test Coverage Snapshot

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import { authService } from './services/auth.service';
 import { LoadingPage } from './pages/LoadingPage';
@@ -77,8 +77,8 @@ function App() {
 
           {/* Scheduler Route (Protected) */}
           <Route path="/" element={schedulerElement} />
-          <Route path="/scheduler" element={schedulerElement} />
-          <Route path="/dashboard" element={schedulerElement} />
+          <Route path="/scheduler" element={<Navigate to="/" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
           {/* Admin Routes */}
           <Route path="/admin/register" element={<AdminRoute><SidebarLayout><RegisterMechanicPage /></SidebarLayout></AdminRoute>} />

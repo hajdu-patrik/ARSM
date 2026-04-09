@@ -92,6 +92,23 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Register][Admin] Mechanic registration with local Hungarian phone (no 36/06 prefix)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "LocalPhone",
+  "email": "matrix.local.phone.{{MatrixRunSuffix}}@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "301112233",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
 ### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
@@ -236,6 +253,92 @@ Content-Type: application/json
   "personType": "Mechanic",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with space rejected (422 expected)
+# "First name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "lastName": "Smith",
+  "email": "name.space.test@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with digit rejected (422 expected)
+# "First name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John2",
+  "lastName": "Smith",
+  "email": "name.digit.test@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with apostrophe rejected (422 expected)
+# "First name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "O'Brien",
+  "lastName": "Smith",
+  "email": "name.apostrophe.test@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] lastName with special character rejected (422 expected)
+# "Last name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "Sm!th",
+  "email": "lastname.special.test@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] middleName with space rejected (422 expected)
+# "Middle name may only contain letters and hyphens."
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": "Van Der",
+  "lastName": "Smith",
+  "email": "middlename.space.test@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
 }
 
 ###
@@ -388,6 +491,17 @@ Content-Type: application/json
 
 {
   "phoneNumber": "06 30 777 0991",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Local Hungarian format without prefix
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "307770991",
   "password": "{{TestPassword}}"
 }
 

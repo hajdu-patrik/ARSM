@@ -15,7 +15,7 @@ const PublicOnlyRouteComponent = memo(function PublicOnlyRoute({ children }: Pub
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

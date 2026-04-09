@@ -71,9 +71,18 @@ function isValidHungarianNationalNumber(nationalDigits: string): boolean {
 function looksLikeHungarianPhone(value: string): boolean {
   const compactValue = value.replaceAll(/\D/g, '');
 
-  return compactValue.startsWith('36') ||
+  if (!compactValue) {
+    return false;
+  }
+
+  if (compactValue.startsWith('36') ||
     compactValue.startsWith('06') ||
-    compactValue.startsWith('0036');
+    compactValue.startsWith('0036')) {
+    return true;
+  }
+
+  // Also treat local Hungarian national format (for example: 301112233) as phone-like.
+  return isValidHungarianNationalNumber(compactValue);
 }
 
 function parseEmailIdentifier(value: string): ParsedIdentifier {
@@ -112,7 +121,11 @@ function parsePhoneIdentifier(value: string): ParsedIdentifier {
   }
 
   if (!normalizedValue.startsWith('36')) {
-    return { kind: 'invalid', reason: 'format' };
+    if (!isValidHungarianNationalNumber(normalizedValue)) {
+      return { kind: 'invalid', reason: 'format' };
+    }
+
+    normalizedValue = `36${normalizedValue}`;
   }
 
   const nationalDigits = normalizedValue.slice(2);

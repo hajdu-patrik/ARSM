@@ -23,13 +23,16 @@ public static partial class AppointmentEndpoints
         string FullName,
         string Email,
         string Specialization,
-        IReadOnlyList<string> Expertise);
+        IReadOnlyList<string> Expertise,
+        bool HasProfilePicture);
 
     internal sealed record AppointmentDto(
         int Id,
         DateTime ScheduledDate,
         string TaskDescription,
         string Status,
+        DateTime? CompletedAt,
+        DateTime? CanceledAt,
         VehicleDto Vehicle,
         IReadOnlyList<MechanicSummaryDto> Mechanics);
 

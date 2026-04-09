@@ -16,7 +16,9 @@ import type { ProfileData } from '../../types/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { fileToImageSource } from '../../utils/imageCrop';
+import { mapSettingsValidationMessageToKey, normalizeServerFieldErrors } from '../../utils/serverValidation';
 import { isAllowedPictureExtension } from '../../utils/validation';
+import { emitProfilePictureUpdated } from '../../services/profile-picture-live.service';
 
 const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
 
@@ -35,6 +37,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [loadErrorKey, setLoadErrorKey] = useState<string | null>(null);
 
   // Personal info form
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -60,44 +64,9 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
-  const mapValidationMessageToKey = useCallback((message: string): string => {
-    const normalized = message.trim().toLowerCase();
-
-    if (normalized.includes('already exists') && normalized.includes('email')) {
-      return 'settings.errors.emailExists';
-    }
-
-    if (normalized.includes('already exists') && normalized.includes('phone')) {
-      return 'settings.errors.phoneExists';
-    }
-
-    if (normalized.includes('email must be a valid email address')) {
-      return 'settings.errors.invalidEmail';
-    }
-
-    if (normalized.includes('phone number must be a valid hungarian number')) {
-      return 'settings.errors.invalidPhone';
-    }
-
-    if (normalized.includes('current password is invalid') || normalized.includes('password is incorrect')) {
-      return 'settings.errors.currentPasswordInvalid';
-    }
-
-    if (normalized.includes('passwords do not match')) {
-      return 'settings.passwordsDoNotMatch';
-    }
-
-    return message;
-  }, []);
-
   const normalizeFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    return Object.fromEntries(
-      Object.entries(errors).map(([key, values]) => [
-        key,
-        values.map((value) => mapValidationMessageToKey(value)),
-      ]),
-    );
-  }, [mapValidationMessageToKey]);
+    return normalizeServerFieldErrors(errors, mapSettingsValidationMessageToKey);
+  }, []);
 
   // Load profile on mount
   useEffect(() => {
@@ -107,6 +76,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
         const data = await profileService.getProfile();
         if (!cancelled) {
           setProfile(data);
+          setFirstName(data.firstName);
+          setLastName(data.lastName);
           setMiddleName(data.middleName ?? '');
           setEmail(data.email);
           setPhoneNumber(data.phoneNumber ?? '');
@@ -189,8 +160,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setIsUpdatingProfile(true);
 
     try {
-      const updated = await profileService.updateProfile({ email, phoneNumber, middleName });
+      const updated = await profileService.updateProfile({ firstName, lastName, email, phoneNumber, middleName });
       setProfile(updated);
+      setFirstName(updated.firstName);
+      setLastName(updated.lastName);
       setMiddleName(updated.middleName ?? '');
       setEmail(updated.email);
       setPhoneNumber(updated.phoneNumber ?? '');
@@ -211,13 +184,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsUpdatingProfile(false);
     }
-  }, [email, middleName, normalizeFieldErrors, phoneNumber, showErrorToast, showSuccessToast]);
+  }, [email, firstName, lastName, middleName, normalizeFieldErrors, phoneNumber, showErrorToast, showSuccessToast]);
 
   const mapPasswordErrors = useCallback((errors: FieldErrors): FieldErrors => {
     const mapped: FieldErrors = {};
 
     Object.entries(errors).forEach(([key, value]) => {
-      const normalizedValues = value.map((message) => mapValidationMessageToKey(message));
+      const normalizedValues = value.map((message) => mapSettingsValidationMessageToKey(message));
 
       if (key === 'CurrentPassword' || key === 'PasswordMismatch') {
         mapped.CurrentPassword = [...(mapped.CurrentPassword ?? []), ...normalizedValues];
@@ -231,11 +204,16 @@ const SettingsPageComponent = memo(function SettingsPage() {
     });
 
     return mapped;
-  }, [mapValidationMessageToKey]);
+  }, []);
 
   const handlePasswordSubmit = useCallback(async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setPasswordFieldErrors({});
+
+    if (newPassword.length < 8) {
+      setPasswordFieldErrors({ NewPassword: ['settings.passwordTooShort'] });
+      return;
+    }
 
     if (newPassword !== confirmNewPassword) {
       setPasswordFieldErrors({ ConfirmNewPassword: ['settings.passwordsDoNotMatch'] });
@@ -298,6 +276,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
   }, []);
 
   const handleConfirmPictureCrop = useCallback(async (blob: Blob) => {
+    if (!profile) {
+      return;
+    }
+
     setIsUploadingPicture(true);
 
     try {
@@ -309,9 +291,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
       setPictureKey((k) => k + 1);
       closePictureCropModal();
 
-      globalThis.dispatchEvent(new CustomEvent('autoservice:profile-picture-updated', {
-        detail: { hasProfilePicture: true, cacheBuster: Date.now() },
-      }));
+      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: true });
 
       showSuccessToast('toast.pictureUploaded');
     } catch {
@@ -319,24 +299,26 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsUploadingPicture(false);
     }
-  }, [closePictureCropModal, pendingPictureFileName, showErrorToast, showSuccessToast]);
+  }, [closePictureCropModal, pendingPictureFileName, profile, showErrorToast, showSuccessToast]);
 
   const handleRemovePicture = useCallback(async () => {
+    if (!profile) {
+      return;
+    }
+
     setIsUploadingPicture(true);
     try {
       await profileService.deleteProfilePicture();
       setProfile((prev) => prev ? { ...prev, hasProfilePicture: false } : prev);
       setPictureKey((k) => k + 1);
-      globalThis.dispatchEvent(new CustomEvent('autoservice:profile-picture-updated', {
-        detail: { hasProfilePicture: false, cacheBuster: Date.now() },
-      }));
+      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: false });
       showSuccessToast('toast.pictureRemoved');
     } catch {
       showErrorToast('toast.pictureRemoveFailed');
     } finally {
       setIsUploadingPicture(false);
     }
-  }, [showErrorToast, showSuccessToast]);
+  }, [profile, showErrorToast, showSuccessToast]);
 
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
@@ -378,7 +360,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
       if ((status === 422 || status === 400) && data?.errors) {
         const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
         if (currentPasswordErrors && currentPasswordErrors.length > 0) {
-          setDeletePasswordError(mapValidationMessageToKey(currentPasswordErrors[0]));
+          setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
         } else {
           showErrorToast('toast.profileDeleteFailed');
         }
@@ -388,7 +370,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsDeletingProfile(false);
     }
-  }, [clearAuth, closeDeleteModal, deletePassword, mapValidationMessageToKey, navigate, showErrorToast, showSuccessToast]);
+  }, [clearAuth, closeDeleteModal, deletePassword, navigate, showErrorToast, showSuccessToast]);
 
   if (isLoadingProfile) {
     return (
@@ -425,13 +407,15 @@ const SettingsPageComponent = memo(function SettingsPage() {
         />
 
         <PersonalInfoSection
-          firstName={profile.firstName}
+          firstName={firstName}
           middleName={middleName}
-          lastName={profile.lastName}
+          lastName={lastName}
           email={email}
           phoneNumber={phoneNumber}
           isSubmitting={isUpdatingProfile}
+          onFirstNameChange={setFirstName}
           onMiddleNameChange={setMiddleName}
+          onLastNameChange={setLastName}
           onEmailChange={setEmail}
           onPhoneNumberChange={setPhoneNumber}
           onSubmit={(e) => { void handleProfileSubmit(e); }}

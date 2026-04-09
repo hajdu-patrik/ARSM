@@ -15,6 +15,9 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - `Customer` 1..* `Vehicle`,
   - `Vehicle` 1..* `Appointment`,
   - `Appointment` *..* `Mechanic` (join table).
+- `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress` (there is no `Scheduled` value).
+- `Appointment` entity has `DateTime? CompletedAt` and `DateTime? CanceledAt`; status transitions auto-set/clear these timestamps.
+- `AppointmentDto` includes `CompletedAt` and `CanceledAt` fields.
 - Use DTO contracts at API boundaries, do not expose EF entities directly.
 - Prefer async EF methods and cancellation tokens.
 - Place new migrations in Data/Migrations.
@@ -29,10 +32,12 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Keep login protections: lockout (5 failed attempts, 15 min lockout), rate limit (10 req/min), and temporary ban behavior (3 min) consistent unless explicitly requested.
 - Keep auth input normalization consistent across register/login:
   - emails are trimmed + lowercased,
-  - Hungarian phone formats (`+36`, `36`, `06`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
+  - Hungarian phone formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
     - `361xxxxxxx` (Budapest),
     - `36(20|21|30|31|50|70)xxxxxxx` (mobile/nomadic),
     - `36<approved 2-digit area>xxxxxx` (geographic).
+- Keep contact normalization, name validation, token-security helpers, and shared validation error message constants centralized in `Common/` (`ContactNormalization`, `TokenSecurity`, `ValidationMessages`) and reuse them from endpoint files.
+- Name fields (first name, middle name, last name) must be validated with `ContactNormalization.IsValidName()` (pattern `^[\p{L}\-]+$`) at registration, profile update, and customer create/update. Use `ValidationMessages` constants for error messages.
 - Registration must reject duplicate phone numbers even when equivalent values are provided in different formats.
 - JWT token lifetime is 10 minutes.
 - JWT validation: issuer/audience validation enabled, lifetime validation enabled, clock skew 1 minute.
@@ -52,14 +57,16 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ### Profile Endpoints (`/api/profile`) — all require authorization
 
 - `GET /api/profile` — Get current user's profile data (name, email, phone, picture status).
-- `PUT /api/profile` — Update email, phone number, middle name. Email/phone normalized and uniqueness-checked.
+- `PUT /api/profile` — Update email, phone number, first name, middle name, last name. Email/phone normalized and uniqueness-checked; first/last name cannot be set to empty.
 - `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session.
 - `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
 - `GET /api/profile/picture` — Serve profile picture binary with content type header.
+- `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing).
+- `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload).
 - `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only.
 - `DELETE /api/profile/picture` — Remove profile picture.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
-- Profile DTOs: `ProfileResponse`, `UpdateProfileRequest`, `ChangePasswordRequest`, `DeleteProfileRequest`.
+- Profile DTOs: `ProfileResponse`, `UpdateProfileRequest` (Email?, PhoneNumber?, FirstName?, MiddleName?, LastName?), `ChangePasswordRequest`, `DeleteProfileRequest`.
 - Endpoint files follow partial-class pattern in `Profile/` folder (mirroring `Appointments/` structure: contracts/helpers/queries/mutations/profilepicture).
 
 ### Admin Endpoints (`/api/admin`) — all require AdminOnly authorization
@@ -83,8 +90,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/customers/{customerId}/vehicles` — List all vehicles for a customer. Returns 404 if customer not found.
 - `GET /api/vehicles/{id}` — Get single vehicle with customer summary. Returns 404 if not found.
-- `POST /api/customers/{customerId}/vehicles` (AdminOnly) — Create a vehicle for a customer. License plate normalized to uppercase. Returns 201 Created. Returns 404 if customer not found, 409 on duplicate plate, 422 on validation errors.
-- `PUT /api/vehicles/{id}` (AdminOnly) — Update vehicle record. Returns 204 No Content. Returns 404/409/422 as appropriate.
+- `POST /api/customers/{customerId}/vehicles` (AdminOnly) — Create a vehicle for a customer. License plate is normalized to uppercase and must match supported European formatting (Latin/Greek/Cyrillic letters + digits with common separators). Returns 201 Created. Returns 404 if customer not found, 409 on duplicate plate, 422 on validation errors.
+- `PUT /api/vehicles/{id}` (AdminOnly) — Update vehicle record with the same European license-plate validation rules. Returns 204 No Content. Returns 404/409/422 as appropriate.
 - `DELETE /api/vehicles/{id}` (AdminOnly) — Delete vehicle and cascade appointments. Returns 204 No Content, 404 if not found.
 - Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
 - Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
@@ -93,8 +100,11 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
-- `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) claims an unassigned appointment. Returns 409 if already claimed, 422 if cancelled.
-- `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum, returns 403 if not assigned.
+- `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment. Returns 409 if already claimed, 422 if appointment is Cancelled.
+- `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, 422 if appointment is Cancelled.
+- `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum (`InProgress`, `Completed`, `Cancelled`), returns 403 if not assigned. Auto-sets `CompletedAt` when transitioning to Completed, `CanceledAt` when transitioning to Cancelled; clears both when transitioning back to InProgress.
+- `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned, 422 if appointment is Cancelled.
+- `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, 422 if appointment is Cancelled.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 - Appointment DTOs: `AppointmentDto`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`.
 - Endpoint files follow partial-class pattern in `Appointments/` folder (mirroring `Auth/` structure).

@@ -21,7 +21,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **Auth service**: Use `authService` from `src/services/auth.service.ts` for login/logout/validate-based restore.
 - **Identifier parsing** (login UI):
   - emails are trimmed and lowercased before submit,
-  - Hungarian phone formats (`+36`, `36`, `06`, spaced/punctuated forms) are normalized before submit,
+  - Hungarian phone formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) are normalized before submit,
   - invalid identifier format should be rejected client-side with explicit error.
 
 ## UI/UX & Theme
@@ -40,16 +40,20 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 ## Component Structure
 
 - **`src/pages/Login/page.tsx`**: Login form (email/phone selector, password field, status-based error display).
-- **`src/pages/Scheduler/page.tsx`**: Scheduler page — data-fetching orchestrator, renders PlannerSpace + CalendarView.
+- **`src/pages/Scheduler/page.tsx`**: Scheduler page — data-fetching orchestrator, stacked layout (PlannerSpace on top, CalendarView full-width, MonthAppointmentList below). Manages `selectedAppointment` and `selectedDay` local state; day filter clears on month change. Handles unclaim, adminAssign, adminUnassign and passes `isAdmin` plus those handlers to AppointmentDetailModal. Keeps selected modal content synchronized with latest store snapshot and performs 8-second background refresh for near-realtime claim/status changes.
 - **`src/pages/Scheduler/components/PlannerSpace.tsx`**: Today's date header + appointment card grid + loading skeleton + empty state.
-- **`src/pages/Scheduler/components/AppointmentCard.tsx`**: Single appointment card with vehicle info, specs, task, mechanic avatars, claim/status controls.
-- **`src/pages/Scheduler/components/StatusBadge.tsx`**: Colored status pill (Scheduled/InProgress/Completed/Cancelled).
-- **`src/pages/Scheduler/components/CalendarView.tsx`**: Monthly calendar grid (Monday-start, ISO/Hungarian convention), appointment badges, month navigation.
-- **`src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx`**: Mechanic list with delete button (hidden for admins) + confirmation modal. Refreshes after successful registration.
+- **`src/pages/Scheduler/components/AppointmentCard.tsx`**: Single appointment card with vehicle info, specs, task, mechanic avatars, claim/status controls. Accepts optional `onClick` prop; interactive controls use stopPropagation. Mechanic avatars use deterministic per-mechanic colors and use current-user profile picture when available.
+- **`src/pages/Scheduler/components/StatusBadge.tsx`**: Colored status pill for appointment status values (InProgress/Completed/Cancelled; Scheduled no longer emitted by backend).
+- **`src/pages/Scheduler/components/CalendarView.tsx`**: Monthly calendar grid (Monday-start, ISO/Hungarian convention), appointment badges, month navigation. Navigation limited to ±6 months from today (buttons disabled at boundary). Day cells are clickable (`onDayClick` prop); selected day is highlighted (`selectedDay` prop).
+- **`src/pages/Scheduler/components/AppointmentDetailModal.tsx`**: Full-detail modal for a selected appointment — vehicle info, license plate, customer name/email, mechanics with specialization and expertise, task description, status controls (claim + status update). Props: `isAdmin`, `onUnclaim`, `onAdminAssign`, `onAdminUnassign`. Regular mechanics see an "Unassign me" button when assigned; admins see a per-mechanic remove (X) button and an "Add mechanic" dropdown populated from the admin mechanic list. Mechanic assignment controls are disabled when the appointment is Cancelled. Uses responsive, overflow-safe layout (`max-h` scroll region, wrapping chips, no overlap) and `Modal` with `max-w-3xl`.
+- **`src/pages/Scheduler/components/MechanicAvatar.tsx`**: Shared mechanic avatar renderer; deterministic color fallback by mechanic ID and mechanic-specific profile picture endpoint (`/api/profile/picture/{personId}`) when available.
+- **`src/services/profile-picture-live.service.ts`**: Shared realtime profile-picture update channel using SSE (`/api/profile/picture/updates`) + window event fan-out (`autoservice:profile-picture-updated`) so navbar and scheduler avatars refresh immediately.
+- **`src/pages/Scheduler/components/MonthAppointmentList.tsx`**: Monthly appointment list rendered as one continuous sorted card grid with per-card date labels. Supports day filtering (`selectedDay` prop) with a "Show all" clear chip, displays loading skeletons while data loads. Filter bar includes status filter chips (toggleable, colored per status), a mechanic dropdown (populated dynamically from appointments), and a date sort toggle (asc/desc); all filters are combinable with each other and with `selectedDay`. Layout rule: mobile is single-column full width, non-mobile is two columns, and if exactly one appointment card is visible it spans full width.
+- **`src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx`**: Mechanic list with left-aligned profile avatar + existing mechanic details and delete button (hidden for admins) + confirmation modal. Reuses `MechanicAvatar` and keeps a responsive row layout. Refreshes after successful registration.
 - **`src/pages/Settings/page.tsx`**: Settings page — data-fetching orchestrator, renders ProfilePictureSection + PersonalInfoSection + ChangePasswordSection. Delete profile section hidden for admin users.
 - **`src/pages/Settings/sections/ProfilePictureSection.tsx`**: Upload/delete profile picture with avatar preview (crop modal opens before upload).
-- **`src/pages/Settings/sections/PersonalInfoSection.tsx`**: Update email, phone, middle name (first/last name read-only).
-- **`src/pages/Settings/sections/ChangePasswordSection.tsx`**: Change password with current/new/confirm fields and show/hide toggle.
+- **`src/pages/Settings/sections/PersonalInfoSection.tsx`**: Update first name, middle name, last name, email, and phone (all fields are editable).
+- **`src/pages/Settings/sections/ChangePasswordSection.tsx`**: Change password with current/new/confirm fields and show/hide toggle. Settings page validates `newPassword.length < 8` client-side before submit (matching admin registration behavior).
 - **`src/pages/Tools/page.tsx`**: Tools management skeleton page (coming soon, uses `tools.*` i18n keys).
 - **`src/pages/Inventory/page.tsx`**: Inventory management skeleton page (coming soon, uses `inventory.*` i18n keys).
 - **`src/pages/LoadingPage.tsx`**: Initial loading animation (~3 seconds, shows only once per browser profile).
@@ -68,7 +72,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 ## Services & State
 
 - **`src/services/auth.service.ts`**: Login, logout, and auth-state restore via `/api/auth/validate`.
-- **`src/services/appointment.service.ts`**: getByMonth, getToday, claim, updateStatus via `/api/appointments`.
+- **`src/services/appointment.service.ts`**: getByMonth, getToday, claim, unclaim, updateStatus, adminAssign, adminUnassign via `/api/appointments`.
 - **`src/services/profile.service.ts`**: getProfile, updateProfile, changePassword, uploadProfilePicture, deleteProfilePicture, deleteProfile via `/api/profile`.
 - Profile picture upload must send multipart `FormData`; axios request interceptor should clear inherited JSON content-type for FormData payloads so browser boundary headers are applied.
 - **`src/store/auth.store.ts`**: Zustand store for `user`, `isAuthenticated`, `isLoading`, `error`.
@@ -77,12 +81,13 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/store/toast.store.ts`**: Zustand store for global toasts (message key + interpolation values, duration, remove actions).
 - **`src/services/api.client.ts`**: Axios instance with credentialed cookie requests and refresh retry; requires `VITE_API_URL` from environment (no hardcoded URL fallback).
 - **`src/types/login.types.ts`**: TypeScript interfaces for auth API contracts (LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse, RefreshResponse, JwtPayload).
-- **`src/types/scheduler.types.ts`**: TypeScript interfaces for scheduler (AppointmentDto, VehicleDto, CustomerSummaryDto, MechanicSummaryDto, AppointmentStatus, CalendarDay, UpdateStatusRequest).
-- **`src/types/profile.types.ts`**: TypeScript interfaces for profile (ProfileData, UpdateProfileRequest, ChangePasswordRequest, DeleteProfileRequest).
+- **`src/types/scheduler.types.ts`**: TypeScript interfaces for scheduler (`AppointmentDto` includes `completedAt?` and `canceledAt?`, `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `AppointmentStatus` (`'InProgress' | 'Completed' | 'Cancelled'`; `Scheduled` has been removed), `CalendarDay`, `UpdateStatusRequest`).
+- **`src/types/profile.types.ts`**: TypeScript interfaces for profile (`ProfileData`, `UpdateProfileRequest` (firstName?, lastName?, email?, phoneNumber?, middleName?), `ChangePasswordRequest`, `DeleteProfileRequest`).
 - **`src/utils/avatar.ts`**: Deterministic fallback avatar utilities.
 - **`src/utils/imageCrop.ts`**: Canvas crop helper for profile image workflow.
-- **`src/utils/validation.ts`**: Shared input validation — `filterNameInput` (Unicode letters/spaces/hyphens only), `filterPhoneInput` (digits/phone-special-chars only), `isAllowedPictureExtension` (.png/.jpg/.jpeg/.webp).
-- **`src/utils/i18n.ts`**: i18next configuration; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound).
+- **`src/utils/validation.ts`**: Shared input validation — `filterNameInput` (Unicode letters and hyphens only; spaces and apostrophes stripped), `filterPhoneInput` (digits/phone-special-chars only), `isAllowedPictureExtension` (.png/.jpg/.jpeg/.webp).
+- **`src/utils/serverValidation.ts`**: Shared backend-validation helpers — `mapValidationMessageToKey(message, context)` central mapping function (email/phone uniqueness, invalid email/phone, invalid name, password errors); `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it; also provides `getServerFieldError`, `extractServerFieldErrors`, `normalizeServerFieldErrors`.
+- **`src/utils/i18n.ts`**: i18next configuration; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound). Scheduler sub-keys include `scheduler.monthList.*` (title, count, empty, emptyFiltered, clearFilter), `scheduler.filter.*` (allMechanics, sortAsc, sortDesc), and `scheduler.detail.*` (title, scheduledDate, vehicle, licensePlate, task, customer, customerName, customerEmail, mechanics, specialization, expertise, noMechanics, unassignMe, removeMechanic, addMechanic, selectMechanic, assignError, unassignError, unassignCancelledError, adminUnassignError).
 - **`src/components/common/Image.tsx`**: Reusable image wrapper component.
 - **`vite.config.ts`**: In serve mode, dev server runs over HTTPS (`vite-plugin-mkcert`) on port from `PORT` env var (`strictPort: true`).
 
@@ -90,8 +95,8 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 
 - `/login` → Login page (public).
 - `/` → Scheduler page (protected, requires valid auth session).
-- `/scheduler` → Scheduler page (protected).
-- `/dashboard` → Scheduler page (backward compatibility alias).
+- `/scheduler` → redirect alias to `/`.
+- `/dashboard` → redirect alias to `/`.
 - `/tools` → ToolsPage (protected, skeleton with coming-soon content).
 - `/inventory` → InventoryPage (protected, skeleton with coming-soon content).
 - `/settings` → Settings page (protected) — profile picture crop/upload/remove, personal info, password change, profile deletion.
@@ -110,14 +115,19 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **Appointment endpoints**:
   - `GET /api/appointments?year=&month=` – list appointments for a month (authorized).
   - `GET /api/appointments/today` – list today's appointments (authorized).
-  - `PUT /api/appointments/{id}/claim` – mechanic claims an appointment (authorized).
+  - `PUT /api/appointments/{id}/claim` – mechanic self-assigns to an appointment (authorized).
+  - `DELETE /api/appointments/{id}/claim` – mechanic self-unassigns from an appointment (authorized).
   - `PUT /api/appointments/{id}/status` – update appointment status (authorized, assigned mechanic only).
+  - `PUT /api/appointments/{id}/assign/{mechanicId}` – admin assigns a mechanic (authorized, admin-only).
+  - `DELETE /api/appointments/{id}/assign/{mechanicId}` – admin removes a mechanic (authorized, admin-only).
 - **Profile endpoints**:
   - `GET /api/profile` – get current user profile data (authorized).
-  - `PUT /api/profile` – update email, phone, middle name (authorized).
+  - `PUT /api/profile` – update email, phone, first name, middle name, last name (authorized).
   - `POST /api/profile/change-password` – change password (authorized).
   - `DELETE /api/profile` – delete current user profile after current-password confirmation (authorized, returns 403 for admin users).
   - `GET /api/profile/picture` – get profile picture (authorized).
+  - `GET /api/profile/picture/{personId}` – get a mechanic profile picture by person id (authorized, scheduler avatars).
+  - `GET /api/profile/picture/updates` – SSE stream for realtime profile picture update events (authorized).
   - `PUT /api/profile/picture` – upload profile picture, multipart/form-data (authorized).
   - `DELETE /api/profile/picture` – delete profile picture (authorized).
 - **Admin endpoints**:
@@ -130,7 +140,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 
 ## Input Validation (Client-Side)
 
-- Name fields (first, middle, last) filter input to Unicode letters, spaces, hyphens, and apostrophes only (via `filterNameInput` from `src/utils/validation.ts`). Applied in both admin registration (`BasicInfoSection`) and settings (`PersonalInfoSection`).
+- Name fields (first, middle, last) filter input to Unicode letters and hyphens only — spaces and apostrophes are stripped (via `filterNameInput` from `src/utils/validation.ts`). Applied in both admin registration (`BasicInfoSection`) and settings (`PersonalInfoSection`).
 - Phone number fields filter input to digits and phone special characters (`+`, `-`, `(`, `)`, space) only (via `filterPhoneInput`). Applied in both admin registration and settings.
 - Profile picture upload validates file extension against `.png`, `.jpg`, `.jpeg`, `.webp` before processing (via `isAllowedPictureExtension`). Invalid types show error toast (`toast.pictureInvalidType`).
 
@@ -140,6 +150,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Keep API calling logic in `src/services` and keep components focused on UI/state.
 - Keep styles in Tailwind utility classes; avoid unnecessary custom CSS.
 - Keep global typography default as `Inter` from `src/index.css`; avoid resetting components back to system fonts.
+- Global CSS in `src/index.css` includes a `select:focus` rule applying a purple ring consistent with the project theme; scheduler select elements use `focus:outline-none` to defer to this rule.
 - Keep layouts responsive for desktop and mobile.
 - Use pastel purple as the primary accent color (`bg-purple-500`, `text-purple-600`).
 - Form validation messages should be explicit and user-friendly.

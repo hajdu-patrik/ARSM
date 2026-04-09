@@ -21,9 +21,11 @@ public class Appointment
     [MaxLength(200)]
     public required string TaskDescription { get; set; }
 
-    // Defaults to Scheduled on creation; updated as the appointment progresses.
-    public ProgresStatus Status { get; set; } = ProgresStatus.Scheduled;
+    // Defaults to InProgress on creation; updated as the appointment progresses.
+    public ProgresStatus Status { get; set; } = ProgresStatus.InProgress;
 
+    public DateTime? CompletedAt { get; set; }
+    public DateTime? CanceledAt { get; set; }
 
     // Relationship: each appointment belongs to exactly one vehicle.
     public int VehicleId { get; set; }

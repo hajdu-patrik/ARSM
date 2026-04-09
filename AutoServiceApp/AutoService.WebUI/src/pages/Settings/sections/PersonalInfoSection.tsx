@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
-import { inputClass, readonlyInputClass, labelClass, cardClass, buttonClass } from '../constants';
+import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
 interface PersonalInfoSectionProps {
@@ -11,7 +11,9 @@ interface PersonalInfoSectionProps {
   readonly email: string;
   readonly phoneNumber: string;
   readonly isSubmitting: boolean;
+  readonly onFirstNameChange: (value: string) => void;
   readonly onMiddleNameChange: (value: string) => void;
+  readonly onLastNameChange: (value: string) => void;
   readonly onEmailChange: (value: string) => void;
   readonly onPhoneNumberChange: (value: string) => void;
   readonly onSubmit: (e: React.SyntheticEvent) => void;
@@ -26,7 +28,9 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   email,
   phoneNumber,
   isSubmitting,
+  onFirstNameChange,
   onMiddleNameChange,
+  onLastNameChange,
   onEmailChange,
   onPhoneNumberChange,
   onSubmit,
@@ -60,8 +64,10 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-firstName"
               type="text"
               value={firstName}
-              readOnly
-              className={readonlyInputClass}
+              onChange={(e) => onFirstNameChange(filterNameInput(e.target.value))}
+              placeholder={t('settings.firstNamePlaceholder')}
+              className={inputClass}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -88,8 +94,10 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-lastName"
               type="text"
               value={lastName}
-              readOnly
-              className={readonlyInputClass}
+              onChange={(e) => onLastNameChange(filterNameInput(e.target.value))}
+              placeholder={t('settings.lastNamePlaceholder')}
+              className={inputClass}
+              disabled={isSubmitting}
             />
           </div>
         </div>

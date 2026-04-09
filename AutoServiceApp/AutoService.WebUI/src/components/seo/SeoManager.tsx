@@ -100,7 +100,11 @@ export function SeoManager() {
     const fullTitle = APP_NAME;
     const locale = i18n.resolvedLanguage?.startsWith('hu') ? 'hu_HU' : 'en_US';
     const htmlLang = i18n.resolvedLanguage?.startsWith('hu') ? 'hu' : 'en';
-    const canonicalUrl = `${window.location.origin}${location.pathname}`;
+    const canonicalPath =
+      location.pathname === '/scheduler' || location.pathname === '/dashboard'
+        ? '/'
+        : location.pathname;
+    const canonicalUrl = `${window.location.origin}${canonicalPath}`;
 
     document.title = fullTitle;
     document.documentElement.lang = htmlLang;

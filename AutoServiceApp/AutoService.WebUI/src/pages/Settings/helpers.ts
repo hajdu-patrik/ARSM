@@ -1,13 +1,12 @@
 import type { FieldErrors } from './types';
+import { extractServerFieldErrors, getServerFieldError } from '../../utils/serverValidation';
 
 export function getFieldError(errors: FieldErrors, field: string): string | undefined {
-  const values = errors[field] ?? errors[field.toLowerCase()];
-  return values?.[0];
+  return getServerFieldError(errors, field);
 }
 
 export function extractFieldErrors(
   data: { errors?: FieldErrors; detail?: string } | undefined,
 ): FieldErrors {
-  if (!data?.errors) return {};
-  return data.errors;
+  return extractServerFieldErrors(data);
 }

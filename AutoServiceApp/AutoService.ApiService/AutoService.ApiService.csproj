@@ -27,9 +27,11 @@
     <ProjectReference Include="..\AutoService.ServiceDefaults\AutoService.ServiceDefaults.csproj" />
   </ItemGroup>
 
-  <!-- Target to kill the running API service before building to avoid conflicts with the new build -->
-  <Target Name="KillRunningApiService" BeforeTargets="PreBuildEvent" Condition="'$(OS)' == 'Windows_NT'">
-    <Exec Command="taskkill /F /IM AutoService.ApiService.exe 2&gt;nul" IgnoreExitCode="true" />
+  <!-- Stop stale API runtime hosts so referenced assemblies are not file-locked during build. -->
+  <Target Name="KillRunningApiServiceHost" BeforeTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec
+      Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$apiAssembly = 'AutoService.ApiService.dll'; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'dotnet.exe' -and $_.CommandLine -like ('*' + $apiAssembly + '*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }&quot;"
+      IgnoreExitCode="true" />
   </Target>
 
 </Project>

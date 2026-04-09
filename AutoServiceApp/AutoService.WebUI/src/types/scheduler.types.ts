@@ -22,9 +22,10 @@ export interface MechanicSummaryDto {
   email: string;
   specialization: string;
   expertise: string[];
+  hasProfilePicture: boolean;
 }
 
-export type AppointmentStatus = 'Scheduled' | 'InProgress' | 'Completed' | 'Cancelled';
+export type AppointmentStatus = 'InProgress' | 'Completed' | 'Cancelled';
 
 export interface AppointmentDto {
   id: number;

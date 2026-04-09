@@ -9,10 +9,11 @@ interface CalendarViewProps {
   readonly month: number;
   readonly isLoading: boolean;
   readonly onMonthChange: (year: number, month: number) => void;
+  readonly onDayClick?: (day: number) => void;
+  readonly selectedDay?: number | null;
 }
 
 const STATUS_DOT_COLORS: Record<string, string> = {
-  Scheduled: 'bg-blue-500',
   InProgress: 'bg-yellow-500',
   Completed: 'bg-green-500',
   Cancelled: 'bg-red-500',
@@ -61,6 +62,8 @@ const CalendarViewComponent = memo(function CalendarView({
   month,
   isLoading,
   onMonthChange,
+  onDayClick,
+  selectedDay,
 }: CalendarViewProps) {
   const { t, i18n } = useTranslation();
 
@@ -82,7 +85,16 @@ const CalendarViewComponent = memo(function CalendarView({
     [year, month, appointments]
   );
 
+  // Navigation clamping: ±6 months from today
+  const now = new Date();
+  const minDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+  const maxDate = new Date(now.getFullYear(), now.getMonth() + 6, 1);
+  const currentDate = new Date(year, month - 1, 1);
+  const canGoPrev = currentDate > minDate;
+  const canGoNext = currentDate < maxDate;
+
   const handlePrev = () => {
+    if (!canGoPrev) return;
     if (month === 1) {
       onMonthChange(year - 1, 12);
     } else {
@@ -91,6 +103,7 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   const handleNext = () => {
+    if (!canGoNext) return;
     if (month === 12) {
       onMonthChange(year + 1, 1);
     } else {
@@ -104,8 +117,9 @@ const CalendarViewComponent = memo(function CalendarView({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrev}
+          disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
-          className="p-1.5 rounded-lg hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] text-[#5E5672] dark:text-[#CFC5EA] transition-colors"
+          className={`p-1.5 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] transition-colors ${canGoPrev ? 'hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]' : 'opacity-50 cursor-not-allowed'}`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -114,8 +128,9 @@ const CalendarViewComponent = memo(function CalendarView({
         </h3>
         <button
           onClick={handleNext}
+          disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
-          className="p-1.5 rounded-lg hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] text-[#5E5672] dark:text-[#CFC5EA] transition-colors"
+          className={`p-1.5 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] transition-colors ${canGoNext ? 'hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]' : 'opacity-50 cursor-not-allowed'}`}
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -138,14 +153,18 @@ const CalendarViewComponent = memo(function CalendarView({
 
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-px">
-            {calendarDays.map((day) => (
+            {calendarDays.map((day) => {
+              const dayNum = day.date.getDate();
+              const isSelected = day.isCurrentMonth && selectedDay === dayNum;
+              return (
               <div
                 key={day.date.toISOString()}
+                onClick={day.isCurrentMonth && onDayClick ? () => onDayClick(dayNum) : undefined}
                 className={`min-h-[2.5rem] p-1 rounded-lg ${
                   day.isCurrentMonth
-                    ? 'text-[#2C2440] dark:text-[#EDE8FA]'
+                    ? 'text-[#2C2440] dark:text-[#EDE8FA] cursor-pointer hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]'
                     : 'text-[#B9B0D3] dark:text-[#5E5672]'
-                  } ${day.isToday ? 'bg-[#EFEBFA] dark:bg-[#241F33]' : ''}`}
+                  } ${day.isToday ? 'bg-[#EFEBFA] dark:bg-[#241F33]' : ''} ${isSelected ? 'ring-2 ring-[#C9B3FF] dark:ring-[#7A66C7]' : ''}`}
               >
                 <div className="flex items-center justify-center mb-0.5">
                   {day.isToday ? (
@@ -174,7 +193,8 @@ const CalendarViewComponent = memo(function CalendarView({
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

@@ -1,6 +1,6 @@
-/** Strip everything except Unicode letters, spaces, hyphens, and apostrophes from name input. */
+/** Strip everything except Unicode letters and hyphens from name input. */
 export function filterNameInput(value: string): string {
-  return value.replace(/[^\p{L}\s\-']/gu, '');
+  return value.replace(/[^\p{L}\-]/gu, '');
 }
 
 /** Strip everything except digits and common phone special characters (+, -, (, ), space). */

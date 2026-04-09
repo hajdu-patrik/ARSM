@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 import { authService } from '../../services/auth.service';
 import { profileService } from '../../services/profile.service';
+import { PROFILE_PICTURE_UPDATED_EVENT, startProfilePictureLiveUpdates } from '../../services/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 
@@ -138,9 +139,25 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   }, [avatarCacheBuster, user?.email]);
 
   useEffect(() => {
+    const stopLiveUpdates = startProfilePictureLiveUpdates();
+    return () => {
+      stopLiveUpdates();
+    };
+  }, []);
+
+  useEffect(() => {
     const handleProfilePictureUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent<{ hasProfilePicture?: boolean; cacheBuster?: number }>;
-      const nextHasProfilePicture = Boolean(customEvent.detail?.hasProfilePicture);
+      const customEvent = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
+      const currentPersonId = profilePersonId ?? user?.personId;
+      if (
+        typeof customEvent.detail?.personId === 'number' &&
+        typeof currentPersonId === 'number' &&
+        customEvent.detail.personId !== currentPersonId
+      ) {
+        return;
+      }
+
+      const nextHasProfilePicture = customEvent.detail?.hasProfilePicture ?? hasProfilePicture;
       const nextCacheBuster = customEvent.detail?.cacheBuster ?? Date.now();
 
       setHasProfilePicture(nextHasProfilePicture);
@@ -157,11 +174,11 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
       };
     };
 
-    globalThis.addEventListener('autoservice:profile-picture-updated', handleProfilePictureUpdated as EventListener);
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
     return () => {
-      globalThis.removeEventListener('autoservice:profile-picture-updated', handleProfilePictureUpdated as EventListener);
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
     };
-  }, [profileFirstName, profileLastName, profilePersonId, user?.email]);
+  }, [hasProfilePicture, profileFirstName, profileLastName, profilePersonId, user?.email, user?.personId]);
 
   const handleLogout = useCallback(async () => {
     await authService.logout();
@@ -224,7 +241,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
           <img
             src={logoSrc}
             alt="AutoService"
-            className="h-8 w-8 object-contain"
+            className="h-8 w-8 object-contain select-none pointer-events-none"
           />
         </span>
         <span
@@ -269,8 +286,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
       {/* Bottom section: Profile → Settings → Logout */}
       <div className="border-t border-[#D8D2E9] dark:border-[#3A3154] px-2 py-3 space-y-1">
         {/* Profile */}
-        <div className="flex items-center">
-          <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
+        <div className="flex items-center ">
+          <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0 select-none pointer-events-none">
             {shouldShowProfilePicture ? (
               <img
                 src={profilePictureUrl}
@@ -319,7 +336,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   );
 
   return (
-    <div className="flex h-screen bg-[#ECECEF] dark:bg-[#09090F]">
+    <div className="flex h-screen overflow-hidden bg-[#ECECEF] dark:bg-[#09090F]">
       {/* Mobile overlay */}
       {mobileOpen && (
         <button
@@ -350,7 +367,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 
       {/* Main content */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+        className={`flex-1 min-h-0 flex flex-col min-w-0 transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
           collapsed ? 'md:pl-[68px]' : 'md:pl-64'
         }`}
       >
@@ -371,7 +388,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
           {children}
         </main>
       </div>

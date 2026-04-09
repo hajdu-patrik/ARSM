@@ -1,3 +1,4 @@
+using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
@@ -132,14 +133,29 @@ public static partial class AuthEndpoints
         AddRequired(errors, nameof(request.Email), request.Email);
         AddRequired(errors, nameof(request.Password), request.Password);
 
+        if (!string.IsNullOrWhiteSpace(request.FirstName) && !ContactNormalization.IsValidName(request.FirstName.Trim()))
+        {
+            errors[nameof(request.FirstName)] = [ValidationMessages.InvalidFirstName];
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.LastName) && !ContactNormalization.IsValidName(request.LastName.Trim()))
+        {
+            errors[nameof(request.LastName)] = [ValidationMessages.InvalidLastName];
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MiddleName) && !ContactNormalization.IsValidName(request.MiddleName.Trim()))
+        {
+            errors[nameof(request.MiddleName)] = [ValidationMessages.InvalidMiddleName];
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Email) && !TryNormalizeEmail(request.Email, out _))
         {
-            errors[nameof(request.Email)] = ["Email must be a valid email address."];
+            errors[nameof(request.Email)] = [ValidationMessages.InvalidEmail];
         }
 
         if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !TryNormalizeHungarianPhoneNumber(request.PhoneNumber, out _))
         {
-            errors[nameof(request.PhoneNumber)] = ["Phone number must be a valid Hungarian number."];
+            errors[nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone];
         }
 
         var isMechanic = string.Equals(request.PersonType, "mechanic", StringComparison.OrdinalIgnoreCase);

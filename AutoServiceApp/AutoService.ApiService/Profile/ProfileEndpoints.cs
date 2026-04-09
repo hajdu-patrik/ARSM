@@ -17,6 +17,8 @@ public static partial class ProfileEndpoints
         group.MapDelete(string.Empty, DeleteProfileAsync);
         group.MapPost("/change-password", ChangePasswordAsync);
         group.MapGet("/picture", GetProfilePictureAsync);
+        group.MapGet("/picture/updates", StreamProfilePictureUpdatesAsync);
+        group.MapGet("/picture/{personId:int}", GetMechanicProfilePictureAsync);
         group.MapPut("/picture", UploadProfilePictureAsync).DisableAntiforgery();
         group.MapDelete("/picture", DeleteProfilePictureAsync);
 

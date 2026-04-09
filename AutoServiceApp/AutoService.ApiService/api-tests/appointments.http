@@ -43,6 +43,39 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Appointments] Update appointment status to Completed
+# Response includes completedAt (DateTime) and canceledAt (null).
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Positive][Appointments] Update appointment status to Cancelled
+# Response includes canceledAt (DateTime) and completedAt (null).
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+###
+
+### [Negative][Appointments] Update appointment status with invalid value (400 expected)
+# Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Scheduled"
+}
+
+###
+
 ### [Negative][Appointments] Claim non-existent appointment (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 
@@ -55,5 +88,24 @@ Content-Type: application/json
 {
   "status": "InProgress"
 }
+
+###
+
+# ── Admin Assign / Unassign ──────────────────────────────────────────────────
+# Prerequisites: login as admin (session cookie required for AdminOnly endpoints).
+# Set @CancelledApptId to an appointment that is in Cancelled status.
+
+@MechanicIdToAssign = 2
+@CancelledApptId = 1
+
+### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
+# Returns 422 Unprocessable Entity: cannot modify mechanics on a cancelled appointment.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
+# Returns 422 Unprocessable Entity: cannot modify mechanics on a cancelled appointment.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
 
 ###

@@ -8,6 +8,7 @@ import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
 import { MechanicListSection } from './sections/MechanicListSection';
+import { mapAdminValidationMessageToKey, normalizeServerFieldErrors } from '../../../utils/serverValidation';
 import type { FieldErrors, RegisterMechanicFormValues } from './types';
 
 const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
@@ -22,36 +23,9 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rawFieldErrors, setRawFieldErrors] = useState<FieldErrors>({});
 
-  const mapServerErrorToKey = useCallback((message: string): string => {
-    const normalized = message.trim().toLowerCase();
-
-    if (normalized.includes('already exists') && normalized.includes('email')) {
-      return 'admin.errors.emailExists';
-    }
-
-    if (normalized.includes('already exists') && normalized.includes('phone')) {
-      return 'admin.errors.phoneExists';
-    }
-
-    if (normalized.includes('email must be a valid email address')) {
-      return 'admin.errors.invalidEmail';
-    }
-
-    if (normalized.includes('phone number must be a valid hungarian number')) {
-      return 'admin.errors.invalidPhone';
-    }
-
-    return message;
-  }, []);
-
   const normalizeFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    return Object.fromEntries(
-      Object.entries(errors).map(([key, values]) => [
-        key,
-        values.map((value) => mapServerErrorToKey(value)),
-      ]),
-    );
-  }, [mapServerErrorToKey]);
+    return normalizeServerFieldErrors(errors, mapAdminValidationMessageToKey);
+  }, []);
 
   const fieldErrors = useMemo(() => normalizeFieldErrors(rawFieldErrors), [normalizeFieldErrors, rawFieldErrors]);
 

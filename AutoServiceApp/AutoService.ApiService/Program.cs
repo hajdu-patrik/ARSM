@@ -166,6 +166,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 builder.Services.AddScoped<ITokenDenylistService, TokenDenylistService>();
+builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
 
 // Build.
 var app = builder.Build();

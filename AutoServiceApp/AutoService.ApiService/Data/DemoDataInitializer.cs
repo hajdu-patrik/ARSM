@@ -164,7 +164,7 @@ public static class DemoDataInitializer
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(2),
                 TaskDescription = "Idoszakos olajcsere es altalanos atvizsgalas",
-                Status = ProgresStatus.Scheduled,
+                Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[0].Id,
                 Mechanics = new List<Mechanic> { mechanics[0] }
             },
@@ -172,7 +172,7 @@ public static class DemoDataInitializer
             {
                 ScheduledDate = DateTime.UtcNow.AddDays(4),
                 TaskDescription = "Fekrendszer ellenorzes es betetcsere",
-                Status = ProgresStatus.Scheduled,
+                Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[1].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
             },

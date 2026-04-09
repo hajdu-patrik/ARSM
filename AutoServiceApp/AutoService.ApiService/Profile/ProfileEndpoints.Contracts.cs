@@ -15,7 +15,9 @@ public static partial class ProfileEndpoints
     internal sealed record UpdateProfileRequest(
         string? Email,
         string? PhoneNumber,
-        string? MiddleName);
+        string? MiddleName,
+        string? FirstName,
+        string? LastName);
 
     internal sealed record ChangePasswordRequest(
         string CurrentPassword,

@@ -26,4 +26,19 @@ export const appointmentService = {
     );
     return response.data;
   },
+
+  async unclaim(id: number): Promise<AppointmentDto> {
+    const response = await apiClient.delete<AppointmentDto>(`/api/appointments/${id}/claim`);
+    return response.data;
+  },
+
+  async adminAssign(id: number, mechanicId: number): Promise<AppointmentDto> {
+    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}/assign/${mechanicId}`);
+    return response.data;
+  },
+
+  async adminUnassign(id: number, mechanicId: number): Promise<AppointmentDto> {
+    const response = await apiClient.delete<AppointmentDto>(`/api/appointments/${id}/assign/${mechanicId}`);
+    return response.data;
+  },
 };

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const InventoryPageComponent = memo(function InventoryPage() {
@@ -12,21 +13,7 @@ const InventoryPageComponent = memo(function InventoryPage() {
 
       <div className="rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-8 text-center dark:border-[#3A3154] dark:bg-[#13131B]">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#EFEBFA] dark:bg-[#241F33]">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-purple-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
-            />
-          </svg>
+          <Package className="h-8 w-8 text-purple-500" strokeWidth={1.5} aria-hidden="true" />
         </div>
 
         <h2 className="mb-2 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">

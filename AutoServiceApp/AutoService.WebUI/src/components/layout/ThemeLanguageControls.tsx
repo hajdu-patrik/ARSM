@@ -36,7 +36,7 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
       <button
         onClick={handleLanguageSwitch}
         type="button"
-        className={`${BASE_BUTTON_CLASS} ${themeButtonClass} tracking-wide`}
+        className={`${BASE_BUTTON_CLASS} ${themeButtonClass} tracking-wide select-none `}
         title={languageButtonTitle}
       >
         {i18n.language.toUpperCase()}
@@ -45,7 +45,7 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
       <button
         onClick={toggleTheme}
         type="button"
-        className={`${BASE_BUTTON_CLASS} ${themeButtonClass}`}
+        className={`${BASE_BUTTON_CLASS} ${themeButtonClass} select-none `}
         title={themeButtonTitle}
       >
         {isDark ? '☽' : '☀'}

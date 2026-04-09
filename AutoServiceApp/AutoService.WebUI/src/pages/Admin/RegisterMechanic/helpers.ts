@@ -1,13 +1,9 @@
 import type { RegisterMechanicRequest } from '../../../services/admin.service';
 import type { FieldErrors, RegisterMechanicFormValues } from './types';
-
-function toCapitalized(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
+import { getServerFieldError } from '../../../utils/serverValidation';
 
 export function getFieldError(fieldErrors: FieldErrors, field: string): string | undefined {
-  const errors = fieldErrors[field] ?? fieldErrors[toCapitalized(field)];
-  return errors?.[0];
+  return getServerFieldError(fieldErrors, field);
 }
 
 export function buildRegisterMechanicRequest(values: RegisterMechanicFormValues): RegisterMechanicRequest {

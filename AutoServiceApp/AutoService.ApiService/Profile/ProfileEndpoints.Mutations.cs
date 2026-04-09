@@ -1,19 +1,18 @@
 using AutoService.ApiService.Auth;
+using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Mail;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace AutoService.ApiService.Profile;
 
 public static partial class ProfileEndpoints
 {
+
     private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,
@@ -37,16 +36,14 @@ public static partial class ProfileEndpoints
         // Email update.
         if (request.Email is not null)
         {
-            var trimmedEmail = request.Email.Trim().ToLowerInvariant();
-
-            if (!IsValidEmail(trimmedEmail))
+            if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
             {
-                errors["Email"] = ["Email must be a valid email address."];
+                errors["Email"] = [ValidationMessages.InvalidEmail];
             }
-            else if (!string.Equals(trimmedEmail, person.Email, StringComparison.OrdinalIgnoreCase))
+            else if (!string.Equals(normalizedEmail, person.Email, StringComparison.OrdinalIgnoreCase))
             {
                 var emailInUse = await db.People
-                    .AnyAsync(p => p.Email == trimmedEmail && p.Id != person.Id, cancellationToken);
+                    .AnyAsync(p => p.Email == normalizedEmail && p.Id != person.Id, cancellationToken);
 
                 if (emailInUse)
                 {
@@ -54,14 +51,14 @@ public static partial class ProfileEndpoints
                 }
                 else
                 {
-                    person.Email = trimmedEmail;
+                    person.Email = normalizedEmail;
 
                     if (identityUser is not null)
                     {
-                        identityUser.Email = trimmedEmail;
-                        identityUser.UserName = trimmedEmail;
-                        identityUser.NormalizedEmail = trimmedEmail.ToUpperInvariant();
-                        identityUser.NormalizedUserName = trimmedEmail.ToUpperInvariant();
+                        identityUser.Email = normalizedEmail;
+                        identityUser.UserName = normalizedEmail;
+                        identityUser.NormalizedEmail = normalizedEmail.ToUpperInvariant();
+                        identityUser.NormalizedUserName = normalizedEmail.ToUpperInvariant();
                         await userManager.UpdateAsync(identityUser);
                     }
                 }
@@ -71,8 +68,8 @@ public static partial class ProfileEndpoints
         // Phone update.
         if (request.PhoneNumber is not null)
         {
-            var trimmedPhone = request.PhoneNumber.Trim();
-            if (string.IsNullOrWhiteSpace(trimmedPhone))
+            var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
+            if (normalizedOptionalPhone is null)
             {
                 person.PhoneNumber = null;
                 if (identityUser is not null)
@@ -83,9 +80,9 @@ public static partial class ProfileEndpoints
             }
             else
             {
-                if (!AuthEndpoints.TryNormalizeHungarianPhoneNumber(trimmedPhone, out var normalizedPhone))
+                if (!ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
                 {
-                    errors["PhoneNumber"] = ["Phone number must be a valid Hungarian number."];
+                    errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
                 }
                 else
                 {
@@ -109,11 +106,64 @@ public static partial class ProfileEndpoints
             }
         }
 
+        // First name update.
+        string firstName = person.Name.FirstName;
+        if (request.FirstName is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.FirstName))
+            {
+                errors["FirstName"] = [ValidationMessages.FirstNameRequired];
+            }
+            else if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
+            {
+                errors["FirstName"] = [ValidationMessages.InvalidFirstName];
+            }
+            else
+            {
+                firstName = request.FirstName.Trim();
+            }
+        }
+
+        // Last name update.
+        string lastName = person.Name.LastName;
+        if (request.LastName is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.LastName))
+            {
+                errors["LastName"] = [ValidationMessages.LastNameRequired];
+            }
+            else if (!ContactNormalization.IsValidName(request.LastName.Trim()))
+            {
+                errors["LastName"] = [ValidationMessages.InvalidLastName];
+            }
+            else
+            {
+                lastName = request.LastName.Trim();
+            }
+        }
+
         // Middle name update.
+        string? middleName = person.Name.MiddleName;
         if (request.MiddleName is not null)
         {
-            var middleName = string.IsNullOrWhiteSpace(request.MiddleName) ? null : request.MiddleName.Trim();
-            person.Name = new FullName(person.Name.FirstName, middleName, person.Name.LastName);
+            var trimmed = request.MiddleName.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                middleName = null;
+            }
+            else if (!ContactNormalization.IsValidName(trimmed))
+            {
+                errors["MiddleName"] = [ValidationMessages.InvalidMiddleName];
+            }
+            else
+            {
+                middleName = trimmed;
+            }
+        }
+
+        if (errors.Count == 0)
+        {
+            person.Name = new FullName(firstName, middleName, lastName);
         }
 
         if (errors.Count > 0)
@@ -263,7 +313,7 @@ public static partial class ProfileEndpoints
         if (httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) &&
             !string.IsNullOrWhiteSpace(refreshTokenValue))
         {
-            var refreshTokenHash = HashRefreshToken(refreshTokenValue);
+            var refreshTokenHash = TokenSecurity.HashSha256(refreshTokenValue);
             var refreshToken = await db.RefreshTokens
                 .FirstOrDefaultAsync(x => x.TokenHash == refreshTokenHash, cancellationToken);
 
@@ -292,7 +342,7 @@ public static partial class ProfileEndpoints
         await transaction.CommitAsync(cancellationToken);
 
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-        var tokenExpiresAtUtc = ParseTokenExpiry(httpContext.User);
+        var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
 
         if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
         {
@@ -305,33 +355,4 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile deleted successfully." });
     }
 
-    private static string HashRefreshToken(string token)
-    {
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
-        return Convert.ToHexString(hashBytes);
-    }
-
-    private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
-    {
-        var expClaim = user.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
-        if (!long.TryParse(expClaim, out var expUnix))
-        {
-            return null;
-        }
-
-        return DateTimeOffset.FromUnixTimeSeconds(expUnix);
-    }
-
-    private static bool IsValidEmail(string email)
-    {
-        try
-        {
-            var parsed = new MailAddress(email);
-            return string.Equals(parsed.Address, email, StringComparison.Ordinal);
-        }
-        catch
-        {
-            return false;
-        }
-    }
 }

@@ -17,11 +17,14 @@ ORDER BY a."Id", am."MechanicId";
 -- ------------------------------------------------------------
 -- 2. PROFILE UPDATE AUDIT (mechanics)
 --    Verifies profile fields changed by /api/profile endpoints.
+--    Includes firstName and lastName (updatable via PUT /api/profile).
 -- ------------------------------------------------------------
 SELECT "Id" AS mechanic_id,
        "Email",
        "PhoneNumber",
+       "FirstName",
        "MiddleName",
+       "LastName",
        ("ProfilePicture" IS NOT NULL) AS has_profile_picture
 FROM people
 WHERE "PersonType" = 'Mechanic'
@@ -29,7 +32,32 @@ ORDER BY "Id";
 
 
 -- ------------------------------------------------------------
--- 3. PROFILE PICTURE STORAGE CHECK
+-- 3. APPOINTMENT STATUS TIMESTAMP AUDIT
+--    Verifies completedAt / canceledAt are set correctly after status updates.
+--    Valid statuses: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
+--    Expected invariants:
+--      Completed  -> CompletedAt IS NOT NULL, CanceledAt IS NULL
+--      Cancelled  -> CanceledAt IS NOT NULL,  CompletedAt IS NULL
+--      InProgress -> both IS NULL
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."Status",
+       a."CompletedAt",
+       a."CanceledAt",
+       CASE
+           WHEN a."Status" = 'Completed'  AND a."CompletedAt" IS NULL THEN 'FAIL: missing CompletedAt'
+           WHEN a."Status" = 'Completed'  AND a."CanceledAt"  IS NOT NULL THEN 'FAIL: spurious CanceledAt'
+           WHEN a."Status" = 'Cancelled'  AND a."CanceledAt"  IS NULL THEN 'FAIL: missing CanceledAt'
+           WHEN a."Status" = 'Cancelled'  AND a."CompletedAt" IS NOT NULL THEN 'FAIL: spurious CompletedAt'
+           WHEN a."Status" = 'InProgress' AND (a."CompletedAt" IS NOT NULL OR a."CanceledAt" IS NOT NULL) THEN 'FAIL: unexpected timestamp'
+           ELSE 'OK'
+       END AS timestamp_integrity
+FROM appointments a
+ORDER BY a."Id";
+
+
+-- ------------------------------------------------------------
+-- 5. PROFILE PICTURE STORAGE CHECK
 --    Counts mechanics with and without stored profile pictures.
 -- ------------------------------------------------------------
 SELECT COUNT(*) FILTER (WHERE "ProfilePicture" IS NOT NULL) AS mechanics_with_profile_picture,
@@ -40,7 +68,7 @@ WHERE "PersonType" = 'Mechanic';
 
 
 -- ------------------------------------------------------------
--- 4. REFRESH TOKEN SESSION ROTATION CHAIN
+-- 6. REFRESH TOKEN SESSION ROTATION CHAIN
 --    Shows TokenHash -> ReplacedByTokenHash links and broken chain flags.
 -- ------------------------------------------------------------
 SELECT rt."Id" AS token_id,
@@ -62,7 +90,7 @@ ORDER BY rt."MechanicId", rt."CreatedAtUtc";
 
 
 -- ------------------------------------------------------------
--- 5. MECHANIC DELETION INTEGRITY
+-- 7. MECHANIC DELETION INTEGRITY
 --    Verifies there are no orphaned rows after mechanic deletion.
 --    Expected: 0 rows.
 -- ------------------------------------------------------------
@@ -90,7 +118,7 @@ WHERE p."Id" IS NULL;
 
 
 -- ------------------------------------------------------------
--- 6. ADMIN MECHANIC LIST CONSISTENCY
+-- 8. ADMIN MECHANIC LIST CONSISTENCY
 --    Cross-checks mechanics against Identity admin role membership.
 -- ------------------------------------------------------------
 SELECT p."Id" AS mechanic_id,
@@ -107,7 +135,7 @@ ORDER BY p."Id";
 
 
 -- ------------------------------------------------------------
--- 7. CUSTOMER RECORD AUDIT
+-- 9. CUSTOMER RECORD AUDIT
 --    Lists all customer records with vehicle counts.
 --    Use after POST/PUT/DELETE /api/customers to verify persistence.
 -- ------------------------------------------------------------
@@ -126,9 +154,9 @@ ORDER BY c."Id";
 
 
 -- ------------------------------------------------------------
--- 8. VEHICLE RECORD AUDIT
---    Lists all vehicles with their owning customer.
---    Use after POST/PUT/DELETE /api/.../vehicles to verify persistence.
+-- 10. VEHICLE RECORD AUDIT
+--     Lists all vehicles with their owning customer.
+--     Use after POST/PUT/DELETE /api/.../vehicles to verify persistence.
 -- ------------------------------------------------------------
 SELECT v."Id" AS vehicle_id,
        v."LicensePlate",
@@ -147,9 +175,9 @@ ORDER BY v."Id";
 
 
 -- ------------------------------------------------------------
--- 9. CUSTOMER DELETION INTEGRITY
---    Verifies no orphaned vehicles remain after customer deletion.
---    Expected: 0 rows.
+-- 11. CUSTOMER DELETION INTEGRITY
+--     Verifies no orphaned vehicles remain after customer deletion.
+--     Expected: 0 rows.
 -- ------------------------------------------------------------
 SELECT v."Id" AS orphaned_vehicle_id,
        v."LicensePlate"
@@ -159,7 +187,7 @@ WHERE c."Id" IS NULL;
 
 
 -- ------------------------------------------------------------
--- 10. VEHICLE DELETION INTEGRITY
+-- 12. VEHICLE DELETION INTEGRITY
 --     Verifies no orphaned appointments remain after vehicle deletion.
 --     Expected: 0 rows.
 -- ------------------------------------------------------------

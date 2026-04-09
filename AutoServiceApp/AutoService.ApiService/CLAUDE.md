@@ -11,6 +11,9 @@
   - `Customer` 1..* `Vehicle`
   - `Vehicle` 1..* `Appointment`
   - `Appointment` *..*  `Mechanic` (join table)
+- `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress`.
+- `Appointment` entity has `DateTime? CompletedAt` and `DateTime? CanceledAt`; status transitions auto-set/clear these timestamps.
+- `AppointmentDto` includes `CompletedAt` and `CanceledAt` fields.
 - Never expose EF entities directly from API boundaries — use DTO contracts.
 
 ## EF Core
@@ -18,7 +21,7 @@
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL` — use `options.UseNpgsql(...)`.
 - Model config centralized in `Data/AutoServiceDbContext.cs`.
 - New migrations go in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts) + customers (plain records) when tables are empty.
 - Admin role seeding is idempotent and runs on every startup (before the "is data already seeded?" guard), ensuring the `"Admin"` Identity role exists and is assigned to the first mechanic (Gabor Kovacs).
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
@@ -37,10 +40,11 @@
 - Mechanic-only registration and login. Customers have no Identity account.
 - Registration is admin-only: requires `"AdminOnly"` authorization policy (caller must have `"Admin"` role in JWT).
 - Registration is transactional: `IdentityUser` + `Mechanic` domain record created together, linked by `IdentityUserId`.
+- Name validation (first name, middle name, last name) is enforced at register, profile update, and customer create/update: names may only contain Unicode letters and hyphens (`^[\p{L}\-]+$`). Validation uses `ContactNormalization.IsValidName()` and error messages from `ValidationMessages`.
 - Login accepts email or phone number.
 - Identifier normalization is mandatory across register/login:
   - emails are trimmed + lowercased,
-  - Hungarian phone inputs (`+36`, `36`, `06`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
+  - Hungarian phone inputs (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
     - `361xxxxxxx` (Budapest),
     - `36(20|21|30|31|50|70)xxxxxxx` (mobile/nomadic),
     - `36<approved 2-digit area>xxxxxx` (geographic).
@@ -69,8 +73,11 @@
 
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
-- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic claims an appointment
-- `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only)
+- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment; returns 422 if appointment is Cancelled
+- `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns 422 if appointment is Cancelled
+- `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only); auto-sets CompletedAt/CanceledAt timestamps on status change
+- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns 422 if appointment is Cancelled
+- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns 422 if appointment is Cancelled
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 
 ## Customer Endpoints (Current)
@@ -88,8 +95,8 @@
 
 - `GET /api/customers/{customerId}/vehicles` (authorized) — list all vehicles for a customer
 - `GET /api/vehicles/{id}` (authorized) — get single vehicle with customer summary
-- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer
-- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record
+- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer; license plate normalized to uppercase and validated against supported European formatting rules
+- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record with the same European license-plate validation rules
 - `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
 - Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
 - Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
@@ -97,10 +104,12 @@
 ## Profile Endpoints (Current)
 
 - `GET /api/profile` (authorized) — get current user's profile (name, email, phone, picture status)
-- `PUT /api/profile` (authorized) — update email, phone number, middle name
+- `PUT /api/profile` (authorized) — update email, phone number, first name, middle name, last name
 - `DELETE /api/profile` (authorized, non-admin only) — delete current user profile after current-password confirmation (logs out and clears auth cookies). Returns 403 if the caller has the Admin role.
 - `POST /api/profile/change-password` (authorized) — change password (current + new + confirm)
 - `GET /api/profile/picture` (authorized) — get profile picture binary
+- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
+- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
 - `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (JPEG/PNG/WebP, max 512 KB, file bound from form payload)
 - `DELETE /api/profile/picture` (authorized) — remove profile picture
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
@@ -139,5 +148,6 @@
 - `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
 - `Middleware/` — custom middleware classes (`LoginBanMiddleware`).
+- `Common/` — cross-cutting reusable utilities (`ContactNormalization`, `TokenSecurity`, `ValidationMessages`); keep email/phone normalization, name validation (`IsValidName`), token hash/expiry parsing, and shared validation error message constants centralized here.
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.
 - Keep comments concise and only for non-obvious logic.

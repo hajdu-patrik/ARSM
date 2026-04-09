@@ -73,6 +73,38 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Vehicles] Create vehicle with EU-style Latin plate formatting (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "AB 1234 CD",
+  "brand": "Renault",
+  "model": "Megane",
+  "year": 2019,
+  "mileageKm": 88000,
+  "enginePowerHp": 116,
+  "engineTorqueNm": 220
+}
+
+###
+
+### [Positive][Vehicles] Create vehicle with European Cyrillic plate formatting (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "\u0410\u0412-1234-\u0415\u0416",
+  "brand": "Skoda",
+  "model": "Kodiaq",
+  "year": 2021,
+  "mileageKm": 39000,
+  "enginePowerHp": 190,
+  "engineTorqueNm": 320
+}
+
+###
+
 ### [Negative][Vehicles] Create vehicle with missing required fields (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
 Content-Type: application/json
@@ -98,6 +130,22 @@ Content-Type: application/json
   "brand": "Skoda",
   "model": "Octavia",
   "year": 1800,
+  "mileageKm": 0,
+  "enginePowerHp": 100,
+  "engineTorqueNm": 200
+}
+
+###
+
+### [Negative][Vehicles] Create vehicle with non-European script in plate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "\u0627\u0628-123",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
   "mileageKm": 0,
   "enginePowerHp": 100,
   "engineTorqueNm": 200

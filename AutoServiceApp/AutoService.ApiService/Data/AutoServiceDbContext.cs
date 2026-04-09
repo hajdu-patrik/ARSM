@@ -158,6 +158,8 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
             entity.Property(x => x.ScheduledDate).IsRequired();
             entity.Property(x => x.TaskDescription).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entity.Property(x => x.CompletedAt);
+            entity.Property(x => x.CanceledAt);
 
             entity.HasIndex(x => x.ScheduledDate);
 

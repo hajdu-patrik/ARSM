@@ -44,4 +44,12 @@ export const profileService = {
   getProfilePictureUrl(): string {
     return `${API_URL}/api/profile/picture`;
   },
+
+  getMechanicProfilePictureUrl(personId: number): string {
+    return `${API_URL}/api/profile/picture/${personId}`;
+  },
+
+  getProfilePictureUpdatesUrl(): string {
+    return `${API_URL}/api/profile/picture/updates`;
+  },
 };

@@ -6,7 +6,6 @@ namespace AutoService.ApiService.Models.UniqueTypes;
  */
 public enum ProgresStatus
 {
-    Scheduled,  // Appointment booked; work has not started yet.
     InProgress, // Vehicle is currently being serviced.
     Completed,  // Service work finished successfully.
     Cancelled   // Appointment was cancelled before or during service.

@@ -1,3 +1,4 @@
+using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
@@ -21,7 +22,42 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidFirstName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!ContactNormalization.IsValidName(request.LastName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidLastName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MiddleName) && !ContactNormalization.IsValidName(request.MiddleName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidMiddleName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidEmail,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
+        if (normalizedPhone is not null &&
+            !ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedPhone, out normalizedPhone))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidPhone,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
 
         var emailExists = await db.People
             .AnyAsync(p => p.Email == normalizedEmail, cancellationToken);
@@ -36,7 +72,7 @@ public static partial class CustomerEndpoints
         var customer = new Customer(
             new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim()),
             normalizedEmail,
-            request.PhoneNumber?.Trim());
+            normalizedPhone);
 
         db.Customers.Add(customer);
         await db.SaveChangesAsync(cancellationToken);
@@ -68,6 +104,27 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
+        if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidFirstName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!ContactNormalization.IsValidName(request.LastName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidLastName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MiddleName) && !ContactNormalization.IsValidName(request.MiddleName.Trim()))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidMiddleName,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
         var customer = await db.Customers
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
@@ -78,7 +135,21 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidEmail,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
+        if (normalizedPhone is not null &&
+            !ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedPhone, out normalizedPhone))
+        {
+            return Results.Problem(
+                detail: ValidationMessages.InvalidPhone,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
 
         var emailConflict = await db.People
             .AnyAsync(p => p.Email == normalizedEmail && p.Id != id, cancellationToken);
@@ -92,7 +163,7 @@ public static partial class CustomerEndpoints
 
         customer.Name = new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim());
         customer.Email = normalizedEmail;
-        customer.PhoneNumber = request.PhoneNumber?.Trim();
+        customer.PhoneNumber = normalizedPhone;
 
         await db.SaveChangesAsync(cancellationToken);
 

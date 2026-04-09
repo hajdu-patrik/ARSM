@@ -1,7 +1,6 @@
+using AutoService.ApiService.Common;
 using AutoService.ApiService.Models;
 using Microsoft.AspNetCore.Identity;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,7 +45,7 @@ public static partial class AuthEndpoints
      * @return Trimmed string, or null.
      */
     private static string? NormalizeOptional(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        => ContactNormalization.NormalizeOptional(value);
 
     /**
      * Appends a "field is required" error entry if the value is null or whitespace.
@@ -64,33 +63,7 @@ public static partial class AuthEndpoints
     }
 
     private static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
-    {
-        normalizedEmail = string.Empty;
-
-        var trimmed = NormalizeOptional(rawValue);
-        if (trimmed is null)
-        {
-            return false;
-        }
-
-        var lowerCased = trimmed.ToLowerInvariant();
-
-        try
-        {
-            var parsed = new MailAddress(lowerCased);
-            if (!string.Equals(parsed.Address, lowerCased, StringComparison.Ordinal))
-            {
-                return false;
-            }
-        }
-        catch
-        {
-            return false;
-        }
-
-        normalizedEmail = lowerCased;
-        return true;
-    }
+        => ContactNormalization.TryNormalizeEmail(rawValue, out normalizedEmail);
 
     private static string GenerateRefreshTokenValue()
     {
@@ -99,10 +72,7 @@ public static partial class AuthEndpoints
     }
 
     private static string HashRefreshToken(string token)
-    {
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
-        return Convert.ToHexString(hashBytes);
-    }
+        => TokenSecurity.HashSha256(token);
 
     private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl)
     {
@@ -131,13 +101,5 @@ public static partial class AuthEndpoints
     }
 
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
-    {
-        var expClaim = user.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
-        if (!long.TryParse(expClaim, out var expUnix))
-        {
-            return null;
-        }
-
-        return DateTimeOffset.FromUnixTimeSeconds(expUnix);
-    }
+        => TokenSecurity.ParseJwtExpiry(user);
 }

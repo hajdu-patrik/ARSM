@@ -17,7 +17,7 @@ const NotFoundComponent = memo(function NotFound() {
   const [remainingMs, setRemainingMs] = useState(REDIRECT_DURATION_MS);
 
   const redirectTarget = useMemo(
-    () => (isAuthenticated ? '/dashboard' : '/login'),
+    () => (isAuthenticated ? '/' : '/login'),
     [isAuthenticated],
   );
 
@@ -40,10 +40,9 @@ const NotFoundComponent = memo(function NotFound() {
 
   const isDark = theme === 'dark';
   const secondsLeft = Math.max(Math.ceil(remainingMs / 1000), 0);
-  const ctaTextKey =
-    redirectTarget === '/dashboard'
-      ? 'notFound.goToDashboard'
-      : 'notFound.goToLogin';
+  const ctaTextKey = isAuthenticated
+    ? 'notFound.goToDashboard'
+    : 'notFound.goToLogin';
 
   return (
     <div

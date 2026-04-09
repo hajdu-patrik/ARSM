@@ -27,7 +27,7 @@ const PlannerSpaceComponent = memo(function PlannerSpace({
     day: 'numeric',
   }).format(new Date());
 
-  const scheduledCount = appointments.filter((a) => a.status === 'Scheduled').length;
+  const scheduledCount = appointments.length;
 
   return (
     <section>
