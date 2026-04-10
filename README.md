@@ -25,7 +25,7 @@ Built as a full-stack application with ASP.NET Core Web API (backend), React + T
 ## Language
 
 - English: this file
-- Hungarian: [README(HU).md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README(HU).md)
+- Hungarian: [README(HU).md](https://github.com/hajdu-patrik/ARSM/blob/main/README(HU).md)
 
 ---
 
@@ -73,6 +73,13 @@ Reusable runbooks invoked via slash commands in both tools.
 
 Skill sources: `.github/skills/*/SKILL.md`
 
+### SQL Read-Only Policy (AI)
+
+- For AI-assisted SQL validation, use the dedicated PostgreSQL account `ai_agent_test_user`.
+- This account is read-only by design and may only run `SELECT` queries.
+- Never run `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, or `GRANT/REVOKE` through AI-assisted SQL tooling.
+- Use privileged/admin DB credentials only for intentional manual maintenance operations.
+
 ### Instruction Files
 
 Domain rules are maintained in parallel for both tools:
@@ -89,7 +96,7 @@ Domain rules are maintained in parallel for both tools:
 - Authentication is based on ASP.NET Core Identity + JWT, with backend-managed HttpOnly cookie sessions.
 - Access and refresh tokens are stored in secure HttpOnly cookies, with refresh token rotation and server-side persistence (hashed).
 - Auth endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
-- Appointment endpoints: `GET /api/appointments`, `GET /api/appointments/today`, `PUT /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`.
+- Appointment endpoints: `GET /api/appointments`, `GET /api/appointments/today`, `POST /api/appointments/intake`, `PUT /api/appointments/{id}`, `PUT /api/appointments/{id}/claim`, `DELETE /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`, `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `POST /api/customers/{customerId}/appointments` (AdminOnly).
 - Dashboard access is for mechanics only. After login, mechanics land on a Scheduler page with a compact today summary strip, monthly calendar view, intake quick section, and monthly appointment list.
 - Sensitive operational/security details are intentionally not published in this README.
 
@@ -99,8 +106,7 @@ Domain rules are maintained in parallel for both tools:
 
 ```Bash
 cd AutoServiceApp
-cd AutoService.AppHost
-dotnet run
+dotnet run --project AutoService.AppHost
 ```
 
 This starts the orchestrated local environment (API + infrastructure + related services).

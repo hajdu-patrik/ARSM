@@ -3,6 +3,7 @@ using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace AutoService.ApiService.DataInitialization;
 
@@ -45,24 +46,47 @@ public static class DemoDataInitializer
                 "Demo seeding requires 'DemoData:MechanicPassword'. Set it in appsettings.Local.json, user secrets, or environment variables.");
         }
 
-        // Ensure the Admin role and assignment exist on every startup (idempotent).
-        await EnsureAdminRoleAsync(userManager, roleManager);
+        if (ContainsTemplateMarker(mechanicPassword))
+        {
+            throw new InvalidOperationException(
+                "Demo seeding password 'DemoData:MechanicPassword' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a unique local password before startup.");
+        }
 
-        if (await db.Mechanics.AnyAsync() || await db.Customers.AnyAsync() || await db.Vehicles.AnyAsync() || await db.Appointments.AnyAsync())
+        var hasMechanics = await db.Mechanics.AnyAsync();
+        var hasCustomers = await db.Customers.AnyAsync();
+        var hasVehicles = await db.Vehicles.AnyAsync();
+        var hasAppointments = await db.Appointments.AnyAsync();
+        var hasIdentityUsers = await db.Users.AnyAsync();
+
+        // Older migration backfill can leave a customer-only dataset with no mechanics/identity users.
+        // Reset that inconsistent state so deterministic demo seeding can create full auth-capable data.
+        if (!hasMechanics && !hasIdentityUsers && (hasCustomers || hasVehicles || hasAppointments))
+        {
+            await ResetLegacyBackfillDatasetAsync(db);
+            hasCustomers = false;
+            hasVehicles = false;
+            hasAppointments = false;
+        }
+
+        if (hasMechanics || hasCustomers || hasVehicles || hasAppointments || hasIdentityUsers)
+        {
+            // Ensure Admin role assignment still converges on already-seeded datasets.
+            await EnsureAdminRoleAsync(userManager, roleManager);
             return;
+        }
 
         // Create mechanics with linked Identity accounts.
         var mechanicSeeds = new[]
         {
-            (Name: new FullName("Gabor", null, "Kovacs"),    Email: "gabor.kovacs@gmail.com", Phone: "+36301112233",
+            (Name: new FullName("Gabor", null, "Kovacs"),    Email: "gabor.kovacs@example.com", Phone: "+36301112233",
              Spec: SpecializationType.GasolineAndDiesel,
              Skills: new List<ExpertiseType> { ExpertiseType.Engine, ExpertiseType.Transmission, ExpertiseType.Brakes, ExpertiseType.FuelSystem }),
 
-            (Name: new FullName("Peter", null, "Nagy"),      Email: "peter.nagy@gmail.com",   Phone: "+36302223344",
+            (Name: new FullName("Peter", null, "Nagy"),      Email: "peter.nagy@example.com",   Phone: "+36302223344",
              Spec: SpecializationType.HybridAndElectric,
              Skills: new List<ExpertiseType> { ExpertiseType.ElectricalSystem, ExpertiseType.CoolingSystem, ExpertiseType.Suspension, ExpertiseType.Brakes, ExpertiseType.AirConditioning }),
 
-            (Name: new FullName("Mate", null, "Szabo"),      Email: "mate.szabo@gmail.com",   Phone: "+36303334455",
+            (Name: new FullName("Mate", null, "Szabo"),      Email: "mate.szabo@example.com",   Phone: "+36303334455",
              Spec: SpecializationType.All,
              Skills: new List<ExpertiseType> { ExpertiseType.Engine, ExpertiseType.Transmission, ExpertiseType.Brakes, ExpertiseType.Suspension, ExpertiseType.ExhaustSystem, ExpertiseType.Bodywork })
         };
@@ -82,11 +106,11 @@ public static class DemoDataInitializer
         // Customers are passive data records — no login account, no IdentityUserId.
         var customers = new List<Customer>
         {
-            new(new FullName("Anna",   "Maria", "Toth"),   "anna.toth@gmail.com",     "+36304445566"),
-            new(new FullName("Bence",  null,    "Farkas"),  "bence.farkas@gmail.com",  "+36305556677"),
-            new(new FullName("Csilla", "Kata",  "Varga"),   "csilla.varga@gmail.com",  null),
-            new(new FullName("David",  null,    "Kiss"),    "david.kiss@gmail.com",    "+36306667788"),
-            new(new FullName("Emese",  null,    "Lakatos"), "emese.lakatos@gmail.com", null)
+            new(new FullName("Anna",   "Maria", "Toth"),   "anna.toth@example.com",     "+36304445566"),
+            new(new FullName("Bence",  null,    "Farkas"),  "bence.farkas@example.com",  "+36305556677"),
+            new(new FullName("Csilla", "Kata",  "Varga"),   "csilla.varga@example.com",  null),
+            new(new FullName("David",  null,    "Kiss"),    "david.kiss@example.com",    "+36306667788"),
+            new(new FullName("Emese",  null,    "Lakatos"), "emese.lakatos@example.com", null)
         };
         db.Customers.AddRange(customers);
         
@@ -287,6 +311,9 @@ public static class DemoDataInitializer
 
         db.Appointments.AddRange(appointments);
         await db.SaveChangesAsync();
+
+        // Ensure role exists and first mechanic is assigned Admin after identity users were created.
+        await EnsureAdminRoleAsync(userManager, roleManager);
     }
 
     /**
@@ -303,7 +330,7 @@ public static class DemoDataInitializer
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        var adminUser = await userManager.FindByEmailAsync("gabor.kovacs@gmail.com");
+        var adminUser = await userManager.FindByEmailAsync("gabor.kovacs@example.com");
         if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
         {
             await userManager.AddToRoleAsync(adminUser, "Admin");
@@ -340,5 +367,54 @@ public static class DemoDataInitializer
         }
 
         return identityUser.Id;
+    }
+
+    private static bool ContainsTemplateMarker(string value)
+    {
+        if (value.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("SET_UNIQUE_LOCAL", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var normalized = NormalizeForMarkerDetection(value);
+        return normalized.Contains("CHANGEME", StringComparison.Ordinal)
+            || normalized.Contains("SETUNIQUELOCAL", StringComparison.Ordinal);
+    }
+
+    private static string NormalizeForMarkerDetection(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                builder.Append(char.ToUpperInvariant(c));
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static async Task ResetLegacyBackfillDatasetAsync(AutoServiceDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            TRUNCATE TABLE
+                appointmentmechanics,
+                appointments,
+                vehicles,
+                refreshtokens,
+                revokedjwttokens,
+                people,
+                "AspNetUserTokens",
+                "AspNetUserRoles",
+                "AspNetUserLogins",
+                "AspNetUserClaims",
+                "AspNetRoleClaims",
+                "AspNetUsers",
+                "AspNetRoles"
+            RESTART IDENTITY CASCADE;
+            """);
     }
 }

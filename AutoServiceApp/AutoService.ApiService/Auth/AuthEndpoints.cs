@@ -20,7 +20,7 @@ public static partial class AuthEndpoints
 
         group.MapPost("/register", RegisterAsync).RequireAuthorization("AdminOnly");
         group.MapPost("/login", LoginAsync).RequireRateLimiting("AuthLoginAttempts");
-        group.MapPost("/refresh", RefreshAsync);
+        group.MapPost("/refresh", RefreshAsync).RequireRateLimiting("AuthRefreshAttempts");
         group.MapPost("/logout", LogoutAsync).RequireAuthorization();
         group.MapGet("/validate", ValidateTokenAsync).RequireAuthorization();
 

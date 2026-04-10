@@ -1,3 +1,6 @@
+-- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
+-- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
+
 -- 1. APPOINTMENT CLAIMS VERIFICATION
 --    Shows which mechanic is assigned to which appointment.
 --    Note: claim timestamp is not persisted; use ScheduledDate + inspected_at_utc.
@@ -135,11 +138,12 @@ WHERE p."Id" IS NULL;
 
 -- ------------------------------------------------------------
 -- 8. ADMIN MECHANIC LIST CONSISTENCY
---    Cross-checks mechanics against Identity admin role membership.
+--    Cross-checks mechanics against Identity admin role membership and picture flag projection.
 -- ------------------------------------------------------------
 SELECT p."Id" AS mechanic_id,
        p."Email" AS mechanic_email,
        p."IdentityUserId" AS identity_user_id,
+    ((p."ProfilePicture" IS NOT NULL) AND (p."ProfilePictureContentType" IS NOT NULL)) AS "HasProfilePicture",
        COALESCE(BOOL_OR(r."Name" = 'Admin'), FALSE) AS "IsAdmin"
 FROM people p
 LEFT JOIN "AspNetUsers" u ON u."Id" = p."IdentityUserId"
@@ -259,7 +263,7 @@ WHERE a."TaskDescription" = 'Scheduler intake with past date should be rejected'
 
 -- ------------------------------------------------------------
 -- 15. APPOINTMENT UPDATE COVERAGE
---     Use after PUT /api/appointments/{id} to verify appointment + vehicle edits.
+--     Use after PUT /api/appointments/{id} to verify appointment-only edits.
 -- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
@@ -274,8 +278,6 @@ SELECT a."Id" AS appointment_id,
        v."EngineTorqueNm",
        CASE
            WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
-           WHEN v."Year" < 1886 OR v."Year" > 2100 THEN 'FAIL: vehicle year out of range'
-           WHEN v."MileageKm" < 0 OR v."EnginePowerHp" < 0 OR v."EngineTorqueNm" < 0 THEN 'FAIL: negative vehicle values'
            ELSE 'OK'
        END AS update_integrity
 FROM appointments a
@@ -322,3 +324,16 @@ SELECT a."Id" AS unexpectedly_updated_appointment_id,
        a."TaskDescription"
 FROM appointments a
 WHERE a."TaskDescription" = 'Past appointment scheduled date change should be rejected';
+
+
+-- ------------------------------------------------------------
+-- 18. CUSTOMER APPOINTMENT CREATE PAST-DATE REJECTION CHECK
+--     The negative POST /api/customers/{customerId}/appointments payload
+--     with this task description must not persist.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS unexpected_persisted_appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription"
+FROM appointments a
+WHERE a."TaskDescription" = 'Admin create with past date should be rejected';

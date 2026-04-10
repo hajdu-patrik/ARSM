@@ -25,6 +25,11 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - For parallel work, prefer folder-level ownership during a work window (for example, one person on `ApiService/Auth`, another on `WebUI/src`).
 - Before pushing larger changes, sync in the group to avoid simultaneous edits on the same files.
 
+## AI SQL Safety Rule (Mandatory)
+- For AI-assisted DB checks, use `ai_agent_test_user` only.
+- Restrict AI SQL execution to read-only `SELECT` queries.
+- Never execute DML/DDL from AI SQL tools (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`).
+
 ## Documentation Sync Rule (Mandatory)
 - After any change that affects API endpoints, EF migrations, middleware pipeline, WebUI pages/components/routes, dependencies (NuGet or npm), AppHost resource wiring, or configuration keys — run `/docs-sync` before considering the task complete.
 - This keeps all `CLAUDE.md` files and `.github/instructions/` files in sync with the actual code.
@@ -42,7 +47,6 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Runtime MCP files stay local/ignored: `.vscode/mcp.json` and `.claude/.mcp.json`.
 - Keep `.vscode` and `.claude` MCP server sets aligned.
 - Current shared server set:
-	- `pencil-design-tool` (bash wrapper starts `openpencil` HTTP server and bridges through `mcp-remote`)
 	- `context-mode`
 	- `aspire` (workspace-local tool via `dotnet tool run aspire -- mcp start`)
 	- `postgres`
@@ -113,13 +117,16 @@ This project uses specialist agents for task decomposition and delegation. **All
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
+- Demo seeding includes legacy-state recovery: if a migrated/backfilled dataset contains customer-side data but lacks mechanics/identity linkage, the initializer resets that inconsistent dataset and reseeds deterministic demo data.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
+- Startup/seeding must fail fast if `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret`, or `DemoData:MechanicPassword` still contains template markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
 - Keep schema constraints and indexes aligned with domain invariants.
 - Use `ConnectionStrings:AutoServiceDb` as the canonical connection key.
-- Configuration keys: `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`, `Cors:AllowedOrigins`.
+- Configuration keys: `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`, `Cors:AllowedOrigins`, `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`.
+- API appsettings default CORS origin is `https://localhost:5173`.
 - Never hardcode credentials in committed source code.
 - Prefer Aspire-injected configuration, environment variables, and gitignored local overrides.
 - Local standalone run (outside AppHost): provide the PostgreSQL connection string in `appsettings.Local.json` (gitignored) or via the `ConnectionStrings__AutoServiceDb` environment variable.
@@ -144,14 +151,14 @@ This project uses specialist agents for task decomposition and delegation. **All
 - Current mapped endpoints in `AutoService.ApiService`:
 	- `POST /api/auth/register` (authorized, AdminOnly)
 	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`)
-	- `POST /api/auth/refresh`
+	- `POST /api/auth/refresh` (rate-limited by policy `AuthRefreshAttempts`)
 	- `POST /api/auth/logout` (authorized)
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback, past-date scheduled-date rejection, and due datetime validation
-	- `PUT /api/appointments/{id}` (authorized) — update appointment and related vehicle fields (customer fields unchanged); allowed for assigned mechanics or admins; rejects `ScheduledDate` changes when the appointment is already in the past
-	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
+	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`) only; legacy vehicle fields in payload are tolerated but ignored; allowed for assigned mechanics or admins; rejects past `ScheduledDate` values and rejects `ScheduledDate` changes when the appointment is already in the past
+	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created, rejects past `ScheduledDate`)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment (422 if Cancelled)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled or if unassign would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (422 if Cancelled)
@@ -164,10 +171,10 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/profile/picture` (authorized) — get profile picture binary
 	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
 	- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
-	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture
+	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (server validates image magic bytes and rejects MIME/content mismatches)
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
-	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag
-	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics)
+	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag and `hasProfilePicture`
+	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics; 409 on concurrent contention/serialization conflict; 500 if linked identity deletion fails)
 	- `GET /api/customers` (authorized) — list all customers
 	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles)
 	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
@@ -189,10 +196,13 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- email inputs are trimmed and normalized to lowercase,
 	- Hungarian phone inputs accept common formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaces/punctuation) and normalize to canonical national form with strict prefix/length rules (`361xxxxxxx`, `36(20|21|30|31|50|70)xxxxxxx`, and approved 2-digit geographic area prefixes),
 	- register rejects duplicate phone numbers even if input format differs,
+	- register pre-checks normalized email collisions against both Identity users and domain `People` records (including passive customers),
+	- register maps unique-email database races to controlled validation errors on `Email`,
 	- unknown/wrong credentials return generic `401` (`invalid_credentials`),
 	- existing customer email/phone identifiers return `403` (`mechanic_only_login`) because only mechanics can authenticate,
 	- lockout is enabled (`5` failed attempts, `15` minutes lockout),
 	- login rate limit is `10` requests per minute per client IP,
+	- refresh rate limit is `20` requests per minute per client IP,
 	- temporary login ban window after rate-limit rejection is currently `3` minutes,
 	- access token lifetime is currently `10` minutes,
 	- refresh token lifetime is currently `7` days,
@@ -203,25 +213,29 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- issuer and audience validation enabled,
 	- lifetime validation enabled,
 	- clock skew set to `1` minute,
-	- secret must be configured and at least `32` bytes,
+	- secret must be configured, must not contain template markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`), and must be at least `32` bytes,
 	- access token may be read from cookie,
 	- denylised `jti` values are rejected.
 - Security middleware currently active:
+	- `UseForwardedHeaders()` before auth throttling,
+	- forwarded-header trust allow-list is read from `ForwardedHeaders:KnownProxies` and `ForwardedHeaders:KnownNetworks` (with loopback fallback when both lists are empty),
 	- `UseHttpsRedirection()` always,
 	- `UseHsts()` outside Development,
-	- custom login ban middleware (3-minute IP cooldown),
+	- custom login ban middleware (3-minute IP cooldown, deterministic 30-second cleanup cadence, max 5000 tracked clients),
 	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseAuthentication()`, `UseAuthorization()`.
 - Service defaults: `builder.AddServiceDefaults()` is called at startup (registers OpenTelemetry, health checks, service discovery). `app.MapDefaultEndpoints()` maps `/health` and `/alive` in Development.
+- Profile-picture SSE broadcaster uses bounded channels (max 200 concurrent subscriptions, per-subscriber buffer size 32, `DropOldest` overflow strategy).
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
 	- seed generation adds 30 additional appointments in the current UTC month (including today and multiple same-day entries),
 	- demo seeding outside Development requires `DemoData:EnableSeeding=true`,
-	- `DemoData:MechanicPassword` is required when seeding is enabled.
+	- `DemoData:MechanicPassword` is required when seeding is enabled,
+	- placeholder marker values (`CHANGE_ME`, `SET_UNIQUE_LOCAL`, including punctuation-separated variants) in DB/JWT/seeding secrets fail fast at startup/seeding.
 
 ## Current Known Gaps (As Of Current Code)
 - `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- Frontend Scheduler page (summary strip reflects selected day when selected, otherwise today + calendar + intake quick section + month list), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Scheduler supports selected-day intake flow (`POST /api/appointments/intake`) with auto-derived scheduled datetime and due-datetime-only input, email customer lookup (`GET /api/customers/by-email`) with create fallback, appointment/vehicle editing via `PUT /api/appointments/{id}` (in edit mode, past appointments keep scheduled datetime fixed as display-only while other fields remain editable), due/overdue display, overdue detail-modal behavior (claim button hidden, admin add-mechanic hidden), calendar badge density rules (mobile day cells show max 1 badge; desktop shows max 3 + overflow `+N`), and immediate viewed-month/today list updates after intake creation via store upsert; sidebar default main nav order starts with Scheduler. Intake create-customer labels indicate optional middle name and phone. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
-- Token denylist is currently in-memory only; horizontal scale/multi-instance deployments need distributed denylist/session invalidation strategy.
+- Frontend Scheduler page (summary strip reflects selected day when selected, otherwise today + calendar + intake quick section + month list), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Scheduler supports selected-day intake flow (`POST /api/appointments/intake`) with auto-derived scheduled datetime and due-datetime-only input, email customer lookup (`GET /api/customers/by-email`) with create fallback, appointment/vehicle editing via `PUT /api/appointments/{id}` (in edit mode, past appointments keep scheduled datetime fixed as display-only while other fields remain editable), due/overdue display, overdue detail-modal behavior (claim button hidden, admin add-mechanic hidden), calendar badge density rules (mobile day cells show max 1 badge; desktop shows max 3 + overflow `+N`), and immediate viewed-month/today list updates after intake creation via store upsert. Scheduler background refresh uses request-id/current-view guards to prevent stale-closure and out-of-order write races. Sidebar default main nav order starts with Scheduler, and sidebar avatar snapshot state is cleared on auth teardown. Intake create-customer labels indicate optional middle name and phone. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. EN and HU locale files define scheduler keys explicitly. Profile-picture SSE client reconnect is auth-aware, attempts refresh on stream errors, and stops reconnect loops after auth clear/session expiry while still clearing timers/event-source handles during teardown. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
+- Token denylist entries are persisted in the database (`revokedjwttokens`) and cached in-memory for fast checks; multi-instance deployments still need shared database/cache consistency and cleanup policy.
 
 ## API Test Coverage Snapshot
 - `AutoService.ApiService/api-tests/auth-and-session.http` includes an auth full matrix for:
@@ -229,6 +243,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
+- API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_ADMIN_PASSWORD}}` and `example.com` seed-style identifiers for deterministic local runs.
 
 ## Aspire Rules
 - `AutoService.AppHost` is the default local entry point.

@@ -33,6 +33,11 @@ public static partial class ProfileEndpoints
             ? await userManager.FindByIdAsync(person.IdentityUserId)
             : null;
 
+        var updatedEmail = person.Email;
+        var updatedPhoneNumber = person.PhoneNumber;
+        var emailChanged = false;
+        var phoneChanged = false;
+
         // Email update.
         if (request.Email is not null)
         {
@@ -51,16 +56,8 @@ public static partial class ProfileEndpoints
                 }
                 else
                 {
-                    person.Email = normalizedEmail;
-
-                    if (identityUser is not null)
-                    {
-                        identityUser.Email = normalizedEmail;
-                        identityUser.UserName = normalizedEmail;
-                        identityUser.NormalizedEmail = normalizedEmail.ToUpperInvariant();
-                        identityUser.NormalizedUserName = normalizedEmail.ToUpperInvariant();
-                        await userManager.UpdateAsync(identityUser);
-                    }
+                    updatedEmail = normalizedEmail;
+                    emailChanged = true;
                 }
             }
         }
@@ -71,11 +68,10 @@ public static partial class ProfileEndpoints
             var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
             if (normalizedOptionalPhone is null)
             {
-                person.PhoneNumber = null;
-                if (identityUser is not null)
+                if (person.PhoneNumber is not null)
                 {
-                    identityUser.PhoneNumber = null;
-                    await userManager.UpdateAsync(identityUser);
+                    updatedPhoneNumber = null;
+                    phoneChanged = true;
                 }
             }
             else
@@ -93,14 +89,10 @@ public static partial class ProfileEndpoints
                     {
                         errors["PhoneNumber"] = ["An account already exists with this phone number."];
                     }
-                    else
+                    else if (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal))
                     {
-                        person.PhoneNumber = normalizedPhone;
-                        if (identityUser is not null)
-                        {
-                            identityUser.PhoneNumber = normalizedPhone;
-                            await userManager.UpdateAsync(identityUser);
-                        }
+                        updatedPhoneNumber = normalizedPhone;
+                        phoneChanged = true;
                     }
                 }
             }
@@ -161,17 +153,40 @@ public static partial class ProfileEndpoints
             }
         }
 
-        if (errors.Count == 0)
-        {
-            person.Name = new FullName(firstName, middleName, lastName);
-        }
-
         if (errors.Count > 0)
         {
             return Results.ValidationProblem(errors);
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        person.Email = updatedEmail;
+        person.PhoneNumber = updatedPhoneNumber;
+        person.Name = new FullName(firstName, middleName, lastName);
+
+        if (identityUser is not null && (emailChanged || phoneChanged))
+        {
+            identityUser.Email = updatedEmail;
+            identityUser.UserName = updatedEmail;
+            identityUser.NormalizedEmail = updatedEmail.ToUpperInvariant();
+            identityUser.NormalizedUserName = updatedEmail.ToUpperInvariant();
+            identityUser.PhoneNumber = updatedPhoneNumber;
+
+            var identityUpdateResult = await userManager.UpdateAsync(identityUser);
+            if (!identityUpdateResult.Succeeded)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+
+                var identityErrors = identityUpdateResult.Errors
+                    .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "identity" : e.Code)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
+
+                return Results.ValidationProblem(identityErrors);
+            }
+        }
+
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Results.Ok(new ProfileResponse(
             person.Id,
@@ -346,7 +361,7 @@ public static partial class ProfileEndpoints
 
         if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
         {
-            tokenDenylistService.Revoke(jwtId, tokenExpiresAtUtc.Value);
+            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
         }
 
         httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });

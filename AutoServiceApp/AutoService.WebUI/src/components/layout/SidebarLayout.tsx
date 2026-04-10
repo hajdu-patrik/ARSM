@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronsLeft, LogOut, Menu, Package, Settings, Shield, Wrench } from 'lucide-react';
@@ -31,34 +31,6 @@ interface SidebarLayoutProps {
   readonly navItems?: NavItem[];
 }
 
-interface AvatarSnapshot {
-  personId: number | null;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  hasProfilePicture: boolean;
-  cacheBuster: number;
-}
-
-type SidebarUserIdentity = {
-  personId: number;
-  email: string;
-} | null | undefined;
-
-let latestAvatarSnapshot: AvatarSnapshot | null = null;
-
-function snapshotMatchesUser(snapshot: AvatarSnapshot | null, user: SidebarUserIdentity): boolean {
-  if (!snapshot || !user) {
-    return false;
-  }
-
-  if (snapshot.personId !== null) {
-    return snapshot.personId === user.personId;
-  }
-
-  return snapshot.email !== null && snapshot.email === user.email;
-}
-
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
 
 /* Shared transition class for text reveal/hide */
@@ -72,17 +44,16 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const theme = useThemeStore((state) => state.theme);
-  const initialSnapshot = snapshotMatchesUser(latestAvatarSnapshot, user) ? latestAvatarSnapshot : null;
 
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem(COLLAPSED_KEY) === 'true';
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [profilePersonId, setProfilePersonId] = useState<number | null>(initialSnapshot?.personId ?? user?.personId ?? null);
-  const [profileFirstName, setProfileFirstName] = useState<string | null>(initialSnapshot?.firstName ?? null);
-  const [profileLastName, setProfileLastName] = useState<string | null>(initialSnapshot?.lastName ?? null);
-  const [hasProfilePicture, setHasProfilePicture] = useState(initialSnapshot?.hasProfilePicture ?? false);
-  const [avatarCacheBuster, setAvatarCacheBuster] = useState(initialSnapshot?.cacheBuster ?? 0);
+  const [profilePersonId, setProfilePersonId] = useState<number | null>(user?.personId ?? null);
+  const [profileFirstName, setProfileFirstName] = useState<string | null>(null);
+  const [profileLastName, setProfileLastName] = useState<string | null>(null);
+  const [hasProfilePicture, setHasProfilePicture] = useState(false);
+  const [avatarCacheBuster, setAvatarCacheBuster] = useState(0);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -91,20 +62,23 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 
   useEffect(() => {
     if (!user) {
+      setProfilePersonId(null);
+      setProfileFirstName(null);
+      setProfileLastName(null);
+      setHasProfilePicture(false);
+      setAvatarCacheBuster(0);
+      setAvatarLoadFailed(false);
       return;
     }
 
-    latestAvatarSnapshot = {
-      personId: profilePersonId ?? user.personId,
-      email: user.email,
-      firstName: profileFirstName,
-      lastName: profileLastName,
-      hasProfilePicture,
-      cacheBuster: avatarCacheBuster,
-    };
-  }, [avatarCacheBuster, hasProfilePicture, profileFirstName, profileLastName, profilePersonId, user]);
+    setProfilePersonId(user.personId);
+  }, [user]);
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     let isCancelled = false;
 
     const loadProfileForAvatar = async () => {
@@ -118,14 +92,6 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         setProfileFirstName(profile.firstName ?? null);
         setProfileLastName(profile.lastName ?? null);
         setHasProfilePicture(profile.hasProfilePicture);
-        latestAvatarSnapshot = {
-          personId: profile.personId,
-          email: user?.email ?? null,
-          firstName: profile.firstName ?? null,
-          lastName: profile.lastName ?? null,
-          hasProfilePicture: profile.hasProfilePicture,
-          cacheBuster: avatarCacheBuster,
-        };
       } catch {
         // Keep last known state to avoid avatar flicker on transient fetch failures.
       }
@@ -136,7 +102,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     return () => {
       isCancelled = true;
     };
-  }, [avatarCacheBuster, user?.email]);
+  }, [user]);
 
   useEffect(() => {
     const stopLiveUpdates = startProfilePictureLiveUpdates();
@@ -163,22 +129,13 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
       setHasProfilePicture(nextHasProfilePicture);
       setAvatarCacheBuster(nextCacheBuster);
       setAvatarLoadFailed(false);
-
-      latestAvatarSnapshot = {
-        personId: profilePersonId,
-        email: user?.email ?? null,
-        firstName: profileFirstName,
-        lastName: profileLastName,
-        hasProfilePicture: nextHasProfilePicture,
-        cacheBuster: nextCacheBuster,
-      };
     };
 
     globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
     return () => {
       globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
     };
-  }, [hasProfilePicture, profileFirstName, profileLastName, profilePersonId, user?.email, user?.personId]);
+  }, [hasProfilePicture, profilePersonId, user?.personId]);
 
   const handleLogout = useCallback(async () => {
     await authService.logout();
@@ -203,7 +160,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   const profilePictureUrl = `${profileService.getProfilePictureUrl()}?v=${avatarCacheBuster}`;
   const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
 
-  /* Collapsed text class — applied only on md+ to hide text */
+  /* Collapsed text class - applied only on md+ to hide text */
   const collapsedText = collapsed ? 'md:max-w-0 md:opacity-0' : 'md:max-w-[180px] md:opacity-100';
 
   const renderNavLink = (item: NavItem) => {
@@ -283,7 +240,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         </button>
       </div>
 
-      {/* Bottom section: Profile → Settings → Logout */}
+      {/* Bottom section: Profile -> Settings -> Logout */}
       <div className="border-t border-[#D8D2E9] dark:border-[#3A3154] px-2 py-3 space-y-1">
         {/* Profile */}
         <div className="flex items-center ">
@@ -347,7 +304,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         />
       )}
 
-      {/* Sidebar — mobile drawer */}
+      {/* Sidebar - mobile drawer */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#F6F4FB] dark:bg-[#13131B] border-r border-[#D8D2E9] dark:border-[#3A3154] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -356,7 +313,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         {sidebarContent}
       </aside>
 
-      {/* Sidebar — desktop */}
+      {/* Sidebar - desktop */}
       <aside
         className={`hidden md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col bg-[#F6F4FB] dark:bg-[#13131B] border-r border-[#D8D2E9] dark:border-[#3A3154] will-change-[width] transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
           collapsed ? 'md:w-[68px]' : 'md:w-64'

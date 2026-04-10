@@ -7,6 +7,10 @@ namespace AutoService.ApiService.Vehicles;
 
 public static partial class VehicleEndpoints
 {
+    private const int MaxLicensePlateLength = 20;
+    private const int MaxBrandLength = 50;
+    private const int MaxModelLength = 50;
+
     private static async Task<IResult> CreateVehicleAsync(
         int customerId,
         CreateVehicleRequest request,
@@ -19,6 +23,14 @@ public static partial class VehicleEndpoints
         {
             return Results.Problem(
                 detail: "LicensePlate, Brand, and Model are required.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
+        if (lengthValidationError is not null)
+        {
+            return Results.Problem(
+                detail: lengthValidationError,
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
@@ -113,6 +125,14 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
+        var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
+        if (lengthValidationError is not null)
+        {
+            return Results.Problem(
+                detail: lengthValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
         if (request.Year < 1886 || request.Year > 2100)
         {
             return Results.Problem(
@@ -186,5 +206,31 @@ public static partial class VehicleEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         return Results.NoContent();
+    }
+
+    internal static string? GetVehicleFieldLengthValidationError(
+        string licensePlate,
+        string brand,
+        string model,
+        string? fieldPrefix = null)
+    {
+        var prefix = fieldPrefix ?? string.Empty;
+
+        if (licensePlate.Trim().Length > MaxLicensePlateLength)
+        {
+            return $"{prefix}LicensePlate must be at most {MaxLicensePlateLength} characters.";
+        }
+
+        if (brand.Trim().Length > MaxBrandLength)
+        {
+            return $"{prefix}Brand must be at most {MaxBrandLength} characters.";
+        }
+
+        if (model.Trim().Length > MaxModelLength)
+        {
+            return $"{prefix}Model must be at most {MaxModelLength} characters.";
+        }
+
+        return null;
     }
 }

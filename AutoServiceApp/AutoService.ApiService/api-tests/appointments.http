@@ -1,22 +1,19 @@
 @AutoService_ApiService_HostAddress = https://localhost:5200
-@AdminPassword = Test_Jelszo.420
-@AdminEmail = gabor.kovacs@gmail.com
-@NonAdminEmail = peter.nagy@gmail.com
-@CustomerId = 6
+@AdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
+@AdminEmail = gabor.kovacs@example.com
+@NonAdminEmail = peter.nagy@example.com
+@CustomerId = 1
 @CustomerVehicleId = 1
 @AnotherCustomerVehicleId = 2
-@PrimaryMechanicId = 2
-@SecondaryMechanicId = 3
+@PrimaryMechanicId = 7
+@SecondaryMechanicId = 8
 @UnknownMechanicId = 99999
 @UnknownVehicleId = 99999
-@KnownCustomerEmail = anna.toth@gmail.com
+@KnownCustomerEmail = anna.toth@example.com
 @NewSchedulerCustomerEmail = scheduler.intake.new@example.com
-@PastCancelledApptId = 1
+@PastCancelledApptId = 5
 @PastScheduledApptId = 4
 @SingleAssignedApptId = 2
-
-#  APPOINTMENTS
-# ─────────────────────────────────────────────────────────────
 
 @ApptId = 1
 
@@ -275,7 +272,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Admin updates appointment and vehicle fields
+### [Positive][Appointments] Admin updates appointment fields (legacy vehicle fields are accepted but ignored)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Content-Type: application/json
 
@@ -290,6 +287,19 @@ Content-Type: application/json
   "mileageKm": 124500,
   "enginePowerHp": 112,
   "engineTorqueNm": 252
+}
+
+###
+
+### [Negative][Appointments] Admin create rejects past scheduled date (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2020-01-01T10:30:00",
+  "taskDescription": "Admin create with past date should be rejected",
+  "mechanicIds": [{{PrimaryMechanicId}}]
 }
 
 ###
@@ -441,7 +451,7 @@ Content-Type: application/json
 # Set @CancelledApptId to an appointment that is in Cancelled status.
 
 @MechanicIdToAssign = 2
-@CancelledApptId = 1
+@CancelledApptId = 5
 
 ### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
 # Returns 422 Unprocessable Entity: cannot modify mechanics on a cancelled appointment.

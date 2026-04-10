@@ -7,13 +7,15 @@
 --------------------------OR-----------------------------------
 -- Download "SQLTools" extension for VS Code, add a new PostgreSQL connection with the same credentials,
 -- and run this file directly in the editor.
+-- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
+-- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
 -- ============================================================
 
 
 -- ------------------------------------------------------------
 -- 1. ROW COUNTS — quick seed sanity check
 --    Expected after fresh seed:
---      people=8, vehicles=5, appointments=5,
+--      people=8, vehicles=5, appointments>=35,
 --      AspNetUsers=3, AspNetRoles=1, AspNetUserRoles=1, refreshtokens=0
 -- ------------------------------------------------------------
 SELECT 'people' AS tbl, COUNT(*) AS cnt FROM people

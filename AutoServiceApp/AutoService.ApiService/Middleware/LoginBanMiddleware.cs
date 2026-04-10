@@ -11,6 +11,9 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
 {
     private static readonly ConcurrentDictionary<string, DateTimeOffset> BannedClients = new();
     private static readonly TimeSpan BanWindow = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(30);
+    private const int MaxTrackedClients = 5000;
+    private static long _nextCleanupAtUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -18,6 +21,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
         {
             var key = ResolveClientKey(context);
             var now = DateTimeOffset.UtcNow;
+            CleanupExpiredEntries(now);
 
             if (BannedClients.TryGetValue(key, out var blockedUntil))
             {
@@ -45,7 +49,21 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
     public static void BanClient(HttpContext context)
     {
         var key = ResolveClientKey(context);
-        var blockedUntil = DateTimeOffset.UtcNow.Add(BanWindow);
+        var now = DateTimeOffset.UtcNow;
+
+        CleanupExpiredEntries(now);
+
+        if (BannedClients.Count >= MaxTrackedClients && !BannedClients.ContainsKey(key))
+        {
+            TrimToBound(now);
+
+            if (BannedClients.Count >= MaxTrackedClients)
+            {
+                return;
+            }
+        }
+
+        var blockedUntil = now.Add(BanWindow);
         BannedClients.AddOrUpdate(key, blockedUntil, (_, existing) => existing > blockedUntil ? existing : blockedUntil);
     }
 
@@ -55,5 +73,56 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
     {
         var ip = context.Connection.RemoteIpAddress?.ToString();
         return string.IsNullOrWhiteSpace(ip) ? "unknown" : ip;
+    }
+
+    private static void CleanupExpiredEntries(DateTimeOffset now, bool force = false)
+    {
+        if (!force)
+        {
+            var nowUnixMilliseconds = now.ToUnixTimeMilliseconds();
+            var scheduledCleanupAt = Volatile.Read(ref _nextCleanupAtUnixMilliseconds);
+
+            if (nowUnixMilliseconds < scheduledCleanupAt)
+            {
+                return;
+            }
+
+            var nextCleanupAt = nowUnixMilliseconds + (long)CleanupInterval.TotalMilliseconds;
+            if (Interlocked.CompareExchange(ref _nextCleanupAtUnixMilliseconds, nextCleanupAt, scheduledCleanupAt) != scheduledCleanupAt)
+            {
+                return;
+            }
+        }
+
+        foreach (var entry in BannedClients)
+        {
+            if (entry.Value <= now)
+            {
+                BannedClients.TryRemove(entry.Key, out _);
+            }
+        }
+    }
+
+    private static void TrimToBound(DateTimeOffset now)
+    {
+        CleanupExpiredEntries(now, force: true);
+
+        var overflow = (BannedClients.Count - MaxTrackedClients) + 1;
+        if (overflow <= 0)
+        {
+            return;
+        }
+
+        var keysToRemove = BannedClients
+            .OrderBy(entry => entry.Value)
+            .ThenBy(entry => entry.Key, StringComparer.Ordinal)
+            .Take(overflow)
+            .Select(entry => entry.Key)
+            .ToArray();
+
+        foreach (var key in keysToRemove)
+        {
+            BannedClients.TryRemove(key, out _);
+        }
     }
 }

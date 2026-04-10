@@ -52,7 +52,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   }, [onStatusChange, appointment.id]);
 
   const { vehicle } = appointment;
-  const shouldShowClaimButton = !isAssigned && !isCancelled;
+  const shouldShowClaimButton = !isAssigned && !isCancelled && !dueState.isOverdue;
   const cardClassName = `bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-3${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66]' : ''}`;
 
   const cardContent: ReactNode = (

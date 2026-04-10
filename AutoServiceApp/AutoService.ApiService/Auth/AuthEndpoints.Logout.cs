@@ -37,7 +37,7 @@ public static partial class AuthEndpoints
 
         if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
         {
-            tokenDenylistService.Revoke(jwtId, tokenExpiresAtUtc.Value);
+            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
         }
 
         httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });

@@ -1,12 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AutoService.ApiService.Auth;
 
@@ -21,7 +16,7 @@ public static partial class AuthEndpoints
      * @param userManager ASP.NET Core Identity user manager.
      * @param signInManager ASP.NET Core Identity sign in manager.
      * @param db Entity Framework Core database context.
-     * @param configuration Application configuration (used to read JwtSettings:Secret).
+    * @param tokenIssuer Startup-configured JWT token issuer.
      * @param cancellationToken Cancellation token for the async operation.
     * @return 200 OK with JWT token and profile info, 401 for invalid credentials,
     *         429 when account lockout is active, or 500 if the linked domain record is missing.
@@ -32,7 +27,7 @@ public static partial class AuthEndpoints
         UserManager<IdentityUser> userManager,
         SignInManager<IdentityUser> signInManager,
         AutoServiceDbContext db,
-        IConfiguration configuration,
+        IJwtTokenIssuer tokenIssuer,
         CancellationToken cancellationToken)
     {
         var validationErrors = ValidateLoginRequest(request);
@@ -171,7 +166,8 @@ public static partial class AuthEndpoints
         var accessTokenExpiresAtUtc = nowUtc.Add(accessTokenTtl);
         var refreshTokenExpiresAtUtc = nowUtc.Add(refreshTokenTtl);
 
-        var accessToken = await CreateJwtTokenAsync(identityUser, mechanic, userManager, configuration, accessTokenExpiresAtUtc);
+        var roles = await userManager.GetRolesAsync(identityUser);
+        var accessToken = tokenIssuer.CreateToken(identityUser, mechanic, roles, accessTokenExpiresAtUtc);
         var refreshTokenValue = GenerateRefreshTokenValue();
         var refreshTokenHash = HashRefreshToken(refreshTokenValue);
 
@@ -180,7 +176,7 @@ public static partial class AuthEndpoints
             refreshTokenHash,
             nowUtc,
             refreshTokenExpiresAtUtc,
-            httpContext.Connection.RemoteIpAddress?.ToString(),
+            ResolveClientIpAddress(httpContext),
             httpContext.Request.Headers.UserAgent.ToString()));
 
         await db.SaveChangesAsync(cancellationToken);
@@ -195,7 +191,7 @@ public static partial class AuthEndpoints
             refreshTokenValue,
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
-        var isAdmin = (await userManager.GetRolesAsync(identityUser)).Contains("Admin");
+        var isAdmin = roles.Contains("Admin");
         return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 
@@ -220,62 +216,5 @@ public static partial class AuthEndpoints
         }
 
         return errors;
-    }
-
-    /**
-     * Builds and serialises a signed JWT containing identity, domain, and role claims.
-     * Reads the signing secret from JwtSettings:Secret in configuration.
-     * Claims included: sub, nameidentifier, email, name, person_id, person_type, role(s).
-     *
-     * @param identityUser ASP.NET Core Identity user (provides sub/email).
-     * @param person Domain People record (provides person_id/person_type/name).
-     * @param userManager Identity UserManager used to retrieve roles.
-     * @param configuration Application configuration root.
-     * @param expiresAtUtc UTC expiry timestamp for the token.
-     * @return A compact serialised JWT string.
-     */
-    private static async Task<string> CreateJwtTokenAsync(
-        IdentityUser identityUser,
-        People person,
-        UserManager<IdentityUser> userManager,
-        IConfiguration configuration,
-        DateTime expiresAtUtc)
-    {
-        var secret = JwtSettingsResolver.ResolveSecret(configuration);
-        var issuer = configuration["JwtSettings:Issuer"] ?? "AutoService.ApiService";
-        var audience = configuration["JwtSettings:Audience"] ?? "AutoService.WebUI";
-        var now = DateTime.UtcNow;
-
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, identityUser.Id),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-            new(ClaimTypes.NameIdentifier, identityUser.Id),
-            new(JwtRegisteredClaimNames.Email, identityUser.Email ?? person.Email),
-            new(ClaimTypes.Email, identityUser.Email ?? person.Email),
-            new(ClaimTypes.Name, person.Name.ToString()),
-            new("person_id", person.Id.ToString()),
-            new("person_type", GetPersonType(person))
-        };
-
-        var roles = await userManager.GetRolesAsync(identityUser);
-        foreach (var role in roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
-
-        var signingCredentials = new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-            SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            notBefore: now,
-            expires: expiresAtUtc,
-            signingCredentials: signingCredentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

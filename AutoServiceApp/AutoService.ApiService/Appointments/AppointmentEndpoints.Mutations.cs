@@ -111,6 +111,13 @@ public static partial class AppointmentEndpoints
             _ => DateTime.SpecifyKind(request.ScheduledDate, DateTimeKind.Utc)
         };
 
+        if (scheduledDateUtc.Date < DateTime.UtcNow.Date)
+        {
+            return Results.Problem(
+                detail: "ScheduledDate cannot be in the past.",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
         var appointment = new Appointment
         {
             ScheduledDate = scheduledDateUtc,

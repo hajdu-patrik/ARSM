@@ -3,6 +3,7 @@ import Cropper, { type Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
 import { cropImageToBlob } from '../../utils/imageCrop';
+import { useToastStore } from '../../store/toast.store';
 
 interface ProfilePictureCropModalProps {
   readonly isOpen: boolean;
@@ -20,6 +21,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
   onConfirm,
 }: ProfilePictureCropModalProps) {
   const { t } = useTranslation();
+  const showErrorToast = useToastStore((state) => state.showError);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -33,9 +35,20 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
       return;
     }
 
-    const croppedBlob = await cropImageToBlob(imageSrc, croppedAreaPixels, 'image/png');
-    await onConfirm(croppedBlob);
-  }, [croppedAreaPixels, imageSrc, onConfirm]);
+    let croppedBlob: Blob;
+    try {
+      croppedBlob = await cropImageToBlob(imageSrc, croppedAreaPixels, 'image/png');
+    } catch {
+      showErrorToast('toast.pictureCropFailed');
+      return;
+    }
+
+    try {
+      await onConfirm(croppedBlob);
+    } catch {
+      // Parent submit handler owns upload-level error feedback.
+    }
+  }, [croppedAreaPixels, imageSrc, onConfirm, showErrorToast]);
 
   return (
     <Modal

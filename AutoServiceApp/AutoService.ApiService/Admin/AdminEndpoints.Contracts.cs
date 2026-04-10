@@ -10,5 +10,6 @@ public static partial class AdminEndpoints
         string Email,
         string? PhoneNumber,
         string Specialization,
-        bool IsAdmin);
+        bool IsAdmin,
+        bool HasProfilePicture);
 }

@@ -1,3 +1,6 @@
+-- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
+-- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
+
 -- 1. REFRESH TOKEN SESSIONS — list with mechanic owner
 --    Expected after fresh seed: 0 rows (until first login)
 -- ------------------------------------------------------------
@@ -118,7 +121,7 @@ ORDER BY normalized_phone;
 
 -- ------------------------------------------------------------
 -- 7. IDENTITY ROLE CHECK — Admin role and assignment existence
---    Expected: at least one row for gabor.kovacs@gmail.com with role 'Admin'
+--    Expected: at least one row for gabor.kovacs@example.com with role 'Admin'
 -- ------------------------------------------------------------
 SELECT u."Email" AS identity_email,
        r."Name" AS role_name
@@ -136,5 +139,5 @@ SELECT COUNT(*) AS gabor_admin_role_count
 FROM "AspNetUsers" u
 JOIN "AspNetUserRoles" ur ON ur."UserId" = u."Id"
 JOIN "AspNetRoles" r ON r."Id" = ur."RoleId"
-WHERE LOWER(TRIM(u."Email")) = 'gabor.kovacs@gmail.com'
+WHERE LOWER(TRIM(u."Email")) = 'gabor.kovacs@example.com'
   AND r."Name" = 'Admin';

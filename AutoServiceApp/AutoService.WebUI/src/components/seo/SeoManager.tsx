@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 type SeoConfig = {
-  title: string;
   description: string;
   robots?: string;
 };
@@ -47,7 +46,6 @@ export function SeoManager() {
 
     if (path === '/login') {
       return {
-        title: t('login.title'),
         description: t('login.subtitle'),
         robots: 'noindex, nofollow',
       };
@@ -55,42 +53,36 @@ export function SeoManager() {
 
     if (path === '/' || path === '/scheduler' || path === '/dashboard') {
       return {
-        title: t('nav.scheduler'),
         description: t('scheduler.plannerSpace'),
       };
     }
 
     if (path === '/tools') {
       return {
-        title: t('tools.pageTitle'),
         description: t('tools.comingSoonDescription'),
       };
     }
 
     if (path === '/inventory') {
       return {
-        title: t('inventory.pageTitle'),
         description: t('inventory.comingSoonDescription'),
       };
     }
 
     if (path === '/settings') {
       return {
-        title: t('settings.title'),
         description: t('settings.personalInfo'),
       };
     }
 
     if (path === '/admin/register') {
       return {
-        title: t('admin.pageTitle'),
         description: t('admin.registerMechanic'),
         robots: 'noindex, nofollow',
       };
     }
 
     return {
-      title: t('notFound.pageNotFound'),
       description: t('notFound.subtitle'),
       robots: 'noindex, nofollow',
     };
@@ -104,7 +96,7 @@ export function SeoManager() {
       location.pathname === '/scheduler' || location.pathname === '/dashboard'
         ? '/'
         : location.pathname;
-    const canonicalUrl = `${window.location.origin}${canonicalPath}`;
+    const canonicalUrl = `${globalThis.location.origin}${canonicalPath}`;
 
     document.title = fullTitle;
     document.documentElement.lang = htmlLang;
@@ -122,7 +114,7 @@ export function SeoManager() {
     getOrCreateMeta('twitter:description').content = config.description;
 
     getOrCreateCanonical().href = canonicalUrl;
-  }, [config.description, config.robots, config.title, i18n.resolvedLanguage, location.pathname]);
+  }, [config.description, config.robots, i18n.resolvedLanguage, location.pathname]);
 
   return null;
 }

@@ -3,7 +3,9 @@ using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
+using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -175,8 +177,6 @@ public static partial class AppointmentEndpoints
                 new FullName(firstName, middleName, lastName),
                 normalizedEmail,
                 normalizedPhone);
-
-            db.Customers.Add(customer);
         }
 
         Vehicle vehicle;
@@ -214,6 +214,19 @@ public static partial class AppointmentEndpoints
             {
                 return Results.Problem(
                     detail: "Vehicle.LicensePlate, Vehicle.Brand, and Vehicle.Model are required.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            var vehicleLengthValidationError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
+                newVehicle.LicensePlate,
+                newVehicle.Brand,
+                newVehicle.Model,
+                fieldPrefix: "Vehicle.");
+
+            if (vehicleLengthValidationError is not null)
+            {
+                return Results.Problem(
+                    detail: vehicleLengthValidationError,
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
@@ -264,8 +277,6 @@ public static partial class AppointmentEndpoints
             {
                 vehicle.CustomerId = customer.Id;
             }
-
-            db.Vehicles.Add(vehicle);
         }
 
         var appointment = new Appointment
@@ -284,15 +295,25 @@ public static partial class AppointmentEndpoints
             appointment.VehicleId = vehicle.Id;
         }
 
-        db.Appointments.Add(appointment);
-
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            if (creatingCustomer)
+            {
+                db.Customers.Add(customer!);
+            }
+
+            if (!usesExistingVehicle)
+            {
+                db.Vehicles.Add(vehicle);
+            }
+
+            db.Appointments.Add(appointment);
+
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
             await transaction.RollbackAsync(cancellationToken);
             return Results.Problem(
@@ -310,4 +331,7 @@ public static partial class AppointmentEndpoints
             DateTimeKind.Local => dateTime.ToUniversalTime(),
             _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
         };
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
+        => exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 }

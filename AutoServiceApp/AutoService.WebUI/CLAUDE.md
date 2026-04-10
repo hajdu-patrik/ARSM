@@ -12,11 +12,12 @@
 - Logout calls `POST /api/auth/logout`, clears auth store state, then redirects to `/login`.
 - Successful logout response is `204 No Content`; frontend still clears local auth state in `finally` to handle network/interceptor edge cases.
 - Use `<PrivateRoute>` to guard authenticated pages.
+- Use `<PublicOnlyRoute>` on the login route to redirect authenticated users back to `/`.
 - Use `<AdminRoute>` to guard admin-only pages (redirects to `/` if not admin, `/login` if not authenticated).
 - `AuthUser` includes `isAdmin: boolean` — derived from backend `IsAdmin` field in login/validate/refresh responses.
 - Sidebar layout: main nav at top (default order: scheduler → tools → inventory), admin nav (shield icon, admin-only) above collapse button, bottom section has profile → settings → logout.
 - Sidebar collapse preference persists in `localStorage['preferred-sidebar-collapsed']`; mobile mode uses a drawer with dismiss overlay.
-- Sidebar profile block shows uploaded profile picture immediately after successful upload/remove events; if no picture exists, it renders a generated initials avatar with a deterministic color selected from a fixed 10-color palette.
+- Sidebar profile block shows uploaded profile picture immediately after successful upload/remove events; if no picture exists, it renders a generated initials avatar with a deterministic color selected from a fixed 10-color palette. Avatar snapshot state is reset on auth teardown to avoid previous-user leakage.
 - UI icons use `lucide-react` (navigation, actions, state indicators); avoid inline SVG icon markup in shared UI components.
 - New global toast system is mounted app-wide (`ToastViewport`) and uses i18n keys from state, so visible toasts update instantly when language/theme changes.
 - All UI strings (errors, hovers, aria-labels, placeholders) must use i18n — no hardcoded English text.
@@ -34,15 +35,15 @@
 - `src/store/scheduler.store.ts` — Zustand: `todayAppointments`, `monthAppointments`, `calendarYear`, `calendarMonth`, loading states, `upsertAppointment` for optimistic sync (including immediate today/month list updates after intake create when the scheduled date belongs to those views)
 - `src/store/toast.store.ts` — Zustand: global toast queue (`showSuccess`, `showError`, auto-dismiss metadata)
 - `src/services/auth.service.ts` — login/logout/session restore via `/api/auth/login`, `/api/auth/logout`, `/api/auth/validate`
-- `src/services/admin.service.ts` — registerMechanic() via `POST /api/auth/register`, listMechanics() via `GET /api/admin/mechanics`, deleteMechanic() via `DELETE /api/admin/mechanics/{id}` (all admin-only; delete can return 422 when backend mechanic-deletion invariants would be violated)
-- `src/services/appointment.service.ts` — findCustomerByEmail via `GET /api/customers/by-email`; createIntake via `POST /api/appointments/intake`; updateAppointment via `PUT /api/appointments/{id}`; getByMonth, getToday, claim, unclaim, updateStatus, adminAssign, adminUnassign via `/api/appointments`
+- `src/services/admin.service.ts` — registerMechanic() via `POST /api/auth/register`, listMechanics() via `GET /api/admin/mechanics` (includes `hasProfilePicture`), deleteMechanic() via `DELETE /api/admin/mechanics/{id}` (all admin-only; delete can return 422 when backend mechanic-deletion invariants would be violated, and 409 on concurrent contention/serialization conflict)
+- `src/services/appointment.service.ts` — findCustomerByEmail via `GET /api/customers/by-email`; createIntake via `POST /api/appointments/intake`; updateAppointment via `PUT /api/appointments/{id}` (appointment fields only; legacy vehicle fields are ignored server-side); getByMonth, getToday, claim, unclaim, updateStatus, adminAssign, adminUnassign via `/api/appointments`
 - `src/services/profile.service.ts` — getProfile, updateProfile, changePassword, uploadProfilePicture, deleteProfilePicture, deleteProfile via `/api/profile`
 - `src/services/profile.service.ts` upload sends multipart `FormData`; axios request interceptor clears inherited JSON content-type for FormData so browser boundary headers are used.
 - `src/services/api.client.ts` — Axios instance with credentialed cookie requests and refresh retry; reads `VITE_API_URL` from env, **no hardcoded fallback**
 - `src/types/login.types.ts` — `LoginRequest`, `LoginResponse`, `AuthUser` (includes `isAdmin`), `ValidateTokenResponse`
 - `src/types/scheduler.types.ts` — `AppointmentDto` (includes `intakeCreatedAt`, `dueDateTime`, `completedAt?`, `canceledAt?`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `AppointmentStatus` (`'InProgress' | 'Completed' | 'Cancelled'`; `Scheduled` has been removed), `CalendarDay`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `SchedulerCustomerLookupDto`, `SchedulerVehicleLookupDto`, `SchedulerNewVehicleRequest`, `SchedulerCreateIntakeRequest`
 - `src/types/profile.types.ts` — `ProfileData`, `UpdateProfileRequest` (firstName?, lastName?, email?, phoneNumber?, middleName?), `ChangePasswordRequest`
-- `src/utils/i18n.ts` — i18next config; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound). Scheduler sub-keys include `scheduler.monthList.*` (title, count, empty, emptyFiltered, clearFilter), `scheduler.filter.*` (allMechanics, sortAsc, sortDesc), and `scheduler.detail.*` (title, scheduledDate, vehicle, licensePlate, task, customer, customerName, customerEmail, mechanics, specialization, expertise, noMechanics, unassignMe, removeMechanic, addMechanic, selectMechanic, assignError, unassignError, unassignCancelledError, adminUnassignError)
+- `src/utils/i18n.ts` — i18next config; translations split into `src/utils/locales/en.ts` and `src/utils/locales/hu.ts` (keys: login, layout, nav, sidebar, theme, modal, toast, scheduler, admin, settings, tools, inventory, notFound). Scheduler sub-keys include `scheduler.monthList.*` (title, count, empty, emptyFiltered, clearFilter), `scheduler.filter.*` (allMechanics, sortAsc, sortDesc), and `scheduler.detail.*` (title, scheduledDate, vehicle, licensePlate, task, customer, customerName, customerEmail, mechanics, specialization, expertise, noMechanics, unassignMe, removeMechanic, addMechanic, selectMechanic, assignError, unassignError, unassignCancelledError, adminUnassignError). EN and HU locale files define these scheduler keys explicitly.
 - `src/utils/avatar.ts` — deterministic avatar fallback helpers (seeded color + initials)
 - `src/utils/imageCrop.ts` — image loading and canvas crop-to-blob helper for profile picture workflow
 - `src/utils/validation.ts` — shared input validation: `filterNameInput` (Unicode letters and hyphens only; spaces and apostrophes stripped), `filterPhoneInput` (digits/phone-special-chars only), `isAllowedPictureExtension` (.png/.jpg/.jpeg/.webp)
@@ -51,6 +52,12 @@
 ## Component Map
 
 - `src/pages/Admin/RegisterMechanic/page.tsx` — admin-only mechanic management page (mechanic list with delete + registration form)
+- `src/pages/Admin/RegisterMechanic/helpers.ts` — request-builder and form helper utilities (`buildRegisterMechanicRequest`, `canSubmitForm`, field-error lookup)
+- `src/pages/Admin/RegisterMechanic/constants.ts` — specialization/expertise option arrays and shared form style class strings
+- `src/pages/Admin/RegisterMechanic/types.ts` — typed form model and field-error helpers for registration sections
+- `src/pages/Admin/RegisterMechanic/sections/BasicInfoSection.tsx` — name/email/phone inputs with shared client-side filters
+- `src/pages/Admin/RegisterMechanic/sections/SecuritySection.tsx` — password input with show/hide toggle and inline validation state
+- `src/pages/Admin/RegisterMechanic/sections/ProfessionalSection.tsx` — specialization selector and expertise multi-select chips
 - `src/pages/Admin/RegisterMechanic/sections/MechanicListSection.tsx` — mechanic list with left-aligned profile avatar (reuses `MechanicAvatar`), existing name/email/admin-badge content, delete button (hidden for admin accounts), and confirmation modal; responsive row layout. Delete warning text in the modal wraps long email values to prevent overflow.
 - `src/pages/Settings/page.tsx` — settings page (profile picture with crop modal, personal info, change password, delete profile modal — delete section hidden for admin users)
 - `src/pages/Settings/sections/ProfilePictureSection.tsx` — upload/delete profile picture with deterministic fallback preview
@@ -58,7 +65,7 @@
 - `src/pages/Settings/sections/ChangePasswordSection.tsx` — change password with current/new/confirm fields; settings page validates `newPassword.length < 8` client-side before submit (matching admin registration behavior)
 - `src/pages/Login/page.tsx` — login form
 - `src/pages/Login/login.helpers.ts` — identifier parsing and login error resolution
-- `src/pages/Scheduler/page.tsx` — scheduler page (data-fetching orchestrator, stacked layout: top summary strip reflects selected day when selected, otherwise today; then CalendarView full-width, scheduler intake quick section, and MonthAppointmentList); manages `selectedAppointment`, `selectedDay`, and selected-day intake modal state; clears day filter on month change; provides quick intake action for the selected day; passes `isAdmin` and handlers for unclaim, adminAssign, adminUnassign, and update to AppointmentDetailModal; keeps modal appointment content synchronized with store updates and runs 8-second background refresh for near-realtime claim/status updates
+- `src/pages/Scheduler/page.tsx` — scheduler page (data-fetching orchestrator, stacked layout: top summary strip reflects selected day when selected, otherwise today; then CalendarView full-width, scheduler intake quick section, and MonthAppointmentList); manages `selectedAppointment`, `selectedDay`, and selected-day intake modal state; clears day filter on month change; provides quick intake action for the selected day; passes `isAdmin` and handlers for unclaim, adminAssign, adminUnassign, and update to AppointmentDetailModal; keeps modal appointment content synchronized with store updates and runs 8-second background refresh for near-realtime claim/status updates. Uses request-id and current-view refs to prevent stale-closure races and out-of-order background refresh writes.
 - `src/pages/Scheduler/components/PlannerSpace.tsx` — legacy today-summary + appointment-card-grid component (currently not rendered by `src/pages/Scheduler/page.tsx`)
 - `src/pages/Scheduler/components/AppointmentCard.tsx` — single appointment card (vehicle, specs, task, claim/status); accepts optional `onClick` prop with stopPropagation on interactive controls; mechanic avatars use deterministic per-mechanic colors and use current-user profile picture when available
 - `src/pages/Scheduler/components/StatusBadge.tsx` — colored status pill
@@ -67,11 +74,11 @@
 - `src/pages/Scheduler/components/SchedulerIntakeModal.tsx` — selected-day intake modal with auto-derived scheduled datetime (selected day + current send time), due datetime input, email customer lookup, existing/new vehicle modes, and customer create fallback when lookup misses. Create-customer labels indicate optional middle name and phone.
 - `src/pages/Scheduler/components/due-date.ts` — due-state utility (`today`/`overdue`/`days left`) used by scheduler cards and detail modal
 - `src/pages/Scheduler/components/MechanicAvatar.tsx` — shared mechanic avatar renderer; uses deterministic color fallback by mechanic ID and mechanic-specific profile picture endpoint when available
-- `src/services/profile-picture-live.service.ts` — shared realtime profile-picture update channel (SSE + `autoservice:profile-picture-updated` event fan-out) used by navbar and scheduler avatar refresh flows
+- `src/services/profile-picture-live.service.ts` — shared realtime profile-picture update channel (SSE + `autoservice:profile-picture-updated` event fan-out) used by navbar and scheduler avatar refresh flows; reconnect is auth-aware and lifecycle-token guarded, attempts `/api/auth/refresh` on SSE errors, clears auth and stops reconnect attempts on refresh `401/403` (session expiry/auth clear), and teardown clears timers/event-source handles when the last subscriber unsubscribes.
 - `src/pages/Scheduler/components/MonthAppointmentList.tsx` — monthly appointment list rendered as one continuous sorted card grid with per-card date labels, day filtering, "Show all" clear chip, and loading skeletons; filter bar includes status filter chips (toggleable, colored per status), mechanic dropdown (populated dynamically from appointments), and date sort toggle (asc/desc); all filters combine with each other and with `selectedDay`. Layout rule: on mobile it is single-column full width, on larger screens it is two columns, and if exactly one appointment card is visible it spans full width.
 - `src/pages/Tools/page.tsx` — tools management skeleton page (coming soon, uses `tools.*` i18n keys)
 - `src/pages/Inventory/page.tsx` — inventory management skeleton page (coming soon, uses `inventory.*` i18n keys)
-- `src/pages/LoadingPage.tsx` — initial animation, once per session
+- `src/pages/LoadingPage.tsx` — initial animation, once per browser profile
 - `src/pages/NotFound.tsx` — 404 with auto-redirect countdown
 - `src/components/layout/SidebarLayout.tsx` — collapsible sidebar layout (fixed-width icon column for consistent alignment, smooth cubic-bezier width transition, mobile drawer, desktop collapse/expand without icon resizing); default main nav order starts with Scheduler
 - `src/components/layout/ThemeLanguageControls.tsx` — EN/HU + dark/light toggle (accepts className prop for repositioning)
@@ -83,10 +90,11 @@
 - `src/components/common/ProfilePictureCropModal.tsx` — image crop dialog for profile picture uploads
 - `src/router/PrivateRoute.tsx` — route guard (authenticated)
 - `src/router/AdminRoute.tsx` — route guard (admin-only)
+- `src/router/PublicOnlyRoute.tsx` — route guard for public-only pages (redirects authenticated users to `/`)
 
 ## Routing
 
-- `/login` — public
+- `/login` — public-only (wrapped in `PublicOnlyRoute`)
 - `/` — protected, renders Scheduler page inside SidebarLayout
 - `/scheduler` and `/dashboard` — backward-compatibility aliases that redirect to `/`
 - `/admin/register` — admin-only, RegisterMechanicPage inside SidebarLayout

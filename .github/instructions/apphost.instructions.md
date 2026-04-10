@@ -16,12 +16,14 @@ description: "Use when editing Aspire orchestration and resource wiring in AutoS
 - Resource: `postgres`, database: `AutoServiceDb`.
 - Port must come from AppHost configuration key `Ports:Postgres` (single source of truth).
 - Persistent data volume: `autoservice-postgres-data`.
+- PostgreSQL container sets `PGGSSENCMODE=disable`.
 
 ## API Service (Backend)
 
 - Wire API service with reference to PostgreSQL database.
 - Ensure API starts after database is ready using `WaitFor()`.
 - API endpoint is available for WebUI reference.
+- API environment includes `JwtSettings__Secret` and `PGGSSENCMODE=disable`.
 
 ## WebUI Service (Frontend)
 

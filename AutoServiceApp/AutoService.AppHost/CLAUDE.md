@@ -10,10 +10,12 @@
 - Compatible connection key: `ConnectionStrings:AutoServiceDb`.
 - Port source: `appsettings.json` → `Ports:Postgres` (single source of truth).
 - Persistent data volume: `autoservice-postgres-data`.
+- PostgreSQL container sets `PGGSSENCMODE=disable`.
 
 ## API Service
 - Wire with reference to PostgreSQL database.
 - API must wait for the database (`WaitFor`).
+- API environment includes `JwtSettings__Secret` and `PGGSSENCMODE=disable`.
 
 ## WebUI Service
 - Wire with reference to the API service.

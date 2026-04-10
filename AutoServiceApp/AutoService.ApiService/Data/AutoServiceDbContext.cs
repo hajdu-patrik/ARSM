@@ -17,6 +17,7 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<RevokedJwtToken> RevokedJwtTokens => Set<RevokedJwtToken>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
@@ -121,6 +122,27 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
                 .WithMany()
                 .HasForeignKey(x => x.MechanicId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Access-token JWT denylist mapping.
+        modelBuilder.Entity<RevokedJwtToken>(entity =>
+        {
+            entity.ToTable("revokedjwttokens");
+
+            entity.Property(x => x.JwtId)
+                .HasMaxLength(64)
+                .IsRequired();
+
+            entity.Property(x => x.RevokedAtUtc)
+                .IsRequired();
+
+            entity.Property(x => x.ExpiresAtUtc)
+                .IsRequired();
+
+            entity.HasIndex(x => x.JwtId)
+                .IsUnique();
+
+            entity.HasIndex(x => x.ExpiresAtUtc);
         });
 
         // Vehicle mapping.

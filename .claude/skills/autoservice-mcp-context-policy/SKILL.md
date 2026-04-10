@@ -19,8 +19,7 @@ Workspace MCP baseline:
 - Aspire MCP startup command: dotnet tool run aspire -- mcp start
 
 Server policy:
-- Shared server set: pencil-design-tool, context-mode, aspire, postgres, docker
-- pencil-design-tool uses a bash wrapper that starts openpencil HTTP server and bridges via mcp-remote
+- Shared server set: context-mode, aspire, postgres, docker
 - Keep server additions intentional and project-focused
 
 When automatic usage is enough:

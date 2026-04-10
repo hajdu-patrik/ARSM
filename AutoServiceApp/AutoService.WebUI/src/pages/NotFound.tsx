@@ -13,6 +13,7 @@ const NotFoundComponent = memo(function NotFound() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
   const theme = useThemeStore((state) => state.theme);
   const [remainingMs, setRemainingMs] = useState(REDIRECT_DURATION_MS);
 
@@ -22,6 +23,11 @@ const NotFoundComponent = memo(function NotFound() {
   );
 
   useEffect(() => {
+    if (isAuthLoading) {
+      setRemainingMs(REDIRECT_DURATION_MS);
+      return;
+    }
+
     const startedAt = Date.now();
 
     const timer = setInterval(() => {
@@ -36,7 +42,7 @@ const NotFoundComponent = memo(function NotFound() {
     }, TIMER_TICK_MS);
 
     return () => clearInterval(timer);
-  }, [navigate, redirectTarget]);
+  }, [isAuthLoading, navigate, redirectTarget]);
 
   const isDark = theme === 'dark';
   const secondsLeft = Math.max(Math.ceil(remainingMs / 1000), 0);

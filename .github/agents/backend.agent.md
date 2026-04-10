@@ -27,7 +27,7 @@ You are a focused backend agent working exclusively within `AutoServiceApp/AutoS
 3. Keep `People` as TPH (Table-Per-Hierarchy) — never switch to TPT/TPC.
 4. Keep `Program.cs` focused on service registration, middleware, and endpoint mapping only.
 5. Place endpoint logic in dedicated folders (`Auth/`, `Appointments/`, `Profile/`, `Admin/`).
-6. Preserve the middleware order: `UseHttpsRedirection` → `UseHsts` → login ban → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`.
+6. Preserve the middleware order: `UseHsts` (non-Development) → `UseForwardedHeaders` → `UseHttpsRedirection` → login ban → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`.
 7. Use async EF methods with cancellation tokens.
 8. Never commit secrets or credentials.
 9. Do NOT touch frontend files, documentation files, or Aspire orchestration files.

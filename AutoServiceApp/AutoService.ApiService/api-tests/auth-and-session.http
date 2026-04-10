@@ -1,16 +1,9 @@
 @AutoService_ApiService_HostAddress = https://localhost:5200
-
-# ─────────────────────────────────────────────────────────────
-#  AUTH – Full API Test Matrix
-#  End-to-end coverage for registration, normalization, duplicates,
-#  invalid inputs, login variants, refresh and logout lifecycle.
-# ─────────────────────────────────────────────────────────────
-
 @TestPassword = Test@1234
 @TestWrongPassword = WrongPassword123!
-@AdminEmail = gabor.kovacs@gmail.com
-@AdminPassword = Test_Jelszo.420
-@NonAdminEmail = peter.nagy@gmail.com
+@AdminEmail = gabor.kovacs@example.com
+@AdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
+@NonAdminEmail = peter.nagy@example.com
 
 # Dedicated matrix users
 @MatrixRunSuffix = 20260403a
@@ -133,7 +126,7 @@ Content-Type: application/json
 {
   "firstName": "Matrix",
   "lastName": "Whitespace",
-  "email": "   MATRIX.WHITESPACE.USER.20260403A@EXAMPLE.COM   ",
+  "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.COM   ",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
   "phoneNumber": "   +36 30 888 0991   ",
@@ -154,6 +147,22 @@ Content-Type: application/json
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
   "phoneNumber": "+36309998888",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Domain",
+  "lastName": "Conflict",
+  "email": "anna.toth@example.com",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
@@ -391,7 +400,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "MATRIX.PHONE.USER.20260403A@EXAMPLE.COM",
+  "email": "MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.COM",
   "password": "{{TestPassword}}"
 }
 
@@ -402,7 +411,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "   MATRIX.WHITESPACE.USER.20260403A@EXAMPLE.COM   ",
+  "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.COM   ",
   "password": "{{TestPassword}}"
 }
 
@@ -435,7 +444,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "anna.toth@gmail.com",
+  "email": "anna.toth@example.com",
   "password": "{{TestPassword}}"
 }
 
@@ -584,6 +593,13 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ### [Positive][Session] Refresh authenticated session (requires refresh cookie)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+
+###
+
+### [Manual][Session] Refresh rate limiting (expect 429 after >20 refresh calls per minute from same client)
+# Re-run the refresh request rapidly (for example with a loop in terminal) to verify AuthRefreshAttempts policy.
+# Example PowerShell:
+# 1..25 | % { iwr -Method Post -UseBasicParsing "{{AutoService_ApiService_HostAddress}}/api/auth/refresh" }
 
 ###
 

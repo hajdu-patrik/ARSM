@@ -25,7 +25,7 @@ Full-stack alkalmazásként épült ASP.NET Core Web API (backend), React + Type
 ## Nyelv
 
 - Magyar: ez a fájl
-- Angol: [README.md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/README.md)
+- Angol: [README.md](https://github.com/hajdu-patrik/ARSM/blob/main/README.md)
 
 ---
 
@@ -73,6 +73,13 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 
 Skill források: `.github/skills/*/SKILL.md`
 
+### SQL csak olvasható policy (MI)
+
+- MI-alapú SQL validációhoz a dedikált PostgreSQL felhasználót használd: `ai_agent_test_user`.
+- Ez a felhasználó csak olvasási jogosultsággal rendelkezik, kizárólag `SELECT` lekérdezésekhez.
+- MI eszközből tilos `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, vagy `GRANT/REVOKE` futtatása.
+- Emelt jogosultságú adatbázis-felhasználót csak szándékos, manuális karbantartási feladatokhoz használj.
+
 ### Utasításfájlok
 
 A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
@@ -89,7 +96,7 @@ A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
 - A rendszer ASP.NET Core Identity + JWT alapon működik, backend által kezelt HttpOnly cookie sessionnel.
 - Az access és refresh tokenek biztonságos HttpOnly cookie-kban vannak, refresh token rotációval és szerveroldali (hash-elt) tárolással.
 - Auth endpointok: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
-- Időpont endpointok: `GET /api/appointments`, `GET /api/appointments/today`, `PUT /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`.
+- Időpont endpointok: `GET /api/appointments`, `GET /api/appointments/today`, `POST /api/appointments/intake`, `PUT /api/appointments/{id}`, `PUT /api/appointments/{id}/claim`, `DELETE /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`, `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `POST /api/customers/{customerId}/appointments` (AdminOnly).
 - A dashboard-hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, amely egy kompakt napi összegző sávot, havi naptárnézetet, gyors intake szekciót és havi időpontlistát tartalmaz.
 - Részletes biztonsági és üzemeltetési információk szándékosan nem publikusak ebben a README-ben.
 
@@ -99,8 +106,7 @@ A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
 
 ```Bash
 cd AutoServiceApp
-cd AutoService.AppHost
-dotnet run
+dotnet run --project AutoService.AppHost
 ```
 
 Ez elindítja a teljes helyi környezetet (API + infrastruktúra + kapcsolódó szolgáltatások).

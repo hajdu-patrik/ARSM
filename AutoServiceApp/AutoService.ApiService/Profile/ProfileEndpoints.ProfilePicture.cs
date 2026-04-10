@@ -8,6 +8,9 @@ namespace AutoService.ApiService.Profile;
 
 public static partial class ProfileEndpoints
 {
+    private static readonly TimeSpan ProfilePictureUpdatesIdleTimeout = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
+
     private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -29,6 +32,7 @@ public static partial class ProfileEndpoints
         return Results.File(
             person.ProfilePicture,
             person.ProfilePictureContentType,
+            fileDownloadName: $"profile-{person.Id}",
             enableRangeProcessing: false);
     }
 
@@ -55,30 +59,63 @@ public static partial class ProfileEndpoints
         return Results.File(
             mechanic.ProfilePicture,
             mechanic.ProfilePictureContentType,
+            fileDownloadName: $"profile-{mechanic.Id}",
             enableRangeProcessing: false);
     }
 
-    private static async Task StreamProfilePictureUpdatesAsync(
+    private static async Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
+        if (!broadcaster.TrySubscribe(out var subscriptionId, out var reader))
+        {
+            return Results.Problem(
+                detail: "Too many active profile picture update subscriptions. Please retry later.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
         httpContext.Response.Headers.CacheControl = "no-cache";
         httpContext.Response.Headers.Append("X-Accel-Buffering", "no");
         httpContext.Response.ContentType = "text/event-stream";
-
-        var (subscriptionId, reader) = broadcaster.Subscribe();
+        var idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
 
         try
         {
             await httpContext.Response.WriteAsync(": profile picture updates stream ready\n\n", cancellationToken);
             await httpContext.Response.Body.FlushAsync(cancellationToken);
 
-            await foreach (var update in reader.ReadAllAsync(cancellationToken))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var payload = JsonSerializer.Serialize(update);
-                await httpContext.Response.WriteAsync($"event: profile-picture-updated\ndata: {payload}\n\n", cancellationToken);
-                await httpContext.Response.Body.FlushAsync(cancellationToken);
+                using var readCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                readCts.CancelAfter(ProfilePictureUpdatesKeepAliveInterval);
+
+                try
+                {
+                    var hasData = await reader.WaitToReadAsync(readCts.Token);
+                    if (!hasData)
+                    {
+                        break;
+                    }
+
+                    while (reader.TryRead(out var update))
+                    {
+                        var payload = JsonSerializer.Serialize(update);
+                        await httpContext.Response.WriteAsync($"event: profile-picture-updated\ndata: {payload}\n\n", cancellationToken);
+                        await httpContext.Response.Body.FlushAsync(cancellationToken);
+                        idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
+                    }
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    if (DateTime.UtcNow >= idleDeadlineUtc)
+                    {
+                        break;
+                    }
+
+                    await httpContext.Response.WriteAsync(": keep-alive\n\n", cancellationToken);
+                    await httpContext.Response.Body.FlushAsync(cancellationToken);
+                }
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -89,6 +126,8 @@ public static partial class ProfileEndpoints
         {
             broadcaster.Unsubscribe(subscriptionId);
         }
+
+        return Results.Empty;
     }
 
     private static async Task<IResult> UploadProfilePictureAsync(
@@ -114,7 +153,9 @@ public static partial class ProfileEndpoints
             });
         }
 
-        if (!AllowedImageContentTypes.Contains(file.ContentType.ToLowerInvariant()))
+        var normalizedContentType = file.ContentType.ToLowerInvariant();
+
+        if (!AllowedImageContentTypes.Contains(normalizedContentType))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -132,8 +173,30 @@ public static partial class ProfileEndpoints
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
-        person.ProfilePicture = memoryStream.ToArray();
-        person.ProfilePictureContentType = file.ContentType.ToLowerInvariant();
+        var fileBytes = memoryStream.ToArray();
+
+        if (!TryDetectImageContentType(fileBytes, out var detectedContentType))
+        {
+            return Results.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["file"] = ["File content is not a valid JPEG, PNG, or WebP image."]
+                },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!string.Equals(detectedContentType, normalizedContentType, StringComparison.Ordinal))
+        {
+            return Results.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["file"] = ["File content does not match the declared content type."]
+                },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        person.ProfilePicture = fileBytes;
+        person.ProfilePictureContentType = normalizedContentType;
 
         await db.SaveChangesAsync(cancellationToken);
 

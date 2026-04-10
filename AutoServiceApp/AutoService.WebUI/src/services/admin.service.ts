@@ -26,6 +26,7 @@ export interface MechanicListItem {
   email: string;
   phoneNumber: string | null;
   specialization: string;
+  hasProfilePicture?: boolean;
   isAdmin: boolean;
 }
 

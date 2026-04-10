@@ -21,6 +21,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Use DTO contracts at API boundaries, do not expose EF entities directly.
 - Prefer async EF methods and cancellation tokens.
 - Place new migrations in Data/Migrations.
+- Current migrations are: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`.
 
 ## Authentication & Security
 
@@ -29,26 +30,31 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Keep auth endpoints in Auth folder and avoid expanding Program.cs with endpoint handler logic.
 - Prefer splitting large auth endpoint files into focused files in `Auth/` (for example map/register/login/helpers/contracts).
 - Keep JWT signing secret externalized (env or local untracked config), minimum 32 bytes.
+- Startup must fail fast if `JwtSettings:Secret` still contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Keep login protections: lockout (5 failed attempts, 15 min lockout), rate limit (10 req/min), and temporary ban behavior (3 min) consistent unless explicitly requested.
+- Keep login-ban middleware in-process behavior deterministic: 30-second cleanup interval and max tracked-client bound (5000).
 - Keep auth input normalization consistent across register/login:
   - emails are trimmed + lowercased,
   - Hungarian phone formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
     - `361xxxxxxx` (Budapest),
     - `36(20|21|30|31|50|70)xxxxxxx` (mobile/nomadic),
     - `36<approved 2-digit area>xxxxxx` (geographic).
+- Registration must pre-check normalized email collisions against both Identity users and domain `People` records (including passive customers).
+- Registration must map unique-constraint email races to controlled validation errors on `Email`.
 - Keep contact normalization, name validation, token-security helpers, and shared validation error message constants centralized in `Common/` (`ContactNormalization`, `TokenSecurity`, `ValidationMessages`) and reuse them from endpoint files.
 - Name fields (first name, middle name, last name) must be validated with `ContactNormalization.IsValidName()` (pattern `^[\p{L}\-]+$`) at registration, profile update, and customer create/update. Use `ValidationMessages` constants for error messages.
 - Registration must reject duplicate phone numbers even when equivalent values are provided in different formats.
 - JWT token lifetime is 10 minutes.
 - JWT validation: issuer/audience validation enabled, lifetime validation enabled, clock skew 1 minute.
 - Keep cookie auth secure defaults for auth cookies (HttpOnly, Secure, SameSite, explicit Path).
-- CORS policy must allow explicit WebUI origins with credentials; configure via `Cors:AllowedOrigins`, `builder.Services.AddCors()`, and `app.UseCors()`.
+- CORS policy must allow explicit WebUI origins with credentials; configure via `Cors:AllowedOrigins`, `builder.Services.AddCors()`, and `app.UseCors()`. Current API appsettings default origin is `https://localhost:5173`.
+- For AI-assisted database verification, use `ai_agent_test_user` and run read-only `SELECT` queries only; never execute DML/DDL (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`) from AI SQL tooling.
 
 ## API Endpoints (Current)
 
 - `POST /api/auth/register` – Mechanic registration endpoint (AdminOnly); returns IdentityUserId + PersonId + PersonType + Email.
 - `POST /api/auth/login` – Email or phone + password → sets access + refresh cookies and returns profile info + expiration time.
-- `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie.
+- `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie (rate-limited by `AuthRefreshAttempts`).
 - `POST /api/auth/logout` – Revokes refresh token session, denylists current JWT `jti`, clears auth cookies.
 - `GET /api/auth/validate` – Returns person linkage data for valid authenticated session.
 - `POST /api/auth/login` accepts normalized email/phone identifier input and supports backward-compatible phone-in-email field fallback.
@@ -62,8 +68,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
 - `GET /api/profile/picture` — Serve profile picture binary with content type header.
 - `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing).
-- `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload).
-- `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only.
+- `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload), backed by bounded per-subscriber channels (max 200 subscriptions, buffer size 32, drop-oldest overflow mode).
+- `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only. Server validates image magic bytes and rejects declared MIME/content mismatches.
 - `DELETE /api/profile/picture` — Remove profile picture.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
 - Profile DTOs: `ProfileResponse`, `UpdateProfileRequest` (Email?, PhoneNumber?, FirstName?, MiddleName?, LastName?), `ChangePasswordRequest`, `DeleteProfileRequest`.
@@ -71,8 +77,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 ### Admin Endpoints (`/api/admin`) — all require AdminOnly authorization
 
-- `GET /api/admin/mechanics` — List all mechanics with admin flag.
-- `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Returns 403 if target is admin or caller is deleting themselves, and 422 if deleting would leave zero mechanics globally or would leave any appointment without assigned mechanics.
+- `GET /api/admin/mechanics` — List all mechanics with admin flag and `hasProfilePicture`.
+- `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Runs deletion invariant checks in a serializable transaction and returns 403 if target is admin or caller is deleting themselves, 422 if deleting would leave zero mechanics globally or would leave any appointment without assigned mechanics, 409 when concurrent contention causes serialization/deadlock/concurrency conflicts, and 500 if linked Identity user deletion fails (no partial-success response).
 - Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
 
 ### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
@@ -102,8 +108,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
 - `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Rejects scheduled dates in the past. Looks up customer by normalized email (creates customer when missing), accepts either `vehicleId` or new `vehicle` payload, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
-- `PUT /api/appointments/{id}` — Update appointment and related vehicle fields (`scheduledDate`, `dueDateTime`, `taskDescription`, and vehicle fields). Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. Rejects `scheduledDate` changes when the appointment is already in the past.
-- `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
+- `PUT /api/appointments/{id}` — Update appointment fields only (`scheduledDate`, `dueDateTime`, `taskDescription`). Legacy vehicle fields in the payload are accepted for backward compatibility but ignored. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. Rejects past `scheduledDate` values and rejects `scheduledDate` changes when the appointment is already in the past.
+- `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, non-past `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment. Returns 409 if already claimed, 422 if appointment is Cancelled.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, 422 if appointment is Cancelled or if unassign would leave the appointment without assigned mechanics.
 - `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum (`InProgress`, `Completed`, `Cancelled`), returns 403 if not assigned. Auto-sets `CompletedAt` when transitioning to Completed, `CanceledAt` when transitioning to Cancelled; clears both when transitioning back to InProgress. Cancelled appointments can be moved back to `InProgress` or `Completed`, including for past-dated appointments.
@@ -123,13 +129,16 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Database: PostgreSQL via Aspire (NpgsqlEntityFrameworkCore.PostgreSQL provider).
 - Connection string key: `ConnectionStrings:AutoServiceDb`.
 - JWT settings: `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`.
+- Startup must fail fast if `ConnectionStrings:AutoServiceDb` or `JwtSettings:Secret` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - CORS settings: `Cors:AllowedOrigins` (required explicit origins for credentialed cross-origin requests).
-- Demo seeding: Outside Development, require `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
+- Forwarded-header trust settings: `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`.
+- Demo seeding: Outside Development, require `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`; fail fast when `DemoData:MechanicPassword` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Configuration files:
   - `appsettings.json` – Production defaults.
   - `appsettings.Local.json` – Local overrides (gitignored).
   - Environment variables override both.
 - Health endpoints: `app.MapDefaultEndpoints()` is called in Program.cs; maps `/health` and `/alive` in Development.
+- JWT denylist entries are persisted in `revokedjwttokens` and cached in memory for quick revocation checks.
 
 ## EF Core Rules
 
@@ -137,3 +146,4 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Keep schema constraints and indexes aligned with domain invariants.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
+- Seeding includes legacy-state recovery: if migrated/backfilled data exists for customer-side tables but mechanics/identity bootstrap is missing, the initializer resets the inconsistent legacy dataset and reseeds deterministic demo data.

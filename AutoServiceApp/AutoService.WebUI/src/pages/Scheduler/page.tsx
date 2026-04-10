@@ -26,6 +26,57 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const isBackgroundRefreshingRef = useRef(false);
+  const backgroundRefreshTaskRef = useRef<() => Promise<void>>(async () => {});
+  const currentMonthViewRef = useRef({
+    year: store.calendarYear,
+    month: store.calendarMonth,
+  });
+  const todayDataRequestIdRef = useRef(0);
+  const monthDataRequestIdRef = useRef(0);
+  const todayLoadingRequestIdRef = useRef(0);
+  const monthLoadingRequestIdRef = useRef(0);
+  const backgroundRefreshErrorShownRef = useRef(false);
+
+  const nextTodayDataRequestId = useCallback(() => {
+    todayDataRequestIdRef.current += 1;
+    return todayDataRequestIdRef.current;
+  }, []);
+
+  const nextMonthDataRequestId = useCallback(() => {
+    monthDataRequestIdRef.current += 1;
+    return monthDataRequestIdRef.current;
+  }, []);
+
+  const applyTodayAppointmentsIfCurrent = useCallback((requestId: number, appointments: AppointmentDto[]) => {
+    if (todayDataRequestIdRef.current !== requestId) {
+      return;
+    }
+
+    useSchedulerStore.getState().setTodayAppointments(appointments);
+  }, []);
+
+  const applyMonthAppointmentsIfCurrent = useCallback(
+    (requestId: number, year: number, month: number, appointments: AppointmentDto[]) => {
+      const currentView = currentMonthViewRef.current;
+      if (
+        monthDataRequestIdRef.current !== requestId ||
+        currentView.year !== year ||
+        currentView.month !== month
+      ) {
+        return;
+      }
+
+      useSchedulerStore.getState().setMonthAppointments(appointments);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    currentMonthViewRef.current = {
+      year: store.calendarYear,
+      month: store.calendarMonth,
+    };
+  }, [store.calendarMonth, store.calendarYear]);
 
   const selectedDate = useMemo(() => {
     if (selectedDay === null) {
@@ -83,56 +134,73 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     let cancelled = false;
 
     const fetchToday = async () => {
-      store.setIsLoadingToday(true);
-      store.setError(null);
+      const loadingRequestId = ++todayLoadingRequestIdRef.current;
+      const dataRequestId = nextTodayDataRequestId();
+      const schedulerState = useSchedulerStore.getState();
+
+      schedulerState.setIsLoadingToday(true);
+      schedulerState.setError(null);
+
       try {
         const data = await appointmentService.getToday();
         if (!cancelled) {
-          store.setTodayAppointments(data);
+          applyTodayAppointmentsIfCurrent(dataRequestId, data);
         }
       } catch {
         if (!cancelled) {
           showErrorToast('scheduler.todayLoadError');
         }
       } finally {
-        if (!cancelled) {
-          store.setIsLoadingToday(false);
+        if (!cancelled && todayLoadingRequestIdRef.current === loadingRequestId) {
+          useSchedulerStore.getState().setIsLoadingToday(false);
         }
       }
     };
 
     void fetchToday();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [applyTodayAppointmentsIfCurrent, nextTodayDataRequestId, showErrorToast]);
 
   // Fetch month appointments when calendar month changes
   useEffect(() => {
     setSelectedDay(null);
+    const requestedYear = store.calendarYear;
+    const requestedMonth = store.calendarMonth;
+    currentMonthViewRef.current = { year: requestedYear, month: requestedMonth };
     let cancelled = false;
 
     const fetchMonth = async () => {
-      store.setIsLoadingMonth(true);
+      const loadingRequestId = ++monthLoadingRequestIdRef.current;
+      const dataRequestId = nextMonthDataRequestId();
+      const schedulerState = useSchedulerStore.getState();
+
+      schedulerState.setIsLoadingMonth(true);
+
       try {
-        const data = await appointmentService.getByMonth(store.calendarYear, store.calendarMonth);
+        const data = await appointmentService.getByMonth(requestedYear, requestedMonth);
         if (!cancelled) {
-          store.setMonthAppointments(data);
+          applyMonthAppointmentsIfCurrent(dataRequestId, requestedYear, requestedMonth, data);
         }
       } catch {
         if (!cancelled) {
           showErrorToast('scheduler.monthLoadError');
         }
       } finally {
-        if (!cancelled) {
-          store.setIsLoadingMonth(false);
+        if (!cancelled && monthLoadingRequestIdRef.current === loadingRequestId) {
+          useSchedulerStore.getState().setIsLoadingMonth(false);
         }
       }
     };
 
     void fetchMonth();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.calendarYear, store.calendarMonth]);
+  }, [
+    applyMonthAppointmentsIfCurrent,
+    nextMonthDataRequestId,
+    showErrorToast,
+    store.calendarMonth,
+    store.calendarYear,
+  ]);
 
   const handleClaim = useCallback(async (id: number) => {
     try {
@@ -220,60 +288,76 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     showSuccessToast('scheduler.detail.updateSuccess');
   }, [showSuccessToast, store]);
 
+  const selectedAppointmentId = selectedAppointment?.id;
+
   // Keep modal content in sync with the latest store snapshot.
   useEffect(() => {
-    if (!selectedAppointment) {
+    if (selectedAppointmentId === undefined) {
       return;
     }
 
     const latest =
-      store.monthAppointments.find((item) => item.id === selectedAppointment.id)
-      ?? store.todayAppointments.find((item) => item.id === selectedAppointment.id);
+      store.monthAppointments.find((item) => item.id === selectedAppointmentId)
+      ?? store.todayAppointments.find((item) => item.id === selectedAppointmentId);
 
     if (latest) {
-      setSelectedAppointment((prev) => (prev?.id === latest.id ? latest : prev));
+      setSelectedAppointment((prev) => {
+        if (prev?.id !== latest.id) {
+          return prev;
+        }
+
+        return prev === latest ? prev : latest;
+      });
     }
-  }, [selectedAppointment, store.monthAppointments, store.todayAppointments]);
+  }, [selectedAppointmentId, store.monthAppointments, store.todayAppointments]);
 
   // Background refresh keeps appointment claim/status updates realtime for open list + modal.
   useEffect(() => {
-    let cancelled = false;
-
-    const refreshSchedulerData = async () => {
+    backgroundRefreshTaskRef.current = async () => {
       if (isBackgroundRefreshingRef.current) {
         return;
       }
+
+      const requestedView = currentMonthViewRef.current;
+      const todayRequestId = nextTodayDataRequestId();
+      const monthRequestId = nextMonthDataRequestId();
 
       isBackgroundRefreshingRef.current = true;
       try {
         const [today, month] = await Promise.all([
           appointmentService.getToday(),
-          appointmentService.getByMonth(store.calendarYear, store.calendarMonth),
+          appointmentService.getByMonth(requestedView.year, requestedView.month),
         ]);
 
-        if (cancelled) {
-          return;
-        }
-
-        store.setTodayAppointments(today);
-        store.setMonthAppointments(month);
+        applyTodayAppointmentsIfCurrent(todayRequestId, today);
+        applyMonthAppointmentsIfCurrent(monthRequestId, requestedView.year, requestedView.month, month);
+        backgroundRefreshErrorShownRef.current = false;
       } catch {
-        // Keep UI stable on transient refresh failures.
+        if (!backgroundRefreshErrorShownRef.current) {
+          showErrorToast('scheduler.monthLoadError');
+          backgroundRefreshErrorShownRef.current = true;
+        }
       } finally {
         isBackgroundRefreshingRef.current = false;
       }
     };
+  }, [
+    applyMonthAppointmentsIfCurrent,
+    applyTodayAppointmentsIfCurrent,
+    nextMonthDataRequestId,
+    nextTodayDataRequestId,
+    showErrorToast,
+  ]);
 
+  useEffect(() => {
     const intervalId = globalThis.setInterval(() => {
-      void refreshSchedulerData();
+      void backgroundRefreshTaskRef.current();
     }, 8000);
 
     return () => {
-      cancelled = true;
       globalThis.clearInterval(intervalId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.calendarYear, store.calendarMonth]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 h-full overflow-auto">

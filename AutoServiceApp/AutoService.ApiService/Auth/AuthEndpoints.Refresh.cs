@@ -15,7 +15,7 @@ public static partial class AuthEndpoints
         HttpContext httpContext,
         AutoServiceDbContext db,
         UserManager<IdentityUser> userManager,
-        IConfiguration configuration,
+        IJwtTokenIssuer tokenIssuer,
         CancellationToken cancellationToken)
     {
         if (!httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) ||
@@ -31,8 +31,33 @@ public static partial class AuthEndpoints
             .Include(x => x.Mechanic)
             .FirstOrDefaultAsync(x => x.TokenHash == refreshTokenHash, cancellationToken);
 
-        if (existingToken is null || !existingToken.IsActive(nowUtc))
+        if (existingToken is null)
         {
+            return Results.Unauthorized();
+        }
+
+        if (existingToken.RevokedAtUtc is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(existingToken.ReplacedByTokenHash))
+            {
+                await RevokeRefreshTokenDescendantsAsync(existingToken, nowUtc, db, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            return Results.Unauthorized();
+        }
+
+        if (existingToken.ExpiresAtUtc <= nowUtc)
+        {
+            return Results.Unauthorized();
+        }
+
+        var currentIpAddress = ResolveClientIpAddress(httpContext);
+        if (!string.IsNullOrWhiteSpace(existingToken.CreatedByIpAddress) &&
+            !string.Equals(existingToken.CreatedByIpAddress, currentIpAddress, StringComparison.Ordinal))
+        {
+            existingToken.Revoke(nowUtc);
+            await db.SaveChangesAsync(cancellationToken);
             return Results.Unauthorized();
         }
 
@@ -53,7 +78,8 @@ public static partial class AuthEndpoints
         var accessTokenExpiresAtUtc = nowUtc.Add(accessTokenTtl);
         var refreshTokenExpiresAtUtc = nowUtc.Add(refreshTokenTtl);
 
-        var newAccessToken = await CreateJwtTokenAsync(identityUser, mechanic, userManager, configuration, accessTokenExpiresAtUtc);
+        var roles = await userManager.GetRolesAsync(identityUser);
+        var newAccessToken = tokenIssuer.CreateToken(identityUser, mechanic, roles, accessTokenExpiresAtUtc);
         var newRefreshTokenValue = GenerateRefreshTokenValue();
         var newRefreshTokenHash = HashRefreshToken(newRefreshTokenValue);
 
@@ -64,7 +90,7 @@ public static partial class AuthEndpoints
             newRefreshTokenHash,
             nowUtc,
             refreshTokenExpiresAtUtc,
-            httpContext.Connection.RemoteIpAddress?.ToString(),
+            currentIpAddress,
             httpContext.Request.Headers.UserAgent.ToString()));
 
         await db.SaveChangesAsync(cancellationToken);
@@ -79,7 +105,35 @@ public static partial class AuthEndpoints
             newRefreshTokenValue,
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
-        var isAdmin = (await userManager.GetRolesAsync(identityUser)).Contains("Admin");
+        var isAdmin = roles.Contains("Admin");
         return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, GetPersonType(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
+    }
+
+    private static async Task RevokeRefreshTokenDescendantsAsync(
+        RefreshToken rootToken,
+        DateTime nowUtc,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var currentToken = rootToken;
+
+        while (!string.IsNullOrWhiteSpace(currentToken.ReplacedByTokenHash))
+        {
+            var childTokenHash = currentToken.ReplacedByTokenHash;
+            var childToken = await db.RefreshTokens
+                .FirstOrDefaultAsync(x => x.TokenHash == childTokenHash, cancellationToken);
+
+            if (childToken is null)
+            {
+                break;
+            }
+
+            if (childToken.RevokedAtUtc is null)
+            {
+                childToken.Revoke(nowUtc);
+            }
+
+            currentToken = childToken;
+        }
     }
 }

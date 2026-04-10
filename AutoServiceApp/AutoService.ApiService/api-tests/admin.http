@@ -1,16 +1,14 @@
 @AutoService_ApiService_HostAddress = https://localhost:5200
 @TestPassword = Test@1234
-@AdminEmail = gabor.kovacs@gmail.com
-@AdminPassword = Test_Jelszo.420
+@AdminEmail = gabor.kovacs@example.com
+@AdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
 @MatrixRunSuffix = 20260403a
-@MatrixWhitespaceEmail = matrix.whitespace.user.{{MatrixRunSuffix}}@example.com
-@CurrentAdminMechanicId = 1
-@MechanicIdWithSoleAssignments = 2
-@MechanicIdCandidateForDeletion = 3
+@CurrentAdminMechanicId = 6
+@MechanicIdWithSoleAssignments = 7
+@MechanicIdCandidateForDeletion = 8
 @UnknownMechanicId = 99999
-
-#  ADMIN
-# ─────────────────────────────────────────────────────────────
+@NonAdminEmail = peter.nagy@example.com
+@NonAdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
 
 ### [Setup][Admin] Login as admin (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -24,6 +22,7 @@ Content-Type: application/json
 ###
 
 ### [Positive][Admin] List all mechanics
+# Response items include isAdmin and hasProfilePicture.
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 
 ###
@@ -50,6 +49,18 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCa
 
 ###
 
+# Preconditions: induce concurrent update/delete contention on the same mechanic in another client/session.
+### [Negative][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+
+###
+
+# Preconditions: force linked identity deletion to fail (for example fault-inject UserManager.DeleteAsync failure).
+### [Negative][Admin][Manual] Linked identity delete failure returns server error (500 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+
+###
+
 ### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 
@@ -60,8 +71,8 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "{{MatrixWhitespaceEmail}}",
-  "password": "{{TestPassword}}"
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
 }
 
 ###

@@ -90,7 +90,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                   <MechanicAvatar
                     mechanicId={mechanic.personId}
                     fullName={displayName}
-                    hasProfilePicture={true}
+                    hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
                     sizeClassName="h-10 w-10 text-sm"
                   />
 

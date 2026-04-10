@@ -9,10 +9,12 @@ using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile;
 using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Globalization;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -28,9 +30,46 @@ builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, relo
 // Service registration section.
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
+var connectionString = ConnectionStringResolver.Resolve(builder.Configuration);
 builder.Services.AddDbContext<AutoServiceDbContext>(options =>
 {
-    options.UseNpgsql(ConnectionStringResolver.Resolve(builder.Configuration));
+    options.UseNpgsql(connectionString);
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = builder.Configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 1;
+
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+
+    var knownProxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [];
+    foreach (var proxy in knownProxies)
+    {
+        if (IPAddress.TryParse(proxy, out var proxyIpAddress))
+        {
+            options.KnownProxies.Add(proxyIpAddress);
+        }
+    }
+
+    var knownNetworks = builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [];
+    foreach (var network in knownNetworks)
+    {
+        var parts = network.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 2 &&
+            IPAddress.TryParse(parts[0], out var prefix) &&
+            int.TryParse(parts[1], out var prefixLength))
+        {
+            options.KnownIPNetworks.Add(new global::System.Net.IPNetwork(prefix, prefixLength));
+        }
+    }
+
+    if (options.KnownProxies.Count == 0 && options.KnownIPNetworks.Count == 0)
+    {
+        options.KnownProxies.Add(IPAddress.Loopback);
+        options.KnownProxies.Add(IPAddress.IPv6Loopback);
+    }
 });
 
 // Identity and authentication configuration.
@@ -82,20 +121,24 @@ builder.Services
 
                 return Task.CompletedTask;
             },
-            OnTokenValidated = context =>
+            OnTokenValidated = async context =>
             {
                 var jwtId = context.Principal?.FindFirst("jti")?.Value;
 
                 if (!string.IsNullOrWhiteSpace(jwtId))
                 {
                     var denylist = context.HttpContext.RequestServices.GetRequiredService<ITokenDenylistService>();
-                    if (denylist.IsRevoked(jwtId))
+                    try
                     {
-                        context.Fail("Token has been revoked.");
+                        if (await denylist.IsRevokedAsync(jwtId, context.HttpContext.RequestAborted))
+                        {
+                            context.Fail("Token has been revoked.");
+                        }
+                    }
+                    catch (OperationCanceledException) when (context.HttpContext.RequestAborted.IsCancellationRequested)
+                    {
                     }
                 }
-
-                return Task.CompletedTask;
             }
         };
 
@@ -147,6 +190,14 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         limiterOptions.QueueLimit = 0;
     });
+
+    options.AddFixedWindowLimiter("AuthRefreshAttempts", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 20;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
 });
 
 builder.Services.AddCors(options =>
@@ -165,7 +216,8 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
-builder.Services.AddScoped<ITokenDenylistService, TokenDenylistService>();
+builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
+builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
 builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
 
 // Build.
@@ -187,6 +239,7 @@ else
     app.UseHsts();
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();

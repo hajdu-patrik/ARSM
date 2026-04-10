@@ -18,7 +18,8 @@ var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
 // Database definition (PostgreSQL)
 var postgresServer = builder.AddPostgres("postgres", password: postgresPassword, port: postgresPort)
                             .WithDataVolume("autoservice-postgres-data")
-                            .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent);
+                            .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent)
+                            .WithEnvironment("PGGSSENCMODE", "disable");
 
 var postgresDb = postgresServer.AddDatabase("AutoServiceDb");
 
@@ -26,7 +27,8 @@ var postgresDb = postgresServer.AddDatabase("AutoServiceDb");
 var apiService = builder.AddProject<Projects.AutoService_ApiService>("apiservice")
                         .WithReference(postgresDb)
                         .WaitFor(postgresDb)
-                        .WithEnvironment("JwtSettings__Secret", jwtSecret);
+                        .WithEnvironment("JwtSettings__Secret", jwtSecret)
+                        .WithEnvironment("PGGSSENCMODE", "disable");
 
 // Frontend (React) setting up and reference to API
 var webUi = builder.AddNpmApp("webui", "../AutoService.WebUI", "dev")

@@ -18,10 +18,16 @@ public static class JwtSettingsResolver
             ? fromConfiguration
             : fromEnvironment;
 
-        if (string.IsNullOrWhiteSpace(secret) || secret.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(secret))
         {
             throw new InvalidOperationException(
                 "JWT secret 'JwtSettings:Secret' is missing. Provide a strong secret in appsettings.Local.json, user secrets, or the 'JwtSettings__Secret' environment variable.");
+        }
+
+        if (ContainsTemplateMarker(secret))
+        {
+            throw new InvalidOperationException(
+                "JWT secret 'JwtSettings:Secret' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a unique local secret before startup.");
         }
 
         if (Encoding.UTF8.GetByteCount(secret) < 32)
@@ -31,5 +37,32 @@ public static class JwtSettingsResolver
         }
 
         return secret;
+    }
+
+    private static bool ContainsTemplateMarker(string value)
+    {
+        if (value.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("SET_UNIQUE_LOCAL", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var normalized = NormalizeForMarkerDetection(value);
+        return normalized.Contains("CHANGEME", StringComparison.Ordinal)
+            || normalized.Contains("SETUNIQUELOCAL", StringComparison.Ordinal);
+    }
+
+    private static string NormalizeForMarkerDetection(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                builder.Append(char.ToUpperInvariant(c));
+            }
+        }
+
+        return builder.ToString();
     }
 }

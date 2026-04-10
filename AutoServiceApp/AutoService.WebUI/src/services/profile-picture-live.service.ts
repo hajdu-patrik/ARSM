@@ -1,5 +1,7 @@
 import { profileService } from './profile.service';
 import { apiClient } from './api.client';
+import { useAuthStore } from '../store/auth.store';
+import axios from 'axios';
 
 export const PROFILE_PICTURE_UPDATED_EVENT = 'autoservice:profile-picture-updated';
 
@@ -12,6 +14,34 @@ export interface ProfilePictureUpdatedDetail {
 let eventSource: EventSource | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let subscriberCount = 0;
+let lifecycleToken = 0;
+
+function shouldKeepLiveUpdates(token: number): boolean {
+  return token === lifecycleToken && subscriberCount > 0 && useAuthStore.getState().isAuthenticated;
+}
+
+function clearReconnectTimer(): void {
+  if (reconnectTimer !== null) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function closeEventSource(): void {
+  if (eventSource !== null) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+
+function teardownConnection(invalidateLifecycle: boolean): void {
+  clearReconnectTimer();
+  closeEventSource();
+
+  if (invalidateLifecycle) {
+    lifecycleToken += 1;
+  }
+}
 
 function dispatchProfilePictureUpdate(detail: ProfilePictureUpdatedDetail): void {
   globalThis.dispatchEvent(new CustomEvent(PROFILE_PICTURE_UPDATED_EVENT, { detail }));
@@ -38,30 +68,47 @@ function parseProfilePictureUpdate(data: string): ProfilePictureUpdatedDetail | 
   }
 }
 
-function scheduleReconnect(): void {
-  if (reconnectTimer !== null || subscriberCount < 1) {
+function scheduleReconnect(tokenAtSchedule: number): void {
+  if (!shouldKeepLiveUpdates(tokenAtSchedule) || reconnectTimer !== null) {
     return;
   }
 
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
+    if (!shouldKeepLiveUpdates(tokenAtSchedule)) {
+      return;
+    }
+
     connectToProfilePictureUpdates();
   }, 2000);
 }
 
-async function refreshSessionIfPossible(): Promise<void> {
+async function refreshSessionIfPossible(tokenAtRequest: number): Promise<boolean> {
+  if (!shouldKeepLiveUpdates(tokenAtRequest)) {
+    return false;
+  }
+
   try {
     await apiClient.post('/api/auth/refresh');
-  } catch {
-    // Ignore refresh failures; reconnect attempts will continue and recover after next successful login.
+    return shouldKeepLiveUpdates(tokenAtRequest);
+  } catch (error) {
+    const refreshStatus = axios.isAxiosError(error) ? error.response?.status : undefined;
+
+    if (refreshStatus === 401 || refreshStatus === 403) {
+      useAuthStore.getState().clearAuth();
+      return false;
+    }
+
+    return shouldKeepLiveUpdates(tokenAtRequest);
   }
 }
 
 function connectToProfilePictureUpdates(): void {
-  if (subscriberCount < 1 || eventSource !== null) {
+  if (!shouldKeepLiveUpdates(lifecycleToken) || eventSource !== null) {
     return;
   }
 
+  const connectionToken = lifecycleToken;
   const source = new EventSource(profileService.getProfilePictureUpdatesUrl(), { withCredentials: true });
 
   source.addEventListener('profile-picture-updated', (event) => {
@@ -77,8 +124,15 @@ function connectToProfilePictureUpdates(): void {
     if (eventSource === source) {
       eventSource = null;
     }
-    void refreshSessionIfPossible().finally(() => {
-      scheduleReconnect();
+
+    if (!shouldKeepLiveUpdates(connectionToken)) {
+      return;
+    }
+
+    void refreshSessionIfPossible(connectionToken).then((shouldReconnect) => {
+      if (shouldReconnect) {
+        scheduleReconnect(connectionToken);
+      }
     });
   };
 
@@ -87,6 +141,10 @@ function connectToProfilePictureUpdates(): void {
 
 export function startProfilePictureLiveUpdates(): () => void {
   subscriberCount += 1;
+  if (subscriberCount === 1) {
+    lifecycleToken += 1;
+  }
+
   connectToProfilePictureUpdates();
 
   return () => {
@@ -95,17 +153,21 @@ export function startProfilePictureLiveUpdates(): () => void {
       return;
     }
 
-    if (reconnectTimer !== null) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
-
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
+    teardownConnection(true);
   };
 }
+
+useAuthStore.subscribe((state, previousState) => {
+  if (previousState.isAuthenticated && !state.isAuthenticated) {
+    teardownConnection(true);
+    return;
+  }
+
+  if (!previousState.isAuthenticated && state.isAuthenticated && subscriberCount > 0) {
+    lifecycleToken += 1;
+    connectToProfilePictureUpdates();
+  }
+});
 
 export function emitProfilePictureUpdated(detail: Omit<ProfilePictureUpdatedDetail, 'cacheBuster'> & { cacheBuster?: number }): void {
   dispatchProfilePictureUpdate({

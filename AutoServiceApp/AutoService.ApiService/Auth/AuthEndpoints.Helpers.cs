@@ -102,4 +102,10 @@ public static partial class AuthEndpoints
 
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);
+
+    private static string? ResolveClientIpAddress(HttpContext httpContext)
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString();
+        return string.IsNullOrWhiteSpace(ip) ? null : ip;
+    }
 }

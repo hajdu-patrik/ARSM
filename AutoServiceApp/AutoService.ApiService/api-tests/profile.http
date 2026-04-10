@@ -1,17 +1,13 @@
 @AutoService_ApiService_HostAddress = https://localhost:5200
 @TestPassword = Test@1234
-@AdminEmail = gabor.kovacs@gmail.com
-@AdminPassword = Test_Jelszo.420
+@AdminEmail = gabor.kovacs@example.com
+@AdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
 @MatrixRunSuffix = 20260403a
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.com
-
-#  PROFILE
-# ─────────────────────────────────────────────────────────────
-
-@ProfileMechanicEmail = {{MatrixEmailOnly}}
-@ProfileCurrentPassword = {{TestPassword}}
+@ProfileMechanicEmail = peter.nagy@example.com
+@ProfileCurrentPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
 @ProfileNewPassword = Test@12345A
-@MechanicPersonIdForPicture = 1
+@MechanicPersonIdForPicture = 7
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -172,6 +168,16 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 # curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
 #   -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
 #   -F "file=@C:/path/to/profile-picture.png"
+#
+# Negative magic-byte checks:
+# 1) MIME/content mismatch should return 422.
+#    curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
+#      -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
+#      -F "file=@C:/path/to/image.png;type=image/jpeg"
+# 2) Non-image payload with image MIME should return 422.
+#    curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
+#      -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
+#      -F "file=@C:/path/to/not-an-image.txt;type=image/png"
 
 ###
 
@@ -202,22 +208,22 @@ Content-Type: application/json
 ###
 
 ### [Setup][Profile] Login back as non-admin for account deletion
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "{{ProfileMechanicEmail}}",
-  "password": "{{ProfileNewPassword}}"
-}
+## POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+## Content-Type: application/json
+##
+## {
+##   "email": "{{ProfileMechanicEmail}}",
+##   "password": "{{ProfileNewPassword}}"
+## }
 
 ###
 
 ### [Positive][Profile] Non-admin deletes own account
-DELETE {{AutoService_ApiService_HostAddress}}/api/profile
-Content-Type: application/json
-
-{
-  "currentPassword": "{{ProfileNewPassword}}"
-}
+## DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+## Content-Type: application/json
+##
+## {
+##   "currentPassword": "{{ProfileNewPassword}}"
+## }
 
 ###

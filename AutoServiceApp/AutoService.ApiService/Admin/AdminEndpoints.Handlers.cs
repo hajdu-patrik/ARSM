@@ -2,7 +2,9 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Security.Claims;
+using System.Data;
 
 namespace AutoService.ApiService.Admin;
 
@@ -10,29 +12,29 @@ public static partial class AdminEndpoints
 {
     private static async Task<IResult> ListMechanicsAsync(
         HttpContext httpContext,
-        UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
         var mechanics = await db.Mechanics
+            .AsNoTracking()
             .OrderBy(m => m.Name.LastName)
             .ThenBy(m => m.Name.FirstName)
             .ToListAsync(cancellationToken);
+
+        var adminIdentityUserIdSet = (await (
+            from userRole in db.UserRoles.AsNoTracking()
+            join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+            where role.Name == "Admin"
+            select userRole.UserId)
+            .ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.Ordinal);
 
         var items = new List<MechanicListItem>(mechanics.Count);
 
         foreach (var mechanic in mechanics)
         {
-            var isAdmin = false;
-
-            if (mechanic.IdentityUserId is not null)
-            {
-                var identityUser = await userManager.FindByIdAsync(mechanic.IdentityUserId);
-                if (identityUser is not null)
-                {
-                    isAdmin = await userManager.IsInRoleAsync(identityUser, "Admin");
-                }
-            }
+            var isAdmin = mechanic.IdentityUserId is not null && adminIdentityUserIdSet.Contains(mechanic.IdentityUserId);
+            var hasProfilePicture = mechanic.ProfilePicture is not null && mechanic.ProfilePictureContentType is not null;
 
             items.Add(new MechanicListItem(
                 mechanic.Id,
@@ -42,7 +44,8 @@ public static partial class AdminEndpoints
                 mechanic.Email,
                 mechanic.PhoneNumber,
                 mechanic.Specialization.ToString(),
-                isAdmin));
+                isAdmin,
+                hasProfilePicture));
         }
 
         return Results.Ok(items);
@@ -63,7 +66,9 @@ public static partial class AdminEndpoints
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        var mechanic = await db.Mechanics.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        var mechanic = await db.Mechanics
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
         if (mechanic is null)
         {
             return Results.Problem(
@@ -84,8 +89,21 @@ public static partial class AdminEndpoints
                         statusCode: StatusCodes.Status403Forbidden);
                 }
             }
+        }
 
-            var invariantViolation = await ValidateMechanicDeletionInvariantsAsync(mechanic.Id, db, cancellationToken);
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
+            var mechanicToDelete = await db.Mechanics.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+            if (mechanicToDelete is null)
+            {
+                return Results.Problem(
+                    detail: "Mechanic not found.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            var invariantViolation = await ValidateMechanicDeletionInvariantsAsync(mechanicToDelete.Id, db, cancellationToken);
             if (invariantViolation is not null)
             {
                 return invariantViolation;
@@ -93,7 +111,7 @@ public static partial class AdminEndpoints
 
             // Revoke all refresh tokens for this mechanic.
             var refreshTokens = await db.RefreshTokens
-                .Where(rt => rt.MechanicId == mechanic.Id && rt.RevokedAtUtc == null)
+                .Where(rt => rt.MechanicId == mechanicToDelete.Id && rt.RevokedAtUtc == null)
                 .ToListAsync(cancellationToken);
 
             var nowUtc = DateTime.UtcNow;
@@ -102,27 +120,31 @@ public static partial class AdminEndpoints
                 token.Revoke(nowUtc);
             }
 
-            await db.SaveChangesAsync(cancellationToken);
-
-            // Remove domain record first, then identity.
-            db.Mechanics.Remove(mechanic);
-            await db.SaveChangesAsync(cancellationToken);
-
-            if (identityUser is not null)
+            if (mechanicToDelete.IdentityUserId is not null)
             {
-                await userManager.DeleteAsync(identityUser);
+                var identityUser = await userManager.FindByIdAsync(mechanicToDelete.IdentityUserId);
+                if (identityUser is not null)
+                {
+                    var identityDeleteResult = await userManager.DeleteAsync(identityUser);
+                    if (!identityDeleteResult.Succeeded)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Results.Problem(
+                            detail: "Failed to delete linked identity account.",
+                            statusCode: StatusCodes.Status500InternalServerError);
+                    }
+                }
             }
+
+            db.Mechanics.Remove(mechanicToDelete);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
-        else
+        catch (Exception ex) when (IsMechanicDeleteConcurrencyConflict(ex))
         {
-            var invariantViolation = await ValidateMechanicDeletionInvariantsAsync(mechanic.Id, db, cancellationToken);
-            if (invariantViolation is not null)
-            {
-                return invariantViolation;
-            }
-
-            db.Mechanics.Remove(mechanic);
-            await db.SaveChangesAsync(cancellationToken);
+            return Results.Problem(
+                detail: "Mechanic deletion conflicted with another concurrent update. Please retry the operation.",
+                statusCode: StatusCodes.Status409Conflict);
         }
 
         return Results.Ok(new { message = "Mechanic deleted successfully." });
@@ -153,5 +175,25 @@ public static partial class AdminEndpoints
         }
 
         return null;
+    }
+
+    private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException!)
+        {
+            if (current is DbUpdateConcurrencyException)
+            {
+                return true;
+            }
+
+            if (current is PostgresException postgresException
+                && (postgresException.SqlState == PostgresErrorCodes.SerializationFailure
+                    || postgresException.SqlState == PostgresErrorCodes.DeadlockDetected))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

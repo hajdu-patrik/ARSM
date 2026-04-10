@@ -4,6 +4,7 @@ using AutoService.ApiService.Models;
 using AutoService.ApiService.Models.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AutoService.ApiService.Auth;
 
@@ -40,6 +41,18 @@ public static partial class AuthEndpoints
                 : null;
 
         if (await userManager.FindByEmailAsync(email) is not null)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(request.Email)] = ["An account already exists with this email address."]
+            });
+        }
+
+        var peopleEmailInUse = await db.People
+            .AsNoTracking()
+            .AnyAsync(p => p.Email == email, cancellationToken);
+
+        if (peopleEmailInUse)
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -111,8 +124,19 @@ public static partial class AuthEndpoints
                 break;
         }
 
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(request.Email)] = ["An account already exists with this email address."]
+            });
+        }
 
         return Results.Ok(new RegisterResponse(identityUser.Id, person.Id, GetPersonType(person), person.Email));
     }
@@ -237,5 +261,18 @@ public static partial class AuthEndpoints
         }
 
         return expertise;
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
