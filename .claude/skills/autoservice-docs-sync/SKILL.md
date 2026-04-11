@@ -78,7 +78,7 @@ For each section in each doc file, compare the documented state against the anal
 - Keep the existing structure/heading style of each file — do not restructure.
 - Only change sections where the content is actually outdated.
 - Do not add speculative content — only document what exists in the code.
-- Keep the `.github/copilot-instructions.md` "Current Known Gaps" section accurate.
+- Do not use or maintain a "Known Gaps" section in instruction files; track open items in `docs/Private-Docs/ARSM-TL-DR.md` under `TO-DO`.
 - Keep the `.github/copilot-instructions.md` "Current API & Security Snapshot" section accurate.
 - If root `README.md` or `README(HU).md` contains stale project-state claims, update both consistently.
 - For touched markdown files, fix basic quality issues (heading spacing, table separators, trailing newline) without changing meaning.

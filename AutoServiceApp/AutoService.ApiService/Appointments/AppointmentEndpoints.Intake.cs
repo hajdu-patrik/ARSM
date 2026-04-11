@@ -1,8 +1,10 @@
 using System.Security.Claims;
-using AutoService.ApiService.Common;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
-using AutoService.ApiService.Models.UniqueTypes;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Linking;
+using AutoService.ApiService.Normalization;
+using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -111,10 +113,22 @@ public static partial class AppointmentEndpoints
         var customer = await db.Customers
             .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
 
+        var linkedMechanicForEmail = customer is null
+            ? await db.Mechanics.FirstOrDefaultAsync(m => m.Email == normalizedEmail, cancellationToken)
+            : null;
+
+        if (customer is null && linkedMechanicForEmail is not null)
+        {
+            var mechanicOwnedCustomerEmail = CustomerOwnerLinking.BuildMechanicOwnedCustomerEmail(linkedMechanicForEmail.Id);
+            customer = await db.Customers
+                .FirstOrDefaultAsync(c => c.Email == mechanicOwnedCustomerEmail, cancellationToken);
+            normalizedEmail = mechanicOwnedCustomerEmail;
+        }
+
         var creatingCustomer = customer is null;
         if (creatingCustomer)
         {
-            var emailInUseByAnotherPersonType = await db.People
+            var emailInUseByAnotherPersonType = linkedMechanicForEmail is null && await db.People
                 .AnyAsync(p => p.Email == normalizedEmail, cancellationToken);
 
             if (emailInUseByAnotherPersonType)
@@ -131,17 +145,18 @@ public static partial class AppointmentEndpoints
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
-            if (string.IsNullOrWhiteSpace(request.CustomerFirstName) ||
-                string.IsNullOrWhiteSpace(request.CustomerLastName))
+            if (linkedMechanicForEmail is null &&
+                (string.IsNullOrWhiteSpace(request.CustomerFirstName) ||
+                 string.IsNullOrWhiteSpace(request.CustomerLastName)))
             {
                 return Results.Problem(
                     detail: "CustomerFirstName and CustomerLastName are required when customer is created.",
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
-            var firstName = request.CustomerFirstName.Trim();
-            var lastName = request.CustomerLastName.Trim();
-            var middleName = ContactNormalization.NormalizeOptional(request.CustomerMiddleName);
+            var firstName = linkedMechanicForEmail?.Name.FirstName ?? request.CustomerFirstName!.Trim();
+            var lastName = linkedMechanicForEmail?.Name.LastName ?? request.CustomerLastName!.Trim();
+            var middleName = linkedMechanicForEmail?.Name.MiddleName ?? ContactNormalization.NormalizeOptional(request.CustomerMiddleName);
 
             if (!ContactNormalization.IsValidName(firstName))
             {
@@ -173,8 +188,20 @@ public static partial class AppointmentEndpoints
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
+            var customerFirstName = firstName;
+            var customerMiddleName = middleName;
+            var customerLastName = lastName;
+
+            if (linkedMechanicForEmail is not null)
+            {
+                if (normalizedPhone is null)
+                {
+                    normalizedPhone = linkedMechanicForEmail.PhoneNumber;
+                }
+            }
+
             customer = new Customer(
-                new FullName(firstName, middleName, lastName),
+                new FullName(customerFirstName, customerMiddleName, customerLastName),
                 normalizedEmail,
                 normalizedPhone);
         }
@@ -237,10 +264,16 @@ public static partial class AppointmentEndpoints
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
-            if (newVehicle.MileageKm < 0 || newVehicle.EnginePowerHp < 0 || newVehicle.EngineTorqueNm < 0)
+            var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
+                newVehicle.MileageKm,
+                newVehicle.EnginePowerHp,
+                newVehicle.EngineTorqueNm,
+                fieldPrefix: "Vehicle.");
+
+            if (vehicleNumericValidationError is not null)
             {
                 return Results.Problem(
-                    detail: "Vehicle.MileageKm, Vehicle.EnginePowerHp, and Vehicle.EngineTorqueNm must be non-negative.",
+                    detail: vehicleNumericValidationError,
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 

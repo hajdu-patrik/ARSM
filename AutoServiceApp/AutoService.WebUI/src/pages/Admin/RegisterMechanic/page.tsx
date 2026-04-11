@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AxiosError } from 'axios';
-import { adminService } from '../../../services/admin.service';
+import { adminService } from '../../../services/admin/admin.service';
 import { useToastStore } from '../../../store/toast.store';
 import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues, getFieldError } from './helpers';
 import { BasicInfoSection } from './sections/BasicInfoSection';

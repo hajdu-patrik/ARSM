@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
-using AutoService.ApiService.Models.UniqueTypes;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
@@ -169,6 +169,11 @@ public static partial class AppointmentEndpoints
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
+        if (appointment.Status != ProgresStatus.InProgress)
+        {
+            return Results.UnprocessableEntity(new { code = "appointment_not_in_progress" });
+        }
+
         if (appointment.Mechanics.Any(m => m.Id == mechanicId))
         {
             return Results.Conflict(new { code = "already_claimed" });
@@ -256,7 +261,7 @@ public static partial class AppointmentEndpoints
 
         if (appointment.Status == ProgresStatus.Cancelled)
         {
-            return Results.UnprocessableEntity(new { error = "Cannot modify mechanics on a cancelled appointment. Change the status first." });
+            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
         if (appointment.Mechanics.Any(m => m.Id == mechanicId))
@@ -296,7 +301,7 @@ public static partial class AppointmentEndpoints
 
         if (appointment.Status == ProgresStatus.Cancelled)
         {
-            return Results.UnprocessableEntity(new { error = "Cannot modify mechanics on a cancelled appointment. Change the status first." });
+            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
         var mechanic = appointment.Mechanics.FirstOrDefault(m => m.Id == mechanicId);

@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Normalization;
+using AutoService.ApiService.Validation;
+using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
@@ -14,13 +17,6 @@ public static partial class AppointmentEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (request.ScheduledDate == default)
-        {
-            return Results.Problem(
-                detail: "ScheduledDate is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
         if (request.DueDateTime == default)
         {
             return Results.Problem(
@@ -28,22 +24,7 @@ public static partial class AppointmentEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
         var dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
-
-        if (scheduledDateUtc.Date < DateTime.UtcNow.Date)
-        {
-            return Results.Problem(
-                detail: "ScheduledDate cannot be in the past.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (dueDateTimeUtc < scheduledDateUtc)
-        {
-            return Results.Problem(
-                detail: "DueDateTime must be greater than or equal to ScheduledDate.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
 
         var taskDescription = request.TaskDescription?.Trim();
         if (string.IsNullOrWhiteSpace(taskDescription))
@@ -85,18 +66,126 @@ public static partial class AppointmentEndpoints
         }
 
         var nowUtc = DateTime.UtcNow;
+        var appointmentIsInPast = appointment.ScheduledDate < nowUtc;
+        var effectiveScheduledDateUtc = appointment.ScheduledDate;
 
-        if (appointment.ScheduledDate < nowUtc && scheduledDateUtc != appointment.ScheduledDate)
+        if (appointmentIsInPast)
+        {
+            if (request.ScheduledDate != default)
+            {
+                var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
+                if (scheduledDateUtc != appointment.ScheduledDate)
+                {
+                    return Results.Problem(
+                        detail: "ScheduledDate cannot be changed for past appointments.",
+                        statusCode: StatusCodes.Status422UnprocessableEntity);
+                }
+            }
+        }
+        else
+        {
+            if (request.ScheduledDate == default)
+            {
+                return Results.Problem(
+                    detail: "ScheduledDate is required.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
+            if (scheduledDateUtc.Date < nowUtc.Date)
+            {
+                return Results.Problem(
+                    detail: "ScheduledDate cannot be in the past.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            appointment.ScheduledDate = scheduledDateUtc;
+            effectiveScheduledDateUtc = scheduledDateUtc;
+        }
+
+        if (dueDateTimeUtc < effectiveScheduledDateUtc)
         {
             return Results.Problem(
-                detail: "ScheduledDate cannot be changed for past appointments.",
+                detail: "DueDateTime must be greater than or equal to ScheduledDate.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (appointment.ScheduledDate >= nowUtc)
+        var hasVehiclePayload = request.Year != default ||
+            request.MileageKm != default ||
+            request.EnginePowerHp != default ||
+            request.EngineTorqueNm != default ||
+            request.LicensePlate is not null ||
+            request.Brand is not null ||
+            request.Model is not null;
+
+        if (hasVehiclePayload)
         {
-            appointment.ScheduledDate = scheduledDateUtc;
+            if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
+                string.IsNullOrWhiteSpace(request.Brand) ||
+                string.IsNullOrWhiteSpace(request.Model))
+            {
+                return Results.Problem(
+                    detail: "LicensePlate, Brand, and Model are required.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            var vehicleLengthValidationError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
+                request.LicensePlate,
+                request.Brand,
+                request.Model);
+
+            if (vehicleLengthValidationError is not null)
+            {
+                return Results.Problem(
+                    detail: vehicleLengthValidationError,
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            if (request.Year is < 1886 or > 2100)
+            {
+                return Results.Problem(
+                    detail: "Year must be between 1886 and 2100.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
+                request.MileageKm,
+                request.EnginePowerHp,
+                request.EngineTorqueNm);
+
+            if (vehicleNumericValidationError is not null)
+            {
+                return Results.Problem(
+                    detail: vehicleNumericValidationError,
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
+            {
+                return Results.Problem(
+                    detail: plateValidationError,
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            var plateConflict = await db.Vehicles
+                .AnyAsync(v => v.LicensePlate == plateNormalized && v.Id != appointment.VehicleId, cancellationToken);
+
+            if (plateConflict)
+            {
+                return Results.Problem(
+                    detail: "A vehicle with this license plate already exists.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            appointment.Vehicle.LicensePlate = plateNormalized;
+            appointment.Vehicle.Brand = request.Brand.Trim();
+            appointment.Vehicle.Model = request.Model.Trim();
+            appointment.Vehicle.Year = request.Year;
+            appointment.Vehicle.MileageKm = request.MileageKm;
+            appointment.Vehicle.EnginePowerHp = request.EnginePowerHp;
+            appointment.Vehicle.EngineTorqueNm = request.EngineTorqueNm;
         }
+
         appointment.DueDateTime = dueDateTimeUtc;
         appointment.TaskDescription = taskDescription;
 

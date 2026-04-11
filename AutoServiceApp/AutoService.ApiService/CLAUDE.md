@@ -78,14 +78,14 @@
 
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
-- `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; rejects scheduled dates in the past, validates due datetime, resolves customer by email (create fallback), and auto-assigns the requesting mechanic
-- `PUT /api/appointments/{id}` (authorized) — update appointment fields only (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are tolerated but ignored; allowed for assigned mechanics and admins; rejects past ScheduledDate values and rejects ScheduledDate changes when the appointment is already in the past
+- `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; rejects scheduled dates in the past, validates due datetime, resolves customer by email (create fallback), supports mechanic-email owner linking via generated customer-owner linkage email, enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
+- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins; for past appointments `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date) and rejects past scheduled dates; returns 201 Created
-- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment; returns 422 if appointment is Cancelled
-- `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns 422 if appointment is Cancelled or if unassign would leave the appointment without mechanics
+- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses
+- `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` if unassign would leave the appointment without mechanics
 - `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only); auto-sets CompletedAt/CanceledAt timestamps on status change and allows moving Cancelled appointments back to InProgress/Completed (including past-dated appointments)
-- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns 422 if appointment is Cancelled
-- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns 422 if appointment is Cancelled or if removal would leave the appointment without mechanics
+- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled
+- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` if removal would leave the appointment without mechanics
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 
 ## Customer Endpoints (Current)
@@ -136,7 +136,9 @@
 
 ## Security Middleware (must preserve order)
 
-`UseHsts` (non-Dev) → `UseForwardedHeaders` → `UseHttpsRedirection` → login ban middleware → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`
+`UseHsts` (non-Dev) → `UseForwardedHeaders` → `UseHttpsRedirection` → security headers middleware → login ban middleware → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`
+
+Security headers middleware adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and API-focused `Content-Security-Policy` headers. In Development, CSP is skipped for `/openapi` and `/scalar` routes so API docs tooling can load.
 
 Login-ban middleware remains in-process and uses deterministic cleanup scheduling (30-second interval) plus a max tracked-client bound (5000) to cap memory growth.
 
@@ -162,6 +164,7 @@ Login-ban middleware remains in-process and uses deterministic cleanup schedulin
 - `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
 - `Middleware/` — custom middleware classes (`LoginBanMiddleware`).
-- `Common/` — cross-cutting reusable utilities (`ContactNormalization`, `TokenSecurity`, `ValidationMessages`); keep email/phone normalization, name validation (`IsValidName`), token hash/expiry parsing, and shared validation error message constants centralized here.
+- `Identity/`, `Linking/`, `Normalization/`, `Security/`, `Validation/` — grouped cross-cutting folders; keep contact normalization (`ContactNormalization`), name validation (`IsValidName`), token hash/expiry parsing (`TokenSecurity`), person-type resolution (`PersonTypeResolver`), image content-type detection (`ImageContentTypeDetector`), and shared validation error message constants (`ValidationMessages`) centralized here.
+- `Domain/` and `Security/` — model locations; keep business entities under `Domain/`, security entities under `Security/`, and unique value-object types under `Domain/UniqueTypes/`.
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.
 - Keep comments concise and only for non-obvious logic.

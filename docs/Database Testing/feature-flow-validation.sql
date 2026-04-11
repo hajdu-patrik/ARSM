@@ -263,7 +263,7 @@ WHERE a."TaskDescription" = 'Scheduler intake with past date should be rejected'
 
 -- ------------------------------------------------------------
 -- 15. APPOINTMENT UPDATE COVERAGE
---     Use after PUT /api/appointments/{id} to verify appointment-only edits.
+--     Use after PUT /api/appointments/{id} to verify appointment and vehicle edits.
 -- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
@@ -278,6 +278,13 @@ SELECT a."Id" AS appointment_id,
        v."EngineTorqueNm",
        CASE
            WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
+           WHEN v."LicensePlate" <> 'ABC-101' THEN 'FAIL: LicensePlate did not persist'
+           WHEN v."Brand" <> 'Volkswagen' THEN 'FAIL: Brand did not persist'
+           WHEN v."Model" <> 'Golf' THEN 'FAIL: Model did not persist'
+           WHEN v."Year" <> 2018 THEN 'FAIL: Year did not persist'
+           WHEN v."MileageKm" <> 124500 THEN 'FAIL: MileageKm did not persist'
+           WHEN v."EnginePowerHp" <> 112 THEN 'FAIL: EnginePowerHp did not persist'
+           WHEN v."EngineTorqueNm" <> 252 THEN 'FAIL: EngineTorqueNm did not persist'
            ELSE 'OK'
        END AS update_integrity
 FROM appointments a
@@ -337,3 +344,64 @@ SELECT a."Id" AS unexpected_persisted_appointment_id,
        a."TaskDescription"
 FROM appointments a
 WHERE a."TaskDescription" = 'Admin create with past date should be rejected';
+
+
+-- ------------------------------------------------------------
+-- 19. MECHANIC-EMAIL INTAKE LINKED CUSTOMER CHECK
+--     Confirms intake with mechanic email persisted under linked customer identity.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription",
+       c."Email" AS persisted_customer_email,
+       CASE
+           WHEN c."Email" LIKE 'mechanic-owner-%@customers.arsm.local' THEN 'OK'
+           ELSE 'WARN: expected mechanic-owned customer email'
+       END AS linked_customer_resolution
+FROM appointments a
+JOIN vehicles v ON v."Id" = a."VehicleId"
+JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
+WHERE a."TaskDescription" = 'Scheduler intake mechanic email linked flow'
+ORDER BY a."Id" DESC;
+
+
+-- ------------------------------------------------------------
+-- 20. INTAKE VEHICLE NUMERIC-MAX REJECTION CHECK
+--     The negative intake payload with this task description must not persist.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS unexpected_persisted_appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription"
+FROM appointments a
+WHERE a."TaskDescription" = 'Scheduler intake vehicle numeric max should be rejected';
+
+
+-- ------------------------------------------------------------
+-- 21. APPOINTMENT UPDATE NUMERIC-MAX REJECTION CHECK
+--     The negative update payload with this task description must not persist.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS unexpectedly_updated_appointment_id,
+       a."ScheduledDate",
+       a."TaskDescription"
+FROM appointments a
+WHERE a."TaskDescription" = 'Admin update vehicle numeric max should be rejected';
+
+
+-- ------------------------------------------------------------
+-- 22. PAST APPOINTMENT PARTIAL UPDATE ALLOWED CHECK
+--     Confirms dueDateTime/taskDescription edits are persisted for past appointments
+--     when ScheduledDate remains unchanged.
+-- ------------------------------------------------------------
+SELECT a."Id" AS appointment_id,
+       a."ScheduledDate",
+       a."DueDateTime",
+       a."TaskDescription",
+       CASE
+           WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
+           ELSE 'OK'
+       END AS partial_update_integrity
+FROM appointments a
+WHERE a."TaskDescription" = 'Past appointment due and task update allowed'
+ORDER BY a."Id" DESC;

@@ -1,12 +1,15 @@
 using AutoService.ApiService.Admin;
 using AutoService.ApiService.Appointments;
-using AutoService.ApiService.Auth;
+using AutoService.ApiService.Auth.Endpoints;
+using AutoService.ApiService.Auth.Security;
+using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
-using AutoService.ApiService.Profile;
+using AutoService.ApiService.Profile.Endpoints;
+using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -241,6 +244,7 @@ else
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();
 app.UseCors("WebUIPolicy");

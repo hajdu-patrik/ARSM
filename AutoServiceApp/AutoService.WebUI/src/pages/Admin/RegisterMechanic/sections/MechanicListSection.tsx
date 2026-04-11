@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
-import { adminService } from '../../../../services/admin.service';
+import { adminService } from '../../../../services/admin/admin.service';
+import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
 import { useToastStore } from '../../../../store/toast.store';
 import { Modal } from '../../../../components/common/Modal';
-import type { MechanicListItem } from '../../../../services/admin.service';
-import { MechanicAvatar } from '../../../Scheduler/components/MechanicAvatar';
+import type { MechanicListItem } from '../../../../services/admin/admin.service';
+import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 
 interface MechanicListSectionProps {
   readonly refreshKey: number;
@@ -36,6 +37,17 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
   useEffect(() => {
     void loadMechanics();
   }, [loadMechanics, refreshKey]);
+
+  useEffect(() => {
+    const handleProfilePictureUpdated = () => {
+      void loadMechanics();
+    };
+
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+    return () => {
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+    };
+  }, [loadMechanics]);
 
   const openDeleteModal = useCallback((mechanic: MechanicListItem) => {
     setDeleteTarget(mechanic);
@@ -78,6 +90,8 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
         ) : (
           <div className="space-y-3">
             {mechanics.map((mechanic) => {
+              const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
+              const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
               const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
                 .filter(Boolean)
                 .join(' ');
@@ -108,7 +122,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                     <p className="truncate text-xs text-[#5E5672] dark:text-[#CFC5EA]">{mechanic.email}</p>
                   </div>
 
-                  {!mechanic.isAdmin && (
+                  {canRemoveMechanic && (
                     <button
                       type="button"
                       onClick={() => openDeleteModal(mechanic)}

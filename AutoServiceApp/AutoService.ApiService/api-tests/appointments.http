@@ -79,6 +79,29 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow
+# Mechanic email is resolved to linked customer identity (mechanic-owner-{id}@customers.arsm.local) internally.
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{NonAdminEmail}}",
+  "vehicle": {
+    "licensePlate": "MEC-260",
+    "brand": "Seat",
+    "model": "Leon",
+    "year": 2019,
+    "mileageKm": 151000,
+    "enginePowerHp": 130,
+    "engineTorqueNm": 250
+  },
+  "scheduledDate": "2026-04-23T11:00:00",
+  "dueDateTime": "2026-04-24T13:00:00",
+  "taskDescription": "Scheduler intake mechanic email linked flow"
+}
+
+###
+
 ### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Content-Type: application/json
@@ -131,6 +154,32 @@ Content-Type: application/json
 
 ###
 
+### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.vehicle.max@example.com",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "Max",
+  "customerPhoneNumber": "+36305556666",
+  "vehicle": {
+    "licensePlate": "MAX-260",
+    "brand": "Audi",
+    "model": "A3",
+    "year": 2021,
+    "mileageKm": 1000001,
+    "enginePowerHp": 50001,
+    "engineTorqueNm": 50001
+  },
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-25T10:00:00",
+  "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
+}
+
+###
+
 ### [Negative][Appointments] Scheduler intake rejects past scheduled date (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Content-Type: application/json
@@ -168,6 +217,13 @@ Content-Type: application/json
 {
   "status": "Completed"
 }
+
+###
+
+### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
+# Self-claim is only allowed for InProgress appointments.
+# Expected error code: appointment_not_in_progress.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 
 ###
 
@@ -272,7 +328,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Admin updates appointment fields (legacy vehicle fields are accepted but ignored)
+### [Positive][Appointments] Admin updates appointment and vehicle fields (vehicle edits persist)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Content-Type: application/json
 
@@ -338,6 +394,43 @@ Content-Type: application/json
   "mileageKm": 167800,
   "enginePowerHp": 125,
   "engineTorqueNm": 200
+}
+
+###
+
+### [Positive][Appointments] Admin update allows dueDateTime/taskDescription edit on past appointment when ScheduledDate is unchanged
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2030-01-03T16:15:00",
+  "taskDescription": "Past appointment due and task update allowed",
+  "licensePlate": "DEF-404",
+  "brand": "Ford",
+  "model": "Focus",
+  "year": 2016,
+  "mileageKm": 167800,
+  "enginePowerHp": 125,
+  "engineTorqueNm": 200
+}
+
+###
+
+### [Negative][Appointments] Admin update rejects vehicle numeric values above max limits (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "scheduledDate": "2026-04-20T10:45:00",
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Admin update vehicle numeric max should be rejected",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 1000001,
+  "enginePowerHp": 50001,
+  "engineTorqueNm": 50001
 }
 
 ###
@@ -454,13 +547,13 @@ Content-Type: application/json
 @CancelledApptId = 5
 
 ### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
-# Returns 422 Unprocessable Entity: cannot modify mechanics on a cancelled appointment.
+# Returns 422 Unprocessable Entity with code: appointment_cancelled.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
 
 ###
 
 ### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
-# Returns 422 Unprocessable Entity: cannot modify mechanics on a cancelled appointment.
+# Returns 422 Unprocessable Entity with code: appointment_cancelled.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
 
 ###

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
-import { authService } from './services/auth.service';
+import { authService } from './services/auth/auth.service';
 import { LoadingPage } from './pages/LoadingPage';
 import { Login } from './pages/Login/page';
 import { SchedulerPage } from './pages/Scheduler/page';

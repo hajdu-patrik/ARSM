@@ -1,5 +1,5 @@
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
+using AutoService.ApiService.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

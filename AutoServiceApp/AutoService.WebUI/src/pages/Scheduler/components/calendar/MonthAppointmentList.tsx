@@ -1,0 +1,227 @@
+import { memo, useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { X, ArrowUpDown } from 'lucide-react';
+import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
+import { AppointmentCard } from '../shared/AppointmentCard';
+import { formatScheduledTime } from '../../utils/scheduler-datetime';
+
+interface MonthAppointmentListProps {
+  readonly appointments: AppointmentDto[];
+  readonly isLoading: boolean;
+  readonly currentMechanicId: number | undefined;
+  readonly selectedDay: number | null;
+  readonly onClaim: (id: number) => Promise<void>;
+  readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
+  readonly onCardClick: (appointment: AppointmentDto) => void;
+  readonly onClearFilter: () => void;
+}
+
+const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
+
+const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string }> = {
+  InProgress: {
+    active: 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white',
+    inactive: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  },
+  Completed: {
+    active: 'bg-green-500 text-white dark:bg-green-600 dark:text-white',
+    inactive: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  },
+  Cancelled: {
+    active: 'bg-red-500 text-white dark:bg-red-600 dark:text-white',
+    inactive: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  },
+};
+
+const MonthAppointmentListComponent = memo(function MonthAppointmentList({
+  appointments,
+  isLoading,
+  currentMechanicId,
+  selectedDay,
+  onClaim,
+  onStatusChange,
+  onCardClick,
+  onClearFilter,
+}: MonthAppointmentListProps) {
+  const { t, i18n } = useTranslation();
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<AppointmentStatus>>(new Set());
+  const [selectedMechanicId, setSelectedMechanicId] = useState<number | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
+
+  const toggleStatus = useCallback((status: AppointmentStatus) => {
+    setSelectedStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  }, []);
+
+  const uniqueMechanics = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const appt of appointments) {
+      for (const m of appt.mechanics) {
+        if (!map.has(m.id)) {
+          map.set(m.id, m.fullName);
+        }
+      }
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [appointments]);
+
+  const filtered = useMemo(() => {
+    let result = appointments;
+
+    // Day filter
+    if (selectedDay !== null) {
+      result = result.filter((a) => new Date(a.scheduledDate).getDate() === selectedDay);
+    }
+
+    // Status filter
+    if (selectedStatuses.size > 0) {
+      result = result.filter((a) => selectedStatuses.has(a.status));
+    }
+
+    // Mechanic filter
+    if (selectedMechanicId !== null) {
+      result = result.filter((a) => a.mechanics.some((m) => m.id === selectedMechanicId));
+    }
+
+    return result;
+  }, [appointments, selectedDay, selectedStatuses, selectedMechanicId]);
+
+  const sortedAppointments = useMemo(() => {
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      const aTs = new Date(a.scheduledDate).getTime();
+      const bTs = new Date(b.scheduledDate).getTime();
+      return sortAsc ? aTs - bTs : bTs - aTs;
+    });
+    return sorted;
+  }, [filtered, sortAsc]);
+
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }), [i18n.language]);
+
+  const shouldSpanSingleCard = sortedAppointments.length === 1;
+  const emptyMessageKey = selectedDay === null
+    ? 'scheduler.monthList.empty'
+    : 'scheduler.monthList.emptyFiltered';
+
+  return (
+    <section className="min-w-0">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <h2 className="text-xl font-bold text-[#2C2440] dark:text-[#EDE8FA]">
+          {t('scheduler.monthList.title')}
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center bg-[#EFEBFA] dark:bg-[#241F33] text-[#2C2440] dark:text-[#F5F2FF] text-xs font-medium px-3 py-1 rounded-full">
+            {t('scheduler.monthList.count', { count: filtered.length })}
+          </span>
+          {selectedDay !== null && (
+            <button
+              onClick={onClearFilter}
+              className="inline-flex items-center gap-1 bg-[#C9B3FF]/20 dark:bg-[#7A66C7]/20 text-[#5E5672] dark:text-[#CFC5EA] text-xs font-medium px-3 py-1 rounded-full hover:bg-[#C9B3FF]/40 dark:hover:bg-[#7A66C7]/40 transition-colors"
+            >
+              <X className="w-3 h-3" />
+              {t('scheduler.monthList.clearFilter')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Status chips */}
+        {STATUS_FILTERS.map((status) => {
+          const isActive = selectedStatuses.has(status);
+          const colors = STATUS_CHIP_COLORS[status];
+          return (
+            <button
+              key={status}
+              onClick={() => toggleStatus(status)}
+              className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${isActive ? colors.active : colors.inactive} hover:opacity-80`}
+            >
+              {t(`scheduler.status.${status.toLowerCase()}`)}
+            </button>
+          );
+        })}
+
+        {/* Mechanic dropdown */}
+        <select
+          value={selectedMechanicId ?? ''}
+          onChange={(e) => setSelectedMechanicId(e.target.value ? Number(e.target.value) : null)}
+          className="text-xs font-medium px-3 py-1 rounded-full border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-[#2C2440] dark:text-[#EDE8FA] min-w-0 max-w-[10rem] truncate focus:outline-none"
+        >
+          <option value="">{t('scheduler.filter.allMechanics')}</option>
+          {uniqueMechanics.map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
+
+        {/* Sort toggle */}
+        <button
+          onClick={() => setSortAsc((prev) => !prev)}
+          title={sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
+          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-[#2C2440] dark:text-[#EDE8FA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] transition-colors"
+        >
+          <ArrowUpDown className="w-3 h-3" />
+          {sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
+        </button>
+      </div>
+
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[0, 1].map((i) => (
+            <div key={i} className="bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] p-4 h-48 animate-pulse">
+              <div className="h-4 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-2/3 mb-3" />
+              <div className="h-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-1/2 mb-3" />
+              <div className="h-16 bg-[#EFEBFA] dark:bg-[#241F33] rounded mb-3" />
+              <div className="h-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-1/3" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && filtered.length === 0 && (
+        <div className="text-center py-12 text-[#6A627F] dark:text-[#B9B0D3]">
+          <p>{t(emptyMessageKey)}</p>
+        </div>
+      )}
+
+      {/* Continuous appointment grid */}
+      {!isLoading && sortedAppointments.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {sortedAppointments.map((appointment) => (
+            <div key={appointment.id} className={shouldSpanSingleCard ? 'sm:col-span-2' : ''}>
+              <h3 className="mb-2 text-sm font-semibold text-[#6A627F] dark:text-[#B9B0D3] capitalize">
+                {dateFormatter.format(new Date(appointment.scheduledDate))} - {formatScheduledTime(appointment.scheduledDate, i18n.language)}
+              </h3>
+              <AppointmentCard
+                appointment={appointment}
+                currentMechanicId={currentMechanicId}
+                onClaim={onClaim}
+                onStatusChange={onStatusChange}
+                onClick={() => onCardClick(appointment)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+});
+
+MonthAppointmentListComponent.displayName = 'MonthAppointmentList';
+
+export const MonthAppointmentList = MonthAppointmentListComponent;

@@ -1,6 +1,10 @@
-using AutoService.ApiService.Common;
+using AutoService.ApiService.Identity;
+using AutoService.ApiService.Linking;
+using AutoService.ApiService.Normalization;
+using AutoService.ApiService.Security;
+using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
+using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Customers;
@@ -76,6 +80,22 @@ public static partial class CustomerEndpoints
             .AsNoTracking()
             .Include(c => c.Vehicles)
             .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
+
+        if (customer is null)
+        {
+            var mechanic = await db.Mechanics
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Email == normalizedEmail, cancellationToken);
+
+            if (mechanic is not null)
+            {
+                var mechanicOwnedCustomerEmail = CustomerOwnerLinking.BuildMechanicOwnedCustomerEmail(mechanic.Id);
+                customer = await db.Customers
+                    .AsNoTracking()
+                    .Include(c => c.Vehicles)
+                    .FirstOrDefaultAsync(c => c.Email == mechanicOwnedCustomerEmail, cancellationToken);
+            }
+        }
 
         if (customer is null)
         {

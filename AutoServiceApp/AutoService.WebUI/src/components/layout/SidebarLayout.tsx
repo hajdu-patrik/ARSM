@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronsLeft, LogOut, Menu, Package, Settings, Shield, Wrench } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
-import { authService } from '../../services/auth.service';
-import { profileService } from '../../services/profile.service';
-import { PROFILE_PICTURE_UPDATED_EVENT, startProfilePictureLiveUpdates } from '../../services/profile-picture-live.service';
+import { authService } from '../../services/auth/auth.service';
+import { profileService } from '../../services/profile/profile.service';
+import { PROFILE_PICTURE_UPDATED_EVENT, startProfilePictureLiveUpdates } from '../../services/profile/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 
@@ -72,6 +72,12 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     }
 
     setProfilePersonId(user.personId);
+    // Reset avatar-related state immediately on user switch to avoid showing stale picture.
+    setProfileFirstName(null);
+    setProfileLastName(null);
+    setHasProfilePicture(false);
+    setAvatarLoadFailed(false);
+    setAvatarCacheBuster(Date.now());
   }, [user]);
 
   useEffect(() => {
@@ -92,6 +98,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         setProfileFirstName(profile.firstName ?? null);
         setProfileLastName(profile.lastName ?? null);
         setHasProfilePicture(profile.hasProfilePicture);
+        setAvatarLoadFailed(false);
+        setAvatarCacheBuster(Date.now());
       } catch {
         // Keep last known state to avoid avatar flicker on transient fetch failures.
       }
@@ -115,11 +123,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     const handleProfilePictureUpdated = (event: Event) => {
       const customEvent = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
       const currentPersonId = profilePersonId ?? user?.personId;
-      if (
-        typeof customEvent.detail?.personId === 'number' &&
-        typeof currentPersonId === 'number' &&
-        customEvent.detail.personId !== currentPersonId
-      ) {
+      // Accept only updates that explicitly target the currently authenticated person.
+      if (typeof customEvent.detail?.personId !== 'number' || customEvent.detail.personId !== currentPersonId) {
         return;
       }
 
@@ -157,7 +162,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   const initials = getAvatarInitials(profileFirstName, profileLastName, user?.email);
   const fallbackAvatarColorClass = getDeterministicAvatarColor(profilePersonId ?? user?.personId ?? user?.email);
   const shouldShowProfilePicture = hasProfilePicture && !avatarLoadFailed;
-  const profilePictureUrl = `${profileService.getProfilePictureUrl()}?v=${avatarCacheBuster}`;
+  const profilePictureUrl = `${profileService.getProfilePictureUrl()}?pid=${profilePersonId ?? 'me'}&v=${avatarCacheBuster}`;
   const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
 
   /* Collapsed text class - applied only on md+ to hide text */

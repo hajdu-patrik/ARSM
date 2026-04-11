@@ -1,4 +1,4 @@
-import type { RegisterMechanicRequest } from '../../../services/admin.service';
+import type { RegisterMechanicRequest } from '../../../services/admin/admin.service';
 import type { FieldErrors, RegisterMechanicFormValues } from './types';
 import { getServerFieldError } from '../../../utils/serverValidation';
 

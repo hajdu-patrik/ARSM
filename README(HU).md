@@ -97,7 +97,7 @@ A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
 - Az access és refresh tokenek biztonságos HttpOnly cookie-kban vannak, refresh token rotációval és szerveroldali (hash-elt) tárolással.
 - Auth endpointok: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
 - Időpont endpointok: `GET /api/appointments`, `GET /api/appointments/today`, `POST /api/appointments/intake`, `PUT /api/appointments/{id}`, `PUT /api/appointments/{id}/claim`, `DELETE /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`, `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `POST /api/customers/{customerId}/appointments` (AdminOnly).
-- A dashboard-hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, amely egy kompakt napi összegző sávot, havi naptárnézetet, gyors intake szekciót és havi időpontlistát tartalmaz.
+- A dashboard-hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, ahol a felső összegző sáv a kijelölt napot (vagy kijelölés nélkül az aktuális napot) mutatja, a havi naptárnézet, gyors intake szekció és havi időpontlista mellett.
 - Részletes biztonsági és üzemeltetési információk szándékosan nem publikusak ebben a README-ben.
 
 ---

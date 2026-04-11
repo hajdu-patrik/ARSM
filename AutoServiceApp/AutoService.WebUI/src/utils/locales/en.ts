@@ -85,7 +85,9 @@ export const en = {
     claimError: 'Failed to claim appointment!',
     statusUpdateError: 'Failed to update status!',
     todayLoadError: 'Failed to load today\'s appointments.',
+    todayAuthExpiredError: 'Your session has expired. Please sign in again to load today\'s appointments.',
     monthLoadError: 'Failed to load monthly appointments.',
+    monthAuthExpiredError: 'Your session has expired. Please sign in again to load monthly appointments.',
     due: {
       label: 'Due',
       today: 'Due today',
@@ -136,6 +138,7 @@ export const en = {
       create: 'Create intake',
       creating: 'Creating...',
       selectDayFirst: 'Select a calendar day first.',
+      selectTodayOrFuture: 'Select today or a future day for intake.',
       createSuccess: 'Intake created successfully.',
       errors: {
         searchFailed: 'Failed to search customer by email.',
@@ -197,6 +200,8 @@ export const en = {
       noMechanics: 'No mechanics assigned',
       unassignMe: 'Unassign me',
       removeMechanic: 'Remove mechanic',
+      removeConfirmTitle: 'Confirm mechanic removal',
+      removeConfirmMessage: 'Remove {{name}} from this appointment?',
       addMechanic: 'Add mechanic',
       selectMechanic: 'Select a mechanic...',
       edit: 'Edit appointment',

@@ -1,6 +1,6 @@
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Models;
-using AutoService.ApiService.Models.UniqueTypes;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text;

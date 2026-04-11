@@ -1,5 +1,6 @@
-using AutoService.ApiService.Models;
-using AutoService.ApiService.Models.UniqueTypes;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Security;
+using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;

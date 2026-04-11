@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 type SeoConfig = {
+  pageTitle: string;
   description: string;
   robots?: string;
 };
@@ -21,6 +22,18 @@ function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:descr
   meta.setAttribute(attribute, name);
   document.head.appendChild(meta);
   return meta;
+}
+
+function normalizeCanonicalPath(pathname: string) {
+  if (pathname === '/scheduler' || pathname === '/dashboard') {
+    return '/';
+  }
+
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1);
+  }
+
+  return pathname;
 }
 
 function getOrCreateCanonical() {
@@ -46,6 +59,7 @@ export function SeoManager() {
 
     if (path === '/login') {
       return {
+        pageTitle: t('login.submit'),
         description: t('login.subtitle'),
         robots: 'noindex, nofollow',
       };
@@ -53,49 +67,52 @@ export function SeoManager() {
 
     if (path === '/' || path === '/scheduler' || path === '/dashboard') {
       return {
+        pageTitle: t('nav.scheduler'),
         description: t('scheduler.plannerSpace'),
       };
     }
 
     if (path === '/tools') {
       return {
+        pageTitle: t('tools.pageTitle'),
         description: t('tools.comingSoonDescription'),
       };
     }
 
     if (path === '/inventory') {
       return {
+        pageTitle: t('inventory.pageTitle'),
         description: t('inventory.comingSoonDescription'),
       };
     }
 
     if (path === '/settings') {
       return {
+        pageTitle: t('settings.title'),
         description: t('settings.personalInfo'),
       };
     }
 
     if (path === '/admin/register') {
       return {
+        pageTitle: t('admin.pageTitle'),
         description: t('admin.registerMechanic'),
         robots: 'noindex, nofollow',
       };
     }
 
     return {
+      pageTitle: t('notFound.pageNotFound'),
       description: t('notFound.subtitle'),
       robots: 'noindex, nofollow',
     };
   }, [i18n.language, location.pathname, t]);
 
   useEffect(() => {
-    const fullTitle = APP_NAME;
+    const fullTitle = `${config.pageTitle} | ${APP_NAME}`;
     const locale = i18n.resolvedLanguage?.startsWith('hu') ? 'hu_HU' : 'en_US';
     const htmlLang = i18n.resolvedLanguage?.startsWith('hu') ? 'hu' : 'en';
-    const canonicalPath =
-      location.pathname === '/scheduler' || location.pathname === '/dashboard'
-        ? '/'
-        : location.pathname;
+    const canonicalPath = normalizeCanonicalPath(location.pathname);
     const canonicalUrl = `${globalThis.location.origin}${canonicalPath}`;
 
     document.title = fullTitle;
@@ -114,7 +131,7 @@ export function SeoManager() {
     getOrCreateMeta('twitter:description').content = config.description;
 
     getOrCreateCanonical().href = canonicalUrl;
-  }, [config.description, config.robots, i18n.resolvedLanguage, location.pathname]);
+  }, [config.description, config.pageTitle, config.robots, i18n.resolvedLanguage, location.pathname]);
 
   return null;
 }

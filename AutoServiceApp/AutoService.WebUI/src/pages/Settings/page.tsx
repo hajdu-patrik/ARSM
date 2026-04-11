@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AxiosError } from 'axios';
-import { profileService } from '../../services/profile.service';
+import { profileService } from '../../services/profile/profile.service';
 import { useToastStore } from '../../store/toast.store';
 import { useAuthStore } from '../../store/auth.store';
 import { FormErrorMessage } from '../../components/common/FormErrorMessage';
@@ -12,13 +12,13 @@ import { ProfilePictureSection } from './sections/ProfilePictureSection';
 import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 import { getFieldError, extractFieldErrors } from './helpers';
-import type { ProfileData } from '../../types/profile.types';
+import type { ProfileData } from '../../types/profile/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { fileToImageSource } from '../../utils/imageCrop';
 import { mapSettingsValidationMessageToKey, normalizeServerFieldErrors } from '../../utils/serverValidation';
 import { isAllowedPictureExtension } from '../../utils/validation';
-import { emitProfilePictureUpdated } from '../../services/profile-picture-live.service';
+import { emitProfilePictureUpdated } from '../../services/profile/profile-picture-live.service';
 
 const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
 

@@ -156,13 +156,13 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
-	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback, past-date scheduled-date rejection, and due datetime validation
-	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`) only; legacy vehicle fields in payload are tolerated but ignored; allowed for assigned mechanics or admins; rejects past `ScheduledDate` values and rejects `ScheduledDate` changes when the appointment is already in the past
+	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), past-date scheduled-date rejection, due datetime validation, and vehicle numeric max validation on new-vehicle payloads
+	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; for past appointments `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created, rejects past `ScheduledDate`)
-	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment (422 if Cancelled)
-	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (422 if Cancelled or if unassign would leave appointment without mechanics)
-	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (422 if Cancelled)
-	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (422 if Cancelled or if removal would leave appointment without mechanics)
+	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
+	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, or `422` if unassign would leave appointment without mechanics)
+	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (`422` with code `appointment_cancelled` if Cancelled)
+	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (`422` with code `appointment_cancelled` if Cancelled, or `422` if removal would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
@@ -220,6 +220,8 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `UseForwardedHeaders()` before auth throttling,
 	- forwarded-header trust allow-list is read from `ForwardedHeaders:KnownProxies` and `ForwardedHeaders:KnownNetworks` (with loopback fallback when both lists are empty),
 	- `UseHttpsRedirection()` always,
+	- `UseMiddleware<SecurityHeadersMiddleware>()` after HTTPS redirection,
+	- security headers middleware appends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and API `Content-Security-Policy`; in Development CSP is skipped for `/openapi` and `/scalar` routes,
 	- `UseHsts()` outside Development,
 	- custom login ban middleware (3-minute IP cooldown, deterministic 30-second cleanup cadence, max 5000 tracked clients),
 	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseAuthentication()`, `UseAuthorization()`.
@@ -232,10 +234,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `DemoData:MechanicPassword` is required when seeding is enabled,
 	- placeholder marker values (`CHANGE_ME`, `SET_UNIQUE_LOCAL`, including punctuation-separated variants) in DB/JWT/seeding secrets fail fast at startup/seeding.
 
-## Current Known Gaps (As Of Current Code)
-- `AutoService.ApiService/Contracts` remains minimal and should be expanded as endpoint surface grows.
-- Frontend Scheduler page (summary strip reflects selected day when selected, otherwise today + calendar + intake quick section + month list), Settings page (profile picture crop/upload/remove, personal info, password change, profile deletion — delete hidden for admin), Admin page (mechanic list with delete + registration form), Tools page, and Inventory page are all implemented. Scheduler supports selected-day intake flow (`POST /api/appointments/intake`) with auto-derived scheduled datetime and due-datetime-only input, email customer lookup (`GET /api/customers/by-email`) with create fallback, appointment/vehicle editing via `PUT /api/appointments/{id}` (in edit mode, past appointments keep scheduled datetime fixed as display-only while other fields remain editable), due/overdue display, overdue detail-modal behavior (claim button hidden, admin add-mechanic hidden), calendar badge density rules (mobile day cells show max 1 badge; desktop shows max 3 + overflow `+N`), and immediate viewed-month/today list updates after intake creation via store upsert. Scheduler background refresh uses request-id/current-view guards to prevent stale-closure and out-of-order write races. Sidebar default main nav order starts with Scheduler, and sidebar avatar snapshot state is cleared on auth teardown. Intake create-customer labels indicate optional middle name and phone. Tools and Inventory are skeleton pages with coming-soon content (using `tools.*` and `inventory.*` i18n keys). Client-side input validation filters name fields to Unicode letters and hyphens only (spaces and apostrophes stripped) and phone fields to digits/special chars only; profile picture upload validates file extension (.png/.jpg/.jpeg/.webp); settings password change validates minimum length of 8 client-side. Admin delete confirmation warning text now wraps long email values to avoid overflow in the modal. `AppointmentStatus` type is `'InProgress' | 'Completed' | 'Cancelled'` — `Scheduled` has been removed from the frontend type, status badges, and i18n keys. `serverValidation.ts` exposes `mapValidationMessageToKey(message, context)` as a centralized mapping function; `mapAdminValidationMessageToKey` and `mapSettingsValidationMessageToKey` delegate to it. EN and HU locale files define scheduler keys explicitly. Profile-picture SSE client reconnect is auth-aware, attempts refresh on stream errors, and stops reconnect loops after auth clear/session expiry while still clearing timers/event-source handles during teardown. UI icons are primarily from `lucide-react`, and `SeoManager` keeps document title fixed to `ARSM` while applying route-specific meta tags.
-- Token denylist entries are persisted in the database (`revokedjwttokens`) and cached in-memory for fast checks; multi-instance deployments still need shared database/cache consistency and cleanup policy.
+> Open implementation gaps and backlog items must be tracked only in `docs/Private-Docs/ARSM-TL-DR.md` under the `TO-DO` section.
 
 ## API Test Coverage Snapshot
 - `AutoService.ApiService/api-tests/auth-and-session.http` includes an auth full matrix for:
@@ -260,6 +259,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 - Use pastel purple as the primary accent color for new UI work.
 - Ensure layouts are responsive on desktop and mobile.
 - Keep API access logic in `src/services` and keep components focused on UI/state.
+- Scheduler load-error UX must distinguish auth-expired (`401/403`) failures from generic load failures using dedicated i18n toast keys.
+- Scheduler mobile calendar must preserve row baseline alignment using fixed day-number/indicator block heights, with taller week rows only when that week contains appointments.
+- AppointmentDetailModal import boundaries are stabilized via extracted presentational files (`AppointmentDetailModal.sections.tsx`, `AppointmentDetailModal.footer.tsx`) while preserving existing behavior.
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
 - Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`.
 

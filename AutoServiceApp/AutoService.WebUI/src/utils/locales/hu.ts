@@ -85,7 +85,9 @@ export const hu = {
     claimError: 'Nem sikerült igényelni az időpontot!',
     statusUpdateError: 'Nem sikerült frissíteni az állapotot!',
     todayLoadError: 'Nem sikerült betölteni a mai időpontokat.',
+    todayAuthExpiredError: 'A munkamenet lejárt. Jelentkezzen be újra a mai időpontok betöltéséhez.',
     monthLoadError: 'Nem sikerült betölteni a havi időpontokat.',
+    monthAuthExpiredError: 'A munkamenet lejárt. Jelentkezzen be újra a havi időpontok betöltéséhez.',
     due: {
       label: 'Határidő',
       today: 'Ma esedékes',
@@ -136,6 +138,7 @@ export const hu = {
       create: 'Felvétel létrehozása',
       creating: 'Létrehozás...',
       selectDayFirst: 'Először válasszon napot a naptárból.',
+      selectTodayOrFuture: 'Felvételhez a mai vagy egy jövőbeni napot válasszon.',
       createSuccess: 'A felvétel sikeresen létrejött.',
       errors: {
         searchFailed: 'Nem sikerült az ügyfél keresése e-mail alapján.',
@@ -197,6 +200,8 @@ export const hu = {
       noMechanics: 'Nincs kijelölt szerelő',
       unassignMe: 'Lejelentkezés',
       removeMechanic: 'Szerelő eltávolítása',
+      removeConfirmTitle: 'Szerelő eltávolításának megerősítése',
+      removeConfirmMessage: '{{name}} eltávolítása erről az időpontról?',
       addMechanic: 'Szerelő hozzáadása',
       selectMechanic: 'Válasszon szerelőt...',
       edit: 'Időpont szerkesztése',

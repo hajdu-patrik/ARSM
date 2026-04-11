@@ -1,4 +1,4 @@
-using AutoService.ApiService.Models;
+using AutoService.ApiService.Domain;
 
 namespace AutoService.ApiService.Appointments;
 
