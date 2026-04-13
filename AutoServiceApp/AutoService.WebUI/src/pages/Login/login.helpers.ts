@@ -1,4 +1,4 @@
-import type { AxiosError } from 'axios';
+import { isAxiosError, type AxiosError } from 'axios';
 
 interface ApiErrorPayload {
   readonly code?: string;
@@ -212,14 +212,17 @@ function buildNormalizedErrorText(
 }
 
 export function resolveLoginError(err: unknown): LoginError {
-  const axiosError = err as AxiosError<ApiErrorPayload>;
-  const status = axiosError?.response?.status;
-  const responseData = axiosError?.response?.data;
+  if (!isAxiosError<ApiErrorPayload>(err)) {
+    return { key: 'login.databaseUnavailable' };
+  }
 
-  const normalizedErrorText = buildNormalizedErrorText(responseData, axiosError?.message);
+  const status = err.response?.status;
+  const responseData = err.response?.data;
+
+  const normalizedErrorText = buildNormalizedErrorText(responseData, err.message);
 
   if (status === 429 || includesAny(normalizedErrorText, ['lockout', 'too many attempts', 'rate limit'])) {
-    return toAttemptsExceededError(parseRetryAfterSeconds(axiosError));
+    return toAttemptsExceededError(parseRetryAfterSeconds(err));
   }
 
   if (status === 500 || normalizedErrorText.includes('500')) {

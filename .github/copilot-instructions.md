@@ -38,8 +38,8 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 ## Endpoint Test Sync Rule (Mandatory)
 - After any API endpoint is added/changed/removed, run `/endpoint-tests-sync` before considering the task complete.
 - This keeps endpoint-level tests synchronized in:
-	- `AutoServiceApp/AutoService.ApiService/api-tests/*.http`
-	- `docs/Database Testing/*.sql`
+	- `tests/API/*.http`
+	- `tests/Database/*.sql`
 
 ## MCP Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
@@ -156,9 +156,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/auth/validate` (authorized)
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
-	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), past-date scheduled-date rejection, due datetime validation, and vehicle numeric max validation on new-vehicle payloads
+	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
 	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; for past appointments `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
-	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created, rejects past `ScheduledDate`)
+	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, or `422` if unassign would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (`422` with code `appointment_cancelled` if Cancelled)
@@ -176,7 +176,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag and `hasProfilePicture`
 	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics; 409 on concurrent contention/serialization conflict; 500 if linked identity deletion fails)
 	- `GET /api/customers` (authorized) — list all customers
-	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles)
+	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles; mechanic email also resolves successfully for own-car intake even when linked customer record is not yet materialized, returning an empty vehicle list)
 	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
 	- `POST /api/customers` (authorized, AdminOnly) — create customer record
 	- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
@@ -237,7 +237,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 > Open implementation gaps and backlog items must be tracked only in `docs/Private-Docs/ARSM-TL-DR.md` under the `TO-DO` section.
 
 ## API Test Coverage Snapshot
-- `AutoService.ApiService/api-tests/auth-and-session.http` includes an auth full matrix for:
+- `tests/API/auth-and-session.http` includes an auth full matrix for:
 	- register (email-only, email+phone, duplicates, invalid email/phone, invalid person type/expertise),
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),

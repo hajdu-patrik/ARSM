@@ -195,7 +195,9 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
   const isCancelled = appointment.status === 'Cancelled';
+  const isClosedForMechanicMutations = appointment.status === 'Cancelled' || appointment.status === 'Completed';
   const canEdit = isAdmin || isAssigned;
+  const canChangeStatus = isAdmin || isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
   const availableMechanics = allMechanics.filter((mechanic) => !assignedMechanicIds.has(mechanic.personId));
@@ -214,6 +216,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       isEditing={isEditing}
       isSaving={isSaving}
       isAssigned={isAssigned}
+      canChangeStatus={canChangeStatus}
       isUpdating={isUpdating}
       shouldShowClaimButton={shouldShowClaimButton}
       isClaiming={isClaiming}
@@ -263,7 +266,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           availableMechanics={availableMechanics}
           selectedNewMechanicId={selectedNewMechanicId}
           isAssigning={isAssigning}
-          isCancelled={isCancelled}
+          isClosedForMechanicMutations={isClosedForMechanicMutations}
           isUnclaiming={isUnclaiming}
           removingMechanicId={removingMechanicId}
           t={t}

@@ -52,6 +52,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             required
+            aria-invalid={!!getFieldError('firstName')}
           />
           <FormErrorMessage message={getFieldError('firstName')} className="mt-1 px-2 py-1 text-xs" />
         </div>
@@ -84,6 +85,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             required
+            aria-invalid={!!getFieldError('lastName')}
           />
           <FormErrorMessage message={getFieldError('lastName')} className="mt-1 px-2 py-1 text-xs" />
         </div>
@@ -102,6 +104,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           className={inputClass}
           disabled={isSubmitting}
           required
+          aria-invalid={!!getFieldError('email')}
         />
         <FormErrorMessage message={getFieldError('email')} className="mt-1 px-2 py-1 text-xs" />
       </div>
@@ -119,6 +122,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           placeholder={t('admin.phonePlaceholder')}
           className={inputClass}
           disabled={isSubmitting}
+          aria-invalid={!!getFieldError('phoneNumber')}
         />
         <FormErrorMessage message={getFieldError('phoneNumber')} className="mt-1 px-2 py-1 text-xs" />
       </div>

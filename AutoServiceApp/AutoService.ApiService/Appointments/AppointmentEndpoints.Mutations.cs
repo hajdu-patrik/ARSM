@@ -3,6 +3,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -111,13 +112,6 @@ public static partial class AppointmentEndpoints
             _ => DateTime.SpecifyKind(request.ScheduledDate, DateTimeKind.Utc)
         };
 
-        if (scheduledDateUtc.Date < DateTime.UtcNow.Date)
-        {
-            return Results.Problem(
-                detail: "ScheduledDate cannot be in the past.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
         var appointment = new Appointment
         {
             ScheduledDate = scheduledDateUtc,
@@ -185,7 +179,7 @@ public static partial class AppointmentEndpoints
         {
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             return Results.Conflict(new { code = "already_claimed" });
         }
@@ -275,7 +269,7 @@ public static partial class AppointmentEndpoints
         {
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             return Results.Conflict(new { code = "already_assigned" });
         }

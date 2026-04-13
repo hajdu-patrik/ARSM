@@ -10,7 +10,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Keep People abstract, with Customer and Mechanic as derived entities.
 - Keep Identity linkage through People.IdentityUserId only.
 - Keep FullName as owned value object mapping.
-- Keep mechanic expertise constraints intact: 1..10 items, unique, non-empty persisted value.
+- Keep mechanic expertise constraints intact: 1..10 items, unique, non-empty persisted value. The `> 10` upper-bound must be enforced by `ValidateRegisterRequest` before persistence (returns `422`), not solely by the DB constraint.
 - Keep core relationships:
   - `Customer` 1..* `Vehicle`,
   - `Vehicle` 1..* `Appointment`,
@@ -47,7 +47,9 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - `Validation/ValidationMessages.cs`
   - `Identity/PersonTypeResolver.cs`
   - `Validation/ImageContentTypeDetector.cs`
-- Name fields (first name, middle name, last name) must be validated with `ContactNormalization.IsValidName()` (pattern `^[\p{L}\-]+$`) at registration, profile update, and customer create/update. Use `ValidationMessages` constants for error messages.
+  - `Validation/NameFieldsValidator.cs` — centralized name-field validation; `ValidateNames()` for dict-based patterns (used by auth register), `GetNameError()` for early-return patterns (used by customer, appointment, and profile endpoints)
+  - `Validation/VehicleNumericValidation.cs` — year/numeric constants (`MinYear`=1886, `MaxYear`=2100, `MaxMileageKm`, `MaxEnginePowerHp`, `MaxEngineTorqueNm`) and `GetYearValidationError()`/`GetValidationError()` helpers used by vehicle create/update and appointment endpoints
+- Name fields (first name, middle name, last name) must be validated using `NameFieldsValidator` (which delegates to `ContactNormalization.IsValidName()` with pattern `^[\p{L}\-]+$`) at registration, profile update, and customer create/update. Use `ValidationMessages` constants for error messages.
 - Registration must reject duplicate phone numbers even when equivalent values are provided in different formats.
 - JWT token lifetime is 10 minutes.
 - JWT validation: issuer/audience validation enabled, lifetime validation enabled, clock skew 1 minute.
@@ -63,7 +65,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `POST /api/auth/logout` – Revokes refresh token session, denylists current JWT `jti`, clears auth cookies.
 - `GET /api/auth/validate` – Returns person linkage data for valid authenticated session.
 - `POST /api/auth/login` accepts normalized email/phone identifier input and supports backward-compatible phone-in-email field fallback.
-- `POST /api/auth/login` failure semantics: generic `401 invalid_credentials` for unknown/wrong credentials, `403 mechanic_only_login` when an existing customer email/phone is used, `429` for lockout/rate-limit, `500` when linked domain record is missing.
+- `POST /api/auth/login` failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, and when a linked mechanic domain record is missing (domain-record gap is not exposed as a 500 — caller receives the same generic 401 to prevent identity linkage leaks); `403 mechanic_only_login` when an existing customer email/phone is used; `429` for lockout/rate-limit.
 
 ### Profile Endpoints (`/api/profile`) — all require authorization
 
@@ -89,7 +91,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
 
 - `GET /api/customers` — List all customers (id, name, email, phone, vehicleCount).
-- `GET /api/customers/by-email?email=` — Scheduler lookup by normalized customer email. Returns customer details with vehicles; `404` if not found, `422` for invalid email.
+- `GET /api/customers/by-email?email=` — Scheduler lookup by normalized customer email. Returns customer details with vehicles; mechanic email lookups also return `200` for own-car intake even if the linked customer record is not yet materialized (empty vehicle list); `404` if not found, `422` for invalid email.
 - `GET /api/customers/{id}` — Get single customer with embedded vehicle list.
 - `POST /api/customers` (AdminOnly) — Create a customer record (firstName, middleName?, lastName, email, phoneNumber?). Returns 201 Created. Returns 409 on duplicate email, 422 on missing required fields.
 - `PUT /api/customers/{id}` (AdminOnly) — Update customer record. Returns 204 No Content. Returns 404/409/422 as appropriate.
@@ -112,13 +114,13 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
-- `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Rejects scheduled dates in the past. Looks up customer by normalized email (creates customer when missing), supports mechanic-email owner linking via generated customer-owner linkage email, accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
+- `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Looks up customer by normalized email (creates customer when missing), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record. Accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
 - `PUT /api/appointments/{id}` — Update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`). Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. For past appointments, `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable.
-- `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, non-past `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
-- `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed, returns `422` with code `appointment_cancelled` if appointment is Cancelled, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
+- `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
+- `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, or returns `422` if unassign would leave the appointment without assigned mechanics.
 - `PUT /api/appointments/{id}/status` — Update appointment status (requesting mechanic must be assigned). Validates status enum (`InProgress`, `Completed`, `Cancelled`), returns 403 if not assigned. Auto-sets `CompletedAt` when transitioning to Completed, `CanceledAt` when transitioning to Cancelled; clears both when transitioning back to InProgress. Cancelled appointments can be moved back to `InProgress` or `Completed`, including for past-dated appointments.
-- `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned, and returns `422` with code `appointment_cancelled` if appointment is Cancelled.
+- `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), and returns `422` with code `appointment_cancelled` if appointment is Cancelled.
 - `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, or returns `422` if removal would leave the appointment without assigned mechanics.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 - Appointment DTOs: `AppointmentDto` (includes `IntakeCreatedAt` and `DueDateTime`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `SchedulerCreateIntakeRequest`.

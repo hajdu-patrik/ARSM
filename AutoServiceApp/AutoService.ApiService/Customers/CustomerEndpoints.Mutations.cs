@@ -26,25 +26,25 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
+        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
+        if (firstNameError is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidFirstName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!ContactNormalization.IsValidName(request.LastName.Trim()))
+        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
+        if (lastNameError is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidLastName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.MiddleName) && !ContactNormalization.IsValidName(request.MiddleName.Trim()))
+        if (!string.IsNullOrWhiteSpace(request.MiddleName))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidMiddleName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
+            if (middleNameError is not null)
+            {
+                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
         }
 
         if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
@@ -108,25 +108,25 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
+        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
+        if (firstNameError is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidFirstName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!ContactNormalization.IsValidName(request.LastName.Trim()))
+        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
+        if (lastNameError is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidLastName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.MiddleName) && !ContactNormalization.IsValidName(request.MiddleName.Trim()))
+        if (!string.IsNullOrWhiteSpace(request.MiddleName))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidMiddleName,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
+            if (middleNameError is not null)
+            {
+                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
         }
 
         var customer = await db.Customers

@@ -204,9 +204,9 @@ export function useSchedulerDataSync({
       void backgroundRefreshTaskRef.current();
     };
 
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     return () => {
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     };
   }, []);
 }

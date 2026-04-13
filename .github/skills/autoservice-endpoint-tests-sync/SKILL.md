@@ -11,21 +11,21 @@ Slash entrypoint:
 ## Goal
 
 Keep endpoint-level test assets synchronized with the current API behavior:
-- HTTP endpoint suites in `AutoServiceApp/AutoService.ApiService/api-tests/`
-- SQL validation suites in `docs/Database Testing/`
+- HTTP endpoint suites in `tests/API/`
+- SQL validation suites in `tests/Database/`
 
 ## Managed test files
 
 HTTP suites:
-- `AutoServiceApp/AutoService.ApiService/api-tests/auth-and-session.http`
-- `AutoServiceApp/AutoService.ApiService/api-tests/appointments.http`
-- `AutoServiceApp/AutoService.ApiService/api-tests/profile.http`
-- `AutoServiceApp/AutoService.ApiService/api-tests/admin.http`
+- `tests/API/auth-and-session.http`
+- `tests/API/appointments.http`
+- `tests/API/profile.http`
+- `tests/API/admin.http`
 
 SQL suites:
-- `docs/Database Testing/core-schema-seed.sql`
-- `docs/Database Testing/identity-auth-validation.sql`
-- `docs/Database Testing/feature-flow-validation.sql`
+- `tests/Database/core-schema-seed.sql`
+- `tests/Database/identity-auth-validation.sql`
+- `tests/Database/feature-flow-validation.sql`
 
 ## Trigger conditions
 

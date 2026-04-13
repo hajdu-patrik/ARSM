@@ -80,10 +80,11 @@ public static partial class CustomerEndpoints
             .AsNoTracking()
             .Include(c => c.Vehicles)
             .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
+        Mechanic? mechanic = null;
 
         if (customer is null)
         {
-            var mechanic = await db.Mechanics
+            mechanic = await db.Mechanics
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Email == normalizedEmail, cancellationToken);
 
@@ -94,6 +95,22 @@ public static partial class CustomerEndpoints
                     .AsNoTracking()
                     .Include(c => c.Vehicles)
                     .FirstOrDefaultAsync(c => c.Email == mechanicOwnedCustomerEmail, cancellationToken);
+
+                // Mechanic email should still be treated as a valid lookup target even
+                // before the linked customer record is materialized by intake creation.
+                if (customer is null)
+                {
+                    var mechanicDto = new SchedulerCustomerLookupDto(
+                        mechanic.Id,
+                        mechanic.Name.FirstName,
+                        mechanic.Name.MiddleName,
+                        mechanic.Name.LastName,
+                        mechanic.Email,
+                        mechanic.PhoneNumber,
+                        []);
+
+                    return Results.Ok(mechanicDto);
+                }
             }
         }
 

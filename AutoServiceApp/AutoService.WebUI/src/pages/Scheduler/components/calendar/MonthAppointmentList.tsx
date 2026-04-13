@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { X, ArrowUpDown } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { AppointmentCard } from '../shared/AppointmentCard';
-import { formatScheduledTime } from '../../utils/scheduler-datetime';
 
 interface MonthAppointmentListProps {
   readonly appointments: AppointmentDto[];
@@ -11,7 +10,6 @@ interface MonthAppointmentListProps {
   readonly currentMechanicId: number | undefined;
   readonly selectedDay: number | null;
   readonly onClaim: (id: number) => Promise<void>;
-  readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
   readonly onCardClick: (appointment: AppointmentDto) => void;
   readonly onClearFilter: () => void;
 }
@@ -39,11 +37,10 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   currentMechanicId,
   selectedDay,
   onClaim,
-  onStatusChange,
   onCardClick,
   onClearFilter,
 }: MonthAppointmentListProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [selectedStatuses, setSelectedStatuses] = useState<Set<AppointmentStatus>>(new Set());
   const [selectedMechanicId, setSelectedMechanicId] = useState<number | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -103,13 +100,6 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     return sorted;
   }, [filtered, sortAsc]);
 
-  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }), [i18n.language]);
-
   const shouldSpanSingleCard = sortedAppointments.length === 1;
   const emptyMessageKey = selectedDay === null
     ? 'scheduler.monthList.empty'
@@ -159,6 +149,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <select
           value={selectedMechanicId ?? ''}
           onChange={(e) => setSelectedMechanicId(e.target.value ? Number(e.target.value) : null)}
+          aria-label={t('scheduler.filter.allMechanics')}
           className="text-xs font-medium px-3 py-1 rounded-full border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-[#2C2440] dark:text-[#EDE8FA] min-w-0 max-w-[10rem] truncate focus:outline-none"
         >
           <option value="">{t('scheduler.filter.allMechanics')}</option>
@@ -204,14 +195,10 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {sortedAppointments.map((appointment) => (
             <div key={appointment.id} className={shouldSpanSingleCard ? 'sm:col-span-2' : ''}>
-              <h3 className="mb-2 text-sm font-semibold text-[#6A627F] dark:text-[#B9B0D3] capitalize">
-                {dateFormatter.format(new Date(appointment.scheduledDate))} - {formatScheduledTime(appointment.scheduledDate, i18n.language)}
-              </h3>
               <AppointmentCard
                 appointment={appointment}
                 currentMechanicId={currentMechanicId}
                 onClaim={onClaim}
-                onStatusChange={onStatusChange}
                 onClick={() => onCardClick(appointment)}
               />
             </div>

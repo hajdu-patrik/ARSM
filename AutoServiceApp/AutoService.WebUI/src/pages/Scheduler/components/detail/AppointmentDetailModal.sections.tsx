@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
+import { inputClassCompact } from '../../../../utils/formStyles';
 import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
@@ -22,7 +23,7 @@ interface AppointmentDetailBodyProps {
   readonly availableMechanics: Array<{ personId: number; firstName: string; middleName: string | null; lastName: string }>;
   readonly selectedNewMechanicId: string;
   readonly isAssigning: boolean;
-  readonly isCancelled: boolean;
+  readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly removingMechanicId: number | null;
   readonly t: TFunction;
@@ -47,7 +48,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   availableMechanics,
   selectedNewMechanicId,
   isAssigning,
-  isCancelled,
+  isClosedForMechanicMutations,
   isUnclaiming,
   removingMechanicId,
   t,
@@ -108,7 +109,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
           currentMechanicId={currentMechanicId}
           isAdmin={isAdmin}
           isAssigning={isAssigning}
-          isCancelled={isCancelled}
+          isClosedForMechanicMutations={isClosedForMechanicMutations}
           isUnclaiming={isUnclaiming}
           removingMechanicId={removingMechanicId}
           availableMechanics={availableMechanics}
@@ -155,7 +156,7 @@ const HeaderSection = memo(function HeaderSection({
             type="datetime-local"
             value={scheduledDate}
             onChange={(event) => onScheduledDateChange(event.target.value)}
-            className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+            className={`${inputClassCompact} px-3 py-2`}
           />
         </label>
       ) : (
@@ -188,7 +189,7 @@ const DueSection = memo(function DueSection({
         <Clock3 className="h-4 w-4" />
         {t('scheduler.due.label')}
       </div>
-      <p className={`mt-1 text-lg font-bold ${dueState.toneClassName}`}>
+      <p className={`mt-1 max-w-full break-words text-base font-bold leading-tight sm:text-lg ${dueState.toneClassName}`}>
         {t(dueState.labelKey, dueState.labelValues)}
       </p>
       <p className="mt-0.5 text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.due.exact', { date: dueDateLabel })}</p>
@@ -199,7 +200,7 @@ const DueSection = memo(function DueSection({
             type="datetime-local"
             value={dueDateTime}
             onChange={(event) => onDueDateTimeChange(event.target.value)}
-            className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+            className={`${inputClassCompact} px-3 py-2`}
           />
         </label>
       )}
@@ -231,7 +232,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           isEditing={isEditing}
           editValue={editForm?.licensePlate ?? ''}
           displayValue={vehicle.licensePlate}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm font-mono uppercase dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={`${inputClassCompact} font-mono uppercase`}
           displayClassName="truncate text-sm font-mono text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('licensePlate', value.toUpperCase())}
         />
@@ -241,7 +242,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           isEditing={isEditing}
           editValue={editForm?.brand ?? ''}
           displayValue={vehicle.brand}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('brand', value)}
         />
@@ -251,7 +252,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           isEditing={isEditing}
           editValue={editForm?.model ?? ''}
           displayValue={vehicle.model}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('model', value)}
         />
@@ -264,7 +265,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           inputType="number"
           min={1886}
           max={2100}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('year', value)}
         />
@@ -277,7 +278,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           inputType="number"
           min={0}
           max={1000000}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('mileageKm', value)}
         />
@@ -290,7 +291,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           inputType="number"
           min={0}
           max={50000}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('enginePowerHp', value)}
         />
@@ -303,7 +304,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           inputType="number"
           min={0}
           max={50000}
-          inputClassName="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
           onChange={(value) => onEditField('engineTorqueNm', value)}
         />
@@ -374,7 +375,7 @@ const TaskSection = memo(function TaskSection({ isEditing, taskDescription, disp
             value={taskDescription}
             onChange={(event) => onTaskChange(event.target.value)}
             rows={3}
-            className="w-full rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm text-[#2C2440] dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA]"
+            className={`${inputClassCompact} px-3 py-2 text-[#2C2440] dark:text-[#EDE8FA]`}
           />
         ) : (
           <p className="break-words text-sm text-[#2C2440] dark:text-[#EDE8FA]">{displayTask}</p>
@@ -413,7 +414,7 @@ interface MechanicsSectionProps {
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
   readonly isAssigning: boolean;
-  readonly isCancelled: boolean;
+  readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly removingMechanicId: number | null;
   readonly availableMechanics: Array<{ personId: number; firstName: string; middleName: string | null; lastName: string }>;
@@ -430,7 +431,7 @@ const MechanicsSection = memo(function MechanicsSection({
   currentMechanicId,
   isAdmin,
   isAssigning,
-  isCancelled,
+  isClosedForMechanicMutations,
   isUnclaiming,
   removingMechanicId,
   availableMechanics,
@@ -452,10 +453,10 @@ const MechanicsSection = memo(function MechanicsSection({
             <MechanicCard
               key={mechanic.id}
               mechanic={mechanic}
-              canUnclaim={!isCancelled && !isAdmin && currentMechanicId !== undefined && mechanic.id === currentMechanicId}
-              canRemove={!isCancelled && isAdmin && appointment.mechanics.length > 1}
+              canUnclaim={!isClosedForMechanicMutations && !isAdmin && currentMechanicId !== undefined && mechanic.id === currentMechanicId}
+              canRemove={!isClosedForMechanicMutations && isAdmin && appointment.mechanics.length > 1}
               isUnclaiming={isUnclaiming}
-              isRemoveDisabled={removingMechanicId === mechanic.id || isCancelled}
+              isRemoveDisabled={removingMechanicId === mechanic.id || isClosedForMechanicMutations}
               t={t}
               onUnclaim={onUnclaim}
               onQueueRemove={() => onQueueRemoveMechanic({ id: mechanic.id, fullName: mechanic.fullName })}
@@ -464,7 +465,7 @@ const MechanicsSection = memo(function MechanicsSection({
         </div>
       )}
 
-      {isAdmin && !isCancelled && (
+      {isAdmin && !isClosedForMechanicMutations && (
         <div className="mt-3">
           <h5 className="mb-1.5 flex items-center gap-1 text-xs font-medium text-[#6A627F] dark:text-[#B9B0D3]">
             <UserPlus className="h-3.5 w-3.5" />
@@ -474,6 +475,7 @@ const MechanicsSection = memo(function MechanicsSection({
             <select
               value={selectedNewMechanicId}
               onChange={(event) => onSelectNewMechanic(event.target.value)}
+              aria-label={t('scheduler.detail.selectMechanic')}
               className="w-full min-w-0 rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1.5 text-sm text-[#2C2440] focus:outline-none disabled:opacity-50 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] sm:flex-1"
             >
               <option value="">{t('scheduler.detail.selectMechanic')}</option>

@@ -14,8 +14,8 @@ export function useAdminMechanics(isAdmin: boolean, isOpen: boolean) {
     try {
       const data = await adminService.listMechanics();
       setAllMechanics(data);
-    } catch {
-      // Silently fail - dropdown will be empty
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[useAdminMechanics] Failed to load mechanics:', err);
     }
   }, [isAdmin, isOpen]);
 
@@ -32,9 +32,9 @@ export function useAdminMechanics(isAdmin: boolean, isOpen: boolean) {
       void loadAllMechanics();
     };
 
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     return () => {
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated as EventListener);
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     };
   }, [isAdmin, isOpen, loadAllMechanics]);
 

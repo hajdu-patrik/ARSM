@@ -26,7 +26,6 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const {
     selectedDate,
-    isSelectedDateInPast,
     selectedDateLabel,
     summaryDateText,
     summaryCount,
@@ -75,13 +74,8 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       return;
     }
 
-    if (isSelectedDateInPast) {
-      showErrorToast('scheduler.intake.selectTodayOrFuture');
-      return;
-    }
-
     setIsIntakeOpen(true);
-  }, [isSelectedDateInPast, selectedDate, showErrorToast]);
+  }, [selectedDate, showErrorToast]);
 
   const selectedAppointmentId = selectedAppointment?.id;
 
@@ -135,7 +129,6 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       <SchedulerQuickIntakeSection
         selectedDateLabel={selectedDateLabel}
         selectedDate={selectedDate}
-        isSelectedDateInPast={isSelectedDateInPast}
         t={t}
         onOpenIntake={handleOpenIntake}
       />
@@ -146,7 +139,6 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         currentMechanicId={user?.personId}
         selectedDay={store.selectedDay}
         onClaim={handleClaim}
-        onStatusChange={handleStatusChange}
         onCardClick={handleCardClick}
         onClearFilter={() => store.setSelectedDay(null)}
       />

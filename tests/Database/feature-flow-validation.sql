@@ -250,15 +250,20 @@ ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
 
 
 -- ------------------------------------------------------------
--- 16. INTAKE PAST-DATE REJECTION CHECK
---     The negative intake payload with this task description must not persist.
---     Expected: 0 rows.
+-- 16. INTAKE PAST-DATE ALLOWED CHECK
+--     Confirms intake payload with past scheduledDate is now persisted.
 -- ------------------------------------------------------------
-SELECT a."Id" AS unexpected_persisted_appointment_id,
+SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
-       a."TaskDescription"
+       a."DueDateTime",
+       a."TaskDescription",
+       CASE
+           WHEN a."ScheduledDate" <> TIMESTAMPTZ '2020-01-01T09:00:00Z' THEN 'FAIL: unexpected ScheduledDate'
+           WHEN a."DueDateTime" <> TIMESTAMPTZ '2020-01-03T10:00:00Z' THEN 'FAIL: unexpected DueDateTime'
+           ELSE 'OK'
+       END AS past_date_integrity
 FROM appointments a
-WHERE a."TaskDescription" = 'Scheduler intake with past date should be rejected';
+WHERE a."TaskDescription" = 'Scheduler intake with past date allowed';
 
 
 -- ------------------------------------------------------------
@@ -334,16 +339,21 @@ WHERE a."TaskDescription" = 'Past appointment scheduled date change should be re
 
 
 -- ------------------------------------------------------------
--- 18. CUSTOMER APPOINTMENT CREATE PAST-DATE REJECTION CHECK
---     The negative POST /api/customers/{customerId}/appointments payload
---     with this task description must not persist.
---     Expected: 0 rows.
+-- 18. CUSTOMER APPOINTMENT CREATE PAST-DATE ALLOWED CHECK
+--     Confirms POST /api/customers/{customerId}/appointments with past
+--     scheduledDate is now persisted.
 -- ------------------------------------------------------------
-SELECT a."Id" AS unexpected_persisted_appointment_id,
+SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
-       a."TaskDescription"
+       a."DueDateTime",
+       a."TaskDescription",
+       CASE
+           WHEN a."ScheduledDate" <> TIMESTAMPTZ '2020-01-01T10:30:00Z' THEN 'FAIL: unexpected ScheduledDate'
+           WHEN a."DueDateTime" <> TIMESTAMPTZ '2020-01-01T10:30:00Z' THEN 'FAIL: unexpected DueDateTime'
+           ELSE 'OK'
+       END AS past_date_integrity
 FROM appointments a
-WHERE a."TaskDescription" = 'Admin create with past date should be rejected';
+WHERE a."TaskDescription" = 'Admin create with past date allowed';
 
 
 -- ------------------------------------------------------------
@@ -405,3 +415,26 @@ SELECT a."Id" AS appointment_id,
 FROM appointments a
 WHERE a."TaskDescription" = 'Past appointment due and task update allowed'
 ORDER BY a."Id" DESC;
+
+
+-- ------------------------------------------------------------
+-- 23. SCHEDULER CUSTOMER BY-EMAIL SUCCESS SEMANTICS (MECHANIC EMAIL)
+--     Documents expected 200 behavior for GET /api/customers/by-email when
+--     queried with mechanic email and linked customer may or may not exist.
+-- ------------------------------------------------------------
+SELECT m."Id" AS mechanic_id,
+       m."Email" AS mechanic_email,
+       c."Id" AS linked_customer_id,
+       c."Email" AS linked_customer_email,
+       COUNT(v."Id") AS linked_vehicle_count,
+       CASE
+           WHEN c."Id" IS NULL THEN 'Expected /by-email success semantics: 200 with mechanic identity and empty vehicles.'
+           ELSE 'Expected /by-email success semantics: 200 with linked customer payload and linked vehicles.'
+       END AS expected_lookup_semantics
+FROM people m
+LEFT JOIN people c ON c."Email" = ('mechanic-owner-' || m."Id"::text || '@customers.arsm.local')
+    AND c."PersonType" = 'Customer'
+LEFT JOIN vehicles v ON v."CustomerId" = c."Id"
+WHERE m."PersonType" = 'Mechanic'
+GROUP BY m."Id", m."Email", c."Id", c."Email"
+ORDER BY m."Id";

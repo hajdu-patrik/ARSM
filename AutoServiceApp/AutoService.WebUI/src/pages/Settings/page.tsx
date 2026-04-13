@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { profileService } from '../../services/profile/profile.service';
 import { useToastStore } from '../../store/toast.store';
 import { useAuthStore } from '../../store/auth.store';
@@ -169,15 +169,18 @@ const SettingsPageComponent = memo(function SettingsPage() {
       setPhoneNumber(updated.phoneNumber ?? '');
       showSuccessToast('toast.profileUpdated');
     } catch (err) {
-      const axiosError = err as AxiosError<{ errors?: FieldErrors; detail?: string }>;
-      const data = axiosError.response?.data;
-      const status = axiosError.response?.status;
-      if ((status === 422 || status === 400) && data) {
-        const fieldErrs = extractFieldErrors(data);
-        if (Object.keys(fieldErrs).length > 0) {
-          setProfileFieldErrors(normalizeFieldErrors(fieldErrs));
+      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+        const data = err.response?.data;
+        const status = err.response?.status;
+        if ((status === 422 || status === 400) && data) {
+          const fieldErrs = extractFieldErrors(data);
+          if (Object.keys(fieldErrs).length > 0) {
+            setProfileFieldErrors(normalizeFieldErrors(fieldErrs));
+          }
+          else showErrorToast('toast.profileUpdateFailed');
+        } else {
+          showErrorToast('toast.profileUpdateFailed');
         }
-        else showErrorToast('toast.profileUpdateFailed');
       } else {
         showErrorToast('toast.profileUpdateFailed');
       }
@@ -228,13 +231,16 @@ const SettingsPageComponent = memo(function SettingsPage() {
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (err) {
-      const axiosError = err as AxiosError<{ errors?: FieldErrors; detail?: string }>;
-      const data = axiosError.response?.data;
-      const status = axiosError.response?.status;
-      if ((status === 422 || status === 400) && data) {
-        const fieldErrs = mapPasswordErrors(extractFieldErrors(data));
-        if (Object.keys(fieldErrs).length > 0) setPasswordFieldErrors(fieldErrs);
-        else showErrorToast('toast.passwordChangeFailed');
+      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+        const data = err.response?.data;
+        const status = err.response?.status;
+        if ((status === 422 || status === 400) && data) {
+          const fieldErrs = mapPasswordErrors(extractFieldErrors(data));
+          if (Object.keys(fieldErrs).length > 0) setPasswordFieldErrors(fieldErrs);
+          else showErrorToast('toast.passwordChangeFailed');
+        } else {
+          showErrorToast('toast.passwordChangeFailed');
+        }
       } else {
         showErrorToast('toast.passwordChangeFailed');
       }
@@ -353,14 +359,17 @@ const SettingsPageComponent = memo(function SettingsPage() {
       closeDeleteModal();
       navigate('/login', { replace: true });
     } catch (err) {
-      const axiosError = err as AxiosError<{ errors?: FieldErrors; detail?: string }>;
-      const data = axiosError.response?.data;
-      const status = axiosError.response?.status;
+      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+        const data = err.response?.data;
+        const status = err.response?.status;
 
-      if ((status === 422 || status === 400) && data?.errors) {
-        const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
-        if (currentPasswordErrors && currentPasswordErrors.length > 0) {
-          setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
+        if ((status === 422 || status === 400) && data?.errors) {
+          const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
+          if (currentPasswordErrors && currentPasswordErrors.length > 0) {
+            setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
+          } else {
+            showErrorToast('toast.profileDeleteFailed');
+          }
         } else {
           showErrorToast('toast.profileDeleteFailed');
         }

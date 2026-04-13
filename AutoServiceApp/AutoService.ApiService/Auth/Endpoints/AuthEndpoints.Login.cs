@@ -162,9 +162,10 @@ public static partial class AuthEndpoints
 
         if (mechanic is null)
         {
+            // Do not reveal that Identity user exists but domain record is missing.
             return Results.Problem(
-                detail: "The linked domain user record was not found.",
-                statusCode: StatusCodes.Status500InternalServerError);
+                detail: "Invalid login credentials.",
+                statusCode: StatusCodes.Status401Unauthorized);
         }
 
         var nowUtc = DateTime.UtcNow;

@@ -65,13 +65,6 @@ public static partial class AppointmentEndpoints
         var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
         var dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
 
-        if (scheduledDateUtc.Date < DateTime.UtcNow.Date)
-        {
-            return Results.Problem(
-                detail: "ScheduledDate cannot be in the past.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
         if (dueDateTimeUtc < scheduledDateUtc)
         {
             return Results.Problem(
@@ -158,25 +151,25 @@ public static partial class AppointmentEndpoints
             var lastName = linkedMechanicForEmail?.Name.LastName ?? request.CustomerLastName!.Trim();
             var middleName = linkedMechanicForEmail?.Name.MiddleName ?? ContactNormalization.NormalizeOptional(request.CustomerMiddleName);
 
-            if (!ContactNormalization.IsValidName(firstName))
+            var firstNameError = NameFieldsValidator.GetNameError(firstName, "FirstName");
+            if (firstNameError is not null)
             {
-                return Results.Problem(
-                    detail: ValidationMessages.InvalidFirstName,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
-            if (!ContactNormalization.IsValidName(lastName))
+            var lastNameError = NameFieldsValidator.GetNameError(lastName, "LastName");
+            if (lastNameError is not null)
             {
-                return Results.Problem(
-                    detail: ValidationMessages.InvalidLastName,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
-            if (middleName is not null && !ContactNormalization.IsValidName(middleName))
+            if (middleName is not null)
             {
-                return Results.Problem(
-                    detail: ValidationMessages.InvalidMiddleName,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                var middleNameError = NameFieldsValidator.GetNameError(middleName, "MiddleName");
+                if (middleNameError is not null)
+                {
+                    return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+                }
             }
 
             var normalizedPhone = ContactNormalization.NormalizeOptional(request.CustomerPhoneNumber);
@@ -362,6 +355,7 @@ public static partial class AppointmentEndpoints
         {
             DateTimeKind.Utc => dateTime,
             DateTimeKind.Local => dateTime.ToUniversalTime(),
+            // Treat Unspecified as UTC — JSON deserializers often strip kind info.
             _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
         };
 

@@ -6,6 +6,16 @@ export interface DueState {
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_MINUTE = 60 * 1000;
+
+function splitDuration(absDiffMs: number): { days: number; hours: number; minutes: number } {
+  const totalMinutes = Math.max(0, Math.ceil(absDiffMs / MS_PER_MINUTE));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return { days, hours, minutes };
+}
 
 export function getDueState(dueDateTime: string): DueState {
   const dueDate = new Date(dueDateTime);
@@ -23,29 +33,24 @@ export function getDueState(dueDateTime: string): DueState {
   const diffMs = dueTimestamp - nowTimestamp;
 
   if (diffMs < 0) {
-    const overdueDays = Math.max(1, Math.ceil(Math.abs(diffMs) / MS_PER_DAY));
+    const overdueDuration = splitDuration(Math.abs(diffMs));
     return {
       isOverdue: true,
       toneClassName: 'text-red-700 dark:text-red-300',
       labelKey: 'scheduler.due.overdueByDays',
-      labelValues: { count: overdueDays },
+      labelValues: overdueDuration,
     };
   }
 
-  const daysLeft = Math.floor(diffMs / MS_PER_DAY);
-  if (daysLeft === 0) {
-    return {
-      isOverdue: false,
-      toneClassName: 'text-amber-700 dark:text-amber-300',
-      labelKey: 'scheduler.due.today',
-    };
-  }
+  const dueDuration = splitDuration(diffMs);
 
   return {
     isOverdue: false,
-    toneClassName: 'text-[#5E5672] dark:text-[#CFC5EA]',
+    toneClassName: diffMs < MS_PER_DAY
+      ? 'text-amber-700 dark:text-amber-300'
+      : 'text-[#5E5672] dark:text-[#CFC5EA]',
     labelKey: 'scheduler.due.daysLeft',
-    labelValues: { count: daysLeft },
+    labelValues: dueDuration,
   };
 }
 

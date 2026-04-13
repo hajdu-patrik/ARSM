@@ -1,22 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import { authService } from './services/auth/auth.service';
 import { LoadingPage } from './pages/LoadingPage';
-import { Login } from './pages/Login/page';
-import { SchedulerPage } from './pages/Scheduler/page';
-import { ToolsPage } from './pages/Tools/page';
-import { InventoryPage } from './pages/Inventory/page';
-import { NotFound } from './pages/NotFound';
 import { PrivateRoute } from './router/PrivateRoute';
 import { AdminRoute } from './router/AdminRoute';
 import { PublicOnlyRoute } from './router/PublicOnlyRoute';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 import { ToastViewport } from './components/common/ToastViewport';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SeoManager } from './components/seo/SeoManager';
-import { RegisterMechanicPage } from './pages/Admin/RegisterMechanic/page';
-import { SettingsPage } from './pages/Settings/page';
 import './utils/i18n';
+
+const Login = lazy(() => import('./pages/Login/page').then(m => ({ default: m.Login })));
+const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then(m => ({ default: m.SchedulerPage })));
+const ToolsPage = lazy(() => import('./pages/Tools/page').then(m => ({ default: m.ToolsPage })));
+const InventoryPage = lazy(() => import('./pages/Inventory/page').then(m => ({ default: m.InventoryPage })));
+const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then(m => ({ default: m.RegisterMechanicPage })));
+const SettingsPage = lazy(() => import('./pages/Settings/page').then(m => ({ default: m.SettingsPage })));
 
 function App() {
   const setIsAuthenticated = useAuthStore((state) => state.setIsAuthenticated);
@@ -61,9 +63,11 @@ function App() {
       <LoadingPage />
 
       {/* Main app */}
+      <ErrorBoundary>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <SeoManager />
 
+        <Suspense fallback={null}>
         <Routes>
           {/* Login Route */}
           <Route
@@ -91,7 +95,9 @@ function App() {
           {/* 404 Not Found */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </Router>
+      </ErrorBoundary>
 
       <ToastViewport />
     </>

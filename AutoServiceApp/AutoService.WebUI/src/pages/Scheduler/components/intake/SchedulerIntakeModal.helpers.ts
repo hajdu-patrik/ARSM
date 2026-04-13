@@ -4,7 +4,6 @@ import type {
   SchedulerNewVehicleRequest,
 } from '../../../../types/scheduler/scheduler.types';
 import { buildSelectedDayIso, toDatetimeLocalValue } from '../../utils/due-date';
-import { isPastCalendarDay } from '../../utils/scheduler-datetime';
 import type {
   IntakeApiError,
   LookupState,
@@ -129,10 +128,6 @@ export function getCreateValidationError(params: {
     return 'scheduler.intake.errors.dueRequired';
   }
 
-  if (isPastCalendarDay(params.selectedDate)) {
-    return 'scheduler.intake.errors.scheduledInPast';
-  }
-
   if (new Date(params.dueDateTime).getTime() < new Date(params.autoScheduledDate).getTime()) {
     return 'scheduler.intake.errors.dueBeforeScheduled';
   }
@@ -174,14 +169,22 @@ export function enrichPayloadByLookupState(params: {
   }
 
   if (params.lookupState === 'not-found') {
-    if (!params.customerFirstName.trim() || !params.customerLastName.trim()) {
+    const firstName = params.customerFirstName.trim();
+    const lastName = params.customerLastName.trim();
+    const hasAnyName = firstName.length > 0 || lastName.length > 0;
+
+    // For mechanic-email intake, backend can resolve/create the linked customer without manual names.
+    if (hasAnyName && (!firstName || !lastName)) {
       return 'scheduler.intake.errors.customerNameRequired';
     }
 
-    params.basePayload.customerFirstName = params.customerFirstName.trim();
-    params.basePayload.customerMiddleName = params.customerMiddleName.trim() || undefined;
-    params.basePayload.customerLastName = params.customerLastName.trim();
-    params.basePayload.customerPhoneNumber = params.customerPhone.trim() || undefined;
+    if (hasAnyName) {
+      params.basePayload.customerFirstName = firstName;
+      params.basePayload.customerMiddleName = params.customerMiddleName.trim() || undefined;
+      params.basePayload.customerLastName = lastName;
+      params.basePayload.customerPhoneNumber = params.customerPhone.trim() || undefined;
+    }
+
     params.basePayload.vehicle = buildVehiclePayload(params.vehicle);
   }
 

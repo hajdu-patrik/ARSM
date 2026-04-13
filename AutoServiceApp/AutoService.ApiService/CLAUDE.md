@@ -6,7 +6,7 @@
 - `FullName` is an owned value object on `People`.
 - Identity linkage only via `People.IdentityUserId`. No password/credential fields on `People`, `Customer`, or `Mechanic`.
 - `People.ProfilePicture` (`byte[]?`) and `People.ProfilePictureContentType` (`string?`, max 50) — optional binary profile picture storage.
-- Mechanic expertise: 1–10 items, unique, never empty when persisted.
+- Mechanic expertise: 1–10 items, unique, never empty when persisted. The `> 10` upper-bound is enforced by `ValidateRegisterRequest` before persistence (returns `422`), not solely by the DB constraint.
 - Core relationships:
   - `Customer` 1..* `Vehicle`
   - `Vehicle` 1..* `Appointment`
@@ -58,7 +58,7 @@
   - refresh token in HttpOnly cookie (`autoservice_rt`),
   - persisted hashed refresh token rows in `refreshtokens`.
 - Access-token JWT denylist rows are persisted in `revokedjwttokens` and cached in-memory for fast validation checks.
-- Login failure semantics: generic `401 invalid_credentials` for unknown identifier and wrong password, `403 mechanic_only_login` when an existing customer email/phone identifier is used, `429` during lockout/rate-limit, `500` when linked domain record is missing.
+- Login failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, and when a linked mechanic domain record is missing (domain-record gap is not exposed as a 500 — caller receives the same generic 401 to prevent identity linkage leaks); `403 mechanic_only_login` when an existing customer email/phone identifier is used; `429` during lockout/rate-limit.
 - Lockout: 5 failed attempts, 15-minute lockout.
 - Rate limit: 10 requests/min per client IP for login (`AuthLoginAttempts`) and 20 requests/min for refresh (`AuthRefreshAttempts`). Temporary login-ban window after login rate-limit rejection: 3 minutes.
 - JWT lifetime: 10 minutes. Refresh token lifetime: 7 days.
@@ -78,20 +78,20 @@
 
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
-- `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; rejects scheduled dates in the past, validates due datetime, resolves customer by email (create fallback), supports mechanic-email owner linking via generated customer-owner linkage email, enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
+- `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; validates due datetime, resolves customer by email (create fallback), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record; enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
 - `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins; for past appointments `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable
-- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date) and rejects past scheduled dates; returns 201 Created
-- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses
+- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
+- `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` if unassign would leave the appointment without mechanics
 - `PUT /api/appointments/{id}/status` (authorized) — update appointment status (assigned mechanic only); auto-sets CompletedAt/CanceledAt timestamps on status change and allows moving Cancelled appointments back to InProgress/Completed (including past-dated appointments)
-- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled
+- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic to an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` if removal would leave the appointment without mechanics
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
 
 ## Customer Endpoints (Current)
 
 - `GET /api/customers` (authorized) — list all customers (id, name, email, phone, vehicle count)
-- `GET /api/customers/by-email?email=` (authorized) — scheduler customer lookup by normalized email; returns customer with vehicle list
+- `GET /api/customers/by-email?email=` (authorized) — scheduler customer lookup by normalized email; returns customer with vehicle list, and mechanic email lookups also succeed for own-car intake even before a linked customer record exists (empty vehicle list)
 - `GET /api/customers/{id}` (authorized) — get single customer with vehicle list
 - `POST /api/customers` (authorized, AdminOnly) — create customer record (firstName, middleName?, lastName, email, phoneNumber?)
 - `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
@@ -164,7 +164,7 @@ Login-ban middleware remains in-process and uses deterministic cleanup schedulin
 - `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
 - `Middleware/` — custom middleware classes (`LoginBanMiddleware`).
-- `Identity/`, `Linking/`, `Normalization/`, `Security/`, `Validation/` — grouped cross-cutting folders; keep contact normalization (`ContactNormalization`), name validation (`IsValidName`), token hash/expiry parsing (`TokenSecurity`), person-type resolution (`PersonTypeResolver`), image content-type detection (`ImageContentTypeDetector`), and shared validation error message constants (`ValidationMessages`) centralized here.
+- `Identity/`, `Linking/`, `Normalization/`, `Security/`, `Validation/` — grouped cross-cutting folders; keep contact normalization (`ContactNormalization`), name validation (`IsValidName`), token hash/expiry parsing (`TokenSecurity`), person-type resolution (`PersonTypeResolver`), image content-type detection (`ImageContentTypeDetector`), and shared validation error message constants (`ValidationMessages`) centralized here. Also contains `NameFieldsValidator` (centralized name-field validation with two entry points: `ValidateNames()` for dict-based error patterns used by auth register, and `GetNameError()` for early-return patterns used by customer, appointment, and profile endpoints) and `VehicleNumericValidation` (year/mileage/power/torque constants `MinYear`/`MaxYear`/`MaxMileageKm`/`MaxEnginePowerHp`/`MaxEngineTorqueNm` and helper methods `GetYearValidationError()`/`GetValidationError()` used by vehicle and appointment endpoints).
 - `Domain/` and `Security/` — model locations; keep business entities under `Domain/`, security entities under `Security/`, and unique value-object types under `Domain/UniqueTypes/`.
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.
 - Keep comments concise and only for non-obvious logic.

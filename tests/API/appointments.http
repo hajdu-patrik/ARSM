@@ -180,7 +180,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Scheduler intake rejects past scheduled date (422 expected)
+### [Positive][Appointments] Scheduler intake allows past scheduled date
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Content-Type: application/json
 
@@ -189,13 +189,18 @@ Content-Type: application/json
   "vehicleId": {{CustomerVehicleId}},
   "scheduledDate": "2020-01-01T09:00:00",
   "dueDateTime": "2020-01-03T10:00:00",
-  "taskDescription": "Scheduler intake with past date should be rejected"
+  "taskDescription": "Scheduler intake with past date allowed"
 }
 
 ###
 
 ### [Positive][Appointments] Claim appointment by id
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Unclaim appointment by id
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 
 ###
 
@@ -347,14 +352,14 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Admin create rejects past scheduled date (422 expected)
+### [Positive][Appointments] Admin create allows past scheduled date
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Content-Type: application/json
 
 {
   "vehicleId": {{CustomerVehicleId}},
   "scheduledDate": "2020-01-01T10:30:00",
-  "taskDescription": "Admin create with past date should be rejected",
+  "taskDescription": "Admin create with past date allowed",
   "mechanicIds": [{{PrimaryMechanicId}}]
 }
 
@@ -545,6 +550,16 @@ Content-Type: application/json
 
 @MechanicIdToAssign = 2
 @CancelledApptId = 5
+
+### [Positive][Appointments] Admin assign mechanic to appointment
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+
+###
+
+### [Positive][Appointments] Admin unassign mechanic from appointment
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+
+###
 
 ### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
 # Returns 422 Unprocessable Entity with code: appointment_cancelled.

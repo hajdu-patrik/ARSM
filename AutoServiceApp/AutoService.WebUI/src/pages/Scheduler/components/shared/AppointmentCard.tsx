@@ -1,33 +1,26 @@
 import { memo, useState, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Clock3 } from 'lucide-react';
-import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
+import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
 import { getDueState } from '../../utils/due-date';
-import { formatScheduledTime } from '../../utils/scheduler-datetime';
 
 interface AppointmentCardProps {
   readonly appointment: AppointmentDto;
   readonly currentMechanicId: number | undefined;
   readonly onClaim: (id: number) => Promise<void>;
-  readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
   readonly onClick?: () => void;
 }
-
-const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 
 const AppointmentCardComponent = memo(function AppointmentCard({
   appointment,
   currentMechanicId,
   onClaim,
-  onStatusChange,
   onClick,
 }: AppointmentCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [isClaiming, setIsClaiming] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const scheduledTime = formatScheduledTime(appointment.scheduledDate, i18n.language);
 
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((m) => m.id === currentMechanicId);
@@ -41,16 +34,6 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       setIsClaiming(false);
     }
   }, [onClaim, appointment.id]);
-
-  const handleStatusChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as AppointmentStatus;
-    setIsUpdating(true);
-    try {
-      await onStatusChange(appointment.id, newStatus);
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [onStatusChange, appointment.id]);
 
   const { vehicle } = appointment;
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
@@ -67,11 +50,6 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{vehicle.year}</span>
         </div>
         <StatusBadge status={appointment.status} />
-      </div>
-
-      <div className="inline-flex items-center gap-1 text-xs text-[#6A627F] dark:text-[#B9B0D3]">
-        <Clock3 className="h-3.5 w-3.5" />
-        <span>{t('scheduler.detail.scheduledDate')}: {scheduledTime}</span>
       </div>
 
       {/* Vehicle specs */}
@@ -93,7 +71,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           <Clock3 className="h-3.5 w-3.5" />
           {t('scheduler.due.label')}
         </span>
-        <span className={`text-xs font-semibold ${dueState.toneClassName}`}>
+        <span className={`max-w-[55%] break-words text-right text-xs font-semibold leading-tight ${dueState.toneClassName}`}>
           {t(dueState.labelKey, dueState.labelValues)}
         </span>
       </div>
@@ -117,25 +95,6 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           {vehicle.licensePlate}
         </span>
       </div>
-
-      {/* Status change (for assigned mechanics) */}
-      {isAssigned && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-        <div onClick={(e) => e.stopPropagation()}>
-          <select
-            value={appointment.status}
-            onChange={(e) => { e.stopPropagation(); void handleStatusChange(e); }}
-            disabled={isUpdating}
-            className="w-full mt-1 py-1.5 px-2 rounded-lg border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-sm text-[#2C2440] dark:text-[#EDE8FA] disabled:opacity-50"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {t(`scheduler.status.${s.toLowerCase()}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {/* Claim button or Assigned label */}
       {isAssigned && (

@@ -47,6 +47,9 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers
 ###
 
 ### [Positive][Customers] Lookup customer by email for scheduler flow (200 expected)
+# Expected success semantics:
+# - 200 OK with scheduler lookup payload fields: id, firstName, middleName, lastName, email, phoneNumber, vehicles.
+# - For real customer emails, email should be the normalized customer email and vehicles should list the customer's vehicles.
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=anna.toth@example.com
 
 ###
@@ -56,7 +59,11 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20ANNA.
 
 ###
 
-### [Positive][Customers] Lookup customer by mechanic email via linked customer flow (200 expected)
+### [Positive][Customers] Lookup customer by mechanic email when linked customer may not exist yet (200 expected)
+# Expected success semantics:
+# - 200 OK (mechanic email is a valid scheduler lookup target).
+# - If no linked customer exists yet, response resolves to mechanic identity (email={{NonAdminEmail}}) with empty vehicles.
+# - If linked customer exists, response resolves to linked customer payload (typically mechanic-owner-{id}@customers.arsm.local) with linked vehicles.
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{NonAdminEmail}}
 
 ###

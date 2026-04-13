@@ -11,6 +11,7 @@ interface AppointmentDetailFooterProps {
   readonly isEditing: boolean;
   readonly isSaving: boolean;
   readonly isAssigned: boolean;
+  readonly canChangeStatus: boolean;
   readonly isUpdating: boolean;
   readonly shouldShowClaimButton: boolean;
   readonly isClaiming: boolean;
@@ -28,6 +29,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   isEditing,
   isSaving,
   isAssigned,
+  canChangeStatus,
   isUpdating,
   shouldShowClaimButton,
   isClaiming,
@@ -68,11 +70,12 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
         </>
       )}
 
-      {isAssigned && !isEditing && (
+      {canChangeStatus && !isEditing && (
         <select
           value={appointment.status}
           onChange={(event) => onStatusChange(event.target.value as AppointmentStatus)}
           disabled={isUpdating}
+          aria-label={t('scheduler.changeStatus')}
           className="min-w-[11rem] flex-1 rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1.5 text-sm text-[#2C2440] disabled:opacity-50 focus:outline-none dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA]"
         >
           {STATUS_OPTIONS.map((status) => (

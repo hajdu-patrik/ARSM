@@ -2,9 +2,21 @@ namespace AutoService.ApiService.Validation;
 
 internal static class VehicleNumericValidation
 {
+    internal const int MinYear = 1886;
+    internal const int MaxYear = 2100;
     internal const int MaxMileageKm = 1_000_000;
     internal const int MaxEnginePowerHp = 50_000;
     internal const int MaxEngineTorqueNm = 50_000;
+
+    internal static string? GetYearValidationError(int year)
+    {
+        if (year < MinYear || year > MaxYear)
+        {
+            return $"Year must be between {MinYear} and {MaxYear}.";
+        }
+
+        return null;
+    }
 
     internal static string? GetValidationError(
         int mileageKm,

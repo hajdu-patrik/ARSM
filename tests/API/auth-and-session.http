@@ -603,6 +603,23 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 
 ###
 
+### [Manual][Login] Login rate limiting (expect 429 after >10 login calls per minute from same client)
+# Example PowerShell:
+# 1..12 | % {
+#   $body = @{ email = "{{MatrixEmailWithPhone}}"; password = "{{TestWrongPassword}}" } | ConvertTo-Json
+#   iwr -Method Post -UseBasicParsing -ContentType "application/json" -Body $body "{{AutoService_ApiService_HostAddress}}/api/auth/login"
+# }
+
+###
+
+### [Manual][Login] Lockout after repeated bad password attempts (expect 429, then valid login works after lockout window)
+# Trigger lockout with 5 consecutive wrong-password attempts against the same mechanic account.
+# Then verify:
+# 1) immediate valid-password login returns 429 during lockout window,
+# 2) valid-password login succeeds after lockout expires.
+
+###
+
 ### [Positive][Session] Logout current session
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 

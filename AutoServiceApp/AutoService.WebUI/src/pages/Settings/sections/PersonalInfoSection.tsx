@@ -114,6 +114,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             placeholder={t('settings.emailPlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
+            aria-invalid={!!getFieldError('Email')}
           />
           <FormErrorMessage message={getFieldError('Email')} className="mt-1 px-2 py-1 text-xs" />
         </div>
@@ -131,6 +132,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             placeholder={t('settings.phonePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
+            aria-invalid={!!getFieldError('PhoneNumber')}
           />
           <FormErrorMessage message={getFieldError('PhoneNumber')} className="mt-1 px-2 py-1 text-xs" />
         </div>

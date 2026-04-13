@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 @custom-variant dark (&:where(.dark, .dark *));
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
@@ -8,10 +7,19 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Inter fallback';
+  src: local('Segoe UI'), local('system-ui'), local('Arial');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
 @layer base {
   html {
     height: 100%;
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Inter', 'Inter fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
     scrollbar-width: thin;
     scrollbar-color: #8f83b8 #ece8f5;
   }
@@ -107,6 +115,17 @@
 
   button {
     @apply transition-all duration-200;
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

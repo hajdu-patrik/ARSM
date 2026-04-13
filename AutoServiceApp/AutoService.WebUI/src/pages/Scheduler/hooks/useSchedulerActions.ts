@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
 import type {
   AppointmentDto,
@@ -48,10 +48,7 @@ export function useSchedulerActions({
       upsertAppointment(updated);
       setSelectedAppointment(updated);
     } catch (err) {
-      const axiosError = err as AxiosError<{ code?: string }>;
-      const apiCode = axiosError.response?.data?.code;
-
-      if (apiCode === 'appointment_cancelled') {
+      if (isAxiosError<{ code?: string }>(err) && err.response?.data?.code === 'appointment_cancelled') {
         showErrorToast('scheduler.detail.unassignCancelledError');
         return;
       }

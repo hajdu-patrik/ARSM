@@ -103,7 +103,7 @@ public static partial class ProfileEndpoints
             }
         }
 
-        // First name update.
+        // Name updates: validate provided fields, keep existing values when not provided.
         string firstName = person.Name.FirstName;
         if (request.FirstName is not null)
         {
@@ -111,17 +111,14 @@ public static partial class ProfileEndpoints
             {
                 errors["FirstName"] = [ValidationMessages.FirstNameRequired];
             }
-            else if (!ContactNormalization.IsValidName(request.FirstName.Trim()))
-            {
-                errors["FirstName"] = [ValidationMessages.InvalidFirstName];
-            }
             else
             {
-                firstName = request.FirstName.Trim();
+                var nameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
+                if (nameError is not null) errors["FirstName"] = [nameError];
+                else firstName = request.FirstName.Trim();
             }
         }
 
-        // Last name update.
         string lastName = person.Name.LastName;
         if (request.LastName is not null)
         {
@@ -129,17 +126,14 @@ public static partial class ProfileEndpoints
             {
                 errors["LastName"] = [ValidationMessages.LastNameRequired];
             }
-            else if (!ContactNormalization.IsValidName(request.LastName.Trim()))
-            {
-                errors["LastName"] = [ValidationMessages.InvalidLastName];
-            }
             else
             {
-                lastName = request.LastName.Trim();
+                var nameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
+                if (nameError is not null) errors["LastName"] = [nameError];
+                else lastName = request.LastName.Trim();
             }
         }
 
-        // Middle name update.
         string? middleName = person.Name.MiddleName;
         if (request.MiddleName is not null)
         {
@@ -148,13 +142,11 @@ public static partial class ProfileEndpoints
             {
                 middleName = null;
             }
-            else if (!ContactNormalization.IsValidName(trimmed))
-            {
-                errors["MiddleName"] = [ValidationMessages.InvalidMiddleName];
-            }
             else
             {
-                middleName = trimmed;
+                var nameError = NameFieldsValidator.GetNameError(trimmed, "MiddleName");
+                if (nameError is not null) errors["MiddleName"] = [nameError];
+                else middleName = trimmed;
             }
         }
 

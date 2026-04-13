@@ -6,6 +6,17 @@ export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const config = {
     plugins: [react(), mkcert()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+            'vendor-ui': ['lucide-react', 'zustand', 'axios'],
+          },
+        },
+      },
+    },
   }
 
   if (command !== 'serve') {

@@ -38,18 +38,16 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (request.Year < 1886 || request.Year > 2100)
+        var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
+        if (yearError is not null)
         {
-            return Results.Problem(
-                detail: "Year must be between 1886 and 2100.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (request.MileageKm < 0 || request.EnginePowerHp < 0 || request.EngineTorqueNm < 0)
+        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerHp, request.EngineTorqueNm);
+        if (numericError is not null)
         {
-            return Results.Problem(
-                detail: "MileageKm, EnginePowerHp, and EngineTorqueNm must be non-negative.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         var customerExists = await db.Customers
@@ -137,18 +135,16 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (request.Year < 1886 || request.Year > 2100)
+        var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
+        if (yearError is not null)
         {
-            return Results.Problem(
-                detail: "Year must be between 1886 and 2100.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        if (request.MileageKm < 0 || request.EnginePowerHp < 0 || request.EngineTorqueNm < 0)
+        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerHp, request.EngineTorqueNm);
+        if (numericError is not null)
         {
-            return Results.Problem(
-                detail: "MileageKm, EnginePowerHp, and EngineTorqueNm must be non-negative.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         var vehicle = await db.Vehicles

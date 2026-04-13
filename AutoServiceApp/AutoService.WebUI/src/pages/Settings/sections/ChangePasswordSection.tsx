@@ -69,6 +69,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="current-password"
+              aria-invalid={!!getFieldError('CurrentPassword')}
             />
             <button
               type="button"
@@ -96,6 +97,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
+              aria-invalid={!!getFieldError('NewPassword')}
             />
             <button
               type="button"
@@ -123,6 +125,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
+              aria-invalid={!!getFieldError('ConfirmNewPassword')}
             />
             <button
               type="button"
