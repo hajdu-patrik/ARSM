@@ -7,6 +7,7 @@
  */
 
 import { isAxiosError, type AxiosError } from 'axios';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 interface ApiErrorPayload {
   readonly code?: string;
@@ -28,7 +29,7 @@ export type LoginError =
   | { key: 'login.attemptsExceeded' }
   | { key: 'login.error' };
 
-/** Parsed login identifier model for email or Hungarian phone input. */
+/** Parsed login identifier model for email or EU phone input. */
 export type ParsedIdentifier =
   | { kind: 'email'; email: string }
   | { kind: 'phone'; phoneNumber: string }
@@ -38,66 +39,23 @@ export type ParsedIdentifier =
 export type LoginMethod = 'email' | 'phone';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ALLOWED_MOBILE_PREFIXES = new Set(['20', '21', '30', '31', '50', '70']);
-const ALLOWED_GEOGRAPHIC_PREFIXES = new Set([
-  '22', '23', '24', '25', '26', '27', '28', '29',
-  '32', '33', '34', '35', '36', '37',
-  '42', '44', '45', '46', '47', '48', '49',
-  '52', '53', '54', '56', '57', '59',
-  '62', '63', '66', '68', '69',
-  '72', '73', '74', '75', '76', '77', '78', '79',
-  '82', '83', '84', '85', '87', '88', '89',
-  '92', '93', '94', '95', '96', '99',
+
+const ACCEPTED_EU_COUNTRY_CALLING_CODES = new Set([
+  '43', '32', '359', '385', '357', '420', '45', '372', '358', '33', '49', '30', '36', '354', '353', '39',
+  '371', '423', '370', '352', '356', '31', '47', '48', '351', '40', '421', '386', '34', '46', '44',
+  '355', '376', '374', '994', '375', '387', '298', '995', '350', '383', '389', '373', '377', '382',
+  '7', '378', '381', '41', '90', '380', '379',
 ]);
 
-function isValidHungarianNationalNumber(nationalDigits: string): boolean {
-  if (!/^\d+$/.test(nationalDigits)) {
-    return false;
-  }
-
-  // Budapest landline: 1 + 7 digits.
-  if (nationalDigits.startsWith('1')) {
-    return nationalDigits.length === 8;
-  }
-
-  if (nationalDigits.length < 8) {
-    return false;
-  }
-
-  const twoDigitPrefix = nationalDigits.slice(0, 2);
-
-  // Mobile/nomadic ranges: 2-digit prefix + 7 digits.
-  if (ALLOWED_MOBILE_PREFIXES.has(twoDigitPrefix)) {
-    return nationalDigits.length === 9;
-  }
-
-  // Geographic ranges: 2-digit area code + 6 digits.
-  if (ALLOWED_GEOGRAPHIC_PREFIXES.has(twoDigitPrefix)) {
-    return nationalDigits.length === 8;
-  }
-
-  return false;
-}
-
-function looksLikeHungarianPhone(value: string): boolean {
-  const compactValue = value.replaceAll(/\D/g, '');
-
-  if (!compactValue) {
-    return false;
-  }
-
-  if (compactValue.startsWith('36') ||
-    compactValue.startsWith('06') ||
-    compactValue.startsWith('0036')) {
-    return true;
-  }
-
-  // Also treat local Hungarian national format (for example: 301112233) as phone-like.
-  return isValidHungarianNationalNumber(compactValue);
+/** Heuristic check: does the input look like a phone number (not an email)? */
+function looksLikePhone(value: string): boolean {
+  const stripped = value.replaceAll(/\D/g, '');
+  if (!stripped || stripped.length < 7) return false;
+  return value.trim().startsWith('+') || stripped.length >= 7;
 }
 
 function parseEmailIdentifier(value: string): ParsedIdentifier {
-  if (!value.includes('@') && looksLikeHungarianPhone(value)) {
+  if (!value.includes('@') && looksLikePhone(value)) {
     return { kind: 'invalid', reason: 'wrong_method_phone' };
   }
 
@@ -116,38 +74,15 @@ function parsePhoneIdentifier(value: string): ParsedIdentifier {
     return { kind: 'invalid', reason: 'wrong_method_email' };
   }
 
-  const compactValue = value.replaceAll(/\D/g, '');
-  if (!compactValue) {
-    return { kind: 'invalid', reason: 'format' };
-  }
-
-  let normalizedValue = compactValue;
-
-  if (normalizedValue.startsWith('00')) {
-    normalizedValue = normalizedValue.slice(2);
-  }
-
-  if (normalizedValue.startsWith('06')) {
-    normalizedValue = `36${normalizedValue.slice(2)}`;
-  }
-
-  if (!normalizedValue.startsWith('36')) {
-    if (!isValidHungarianNationalNumber(normalizedValue)) {
-      return { kind: 'invalid', reason: 'format' };
+  // Use libphonenumber-js with HU as default country for local numbers.
+  try {
+    const parsed = parsePhoneNumberFromString(value, 'HU');
+    if (parsed && parsed.isValid() && ACCEPTED_EU_COUNTRY_CALLING_CODES.has(parsed.countryCallingCode)) {
+      return { kind: 'phone', phoneNumber: parsed.number };
     }
+  } catch { /* fall through to invalid */ }
 
-    normalizedValue = `36${normalizedValue}`;
-  }
-
-  const nationalDigits = normalizedValue.slice(2);
-  if (!isValidHungarianNationalNumber(nationalDigits)) {
-    return { kind: 'invalid', reason: 'format' };
-  }
-
-  return {
-    kind: 'phone',
-    phoneNumber: `36${nationalDigits}`,
-  };
+  return { kind: 'invalid', reason: 'format' };
 }
 
 /** Parses and validates a user-provided identifier by selected login method. */

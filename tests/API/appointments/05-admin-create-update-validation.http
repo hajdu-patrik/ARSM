@@ -1,0 +1,155 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - ADMIN CREATE UPDATE VALIDATION
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@CustomerId = 1
+@CustomerVehicleId = 1
+@AnotherCustomerVehicleId = 2
+@UnknownVehicleId = 99999
+@UnknownMechanicId = 99999
+@PrimaryMechanicId = 7
+@PastScheduledApptId = 4
+@ApptId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Appointments] PUT /api/appointments/{{PastScheduledApptId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2030-01-03T16:15:00",
+  "taskDescription": "Past appointment due and task update allowed",
+  "licensePlate": "DEF-404",
+  "brand": "Ford",
+  "model": "Focus",
+  "year": 2016,
+  "mileageKm": 167800,
+  "enginePowerHp": 125,
+  "engineTorqueNm": 200
+}
+
+###
+
+### [Negative][Appointments] Admin update rejects vehicle numeric values above max limits (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Admin update vehicle numeric max should be rejected",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 1000001,
+  "enginePowerHp": 50001,
+  "engineTorqueNm": 50001
+}
+
+###
+
+### [Negative][Appointments] Admin create fails when customer does not exist (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/99999/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails when vehicle is not owned by customer (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{AnotherCustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails when vehicle does not exist (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{UnknownVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails for empty mechanicIds (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": []
+}
+
+###
+
+### [Negative][Appointments] Admin create fails for duplicate mechanicIds (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}, {{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails for non-positive mechanicIds (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [0]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails for empty taskDescription (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "   ",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin create fails for invalid mechanicIds (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{UnknownMechanicId}}]
+}

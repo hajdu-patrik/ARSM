@@ -53,7 +53,7 @@ public static partial class AuthEndpoints
         _ = TryNormalizeEmail(request.Email, out var email);
         var phoneNumber = NormalizeOptional(request.PhoneNumber) is null
             ? null
-            : TryNormalizeHungarianPhoneNumber(request.PhoneNumber, out var normalizedPhone)
+            : TryNormalizeEuPhoneNumber(request.PhoneNumber, out var normalizedPhone)
                 ? normalizedPhone
                 : null;
 
@@ -81,7 +81,7 @@ public static partial class AuthEndpoints
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            var phoneLookupCandidates = BuildHungarianPhoneLookupCandidates(phoneNumber);
+            var phoneLookupCandidates = BuildPhoneLookupCandidates(phoneNumber);
             var phoneNumberInUse = await userManager.Users
                 .AnyAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
 
@@ -189,7 +189,7 @@ public static partial class AuthEndpoints
             errors[nameof(request.Email)] = [ValidationMessages.InvalidEmail];
         }
 
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !TryNormalizeHungarianPhoneNumber(request.PhoneNumber, out _))
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !TryNormalizeEuPhoneNumber(request.PhoneNumber, out _))
         {
             errors[nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone];
         }

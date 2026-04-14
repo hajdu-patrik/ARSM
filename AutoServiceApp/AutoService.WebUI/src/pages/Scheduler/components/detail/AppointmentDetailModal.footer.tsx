@@ -110,13 +110,15 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       )}
 
       {!isEditing && shouldShowClaimButton && (
-        <button
-          onClick={onClaim}
-          disabled={isClaiming}
-          className="w-full rounded-xl bg-[#C9B3FF] py-2 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] sm:w-auto sm:min-w-[10rem]"
-        >
-          {isClaiming ? '...' : t('scheduler.claim')}
-        </button>
+        <div className="flex w-full justify-center">
+          <button
+            onClick={onClaim}
+            disabled={isClaiming}
+            className="w-full rounded-xl bg-[#C9B3FF] py-2 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+          >
+            {isClaiming ? '...' : t('scheduler.claim')}
+          </button>
+        </div>
       )}
     </div>
   );

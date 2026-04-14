@@ -4,6 +4,12 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ---
 # AutoService.ApiService Instructions
 
+## Code Documentation Style
+
+- For new or changed non-trivial classes/methods, use JSDoc-style block comments.
+- Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
+- When code changes introduce/modify classes or methods, run the `/code-docs-sync` routine.
+
 ## Domain Model & Persistence
 
 - Preserve People inheritance as TPH with one people table and discriminator.
@@ -21,7 +27,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Use DTO contracts at API boundaries, do not expose EF entities directly.
 - Prefer async EF methods and cancellation tokens.
 - Place new migrations in Data/Migrations.
-- Current migrations are: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`.
+- Current migrations are: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
 
 ## Authentication & Security
 
@@ -35,10 +41,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Keep login-ban middleware in-process behavior deterministic: 30-second cleanup interval and max tracked-client bound (5000).
 - Keep auth input normalization consistent across register/login:
   - emails are trimmed + lowercased,
-  - Hungarian phone formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
-    - `361xxxxxxx` (Budapest),
-    - `36(20|21|30|31|50|70)xxxxxxx` (mobile/nomadic),
-    - `36<approved 2-digit area>xxxxxx` (geographic).
+  - phone numbers are normalized to canonical E.164 (`+{countryCode}{nationalNumber}`),
+  - accepted phone numbers must be valid European numbers according to libphonenumber and the backend European country-code allowlist.
 - Registration must pre-check normalized email collisions against both Identity users and domain `People` records (including passive customers).
 - Registration must map unique-constraint email races to controlled validation errors on `Email`.
 - Keep contact normalization, name validation, token-security helpers, person-type resolution, image content-type detection, and shared validation error message constants centralized in the current grouped top-level folders and reuse them from endpoint files:
@@ -115,7 +119,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
 - `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Looks up customer by normalized email (creates customer when missing), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record. Accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
-- `PUT /api/appointments/{id}` — Update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`). Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. For past appointments, `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable.
+- `PUT /api/appointments/{id}` — Update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`). Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable.
 - `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, or returns `422` if unassign would leave the appointment without assigned mechanics.

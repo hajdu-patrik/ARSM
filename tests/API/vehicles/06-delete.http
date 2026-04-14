@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+#  DELETE VEHICLE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@SeedVehicleId = 1
+@NonExistentVehicleId = 99999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Vehicles] Login as admin for delete tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Vehicles] Delete non-existent vehicle (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+
+###
+
+### [Setup][Vehicles] Logout admin, login as non-admin for forbidden delete check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Vehicles] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Vehicles] Non-admin cannot delete vehicle (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+
+###
+
+### [Setup][Vehicles] Login as admin before positive delete
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}

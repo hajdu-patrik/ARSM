@@ -35,7 +35,7 @@ function splitDuration(absDiffMs: number): { days: number; hours: number; minute
 }
 
 /**
- * Computes the due state for an appointment given its ISO due datetime.
+ * Computes the due state for an appointment given its due datetime string.
  *
  * Returns overdue duration when past, remaining duration when future,
  * and an amber tone when less than one day remains.
@@ -78,7 +78,7 @@ export function getDueState(dueDateTime: string): DueState {
 }
 
 /**
- * Converts an ISO datetime string to the `YYYY-MM-DDThh:mm` format
+ * Converts a datetime string to the `YYYY-MM-DDThh:mm` format
  * expected by `<input type="datetime-local">`.
  */
 export function toDatetimeLocalValue(isoValue: string): string {
@@ -96,7 +96,7 @@ export function toDatetimeLocalValue(isoValue: string): string {
 }
 
 /**
- * Builds an ISO 8601 string for a specific calendar day and time.
+ * Builds a UTC timestamp string for a specific calendar day and time.
  *
  * @param year   - Full calendar year (e.g. 2026).
  * @param month  - 1-based month (1 = January).

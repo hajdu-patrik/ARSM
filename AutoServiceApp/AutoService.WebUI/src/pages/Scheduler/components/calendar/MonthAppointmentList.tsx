@@ -131,7 +131,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         </h2>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center bg-[#EFEBFA] dark:bg-[#241F33] text-[#2C2440] dark:text-[#F5F2FF] text-xs font-medium px-3 py-1 rounded-full">
-            {t('scheduler.monthList.count', { count: filtered.length })}
+            {t('scheduler.monthList.count', { count: appointments.length })}
           </span>
           {selectedDay !== null && (
             <button

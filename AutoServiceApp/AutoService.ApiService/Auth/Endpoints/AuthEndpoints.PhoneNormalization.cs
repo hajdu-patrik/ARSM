@@ -17,9 +17,9 @@ namespace AutoService.ApiService.Auth.Endpoints;
  */
 public static partial class AuthEndpoints
 {
-    internal static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
-        => ContactNormalization.TryNormalizeHungarianPhoneNumber(rawValue, out normalizedPhoneNumber);
+    internal static bool TryNormalizeEuPhoneNumber(string? rawValue, out string e164Number)
+        => ContactNormalization.TryNormalizeEuPhoneNumber(rawValue, out e164Number);
 
-    private static IReadOnlyCollection<string> BuildHungarianPhoneLookupCandidates(string normalizedPhoneNumber)
-        => ContactNormalization.BuildHungarianPhoneLookupCandidates(normalizedPhoneNumber);
+    private static IReadOnlyCollection<string> BuildPhoneLookupCandidates(string e164Number)
+        => ContactNormalization.BuildPhoneLookupCandidates(e164Number);
 }

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="libphonenumber-csharp" Version="9.0.28" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
@@ -29,9 +30,7 @@
 
   <!-- Stop stale API runtime hosts so referenced assemblies are not file-locked during build. -->
   <Target Name="KillRunningApiServiceHost" BeforeTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Exec
-      Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$apiAssembly = 'AutoService.ApiService.dll'; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'dotnet.exe' -and $_.CommandLine -like ('*' + $apiAssembly + '*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }&quot;"
-      IgnoreExitCode="true" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$apiAssembly = 'AutoService.ApiService.dll'; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'dotnet.exe' -and $_.CommandLine -like ('*' + $apiAssembly + '*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }&quot;" IgnoreExitCode="true" />
   </Target>
 
 </Project>

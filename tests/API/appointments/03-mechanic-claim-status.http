@@ -1,0 +1,171 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - MECHANIC CLAIM STATUS
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@ApptId = 1
+@PastCancelledApptId = 5
+@SingleAssignedApptId = 2
+@CustomerId = 1
+@CustomerVehicleId = 1
+@PrimaryMechanicId = 7
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Appointments] Claim appointment by id
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Update appointment status to Completed (setup for completed mutation blocking checks)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
+# Self-unclaim is blocked when status is Completed.
+# Expected error code: appointment_completed.
+### [Case][Appointments] DELETE /api/appointments/{{ApptId}}/claim
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Reopen completed appointment to InProgress for remaining mutation tests
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Unclaim appointment by id
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Update appointment status to InProgress
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Update appointment status to Completed
+# Response includes completedAt (DateTime) and canceledAt (null).
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
+# Self-claim is only allowed for InProgress appointments.
+# Expected error code: appointment_not_in_progress.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Update appointment status to Cancelled
+# Response includes canceledAt (DateTime) and completedAt (null).
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+###
+
+### [Positive][Appointments] Reopen cancelled appointment to InProgress (past-cancelled remains editable)
+# Cancelled appointments can be moved back to active states even after cancellation.
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Move reopened appointment to Completed
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Update appointment status with invalid value (400 expected)
+# Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Scheduled"
+}
+
+###
+
+### [Negative][Appointments] Claim non-existent appointment (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+
+###
+
+### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim
+
+###
+
+### [Negative][Appointments] Update non-existent appointment status (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Negative][Appointments] Non-admin cannot create customer appointment (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-17T09:00:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}

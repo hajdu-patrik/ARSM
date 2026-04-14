@@ -80,46 +80,19 @@ public static partial class AppointmentEndpoints
             return Results.Forbid();
         }
 
-        var nowUtc = DateTime.UtcNow;
-        var appointmentIsInPast = appointment.ScheduledDate < nowUtc;
-        var effectiveScheduledDateUtc = appointment.ScheduledDate;
-
-        if (appointmentIsInPast)
+        if (request.ScheduledDate is not null)
         {
-            if (request.ScheduledDate != default)
+            var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate.Value);
+            if (scheduledDateUtc != appointment.ScheduledDate)
             {
-                var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
-                if (scheduledDateUtc != appointment.ScheduledDate)
-                {
-                    logger.LogWarning("Appointment update rejected: attempted ScheduledDate change for past appointment {AppointmentId}.", id);
-                    return Results.Problem(
-                        detail: "ScheduledDate cannot be changed for past appointments.",
-                        statusCode: StatusCodes.Status422UnprocessableEntity);
-                }
-            }
-        }
-        else
-        {
-            if (request.ScheduledDate == default)
-            {
+                logger.LogWarning("Appointment update rejected: attempted ScheduledDate change for appointment {AppointmentId}.", id);
                 return Results.Problem(
-                    detail: "ScheduledDate is required.",
+                    detail: "ScheduledDate cannot be changed.",
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
-
-            var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
-            if (scheduledDateUtc.Date < nowUtc.Date)
-            {
-                return Results.Problem(
-                    detail: "ScheduledDate cannot be in the past.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            appointment.ScheduledDate = scheduledDateUtc;
-            effectiveScheduledDateUtc = scheduledDateUtc;
         }
 
-        if (dueDateTimeUtc < effectiveScheduledDateUtc)
+        if (dueDateTimeUtc < appointment.ScheduledDate)
         {
             return Results.Problem(
                 detail: "DueDateTime must be greater than or equal to ScheduledDate.",

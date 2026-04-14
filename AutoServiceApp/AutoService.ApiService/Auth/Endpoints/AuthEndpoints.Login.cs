@@ -87,12 +87,12 @@ public static partial class AuthEndpoints
 
         if (rawPhoneNumber is not null)
         {
-            if (!TryNormalizeHungarianPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
+            if (!TryNormalizeEuPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
             {
                 logger.LogWarning("Login rejected due to invalid phone number format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    [nameof(request.PhoneNumber)] = ["Phone number must be a valid Hungarian number."]
+                    [nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone]
                 });
             }
 
@@ -107,7 +107,7 @@ public static partial class AuthEndpoints
         }
         else if (phoneNumber is not null)
         {
-            var phoneLookupCandidates = BuildHungarianPhoneLookupCandidates(phoneNumber);
+            var phoneLookupCandidates = BuildPhoneLookupCandidates(phoneNumber);
             identityUser = await userManager.Users
                 .FirstOrDefaultAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
         }

@@ -1,0 +1,59 @@
+# ── Admin Assign / Unassign ──────────────────────────────────────────────────
+# Prerequisites: login as admin (session cookie required for AdminOnly endpoints).
+# Set @CancelledApptId to an appointment that is in Cancelled status.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@SingleAssignedApptId = 2
+@SecondaryMechanicId = 8
+
+@MechanicIdToAssign = 2
+@CancelledApptId = 5
+@CompletedApptId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_completed.
+### [Case][Appointments] PUT /api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Admin unassign mechanic from completed appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_completed.
+### [Case][Appointments] DELETE /api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Positive][Appointments] Admin assign mechanic to appointment
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+
+###
+
+### [Positive][Appointments] Admin unassign mechanic from appointment
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+
+###
+
+### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_cancelled.
+### [Case][Appointments] PUT /api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_cancelled.
+### [Case][Appointments] DELETE /api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Admin cannot unassign last mechanic from appointment (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}

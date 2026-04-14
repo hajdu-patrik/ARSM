@@ -38,6 +38,12 @@ You are a focused backend agent working exclusively within `AutoServiceApp/AutoS
 7. Preserve or improve testability with every change (clear boundaries, deterministic behavior).
 8. Maintain secure defaults and fail-fast behavior for invalid security/config states.
 
+## JSDoc Documentation Rules
+1. For new/changed non-trivial classes and methods, use JSDoc block comments placed immediately before the declaration.
+2. Use commonly understood tags where needed: `@param`, `@returns`, `@throws`, `@type`, `@example`, `@deprecated`, `@see`.
+3. Do NOT use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
+4. Keep comments short, human-readable, and intent-focused.
+
 ## After completing your work
 - Run `dotnet build` from the `AutoServiceApp` directory to verify compilation.
 - Report what endpoints were added/changed, what DTOs were created, and any migration needs.

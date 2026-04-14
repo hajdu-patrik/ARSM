@@ -43,7 +43,8 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 | **Backend** | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
 | **Frontend** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
-| **Docs** | Documentation | Syncs all instruction files with current code after every change |
+| **Docs Sync** | Documentation | Syncs all instruction files with current code after every change |
+| **Code Docs Sync** | Source-code comments | Enforces JSDoc-style comments for changed classes/methods and removes XML doc comments |
 | **Test Endpoints** | .http/.sql tests | Updates endpoint test suites after API changes |
 | **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
 
@@ -52,7 +53,9 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 1. Orchestrator decomposes the task into phases
 2. Backend + Frontend specialists execute in parallel
 3. Validate agent checks the build
-4. Docs agent syncs all documentation; Test Endpoints agent syncs test suites
+4. Docs Sync agent updates project documentation
+5. Code Docs Sync agent enforces source-code comment style
+6. Test Endpoints agent syncs endpoint test suites
 
 Agent definitions:
 
@@ -66,6 +69,7 @@ Reusable runbooks invoked via slash commands in both tools.
 | Command | Purpose |
 | ------- | ------- |
 | `/docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and ARSM-TL-DR.md with code |
+| `/code-docs-sync` | Enforce JSDoc-style source-code comments and remove XML doc comments |
 | `/endpoint-tests-sync` | Update .http and .sql test suites after endpoint changes |
 | `/ef-migration` | EF Core migration workflow and troubleshooting |
 | `/config-driven-endpoints` | Enforce config-driven URL/port policy |

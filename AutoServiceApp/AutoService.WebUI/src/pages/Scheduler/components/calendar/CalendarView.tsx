@@ -140,7 +140,7 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className="bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] shadow-sm p-4">
+    <section className="bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] shadow-sm p-4 select-none">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button

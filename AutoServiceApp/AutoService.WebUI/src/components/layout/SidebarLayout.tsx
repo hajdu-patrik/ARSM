@@ -216,6 +216,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     );
   };
 
+  const primaryNavItems = user?.isAdmin ? [ADMIN_NAV_ITEM, ...navItems] : navItems;
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo */}
@@ -236,15 +238,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 
       {/* Main nav */}
       <nav className="flex-1 px-2 py-3 space-y-1">
-        {navItems.map(renderNavLink)}
+        {primaryNavItems.map(renderNavLink)}
       </nav>
-
-      {/* Admin nav (admins only) */}
-      {user?.isAdmin && (
-        <div className="px-2 pb-1">
-          {renderNavLink(ADMIN_NAV_ITEM)}
-        </div>
-      )}
 
       {/* Collapse toggle (desktop only) */}
       <div className="hidden md:block px-2 py-1">

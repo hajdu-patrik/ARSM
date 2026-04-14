@@ -72,19 +72,19 @@ export type AppointmentStatus = 'InProgress' | 'Completed' | 'Cancelled';
 export interface AppointmentDto {
   /** Unique appointment identifier. */
   id: number;
-  /** ISO 8601 date string for the scheduled service date. */
+  /** Date string for the scheduled service date. */
   scheduledDate: string;
-  /** ISO 8601 timestamp when the intake was created. */
+  /** Timestamp when the intake was created. */
   intakeCreatedAt: string;
-  /** ISO 8601 timestamp for the service due deadline. */
+  /** Timestamp for the service due deadline. */
   dueDateTime: string;
   /** Description of the work to be performed. */
   taskDescription: string;
   /** Current lifecycle status. */
   status: AppointmentStatus;
-  /** ISO 8601 timestamp when completed, or {@code null} if not yet completed. */
+  /** Timestamp when completed, or {@code null} if not yet completed. */
   completedAt?: string | null;
-  /** ISO 8601 timestamp when cancelled, or {@code null} if not cancelled. */
+  /** Timestamp when cancelled, or {@code null} if not cancelled. */
   canceledAt?: string | null;
   /** Vehicle associated with this appointment. */
   vehicle: VehicleDto;
@@ -202,9 +202,9 @@ export interface SchedulerCreateIntakeRequest {
   vehicleId?: number;
   /** New vehicle details when creating a vehicle during intake. */
   vehicle?: SchedulerNewVehicleRequest;
-  /** ISO 8601 date string for the scheduled service date. */
+  /** Date string for the scheduled service date. */
   scheduledDate: string;
-  /** ISO 8601 timestamp for the service due deadline. */
+  /** Timestamp for the service due deadline. */
   dueDateTime: string;
   /** Description of the work to be performed. */
   taskDescription: string;
@@ -216,9 +216,9 @@ export interface SchedulerCreateIntakeRequest {
  * Includes both appointment fields and vehicle fields for backend compatibility.
  */
 export interface UpdateAppointmentRequest {
-  /** Updated ISO 8601 scheduled service date. */
-  scheduledDate: string;
-  /** Updated ISO 8601 due deadline. */
+  /** Optional scheduled service date for backward compatibility. */
+  scheduledDate?: string;
+  /** Updated due deadline timestamp. */
   dueDateTime: string;
   /** Updated task description. */
   taskDescription: string;

@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────
+#  HEALTH – Aspire default endpoints (Development only)
+#  Mapped by MapDefaultEndpoints() in ServiceDefaults.
+#  No authentication required; only available when ASPNETCORE_ENVIRONMENT = Development.
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Health] Full health check — all registered checks must pass (200 Healthy expected)
+GET {{AutoService_ApiService_HostAddress}}/health
+
+###
+
+### [Positive][Health] Liveness check — only "live"-tagged checks (200 Healthy expected)
+GET {{AutoService_ApiService_HostAddress}}/alive

@@ -212,7 +212,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const dueDateLabel = formatDueExactDateTime(appointment.dueDateTime, i18n.language);
 
   const dueState = getDueState(appointment.dueDateTime);
-  const isPastAppointment = new Date(appointment.scheduledDate).getTime() < Date.now();
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
 
   const footer = (
@@ -263,7 +262,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           currentMechanicId={currentMechanicId}
           isAdmin={isAdmin}
           isEditing={isEditing}
-          isPastAppointment={isPastAppointment}
           editForm={editForm}
           editErrorKey={editErrorKey}
           formattedDate={formattedDate}

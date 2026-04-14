@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────
+# CUSTOMERS - CREATE AUTHZ AND CONFLICTS
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Customers] POST /api/customers
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Duplicate",
+  "middleName": null,
+  "lastName": "Email",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden write check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot create customer (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "middleName": null,
+  "lastName": "ByPolicy",
+  "email": "blocked.by.policy.{{RunId}}@example.test",
+  "phoneNumber": null
+}

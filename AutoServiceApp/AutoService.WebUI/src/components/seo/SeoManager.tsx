@@ -124,7 +124,7 @@ export function SeoManager() {
       description: t('notFound.subtitle'),
       robots: 'noindex, nofollow',
     };
-  }, [i18n.language, location.pathname, t]);
+  }, [location.pathname, t]);
 
   useEffect(() => {
     const fullTitle = `${config.pageTitle} | ${APP_NAME}`;

@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+#  DELETE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@SeedCustomerId = 1
+@NonExistentCustomerId = 99999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for delete tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Delete non-existent customer (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden delete check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot delete customer (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Setup][Customers] Login as admin before positive delete
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}

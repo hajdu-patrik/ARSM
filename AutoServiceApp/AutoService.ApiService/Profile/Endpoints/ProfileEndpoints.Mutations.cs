@@ -90,7 +90,7 @@ public static partial class ProfileEndpoints
             }
             else
             {
-                if (!ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
+                if (!ContactNormalization.TryNormalizeEuPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
                 {
                     errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
                 }

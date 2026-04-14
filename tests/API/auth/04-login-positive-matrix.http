@@ -1,0 +1,167 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - LOGIN POSITIVE MATRIX
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
+@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+@MatrixPhoneCanonical = +36307770991
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Login] Email-only user login by email
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{MatrixEmailOnly}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login] Email+phone user login by email (uppercase normalization)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login] Whitespace email login (trim + lowercase normalization)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Negative][Login] Existing user wrong password
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestWrongPassword}}"
+}
+
+###
+
+### [Negative][Login] Unknown account
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "unknown.user.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Negative][Login] Existing customer email returns generic invalid credentials (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{KnownCustomerEmail}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Negative][Login] Existing customer phone returns generic invalid credentials (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "+36 30 444 5566",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Canonical 363 format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{MatrixPhoneCanonical}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] +36 format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "+36307770991",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] 06 format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "06307770991",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Spaced 06 format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "06 30 777 0991",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Local Hungarian format without prefix
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "307770991",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Leading/trailing whitespace phone format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "   06 30 777 0991   ",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Login Phone Matrix] Phone in email field (backward compatibility)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "06 30 777 0991",
+  "password": "{{TestPassword}}"
+}

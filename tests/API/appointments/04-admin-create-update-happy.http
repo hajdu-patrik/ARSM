@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - ADMIN CREATE UPDATE HAPPY
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@CustomerId = 1
+@CustomerVehicleId = 1
+@PrimaryMechanicId = 7
+@SecondaryMechanicId = 8
+@ApptId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] Admin creates appointment for customer
+# Response includes intakeCreatedAt and dueDateTime (dueDateTime defaults to scheduledDate for this path).
+### [Case][Appointments] POST /api/customers/{{CustomerId}}/appointments
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}, {{SecondaryMechanicId}}]
+}
+
+###
+
+### [Positive][Appointments] Admin updates appointment dueDateTime/taskDescription and vehicle fields (vehicle edits persist)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 112,
+  "engineTorqueNm": 252
+}
+
+###
+
+### [Positive][Appointments] Admin create allows past scheduled date
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2020-01-01T10:30:00",
+  "taskDescription": "Admin create with past date allowed",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+###
+
+### [Negative][Appointments] Admin update fails when appointment does not exist (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
+Content-Type: application/json
+
+{
+  "scheduledDate": "2026-04-20T10:45:00",
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 112,
+  "engineTorqueNm": 252
+}
+
+###
+
+### [Negative][Appointments] Admin update cannot change ScheduledDate (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "scheduledDate": "2030-01-01T10:45:00",
+  "dueDateTime": "2030-01-03T16:15:00",
+  "taskDescription": "Scheduled date change should be rejected"
+}

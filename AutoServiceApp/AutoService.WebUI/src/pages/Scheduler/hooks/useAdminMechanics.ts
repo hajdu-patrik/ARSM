@@ -36,13 +36,13 @@ export function useAdminMechanics(isAdmin: boolean, isOpen: boolean) {
   }, [isAdmin, isOpen]);
 
   useEffect(() => {
-    void loadAllMechanics();
-  }, [loadAllMechanics]);
-
-  useEffect(() => {
     if (!isAdmin || !isOpen) {
       return;
     }
+
+    const initialLoadTimer = globalThis.setTimeout(() => {
+      void loadAllMechanics();
+    }, 0);
 
     const handleProfilePictureUpdated = () => {
       void loadAllMechanics();
@@ -50,6 +50,7 @@ export function useAdminMechanics(isAdmin: boolean, isOpen: boolean) {
 
     globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     return () => {
+      globalThis.clearTimeout(initialLoadTimer);
       globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
     };
   }, [isAdmin, isOpen, loadAllMechanics]);

@@ -12,21 +12,25 @@ Slash entrypoint:
 ## Goal
 
 Keep endpoint-level test assets synchronized with the current API behavior:
-- HTTP endpoint suites in `tests/API/`
-- SQL validation suites in `tests/Database/`
+- HTTP endpoint suites in `tests/API/` (including chunked subfolders)
+- SQL validation suites in `tests/Database/` (including chunked subfolders)
 
 ## Managed test files
 
-HTTP suites:
-- `tests/API/auth-and-session.http`
-- `tests/API/appointments.http`
-- `tests/API/profile.http`
-- `tests/API/admin.http`
+HTTP suites (chunked):
+- `tests/API/auth/*.http`
+- `tests/API/appointments/*.http`
+- `tests/API/customers/*.http`
+- `tests/API/profile/*.http`
+- `tests/API/admin/*.http`
+- `tests/API/vehicles/*.http`
+- `tests/API/**/*.http`
 
 SQL suites:
-- `tests/Database/core-schema-seed.sql`
-- `tests/Database/identity-auth-validation.sql`
-- `tests/Database/feature-flow-validation.sql`
+- `tests/Database/core-schema/*.sql`
+- `tests/Database/identity-auth/*.sql`
+- `tests/Database/feature-flow/*.sql`
+- `tests/Database/**/*.sql`
 
 ## Trigger conditions
 
@@ -52,6 +56,8 @@ Run this skill when any of these change:
 - Keep existing test style and comments.
 - For each endpoint change, include at least one positive and one negative case when meaningful.
 - Keep admin/non-admin authorization checks explicit where relevant.
+- For appointment intake/update changes, keep explicit coverage for duplicate new-vehicle license-plate conflicts (`409`) and `scheduledDate` immutability enforcement (`422`).
+- Keep request field terminology and comments aligned with current DTO naming (`scheduledDate`, `dueDateTime`) and ISO date-time formatting expectations.
 - If multipart upload cannot be represented reliably in `.http`, keep a short `curl` note.
 - Do not delete unrelated tests.
 

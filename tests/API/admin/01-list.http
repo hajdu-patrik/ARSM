@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────
+# ADMIN - LIST
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+@CurrentAdminMechanicId = 6
+@MechanicIdWithSoleAssignments = 7
+@MechanicIdCandidateForDeletion = 8
+@UnknownMechanicId = 99999
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Admin] Login as admin (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Admin] List all mechanics
+# Response items include isAdmin and hasProfilePicture.
+### [Case][Admin] GET /api/admin/mechanics
+
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics

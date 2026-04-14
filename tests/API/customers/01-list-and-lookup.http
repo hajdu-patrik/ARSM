@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────
+# CUSTOMERS - LIST AND LOOKUP
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+@SeedCustomerId = 1
+@NonExistentCustomerId = 99999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  LIST CUSTOMERS
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Customers] List all customers (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for auth check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Non-admin can list customers (200 expected — read is authorized, not admin-only)
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+### [Positive][Customers] Lookup customer by email for scheduler flow (200 expected)
+# Expected success semantics:
+# - 200 OK with scheduler lookup payload fields: id, firstName, middleName, lastName, email, phoneNumber, vehicles.
+# - For real customer emails, email should be the normalized customer email and vehicles should list the customer's vehicles.
+### [Case][Customers] GET /api/customers/by-email?email={{KnownCustomerEmail}}
+
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+
+###
+
+### [Positive][Customers] Lookup customer by email with casing/whitespace normalization (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20{{KnownCustomerEmail}}%20
+
+###
+
+### [Positive][Customers] Lookup customer by mechanic email when linked customer may not exist yet (200 expected)
+# Expected success semantics:
+# - 200 OK (mechanic email is a valid scheduler lookup target).
+# - If no linked customer exists yet, response resolves to mechanic identity (email={{NonAdminEmail}}) with empty vehicles.
+# - If linked customer exists, response resolves to linked customer payload (typically mechanic-owner-{id}@customers.arsm.local) with linked vehicles.
+### [Case][Customers] GET /api/customers/by-email?email={{NonAdminEmail}}
+
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{NonAdminEmail}}
+
+###
+
+### [Negative][Customers] Lookup customer by invalid email format (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=not-an-email
+
+###
+
+### [Negative][Customers] Lookup customer by unknown email (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=unknown.scheduler.lookup.{{RunId}}@example.test
+
+###
+
+### [Negative][Customers] Unauthenticated list customers (401 expected)
+# NOTE: Run this after manually clearing cookies / in a fresh session.
+# Uncomment to use:
+# GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+###
+
+# ─────────────────────────────────────────────────────────────
+#  GET CUSTOMER BY ID
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for single-customer queries
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Get seeded customer by id (200 expected, includes vehicle list)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Negative][Customers] Get non-existent customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}

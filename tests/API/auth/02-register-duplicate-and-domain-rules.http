@@ -1,0 +1,116 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - REGISTER DUPLICATE AND DOMAIN RULES
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Duplicate",
+  "lastName": "Email",
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "+36309998888",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Domain",
+  "lastName": "Conflict",
+  "email": "{{KnownCustomerEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Negative][Register][Admin] Duplicate phone in another valid input format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Duplicate",
+  "lastName": "Phone",
+  "email": "duplicate.phone.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "+36 30 777 0991",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Duplicate",
+  "lastName": "PhoneWhitespace",
+  "email": "duplicate.phone.whitespace.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "   06 30 777 0991   ",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Negative][Register][Admin] Invalid email format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Bad",
+  "lastName": "Email",
+  "email": "bad-email-format",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] Invalid phone format
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Bad",
+  "lastName": "Phone",
+  "email": "bad.phone.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "12345",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}

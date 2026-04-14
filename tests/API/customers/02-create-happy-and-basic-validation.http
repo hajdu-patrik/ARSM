@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────
+#  CREATE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@RunId = {{$timestamp}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Customers] Admin creates new customer (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "test.customer.new.{{RunId}}@example.test",
+  "phoneNumber": "+36301234567"
+}
+
+###
+
+### [Positive][Customers] Admin creates customer without optional fields (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Minimal",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "minimal.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with missing required fields (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "bad.create.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with firstName containing a space (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Customers] POST /api/customers
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "firstname.space.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with firstName containing a digit (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Customers] POST /api/customers
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "John2",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "firstname.digit.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with lastName containing a special character (422 expected)
+# "Last name may only contain letters and hyphens."
+### [Case][Customers] POST /api/customers
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": null,
+  "lastName": "O'Brien",
+  "email": "lastname.apostrophe.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with middleName containing a space (422 expected)
+# "Middle name may only contain letters and hyphens."
+### [Case][Customers] POST /api/customers
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": "Van Der",
+  "lastName": "Customer",
+  "email": "middlename.space.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with invalid email format (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "middleName": null,
+  "lastName": "Email",
+  "email": "invalid-email-format",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Create customer with invalid European phone format (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "middleName": null,
+  "lastName": "Phone",
+  "email": "invalid.customer.phone.{{RunId}}@example.test",
+  "phoneNumber": "12345"
+}

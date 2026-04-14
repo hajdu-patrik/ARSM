@@ -8,7 +8,7 @@
  */
 
 /**
- * Formats an ISO datetime to a localized 24-hour time string (e.g. "14:30").
+ * Formats a datetime string to a localized 24-hour time string (e.g. "14:30").
  */
 export function formatScheduledTime(isoValue: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -28,7 +28,7 @@ export function formatLongDate(date: Date, locale: string): string {
   }).format(date);
 }
 
-/** Formats an ISO datetime to a long localized date-time string including weekday. */
+/** Formats a datetime string to a long localized date-time string including weekday. */
 export function formatLongDateTime(isoValue: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
@@ -40,7 +40,7 @@ export function formatLongDateTime(isoValue: string, locale: string): string {
   }).format(new Date(isoValue));
 }
 
-/** Formats an ISO datetime to a localized date-time string without weekday (used for due dates). */
+/** Formats a datetime string to a localized date-time string without weekday (used for due dates). */
 export function formatDueExactDateTime(isoValue: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',

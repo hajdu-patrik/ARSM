@@ -1,0 +1,147 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - LIST AND INTAKE HAPPY
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@CustomerId = 1
+@CustomerVehicleId = 1
+@AnotherCustomerVehicleId = 2
+@PrimaryMechanicId = 7
+@SecondaryMechanicId = 8
+@UnknownMechanicId = 99999
+@UnknownVehicleId = 99999
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+@NewSchedulerCustomerEmail = scheduler.intake.new.{{RunId}}@example.test
+@NewSchedulerPlate = SCH-{{RunId}}
+@MechanicEmailFlowPlate = MEC-{{RunId}}
+@PastCancelledApptId = 5
+@PastScheduledApptId = 4
+@SingleAssignedApptId = 2
+
+@ApptId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] List month appointments (2026-04)
+# Response items include intakeCreatedAt and dueDateTime.
+### [Case][Appointments] GET /api/appointments?year=2026&month=4
+
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
+
+###
+
+### [Positive][Appointments] List today's appointments
+GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+###
+
+### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-21T08:30:00",
+  "dueDateTime": "2026-04-23T16:00:00",
+  "taskDescription": "Scheduler intake existing customer and vehicle"
+}
+
+###
+
+### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{NewSchedulerCustomerEmail}}",
+  "customerFirstName": "Scheduler",
+  "customerMiddleName": null,
+  "customerLastName": "New",
+  "customerPhoneNumber": "+36301239876",
+  "vehicle": {
+    "licensePlate": "{{NewSchedulerPlate}}",
+    "brand": "Skoda",
+    "model": "Octavia",
+    "year": 2020,
+    "mileageKm": 98500,
+    "enginePowerHp": 150,
+    "engineTorqueNm": 320
+  },
+  "scheduledDate": "2026-04-22T10:00:00",
+  "dueDateTime": "2026-04-25T15:00:00",
+  "taskDescription": "Scheduler intake new customer and vehicle"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects duplicate license plate for new vehicle (409 expected)
+# Reuses the plate from the previous successful new-vehicle intake case.
+### [Case][Appointments] POST /api/appointments/intake
+
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "scheduler.intake.duplicate.{{RunId}}@example.test",
+  "customerFirstName": "Scheduler",
+  "customerMiddleName": null,
+  "customerLastName": "Duplicate",
+  "customerPhoneNumber": "+36309998877",
+  "vehicle": {
+    "licensePlate": "{{NewSchedulerPlate}}",
+    "brand": "Skoda",
+    "model": "Fabia",
+    "year": 2021,
+    "mileageKm": 60500,
+    "enginePowerHp": 110,
+    "engineTorqueNm": 200
+  },
+  "scheduledDate": "2026-04-22T12:00:00",
+  "dueDateTime": "2026-04-25T18:00:00",
+  "taskDescription": "Scheduler intake duplicate plate conflict"
+}
+
+###
+
+### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow
+# Mechanic email is resolved to linked customer identity (mechanic-owner-{id}@customers.arsm.local) internally.
+### [Case][Appointments] POST /api/appointments/intake
+
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{NonAdminEmail}}",
+  "vehicle": {
+    "licensePlate": "{{MechanicEmailFlowPlate}}",
+    "brand": "Seat",
+    "model": "Leon",
+    "year": 2019,
+    "mileageKm": 151000,
+    "enginePowerHp": 130,
+    "engineTorqueNm": 250
+  },
+  "scheduledDate": "2026-04-23T11:00:00",
+  "dueDateTime": "2026-04-24T13:00:00",
+  "taskDescription": "Scheduler intake mechanic email linked flow"
+}

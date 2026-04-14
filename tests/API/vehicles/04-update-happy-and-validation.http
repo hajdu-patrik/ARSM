@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+#  UPDATE VEHICLE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@SeedVehicleId = 1
+@NonExistentVehicleId = 99999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Vehicles] Login as admin for update tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Vehicles] Admin updates existing vehicle (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf 7",
+  "year": 2018,
+  "mileageKm": 130000,
+  "enginePowerHp": 110,
+  "engineTorqueNm": 250
+}
+
+###
+
+### [Negative][Vehicles] Update non-existent vehicle (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "GHO-ST1",
+  "brand": "Ghost",
+  "model": "Rider",
+  "year": 2020,
+  "mileageKm": 0,
+  "enginePowerHp": 100,
+  "engineTorqueNm": 200
+}
+
+###
+
+### [Negative][Vehicles] Update vehicle with missing required fields (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 0,
+  "enginePowerHp": 110,
+  "engineTorqueNm": 250
+}

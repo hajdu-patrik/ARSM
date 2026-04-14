@@ -1,0 +1,116 @@
+# ─────────────────────────────────────────────────────────────
+#  UPDATE CUSTOMER
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+@SeedCustomerId = 1
+@NonExistentCustomerId = 99999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Customers] Login as admin for update tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Customers] Admin updates existing customer (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": "Maria",
+  "lastName": "Toth-Updated",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": "+36304445566"
+}
+
+###
+
+### [Negative][Customers] Update non-existent customer (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Ghost",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "ghost.customer.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with missing required fields (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with firstName containing a space (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with lastName containing a digit (422 expected)
+# "Last name may only contain letters and hyphens."
+### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth2",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with middleName containing an apostrophe (422 expected)
+# "Middle name may only contain letters and hyphens."
+### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": "O'Maria",
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}

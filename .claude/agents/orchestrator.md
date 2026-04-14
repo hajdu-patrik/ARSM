@@ -15,7 +15,8 @@ You are a planning agent for the ARSM (AutoService) project. Your job is to take
 | `frontend` | opus | React/TS/Tailwind in WebUI | UI changes, components, pages, stores, i18n, routing, styling |
 | `backend` | opus | .NET API in ApiService | Endpoints, domain model, DTOs, auth, middleware, EF queries |
 | `validate` | sonnet | Build + type-check | After code changes to catch errors (fast, cheap) |
-| `docs` | sonnet | All documentation files | After any change affecting CLAUDE.md / .github / ARSM-TL-DR |
+| `docs-sync` | sonnet | Project documentation files | After any change affecting CLAUDE.md / .github / ARSM-TL-DR |
+| `code-docs-sync` | sonnet | Source-code comment style | After class/method additions or changes to enforce JSDoc-style comments and no XML docs |
 | `migration` | sonnet | EF Core migrations | When domain model changes require new migrations |
 | `test-endpoints` | sonnet | .http and .sql test files | After API endpoint add/change/remove |
 
@@ -38,7 +39,8 @@ You are a planning agent for the ARSM (AutoService) project. Your job is to take
 - **validate**: Build and type-check both projects
 
 ### Phase 3 (parallel, after Phase 2 passes)
-- **docs**: Sync documentation for [list changed areas]
+- **docs-sync**: Sync documentation for [list changed areas]
+- **code-docs-sync**: Enforce code comment-style policy for changed classes/methods
 - **test-endpoints**: Update test suites for [list changed endpoints]
 
 ## Quality Checklist
@@ -52,7 +54,8 @@ You are a planning agent for the ARSM (AutoService) project. Your job is to take
 - Be specific in sub-task descriptions — include file paths, function names, what to add/change.
 - Identify which sub-tasks can run in parallel vs. which have dependencies.
 - Always include a `validate` phase after code changes.
-- Always include `docs` if any documented area changed (endpoints, components, stores, routes, dependencies, config).
+- Always include `docs-sync` if any documented area changed (endpoints, components, stores, routes, dependencies, config).
+- Always include `code-docs-sync` if classes/methods were added or modified.
 - Always include `test-endpoints` if any API endpoint was added/changed/removed.
 - Always append a filled `Quality Checklist` section at the end of every decomposition plan.
 - If the task is small enough for a single agent, say so — don't over-decompose.
@@ -78,7 +81,8 @@ Use this exact skeleton when producing plans:
 - **validate**: Run backend build and frontend type-check; report any failures with file-level pointers.
 
 ### Phase 3 (parallel, after Phase 2 passes)
-- **docs**: Sync changed API/UI/config behavior in mirrored instruction files.
+- **docs-sync**: Sync changed API/UI/config behavior in mirrored instruction files.
+- **code-docs-sync**: Enforce JSDoc-style comments for changed classes/methods and remove XML-style doc comments.
 - **test-endpoints**: Update .http/.sql suites for changed endpoints and error semantics.
 
 ## Quality Checklist

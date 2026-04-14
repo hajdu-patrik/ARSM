@@ -20,7 +20,6 @@ interface AppointmentDetailBodyProps {
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
   readonly isEditing: boolean;
-  readonly isPastAppointment: boolean;
   readonly editForm: EditFormState | null;
   readonly editErrorKey: string | null;
   readonly formattedDate: string;
@@ -45,7 +44,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   currentMechanicId,
   isAdmin,
   isEditing,
-  isPastAppointment,
   editForm,
   editErrorKey,
   formattedDate,
@@ -70,12 +68,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
 
       <HeaderSection
         appointmentStatus={appointment.status}
-        isEditing={isEditing}
-        isPastAppointment={isPastAppointment}
-        scheduledDate={editForm?.scheduledDate ?? ''}
         formattedDate={formattedDate}
-        t={t}
-        onScheduledDateChange={(value) => onEditField('scheduledDate', value)}
       />
 
       <DueSection
@@ -133,41 +126,17 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
 
 interface HeaderSectionProps {
   readonly appointmentStatus: AppointmentStatus;
-  readonly isEditing: boolean;
-  readonly isPastAppointment: boolean;
-  readonly scheduledDate: string;
   readonly formattedDate: string;
-  readonly t: TFunction;
-  readonly onScheduledDateChange: (value: string) => void;
 }
 
 const HeaderSection = memo(function HeaderSection({
   appointmentStatus,
-  isEditing,
-  isPastAppointment,
-  scheduledDate,
   formattedDate,
-  t,
-  onScheduledDateChange,
 }: HeaderSectionProps) {
-  const showScheduledInput = isEditing && !isPastAppointment;
-
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <StatusBadge status={appointmentStatus} />
-      {showScheduledInput ? (
-        <label className="flex min-w-[18rem] flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
-          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.scheduledDate')}</span>
-          <input
-            type="datetime-local"
-            value={scheduledDate}
-            onChange={(event) => onScheduledDateChange(event.target.value)}
-            className={`${inputClassCompact} px-3 py-2`}
-          />
-        </label>
-      ) : (
-        <span className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">{formattedDate}</span>
-      )}
+      <span className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">{formattedDate}</span>
     </div>
   );
 });
@@ -459,7 +428,7 @@ const MechanicsSection = memo(function MechanicsSection({
             <MechanicCard
               key={mechanic.id}
               mechanic={mechanic}
-              canUnclaim={!isClosedForMechanicMutations && !isAdmin && currentMechanicId !== undefined && mechanic.id === currentMechanicId}
+              canUnclaim={!isClosedForMechanicMutations && !isAdmin && appointment.mechanics.length > 1 && currentMechanicId !== undefined && mechanic.id === currentMechanicId}
               canRemove={!isClosedForMechanicMutations && isAdmin && appointment.mechanics.length > 1}
               isUnclaiming={isUnclaiming}
               isRemoveDisabled={removingMechanicId === mechanic.id || isClosedForMechanicMutations}

@@ -88,7 +88,7 @@ export function mapIntakeErrorToKey(error: unknown): string {
   if (detail.includes('invalid first name') || detail.includes('invalid last name') || detail.includes('invalid middle name')) {
     return 'scheduler.intake.errors.invalidName';
   }
-  if (detail.includes('phone number must be a valid hungarian number')) return 'scheduler.intake.errors.invalidPhone';
+  if (detail.includes('phone number must be a valid european number')) return 'scheduler.intake.errors.invalidPhone';
   if (detail.includes('vehicle.licenseplate, vehicle.brand, and vehicle.model are required')) {
     return 'scheduler.intake.errors.vehicleRequiredFields';
   }
@@ -103,7 +103,7 @@ export function mapIntakeErrorToKey(error: unknown): string {
 }
 
 /**
- * toIso operation.
+ * Converts a datetime-local string to a serialized timestamp value.
  *
  * @param string Parameter.
  * @returns Return value.

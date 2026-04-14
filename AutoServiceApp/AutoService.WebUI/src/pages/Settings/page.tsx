@@ -217,6 +217,25 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return mapped;
   }, []);
 
+  const handlePasswordChangeFailure = useCallback((err: unknown) => {
+    if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+      showErrorToast('toast.passwordChangeFailed');
+      return;
+    }
+
+    const data = err.response?.data;
+    const status = err.response?.status;
+    if ((status === 422 || status === 400) && data) {
+      const fieldErrs = mapPasswordErrors(extractFieldErrors(data));
+      if (Object.keys(fieldErrs).length > 0) {
+        setPasswordFieldErrors(fieldErrs);
+        return;
+      }
+    }
+
+    showErrorToast('toast.passwordChangeFailed');
+  }, [mapPasswordErrors, showErrorToast]);
+
   const handlePasswordSubmit = useCallback(async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setPasswordFieldErrors({});
@@ -239,30 +258,36 @@ const SettingsPageComponent = memo(function SettingsPage() {
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (err) {
-      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-        const data = err.response?.data;
-        const status = err.response?.status;
-        if ((status === 422 || status === 400) && data) {
-          const fieldErrs = mapPasswordErrors(extractFieldErrors(data));
-          if (Object.keys(fieldErrs).length > 0) setPasswordFieldErrors(fieldErrs);
-          else showErrorToast('toast.passwordChangeFailed');
-        } else {
-          showErrorToast('toast.passwordChangeFailed');
-        }
-      } else {
-        showErrorToast('toast.passwordChangeFailed');
-      }
+      handlePasswordChangeFailure(err);
     } finally {
       setIsChangingPassword(false);
     }
   }, [
     confirmNewPassword,
     currentPassword,
-    mapPasswordErrors,
+    handlePasswordChangeFailure,
     newPassword,
-    showErrorToast,
     showSuccessToast,
   ]);
+
+  const handleDeleteProfileFailure = useCallback((err: unknown) => {
+    if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+      showErrorToast('toast.profileDeleteFailed');
+      return;
+    }
+
+    const data = err.response?.data;
+    const status = err.response?.status;
+    if ((status === 422 || status === 400) && data?.errors) {
+      const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
+      if (currentPasswordErrors && currentPasswordErrors.length > 0) {
+        setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
+        return;
+      }
+    }
+
+    showErrorToast('toast.profileDeleteFailed');
+  }, [showErrorToast]);
 
   const handleSelectPicture = useCallback(async (file: File) => {
     if (!isAllowedPictureExtension(file.name)) {
@@ -367,27 +392,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
       closeDeleteModal();
       navigate('/login', { replace: true });
     } catch (err) {
-      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-        const data = err.response?.data;
-        const status = err.response?.status;
-
-        if ((status === 422 || status === 400) && data?.errors) {
-          const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
-          if (currentPasswordErrors && currentPasswordErrors.length > 0) {
-            setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
-          } else {
-            showErrorToast('toast.profileDeleteFailed');
-          }
-        } else {
-          showErrorToast('toast.profileDeleteFailed');
-        }
-      } else {
-        showErrorToast('toast.profileDeleteFailed');
-      }
+      handleDeleteProfileFailure(err);
     } finally {
       setIsDeletingProfile(false);
     }
-  }, [clearAuth, closeDeleteModal, deletePassword, navigate, showErrorToast, showSuccessToast]);
+  }, [clearAuth, closeDeleteModal, deletePassword, handleDeleteProfileFailure, navigate, showSuccessToast]);
 
   if (isLoadingProfile) {
     return (

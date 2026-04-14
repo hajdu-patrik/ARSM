@@ -41,6 +41,12 @@ You are a focused frontend agent working exclusively within `AutoServiceApp/Auto
 6. Keep changes testable and easy to validate with type-check/build.
 7. Preserve maintainability under i18n/dark-mode/responsive constraints.
 
+## JSDoc Documentation Rules
+1. For new/changed non-trivial classes and methods, use JSDoc block comments placed immediately before the declaration.
+2. Use commonly understood tags where needed: `@param`, `@returns`, `@throws`, `@type`, `@example`, `@deprecated`, `@see`.
+3. Do NOT use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
+4. Keep comments short, human-readable, and intent-focused.
+
 ## After completing your work
 - Run `npx tsc --noEmit` from the WebUI directory to type-check.
 - Report what files you changed, what i18n keys you added, and any new components created.

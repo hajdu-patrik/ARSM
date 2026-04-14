@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - REGISTER ADMIN SETUP AND POSITIVE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+# Dedicated matrix users
+@MatrixRunSuffix = {{$timestamp}}
+@MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
+@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+@MatrixPhoneCanonical = +36307770991
+@MatrixBudapestEmail = matrix.budapest.user.{{MatrixRunSuffix}}@example.test
+@MatrixBudapestPhoneCanonical = +3612345678
+@MatrixWhitespaceEmail = matrix.whitespace.user.{{MatrixRunSuffix}}@example.test
+@MatrixWhitespacePhoneCanonical = +36308880991
+@MatrixEuEmail = matrix.eu.phone.{{MatrixRunSuffix}}@example.test
+@MatrixEuPhoneCanonical = +4915112345678
+@DemoMechanicPhoneCanonical = +36301112233
+
+# NOTE:
+# If a positive register/login test starts failing with 401 because the account
+# already exists from an earlier run with a different password, change MatrixRunSuffix.
+
+### [Negative][Register] Unauthenticated registration (AdminOnly policy -> 401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "lastName": "Unauth",
+  "email": "blocked.unauth.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Setup][Admin Session] Login as admin before register matrix
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Admin Session] Validate authenticated admin session (expects IsAdmin=true)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+###
+
+### [Positive][Register][Admin] Email-only mechanic registration
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "EmailOnly",
+  "email": "{{MatrixEmailOnly}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "PhoneUser",
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "06 30 777 0991",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Positive][Register][Admin] Mechanic registration with local Hungarian phone (no 36/06 prefix)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "LocalPhone",
+  "email": "matrix.local.phone.{{MatrixRunSuffix}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "301112233",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "Budapest",
+  "email": "{{MatrixBudapestEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "+36 1 234 5678",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Positive][Register][Admin] Mechanic registration with EU phone (+49)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "EuPhone",
+  "email": "{{MatrixEuEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "+49 151 1234 5678",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Positive][Register][Admin] Mechanic registration with leading/trailing whitespace in email and phone
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "Whitespace",
+  "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "   +36 30 888 0991   ",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}

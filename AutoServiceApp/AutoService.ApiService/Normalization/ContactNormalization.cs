@@ -1,34 +1,32 @@
 /**
  * ContactNormalization.cs
  *
- * Auto-generated documentation header for this source file.
+ * Centralizes contact-info normalization: email, EU phone numbers, and name validation.
  */
 
 using System.Net.Mail;
 using System.Text.RegularExpressions;
+using PhoneNumbers;
 
 namespace AutoService.ApiService.Normalization;
 
 /**
- * Backend type for API logic in this file.
+ * Provides normalization and validation helpers for contact information fields.
  */
 internal static partial class ContactNormalization
 {
-    private static readonly HashSet<string> AllowedHungarianMobilePrefixes =
-    [
-        "20", "21", "30", "31", "50", "70"
-    ];
+    private static readonly PhoneNumberUtil PhoneUtil = PhoneNumberUtil.GetInstance();
 
-    private static readonly HashSet<string> AllowedHungarianGeographicPrefixes =
+    /**
+     * Country calling codes accepted as valid European numbers.
+     * Covers EU member states, EEA, and broader European region.
+     */
+    private static readonly HashSet<int> EuCountryCodes =
     [
-        "22", "23", "24", "25", "26", "27", "28", "29",
-        "32", "33", "34", "35", "36", "37",
-        "42", "44", "45", "46", "47", "48", "49",
-        "52", "53", "54", "56", "57", "59",
-        "62", "63", "66", "68", "69",
-        "72", "73", "74", "75", "76", "77", "78", "79",
-        "82", "83", "84", "85", "87", "88", "89",
-        "92", "93", "94", "95", "96", "99"
+        43, 32, 359, 385, 357, 420, 45, 372, 358, 33, 49, 30, 36, 354, 353, 39,
+        371, 423, 370, 352, 356, 31, 47, 48, 351, 40, 421, 386, 34, 46, 44,
+        355, 376, 374, 994, 375, 387, 298, 995, 350, 383, 389, 373, 377, 382,
+        7, 378, 381, 41, 90, 380, 379
     ];
 
     private static readonly Regex NamePattern = new(@"^[\p{L}\-]+$", RegexOptions.Compiled);
@@ -38,7 +36,7 @@ internal static partial class ContactNormalization
     internal static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-        internal static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
+    internal static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
     {
         normalizedEmail = string.Empty;
 
@@ -67,9 +65,17 @@ internal static partial class ContactNormalization
         return true;
     }
 
-        internal static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
+    /**
+     * Parses and validates a phone number using libphonenumber, ensuring
+     * the country code belongs to an accepted European region.
+     * @param rawValue Raw user input (any format).
+     * @param e164Number E.164 formatted output including '+' prefix.
+     * @param defaultRegion ISO 3166-1 alpha-2 default region when input has no country code.
+     * @returns {@code true} when the number is a valid European phone number.
+     */
+    internal static bool TryNormalizeEuPhoneNumber(string? rawValue, out string e164Number, string defaultRegion = "HU")
     {
-        normalizedPhoneNumber = string.Empty;
+        e164Number = string.Empty;
 
         var trimmed = NormalizeOptional(rawValue);
         if (trimmed is null)
@@ -77,91 +83,43 @@ internal static partial class ContactNormalization
             return false;
         }
 
-        var digitsOnly = NonDigitRegex().Replace(trimmed, string.Empty);
-        if (string.IsNullOrEmpty(digitsOnly))
+        try
         {
-            return false;
-        }
+            var parsed = PhoneUtil.Parse(trimmed, defaultRegion);
 
-        var candidate = digitsOnly;
-
-        if (candidate.StartsWith("00", StringComparison.Ordinal))
-        {
-            candidate = candidate[2..];
-        }
-
-        if (candidate.StartsWith("06", StringComparison.Ordinal))
-        {
-            candidate = $"36{candidate[2..]}";
-        }
-
-        if (!candidate.StartsWith("36", StringComparison.Ordinal))
-        {
-            if (!IsValidHungarianNationalNumber(candidate))
+            if (!PhoneUtil.IsValidNumber(parsed))
             {
                 return false;
             }
 
-            candidate = $"36{candidate}";
-        }
+            if (!EuCountryCodes.Contains(parsed.CountryCode))
+            {
+                return false;
+            }
 
-        var nationalNumber = candidate[2..];
-        if (!AllDigitsRegex().IsMatch(nationalNumber))
+            e164Number = PhoneUtil.Format(parsed, PhoneNumberFormat.E164);
+            return true;
+        }
+        catch (NumberParseException)
         {
             return false;
         }
-
-        if (!IsValidHungarianNationalNumber(nationalNumber))
-        {
-            return false;
-        }
-
-        normalizedPhoneNumber = $"36{nationalNumber}";
-        return true;
     }
 
-        internal static IReadOnlyCollection<string> BuildHungarianPhoneLookupCandidates(string normalizedPhoneNumber)
+    /**
+     * Returns lookup candidates for backward-compatible phone matching:
+     * E.164 with '+' prefix and legacy no-plus format.
+     * @param e164Number E.164 formatted number (e.g. "+36301234567").
+     */
+    internal static IReadOnlyCollection<string> BuildPhoneLookupCandidates(string e164Number)
     {
-        var nationalNumber = normalizedPhoneNumber[2..];
+        // e164Number already includes the '+' prefix.
+        var noPlusFormat = e164Number[1..];
 
         return
         [
-            normalizedPhoneNumber,
-            $"+{normalizedPhoneNumber}",
-            $"06{nationalNumber}"
+            e164Number,
+            noPlusFormat
         ];
     }
-
-        private static bool IsValidHungarianNationalNumber(string nationalNumber)
-    {
-        if (nationalNumber.StartsWith("1", StringComparison.Ordinal))
-        {
-            return nationalNumber.Length == 8;
-        }
-
-        if (nationalNumber.Length < 8)
-        {
-            return false;
-        }
-
-        var twoDigitPrefix = nationalNumber[..2];
-
-        if (AllowedHungarianMobilePrefixes.Contains(twoDigitPrefix))
-        {
-            return nationalNumber.Length == 9;
-        }
-
-        if (AllowedHungarianGeographicPrefixes.Contains(twoDigitPrefix))
-        {
-            return nationalNumber.Length == 8;
-        }
-
-        return false;
-    }
-
-    [GeneratedRegex("\\D", RegexOptions.CultureInvariant)]
-    private static partial Regex NonDigitRegex();
-
-    [GeneratedRegex("^\\d+$", RegexOptions.CultureInvariant)]
-    private static partial Regex AllDigitsRegex();
 }

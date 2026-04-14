@@ -6,15 +6,19 @@
  * @module pages/Login/page
  */
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, TriangleAlert } from 'lucide-react';
 import { authService } from '../../services/auth/auth.service';
 import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
 import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
+
+type SystemLoginErrorKey = 'login.serverError500' | 'login.databaseUnavailable';
+
+type InvalidIdentifierReason = 'wrong_method_email' | 'wrong_method_phone' | 'format';
 
 const LoginComponent = memo(function Login() {
   const navigate = useNavigate();
@@ -25,6 +29,52 @@ const LoginComponent = memo(function Login() {
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [systemErrorKey, setSystemErrorKey] = useState<SystemLoginErrorKey | null>(null);
+
+  useEffect(() => {
+    if (!systemErrorKey) {
+      return;
+    }
+
+    const timeoutId = globalThis.setTimeout(() => {
+      setSystemErrorKey(null);
+    }, 5000);
+
+    return () => {
+      globalThis.clearTimeout(timeoutId);
+    };
+  }, [systemErrorKey]);
+
+  const showInvalidIdentifierError = useCallback((reason: InvalidIdentifierReason) => {
+    if (reason === 'wrong_method_email') {
+      showErrorToast('login.wrongMethodEmailInPhone');
+      return;
+    }
+
+    if (reason === 'wrong_method_phone') {
+      showErrorToast('login.wrongMethodPhoneInEmail');
+      return;
+    }
+
+    showErrorToast('login.invalidFormat');
+  }, [showErrorToast]);
+
+  const showResolvedLoginError = useCallback((
+    resolvedError: ReturnType<typeof resolveLoginError>,
+    method: LoginMethod,
+  ) => {
+    if (resolvedError.key === 'login.identifierNotFound') {
+      showErrorToast(method === 'email' ? 'login.identifierNotFoundEmail' : 'login.identifierNotFoundPhone');
+      return;
+    }
+
+    if (resolvedError.key === 'login.attemptsExceededWithDuration') {
+      showErrorToast(resolvedError.key, { minutes: resolvedError.minutes });
+      return;
+    }
+
+    showErrorToast(resolvedError.key);
+  }, [showErrorToast]);
 
   const handleSubmit = useCallback(async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,18 +82,12 @@ const LoginComponent = memo(function Login() {
     const parsedIdentifier = parseIdentifierByMethod(identifier, loginMethod);
 
     if (parsedIdentifier.kind === 'invalid') {
-      if (parsedIdentifier.reason === 'wrong_method_email') {
-        showErrorToast('login.wrongMethodEmailInPhone');
-      } else if (parsedIdentifier.reason === 'wrong_method_phone') {
-        showErrorToast('login.wrongMethodPhoneInEmail');
-      } else {
-        showErrorToast('login.invalidFormat');
-      }
-
+      showInvalidIdentifierError(parsedIdentifier.reason);
       return;
     }
 
     setIsLoading(true);
+    setSystemErrorKey(null);
 
     try {
       const loginRequest = {
@@ -57,22 +101,21 @@ const LoginComponent = memo(function Login() {
     } catch (err) {
       const resolvedError = resolveLoginError(err);
 
-      if (resolvedError.key === 'login.identifierNotFound') {
-        showErrorToast(loginMethod === 'email' ? 'login.identifierNotFoundEmail' : 'login.identifierNotFoundPhone');
-      } else if (resolvedError.key === 'login.attemptsExceededWithDuration') {
-        showErrorToast(resolvedError.key, { minutes: resolvedError.minutes });
-      } else {
-        showErrorToast(resolvedError.key);
+      if (resolvedError.key === 'login.serverError500' || resolvedError.key === 'login.databaseUnavailable') {
+        setSystemErrorKey(resolvedError.key);
       }
+
+      showResolvedLoginError(resolvedError, loginMethod);
     } finally {
       setPassword('');
       setIsLoading(false);
     }
-  }, [identifier, loginMethod, navigate, password, showErrorToast]);
+  }, [identifier, loginMethod, navigate, password, showInvalidIdentifierError, showResolvedLoginError]);
 
   const handleLoginMethodChange = useCallback((method: LoginMethod) => {
     setLoginMethod(method);
     setIdentifier('');
+    setSystemErrorKey(null);
   }, []);
 
   const identifierLabel = useMemo(
@@ -137,7 +180,10 @@ const LoginComponent = memo(function Login() {
                 inputMode={identifierInputMode}
                 pattern={identifierPattern}
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => {
+                  setIdentifier(e.target.value);
+                  setSystemErrorKey(null);
+                }}
                 placeholder={identifierPlaceholder}
                 className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
                 required
@@ -155,7 +201,10 @@ const LoginComponent = memo(function Login() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setSystemErrorKey(null);
+                  }}
                   placeholder={t('login.loginPassword')}
                   className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 pr-12 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
                   required
@@ -185,6 +234,19 @@ const LoginComponent = memo(function Login() {
             >
               {isLoading ? t('login.loading') : t('login.submit')}
             </button>
+
+            {systemErrorKey ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-xl border border-[#E9A5A9] bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] p-3 text-[#A52A33] shadow-[0_8px_20px_rgba(165,42,51,0.12)] dark:border-[#8A3A42] dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-[#FFC3C8]"
+              >
+                <div className="flex items-start gap-2.5">
+                  <TriangleAlert className="mt-0.5 h-4.5 w-4.5 flex-shrink-0" aria-hidden="true" />
+                  <p className="text-sm font-medium leading-5">{t(systemErrorKey)}</p>
+                </div>
+              </div>
+            ) : null}
 
             <fieldset className="pt-1.5" aria-label={t('login.loginMethodLabel')}>
               <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">

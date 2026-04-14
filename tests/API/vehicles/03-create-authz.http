@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+# VEHICLES - CREATE AUTHZ
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonExistentCustomerId = 99999
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@SeedCustomerId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Vehicles] POST /api/customers/{{NonExistentCustomerId}}/vehicles
+
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "GHO-ST1",
+  "brand": "Ghost",
+  "model": "Rider",
+  "year": 2023,
+  "mileageKm": 0,
+  "enginePowerHp": 200,
+  "engineTorqueNm": 400
+}
+
+###
+
+### [Setup][Vehicles] Logout admin, login as non-admin for forbidden write check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Vehicles] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Vehicles] Non-admin cannot create vehicle (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "NON-ADM",
+  "brand": "Blocked",
+  "model": "ByPolicy",
+  "year": 2020,
+  "mileageKm": 0,
+  "enginePowerHp": 100,
+  "engineTorqueNm": 200
+}

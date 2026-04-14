@@ -1,13 +1,10 @@
 ---
-name: Documentation Sync
-description: Updates CLAUDE.md, .github/instructions, copilot-instructions.md, and ARSM-TL-DR.md to match current code state.
-tools:
-  - read
-  - edit
-  - search
+name: docs-sync
+description: "Docs sync agent. Updates CLAUDE.md, .github/instructions, copilot-instructions.md, and ARSM-TL-DR.md to match current code state."
+model: sonnet
 ---
 
-# Documentation Sync Agent
+# Docs Sync Agent
 
 You are a documentation agent. Your job is to synchronize project documentation with the current code state.
 

@@ -1,0 +1,172 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - REGISTER VALIDATION AND NONADMIN AUTHZ
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Customer",
+  "lastName": "ShouldFail",
+  "email": "customer.should.fail.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Customer"
+}
+
+###
+
+### [Negative][Register][Admin] Invalid expertise list (duplicate item expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Bad",
+  "lastName": "Expertise",
+  "email": "bad.expertise.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with space rejected (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Mary Jane",
+  "lastName": "Smith",
+  "email": "name.space.test.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with digit rejected (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John2",
+  "lastName": "Smith",
+  "email": "name.digit.test.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] firstName with apostrophe rejected (422 expected)
+# "First name may only contain letters and hyphens."
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "O'Brien",
+  "lastName": "Smith",
+  "email": "name.apostrophe.test.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] lastName with special character rejected (422 expected)
+# "Last name may only contain letters and hyphens."
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "Sm!th",
+  "email": "lastname.special.test.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Negative][Register][Admin] middleName with space rejected (422 expected)
+# "Middle name may only contain letters and hyphens."
+### [Case][Auth] POST /api/auth/register
+
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": "Van Der",
+  "lastName": "Smith",
+  "email": "middlename.space.test.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+###
+
+### [Setup][Admin Session] Logout admin before non-admin authorization check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Non-Admin Session] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Register] Non-admin mechanic cannot register mechanics (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Blocked",
+  "lastName": "NonAdmin",
+  "email": "blocked.nonadmin.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}

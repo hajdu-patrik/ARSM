@@ -7,7 +7,6 @@
 import type { AppointmentDto, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
 
 export interface EditFormState {
-  scheduledDate: string;
   dueDateTime: string;
   taskDescription: string;
   licensePlate: string;
@@ -33,7 +32,6 @@ export const VEHICLE_NUMERIC_LIMITS = {
  */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
-    scheduledDate: toDatetimeLocalValue(appointment.scheduledDate),
     dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),
     taskDescription: appointment.taskDescription,
     licensePlate: appointment.vehicle.licensePlate,
@@ -76,17 +74,10 @@ export function normalizeEditFieldValue(field: keyof EditFormState, value: strin
 export function buildUpdateRequestFromEditForm(
   appointment: AppointmentDto,
   editForm: EditFormState,
-  nowMs: number = Date.now(),
 ): { request: UpdateAppointmentRequest } | { errorKey: string } {
-  const isPastAppointment = new Date(appointment.scheduledDate).getTime() < nowMs;
-
   const taskDescription = editForm.taskDescription.trim();
   if (!taskDescription) {
     return { errorKey: 'scheduler.intake.errors.taskRequired' };
-  }
-
-  if (!isPastAppointment && !editForm.scheduledDate) {
-    return { errorKey: 'scheduler.intake.errors.scheduledRequired' };
   }
 
   if (!editForm.dueDateTime) {
@@ -117,9 +108,7 @@ export function buildUpdateRequestFromEditForm(
     return { errorKey: 'scheduler.intake.errors.vehicleNumberInvalid' };
   }
 
-  const scheduledMs = isPastAppointment
-    ? Date.parse(appointment.scheduledDate)
-    : Date.parse(editForm.scheduledDate);
+  const scheduledMs = Date.parse(appointment.scheduledDate);
 
   if (Number.isNaN(scheduledMs)) {
     return { errorKey: 'scheduler.intake.errors.scheduledRequired' };
@@ -136,7 +125,6 @@ export function buildUpdateRequestFromEditForm(
 
   return {
     request: {
-      scheduledDate: new Date(scheduledMs).toISOString(),
       dueDateTime: new Date(dueMs).toISOString(),
       taskDescription,
       licensePlate,
@@ -163,7 +151,7 @@ export function buildUpdatedAppointmentSnapshot(
 ): AppointmentDto {
   return {
     ...appointment,
-    scheduledDate: request.scheduledDate,
+    scheduledDate: request.scheduledDate ?? appointment.scheduledDate,
     dueDateTime: request.dueDateTime,
     taskDescription: request.taskDescription,
     vehicle: {

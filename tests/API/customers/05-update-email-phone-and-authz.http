@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────
+# CUSTOMERS - UPDATE EMAIL PHONE AND AUTHZ
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@SeedCustomerId = 1
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "invalid-email-format",
+  "phoneNumber": null
+}
+
+###
+
+### [Negative][Customers] Update customer with invalid European phone format (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": "12345"
+}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for forbidden update check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Customers] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Customers] Non-admin cannot update customer (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": null
+}

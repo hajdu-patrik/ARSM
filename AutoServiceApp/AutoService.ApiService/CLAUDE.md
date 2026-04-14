@@ -21,7 +21,7 @@
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL` — use `options.UseNpgsql(...)`.
 - Model config centralized in `Data/AutoServiceDbContext.cs`.
 - New migrations go in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Admin role seeding is idempotent and runs on every startup (before the "is data already seeded?" guard), ensuring the `"Admin"` Identity role exists and is assigned to the first mechanic (Gabor Kovacs).
 - Legacy migrated/backfilled customer-only states are auto-recovered: if mechanics/identity linkage is missing while customer-side data exists, the initializer resets the inconsistent dataset and reseeds deterministic demo data.
@@ -48,10 +48,8 @@
 - Login accepts email or phone number.
 - Identifier normalization is mandatory across register/login:
   - emails are trimmed + lowercased,
-  - Hungarian phone inputs (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaced/punctuated forms) normalize to canonical national form with strict prefix/length rules:
-    - `361xxxxxxx` (Budapest),
-    - `36(20|21|30|31|50|70)xxxxxxx` (mobile/nomadic),
-    - `36<approved 2-digit area>xxxxxx` (geographic).
+  - phone inputs normalize to canonical E.164 format (`+{countryCode}{nationalNumber}`),
+  - accepted phone numbers must be valid European numbers according to libphonenumber and the backend country-code allowlist.
 - Register enforces duplicate phone detection on normalized values, including equivalent formats.
 - Auth session model is cookie-based:
   - access token in HttpOnly cookie (`autoservice_at`),
@@ -79,7 +77,7 @@
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
 - `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; validates due datetime, resolves customer by email (create fallback), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record; enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
-- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins; for past appointments `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable
+- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins; `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, `422` with code `appointment_completed` if appointment is Completed, or `422` if unassign would leave the appointment without mechanics

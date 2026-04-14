@@ -65,7 +65,7 @@ public static partial class CustomerEndpoints
 
         var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
         if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedPhone, out normalizedPhone))
+            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
         {
             return Results.Problem(
                 detail: ValidationMessages.InvalidPhone,
@@ -157,7 +157,7 @@ public static partial class CustomerEndpoints
 
         var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
         if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedPhone, out normalizedPhone))
+            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
         {
             return Results.Problem(
                 detail: ValidationMessages.InvalidPhone,

@@ -191,7 +191,7 @@ public static partial class AppointmentEndpoints
 
             var normalizedPhone = ContactNormalization.NormalizeOptional(request.CustomerPhoneNumber);
             if (normalizedPhone is not null &&
-                !ContactNormalization.TryNormalizeHungarianPhoneNumber(normalizedPhone, out normalizedPhone))
+                !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
             {
                 return Results.Problem(
                     detail: ValidationMessages.InvalidPhone,

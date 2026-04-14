@@ -1,0 +1,107 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - INTAKE VALIDATION
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+@CustomerVehicleId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-23T10:00:00",
+  "dueDateTime": "2026-04-24T10:00:00",
+  "taskDescription": "Scheduler status input should be blocked",
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake requires exactly one vehicle path (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "vehicle": {
+    "licensePlate": "BAD-000",
+    "brand": "Ford",
+    "model": "Focus",
+    "year": 2018,
+    "mileageKm": 120000,
+    "enginePowerHp": 125,
+    "engineTorqueNm": 200
+  },
+  "scheduledDate": "2026-04-23T10:00:00",
+  "dueDateTime": "2026-04-24T10:00:00",
+  "taskDescription": "Scheduler invalid vehicle path selection"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects dueDateTime earlier than scheduledDate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-24T09:59:59",
+  "taskDescription": "Scheduler invalid due date ordering"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.vehicle.max.{{RunId}}@example.test",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "Max",
+  "customerPhoneNumber": "+36305556666",
+  "vehicle": {
+    "licensePlate": "MAX-{{RunId}}",
+    "brand": "Audi",
+    "model": "A3",
+    "year": 2021,
+    "mileageKm": 1000001,
+    "enginePowerHp": 50001,
+    "engineTorqueNm": 50001
+  },
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-25T10:00:00",
+  "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
+}
+
+###
+
+### [Positive][Appointments] Scheduler intake allows past scheduled date
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2020-01-01T09:00:00",
+  "dueDateTime": "2020-01-03T10:00:00",
+  "taskDescription": "Scheduler intake with past date allowed"
+}

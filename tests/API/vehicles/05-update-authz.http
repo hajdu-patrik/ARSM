@@ -1,0 +1,59 @@
+# ─────────────────────────────────────────────────────────────
+# VEHICLES - UPDATE AUTHZ
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@SeedVehicleId = 1
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Case][Vehicles] PUT /api/vehicles/{{SeedVehicleId}}
+
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2200,
+  "mileageKm": 0,
+  "enginePowerHp": 110,
+  "engineTorqueNm": 250
+}
+
+###
+
+### [Setup][Vehicles] Logout admin, login as non-admin for forbidden update check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Vehicles] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Vehicles] Non-admin cannot update vehicle (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 110,
+  "engineTorqueNm": 250
+}

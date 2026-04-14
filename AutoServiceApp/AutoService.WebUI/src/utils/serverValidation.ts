@@ -75,7 +75,7 @@ export function mapValidationMessageToKey(message: string, context: ValidationCo
     return `${context}.errors.invalidEmail`;
   }
 
-  if (normalized.includes('phone number must be a valid hungarian number')) {
+  if (normalized.includes('phone number must be a valid european number')) {
     return `${context}.errors.invalidPhone`;
   }
 

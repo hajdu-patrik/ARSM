@@ -30,7 +30,7 @@ function hashSeed(seed: string): number {
   let hash = 5381;
 
   for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 33) ^ seed.charCodeAt(index);
+    hash = (hash * 33) ^ (seed.codePointAt(index) ?? 0);
   }
 
   return Math.abs(hash);

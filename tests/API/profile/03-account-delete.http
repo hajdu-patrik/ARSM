@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────────────────────────
+# PROFILE - ACCOUNT DELETE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@ProfileNewPassword = {{$processEnv ARSM_TEST_MECHANIC_NEW_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Profile] Login as admin for self-delete negative test
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Profile] Admin self-delete forbidden (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{AdminPassword}}"
+}

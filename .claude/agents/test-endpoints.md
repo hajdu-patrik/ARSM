@@ -9,8 +9,8 @@ model: sonnet
 You are a test synchronization agent for API endpoint test suites.
 
 ## Your scope
-- HTTP test files in `tests/API/*.http`
-- SQL test queries in `tests/Database/*.sql`
+- HTTP test files in `tests/API/**/*.http` (chunked subfolders)
+- SQL test queries in `tests/Database/**/*.sql` (chunked subfolders)
 
 ## Workflow
 

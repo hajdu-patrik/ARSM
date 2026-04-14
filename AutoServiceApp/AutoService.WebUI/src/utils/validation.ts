@@ -8,12 +8,12 @@
 
 /** Strip everything except Unicode letters and hyphens from name input. */
 export function filterNameInput(value: string): string {
-  return value.replace(/[^\p{L}\-]/gu, '');
+  return value.replaceAll(/[^\p{L}-]/gu, '');
 }
 
 /** Strip everything except digits and common phone special characters (+, -, (, ), space). */
 export function filterPhoneInput(value: string): string {
-  return value.replace(/[^\d+\-()\s]/g, '');
+  return value.replaceAll(/[^\d+\-()\s]/g, '');
 }
 
 /** Set of allowed file extensions for profile picture uploads. */

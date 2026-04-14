@@ -1,31 +1,21 @@
-@AutoService_ApiService_HostAddress = https://localhost:5200
-@TestPassword = Test@1234
-@AdminEmail = gabor.kovacs@example.com
-@AdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
-@MatrixRunSuffix = 20260403a
+# ─────────────────────────────────────────────────────────────
+# ADMIN - DELETE INVARIANTS
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @CurrentAdminMechanicId = 6
 @MechanicIdWithSoleAssignments = 7
 @MechanicIdCandidateForDeletion = 8
 @UnknownMechanicId = 99999
-@NonAdminEmail = peter.nagy@example.com
-@NonAdminPassword = {{$processEnv ARSM_ADMIN_PASSWORD}}
 
-### [Setup][Admin] Login as admin (session prerequisite)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-###
-
-### [Positive][Admin] List all mechanics
-# Response items include isAdmin and hasProfilePicture.
-GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
-
-###
+# ─────────────────────────────────────────────────────────────
 
 ### [Negative][Admin] Try deleting self mechanic (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{CurrentAdminMechanicId}}
@@ -63,19 +53,3 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCa
 
 ### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
-
-###
-
-### [Setup][Admin] Login as non-admin for forbidden access check
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
-
-###
-
-### [Negative][Admin] Non-admin cannot list mechanics (403 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics

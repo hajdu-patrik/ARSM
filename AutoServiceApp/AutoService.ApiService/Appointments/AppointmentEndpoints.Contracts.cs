@@ -100,7 +100,7 @@ public static partial class AppointmentEndpoints
  * Immutable DTO used by API request and response flows.
  */
     internal sealed record UpdateAppointmentRequest(
-        DateTime ScheduledDate,
+        DateTime? ScheduledDate,
         DateTime DueDateTime,
         string TaskDescription,
         string LicensePlate,

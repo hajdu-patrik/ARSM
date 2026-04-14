@@ -94,6 +94,22 @@ export function useSchedulerIntakeForm({
   const shouldShowVehicleCreate = lookupState === 'not-found' || vehicleMode === 'new';
   const customerHasVehicles = (customerLookup?.vehicles.length ?? 0) > 0;
 
+  const resetLookupDependentState = useCallback(() => {
+    setLookupState('idle');
+    setCustomerLookup(null);
+    setVehicleMode('existing');
+    setExistingVehicleId('');
+    setTaskDescription('');
+  }, []);
+
+  const handleEmailChange = useCallback((value: string) => {
+    setEmail(value);
+
+    // Editing the lookup key invalidates previous lookup-derived sections.
+    resetLookupDependentState();
+    setErrorKey(null);
+  }, [resetLookupDependentState]);
+
   const handleLookup = useCallback(async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
@@ -118,11 +134,12 @@ export function useSchedulerIntakeForm({
         setExistingVehicleId('');
       }
     } catch {
+      resetLookupDependentState();
       setErrorKey('scheduler.intake.errors.searchFailed');
     } finally {
       setIsSearching(false);
     }
-  }, [email]);
+  }, [email, resetLookupDependentState]);
 
   const handleVehicleField = useCallback((field: keyof VehicleFormState, value: string) => {
     if (field in VEHICLE_NUMERIC_LIMITS) {
@@ -212,7 +229,7 @@ export function useSchedulerIntakeForm({
   ]);
 
   const actions = useMemo(() => ({
-    setEmail,
+    handleEmailChange,
     setCustomerFirstName,
     setCustomerMiddleName,
     setCustomerLastName,
@@ -224,7 +241,7 @@ export function useSchedulerIntakeForm({
     handleLookup,
     handleVehicleField,
     handleCreate,
-  }), [handleCreate, handleLookup, handleVehicleField]);
+  }), [handleCreate, handleEmailChange, handleLookup, handleVehicleField]);
 
   return {
     state: {

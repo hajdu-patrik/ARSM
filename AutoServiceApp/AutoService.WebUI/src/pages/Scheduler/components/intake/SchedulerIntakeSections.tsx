@@ -11,6 +11,9 @@ import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/sch
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
 
+const FORM_FIELD_CLASS = 'rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm text-[#2C2440] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]';
+const FORM_TEXTAREA_CLASS = `${FORM_FIELD_CLASS} resize-y`;
+
 interface SchedulerIntakeHeaderProps {
   readonly selectedDayLabel: string;
   readonly dueDateTime: string;
@@ -37,7 +40,7 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
             type="datetime-local"
             value={dueDateTime}
             onChange={(event) => onDueDateTimeChange(event.target.value)}
-            className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+            className={`intake-datetime-input ${FORM_FIELD_CLASS}`}
           />
         </label>
       </div>
@@ -73,6 +76,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 }: SchedulerIntakeLookupProps) {
   return (
     <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.userDetails')}</p>
       <h3 className="text-sm font-semibold text-[#2C2440] dark:text-[#EDE8FA]">{t('scheduler.intake.customerLookup')}</h3>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -83,7 +87,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
             placeholder={t('scheduler.intake.customerEmailPlaceholder')}
-            className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+            className={FORM_FIELD_CLASS}
           />
         </label>
 
@@ -147,12 +151,14 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
 }: SchedulerIntakeCustomerFormProps) {
   return (
     <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B] lg:grid-cols-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3] lg:col-span-2">{t('scheduler.intake.personalInformation')}</p>
       <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
         <span className="font-medium">{t('scheduler.intake.customerFirstName')}</span>
         <input
           value={customerFirstName}
           onChange={(event) => onCustomerFirstNameChange(filterNameInput(event.target.value))}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.customerFirstNamePlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -161,7 +167,8 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <input
           value={customerMiddleName}
           onChange={(event) => onCustomerMiddleNameChange(filterNameInput(event.target.value))}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.customerMiddleNamePlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -170,7 +177,8 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <input
           value={customerLastName}
           onChange={(event) => onCustomerLastNameChange(filterNameInput(event.target.value))}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.customerLastNamePlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -180,7 +188,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
           value={customerPhone}
           onChange={(event) => onCustomerPhoneChange(filterPhoneInput(event.target.value))}
           placeholder={t('scheduler.intake.customerPhonePlaceholder')}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          className={FORM_FIELD_CLASS}
         />
       </label>
     </div>
@@ -208,7 +216,9 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
 }: SchedulerIntakeVehicleModeProps) {
   return (
     <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
-      <h3 className="text-sm font-semibold text-[#2C2440] dark:text-[#EDE8FA]">{t('scheduler.intake.vehicleModeTitle')}</h3>
+      {vehicleMode === 'existing' && (
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleDetails')}</p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -234,9 +244,11 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
           <select
             value={existingVehicleId}
             onChange={(event) => onExistingVehicleIdChange(event.target.value)}
-            className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+            className={FORM_FIELD_CLASS}
           >
-            <option value="">{t('scheduler.intake.selectVehiclePlaceholder')}</option>
+            <option value="" disabled hidden>
+              {t('scheduler.intake.selectVehiclePlaceholder')}
+            </option>
             {customerLookup?.vehicles.map((vehicleItem) => (
               <option key={vehicleItem.id} value={vehicleItem.id}>
                 {vehicleItem.licensePlate} - {vehicleItem.brand} {vehicleItem.model} ({vehicleItem.year})
@@ -262,12 +274,14 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 }: SchedulerIntakeVehicleFormProps) {
   return (
     <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B] lg:grid-cols-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3] lg:col-span-2">{t('scheduler.intake.vehicleDetails')}</p>
       <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
         <span className="font-medium">{t('scheduler.intake.vehicleLicensePlate')}</span>
         <input
           value={vehicle.licensePlate}
           onChange={(event) => onVehicleFieldChange('licensePlate', event.target.value.toUpperCase())}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm uppercase dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleLicensePlatePlaceholder')}
+          className={`${FORM_FIELD_CLASS} uppercase`}
         />
       </label>
 
@@ -276,7 +290,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         <input
           value={vehicle.brand}
           onChange={(event) => onVehicleFieldChange('brand', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleBrandPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -285,7 +300,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         <input
           value={vehicle.model}
           onChange={(event) => onVehicleFieldChange('model', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleModelPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -297,7 +313,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
           max={2100}
           value={vehicle.year}
           onChange={(event) => onVehicleFieldChange('year', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleYearPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -309,7 +326,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
           max={1000000}
           value={vehicle.mileageKm}
           onChange={(event) => onVehicleFieldChange('mileageKm', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleMileageKmPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -321,7 +339,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
           max={50000}
           value={vehicle.enginePowerHp}
           onChange={(event) => onVehicleFieldChange('enginePowerHp', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleEnginePowerHpPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
 
@@ -333,7 +352,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
           max={50000}
           value={vehicle.engineTorqueNm}
           onChange={(event) => onVehicleFieldChange('engineTorqueNm', event.target.value)}
-          className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm dark:border-[#3A3154] dark:bg-[#1A1A25]"
+          placeholder={t('scheduler.intake.vehicleEngineTorqueNmPlaceholder')}
+          className={FORM_FIELD_CLASS}
         />
       </label>
     </div>
@@ -352,15 +372,19 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
   onTaskDescriptionChange,
 }: SchedulerIntakeTaskSectionProps) {
   return (
-    <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
-      <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
-      <textarea
-        value={taskDescription}
-        onChange={(event) => onTaskDescriptionChange(event.target.value)}
-        maxLength={200}
-        rows={4}
-        className="rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm text-[#2C2440] transition-colors hover:border-[#BFA6F7] focus:border-[#BFA6F7] focus:outline-none dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:hover:border-[#7A66C7] dark:focus:border-[#8A75D6]"
-      />
-    </label>
+    <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.taskDetails')}</p>
+      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+        <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
+        <textarea
+          value={taskDescription}
+          onChange={(event) => onTaskDescriptionChange(event.target.value)}
+          placeholder={t('scheduler.intake.taskDescriptionPlaceholder')}
+          maxLength={200}
+          rows={4}
+          className={FORM_TEXTAREA_CLASS}
+        />
+      </label>
+    </div>
   );
 });

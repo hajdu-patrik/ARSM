@@ -35,11 +35,16 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - This keeps all `CLAUDE.md` files and `.github/instructions/` files in sync with the actual code.
 - Trigger sections: endpoints, migrations, middleware order, pages, components, routes, stores, services, dependencies, config keys, AppHost resources, security settings (lockout, rate limits, token lifetimes).
 
+## Code Documentation Style Rule (Mandatory)
+- When adding or changing non-trivial classes/methods, use JSDoc-style block comments.
+- Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
+- Run `/code-docs-sync` after code changes that introduce/modify classes or methods.
+
 ## Endpoint Test Sync Rule (Mandatory)
 - After any API endpoint is added/changed/removed, run `/endpoint-tests-sync` before considering the task complete.
 - This keeps endpoint-level tests synchronized in:
-	- `tests/API/*.http`
-	- `tests/Database/*.sql`
+	- `tests/API/**/*.http` (including chunked subfolders)
+	- `tests/Database/**/*.sql` (including chunked subfolders)
 
 ## MCP Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
@@ -66,7 +71,8 @@ This project uses specialist agents for task decomposition and delegation. **All
 | **Backend Specialist** | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
 | **Frontend Specialist** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | **EF Migration** | EF Core migrations | Creating, validating, and troubleshooting migrations |
-| **Documentation Sync** | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
+| **Docs Sync** | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
+| **Code Docs Sync** | Source-code comment style | Enforces JSDoc-style comments for changed classes/methods and removes XML doc comments |
 | **Endpoint Test Sync** | .http and .sql test files | After API endpoint add/change/remove |
 | **Build Validator** | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
 
@@ -77,13 +83,15 @@ This project uses specialist agents for task decomposition and delegation. **All
 2. **Specialist execution** — identified agents execute in parallel where possible.
 3. **Validate** — always runs after code changes.
 4. **Docs sync (always)** — must run after every change. If changes touch skills, agents, or instruction files, those are updated too.
-5. **Test endpoints** — runs after any API endpoint change.
+5. **Code docs sync** — runs after class/method additions/changes to enforce JSDoc-only style.
+6. **Test endpoints** — runs after any API endpoint change.
 
 ## Copilot Skill Entry Points
 - Use `/mcp-context-policy` for MCP server interaction policy and Context Mode usage decisions.
 - Use `/config-driven-endpoints` for URL/port changes to enforce config-driven addressing and avoid hardcoded fallback endpoints.
 - Use `/ef-migration` for EF migration execution and troubleshooting.
 - Use `/docs-sync` to synchronize all CLAUDE.md and .github/instructions files with the actual codebase state after significant changes.
+- Use `/code-docs-sync` to enforce source-code documentation style (JSDoc-style comments, no XML comments).
 - Use `/endpoint-tests-sync` to update endpoint HTTP/SQL test suites after endpoint changes.
 - Keep README usage references concise; detailed policy/workflow logic belongs in skill files under `.github/skills/*/SKILL.md`.
 
@@ -117,7 +125,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Demo seeding includes legacy-state recovery: if a migrated/backfilled dataset contains customer-side data but lacks mechanics/identity linkage, the initializer resets that inconsistent dataset and reseeds deterministic demo data.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
@@ -157,7 +165,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
-	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; for past appointments `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
+	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
@@ -194,7 +202,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- registration is mechanic-only and admin-only,
 	- login accepts email or phone number,
 	- email inputs are trimmed and normalized to lowercase,
-	- Hungarian phone inputs accept common formats (`+36`, `36`, `06`, local national form without prefix like `301112233`, spaces/punctuation) and normalize to canonical national form with strict prefix/length rules (`361xxxxxxx`, `36(20|21|30|31|50|70)xxxxxxx`, and approved 2-digit geographic area prefixes),
+	- phone inputs are normalized to canonical E.164 format (`+{countryCode}{nationalNumber}`), validated via libphonenumber, and restricted to the backend's accepted European country-code allowlist,
 	- register rejects duplicate phone numbers even if input format differs,
 	- register pre-checks normalized email collisions against both Identity users and domain `People` records (including passive customers),
 	- register maps unique-email database races to controlled validation errors on `Email`,
@@ -237,11 +245,17 @@ This project uses specialist agents for task decomposition and delegation. **All
 > Open implementation gaps and backlog items must be tracked only in `docs/Private-Docs/ARSM-TL-DR.md` under the `TO-DO` section.
 
 ## API Test Coverage Snapshot
-- `tests/API/auth-and-session.http` includes an auth full matrix for:
+- `tests/API/**/*.http` (chunked suites under `auth/`, `appointments/`, `customers/`, `profile/`, `admin/`, `vehicles/`) includes:
 	- register (email-only, email+phone, duplicates, invalid email/phone, invalid person type/expertise),
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
+- `tests/API/appointments/*.http` includes scheduler/admin appointment flows for:
+	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, and duplicate new-vehicle license-plate conflict (`409`),
+	- appointment update immutability guard (`scheduledDate` change rejected with `422`) while due/task updates remain allowed,
+	- claim/unclaim/admin assign-admin unassign status guardrails and reopened-cancelled transition checks,
+	- aligned request/comment terminology using current field names (`scheduledDate`, `dueDateTime`) and ISO date-time payload format.
+- `tests/Database/**/*.sql` (chunked suites under `core-schema/`, `identity-auth/`, `feature-flow/`) covers schema baseline, identity/auth data checks, and feature-flow regression guards.
 - API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_ADMIN_PASSWORD}}` and `example.com` seed-style identifiers for deterministic local runs.
 
 ## Aspire Rules
@@ -262,6 +276,10 @@ This project uses specialist agents for task decomposition and delegation. **All
 - Scheduler load-error UX must distinguish auth-expired (`401/403`) failures from generic load failures using dedicated i18n toast keys.
 - Scheduler mobile calendar must preserve row baseline alignment using fixed day-number/indicator block heights, with taller week rows only when that week contains appointments.
 - AppointmentDetailModal import boundaries are stabilized via extracted presentational files (`AppointmentDetailModal.sections.tsx`, `AppointmentDetailModal.footer.tsx`) while preserving existing behavior.
+- Scheduler claim CTAs are rendered as full-width buttons in both appointment cards and detail footer when visible.
+- Scheduler self-unassign control is hidden when the current mechanic is the sole assigned mechanic.
+- Scheduler intake form sections keep grouped user/vehicle/task titles with unified field styles and explicit placeholders (including vehicle detail inputs), and existing-vehicle select keeps a disabled non-selectable placeholder option.
+- Scheduler intake lookup-dependent UI state resets when the lookup email changes or when lookup fails (clears stale vehicle/task sections before showing errors).
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
 - Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`.
 

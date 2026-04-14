@@ -32,7 +32,6 @@ const NotFoundComponent = memo(function NotFound() {
 
   useEffect(() => {
     if (isAuthLoading) {
-      setRemainingMs(REDIRECT_DURATION_MS);
       return;
     }
 

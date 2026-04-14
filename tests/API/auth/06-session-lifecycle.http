@@ -1,0 +1,79 @@
+# ─────────────────────────────────────────────────────────────
+#  AUTH – Session Lifecycle (cookie-based)
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Positive][Session] Login before validate/refresh/logout chain
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Session] Validate authenticated session (requires login cookie)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+###
+
+### [Positive][Session] Refresh authenticated session (requires refresh cookie)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+
+###
+
+### [Manual][Session] Refresh rate limiting (expect 429 after >20 refresh calls per minute from same client)
+# Re-run the refresh request rapidly (for example with a loop in terminal) to verify AuthRefreshAttempts policy.
+# Example PowerShell:
+# 1..25 | % { iwr -Method Post -UseBasicParsing "{{AutoService_ApiService_HostAddress}}/api/auth/refresh" }
+
+###
+
+### [Manual][Login] Login rate limiting (expect 429 after >10 login calls per minute from same client)
+# Example PowerShell:
+# 1..12 | % {
+#   $body = @{ email = "{{MatrixEmailWithPhone}}"; password = "{{TestWrongPassword}}" } | ConvertTo-Json
+#   iwr -Method Post -UseBasicParsing -ContentType "application/json" -Body $body "{{AutoService_ApiService_HostAddress}}/api/auth/login"
+# }
+
+###
+
+### [Manual][Login] Lockout after repeated bad password attempts (expect 429, then valid login works after lockout window)
+# Trigger lockout with 5 consecutive wrong-password attempts against the same mechanic account.
+# Then verify:
+# 1) immediate valid-password login returns 429 during lockout window,
+# 2) valid-password login succeeds after lockout expires.
+
+###
+
+### [Positive][Session] Logout current session
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Negative][Session] Validate after logout (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+###
+
+### [Negative][Session] Refresh without active cookie session (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+
+###
+
+### [Negative][Session] Logout without active access cookie (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

@@ -43,7 +43,8 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | **Backend** | `AutoService.ApiService` | Endpointok, domain modell, DTO-k, auth, middleware, EF lekérdezések |
 | **Frontend** | `AutoService.WebUI` | Komponensek, oldalak, store-ok, szolgáltatások, i18n, routing, stílusok |
 | **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
-| **Docs** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
+| **Docs Sync** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
+| **Code Docs Sync** | Forráskód kommentek | JSDoc stílus kikényszerítése új/módosított osztályoknál/metódusoknál, XML kommentek tiltása |
 | **Teszt Endpointok** | .http/.sql tesztek | Endpoint tesztcsomagok frissítése API-változások után |
 | **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
 
@@ -52,7 +53,9 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 1. Orkesztrátor fázisokra bontja a feladatot
 2. Backend + Frontend specialisták párhuzamosan dolgoznak
 3. Validáló ágens ellenőrzi a buildet
-4. Docs ágens szinkronizálja a dokumentációt; Teszt Endpointok ágens szinkronizálja a teszteket
+4. Docs Sync ágens szinkronizálja a dokumentációt
+5. Code Docs Sync ágens ellenőrzi a forráskód kommentstílust
+6. Teszt Endpointok ágens szinkronizálja a teszteket
 
 Ágensdefiníciók:
 
@@ -66,6 +69,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | Parancs | Cél |
 | ------- | --- |
 | `/docs-sync` | Összes CLAUDE.md, .github/instructions és ARSM-TL-DR.md szinkronizálása a kóddal |
+| `/code-docs-sync` | JSDoc alapú forráskód-komment szabályok kikényszerítése, XML kommentek eltávolítása |
 | `/endpoint-tests-sync` | .http és .sql tesztcsomagok frissítése endpointváltozások után |
 | `/ef-migration` | EF Core migrációs workflow és hibaelhárítás |
 | `/config-driven-endpoints` | Konfiguráció-alapú URL/port policy érvényesítése |

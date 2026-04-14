@@ -4,7 +4,7 @@
  * license plate, and a claim button for unassigned in-progress appointments.
  * @module AppointmentCard
  */
-import { memo, useState, useCallback, type ReactNode } from 'react';
+import { memo, useState, useCallback, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Clock3 } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
@@ -45,6 +45,17 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       setIsClaiming(false);
     }
   }, [onClaim, appointment.id]);
+
+  const handleCardKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.currentTarget !== event.target) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.();
+    }
+  }, [onClick]);
 
   const { vehicle } = appointment;
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
@@ -116,22 +127,25 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       )}
 
       {shouldShowClaimButton && (
-        <button
-          onClick={(e) => { e.stopPropagation(); void handleClaim(); }}
-          disabled={isClaiming}
-          className="w-full mt-2 py-2 rounded-xl bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF] hover:bg-[#BFA6F7] dark:hover:bg-[#8A75D6] text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {isClaiming ? '...' : t('scheduler.claim')}
-        </button>
+        <div className="mt-2 flex justify-center">
+          <button
+            onClick={(e) => { e.stopPropagation(); void handleClaim(); }}
+            disabled={isClaiming}
+            className="w-full rounded-xl bg-[#C9B3FF] py-2 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+          >
+            {isClaiming ? '...' : t('scheduler.claim')}
+          </button>
+        </div>
       )}
     </>
   );
 
   if (onClick) {
     return (
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
       <div
         onClick={onClick}
+        onKeyDown={handleCardKeyDown}
+        tabIndex={0}
         className={`${cardClassName} w-full text-left`}
       >
         {cardContent}
