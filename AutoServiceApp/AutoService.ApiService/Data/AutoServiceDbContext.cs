@@ -1,3 +1,9 @@
+/**
+ * AutoServiceDbContext.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Domain.UniqueTypes;

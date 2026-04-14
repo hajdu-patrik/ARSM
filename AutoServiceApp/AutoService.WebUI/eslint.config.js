@@ -1,3 +1,9 @@
+/**
+ * eslint.config.js
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

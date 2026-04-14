@@ -1,16 +1,29 @@
+/**
+ * Shared mechanic avatar renderer used across scheduler components.
+ * Shows a profile picture when available (with live SSE update support)
+ * or falls back to a deterministic initials avatar colored by mechanic ID.
+ * @module MechanicAvatar
+ */
 import { memo, useEffect, useMemo, useState } from 'react';
 import { profileService } from '../../../../services/profile/profile.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
 import { getDeterministicAvatarColor } from '../../../../utils/avatar';
 
+/** Props for the {@link MechanicAvatar} component. */
 interface MechanicAvatarProps {
+  /** Unique mechanic identifier used for picture URL and deterministic color. */
   readonly mechanicId: number;
+  /** Full display name used for alt text, title, and initials extraction. */
   readonly fullName: string;
+  /** Whether the mechanic has an uploaded profile picture. */
   readonly hasProfilePicture: boolean;
+  /** Tailwind size/text classes for the avatar element. */
   readonly sizeClassName?: string;
+  /** Additional CSS classes appended to the avatar element. */
   readonly className?: string;
 }
 
+/** Extracts up to two uppercase initials from a full name string. */
 function getInitialsFromFullName(fullName: string): string {
   const initials = fullName
     .split(' ')
@@ -81,4 +94,5 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
 
 MechanicAvatarComponent.displayName = 'MechanicAvatar';
 
+/** Memoized mechanic avatar with live profile picture updates. */
 export const MechanicAvatar = MechanicAvatarComponent;

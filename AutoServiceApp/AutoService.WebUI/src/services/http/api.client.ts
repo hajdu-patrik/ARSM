@@ -1,9 +1,22 @@
+/**
+ * Configured Axios HTTP client for API communication.
+ *
+ * Reads the base URL from {@code VITE_API_URL} (no hardcoded fallback).
+ * Includes request interceptor for {@code FormData} content-type handling
+ * and response interceptor for automatic {@code 401} token refresh with
+ * single-flight deduplication and login password redaction.
+ * @module services/http/api.client
+ */
+
 import axios from 'axios';
 import type { AxiosError, AxiosInstance } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
 import type { RefreshResponse } from '../../types/auth/login.types';
 
+/** Base API URL read from environment configuration. */
 const API_URL = import.meta.env.VITE_API_URL;
+
+/** Auth endpoint paths excluded from the automatic refresh retry. */
 const LOGIN_PATH = '/api/auth/login';
 const REFRESH_PATH = '/api/auth/refresh';
 const LOGOUT_PATH = '/api/auth/logout';
@@ -13,12 +26,36 @@ if (!API_URL) {
   throw new Error('VITE_API_URL is not configured. Set it via AppHost or .env.development.');
 }
 
-type RetryableRequestConfig = NonNullable<AxiosError['config']> & {
-  _retry?: boolean;
-};
-
+/** In-flight refresh promise for single-flight deduplication. */
 let refreshPromise: Promise<void> | null = null;
 
+/** Tracks requests that have already been retried after a 401 to prevent infinite loops. */
+const retriedRequests = new WeakSet<object>();
+
+/**
+ * Type guard that checks whether a value is a non-null object (record).
+ * @param value - The value to check.
+ * @returns {@code true} if the value is a plain object.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Type guard that checks whether an object has a {@code delete} method.
+ * Used to safely interact with Axios headers objects.
+ * @param value - The value to check.
+ * @returns {@code true} if the value has a callable {@code delete} property.
+ */
+function hasDeleteMethod(value: unknown): value is { delete: (name: string) => void } {
+  return isRecord(value) && typeof value.delete === 'function';
+}
+
+/**
+ * Redacts the password field from login request errors before they
+ * propagate to error handlers or logging, preventing credential leakage.
+ * @param error - The Axios error to sanitize.
+ */
 function redactLoginPassword(error: AxiosError): void {
   const requestUrl = error.config?.url ?? '';
   if (!requestUrl.includes(LOGIN_PATH) || error.config?.data == null) {
@@ -29,8 +66,8 @@ function redactLoginPassword(error: AxiosError): void {
 
   if (typeof payload === 'string') {
     try {
-      const parsedPayload = JSON.parse(payload) as Record<string, unknown>;
-      if ('password' in parsedPayload) {
+      const parsedPayload: unknown = JSON.parse(payload);
+      if (isRecord(parsedPayload) && 'password' in parsedPayload) {
         delete parsedPayload.password;
         error.config.data = JSON.stringify(parsedPayload);
       }
@@ -41,10 +78,8 @@ function redactLoginPassword(error: AxiosError): void {
     return;
   }
 
-  if (typeof payload === 'object' && payload !== null) {
-    const redactedPayload = {
-      ...(payload as Record<string, unknown>),
-    };
+  if (isRecord(payload)) {
+    const redactedPayload = { ...payload };
 
     if ('password' in redactedPayload) {
       delete redactedPayload.password;
@@ -53,6 +88,10 @@ function redactLoginPassword(error: AxiosError): void {
   }
 }
 
+/**
+ * Pre-configured Axios instance used by all service modules.
+ * Sends credentials (cookies) with every request.
+ */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
@@ -60,10 +99,10 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use((config) => {
   if (config.data instanceof FormData && config.headers) {
-    if (typeof (config.headers as { delete?: (name: string) => void }).delete === 'function') {
-      (config.headers as { delete: (name: string) => void }).delete('Content-Type');
-    } else {
-      delete (config.headers as Record<string, unknown>)['Content-Type'];
+    if (hasDeleteMethod(config.headers)) {
+      config.headers.delete('Content-Type');
+    } else if (isRecord(config.headers)) {
+      delete config.headers['Content-Type'];
     }
   }
 
@@ -76,20 +115,21 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     redactLoginPassword(error);
 
-    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    const originalRequest = error.config;
     const requestUrl = originalRequest?.url ?? '';
     const responseStatus = error.response?.status;
+    const hasRetried = originalRequest != null && retriedRequests.has(originalRequest);
     const isAuthExcludedPath =
       requestUrl.includes(LOGIN_PATH) ||
       requestUrl.includes(REFRESH_PATH) ||
       requestUrl.includes(LOGOUT_PATH) ||
       requestUrl.includes(VALIDATE_PATH);
 
-    if (responseStatus !== 401 || !originalRequest || originalRequest._retry || isAuthExcludedPath) {
+    if (responseStatus !== 401 || !originalRequest || hasRetried || isAuthExcludedPath) {
       throw error;
     }
 
-    originalRequest._retry = true;
+    retriedRequests.add(originalRequest);
 
     try {
       refreshPromise ??= apiClient

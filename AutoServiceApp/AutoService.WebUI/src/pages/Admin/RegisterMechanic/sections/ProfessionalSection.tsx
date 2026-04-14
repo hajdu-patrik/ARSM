@@ -1,3 +1,10 @@
+/**
+ * Professional details section for mechanic registration.
+ *
+ * Collects specialization and expertise selections.
+ * @module pages/Admin/RegisterMechanic/sections/ProfessionalSection
+ */
+
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
@@ -5,6 +12,7 @@ import { FormErrorMessage } from '../../../../components/common/FormErrorMessage
 import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS, inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
 
+/** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {
   readonly specialization: string;
   readonly expertise: string[];
@@ -94,4 +102,5 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
 
 ProfessionalSectionComponent.displayName = 'ProfessionalSection';
 
+/** Specialization and expertise picker section for registration. */
 export const ProfessionalSection = ProfessionalSectionComponent;

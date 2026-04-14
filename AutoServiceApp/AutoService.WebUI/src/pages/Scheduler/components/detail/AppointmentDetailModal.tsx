@@ -1,3 +1,9 @@
+/**
+ * AppointmentDetailModal.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AppointmentDto, AppointmentStatus, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
@@ -197,7 +203,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const isCancelled = appointment.status === 'Cancelled';
   const isClosedForMechanicMutations = appointment.status === 'Cancelled' || appointment.status === 'Completed';
   const canEdit = isAdmin || isAssigned;
-  const canChangeStatus = isAdmin || isAssigned;
+  const canChangeStatus = isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
   const availableMechanics = allMechanics.filter((mechanic) => !assignedMechanicIds.has(mechanic.personId));

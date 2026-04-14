@@ -1,6 +1,14 @@
+/**
+ * Admin mechanic registration page.
+ *
+ * Combines mechanic list management and registration form submission
+ * with inline validation and toast-based status feedback.
+ * @module pages/Admin/RegisterMechanic/page
+ */
+
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { adminService } from '../../../services/admin/admin.service';
 import { useToastStore } from '../../../store/toast.store';
 import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues, getFieldError } from './helpers';
@@ -58,8 +66,8 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   }, [fieldErrors]);
 
   const setFieldValue = useCallback(
-    (field: keyof RegisterMechanicFormValues, value: string | string[]) => {
-      setFormValues((prev) => ({ ...prev, [field]: value } as RegisterMechanicFormValues));
+    <K extends keyof RegisterMechanicFormValues>(field: K, value: RegisterMechanicFormValues[K]) => {
+      setFormValues((prev) => ({ ...prev, [field]: value }));
     },
     [],
   );
@@ -118,6 +126,34 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setRawFieldErrors({});
   }, []);
 
+  const handleSubmitError = useCallback((err: unknown) => {
+    if (!isAxiosError<{ errors?: Record<string, string[]>; detail?: string }>(err)) {
+      showErrorToast('admin.genericError');
+      return;
+    }
+
+    if (err.response?.status === 422 || err.response?.status === 400) {
+      const data = err.response.data;
+      const inlineErrors = data?.errors ? pickInlineContactFieldErrors(data.errors) : {};
+
+      if (Object.keys(inlineErrors).length > 0) {
+        setRawFieldErrors(inlineErrors);
+        return;
+      }
+
+      // Keep validation feedback directly under relevant fields to avoid duplicate top-panel errors.
+      showErrorToast('admin.validationError');
+      return;
+    }
+
+    if (err.response?.status === 403) {
+      showErrorToast('admin.forbidden');
+      return;
+    }
+
+    showErrorToast('admin.genericError');
+  }, [pickInlineContactFieldErrors, showErrorToast]);
+
   const handleSubmit = useCallback(
     async (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -132,28 +168,12 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         resetForm();
         setMechanicListRefreshKey((k) => k + 1);
       } catch (err) {
-        const axiosError = err as AxiosError<{ errors?: Record<string, string[]>; detail?: string }>;
-
-        if (axiosError.response?.status === 422 || axiosError.response?.status === 400) {
-          const data = axiosError.response.data;
-          if (data?.errors) {
-            setRawFieldErrors(pickInlineContactFieldErrors(data.errors));
-          }
-
-          // Keep validation feedback directly under relevant fields to avoid duplicate top-panel errors.
-          if (!data?.errors || Object.keys(pickInlineContactFieldErrors(data.errors)).length === 0) {
-            showErrorToast('admin.validationError');
-          }
-        } else if (axiosError.response?.status === 403) {
-          showErrorToast('admin.forbidden');
-        } else {
-          showErrorToast('admin.genericError');
-        }
+        handleSubmitError(err);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [formValues, pickInlineContactFieldErrors, resetForm, showErrorToast, showSuccessToast],
+    [formValues, handleSubmitError, resetForm, showSuccessToast],
   );
 
   return (
@@ -221,4 +241,5 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
 RegisterMechanicComponent.displayName = 'RegisterMechanicPage';
 
+/** Admin-only route component for mechanic management and registration. */
 export const RegisterMechanicPage = RegisterMechanicComponent;

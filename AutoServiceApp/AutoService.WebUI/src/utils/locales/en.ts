@@ -1,3 +1,9 @@
+/**
+ * en.ts
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 export const en = {
   login: {
     title: 'Welcome ARSM',

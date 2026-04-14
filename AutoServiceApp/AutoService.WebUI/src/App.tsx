@@ -1,3 +1,9 @@
+/**
+ * Root application component. Configures routing, lazy-loaded pages,
+ * auth session restoration, error boundaries, SEO management, and the
+ * global toast viewport.
+ * @module App
+ */
 import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
@@ -20,6 +26,7 @@ const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.N
 const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then(m => ({ default: m.RegisterMechanicPage })));
 const SettingsPage = lazy(() => import('./pages/Settings/page').then(m => ({ default: m.SettingsPage })));
 
+/** Root component that wires routing, auth restoration, SEO, error boundary, and toast system. */
 function App() {
   const setIsAuthenticated = useAuthStore((state) => state.setIsAuthenticated);
   const setIsLoading = useAuthStore((state) => state.setIsLoading);

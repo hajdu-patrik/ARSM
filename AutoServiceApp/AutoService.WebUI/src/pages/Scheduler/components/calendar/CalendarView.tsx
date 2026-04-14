@@ -1,24 +1,44 @@
+/**
+ * Monthly calendar view with appointment badge indicators.
+ * Supports mobile-optimized single-badge layout and desktop multi-badge
+ * layout, month navigation with a +/-6 month limit, day selection,
+ * and locale-aware day/month headers.
+ * @module CalendarView
+ */
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppointmentDto, CalendarDay } from '../../../../types/scheduler/scheduler.types';
 
+/** Props for the {@link CalendarView} component. */
 interface CalendarViewProps {
+  /** All appointments for the displayed month. */
   readonly appointments: AppointmentDto[];
+  /** Calendar year to display. */
   readonly year: number;
+  /** Calendar month to display (1-based). */
   readonly month: number;
+  /** Whether month appointment data is currently loading. */
   readonly isLoading: boolean;
+  /** Callback fired when the user navigates to a different month. */
   readonly onMonthChange: (year: number, month: number) => void;
+  /** Optional callback fired when a current-month day cell is clicked. */
   readonly onDayClick?: (day: number) => void;
+  /** Currently selected day number, if any. */
   readonly selectedDay?: number | null;
 }
 
+/** Status-to-dot-color mapping for calendar appointment indicators. */
 const STATUS_DOT_COLORS: Record<string, string> = {
   InProgress: 'bg-yellow-500',
   Completed: 'bg-green-500',
   Cancelled: 'bg-red-500',
 };
 
+/**
+ * Builds a 6-week (42-day) calendar grid for the given month,
+ * starting from Monday, with appointments mapped to their scheduled dates.
+ */
 function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[]): CalendarDay[] {
   const firstDay = new Date(year, month - 1, 1);
   const dayOfWeek = firstDay.getDay();
@@ -265,4 +285,5 @@ const CalendarViewComponent = memo(function CalendarView({
 
 CalendarViewComponent.displayName = 'CalendarView';
 
+/** Memoized monthly calendar view with appointment indicators and day selection. */
 export const CalendarView = CalendarViewComponent;

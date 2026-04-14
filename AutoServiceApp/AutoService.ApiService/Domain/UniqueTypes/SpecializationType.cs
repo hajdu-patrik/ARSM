@@ -1,3 +1,9 @@
+/**
+ * SpecializationType.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 namespace AutoService.ApiService.Domain.UniqueTypes;
 
 /**

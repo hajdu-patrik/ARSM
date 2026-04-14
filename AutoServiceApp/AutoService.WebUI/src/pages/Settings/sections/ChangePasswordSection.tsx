@@ -1,9 +1,18 @@
+/**
+ * Settings change-password form section.
+ *
+ * Provides current/new/confirm password inputs with visibility toggles
+ * and inline validation message rendering.
+ * @module pages/Settings/sections/ChangePasswordSection
+ */
+
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 
+/** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
   readonly currentPassword: string;
   readonly newPassword: string;
@@ -154,4 +163,5 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
 
 ChangeSecretSectionComponent.displayName = 'ChangeSecretSection';
 
+/** Password update section rendered on the settings page. */
 export const ChangePasswordSection = ChangeSecretSectionComponent;

@@ -1,17 +1,31 @@
+/**
+ * Reusable modal dialog shell. Renders via a portal into `document.body`,
+ * supports Escape-key dismissal, a backdrop overlay, and an optional footer.
+ * Uses the `modal-enter` CSS keyframe animation defined in `index.css`.
+ * @module Modal
+ */
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
+/** Props for the {@link Modal} component. */
 interface ModalProps {
+  /** Whether the modal is currently visible. */
   readonly isOpen: boolean;
+  /** Callback invoked when the modal should close (overlay click, Escape, or X button). */
   readonly onClose: () => void;
+  /** Modal heading text, also used as the dialog `aria-label`. */
   readonly title: string;
+  /** Body content rendered inside the dialog. */
   readonly children: ReactNode;
+  /** Optional footer content (e.g. action buttons) rendered below the body. */
   readonly footer?: ReactNode;
+  /** Tailwind max-width class for the dialog. Defaults to `'max-w-lg'`. */
   readonly widthClassName?: string;
 }
 
+/** Memoized modal dialog with portal rendering, backdrop, and keyboard dismissal. */
 const ModalComponent = memo(function Modal({
   isOpen,
   onClose,

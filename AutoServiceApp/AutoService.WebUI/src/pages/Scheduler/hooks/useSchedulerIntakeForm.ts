@@ -1,3 +1,13 @@
+/**
+ * Hook that manages the intake modal form state, customer email lookup,
+ * vehicle mode switching, and intake creation submission.
+ *
+ * Resets all fields when the modal opens, performs customer-by-email
+ * lookup, derives vehicle create/existing mode, validates the form
+ * before submission, and maps backend errors to i18n keys.
+ *
+ * @module useSchedulerIntakeForm
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SchedulerCreateIntakeRequest, SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
@@ -18,13 +28,26 @@ import {
   VEHICLE_NUMERIC_LIMITS,
 } from '../components/intake/SchedulerIntakeModal.types';
 
+/** Configuration for {@link useSchedulerIntakeForm}. */
 interface UseSchedulerIntakeFormArgs {
+  /** Whether the intake modal is currently visible. */
   readonly isOpen: boolean;
+  /** The calendar day selected for the new appointment. */
   readonly selectedDate: Date;
+  /** Callback to close the intake modal on successful submission. */
   readonly onClose: () => void;
+  /** Submits the built intake request to the backend via the parent page. */
   readonly onSubmit: (request: SchedulerCreateIntakeRequest) => Promise<void>;
 }
 
+/**
+ * Manages the full lifecycle of the scheduler intake form: field state,
+ * customer lookup, vehicle field handling, validation, and submission.
+ *
+ * @returns `state` (all field values and loading flags), `derived`
+ *          (computed booleans for conditional UI), and `actions`
+ *          (memoized callbacks for field changes and form operations).
+ */
 export function useSchedulerIntakeForm({
   isOpen,
   selectedDate,

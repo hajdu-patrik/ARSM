@@ -1,3 +1,9 @@
+/**
+ * Program.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Admin;
 using AutoService.ApiService.Appointments;
 using AutoService.ApiService.Auth.Endpoints;
@@ -23,6 +29,20 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Scalar.AspNetCore;
 
+/**
+ * API service entrypoint.
+ *
+ * This top-level program configures the full backend runtime:
+ * - configuration resolution (database/JWT/CORS/forwarded headers)
+ * - service registrations (EF Core, Identity, auth, rate limits, CORS, SSE broadcaster)
+ * - middleware pipeline ordering
+ * - endpoint mapping for all API areas
+ *
+ * Operational notes:
+ * - appsettings.Local.json is optional and intended for local overrides only.
+ * - startup fails fast when critical security configuration is missing or invalid.
+ * - demo data seeding/migrations are executed during startup via EnsureSeededAsync().
+ */
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -39,6 +59,12 @@ builder.Services.AddDbContext<AutoServiceDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
+/**
+ * Forwarded headers trust policy configuration.
+ *
+ * @param options Mutable forwarded headers options instance.
+ * @return Configuration side effects are applied directly to options.
+ */
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -112,6 +138,15 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        /**
+         * JWT bearer event hooks.
+         *
+         * OnMessageReceived:
+         * - reads access token from HttpOnly cookie when Authorization header is missing.
+         *
+         * OnTokenValidated:
+         * - checks denylist for JTI revocation and fails auth if token is revoked.
+         */
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -162,6 +197,14 @@ builder.Services
 
 builder.Services.AddRateLimiter(options =>
 {
+    /**
+     * Rate-limit rejection behavior.
+     *
+     * For login route only, this callback additionally:
+     * - activates temporary login-ban window,
+     * - sets Retry-After response header,
+     * - returns stable JSON error payload.
+     */
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.OnRejected = async (context, cancellationToken) =>
@@ -232,6 +275,19 @@ await app.EnsureSeededAsync();
 // -------------------------
 // Middleware pipeline
 // -------------------------
+/**
+ * Middleware ordering is security-sensitive.
+ *
+ * Effective order:
+ * - forwarded headers
+ * - https redirection / hsts
+ * - security headers
+ * - login ban middleware
+ * - rate limiter
+ * - cors
+ * - authentication
+ * - authorization
+ */
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -252,6 +308,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Endpoint mapping.
+/**
+ * Endpoint map groups by domain module.
+ *
+ * @return The app starts with all endpoint groups and default health endpoints mapped.
+ */
 app.MapAuthEndpoints();
 app.MapAppointmentEndpoints();
 app.MapProfileEndpoints();

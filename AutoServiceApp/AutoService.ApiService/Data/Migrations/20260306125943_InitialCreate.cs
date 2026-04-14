@@ -1,3 +1,9 @@
+/**
+ * 20260306125943_InitialCreate.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -5,12 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class InitialCreate : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class InitialCreate : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "people",
@@ -140,10 +142,7 @@ namespace AutoService.ApiService.Data.Migrations
                 table: "vehicles",
                 column: "LicensePlate",
                 unique: true);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        }protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "appointmentmechanics");

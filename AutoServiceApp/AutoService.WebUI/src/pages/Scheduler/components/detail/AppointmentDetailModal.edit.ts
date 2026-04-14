@@ -1,3 +1,9 @@
+/**
+ * AppointmentDetailModal.edit.ts
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import type { AppointmentDto, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
 
 export interface EditFormState {
@@ -19,6 +25,12 @@ export const VEHICLE_NUMERIC_LIMITS = {
   engineTorqueNm: { min: 0, max: 50000 },
 } as const;
 
+/**
+ * buildEditForm operation.
+ *
+ * @param AppointmentDto Parameter.
+ * @returns Return value.
+ */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
     scheduledDate: toDatetimeLocalValue(appointment.scheduledDate),
@@ -34,6 +46,13 @@ export function buildEditForm(appointment: AppointmentDto): EditFormState {
   };
 }
 
+/**
+ * normalizeEditFieldValue operation.
+ *
+ * @param EditFormState Parameter.
+ * @param string Parameter.
+ * @returns Return value.
+ */
 export function normalizeEditFieldValue(field: keyof EditFormState, value: string): string {
   if (!(field in VEHICLE_NUMERIC_LIMITS)) {
     return value;
@@ -46,6 +65,14 @@ export function normalizeEditFieldValue(field: keyof EditFormState, value: strin
   );
 }
 
+/**
+ * buildUpdateRequestFromEditForm operation.
+ *
+ * @param appointment Parameter.
+ * @param editForm Parameter.
+ * @param nowMs Parameter.
+ * @returns Return value.
+ */
 export function buildUpdateRequestFromEditForm(
   appointment: AppointmentDto,
   editForm: EditFormState,
@@ -123,6 +150,13 @@ export function buildUpdateRequestFromEditForm(
   };
 }
 
+/**
+ * buildUpdatedAppointmentSnapshot operation.
+ *
+ * @param appointment Parameter.
+ * @param request Parameter.
+ * @returns Return value.
+ */
 export function buildUpdatedAppointmentSnapshot(
   appointment: AppointmentDto,
   request: UpdateAppointmentRequest,

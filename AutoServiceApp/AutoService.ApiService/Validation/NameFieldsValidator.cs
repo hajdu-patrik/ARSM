@@ -1,15 +1,31 @@
+/**
+ * NameFieldsValidator.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Validation;
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal static class NameFieldsValidator
 {
-    /// <summary>
-    /// Validates first, middle, and last names and adds errors to the provided dictionary.
-    /// Suitable for dict-based validation patterns (e.g. auth register).
-    /// Only validates non-empty values; use <paramref name="requireFirstName"/> and
-    /// <paramref name="requireLastName"/> to control required-field errors.
-    /// </summary>
+    /**
+     * Validates first, middle, and last names and adds errors to the provided dictionary.
+     * Suitable for dict-based validation patterns (e.g. auth register).
+     * Only validates non-empty values; use requireFirstName and requireLastName
+     * to control required-field errors.
+     *
+     * @param firstName First-name input value.
+     * @param middleName Middle-name input value.
+     * @param lastName Last-name input value.
+     * @param errors Target validation error dictionary.
+     * @param requireFirstName Whether FirstName is required.
+     * @param requireLastName Whether LastName is required.
+     */
     internal static void ValidateNames(
         string? firstName,
         string? middleName,
@@ -42,10 +58,14 @@ internal static class NameFieldsValidator
         }
     }
 
-    /// <summary>
-    /// Returns a validation error message for a single name value, or null if valid.
-    /// Suitable for early-return patterns (e.g. customer create, appointment intake).
-    /// </summary>
+    /**
+     * Returns a validation error message for a single name value, or null if valid.
+     * Suitable for early-return patterns (e.g. customer create, appointment intake).
+     *
+     * @param value Name field value to validate.
+     * @param fieldName Field identifier used to resolve a specific validation message.
+     * @return Validation message when invalid; otherwise null.
+     */
     internal static string? GetNameError(string value, string fieldName)
     {
         if (!ContactNormalization.IsValidName(value))

@@ -32,6 +32,16 @@ You are a focused backend agent working exclusively within `AutoServiceApp/AutoS
 8. Never commit secrets or credentials.
 9. Do NOT touch frontend files, documentation files, or Aspire orchestration files.
 
+## Code Quality Principles (Mandatory)
+1. Prefer human-readable code over clever shortcuts.
+2. Keep functions small and single-purpose; split complex logic into focused helpers.
+3. Use descriptive names for variables, methods, and DTOs.
+4. Keep side effects localized and explicit; avoid hidden global coupling.
+5. Add concise comments for non-obvious business rules (explain why, not what).
+6. Reuse shared validators/helpers instead of duplicating logic (DRY).
+7. Preserve or improve testability with every change (clear boundaries, deterministic behavior).
+8. Maintain secure defaults and fail-fast behavior for invalid security/config states.
+
 ## After completing your work
 - Run `dotnet build` from the `AutoServiceApp` directory to verify compilation.
 - Report what endpoints were added/changed, what DTOs were created, and any migration needs.

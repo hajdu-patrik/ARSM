@@ -1,3 +1,9 @@
+/**
+ * AuthEndpoints.Helpers.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -11,6 +17,9 @@ using System.Text;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AuthEndpoints
 {
     /**
@@ -55,7 +64,7 @@ public static partial class AuthEndpoints
     private static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
         => ContactNormalization.TryNormalizeEmail(rawValue, out normalizedEmail);
 
-    private static string GenerateRefreshTokenValue()
+        private static string GenerateRefreshTokenValue()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
@@ -64,7 +73,7 @@ public static partial class AuthEndpoints
     private static string HashRefreshToken(string token)
         => TokenSecurity.HashSha256(token);
 
-    private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl)
+        private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl)
     {
         return new CookieOptions
         {
@@ -77,7 +86,7 @@ public static partial class AuthEndpoints
         };
     }
 
-    private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl)
+        private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl)
     {
         return new CookieOptions
         {
@@ -93,7 +102,7 @@ public static partial class AuthEndpoints
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);
 
-    private static string? ResolveClientIpAddress(HttpContext httpContext)
+        private static string? ResolveClientIpAddress(HttpContext httpContext)
     {
         var ip = httpContext.Connection.RemoteIpAddress?.ToString();
         return string.IsNullOrWhiteSpace(ip) ? null : ip;

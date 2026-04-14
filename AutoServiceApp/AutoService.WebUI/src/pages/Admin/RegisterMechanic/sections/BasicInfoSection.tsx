@@ -1,3 +1,8 @@
+/**
+ * Basic identity/contact fields for mechanic registration.
+ * @module pages/Admin/RegisterMechanic/sections/BasicInfoSection
+ */
+
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
@@ -5,6 +10,7 @@ import { inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 
+/** Props for the BasicInfoSection component. */
 interface BasicInfoSectionProps {
   readonly firstName: string;
   readonly middleName: string;
@@ -132,4 +138,5 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
 BasicInfoSectionComponent.displayName = 'BasicInfoSection';
 
+/** Name and contact input section used by the mechanic registration form. */
 export const BasicInfoSection = BasicInfoSectionComponent;

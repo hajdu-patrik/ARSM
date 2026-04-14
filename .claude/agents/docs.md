@@ -39,3 +39,8 @@ Also: `docs/Private-Docs/ARSM-TL-DR.md` (full project state summary).
 - If `README.md` or `README(HU).md` contains stale project-state facts, update both.
 - Apply basic markdown hygiene in touched files (tables, blank lines, trailing newline).
 - Report a summary of what changed and in which files.
+
+## Quality Alignment Rules
+- Documentation must reinforce human-readable, maintainable coding practices.
+- When code rules change, document readability/maintainability expectations explicitly.
+- Keep examples and wording clear, concrete, and action-oriented for implementers.

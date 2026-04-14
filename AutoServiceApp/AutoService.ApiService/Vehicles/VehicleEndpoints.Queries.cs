@@ -1,11 +1,20 @@
+/**
+ * VehicleEndpoints.Queries.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Vehicles;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class VehicleEndpoints
 {
-    private static async Task<IResult> ListCustomerVehiclesAsync(
+        private static async Task<IResult> ListCustomerVehiclesAsync(
         int customerId,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -45,7 +54,7 @@ public static partial class VehicleEndpoints
         return Results.Ok(vehicles);
     }
 
-    private static async Task<IResult> GetVehicleAsync(
+        private static async Task<IResult> GetVehicleAsync(
         int id,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)

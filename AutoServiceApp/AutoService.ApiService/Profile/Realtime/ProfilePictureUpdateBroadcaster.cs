@@ -1,13 +1,25 @@
+/**
+ * ProfilePictureUpdateBroadcaster.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace AutoService.ApiService.Profile.Realtime;
 
+/**
+ * Immutable DTO used by API request and response flows.
+ */
 internal sealed record ProfilePictureUpdatedEvent(
     int PersonId,
     bool HasProfilePicture,
     long CacheBuster);
 
+/**
+ * Contract for related backend behavior.
+ */
 internal interface IProfilePictureUpdateBroadcaster
 {
     bool TrySubscribe(out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader);
@@ -17,6 +29,9 @@ internal interface IProfilePictureUpdateBroadcaster
     void Publish(ProfilePictureUpdatedEvent updateEvent);
 }
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBroadcaster
 {
     private const int MaxConcurrentSubscriptions = 200;
@@ -25,7 +40,14 @@ internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBro
     private readonly ConcurrentDictionary<Guid, Channel<ProfilePictureUpdatedEvent>> subscribers = new();
     private int subscriptionCount;
 
-    public bool TrySubscribe(out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader)
+        /**
+         * TrySubscribe operation.
+         *
+         * @param subscriptionId Parameter.
+         * @param reader Parameter.
+         * @returns Return value.
+         */
+        public bool TrySubscribe(out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader)
     {
         var newCount = Interlocked.Increment(ref subscriptionCount);
         if (newCount > MaxConcurrentSubscriptions)
@@ -58,7 +80,12 @@ internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBro
         return true;
     }
 
-    public void Unsubscribe(Guid subscriptionId)
+        /**
+         * Unsubscribe operation.
+         *
+         * @param subscriptionId Parameter.
+         */
+        public void Unsubscribe(Guid subscriptionId)
     {
         if (subscribers.TryRemove(subscriptionId, out var channel))
         {
@@ -67,7 +94,12 @@ internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBro
         }
     }
 
-    public void Publish(ProfilePictureUpdatedEvent updateEvent)
+        /**
+         * Publish operation.
+         *
+         * @param updateEvent Parameter.
+         */
+        public void Publish(ProfilePictureUpdatedEvent updateEvent)
     {
         foreach (var subscriber in subscribers)
         {

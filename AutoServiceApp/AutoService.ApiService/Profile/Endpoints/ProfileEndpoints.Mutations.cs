@@ -1,3 +1,9 @@
+/**
+ * ProfileEndpoints.Mutations.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
@@ -15,10 +21,13 @@ using System.Security.Claims;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class ProfileEndpoints
 {
 
-    private static async Task<IResult> UpdateProfileAsync(
+        private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -196,7 +205,7 @@ public static partial class ProfileEndpoints
             person.ProfilePicture is not null));
     }
 
-    private static async Task<IResult> ChangePasswordAsync(
+        private static async Task<IResult> ChangePasswordAsync(
         ChangePasswordRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -270,7 +279,7 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Password changed successfully." });
     }
 
-    private static async Task<IResult> DeleteProfileAsync(
+        private static async Task<IResult> DeleteProfileAsync(
         [FromBody] DeleteProfileRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,

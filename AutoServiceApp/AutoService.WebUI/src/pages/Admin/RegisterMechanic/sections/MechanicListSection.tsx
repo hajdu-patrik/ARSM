@@ -1,3 +1,9 @@
+/**
+ * MechanicListSection.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';

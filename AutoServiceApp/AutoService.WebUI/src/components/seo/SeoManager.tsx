@@ -1,15 +1,30 @@
+/**
+ * Route-aware SEO manager. Updates document title, meta description,
+ * robots directives, Open Graph, Twitter Card tags, canonical URL,
+ * and `html[lang]` attribute on every route/language change.
+ * @module SeoManager
+ */
 import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
+/** Per-route SEO configuration resolved from the current path and language. */
 type SeoConfig = {
+  /** Localized page title (displayed before the `| ARSM` suffix). */
   pageTitle: string;
+  /** Meta description content. */
   description: string;
+  /** Robots directive override. Defaults to `'index, follow'` when omitted. */
   robots?: string;
 };
 
+/** Application name appended to every page title. */
 const APP_NAME = 'ARSM';
 
+/**
+ * Retrieves an existing `<meta>` tag or creates one if it does not exist.
+ * Appends the new element to `<head>` when created.
+ */
 function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:description' | 'og:type' | 'og:locale' | 'twitter:card' | 'twitter:title' | 'twitter:description', attribute: 'name' | 'property' = 'name') {
   const selector = `meta[${attribute}="${name}"]`;
   const existing = document.head.querySelector<HTMLMetaElement>(selector);
@@ -24,6 +39,7 @@ function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:descr
   return meta;
 }
 
+/** Normalizes a route pathname for canonical URL generation. `/scheduler` and `/dashboard` map to `/`. */
 function normalizeCanonicalPath(pathname: string) {
   if (pathname === '/scheduler' || pathname === '/dashboard') {
     return '/';
@@ -36,6 +52,7 @@ function normalizeCanonicalPath(pathname: string) {
   return pathname;
 }
 
+/** Retrieves the existing `<link rel="canonical">` or creates one in `<head>`. */
 function getOrCreateCanonical() {
   const selector = 'link[rel="canonical"]';
   const existing = document.head.querySelector<HTMLLinkElement>(selector);
@@ -50,6 +67,7 @@ function getOrCreateCanonical() {
   return link;
 }
 
+/** Renderless component that manages all SEO-related `<head>` tags based on the current route and language. */
 export function SeoManager() {
   const location = useLocation();
   const { t, i18n } = useTranslation();

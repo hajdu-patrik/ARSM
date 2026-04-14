@@ -1,8 +1,17 @@
+/**
+ * ContactNormalization.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Net.Mail;
 using System.Text.RegularExpressions;
 
 namespace AutoService.ApiService.Normalization;
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal static partial class ContactNormalization
 {
     private static readonly HashSet<string> AllowedHungarianMobilePrefixes =
@@ -29,7 +38,7 @@ internal static partial class ContactNormalization
     internal static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    internal static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
+        internal static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
     {
         normalizedEmail = string.Empty;
 
@@ -58,7 +67,7 @@ internal static partial class ContactNormalization
         return true;
     }
 
-    internal static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
+        internal static bool TryNormalizeHungarianPhoneNumber(string? rawValue, out string normalizedPhoneNumber)
     {
         normalizedPhoneNumber = string.Empty;
 
@@ -111,7 +120,7 @@ internal static partial class ContactNormalization
         return true;
     }
 
-    internal static IReadOnlyCollection<string> BuildHungarianPhoneLookupCandidates(string normalizedPhoneNumber)
+        internal static IReadOnlyCollection<string> BuildHungarianPhoneLookupCandidates(string normalizedPhoneNumber)
     {
         var nationalNumber = normalizedPhoneNumber[2..];
 
@@ -123,7 +132,7 @@ internal static partial class ContactNormalization
         ];
     }
 
-    private static bool IsValidHungarianNationalNumber(string nationalNumber)
+        private static bool IsValidHungarianNationalNumber(string nationalNumber)
     {
         if (nationalNumber.StartsWith("1", StringComparison.Ordinal))
         {

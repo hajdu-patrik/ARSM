@@ -4,7 +4,8 @@
       "Bash(find:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(cat \"C:/Users/hajdu/.claude/plugins/\"*.json)"
     ],
     "deny": [
       "Read(node_modules/**)",

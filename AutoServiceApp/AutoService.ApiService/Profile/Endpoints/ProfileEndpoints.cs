@@ -1,3 +1,9 @@
+/**
+ * ProfileEndpoints.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Profile.Endpoints;
@@ -8,7 +14,13 @@ namespace AutoService.ApiService.Profile.Endpoints;
  */
 public static partial class ProfileEndpoints
 {
-    public static IEndpointRouteBuilder MapProfileEndpoints(this IEndpointRouteBuilder endpoints)
+        /**
+         * MapProfileEndpoints operation.
+         *
+         * @param endpoints Parameter.
+         * @returns Return value.
+         */
+        public static IEndpointRouteBuilder MapProfileEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/profile").WithTags("Profile").RequireAuthorization();
 

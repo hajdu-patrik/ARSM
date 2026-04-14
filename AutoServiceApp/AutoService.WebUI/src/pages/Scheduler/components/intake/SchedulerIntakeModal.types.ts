@@ -1,3 +1,9 @@
+/**
+ * SchedulerIntakeModal.types.ts
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 
 export type LookupState = 'idle' | 'found' | 'not-found';

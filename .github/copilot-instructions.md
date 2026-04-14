@@ -160,9 +160,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; for past appointments `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
-	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, or `422` if unassign would leave appointment without mechanics)
-	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (`422` with code `appointment_cancelled` if Cancelled)
-	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (`422` with code `appointment_cancelled` if Cancelled, or `422` if removal would leave appointment without mechanics)
+	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
+	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_completed` if Completed)
+	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if removal would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
@@ -199,7 +199,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- register pre-checks normalized email collisions against both Identity users and domain `People` records (including passive customers),
 	- register maps unique-email database races to controlled validation errors on `Email`,
 	- unknown/wrong credentials return generic `401` (`invalid_credentials`),
-	- existing customer email/phone identifiers return `403` (`mechanic_only_login`) because only mechanics can authenticate,
+	- existing customer email/phone identifiers follow the same generic `401` (`invalid_credentials`) path to reduce account enumeration,
 	- lockout is enabled (`5` failed attempts, `15` minutes lockout),
 	- login rate limit is `10` requests per minute per client IP,
 	- refresh rate limit is `20` requests per minute per client IP,

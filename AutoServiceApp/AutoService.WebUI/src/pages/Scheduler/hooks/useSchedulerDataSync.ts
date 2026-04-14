@@ -1,3 +1,17 @@
+/**
+ * Hook that orchestrates scheduler data fetching, background refresh,
+ * and stale-data prevention.
+ *
+ * Fetches today's appointments once on mount, fetches the selected month
+ * whenever `calendarYear`/`calendarMonth` change, and runs an 8-second
+ * background poll for near-realtime claim/status updates. Uses request-id
+ * and current-view refs to prevent stale-closure races and out-of-order
+ * writes. Distinguishes auth-expired (401/403) from generic load failures
+ * in error toasts. Listens for profile-picture-update SSE events to
+ * trigger an immediate background refresh.
+ *
+ * @module useSchedulerDataSync
+ */
 import { useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
@@ -5,12 +19,17 @@ import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile
 import { useSchedulerStore } from '../../../store/scheduler.store';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
+/** Configuration for {@link useSchedulerDataSync}. */
 interface UseSchedulerDataSyncArgs {
+  /** Currently displayed calendar year. */
   readonly calendarYear: number;
+  /** Currently displayed calendar month (1-based). */
   readonly calendarMonth: number;
+  /** Displays an error toast by i18n key. */
   readonly showErrorToast: (key: string) => void;
 }
 
+/** Returns `true` when the error is an Axios 401 or 403 response (session expired). */
 function isAuthExpiredError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) {
     return false;
@@ -19,6 +38,10 @@ function isAuthExpiredError(error: unknown): boolean {
   return error.response?.status === 401 || error.response?.status === 403;
 }
 
+/**
+ * Manages today and month appointment data loading, background polling,
+ * and stale-request guards for the scheduler page.
+ */
 export function useSchedulerDataSync({
   calendarYear,
   calendarMonth,

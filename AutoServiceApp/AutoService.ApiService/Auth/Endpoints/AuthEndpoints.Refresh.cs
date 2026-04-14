@@ -1,3 +1,9 @@
+/**
+ * AuthEndpoints.Refresh.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
@@ -12,22 +18,37 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AuthEndpoints
 {
     /**
      * Handles POST /api/auth/refresh.
-     * Validates refresh token cookie, rotates refresh token, and reissues access token cookie.
+     * Validates refresh token state, rotates token, and reissues auth cookies.
+     *
+     * @param httpContext Current request context used to read/write cookies.
+     * @param db Database context.
+     * @param userManager Identity user manager.
+     * @param tokenIssuer JWT issuer service.
+     * @param loggerFactory Logger factory used to create endpoint logger.
+     * @param cancellationToken Request cancellation token.
+     * @return 200 OK with refreshed auth payload, or 401 when refresh cannot proceed.
      */
     private static async Task<IResult> RefreshAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         UserManager<IdentityUser> userManager,
         IJwtTokenIssuer tokenIssuer,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var logger = loggerFactory.CreateLogger("AuthEndpoints.Refresh");
+
         if (!httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) ||
             string.IsNullOrWhiteSpace(refreshTokenValue))
         {
+            logger.LogInformation("Refresh rejected: missing or empty refresh token cookie.");
             return Results.Unauthorized();
         }
 
@@ -40,11 +61,13 @@ public static partial class AuthEndpoints
 
         if (existingToken is null)
         {
+            logger.LogInformation("Refresh rejected: refresh token not found.");
             return Results.Unauthorized();
         }
 
         if (existingToken.RevokedAtUtc is not null)
         {
+            logger.LogWarning("Refresh rejected: token already revoked for mechanic {MechanicId}.", existingToken.MechanicId);
             if (!string.IsNullOrWhiteSpace(existingToken.ReplacedByTokenHash))
             {
                 await RevokeRefreshTokenDescendantsAsync(existingToken, nowUtc, db, cancellationToken);
@@ -56,6 +79,7 @@ public static partial class AuthEndpoints
 
         if (existingToken.ExpiresAtUtc <= nowUtc)
         {
+            logger.LogInformation("Refresh rejected: token expired for mechanic {MechanicId}.", existingToken.MechanicId);
             return Results.Unauthorized();
         }
 
@@ -65,18 +89,21 @@ public static partial class AuthEndpoints
         {
             existingToken.Revoke(nowUtc);
             await db.SaveChangesAsync(cancellationToken);
+            logger.LogWarning("Refresh rejected due to IP mismatch for mechanic {MechanicId}; token revoked.", existingToken.MechanicId);
             return Results.Unauthorized();
         }
 
         var mechanic = existingToken.Mechanic;
         if (string.IsNullOrWhiteSpace(mechanic.IdentityUserId))
         {
+            logger.LogWarning("Refresh rejected: mechanic {MechanicId} has no linked identity user.", mechanic.Id);
             return Results.Unauthorized();
         }
 
         var identityUser = await userManager.FindByIdAsync(mechanic.IdentityUserId);
         if (identityUser is null)
         {
+            logger.LogWarning("Refresh rejected: linked identity user missing for mechanic {MechanicId}.", mechanic.Id);
             return Results.Unauthorized();
         }
 
@@ -113,9 +140,18 @@ public static partial class AuthEndpoints
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
         var isAdmin = roles.Contains("Admin");
+        logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}.", mechanic.Id, isAdmin);
         return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 
+    /**
+     * Revokes descendant refresh tokens that were issued by token replacement chain.
+     *
+     * @param rootToken Starting token in rotation chain.
+     * @param nowUtc Revocation timestamp.
+     * @param db Database context.
+     * @param cancellationToken Request cancellation token.
+     */
     private static async Task RevokeRefreshTokenDescendantsAsync(
         RefreshToken rootToken,
         DateTime nowUtc,

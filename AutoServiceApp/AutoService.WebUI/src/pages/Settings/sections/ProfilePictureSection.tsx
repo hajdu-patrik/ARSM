@@ -1,15 +1,32 @@
+/**
+ * Settings profile-picture section.
+ *
+ * Handles upload trigger, current picture preview, deterministic fallback
+ * avatar display, and picture removal action.
+ * @module pages/Settings/sections/ProfilePictureSection
+ */
+
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cardClass, buttonClass } from '../constants';
 
+/** Props for the {@link ProfilePictureSection} component. */
 interface ProfilePictureSectionProps {
+  /** Whether the user currently has an uploaded profile picture. */
   readonly hasProfilePicture: boolean;
+  /** URL to fetch the current profile picture. */
   readonly pictureUrl: string;
+  /** Initials string for the deterministic fallback avatar. */
   readonly initials: string;
+  /** Tailwind color class for the fallback avatar background. */
   readonly fallbackColorClass: string;
+  /** Cache-busting key incremented after upload/remove to force image reload. */
   readonly pictureKey: number;
+  /** Whether an upload or remove operation is in progress. */
   readonly isUploading: boolean;
+  /** Callback invoked when the user selects a file for upload. */
   readonly onSelectFile: (file: File) => void;
+  /** Callback invoked when the user clicks remove picture. */
   readonly onRemove: () => void;
 }
 
@@ -107,4 +124,5 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 
 ProfilePictureSectionComponent.displayName = 'ProfilePictureSection';
 
+/** Profile picture section with upload, remove, and deterministic fallback avatar. */
 export const ProfilePictureSection = ProfilePictureSectionComponent;

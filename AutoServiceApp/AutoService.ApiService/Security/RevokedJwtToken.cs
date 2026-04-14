@@ -1,3 +1,9 @@
+/**
+ * RevokedJwtToken.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,6 +27,13 @@ public sealed class RevokedJwtToken
 
     private RevokedJwtToken() { }
 
+    /**
+     * RevokedJwtToken operation.
+     *
+     * @param jwtId Parameter.
+     * @param revokedAtUtc Parameter.
+     * @param expiresAtUtc Parameter.
+     */
     public RevokedJwtToken(string jwtId, DateTime revokedAtUtc, DateTime expiresAtUtc)
     {
         JwtId = jwtId;
@@ -28,7 +41,12 @@ public sealed class RevokedJwtToken
         ExpiresAtUtc = expiresAtUtc;
     }
 
-    public void ExtendExpiry(DateTime expiresAtUtc)
+        /**
+         * ExtendExpiry operation.
+         *
+         * @param expiresAtUtc Parameter.
+         */
+        public void ExtendExpiry(DateTime expiresAtUtc)
     {
         if (expiresAtUtc > ExpiresAtUtc)
         {

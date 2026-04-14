@@ -1,3 +1,8 @@
+/**
+ * Profile picture crop dialog. Allows the user to pan, zoom, and crop
+ * an uploaded image to a circular 1:1 aspect ratio before uploading.
+ * @module ProfilePictureCropModal
+ */
 import { memo, useCallback, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
@@ -5,14 +10,21 @@ import { Modal } from './Modal';
 import { cropImageToBlob } from '../../utils/imageCrop';
 import { useToastStore } from '../../store/toast.store';
 
+/** Props for the {@link ProfilePictureCropModal} component. */
 interface ProfilePictureCropModalProps {
+  /** Whether the crop modal is currently visible. */
   readonly isOpen: boolean;
+  /** Data URL of the selected image to crop, or null when no image is selected. */
   readonly imageSrc: string | null;
+  /** Whether a crop/upload operation is currently in progress. */
   readonly isSubmitting: boolean;
+  /** Callback invoked when the user cancels the crop. */
   readonly onCancel: () => void;
+  /** Callback invoked with the cropped image blob when the user confirms. */
   readonly onConfirm: (croppedImage: Blob) => Promise<void>;
 }
 
+/** Memoized crop modal with pan/zoom controls, cancel/confirm actions, and error toast feedback. */
 const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
   isOpen,
   imageSrc,

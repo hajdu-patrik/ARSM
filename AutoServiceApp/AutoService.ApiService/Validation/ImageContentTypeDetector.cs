@@ -1,5 +1,14 @@
+/**
+ * ImageContentTypeDetector.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 namespace AutoService.ApiService.Validation;
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal static class ImageContentTypeDetector
 {
     internal static readonly HashSet<string> AllowedImageContentTypes =
@@ -9,7 +18,7 @@ internal static class ImageContentTypeDetector
         "image/webp"
     ];
 
-    internal static bool TryDetect(ReadOnlySpan<byte> fileBytes, out string contentType)
+        internal static bool TryDetect(ReadOnlySpan<byte> fileBytes, out string contentType)
     {
         if (IsJpeg(fileBytes))
         {

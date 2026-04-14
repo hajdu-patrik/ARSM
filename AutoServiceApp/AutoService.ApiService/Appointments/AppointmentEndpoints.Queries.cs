@@ -1,11 +1,20 @@
+/**
+ * AppointmentEndpoints.Queries.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AppointmentEndpoints
 {
-    private static async Task<IResult> GetByMonthAsync(
+        private static async Task<IResult> GetByMonthAsync(
         int? year,
         int? month,
         AutoServiceDbContext db,
@@ -34,7 +43,7 @@ public static partial class AppointmentEndpoints
         return Results.Ok(appointments.Select(ToDto).ToList());
     }
 
-    private static async Task<IResult> GetTodayAsync(
+        private static async Task<IResult> GetTodayAsync(
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {

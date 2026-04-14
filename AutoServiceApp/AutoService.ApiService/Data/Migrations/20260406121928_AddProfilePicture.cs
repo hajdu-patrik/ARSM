@@ -1,14 +1,16 @@
+/**
+ * 20260406121928_AddProfilePicture.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class AddProfilePicture : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class AddProfilePicture : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<byte[]>(
                 name: "ProfilePicture",
@@ -22,10 +24,7 @@ namespace AutoService.ApiService.Data.Migrations
                 type: "character varying(50)",
                 maxLength: 50,
                 nullable: true);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        }protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
                 name: "ProfilePicture",

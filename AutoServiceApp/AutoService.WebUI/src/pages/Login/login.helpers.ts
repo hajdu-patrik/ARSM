@@ -1,3 +1,11 @@
+/**
+ * Login parsing and error-resolution helpers.
+ *
+ * Normalizes email/phone identifiers and translates backend/transport
+ * failures to stable i18n-friendly login error keys.
+ * @module pages/Login/login.helpers
+ */
+
 import { isAxiosError, type AxiosError } from 'axios';
 
 interface ApiErrorPayload {
@@ -9,6 +17,7 @@ interface ApiErrorPayload {
   readonly retryAfterSeconds?: number;
 }
 
+/** Discriminated login error model used by the login page UI. */
 export type LoginError =
   | { key: 'login.invalidCredentials' }
   | { key: 'login.mechanicOnly' }
@@ -19,11 +28,13 @@ export type LoginError =
   | { key: 'login.attemptsExceeded' }
   | { key: 'login.error' };
 
+/** Parsed login identifier model for email or Hungarian phone input. */
 export type ParsedIdentifier =
   | { kind: 'email'; email: string }
   | { kind: 'phone'; phoneNumber: string }
   | { kind: 'invalid'; reason: 'format' | 'wrong_method_email' | 'wrong_method_phone' };
 
+/** Identifier login mode currently selected by the user. */
 export type LoginMethod = 'email' | 'phone';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -139,6 +150,7 @@ function parsePhoneIdentifier(value: string): ParsedIdentifier {
   };
 }
 
+/** Parses and validates a user-provided identifier by selected login method. */
 export function parseIdentifierByMethod(value: string, method: LoginMethod): ParsedIdentifier {
   const trimmedValue = value.trim();
 
@@ -211,6 +223,7 @@ function buildNormalizedErrorText(
     .toLowerCase();
 }
 
+/** Maps unknown login errors to user-facing login error keys. */
 export function resolveLoginError(err: unknown): LoginError {
   if (!isAxiosError<ApiErrorPayload>(err)) {
     return { key: 'login.databaseUnavailable' };

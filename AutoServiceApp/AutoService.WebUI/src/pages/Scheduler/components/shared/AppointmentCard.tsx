@@ -1,3 +1,9 @@
+/**
+ * Appointment card component for the scheduler grid and list views.
+ * Displays vehicle info, task description, due state, mechanic avatars,
+ * license plate, and a claim button for unassigned in-progress appointments.
+ * @module AppointmentCard
+ */
 import { memo, useState, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Clock3 } from 'lucide-react';
@@ -6,10 +12,15 @@ import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
 import { getDueState } from '../../utils/due-date';
 
+/** Props for the {@link AppointmentCard} component. */
 interface AppointmentCardProps {
+  /** The appointment data to render. */
   readonly appointment: AppointmentDto;
+  /** ID of the currently authenticated mechanic, used to determine assignment status. */
   readonly currentMechanicId: number | undefined;
+  /** Callback to claim the appointment; receives the appointment ID. */
   readonly onClaim: (id: number) => Promise<void>;
+  /** Optional click handler that makes the entire card interactive. */
   readonly onClick?: () => void;
 }
 
@@ -137,4 +148,5 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
 AppointmentCardComponent.displayName = 'AppointmentCard';
 
+/** Memoized appointment card for scheduler grid and list views. */
 export const AppointmentCard = AppointmentCardComponent;

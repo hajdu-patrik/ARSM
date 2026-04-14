@@ -1,4 +1,10 @@
-import type { AxiosError } from 'axios';
+/**
+ * SchedulerIntakeModal.helpers.ts
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
+import { isAxiosError } from 'axios';
 import type {
   SchedulerCreateIntakeRequest,
   SchedulerNewVehicleRequest,
@@ -12,6 +18,24 @@ import type {
 } from './SchedulerIntakeModal.types';
 import { VEHICLE_NUMERIC_LIMITS } from './SchedulerIntakeModal.types';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isIntakeApiError(value: unknown): value is IntakeApiError {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return value.detail == null || typeof value.detail === 'string';
+}
+
+/**
+ * getDefaultScheduledDate operation.
+ *
+ * @param Date Parameter.
+ * @returns Return value.
+ */
 export function getDefaultScheduledDate(selectedDate: Date): string {
   const now = new Date();
   return toDatetimeLocalValue(
@@ -25,6 +49,12 @@ export function getDefaultScheduledDate(selectedDate: Date): string {
   );
 }
 
+/**
+ * getDefaultDueDate operation.
+ *
+ * @param Date Parameter.
+ * @returns Return value.
+ */
 export function getDefaultDueDate(selectedDate: Date): string {
   const next = new Date(selectedDate);
   next.setDate(selectedDate.getDate() + 3);
@@ -39,9 +69,17 @@ export function getDefaultDueDate(selectedDate: Date): string {
   );
 }
 
+/**
+ * mapIntakeErrorToKey operation.
+ *
+ * @param unknown Parameter.
+ * @returns Return value.
+ */
 export function mapIntakeErrorToKey(error: unknown): string {
-  const axiosError = error as AxiosError<IntakeApiError>;
-  const detail = axiosError.response?.data?.detail?.toLowerCase() ?? '';
+  const detail =
+    isAxiosError(error) && isIntakeApiError(error.response?.data)
+      ? error.response.data.detail?.toLowerCase() ?? ''
+      : '';
 
   if (detail.includes('invalid email')) return 'scheduler.intake.errors.invalidEmail';
   if (detail.includes('taskdescription is required')) return 'scheduler.intake.errors.taskRequired';
@@ -64,10 +102,22 @@ export function mapIntakeErrorToKey(error: unknown): string {
   return 'scheduler.intake.errors.createFailed';
 }
 
+/**
+ * toIso operation.
+ *
+ * @param string Parameter.
+ * @returns Return value.
+ */
 export function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
+/**
+ * buildVehiclePayload operation.
+ *
+ * @param VehicleFormState Parameter.
+ * @returns Return value.
+ */
 export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehicleRequest {
   return {
     licensePlate: vehicle.licensePlate.trim(),
@@ -80,6 +130,14 @@ export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehi
   };
 }
 
+/**
+ * normalizeRangedNumberInput operation.
+ *
+ * @param string Parameter.
+ * @param number Parameter.
+ * @param number Parameter.
+ * @returns Return value.
+ */
 export function normalizeRangedNumberInput(rawValue: string, min: number, max: number): string {
   if (rawValue.trim() === '') {
     return '';
@@ -94,6 +152,12 @@ export function normalizeRangedNumberInput(rawValue: string, min: number, max: n
   return String(clamped);
 }
 
+/**
+ * hasValidVehicleNumericValues operation.
+ *
+ * @param VehicleFormState Parameter.
+ * @returns Return value.
+ */
 export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean {
   const mileageKm = Number(vehicle.mileageKm);
   const enginePowerHp = Number(vehicle.enginePowerHp);
@@ -106,6 +170,12 @@ export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean
   );
 }
 
+/**
+ * getCreateValidationError operation.
+ *
+ * @param params Parameter.
+ * @returns Return value.
+ */
 export function getCreateValidationError(params: {
   lookupState: LookupState;
   normalizedEmail: string;
@@ -143,6 +213,12 @@ export function getCreateValidationError(params: {
   return null;
 }
 
+/**
+ * enrichPayloadByLookupState operation.
+ *
+ * @param params Parameter.
+ * @returns Return value.
+ */
 export function enrichPayloadByLookupState(params: {
   basePayload: SchedulerCreateIntakeRequest;
   lookupState: LookupState;

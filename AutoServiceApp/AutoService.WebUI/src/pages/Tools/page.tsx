@@ -1,3 +1,10 @@
+/**
+ * Tools page placeholder.
+ *
+ * Renders a coming-soon panel for workshop tools management.
+ * @module pages/Tools/page
+ */
+
 import { memo } from 'react';
 import { Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -29,4 +36,5 @@ const ToolsPageComponent = memo(function ToolsPage() {
 
 ToolsPageComponent.displayName = 'ToolsPage';
 
+/** Tools route component with coming-soon content. */
 export const ToolsPage = ToolsPageComponent;

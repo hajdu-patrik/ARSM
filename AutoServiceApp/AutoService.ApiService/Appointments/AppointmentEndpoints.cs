@@ -1,8 +1,23 @@
+/**
+ * AppointmentEndpoints.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 namespace AutoService.ApiService.Appointments;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AppointmentEndpoints
 {
-    public static IEndpointRouteBuilder MapAppointmentEndpoints(this IEndpointRouteBuilder endpoints)
+        /**
+         * MapAppointmentEndpoints operation.
+         *
+         * @param endpoints Parameter.
+         * @returns Return value.
+         */
+        public static IEndpointRouteBuilder MapAppointmentEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/appointments")
                              .WithTags("Appointments")

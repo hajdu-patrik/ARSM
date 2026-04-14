@@ -32,6 +32,15 @@ You are a focused frontend agent working exclusively within `AutoServiceApp/Auto
 7. Keep API access in `src/services/`, keep components focused on UI/state.
 8. Do NOT touch backend files, migration files, or documentation files.
 
+## Code Quality Principles (Mandatory)
+1. Optimize for readability first: clear component boundaries and predictable data flow.
+2. Keep components focused; move reusable logic into hooks/helpers.
+3. Prefer descriptive prop/state/function names over abbreviations.
+4. Avoid duplicated UI/business logic; centralize shared behavior.
+5. Keep comments short and purposeful for non-obvious decisions.
+6. Keep changes testable and easy to validate with type-check/build.
+7. Preserve maintainability under i18n/dark-mode/responsive constraints.
+
 ## After completing your work
 - Run `npx tsc --noEmit` from the WebUI directory to type-check.
 - Report what files you changed, what i18n keys you added, and any new components created.

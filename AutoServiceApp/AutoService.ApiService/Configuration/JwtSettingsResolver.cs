@@ -1,3 +1,9 @@
+/**
+ * JwtSettingsResolver.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Text;
 
 namespace AutoService.ApiService.Configuration;
@@ -9,7 +15,13 @@ namespace AutoService.ApiService.Configuration;
  */
 public static class JwtSettingsResolver
 {
-    public static string ResolveSecret(IConfiguration configuration)
+        /**
+         * ResolveSecret operation.
+         *
+         * @param configuration Parameter.
+         * @returns Return value.
+         */
+        public static string ResolveSecret(IConfiguration configuration)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable("JwtSettings__Secret");
         var fromConfiguration = configuration["JwtSettings:Secret"];
@@ -39,7 +51,7 @@ public static class JwtSettingsResolver
         return secret;
     }
 
-    private static bool ContainsTemplateMarker(string value)
+        private static bool ContainsTemplateMarker(string value)
     {
         if (value.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase)
             || value.Contains("SET_UNIQUE_LOCAL", StringComparison.OrdinalIgnoreCase))
@@ -52,7 +64,7 @@ public static class JwtSettingsResolver
             || normalized.Contains("SETUNIQUELOCAL", StringComparison.Ordinal);
     }
 
-    private static string NormalizeForMarkerDetection(string value)
+        private static string NormalizeForMarkerDetection(string value)
     {
         var builder = new StringBuilder(value.Length);
         foreach (var c in value)

@@ -1,3 +1,10 @@
+/**
+ * Inventory page placeholder.
+ *
+ * Renders a coming-soon panel for inventory management.
+ * @module pages/Inventory/page
+ */
+
 import { memo } from 'react';
 import { Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -29,4 +36,5 @@ const InventoryPageComponent = memo(function InventoryPage() {
 
 InventoryPageComponent.displayName = 'InventoryPage';
 
+/** Inventory route component with coming-soon content. */
 export const InventoryPage = InventoryPageComponent;

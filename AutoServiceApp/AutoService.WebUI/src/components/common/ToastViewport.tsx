@@ -1,12 +1,21 @@
+/**
+ * App-wide toast notification viewport. Renders a fixed overlay of
+ * auto-dismissing success/error toasts with i18n-resolved messages.
+ * Toast messages store i18n keys so visible toasts update on language change.
+ * @module ToastViewport
+ */
 import { memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
 
+/** Props for the internal {@link ToastItem} component. */
 interface ToastItemProps {
+  /** The toast message data to render. */
   readonly toast: ToastMessage;
 }
 
+/** Single toast notification with auto-dismiss timer, variant styling, and manual dismiss button. */
 const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   const { t } = useTranslation();
   const removeToast = useToastStore((state) => state.removeToast);
@@ -57,6 +66,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
 ToastItem.displayName = 'ToastItem';
 
+/** Fixed-position container that renders all active toasts at the top of the viewport. */
 const ToastViewportComponent = memo(function ToastViewport() {
   const toasts = useToastStore((state) => state.toasts);
 

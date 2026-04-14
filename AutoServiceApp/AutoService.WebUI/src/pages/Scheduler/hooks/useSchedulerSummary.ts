@@ -1,17 +1,40 @@
+/**
+ * Hook that computes summary-strip data for the scheduler page header.
+ *
+ * Derives the selected date object, its formatted label, whether it is
+ * in the past, the display text (selected day vs. today), and the
+ * appointment count for the relevant day.
+ *
+ * @module useSchedulerSummary
+ */
 import { useMemo } from 'react';
 import { formatLongDate, isPastCalendarDay } from '../utils/scheduler-datetime';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
+/** Configuration for {@link useSchedulerSummary}. */
 interface UseSchedulerSummaryArgs {
+  /** Currently selected day-of-month (1-based), or `null` if no day is selected. */
   readonly selectedDay: number | null;
+  /** Currently displayed calendar year. */
   readonly calendarYear: number;
+  /** Currently displayed calendar month (1-based). */
   readonly calendarMonth: number;
+  /** All appointments loaded for the current month. */
   readonly monthAppointments: AppointmentDto[];
+  /** Number of today's appointments (from the dedicated today endpoint). */
   readonly todayAppointmentsCount: number;
+  /** Active i18n locale code (e.g. "en", "hu"). */
   readonly locale: string;
+  /** i18next translation function. */
   readonly t: (key: string, options?: Record<string, unknown>) => string;
 }
 
+/**
+ * Computes display data for the scheduler summary strip.
+ *
+ * @returns `selectedDate`, `isSelectedDateInPast`, `selectedDateLabel`,
+ *          `summaryDateText`, and `summaryCount`.
+ */
 export function useSchedulerSummary({
   selectedDay,
   calendarYear,

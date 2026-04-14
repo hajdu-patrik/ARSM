@@ -1,5 +1,14 @@
+/**
+ * ValidationMessages.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 namespace AutoService.ApiService.Validation;
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal static class ValidationMessages
 {
     internal const string InvalidFirstName = "First name may only contain letters and hyphens.";

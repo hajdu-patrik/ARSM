@@ -1,15 +1,17 @@
+/**
+ * 20260409133356_AddAppointmentIntakeAndDueDateTime.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class AddAppointmentIntakeAndDueDateTime : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class AddAppointmentIntakeAndDueDateTime : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTime>(
                 name: "DueDateTime",
@@ -56,10 +58,7 @@ namespace AutoService.ApiService.Data.Migrations
                 name: "IX_appointments_DueDateTime",
                 table: "appointments",
                 column: "DueDateTime");
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        }protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
                 name: "IX_appointments_DueDateTime",

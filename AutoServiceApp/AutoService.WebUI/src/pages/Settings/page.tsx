@@ -1,3 +1,11 @@
+/**
+ * Settings page.
+ *
+ * Manages profile loading and editing flows: personal info updates,
+ * password change, profile picture crop/upload/remove, and profile delete.
+ * @module pages/Settings/page
+ */
+
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -518,4 +526,5 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
 SettingsPageComponent.displayName = 'SettingsPage';
 
+/** Account settings route component for the authenticated user. */
 export const SettingsPage = SettingsPageComponent;

@@ -1,14 +1,31 @@
+/**
+ * React Error Boundary with i18n-aware fallback UI.
+ *
+ * Catches unhandled errors in the component tree and displays a
+ * localized error message with a reload button. Logs errors to
+ * console in development mode only. Wraps the main app router.
+ * @module components/common/ErrorBoundary
+ */
+
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+/** Props for the {@link ErrorBoundary} wrapper component. */
 interface ErrorBoundaryProps {
+  /** Child components to protect with the error boundary. */
   readonly children: ReactNode;
 }
 
+/** Internal state tracking whether an error has been caught. */
 interface ErrorBoundaryState {
+  /** Whether an unhandled error has occurred in the subtree. */
   hasError: boolean;
 }
 
+/**
+ * Internal class component implementing the error boundary lifecycle.
+ * Renders the provided fallback UI when an error is caught.
+ */
 class ErrorBoundaryInner extends Component<ErrorBoundaryProps & { readonly fallback: ReactNode }, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps & { readonly fallback: ReactNode }) {
     super(props);
@@ -58,6 +75,12 @@ function ErrorFallback() {
   );
 }
 
+/**
+ * ErrorBoundary operation.
+ *
+ * @param ErrorBoundaryProps Parameter.
+ * @returns Return value.
+ */
 export function ErrorBoundary({ children }: ErrorBoundaryProps) {
   return (
     <ErrorBoundaryInner fallback={<ErrorFallback />}>

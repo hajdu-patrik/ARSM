@@ -1,3 +1,9 @@
+/**
+ * AuthEndpoints.Register.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -12,28 +18,35 @@ using Npgsql;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AuthEndpoints
 {
     /**
-     * Handles POST /api/auth/register.
-     * Creates an ASP.NET Core Identity account and a linked Mechanic domain record
-     * inside a single database transaction. Rolls back both if either step fails.
+     * Handles POST /api/auth/register and creates a mechanic account.
+     * Identity and domain records are persisted in one transaction.
      *
-     * @param request Registration payload (mechanic only).
-     * @param userManager ASP.NET Core Identity user manager.
-     * @param db Entity Framework Core database context.
-     * @param cancellationToken Cancellation token for the async operation.
-     * @return 200 OK with identity+domain IDs, or 422 Unprocessable with validation errors.
+     * @param request Incoming registration payload.
+     * @param userManager Identity user manager.
+     * @param db Database context.
+     * @param loggerFactory Logger factory used to create endpoint logger.
+     * @param cancellationToken Request cancellation token.
+     * @return 200 OK with IDs on success, or validation/conflict result when registration fails.
      */
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var logger = loggerFactory.CreateLogger("AuthEndpoints.Register");
+
         var validationErrors = ValidateRegisterRequest(request);
         if (validationErrors.Count > 0)
         {
+            logger.LogWarning("Registration validation failed with {ErrorCount} errors.", validationErrors.Count);
             return Results.ValidationProblem(validationErrors);
         }
 
@@ -46,6 +59,7 @@ public static partial class AuthEndpoints
 
         if (await userManager.FindByEmailAsync(email) is not null)
         {
+            logger.LogInformation("Registration rejected: email already exists in Identity.");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
                 [nameof(request.Email)] = ["An account already exists with this email address."]
@@ -58,6 +72,7 @@ public static partial class AuthEndpoints
 
         if (peopleEmailInUse)
         {
+            logger.LogInformation("Registration rejected: email already exists in People records.");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
                 [nameof(request.Email)] = ["An account already exists with this email address."]
@@ -72,6 +87,7 @@ public static partial class AuthEndpoints
 
             if (phoneNumberInUse)
             {
+                logger.LogInformation("Registration rejected: phone number already exists.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     [nameof(request.PhoneNumber)] = ["An account already exists with this phone number."]
@@ -92,6 +108,7 @@ public static partial class AuthEndpoints
         if (!createUserResult.Succeeded)
         {
             await transaction.RollbackAsync(cancellationToken);
+            logger.LogWarning("Registration failed while creating identity user. ErrorCount: {ErrorCount}.", createUserResult.Errors.Count());
             return Results.ValidationProblem(ToValidationErrors(createUserResult));
         }
 
@@ -104,6 +121,7 @@ public static partial class AuthEndpoints
         catch (ArgumentOutOfRangeException exception)
         {
             await transaction.RollbackAsync(cancellationToken);
+            logger.LogWarning("Registration failed due to out-of-range input for {ParamName}.", exception.ParamName ?? "register");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
                 [exception.ParamName ?? "register"] = [exception.Message]
@@ -112,6 +130,7 @@ public static partial class AuthEndpoints
         catch (ArgumentException exception)
         {
             await transaction.RollbackAsync(cancellationToken);
+            logger.LogWarning("Registration failed due to invalid input for {ParamName}.", exception.ParamName ?? "register");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
                 [exception.ParamName ?? "register"] = [exception.Message]
@@ -136,20 +155,22 @@ public static partial class AuthEndpoints
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
             await transaction.RollbackAsync(cancellationToken);
+            logger.LogInformation("Registration failed due to unique constraint conflict on persisted data.");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
                 [nameof(request.Email)] = ["An account already exists with this email address."]
             });
         }
 
+        logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}.", person.Id, identityUser.Id);
         return Results.Ok(new RegisterResponse(identityUser.Id, person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 
     /**
-     * Validates all required and mechanic-specific fields in a register request.
+     * Validates required and mechanic-specific registration fields.
      *
-     * @param request The incoming registration payload.
-     * @return A dictionary of field-level error messages; empty if valid.
+     * @param request Incoming registration payload.
+     * @return Field-level validation errors keyed by request property name.
      */
     private static Dictionary<string, string[]> ValidateRegisterRequest(RegisterRequest request)
     {
@@ -203,14 +224,14 @@ public static partial class AuthEndpoints
     }
 
     /**
-     * Factory method that constructs the correct domain entity from the register request.
-     * Only Mechanic is supported; an ArgumentException is thrown for any other PersonType.
+     * Creates a domain entity from the registration payload.
+     * Only mechanics are allowed for public registration.
      *
-     * @param request The validated registration payload.
-     * @param identityUserId The Identity user ID to link to the domain record.
-     * @param email Normalised email address.
-     * @param phoneNumber Normalised optional phone number.
-     * @return A new Mechanic entity ready to be persisted.
+     * @param request Validated registration payload.
+     * @param identityUserId Linked identity user ID.
+     * @param email Normalized email address.
+     * @param phoneNumber Normalized optional phone number.
+     * @return A mechanic domain entity linked to the identity user.
      */
     private static People CreatePerson(RegisterRequest request, string identityUserId, string email, string? phoneNumber)
     {
@@ -235,11 +256,10 @@ public static partial class AuthEndpoints
     }
 
     /**
-     * Parses and validates a list of expertise string values into ExpertiseType enum values.
-     * Throws ArgumentException if any value does not match a known enum member.
+     * Parses expertise strings to ExpertiseType values.
      *
-     * @param expertiseValues Raw string values from the registration request.
-     * @return A list of parsed ExpertiseType enum values.
+     * @param expertiseValues Raw expertise values from request payload.
+     * @return Parsed expertise enum list.
      */
     private static List<ExpertiseType> ParseExpertise(IReadOnlyCollection<string> expertiseValues)
     {
@@ -258,6 +278,12 @@ public static partial class AuthEndpoints
         return expertise;
     }
 
+    /**
+     * Determines whether a database update failed due to a unique key constraint.
+     *
+     * @param exception The thrown EF update exception.
+     * @return true when a nested PostgreSQL unique violation is found; otherwise false.
+     */
     private static bool IsUniqueConstraintViolation(DbUpdateException exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)

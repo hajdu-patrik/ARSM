@@ -439,7 +439,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Login] Existing customer email cannot log in (mechanic-only)
+### [Negative][Login] Existing customer email returns generic invalid credentials (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -450,7 +450,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Login] Existing customer phone cannot log in (mechanic-only)
+### [Negative][Login] Existing customer phone returns generic invalid credentials (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 

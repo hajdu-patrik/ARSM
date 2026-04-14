@@ -1,3 +1,9 @@
+/**
+ * SchedulerIntakeModal.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchedulerCreateIntakeRequest } from '../../../../types/scheduler/scheduler.types';

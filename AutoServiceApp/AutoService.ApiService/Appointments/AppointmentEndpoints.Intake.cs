@@ -1,3 +1,9 @@
+/**
+ * AppointmentEndpoints.Intake.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
@@ -11,16 +17,23 @@ using Npgsql;
 
 namespace AutoService.ApiService.Appointments;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AppointmentEndpoints
 {
-    private static async Task<IResult> CreateIntakeAsync(
+        private static async Task<IResult> CreateIntakeAsync(
         SchedulerCreateIntakeRequest request,
         ClaimsPrincipal user,
         AutoServiceDbContext db,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Intake");
+
         if (request.Status is not null)
         {
+            logger.LogWarning("Intake rejected because status was provided by caller.");
             return Results.Problem(
                 detail: "Status cannot be provided for intake creation. New appointments always start as InProgress.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
@@ -28,6 +41,7 @@ public static partial class AppointmentEndpoints
 
         if (!ContactNormalization.TryNormalizeEmail(request.CustomerEmail, out var normalizedEmail))
         {
+            logger.LogWarning("Intake rejected due to invalid customer email format.");
             return Results.Problem(
                 detail: ValidationMessages.InvalidEmail,
                 statusCode: StatusCodes.Status422UnprocessableEntity);
@@ -92,6 +106,7 @@ public static partial class AppointmentEndpoints
         var personIdClaim = user.FindFirst("person_id")?.Value;
         if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
         {
+            logger.LogWarning("Intake rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
         }
 
@@ -100,6 +115,7 @@ public static partial class AppointmentEndpoints
 
         if (mechanic is null)
         {
+            logger.LogWarning("Intake rejected: requesting mechanic {MechanicId} not found.", mechanicId);
             return Results.Unauthorized();
         }
 
@@ -126,6 +142,7 @@ public static partial class AppointmentEndpoints
 
             if (emailInUseByAnotherPersonType)
             {
+                logger.LogWarning("Intake rejected due to customer email conflict with non-customer account.");
                 return Results.Problem(
                     detail: "Email is already used by a non-customer account.",
                     statusCode: StatusCodes.Status409Conflict);
@@ -210,6 +227,7 @@ public static partial class AppointmentEndpoints
 
             if (existingVehicle is null)
             {
+                logger.LogInformation("Intake failed: requested vehicle {VehicleId} not found.", requestedVehicleId);
                 return Results.Problem(
                     detail: "Vehicle not found.",
                     statusCode: StatusCodes.Status404NotFound);
@@ -217,6 +235,7 @@ public static partial class AppointmentEndpoints
 
             if (customer is null || existingVehicle.CustomerId != customer.Id)
             {
+                logger.LogWarning("Intake rejected: vehicle {VehicleId} does not belong to selected customer.", requestedVehicleId);
                 return Results.Problem(
                     detail: "Vehicle does not belong to the selected customer.",
                     statusCode: StatusCodes.Status422UnprocessableEntity);
@@ -342,11 +361,18 @@ public static partial class AppointmentEndpoints
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
             await transaction.RollbackAsync(cancellationToken);
+            logger.LogWarning("Intake creation failed due to unique constraint conflict.");
             return Results.Problem(
                 detail: "Unable to create intake due to conflicting customer or vehicle data.",
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        logger.LogInformation(
+            "Intake created appointment {AppointmentId} by mechanic {MechanicId}. CreatedCustomer: {CreatedCustomer}, UsedExistingVehicle: {UsedExistingVehicle}.",
+            appointment.Id,
+            mechanicId,
+            creatingCustomer,
+            usesExistingVehicle);
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
 

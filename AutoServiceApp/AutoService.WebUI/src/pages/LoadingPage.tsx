@@ -1,3 +1,11 @@
+/**
+ * One-time loading splash screen.
+ *
+ * Displays an animated branded intro for roughly 3 seconds per browser
+ * profile using a localStorage flag, then renders nothing.
+ * @module pages/LoadingPage
+ */
+
 import { memo, useEffect, useState } from 'react';
 import { useThemeStore } from '../store/theme.store';
 import { Image } from '../components/common/Image';
@@ -195,4 +203,5 @@ const LoadingPageComponent = memo(function LoadingPage() {
 
 LoadingPageComponent.displayName = 'LoadingPage';
 
+/** Animated loading splash shown once per browser profile. */
 export const LoadingPage = LoadingPageComponent;

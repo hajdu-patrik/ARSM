@@ -1,3 +1,9 @@
+/**
+ * SchedulerIntakeSections.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo } from 'react';
 import { Search, UserCheck, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';

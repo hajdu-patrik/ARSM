@@ -1,3 +1,9 @@
+/**
+ * VehicleEndpoints.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Vehicles;
@@ -9,7 +15,13 @@ namespace AutoService.ApiService.Vehicles;
  */
 public static partial class VehicleEndpoints
 {
-    public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
+        /**
+         * MapVehicleEndpoints operation.
+         *
+         * @param endpoints Parameter.
+         * @returns Return value.
+         */
+        public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
     {
         // Nested routes scoped to a customer.
         var nested = endpoints.MapGroup("/api/customers/{customerId:int}/vehicles")

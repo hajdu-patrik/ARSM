@@ -1,3 +1,10 @@
+/**
+ * Collapsible sidebar layout with responsive mobile drawer.
+ * Provides main navigation, admin navigation, profile block with
+ * live-updating avatar, settings link, and logout action.
+ * Collapse preference persists in `localStorage`.
+ * @module SidebarLayout
+ */
 import { memo, useCallback, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -10,32 +17,46 @@ import { PROFILE_PICTURE_UPDATED_EVENT, startProfilePictureLiveUpdates } from '.
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 
+/** Describes a single sidebar navigation entry. */
 interface NavItem {
+  /** Unique key used as the React list key. */
   key: string;
+  /** i18n translation key for the link label. */
   labelKey: string;
+  /** Lucide icon component rendered beside the label. */
   icon: React.ComponentType<{ className?: string }>;
+  /** Route path the link navigates to. */
   path: string;
 }
 
+/** Default main navigation items (scheduler, tools, inventory). */
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
   { key: 'tools', labelKey: 'nav.tools', icon: Wrench, path: '/tools' },
   { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
 ];
 
+/** Admin-only navigation item (mechanic registration). */
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };
+
+/** Settings navigation item shown in the sidebar bottom section. */
 const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: '/settings' };
 
+/** Props for the {@link SidebarLayout} component. */
 interface SidebarLayoutProps {
+  /** Page content rendered in the main area beside the sidebar. */
   readonly children: React.ReactNode;
+  /** Override the default main navigation items. */
   readonly navItems?: NavItem[];
 }
 
+/** `localStorage` key for persisting the sidebar collapsed state. */
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
 
-/* Shared transition class for text reveal/hide */
+/** Shared transition class for text reveal/hide animations. */
 const TEXT_TRANSITION = 'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
 
+/** Memoized sidebar layout with collapsible desktop sidebar and mobile drawer. */
 const SidebarLayoutComponent = memo(function SidebarLayout({
   children,
   navItems = DEFAULT_NAV_ITEMS,

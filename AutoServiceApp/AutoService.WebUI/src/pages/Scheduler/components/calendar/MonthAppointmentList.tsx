@@ -1,21 +1,38 @@
+/**
+ * Monthly appointment list rendered as a continuous sorted card grid.
+ * Provides status filter chips, mechanic dropdown filter, date sort toggle,
+ * day filtering, and loading skeletons. All filters combine with each other
+ * and with the selected day.
+ * @module MonthAppointmentList
+ */
 import { memo, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, ArrowUpDown } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { AppointmentCard } from '../shared/AppointmentCard';
 
+/** Props for the {@link MonthAppointmentList} component. */
 interface MonthAppointmentListProps {
+  /** All appointments for the current month. */
   readonly appointments: AppointmentDto[];
+  /** Whether appointment data is currently loading. */
   readonly isLoading: boolean;
+  /** ID of the currently authenticated mechanic. */
   readonly currentMechanicId: number | undefined;
+  /** Currently selected day filter, or null if showing all days. */
   readonly selectedDay: number | null;
+  /** Callback to claim an appointment by ID. */
   readonly onClaim: (id: number) => Promise<void>;
+  /** Callback when an appointment card is clicked to open detail. */
   readonly onCardClick: (appointment: AppointmentDto) => void;
+  /** Callback to clear the day filter. */
   readonly onClearFilter: () => void;
 }
 
+/** Ordered list of status values available as filter chips. */
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 
+/** Active/inactive Tailwind color classes for each status filter chip. */
 const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string }> = {
   InProgress: {
     active: 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white',
@@ -211,4 +228,5 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
 
 MonthAppointmentListComponent.displayName = 'MonthAppointmentList';
 
+/** Memoized monthly appointment list with filtering, sorting, and card grid. */
 export const MonthAppointmentList = MonthAppointmentListComponent;

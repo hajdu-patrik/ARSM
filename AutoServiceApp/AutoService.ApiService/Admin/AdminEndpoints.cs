@@ -1,3 +1,9 @@
+/**
+ * AdminEndpoints.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Admin;
@@ -8,7 +14,13 @@ namespace AutoService.ApiService.Admin;
  */
 public static partial class AdminEndpoints
 {
-    public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder endpoints)
+        /**
+         * MapAdminEndpoints operation.
+         *
+         * @param endpoints Parameter.
+         * @returns Return value.
+         */
+        public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/admin").WithTags("Admin").RequireAuthorization("AdminOnly");
 

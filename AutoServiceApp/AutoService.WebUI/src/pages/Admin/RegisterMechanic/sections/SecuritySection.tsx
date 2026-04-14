@@ -1,3 +1,8 @@
+/**
+ * Password input section for mechanic registration.
+ * @module pages/Admin/RegisterMechanic/sections/SecuritySection
+ */
+
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
@@ -5,6 +10,7 @@ import { FormErrorMessage } from '../../../../components/common/FormErrorMessage
 import { inputClass, labelClass } from '../constants';
 import type { GetFieldError } from '../types';
 
+/** Props for the SecuritySection component. */
 interface SecuritySectionProps {
   readonly password: string;
   readonly showPassword: boolean;
@@ -62,4 +68,5 @@ const SecuritySectionComponent = memo(function SecuritySection({
 
 SecuritySectionComponent.displayName = 'SecuritySection';
 
+/** Password and visibility-toggle section for registration. */
 export const SecuritySection = SecuritySectionComponent;

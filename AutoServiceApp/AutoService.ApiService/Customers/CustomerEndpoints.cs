@@ -1,3 +1,9 @@
+/**
+ * CustomerEndpoints.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Customers;
@@ -8,7 +14,13 @@ namespace AutoService.ApiService.Customers;
  */
 public static partial class CustomerEndpoints
 {
-    public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
+        /**
+         * MapCustomerEndpoints operation.
+         *
+         * @param endpoints Parameter.
+         * @returns Return value.
+         */
+        public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();
 

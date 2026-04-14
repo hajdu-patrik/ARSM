@@ -1,14 +1,16 @@
+/**
+ * 20260409112830_BackfillDemoData.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class BackfillDemoData : Migration
-    {
-        /// <inheritdoc />
-                protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class BackfillDemoData : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
                 {
                         migrationBuilder.Sql(
                                 """
@@ -266,10 +268,7 @@ namespace AutoService.ApiService.Data.Migrations
                                                 AND am."MechanicId" = candidate."MechanicId"
                                     );
                                 """);
-                }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+                }protected override void Down(MigrationBuilder migrationBuilder)
         {
             // Intentionally left empty to keep this backfill migration non-destructive.
         }

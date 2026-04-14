@@ -1,9 +1,20 @@
+/**
+ * AppointmentDetailModal.footer.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo } from 'react';
 import { Check } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
+const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
+
+function isAppointmentStatus(value: string): value is AppointmentStatus {
+  return STATUS_OPTIONS_SET.has(value);
+}
 
 interface AppointmentDetailFooterProps {
   readonly appointment: AppointmentDto;
@@ -73,7 +84,12 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       {canChangeStatus && !isEditing && (
         <select
           value={appointment.status}
-          onChange={(event) => onStatusChange(event.target.value as AppointmentStatus)}
+          onChange={(event) => {
+            const nextStatus = event.target.value;
+            if (isAppointmentStatus(nextStatus)) {
+              onStatusChange(nextStatus);
+            }
+          }}
           disabled={isUpdating}
           aria-label={t('scheduler.changeStatus')}
           className="min-w-[11rem] flex-1 rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1.5 text-sm text-[#2C2440] disabled:opacity-50 focus:outline-none dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA]"

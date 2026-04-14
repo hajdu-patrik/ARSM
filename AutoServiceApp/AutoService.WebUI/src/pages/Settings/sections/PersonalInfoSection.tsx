@@ -1,9 +1,18 @@
+/**
+ * Settings personal-information form section.
+ *
+ * Renders editable name, email, and phone fields with inline
+ * server-validation message display.
+ * @module pages/Settings/sections/PersonalInfoSection
+ */
+
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
+/** Props for the PersonalInfoSection component. */
 interface PersonalInfoSectionProps {
   readonly firstName: string;
   readonly middleName: string;
@@ -152,4 +161,5 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
 PersonalInfoSectionComponent.displayName = 'PersonalInfoSection';
 
+/** Personal-information editor used on the settings page. */
 export const PersonalInfoSection = PersonalInfoSectionComponent;

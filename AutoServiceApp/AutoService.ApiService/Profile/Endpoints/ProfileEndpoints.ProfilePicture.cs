@@ -1,3 +1,9 @@
+/**
+ * ProfileEndpoints.ProfilePicture.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Identity;
@@ -12,12 +18,15 @@ using System.Text.Json;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class ProfileEndpoints
 {
     private static readonly TimeSpan ProfilePictureUpdatesIdleTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
 
-    private static async Task<IResult> GetProfilePictureAsync(
+        private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -42,7 +51,7 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
-    private static async Task<IResult> GetMechanicProfilePictureAsync(
+        private static async Task<IResult> GetMechanicProfilePictureAsync(
         int personId,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -69,7 +78,7 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
-    private static async Task<IResult> StreamProfilePictureUpdatesAsync(
+        private static async Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
@@ -136,7 +145,7 @@ public static partial class ProfileEndpoints
         return Results.Empty;
     }
 
-    private static async Task<IResult> UploadProfilePictureAsync(
+        private static async Task<IResult> UploadProfilePictureAsync(
         [FromForm] IFormFile file,
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -214,7 +223,7 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile picture updated." });
     }
 
-    private static async Task<IResult> DeleteProfilePictureAsync(
+        private static async Task<IResult> DeleteProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         IProfilePictureUpdateBroadcaster broadcaster,

@@ -1,3 +1,9 @@
+/**
+ * Extensions.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;

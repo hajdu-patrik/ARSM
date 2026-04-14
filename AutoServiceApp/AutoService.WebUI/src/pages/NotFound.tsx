@@ -1,3 +1,11 @@
+/**
+ * Not Found page with timed redirect.
+ *
+ * Displays a branded 404 experience and redirects users to either
+ * the scheduler or login route after a short countdown.
+ * @module pages/NotFound
+ */
+
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -125,4 +133,5 @@ const NotFoundComponent = memo(function NotFound() {
 
 NotFoundComponent.displayName = 'NotFound';
 
+/** 404 page component with countdown-based redirect. */
 export const NotFound = NotFoundComponent;

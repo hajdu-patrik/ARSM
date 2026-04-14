@@ -1,10 +1,19 @@
+/**
+ * LicensePlateNormalization.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Text.RegularExpressions;
 
 namespace AutoService.ApiService.Normalization;
 
+/**
+ * Backend type for API logic in this file.
+ */
 internal static partial class LicensePlateNormalization
 {
-    internal static bool TryNormalizeEuropeanLicensePlate(
+        internal static bool TryNormalizeEuropeanLicensePlate(
         string rawLicensePlate,
         out string normalizedLicensePlate,
         out string validationError)
@@ -73,7 +82,7 @@ internal static partial class LicensePlateNormalization
     [GeneratedRegex("\\p{Nd}", RegexOptions.CultureInvariant)]
     private static partial Regex ContainsDigitRegex();
 
-    private static bool IsSupportedEuropeanLetter(char value)
+        private static bool IsSupportedEuropeanLetter(char value)
     {
         return IsInRange(value, '\u0041', '\u005A') ||
                IsInRange(value, '\u00C0', '\u00FF') ||

@@ -1,3 +1,11 @@
+/**
+ * Login page.
+ *
+ * Supports email or phone identifier login modes and shows localized
+ * feedback for authentication and rate-limit related failures.
+ * @module pages/Login/page
+ */
+
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -224,4 +232,5 @@ const LoginComponent = memo(function Login() {
 
 LoginComponent.displayName = 'Login';
 
+/** Login route component for unauthenticated users. */
 export const Login = LoginComponent;

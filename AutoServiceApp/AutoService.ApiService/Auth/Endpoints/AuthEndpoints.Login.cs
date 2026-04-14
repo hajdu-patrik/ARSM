@@ -1,3 +1,9 @@
+/**
+ * AuthEndpoints.Login.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
@@ -12,21 +18,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AuthEndpoints
 {
     /**
-     * Handles POST /api/auth/login.
-     * Verifies credentials via Identity, looks up the linked domain People record,
-     * and issues a 10-minute JWT containing identity and domain claims.
+     * Handles POST /api/auth/login by validating the identifier/password pair
+     * and issuing access/refresh cookies for linked mechanic identities.
      *
-     * @param request Login payload (email or phone number + password).
-     * @param userManager ASP.NET Core Identity user manager.
-     * @param signInManager ASP.NET Core Identity sign in manager.
-     * @param db Entity Framework Core database context.
-    * @param tokenIssuer Startup-configured JWT token issuer.
-     * @param cancellationToken Cancellation token for the async operation.
-    * @return 200 OK with JWT token and profile info, 401 for invalid credentials,
-    *         429 when account lockout is active, or 500 if the linked domain record is missing.
+     * @param request Login payload (email or phone number plus password).
+     * @param httpContext Current request context used for cookies/client metadata.
+     * @param userManager Identity user manager.
+     * @param signInManager Identity sign-in manager.
+     * @param db Database context.
+     * @param tokenIssuer JWT issuer service.
+     * @param loggerFactory Logger factory used to create endpoint logger.
+     * @param cancellationToken Request cancellation token.
+     * @return 200 OK on success, 401 on invalid credentials, or 429 when lockout is active.
      */
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
@@ -35,11 +44,15 @@ public static partial class AuthEndpoints
         SignInManager<IdentityUser> signInManager,
         AutoServiceDbContext db,
         IJwtTokenIssuer tokenIssuer,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var logger = loggerFactory.CreateLogger("AuthEndpoints.Login");
+
         var validationErrors = ValidateLoginRequest(request);
         if (validationErrors.Count > 0)
         {
+            logger.LogWarning("Login request validation failed with {ErrorCount} errors.", validationErrors.Count);
             return Results.ValidationProblem(validationErrors);
         }
 
@@ -53,6 +66,7 @@ public static partial class AuthEndpoints
         {
             if (!TryNormalizeEmail(rawEmail, out var normalizedEmail))
             {
+                logger.LogWarning("Login rejected due to invalid email format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     [nameof(request.Email)] = ["Email must be a valid email address."]
@@ -75,6 +89,7 @@ public static partial class AuthEndpoints
         {
             if (!TryNormalizeHungarianPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
             {
+                logger.LogWarning("Login rejected due to invalid phone number format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     [nameof(request.PhoneNumber)] = ["Phone number must be a valid Hungarian number."]
@@ -88,37 +103,10 @@ public static partial class AuthEndpoints
 
         if (email is not null)
         {
-            var customerExists = await db.Customers
-                .AsNoTracking()
-                .AnyAsync(x => x.Email == email, cancellationToken);
-
-            if (customerExists)
-            {
-                return Results.Problem(
-                    title: "mechanic_only_login",
-                    detail: "Only mechanics can log in to this portal.",
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
-
             identityUser = await userManager.FindByEmailAsync(email);
         }
         else if (phoneNumber is not null)
         {
-            var customerPhoneLookupCandidates = BuildHungarianPhoneLookupCandidates(phoneNumber);
-            var customerExists = await db.Customers
-                .AsNoTracking()
-                .AnyAsync(
-                    x => x.PhoneNumber != null && customerPhoneLookupCandidates.Contains(x.PhoneNumber.Trim()),
-                    cancellationToken);
-
-            if (customerExists)
-            {
-                return Results.Problem(
-                    title: "mechanic_only_login",
-                    detail: "Only mechanics can log in to this portal.",
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
-
             var phoneLookupCandidates = BuildHungarianPhoneLookupCandidates(phoneNumber);
             identityUser = await userManager.Users
                 .FirstOrDefaultAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
@@ -126,6 +114,7 @@ public static partial class AuthEndpoints
 
         if (identityUser is null)
         {
+            logger.LogInformation("Login failed: no identity user found for provided identifier.");
             return Results.Problem(
                 title: "invalid_credentials",
                 detail: "Invalid login credentials.",
@@ -140,6 +129,8 @@ public static partial class AuthEndpoints
                 ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value.UtcDateTime - DateTime.UtcNow).TotalSeconds))
                 : 60;
 
+            logger.LogWarning("Login blocked due to active lockout. Retry after {RetryAfterSeconds} seconds.", retryAfterSeconds);
+
             return Results.Json(new
             {
                 code = "lockout_active",
@@ -150,6 +141,7 @@ public static partial class AuthEndpoints
 
         if (!signInResult.Succeeded)
         {
+            logger.LogInformation("Login failed: invalid credentials.");
             return Results.Problem(
                 title: "invalid_credentials",
                 detail: "Invalid login credentials.",
@@ -163,6 +155,7 @@ public static partial class AuthEndpoints
         if (mechanic is null)
         {
             // Do not reveal that Identity user exists but domain record is missing.
+            logger.LogWarning("Login failed: linked mechanic record missing for identity user {IdentityUserId}.", identityUser.Id);
             return Results.Problem(
                 detail: "Invalid login credentials.",
                 statusCode: StatusCodes.Status401Unauthorized);
@@ -200,14 +193,15 @@ public static partial class AuthEndpoints
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
         var isAdmin = roles.Contains("Admin");
+        logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}.", mechanic.Id, isAdmin);
         return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 
     /**
-     * Validates that password is present and either email or phone number is provided.
+     * Validates presence of required login fields.
      *
-     * @param request The incoming login payload.
-     * @return A dictionary of field-level error messages; empty if valid.
+     * @param request Incoming login payload.
+     * @return Field-level validation errors keyed by request property name.
      */
     private static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
     {

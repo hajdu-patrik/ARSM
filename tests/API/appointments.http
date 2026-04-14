@@ -199,6 +199,33 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 
 ###
 
+### [Positive][Appointments] Update appointment status to Completed (setup for completed mutation blocking checks)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
+# Self-unclaim is blocked when status is Completed.
+# Expected error code: appointment_completed.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Reopen completed appointment to InProgress for remaining mutation tests
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
 ### [Positive][Appointments] Unclaim appointment by id
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 
@@ -550,6 +577,19 @@ Content-Type: application/json
 
 @MechanicIdToAssign = 2
 @CancelledApptId = 5
+@CompletedApptId = 1
+
+### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_completed.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Admin unassign mechanic from completed appointment (422 expected)
+# Returns 422 Unprocessable Entity with code: appointment_completed.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+
+###
 
 ### [Positive][Appointments] Admin assign mechanic to appointment
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}

@@ -1,3 +1,9 @@
+/**
+ * 20260409200900_AddRevokedJwtTokenDenylist.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -5,12 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class AddRevokedJwtTokenDenylist : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class AddRevokedJwtTokenDenylist : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "revokedjwttokens",
@@ -37,10 +39,7 @@ namespace AutoService.ApiService.Data.Migrations
                 table: "revokedjwttokens",
                 column: "JwtId",
                 unique: true);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        }protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "revokedjwttokens");

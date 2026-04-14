@@ -1,3 +1,9 @@
+/**
+ * AppointmentDetailModal.sections.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo } from 'react';
 import { Clock3, LogOut, UserPlus, X } from 'lucide-react';
 import type { TFunction } from 'i18next';

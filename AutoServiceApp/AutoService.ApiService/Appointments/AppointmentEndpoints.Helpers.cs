@@ -1,7 +1,16 @@
+/**
+ * AppointmentEndpoints.Helpers.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using AutoService.ApiService.Domain;
 
 namespace AutoService.ApiService.Appointments;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AppointmentEndpoints
 {
     private static AppointmentDto ToDto(Appointment appointment) => new(

@@ -1,3 +1,9 @@
+/**
+ * AppointmentDetailRemoveMechanicModal.tsx
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../../../../components/common/Modal';

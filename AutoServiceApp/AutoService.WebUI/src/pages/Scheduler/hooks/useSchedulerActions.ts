@@ -1,3 +1,13 @@
+/**
+ * Hook that encapsulates all scheduler appointment mutation callbacks.
+ *
+ * Provides stable, memoized handlers for claim, unclaim, status change,
+ * admin assign/unassign, intake creation, and appointment update. Each
+ * handler calls the appointment service, applies optimistic store updates,
+ * and shows success/error toasts.
+ *
+ * @module useSchedulerActions
+ */
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { isAxiosError } from 'axios';
@@ -9,13 +19,24 @@ import type {
   UpdateAppointmentRequest,
 } from '../../../types/scheduler/scheduler.types';
 
+/** Configuration for {@link useSchedulerActions}. */
 interface UseSchedulerActionsArgs {
+  /** Optimistic store upsert for the mutated appointment. */
   readonly upsertAppointment: (appointment: AppointmentDto) => void;
+  /** State setter to keep the detail modal synchronized after mutations. */
   readonly setSelectedAppointment: Dispatch<SetStateAction<AppointmentDto | null>>;
+  /** Displays a success toast by i18n key. */
   readonly showSuccessToast: (key: string) => void;
+  /** Displays an error toast by i18n key. */
   readonly showErrorToast: (key: string) => void;
 }
 
+/**
+ * Returns memoized scheduler action handlers for appointment mutations.
+ *
+ * Each handler calls the backend, upserts the result into the store,
+ * updates the selected-appointment state, and triggers a toast.
+ */
 export function useSchedulerActions({
   upsertAppointment,
   setSelectedAppointment,

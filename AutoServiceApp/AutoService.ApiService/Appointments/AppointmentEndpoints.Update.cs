@@ -1,3 +1,9 @@
+/**
+ * AppointmentEndpoints.Update.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
@@ -8,15 +14,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
 
+/**
+ * Backend type for API logic in this file.
+ */
 public static partial class AppointmentEndpoints
 {
-    private static async Task<IResult> UpdateAppointmentAsync(
+        private static async Task<IResult> UpdateAppointmentAsync(
         int id,
         UpdateAppointmentRequest request,
         ClaimsPrincipal user,
         AutoServiceDbContext db,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Update");
+
         if (request.DueDateTime == default)
         {
             return Results.Problem(
@@ -44,6 +56,7 @@ public static partial class AppointmentEndpoints
         var personIdClaim = user.FindFirst("person_id")?.Value;
         if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
         {
+            logger.LogWarning("Appointment update rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
         }
 
@@ -57,11 +70,13 @@ public static partial class AppointmentEndpoints
 
         if (appointment is null)
         {
+            logger.LogInformation("Appointment update failed: appointment {AppointmentId} not found.", id);
             return Results.NotFound(new { code = "appointment_not_found" });
         }
 
         if (!isAdmin && !appointment.Mechanics.Any(m => m.Id == mechanicId))
         {
+            logger.LogWarning("Appointment update forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
             return Results.Forbid();
         }
 
@@ -76,6 +91,7 @@ public static partial class AppointmentEndpoints
                 var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
                 if (scheduledDateUtc != appointment.ScheduledDate)
                 {
+                    logger.LogWarning("Appointment update rejected: attempted ScheduledDate change for past appointment {AppointmentId}.", id);
                     return Results.Problem(
                         detail: "ScheduledDate cannot be changed for past appointments.",
                         statusCode: StatusCodes.Status422UnprocessableEntity);
@@ -172,6 +188,7 @@ public static partial class AppointmentEndpoints
 
             if (plateConflict)
             {
+                logger.LogInformation("Appointment update failed due to license plate conflict on appointment {AppointmentId}.", id);
                 return Results.Problem(
                     detail: "A vehicle with this license plate already exists.",
                     statusCode: StatusCodes.Status409Conflict);
@@ -190,6 +207,8 @@ public static partial class AppointmentEndpoints
         appointment.TaskDescription = taskDescription;
 
         await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Appointment {AppointmentId} updated by mechanic {MechanicId}. IsAdmin: {IsAdmin}.", id, mechanicId, isAdmin);
 
         return Results.Ok(ToDto(appointment));
     }

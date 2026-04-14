@@ -1,3 +1,9 @@
+/**
+ * 20260403074955_AddRefreshTokensAndCookieAuth.cs
+ *
+ * Auto-generated documentation header for this source file.
+ */
+
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -5,12 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 #nullable disable
 
 namespace AutoService.ApiService.Data.Migrations
-{
-    /// <inheritdoc />
-    public partial class AddRefreshTokensAndCookieAuth : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+{public partial class AddRefreshTokensAndCookieAuth : Migration
+    {protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "refreshtokens",
@@ -48,10 +50,7 @@ namespace AutoService.ApiService.Data.Migrations
                 table: "refreshtokens",
                 column: "TokenHash",
                 unique: true);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        }protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "refreshtokens");
