@@ -11,10 +11,10 @@ Objective:
 - Keep Aspire wiring as the source of truth for cross-service communication.
 
 Repository policy:
-- AppHost config source: AutoServiceApp/AutoService.AppHost/appsettings.json (Ports section).
-- API local URL source: AutoServiceApp/AutoService.ApiService/Properties/launchSettings.json.
-- API CORS origin source: AutoServiceApp/AutoService.ApiService/appsettings.json and appsettings.Local.json (`Cors:AllowedOrigins`).
-- WebUI local source: AutoServiceApp/AutoService.WebUI/.env.development.
+- AppHost config source: app/AutoService.AppHost/appsettings.json (Ports section).
+- API local URL source: app/AutoService.ApiService/Properties/launchSettings.json.
+- API CORS origin source: app/AutoService.ApiService/appsettings.json and appsettings.Local.json (`Cors:AllowedOrigins`).
+- WebUI local source: app/AutoService.WebUI/.env.development.
 - API client must require VITE_API_URL from environment; do not add hardcoded fallback.
 - vite serve mode must read PORT from environment and use strictPort true.
 

@@ -8,6 +8,7 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @SeedCustomerId = 1
+@SeedCustomerVehicleId = 1
 @NonExistentCustomerId = 99999
 
 
@@ -58,3 +59,23 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+###
+
+### [Positive][Customers] Admin deletes customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Negative][Customers] Deleted customer cannot be fetched (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+
+###
+
+### [Negative][Customers] Deleted customer vehicles endpoint returns not found (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+###
+
+### [Negative][Customers] Cascade check - customer vehicle no longer exists (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedCustomerVehicleId}}

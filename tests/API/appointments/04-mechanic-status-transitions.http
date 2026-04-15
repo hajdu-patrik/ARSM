@@ -1,0 +1,160 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - STATUS TRANSITIONS & NON-ADMIN AUTHZ
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@ApptId = 1
+@PastCancelledApptId = 5
+@NonAssignedApptId = 3
+@CustomerId = 1
+@CustomerVehicleId = 1
+@PrimaryMechanicId = 7
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] Update appointment status to InProgress
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Update appointment status to Completed
+# Response includes completedAt (DateTime) and canceledAt (null).
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
+# Self-claim is only allowed for InProgress appointments.
+# Expected error code: appointment_not_in_progress.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Update appointment status to Cancelled
+# Response includes canceledAt (DateTime) and completedAt (null).
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+###
+
+### [Negative][Appointments] Claim cancelled appointment is rejected (422 expected)
+# Expected error code: appointment_cancelled.
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+
+###
+
+### [Positive][Appointments] Reopen cancelled appointment to InProgress (past-cancelled remains editable)
+# Cancelled appointments can be moved back to active states even after cancellation.
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Move reopened appointment to Completed
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Update appointment status with invalid value (400 expected)
+# Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Scheduled"
+}
+
+###
+
+### [Negative][Appointments] Update non-existent appointment status (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+# Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
+### [Negative][Appointments] Non-assigned mechanic cannot change appointment status (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+# Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
+### [Negative][Appointments] Non-assigned non-admin mechanic cannot update appointment (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2030-01-03T16:15:00",
+  "taskDescription": "Forbidden update attempt by non-assigned mechanic"
+}
+
+###
+
+### [Negative][Appointments] Non-admin cannot create customer appointment (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-17T09:00:00",
+  "taskDescription": "Uj idopont felvetele admin oldalon",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}

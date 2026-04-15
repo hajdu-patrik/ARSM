@@ -5,7 +5,16 @@
       "Bash(npx tsc:*)",
       "Bash(npx vite:*)",
       "Bash(xargs grep:*)",
-      "Bash(cat \"C:/Users/hajdu/.claude/plugins/\"*.json)"
+      "Bash(cat \"C:/Users/hajdu/.claude/plugins/\"*.json)",
+      "Bash(ls \"E:/BME/6. Félév/Informatika/Önálló laboratórium/\"README*.md)",
+      "Bash(ls \"E:/BME/6. Félév/Informatika/Önálló laboratórium/\"*.md)",
+      "Bash(wc *)",
+      "Bash(mv appointments/06-admin-assign-unassign.http appointments/07-admin-assign-unassign.http)",
+      "Bash(mv appointments/05-admin-create-update-validation.http appointments/06-admin-create-update-validation.http)",
+      "Bash(mv appointments/04-admin-create-update-happy.http appointments/05-admin-create-update-happy.http)",
+      "Bash(rm appointments/03-mechanic-claim-status.http)",
+      "Bash(mv profile/03-account-delete.http profile/04-account-delete.http)",
+      "Bash(grep -oP '\\\\$processEnv \\\\K\\\\w+' 'e:/BME/6. Félév/Informatika/Önálló laboratórium/tests/API' -r)"
     ],
     "deny": [
       "Read(node_modules/**)",

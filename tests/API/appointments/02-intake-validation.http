@@ -94,6 +94,21 @@ Content-Type: application/json
 
 ###
 
+### [Negative][Appointments] Scheduler intake rejects non-existent vehicleId (404 expected)
+# When vehicleId is provided but does not exist in the database.
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": 99999,
+  "scheduledDate": "2026-04-23T10:00:00",
+  "dueDateTime": "2026-04-24T10:00:00",
+  "taskDescription": "Scheduler intake with unknown vehicle id"
+}
+
+###
+
 ### [Positive][Appointments] Scheduler intake allows past scheduled date
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Content-Type: application/json

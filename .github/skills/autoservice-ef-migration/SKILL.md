@@ -9,7 +9,7 @@ Slash entrypoint:
 - Use `/ef-migration` to run the wrapper prompt that loads and applies this skill.
 
 Repository context and defaults:
-- Execute commands from AutoServiceApp.
+- Execute commands from app.
 - EF project: AutoService.ApiService.
 - EF startup project: AutoService.ApiService.
 - Migration output directory: Data/Migrations.
@@ -29,7 +29,7 @@ Safety rule:
 ## Preferred flow: schema-only update (preserve data)
 
 ```bash
-# from AutoServiceApp
+# from app
 dotnet ef migrations add <MigrationName> \
   --project AutoService.ApiService \
   --startup-project AutoService.ApiService \
@@ -51,7 +51,7 @@ dotnet run --project AutoService.AppHost
 Option A: EF CLI
 
 ```bash
-# from AutoServiceApp
+# from app
 dotnet ef database drop --force --project AutoService.ApiService --startup-project AutoService.ApiService
 dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService
 dotnet run --project AutoService.AppHost
@@ -116,7 +116,7 @@ Exit:
   - Action: stop running processes using Ctrl+C and taskkill commands, then rerun.
 
 - Symptom: No project was found or MSBuild cannot locate project
-  - Action: run from AutoServiceApp and keep --project and --startup-project as AutoService.ApiService.
+  - Action: run from app and keep --project and --startup-project as AutoService.ApiService.
 
 - Symptom: Connection/authentication error to PostgreSQL
   - Action: verify AppHost is running, check container status with docker ps, and verify ConnectionStrings__AutoServiceDb or local config.

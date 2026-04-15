@@ -1,5 +1,5 @@
 ---
-applyTo: "AutoServiceApp/AutoService.AppHost/**"
+applyTo: "app/AutoService.AppHost/**"
 description: "Use when editing Aspire orchestration and resource wiring in AutoService.AppHost."
 ---
 # AutoService.AppHost Instructions
@@ -36,7 +36,7 @@ description: "Use when editing Aspire orchestration and resource wiring in AutoS
 
 ## Development Notes
 
-- To run locally: `dotnet run --project AutoService.AppHost` from `AutoServiceApp` root.
+- To run locally: `dotnet run --project AutoService.AppHost` from `app` root.
 - AppHost manages all resource initialization and wiring.
 - Logs and container outputs can be viewed in the Aspire dashboard.
 - Keep local fixed ports in `AutoService.AppHost/appsettings.json` under `Ports` and update there only.

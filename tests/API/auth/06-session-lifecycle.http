@@ -60,7 +60,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 
 ###
 
-### [Positive][Session] Logout current session
+### [Positive][Session] Logout current session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 
 ###

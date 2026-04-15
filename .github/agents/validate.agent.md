@@ -12,8 +12,8 @@ You are a fast validation agent. Your job is to validate build/type-check status
 
 ## Steps
 
-1. **Backend build**: Run `dotnet build` from `AutoServiceApp/` directory. Capture any errors.
-2. **Frontend type-check**: Run `npx tsc --noEmit` from `AutoServiceApp/AutoService.WebUI/` directory. Capture any errors.
+1. **Backend build**: Run `dotnet build` from `app/` directory. Capture any errors.
+2. **Frontend type-check**: Run `npx tsc --noEmit` from `app/AutoService.WebUI/` directory. Capture any errors.
 3. **Quality gate (required)**: Inspect changed source files and report violations for:
   - XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`) in touched code,
   - Missing JSDoc-style comments on new/changed non-trivial classes/methods,

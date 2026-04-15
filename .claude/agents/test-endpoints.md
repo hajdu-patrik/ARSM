@@ -15,7 +15,7 @@ You are a test synchronization agent for API endpoint test suites.
 ## Workflow
 
 1. Read the skill runbook at `.github/skills/autoservice-endpoint-tests-sync/SKILL.md` for the full sync workflow.
-2. Read `AutoServiceApp/AutoService.ApiService/CLAUDE.md` for the current endpoint list.
+2. Read `app/AutoService.ApiService/CLAUDE.md` for the current endpoint list.
 3. Scan the actual endpoint mapper files to discover all mapped routes.
 4. Compare existing test files against the current endpoints.
 5. Add missing test cases, remove obsolete ones.

@@ -15,10 +15,10 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Database target: PostgreSQL via Aspire orchestration.
 
 ## Repository Map
-- `AutoServiceApp/AutoService.ApiService`: API, domain model, EF Core context and migrations.
-- `AutoServiceApp/AutoService.AppHost`: Aspire orchestration entry point.
-- `AutoServiceApp/AutoService.ServiceDefaults`: shared defaults and cross-service settings.
-- `AutoServiceApp/AutoService.WebUI`: React client.
+- `app/AutoService.ApiService`: API, domain model, EF Core context and migrations.
+- `app/AutoService.AppHost`: Aspire orchestration entry point.
+- `app/AutoService.ServiceDefaults`: shared defaults and cross-service settings.
+- `app/AutoService.WebUI`: React client.
 
 ## Team Coordination Rule (Merge-Conflict Prevention)
 - If someone starts working in a shared or high-churn area, they should post a short note in the team group first (scope + expected files).
@@ -98,9 +98,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 ## Configuration-First Addressing Rule
 - Keep local ports and service endpoints in configuration files; do not hardcode runtime fallback URLs.
 - For service endpoint changes, update the relevant config sources consistently:
-	- `AutoServiceApp/AutoService.AppHost/appsettings.json` (ports)
-	- `AutoServiceApp/AutoService.ApiService/Properties/launchSettings.json` (API local URL)
-	- `AutoServiceApp/AutoService.WebUI/.env.development` (WebUI local env)
+	- `app/AutoService.AppHost/appsettings.json` (ports)
+	- `app/AutoService.ApiService/Properties/launchSettings.json` (API local URL)
+	- `app/AutoService.WebUI/.env.development` (WebUI local env)
 - Keep frontend API base URL environment-driven (`VITE_API_URL`) and avoid code-level localhost fallback.
 - When adding new services, define addresses in config first, then wire via Aspire/environment injection.
 
@@ -196,6 +196,7 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
 	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
+	- Endpoint mapper registrations declare explicit OpenAPI response metadata (`Produces`, `ProducesProblem`, `ProducesValidationProblem`) so status/body documentation in OpenAPI/Scalar stays accurate without changing runtime behavior
 	- `GET /health` and `GET /alive` in Development (`app.MapDefaultEndpoints()`)
 - Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
 - Auth and login behavior currently implemented:
@@ -250,11 +251,18 @@ This project uses specialist agents for task decomposition and delegation. **All
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
-- `tests/API/appointments/*.http` includes scheduler/admin appointment flows for:
-	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, and duplicate new-vehicle license-plate conflict (`409`),
+- `tests/API/appointments/*.http` (7 files) includes scheduler/admin appointment flows for:
+	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, duplicate new-vehicle license-plate conflict (`409`), vehicleId not found (`404`), and vehicle numeric max validation (`422`),
 	- appointment update immutability guard (`scheduledDate` change rejected with `422`) while due/task updates remain allowed,
-	- claim/unclaim/admin assign-admin unassign status guardrails and reopened-cancelled transition checks,
-	- aligned request/comment terminology using current field names (`scheduledDate`, `dueDateTime`) and ISO date-time payload format.
+	- mechanic claim/unclaim guardrails: claim on cancelled/non-InProgress (`422`), duplicate claim (`409`), unclaim on cancelled/completed (`422`), unclaim when not assigned (`409`), unclaim when last mechanic (`422`), and 404 for non-existent appointments,
+	- status transitions: InProgress/Completed/Cancelled/reopen-from-cancelled, invalid status (`400`), non-assigned mechanic forbidden (`403`),
+	- admin assign/unassign guardrails: cancelled/completed (`422`), already assigned/not assigned (`409`), mechanic or appointment not found (`404`), last mechanic removal (`422`).
+- `tests/API/profile/*.http` (4 files) includes:
+	- profile get and positive update flows (name, email, phone fields),
+	- duplicate email/phone conflict (`409`/`422`), invalid format (`422`), empty name fields (`422`),
+	- name field character validation (space/digit/apostrophe rejection, `422`),
+	- change-password flows: wrong current password, too-short new password, confirmation mismatch (all `400`), positive change,
+	- account delete: wrong password (`400`), missing password body (`400`), admin self-delete forbidden (`403`), non-admin self-delete (`204`).
 - `tests/Database/**/*.sql` (chunked suites under `core-schema/`, `identity-auth/`, `feature-flow/`) covers schema baseline, identity/auth data checks, and feature-flow regression guards.
 - API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_ADMIN_PASSWORD}}` and `example.com` seed-style identifiers for deterministic local runs.
 
@@ -286,18 +294,18 @@ This project uses specialist agents for task decomposition and delegation. **All
 ## Code Change Policy for Copilot
 - Make minimal, task-focused changes; avoid broad refactors unless requested.
 - Preserve existing behavior unless the task explicitly asks for behavior changes.
-- For backend changes, validate with `dotnet build` from `AutoServiceApp`.
+- For backend changes, validate with `dotnet build` from `app`.
 - For frontend changes, validate with `npm run build` from `AutoService.WebUI` when relevant.
 - If task requirements conflict with current implementation, follow this file and call out the conflict clearly.
 
 ## Preferred Commands
-From `AutoServiceApp` root:
+From `app` root:
 - `dotnet build`
 - `dotnet run --project AutoService.AppHost`
 - `dotnet ef migrations add <Name> --project AutoService.ApiService --startup-project AutoService.ApiService --output-dir Data/Migrations`
 - `dotnet ef database update --project AutoService.ApiService --startup-project AutoService.ApiService`
 
-From `AutoServiceApp/AutoService.WebUI`:
+From `app/AutoService.WebUI`:
 - `npm install`
 - `npm run dev`
 - `npm run build`

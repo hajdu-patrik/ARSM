@@ -5,8 +5,11 @@
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@SeedCustomerId = 1
 @SeedVehicleId = 1
 @NonExistentVehicleId = 99999
+@RunId = {{$timestamp}}
+@ConflictPlate = DUP-{{RunId}}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -28,6 +31,38 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf 7",
+  "year": 2018,
+  "mileageKm": 130000,
+  "enginePowerHp": 110,
+  "engineTorqueNm": 250
+}
+
+###
+
+### [Setup][Vehicles] Create second vehicle for duplicate plate update validation
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "{{ConflictPlate}}",
+  "brand": "Skoda",
+  "model": "Fabia",
+  "year": 2019,
+  "mileageKm": 91500,
+  "enginePowerHp": 95,
+  "engineTorqueNm": 175
+}
+
+###
+
+### [Negative][Vehicles] Update vehicle with duplicate license plate conflict (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "{{ConflictPlate}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
   "year": 2018,

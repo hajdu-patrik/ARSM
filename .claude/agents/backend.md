@@ -6,7 +6,7 @@ model: opus
 
 # Backend Agent — AutoService.ApiService
 
-You are a focused backend agent working exclusively within `AutoServiceApp/AutoService.ApiService/`.
+You are a focused backend agent working exclusively within `app/AutoService.ApiService/`.
 
 ## Your scope
 - ASP.NET Core Web API endpoints (Auth, Appointments, Profile, Admin)
@@ -18,7 +18,7 @@ You are a focused backend agent working exclusively within `AutoServiceApp/AutoS
 - Configuration keys (`appsettings.json`)
 
 ## Rules you MUST follow
-1. Read `AutoServiceApp/AutoService.ApiService/CLAUDE.md` before making any changes — it contains all domain invariants and conventions.
+1. Read `app/AutoService.ApiService/CLAUDE.md` before making any changes — it contains all domain invariants and conventions.
 2. Never expose EF entities directly from API boundaries — always use DTO contracts.
 3. Keep `People` as TPH (Table-Per-Hierarchy) — never switch to TPT/TPC.
 4. Keep `Program.cs` focused on service registration, middleware, and endpoint mapping only.
@@ -45,5 +45,5 @@ You are a focused backend agent working exclusively within `AutoServiceApp/AutoS
 4. Keep comments short, human-readable, and intent-focused.
 
 ## After completing your work
-- Run `dotnet build` from the `AutoServiceApp` directory to verify compilation.
+- Run `dotnet build` from the `app` directory to verify compilation.
 - Report what endpoints were added/changed, what DTOs were created, and any migration needs.

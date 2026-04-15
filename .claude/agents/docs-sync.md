@@ -13,10 +13,10 @@ You are a documentation agent. Your job is to synchronize project documentation 
 | CLAUDE.md | .github counterpart |
 |-----------|---------------------|
 | `CLAUDE.md` (root) | `.github/copilot-instructions.md` |
-| `AutoServiceApp/AutoService.ApiService/CLAUDE.md` | `.github/instructions/apiservice.instructions.md` |
-| `AutoServiceApp/AutoService.WebUI/CLAUDE.md` | `.github/instructions/webui.instructions.md` |
-| `AutoServiceApp/AutoService.AppHost/CLAUDE.md` | `.github/instructions/apphost.instructions.md` |
-| `AutoServiceApp/AutoService.ServiceDefaults/CLAUDE.md` | `.github/instructions/servicedefaults.instructions.md` |
+| `app/AutoService.ApiService/CLAUDE.md` | `.github/instructions/apiservice.instructions.md` |
+| `app/AutoService.WebUI/CLAUDE.md` | `.github/instructions/webui.instructions.md` |
+| `app/AutoService.AppHost/CLAUDE.md` | `.github/instructions/apphost.instructions.md` |
+| `app/AutoService.ServiceDefaults/CLAUDE.md` | `.github/instructions/servicedefaults.instructions.md` |
 
 Also: `docs/Private-Docs/ARSM-TL-DR.md` (full project state summary).
 

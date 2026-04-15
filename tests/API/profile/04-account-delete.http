@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────
+# PROFILE - ACCOUNT DELETE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@ProfileNewPassword = {{$processEnv ARSM_TEST_MECHANIC_NEW_PASSWORD}}
+@DeleteRunSuffix = {{$timestamp}}
+@DeleteSelfEmail = profile.delete.self.{{DeleteRunSuffix}}@example.test
+@DeleteSelfPhoneSuffix = {{$randomInt 1000000 9999999}}
+@DeleteSelfPhone = +3630{{DeleteSelfPhoneSuffix}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Profile] Login as admin for self-delete negative test
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Profile] Self-delete with wrong password (400 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "WrongPassword!123"
+}
+
+###
+
+### [Negative][Profile] Self-delete with missing password body (400 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{}
+
+###
+
+### [Negative][Profile] Admin self-delete forbidden (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{AdminPassword}}"
+}
+
+###
+
+### [Setup][Profile] Register disposable non-admin mechanic for self-delete flow
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Delete",
+  "lastName": "Self",
+  "email": "{{DeleteSelfEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "{{DeleteSelfPhone}}",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+###
+
+### [Setup][Profile] Logout admin before non-admin self-delete check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Profile] Login as disposable non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{DeleteSelfEmail}}",
+  "password": "{{TestPassword}}"
+}
+
+###
+
+### [Positive][Profile] Non-admin self-delete (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{TestPassword}}"
+}
+
+###
+
+### [Negative][Profile] Validate deleted session profile access is unauthorized (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile

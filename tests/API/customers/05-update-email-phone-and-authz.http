@@ -4,6 +4,7 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @SeedCustomerId = 1
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
@@ -37,6 +38,20 @@ Content-Type: application/json
   "lastName": "Toth",
   "email": "{{KnownCustomerEmail}}",
   "phoneNumber": "12345"
+}
+
+###
+
+### [Negative][Customers] Update customer with duplicate email conflict (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{AdminEmail}}",
+  "phoneNumber": null
 }
 
 ###

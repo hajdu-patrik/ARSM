@@ -6,9 +6,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build: AppHost",
-            "program": "${workspaceFolder}/AutoServiceApp/AutoService.AppHost/bin/Debug/net10.0/AutoService.AppHost.exe",
+            "program": "${workspaceFolder}/app/AutoService.AppHost/bin/Debug/net10.0/AutoService.AppHost.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/AutoServiceApp/AutoService.AppHost",
+            "cwd": "${workspaceFolder}/app/AutoService.AppHost",
             "stopAtEntry": false,
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",

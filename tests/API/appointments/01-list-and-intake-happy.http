@@ -49,6 +49,23 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
 
 ###
 
+### [Positive][Appointments] List appointments without month params (defaults to current UTC month)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments
+
+###
+
+### [Negative][Appointments] List appointments with invalid year range (400 expected)
+# Expected error code: invalid_date_range.
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=1999&month=4
+
+###
+
+### [Negative][Appointments] List appointments with invalid month range (400 expected)
+# Expected error code: invalid_date_range.
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=13
+
+###
+
 ### [Positive][Appointments] List today's appointments
 GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 

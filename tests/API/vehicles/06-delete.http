@@ -8,6 +8,7 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @SeedVehicleId = 1
+@SeedCustomerId = 1
 @NonExistentVehicleId = 99999
 
 
@@ -58,3 +59,30 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+###
+
+### [Positive][Vehicles] Admin deletes vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+
+###
+
+### [Negative][Vehicles] Deleted vehicle cannot be fetched (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+
+###
+
+### [Negative][Vehicles] Re-delete deleted vehicle returns not found (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+
+###
+
+### [Cascade][Vehicles] Verify customer vehicle list remains queryable after cascade delete
+# Inspect response payload and confirm deleted vehicle id is absent.
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+###
+
+### [Cascade][Vehicles] Verify month appointment list after vehicle delete
+# Inspect response payload and confirm entries tied to deleted vehicle are absent.
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4

@@ -1,5 +1,5 @@
 ---
-applyTo: "AutoServiceApp/AutoService.ServiceDefaults/**"
+applyTo: "app/AutoService.ServiceDefaults/**"
 description: "Use when editing shared service defaults, health checks, resilience, and OpenTelemetry settings."
 ---
 # AutoService.ServiceDefaults Instructions

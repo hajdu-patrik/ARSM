@@ -1,5 +1,5 @@
 ---
-applyTo: "AutoServiceApp/AutoService.ApiService/**"
+applyTo: "app/AutoService.ApiService/**"
 description: "Use when editing backend API, auth, EF Core model, migrations, and domain logic in AutoService.ApiService."
 ---
 # AutoService.ApiService Instructions
@@ -134,6 +134,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - OpenAPI spec: `GET /openapi/v1.json` (Development only, via `Microsoft.AspNetCore.OpenApi`).
 - Interactive docs: Scalar API Reference at `/scalar/v1` (Development only, via `Scalar.AspNetCore`).
+- Endpoint mapper registrations declare explicit OpenAPI response metadata (`Produces`, `ProducesProblem`, `ProducesValidationProblem`) so status/body documentation in OpenAPI/Scalar stays accurate without changing runtime behavior.
 
 ## Configuration
 

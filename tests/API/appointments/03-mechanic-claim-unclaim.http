@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - MECHANIC CLAIM & UNCLAIM
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@ApptId = 1
+@PastCancelledApptId = 5
+@SingleAssignedApptId = 2
+@NonAssignedApptId = 3
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] Claim appointment by id
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Negative][Appointments] Duplicate claim conflict when already assigned (409 expected)
+# Expected error code: already_claimed.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Positive][Appointments] Complete appointment (setup for unclaim-completed check)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
+# Self-unclaim is blocked when status is Completed.
+# Expected error code: appointment_completed.
+### [Case][Appointments] DELETE /api/appointments/{{ApptId}}/claim
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Setup][Appointments] Cancel appointment for unclaim-cancelled check
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+###
+
+### [Negative][Appointments] Unclaim cancelled appointment is rejected (422 expected)
+# Expected error code: appointment_cancelled.
+### [Case][Appointments] DELETE /api/appointments/{{PastCancelledApptId}}/claim
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+
+###
+
+### [Setup][Appointments] Reopen completed appointment to InProgress for remaining tests
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Positive][Appointments] Unclaim appointment by id
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
+### [Negative][Appointments] Claim cancelled appointment is rejected (422 expected)
+# Expected error code: appointment_cancelled.
+### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+
+###
+
+### [Negative][Appointments] Claim non-existent appointment (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+
+###
+
+### [Negative][Appointments] Unclaim non-existent appointment (404 expected)
+# Expected error code: appointment_not_found.
+### [Case][Appointments] DELETE /api/appointments/99999/claim
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+
+###
+
+### [Negative][Appointments] Unclaim when not assigned to appointment (409 expected)
+# Expected error code: not_assigned.
+### [Case][Appointments] DELETE /api/appointments/{{NonAssignedApptId}}/claim
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
+
+###
+
+### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
+# Expected error code: last_assigned_mechanic.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim

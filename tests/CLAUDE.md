@@ -12,10 +12,10 @@ This folder uses chunked suites (subfolders) for focused execution and fast debu
 ### API chunks
 
 - `tests/API/auth/` - register setup/rules/validation, login matrix, session lifecycle, health
-- `tests/API/appointments/` - intake, mechanic flows, admin create/update, admin assign flows
+- `tests/API/appointments/` - intake, mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign
 - `tests/API/customers/` - list/lookup, create, update, delete
 - `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete
-- `tests/API/profile/` - profile core, profile picture, account deletion
+- `tests/API/profile/` - profile get/update, name validation/password, profile picture, account deletion
 - `tests/API/admin/` - list, delete invariants, authz
 
 ### Database chunks
@@ -37,6 +37,11 @@ For API `.http` suites:
 - `ARSM_TEST_CUSTOMER_EMAIL`
 - `ARSM_TEST_PASSWORD`
 - `ARSM_TEST_WRONG_PASSWORD`
+
+## File Size Rule
+
+- If any `.http` or `.sql` test file exceeds 200 lines, split it into multiple files with corresponding descriptive names in the same folder.
+- Keep each file focused on a single logical area (e.g., claim/unclaim, status transitions, validation).
 
 ## Test Data Policy
 

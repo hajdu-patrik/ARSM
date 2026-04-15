@@ -10,6 +10,7 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @CurrentAdminMechanicId = 6
+@AnotherAdminMechanicId = 9
 @MechanicIdWithSoleAssignments = 7
 @MechanicIdCandidateForDeletion = 8
 @UnknownMechanicId = 99999
@@ -19,6 +20,12 @@
 
 ### [Negative][Admin] Try deleting self mechanic (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{CurrentAdminMechanicId}}
+
+###
+
+# Preconditions: AnotherAdminMechanicId exists, has Admin role, and differs from CurrentAdminMechanicId.
+### [Negative][Admin] Try deleting another admin mechanic (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AnotherAdminMechanicId}}
 
 ###
 

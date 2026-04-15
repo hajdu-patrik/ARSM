@@ -16,10 +16,10 @@ Apply these rules whenever editing files in `tests/**`.
 ### API chunks
 
 - `tests/API/auth/` - register setup/rules/validation, login matrix, session lifecycle, health
-- `tests/API/appointments/` - intake, mechanic flows, admin create/update, admin assign flows
+- `tests/API/appointments/` - intake, mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign
 - `tests/API/customers/` - list/lookup, create, update, delete
 - `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete
-- `tests/API/profile/` - profile core, profile picture, account deletion
+- `tests/API/profile/` - profile get/update, name validation/password, profile picture, account deletion
 - `tests/API/admin/` - list, delete invariants, authz
 
 ### Database chunks
@@ -54,6 +54,11 @@ For API `.http` suites:
 - Prefer synthetic identifiers only (for example `example.test`).
 - For create flows, use run-scoped unique suffixes (`{{$timestamp}}`) to avoid reusable test data collisions.
 - Keep non-admin authentication requests mapped to non-admin password variables.
+
+## File Size Rule
+
+- If any `.http` or `.sql` test file exceeds 200 lines, split it into multiple files with corresponding descriptive names in the same folder.
+- Keep each file focused on a single logical area (for example claim/unclaim, status transitions, validation).
 
 ## SQL Verification Rules
 

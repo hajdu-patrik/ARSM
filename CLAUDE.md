@@ -19,10 +19,10 @@ This repository hosts the **ARSM** (Appointment and Resource Scheduling Manageme
 
 Specific instructions and conventions are decentralized. Claude will automatically read these when navigating into the respective directories:
 
-- **Backend API & Domain:** See `@AutoServiceApp/AutoService.ApiService/CLAUDE.md`
-- **Aspire Orchestration:** See `@AutoServiceApp/AutoService.AppHost/CLAUDE.md`
-- **Frontend UI:** See `@AutoServiceApp/AutoService.WebUI/CLAUDE.md`
-- **Service Defaults:** See `@AutoServiceApp/AutoService.ServiceDefaults/CLAUDE.md`
+- **Backend API & Domain:** See `@app/AutoService.ApiService/CLAUDE.md`
+- **Aspire Orchestration:** See `@app/AutoService.AppHost/CLAUDE.md`
+- **Frontend UI:** See `@app/AutoService.WebUI/CLAUDE.md`
+- **Service Defaults:** See `@app/AutoService.ServiceDefaults/CLAUDE.md`
 
 ## Specialist Agents (Mandatory Delegation)
 

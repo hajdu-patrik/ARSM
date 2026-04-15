@@ -91,7 +91,7 @@ Domain rules are maintained in parallel for both tools:
 | Claude Code | GitHub Copilot |
 | ----------- | -------------- |
 | `CLAUDE.md` (root) | `.github/copilot-instructions.md` |
-| `AutoServiceApp/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
+| `app/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
 
 ---
 
@@ -109,7 +109,7 @@ Domain rules are maintained in parallel for both tools:
 ## Run with Aspire
 
 ```Bash
-cd AutoServiceApp
+cd app
 dotnet run --project AutoService.AppHost
 ```
 

@@ -91,7 +91,7 @@ A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
 | Claude Code | GitHub Copilot |
 | ----------- | -------------- |
 | `CLAUDE.md` (gyökérben) | `.github/copilot-instructions.md` |
-| `AutoServiceApp/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
+| `app/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
 
 ---
 
@@ -109,7 +109,7 @@ A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
 ## Indítás Aspire-rel
 
 ```Bash
-cd AutoServiceApp
+cd app
 dotnet run --project AutoService.AppHost
 ```
 

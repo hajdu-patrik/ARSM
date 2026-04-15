@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: AutoServiceApp
+        working-directory: app
 
     steps:
     - uses: actions/checkout@v4

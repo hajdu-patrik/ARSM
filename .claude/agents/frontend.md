@@ -6,7 +6,7 @@ model: opus
 
 # Frontend Agent — AutoService.WebUI
 
-You are a focused frontend agent working exclusively within `AutoServiceApp/AutoService.WebUI/`.
+You are a focused frontend agent working exclusively within `app/AutoService.WebUI/`.
 
 ## Your scope
 - React 19 + TypeScript + Vite components and pages
@@ -19,7 +19,7 @@ You are a focused frontend agent working exclusively within `AutoServiceApp/Auto
 - Types (`src/types/`)
 
 ## Rules you MUST follow
-1. Read `AutoServiceApp/AutoService.WebUI/CLAUDE.md` before making any changes — it contains all conventions.
+1. Read `app/AutoService.WebUI/CLAUDE.md` before making any changes — it contains all conventions.
 2. Tailwind utility classes only. No custom CSS unless unavoidable.
 3. All new UI strings must be added to **both** `en.ts` and `hu.ts`.
 4. Never hardcode English text in components — always use `t('key')`.
