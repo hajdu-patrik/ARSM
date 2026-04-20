@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.Refresh.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
@@ -19,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AutoService.ApiService.Auth.Endpoints;
 
 /**
- * Backend type for API logic in this file.
+ * Partial class containing the token-refresh endpoint handler and its supporting helpers.
  */
 public static partial class AuthEndpoints
 {
@@ -44,6 +38,7 @@ public static partial class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Refresh");
+        var currentIpAddress = ResolveClientIpAddress(httpContext);
 
         if (!httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) ||
             string.IsNullOrWhiteSpace(refreshTokenValue))
@@ -67,7 +62,7 @@ public static partial class AuthEndpoints
 
         if (existingToken.RevokedAtUtc is not null)
         {
-            logger.LogWarning("Refresh rejected: token already revoked for mechanic {MechanicId}.", existingToken.MechanicId);
+            logger.LogWarning("Refresh rejected: token already revoked for mechanic {MechanicId}. ClientIp: {ClientIp}.", existingToken.MechanicId, currentIpAddress);
             if (!string.IsNullOrWhiteSpace(existingToken.ReplacedByTokenHash))
             {
                 await RevokeRefreshTokenDescendantsAsync(existingToken, nowUtc, db, cancellationToken);
@@ -83,7 +78,6 @@ public static partial class AuthEndpoints
             return Results.Unauthorized();
         }
 
-        var currentIpAddress = ResolveClientIpAddress(httpContext);
         if (!string.IsNullOrWhiteSpace(existingToken.CreatedByIpAddress) &&
             !string.Equals(existingToken.CreatedByIpAddress, currentIpAddress, StringComparison.Ordinal))
         {
@@ -140,7 +134,7 @@ public static partial class AuthEndpoints
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
         var isAdmin = roles.Contains("Admin");
-        logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}.", mechanic.Id, isAdmin);
+        logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, currentIpAddress);
         return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 

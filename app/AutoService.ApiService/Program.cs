@@ -177,7 +177,7 @@ builder.Services
                     {
                     }
                 }
-            }
+            },
         };
 
         options.TokenValidationParameters = new TokenValidationParameters
@@ -285,6 +285,7 @@ await app.EnsureSeededAsync();
  * - login ban middleware
  * - rate limiter
  * - cors
+ * - audit access denied middleware (wraps auth pipeline to log 401/403)
  * - authentication
  * - authorization
  */
@@ -304,6 +305,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();
 app.UseCors("WebUIPolicy");
+app.UseMiddleware<AuditAccessDeniedMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

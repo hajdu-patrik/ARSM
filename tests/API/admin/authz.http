@@ -9,6 +9,7 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@SomeMechanicId = 8
 
 
 # ─────────────────────────────────────────────────────────────
@@ -26,3 +27,23 @@ Content-Type: application/json
 
 ### [Negative][Admin] Non-admin cannot list mechanics (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+###
+
+### [Negative][Admin] Non-admin cannot delete mechanic (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SomeMechanicId}}
+
+###
+
+### [Setup][Admin] Logout non-admin before unauthenticated checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Negative][Admin] Unauthenticated list mechanics (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+###
+
+### [Negative][Admin] Unauthenticated delete mechanic (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SomeMechanicId}}

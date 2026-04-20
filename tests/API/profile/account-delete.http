@@ -100,3 +100,14 @@ Content-Type: application/json
 
 ### [Negative][Profile] Validate deleted session profile access is unauthorized (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+###
+
+### [Negative][Profile] Unauthenticated self-delete (no session cookie) returns 401
+# Run in a fresh session with no active cookies.
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Content-Type: application/json
+
+{
+  "currentPassword": "{{TestPassword}}"
+}

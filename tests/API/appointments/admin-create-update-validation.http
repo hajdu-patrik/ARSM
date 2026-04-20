@@ -3,6 +3,8 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @CustomerId = 1
 @CustomerVehicleId = 1
 @AnotherCustomerVehicleId = 2
@@ -15,6 +17,19 @@
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly create endpoint)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Appointments] Admin updates past appointment dueDateTime/taskDescription (200 expected)
+# Preconditions: PastScheduledApptId exists. Confirms past appointments remain editable.
 ### [Case][Appointments] PUT /api/appointments/{{PastScheduledApptId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
@@ -153,3 +168,4 @@ Content-Type: application/json
   "taskDescription": "Uj idopont felvetele admin oldalon",
   "mechanicIds": [{{UnknownMechanicId}}]
 }
+

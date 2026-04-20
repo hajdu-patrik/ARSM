@@ -3,6 +3,10 @@
 # Set @CancelledApptId to an appointment that is in Cancelled status.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @SingleAssignedApptId = 2
 @SecondaryMechanicId = 8
 
@@ -12,6 +16,17 @@
 
 
 # ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
 
 ### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
 # Returns 422 Unprocessable Entity with code: appointment_completed.
@@ -98,3 +113,29 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{Me
 ### [Case][Appointments] DELETE /api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+
+###
+
+### [Setup][Appointments] Logout admin, login as non-admin for authz checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Appointments] Non-admin cannot admin-assign mechanic to appointment (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
+
+###
+
+### [Negative][Appointments] Non-admin cannot admin-unassign mechanic from appointment (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}

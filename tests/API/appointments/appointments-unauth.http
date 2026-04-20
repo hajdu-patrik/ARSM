@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - UNAUTHENTICATED ACCESS (401 checks)
+# ─────────────────────────────────────────────────────────────
+# Run these in a fresh session with no active auth cookies,
+# or after logging out.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@RunId = {{$timestamp}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Negative][Appointments] Unauthenticated list appointments (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
+
+###
+
+### [Negative][Appointments] Unauthenticated list today's appointments (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+###
+
+### [Negative][Appointments] Unauthenticated intake create (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "unauth.intake.{{RunId}}@example.test",
+  "customerFirstName": "Unauth",
+  "customerLastName": "Intake",
+  "vehicle": {
+    "licensePlate": "UNAUTH-{{RunId}}",
+    "brand": "Ghost",
+    "model": "Rider",
+    "year": 2020,
+    "mileageKm": 0,
+    "enginePowerHp": 100,
+    "engineTorqueNm": 200
+  },
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Unauthenticated intake should be blocked"
+}
+
+###
+
+### [Negative][Appointments] Unauthenticated appointment update (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Unauthenticated update should be blocked"
+}
+
+###
+
+### [Negative][Appointments] Unauthenticated appointment status update (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/status
+Content-Type: application/json
+
+{
+  "status": "InProgress"
+}
+
+###
+
+### [Negative][Appointments] Unauthenticated claim (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
+
+###
+
+### [Negative][Appointments] Unauthenticated unclaim (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim

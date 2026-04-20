@@ -39,6 +39,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Startup must fail fast if `JwtSettings:Secret` still contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Keep login protections: lockout (5 failed attempts, 15 min lockout), rate limit (10 req/min), and temporary ban behavior (3 min) consistent unless explicitly requested.
 - Keep login-ban middleware in-process behavior deterministic: 30-second cleanup interval and max tracked-client bound (5000).
+- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) must remain registered between `UseCors` and `UseAuthentication`. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for every `401` or `403` response, including `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, and `ClientIp` structured properties.
+- Auth log events (login success, login failure, login lockout, refresh success, refresh revoked-token reuse) must include a `ClientIp` structured property. Use `ResolveClientIpAddress(httpContext)` computed once per handler and reuse it for both log calls and the `CreatedByIpAddress` field on new `RefreshToken` DB rows.
 - Keep auth input normalization consistent across register/login:
   - emails are trimmed + lowercased,
   - phone numbers are normalized to canonical E.164 (`+{countryCode}{nationalNumber}`),

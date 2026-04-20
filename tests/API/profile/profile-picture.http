@@ -3,10 +3,24 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @MechanicPersonIdForPicture = 7
+@NonExistentPersonId = 99999
 
 
 # ─────────────────────────────────────────────────────────────
+
+### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
 
 ### [Positive][Profile] Get profile picture (200 or 404 if none)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
@@ -15,6 +29,11 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
 ### [Positive][Profile] Get mechanic profile picture by person id (200 or 404 if none)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+
+###
+
+### [Negative][Profile] Get profile picture for non-existent person id (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPersonId}}
 
 ###
 
@@ -42,4 +61,24 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 ###
 
 ### [Positive][Profile] Remove profile picture
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+###
+
+### [Setup][Profile] Logout before unauthenticated picture checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Negative][Profile] Unauthenticated get profile picture (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+###
+
+### [Negative][Profile] Unauthenticated get profile picture by person id (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+
+###
+
+### [Negative][Profile] Unauthenticated delete profile picture (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture

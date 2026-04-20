@@ -56,6 +56,8 @@
   - refresh token in HttpOnly cookie (`autoservice_rt`),
   - persisted hashed refresh token rows in `refreshtokens`.
 - Access-token JWT denylist rows are persisted in `revokedjwttokens` and cached in-memory for fast validation checks.
+- Auth log events include a `ClientIp` structured property: login success, login failure, and login lockout all log `ClientIp`; refresh success and revoked-token-reuse warning log `ClientIp`. `ResolveClientIpAddress(httpContext)` is computed once per handler and reused (including for the `CreatedByIpAddress` field on new `RefreshToken` DB rows).
+- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) emits a `LogWarning` under logger category `Auth.AccessDenied` for every response with status code `401` or `403`. Structured properties: `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, `ClientIp` (`context.Connection.RemoteIpAddress`). Must be registered before `UseAuthentication()`.
 - Login failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, when a linked mechanic domain record is missing, and for existing customer email/phone identifiers (to reduce account enumeration); `429` during lockout/rate-limit.
 - Lockout: 5 failed attempts, 15-minute lockout.
 - Rate limit: 10 requests/min per client IP for login (`AuthLoginAttempts`) and 20 requests/min for refresh (`AuthRefreshAttempts`). Temporary login-ban window after login rate-limit rejection: 3 minutes.
@@ -135,11 +137,13 @@
 
 ## Security Middleware (must preserve order)
 
-`UseHsts` (non-Dev) → `UseForwardedHeaders` → `UseHttpsRedirection` → security headers middleware → login ban middleware → `UseRateLimiter` → `UseCors` → `UseAuthentication` → `UseAuthorization`
+`UseHsts` (non-Dev) → `UseForwardedHeaders` → `UseHttpsRedirection` → security headers middleware → login ban middleware → `UseRateLimiter` → `UseCors` → `AuditAccessDeniedMiddleware` → `UseAuthentication` → `UseAuthorization`
 
 Security headers middleware adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and API-focused `Content-Security-Policy` headers. In Development, CSP is skipped for `/openapi` and `/scalar` routes so API docs tooling can load.
 
 Login-ban middleware remains in-process and uses deterministic cleanup scheduling (30-second interval) plus a max tracked-client bound (5000) to cap memory growth.
+
+`AuditAccessDeniedMiddleware` is registered between `UseCors` and `UseAuthentication` so it wraps the full auth pipeline and can observe the final response status code on the way out. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for any `401` or `403` response, including the structured properties `StatusCode`, `MechanicId` (from the `person_id` claim, null when unauthenticated), `Method`, `Path`, and `ClientIp`.
 
 ## Configuration
 
@@ -162,7 +166,7 @@ Login-ban middleware remains in-process and uses deterministic cleanup schedulin
 - `Customers/` — customer endpoint files (CustomerEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
-- `Middleware/` — custom middleware classes (`LoginBanMiddleware`).
+- `Middleware/` — custom middleware classes (`LoginBanMiddleware`, `AuditAccessDeniedMiddleware`).
 - `Identity/`, `Linking/`, `Normalization/`, `Security/`, `Validation/` — grouped cross-cutting folders; keep contact normalization (`ContactNormalization`), name validation (`IsValidName`), token hash/expiry parsing (`TokenSecurity`), person-type resolution (`PersonTypeResolver`), image content-type detection (`ImageContentTypeDetector`), and shared validation error message constants (`ValidationMessages`) centralized here. Also contains `NameFieldsValidator` (centralized name-field validation with two entry points: `ValidateNames()` for dict-based error patterns used by auth register, and `GetNameError()` for early-return patterns used by customer, appointment, and profile endpoints) and `VehicleNumericValidation` (year/mileage/power/torque constants `MinYear`/`MaxYear`/`MaxMileageKm`/`MaxEnginePowerHp`/`MaxEngineTorqueNm` and helper methods `GetYearValidationError()`/`GetValidationError()` used by vehicle and appointment endpoints).
 - `Domain/` and `Security/` — model locations; keep business entities under `Domain/`, security entities under `Security/`, and unique value-object types under `Domain/UniqueTypes/`.
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.

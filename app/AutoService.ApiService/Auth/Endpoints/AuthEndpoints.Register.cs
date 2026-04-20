@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.Register.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -19,7 +13,7 @@ using Npgsql;
 namespace AutoService.ApiService.Auth.Endpoints;
 
 /**
- * Backend type for API logic in this file.
+ * Partial class containing the registration endpoint handler and its supporting helpers.
  */
 public static partial class AuthEndpoints
 {
@@ -28,6 +22,7 @@ public static partial class AuthEndpoints
      * Identity and domain records are persisted in one transaction.
      *
      * @param request Incoming registration payload.
+     * @param httpContext Current request context used for client metadata.
      * @param userManager Identity user manager.
      * @param db Database context.
      * @param loggerFactory Logger factory used to create endpoint logger.
@@ -36,12 +31,14 @@ public static partial class AuthEndpoints
      */
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
+        HttpContext httpContext,
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Register");
+        var clientIp = ResolveClientIpAddress(httpContext);
 
         var validationErrors = ValidateRegisterRequest(request);
         if (validationErrors.Count > 0)
@@ -162,7 +159,7 @@ public static partial class AuthEndpoints
             });
         }
 
-        logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}.", person.Id, identityUser.Id);
+        logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}. ClientIp: {ClientIp}.", person.Id, identityUser.Id, clientIp);
         return Results.Ok(new RegisterResponse(identityUser.Id, person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 

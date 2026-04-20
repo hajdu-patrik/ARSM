@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.Login.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
@@ -19,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AutoService.ApiService.Auth.Endpoints;
 
 /**
- * Backend type for API logic in this file.
+ * Partial class containing the login endpoint handler and its supporting helpers.
  */
 public static partial class AuthEndpoints
 {
@@ -48,6 +42,7 @@ public static partial class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Login");
+        var clientIp = ResolveClientIpAddress(httpContext);
 
         var validationErrors = ValidateLoginRequest(request);
         if (validationErrors.Count > 0)
@@ -114,7 +109,7 @@ public static partial class AuthEndpoints
 
         if (identityUser is null)
         {
-            logger.LogInformation("Login failed: no identity user found for provided identifier.");
+            logger.LogInformation("Login failed: no identity user found for provided identifier. ClientIp: {ClientIp}.", clientIp);
             return Results.Problem(
                 title: "invalid_credentials",
                 detail: "Invalid login credentials.",
@@ -129,7 +124,7 @@ public static partial class AuthEndpoints
                 ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value.UtcDateTime - DateTime.UtcNow).TotalSeconds))
                 : 60;
 
-            logger.LogWarning("Login blocked due to active lockout. Retry after {RetryAfterSeconds} seconds.", retryAfterSeconds);
+            logger.LogWarning("Login blocked due to active lockout. Retry after {RetryAfterSeconds} seconds. ClientIp: {ClientIp}.", retryAfterSeconds, clientIp);
 
             return Results.Json(new
             {
@@ -141,7 +136,7 @@ public static partial class AuthEndpoints
 
         if (!signInResult.Succeeded)
         {
-            logger.LogInformation("Login failed: invalid credentials.");
+            logger.LogInformation("Login failed: invalid credentials. ClientIp: {ClientIp}.", clientIp);
             return Results.Problem(
                 title: "invalid_credentials",
                 detail: "Invalid login credentials.",
@@ -177,7 +172,7 @@ public static partial class AuthEndpoints
             refreshTokenHash,
             nowUtc,
             refreshTokenExpiresAtUtc,
-            ResolveClientIpAddress(httpContext),
+            clientIp,
             httpContext.Request.Headers.UserAgent.ToString()));
 
         await db.SaveChangesAsync(cancellationToken);
@@ -193,7 +188,7 @@ public static partial class AuthEndpoints
             BuildRefreshTokenCookieOptions(refreshTokenTtl));
 
         var isAdmin = roles.Contains("Admin");
-        logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}.", mechanic.Id, isAdmin);
+        logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, clientIp);
         return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
     }
 

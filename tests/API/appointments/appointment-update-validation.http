@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - APPOINTMENT UPDATE FIELD VALIDATION
+# ─────────────────────────────────────────────────────────────
+# Tests for PUT /api/appointments/{id} field-level validation.
+# Prerequisites: admin session cookie required.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@ApptId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as admin (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][Appointments] Admin update rejects empty taskDescription (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-25T16:00:00",
+  "taskDescription": "   "
+}
+
+###
+
+### [Negative][Appointments] Admin update rejects taskDescription exceeding 200 characters (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-25T16:00:00",
+  "taskDescription": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"
+}
+
+###
+
+### [Negative][Appointments] Admin update rejects dueDateTime earlier than scheduledDate (422 expected)
+# dueDateTime must be >= scheduledDate for the linked appointment.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2000-01-01T00:00:00",
+  "taskDescription": "Due before scheduled date should be rejected"
+}
+
+###
+
+### [Negative][Appointments] Admin update with vehicle payload missing required fields (422 expected)
+# When any vehicle field is supplied, LicensePlate, Brand, and Model are all required.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-25T16:00:00",
+  "taskDescription": "Partial vehicle payload should be rejected",
+  "brand": "Volkswagen"
+}

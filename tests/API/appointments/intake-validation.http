@@ -120,3 +120,26 @@ Content-Type: application/json
   "dueDateTime": "2020-01-03T10:00:00",
   "taskDescription": "Scheduler intake with past date allowed"
 }
+
+###
+
+### [Negative][Appointments] Scheduler intake requires customer name fields when email is unknown and not a mechanic email (422 expected)
+# When the email does not match any customer or mechanic, customerFirstName and customerLastName are mandatory.
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "completely.unknown.{{RunId}}@example.test",
+  "vehicle": {
+    "licensePlate": "UNK-{{RunId}}",
+    "brand": "Ford",
+    "model": "Focus",
+    "year": 2018,
+    "mileageKm": 60000,
+    "enginePowerHp": 110,
+    "engineTorqueNm": 200
+  },
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Intake missing customer name fields"
+}
