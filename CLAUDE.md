@@ -31,12 +31,14 @@ This project uses specialist agents for both Claude Code (`.claude/agents/`) and
 | Agent | Model | Scope | When to use |
 | ----- | ----- | ----- | ----------- |
 | `orchestrator` | sonnet | Task decomposition | **Always first** — analyzes every task and decides which specialists work on it in which phases |
-| `backend` | sonnet | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
-| `frontend` | sonnet | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
+| `backend` | opus | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
+| `frontend` | opus | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | `migration` | sonnet | EF Core migrations | Creating, validating, and troubleshooting migrations |
 | `docs-sync` | sonnet | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
-| `code-docs-sync` | sonnet | Source-code comment style | Enforces JSDoc-style comments for changed classes/methods and removes XML doc comments |
-| `test-endpoints` | sonnet | .http and .sql test files | After API endpoint add/change/remove |
+| `coding-principles` | sonnet | Code style & quality enforcement | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
+| `http-endpoint-test` | sonnet | .http test files | After API endpoint add/change/remove |
+| `sql-database-test` | sonnet | .sql validation files | After schema or persistence model changes |
+| `e2e-playwright` | sonnet | Playwright E2E tests | After frontend UI changes or backend DTO changes that affect the UI |
 | `validate` | haiku | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
 
 **Mandatory workflow:**
@@ -44,15 +46,17 @@ This project uses specialist agents for both Claude Code (`.claude/agents/`) and
 2. **Specialist execution** — identified agents execute in parallel where possible.
 3. **Validate** — always runs after code changes to catch build/type errors.
 4. **Docs sync (always)** — the `docs-sync` agent must run after every change to synchronize all documentation files. If changes touch skills, agents, or instruction files, those are updated too.
-5. **Code docs sync** — the `code-docs-sync` agent must run after class/method additions or changes.
-6. **Test endpoints** — runs after any API endpoint change.
+5. **Coding principles** — the `coding-principles` agent must run after class/method additions or changes to enforce code style and quality.
+6. **HTTP endpoint test** — runs after any API endpoint change.
+7. **SQL database test** — runs after schema or persistence model changes (often pairs with `migration`).
+8. **E2E Playwright** — the `e2e-playwright` agent must run after UI component or DTO changes to keep Playwright tests aligned.
 
 ## Team & Operations Core Rules
 
 - **Configuration-First Addressing:** Never hardcode runtime fallback URLs. Local ports and service endpoints must exclusively reside in configuration files (`appsettings.json`, `launchSettings.json`, `.env.development`).
 - **Conflict Prevention:** For parallel work, respect folder-level ownership to prevent merge conflicts.
 - **Documentation Sync (Mandatory):** After any change that affects API endpoints, EF migrations, middleware pipeline, WebUI pages/components/routes, dependencies (NuGet or npm), AppHost resource wiring, or configuration keys — run `/docs-sync` before considering the task complete. This keeps all `CLAUDE.md` and `.github/instructions/` files in sync with the actual code.
-- **Code Documentation Style (Mandatory):** For new or changed non-trivial classes/methods, use JSDoc-style block comments. Do not use XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`). Run `/code-docs-sync` when these code changes are introduced.
-- **Endpoint Test Sync (Mandatory):** After any API endpoint is added/changed/removed, run `/endpoint-tests-sync` to keep endpoint test suites synchronized in `tests/API/**/*.http` and `tests/Database/**/*.sql`.
+- **Code Documentation Style (Mandatory):** For new or changed non-trivial classes/methods, use JSDoc-style block comments. Do not use XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`). Run the `coding-principles` agent when these code changes are introduced.
+- **Endpoint Test Sync (Mandatory):** After any API endpoint is added/changed/removed, run the `http-endpoint-test` agent for `.http` suites in `tests/API/` and the `sql-database-test` agent for `.sql` suites in `tests/Database/`.
 - **AI SQL Safety (Mandatory):** For AI-assisted database verification, use `ai_agent_test_user` and execute read-only `SELECT` queries only. Never run DML/DDL (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`) from AI SQL tooling.
 - **Scheduler Doc Accuracy:** Keep frontend docs aligned with current scheduler UX details, including mobile calendar baseline alignment, auth-expired (`401/403`) vs generic load-toast messaging, intake lookup-state reset behavior and placeholder coverage, and AppointmentDetailModal import-boundary refactors that preserve behavior.

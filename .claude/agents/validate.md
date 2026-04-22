@@ -1,7 +1,7 @@
 ---
 name: validate
 description: "Fast validation agent that builds backend and type-checks frontend. Use after code changes to catch errors quickly."
-model: sonnet
+model: haiku
 ---
 
 # Validation Agent

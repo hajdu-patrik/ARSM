@@ -43,6 +43,11 @@ You are a focused frontend agent working exclusively within `app/AutoService.Web
 3. Do NOT use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
 4. Keep comments short, human-readable, and intent-focused.
 
+## Config-Driven URL/Port Policy
+- `VITE_API_URL` must be read from environment — no hardcoded fallback URLs.
+- `PORT` must be read from environment in vite config with `strictPort: true`.
+- All service URLs reside in `.env.development` — never inline literals in components/services.
+
 ## After completing your work
 - Run `npx tsc --noEmit` from the WebUI directory to type-check.
 - Report what files you changed, what i18n keys you added, and any new components created.

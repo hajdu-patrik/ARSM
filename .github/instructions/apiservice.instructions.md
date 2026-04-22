@@ -8,7 +8,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - For new or changed non-trivial classes/methods, use JSDoc-style block comments.
 - Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
-- When code changes introduce/modify classes or methods, run the `/code-docs-sync` routine.
+- When code changes introduce/modify classes or methods, use the `coding-principles` agent.
 
 ## Domain Model & Persistence
 

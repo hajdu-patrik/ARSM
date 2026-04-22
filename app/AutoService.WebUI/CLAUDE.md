@@ -153,9 +153,20 @@
 - `public/robots.txt` is served statically (User-agent: *, Allow: /, Disallow: /api/).
 - `build.rollupOptions.output.manualChunks` splits vendor code into three named chunks: `vendor-react` (react, react-dom, react-router-dom), `vendor-i18n` (i18next, react-i18next, i18next-browser-languagedetector), `vendor-ui` (lucide-react, zustand, axios).
 
+## E2E Testing (Playwright)
+
+- Frontend E2E uses `@playwright/test` with config in `playwright.config.ts`.
+- E2E test files live under `tests/e2e` (specs + page objects + support helpers).
+- Default base URL is `https://localhost:5173`; override with `PLAYWRIGHT_BASE_URL`.
+- Playwright web server runs `npm run dev`, ignores local HTTPS certificate errors for readiness checks, and reuses an already running dev server outside CI.
+- Supported scripts:
+  - `npm run e2e`
+  - `npm run e2e:headed`
+  - `npm run e2e:ui`
+
 ## Key Dependencies
 
-`react-router-dom`, `axios`, `zustand`, `react-easy-crop`, `libphonenumber-js`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`
+`react-router-dom`, `axios`, `zustand`, `react-easy-crop`, `libphonenumber-js`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `@playwright/test`
 
 ## Security
 

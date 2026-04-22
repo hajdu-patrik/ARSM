@@ -173,6 +173,7 @@ const DueSection = memo(function DueSection({
           <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.dueDateTime')}</span>
           <input
             type="datetime-local"
+            data-testid="appointment-detail-due-datetime"
             value={dueDateTime}
             onChange={(event) => onDueDateTimeChange(event.target.value)}
             className={`${inputClassCompact} px-3 py-2`}

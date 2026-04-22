@@ -248,6 +248,8 @@ const CalendarViewComponent = memo(function CalendarView({
                       ? 'min-h-[4.5rem] md:min-h-[2.5rem]'
                       : 'min-h-[2.5rem]';
 
+                    const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+
                     const dayClassName = `${rowHeightClass} p-1 rounded-lg flex flex-col items-center justify-start ${
                       day.isCurrentMonth
                         ? 'text-[#2C2440] dark:text-[#EDE8FA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]'
@@ -259,6 +261,8 @@ const CalendarViewComponent = memo(function CalendarView({
                         <button
                           type="button"
                           key={day.date.toISOString()}
+                          data-testid={dayTestId}
+                          aria-label={dayTestId}
                           onClick={() => onDayClick(dayNum)}
                           className={`${dayClassName} cursor-pointer text-left`}
                         >

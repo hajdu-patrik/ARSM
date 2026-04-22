@@ -55,6 +55,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
     <div className="flex w-full flex-wrap items-center gap-2">
       {canEdit && !isEditing && (
         <button
+          data-testid="appointment-detail-edit"
           onClick={onStartEdit}
           className="w-full rounded-xl bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] sm:w-auto sm:min-w-[10rem]"
         >
@@ -72,6 +73,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             {t('scheduler.intake.cancel')}
           </button>
           <button
+            data-testid="appointment-detail-save"
             onClick={onSave}
             disabled={isSaving}
             className="rounded-xl bg-[#C9B3FF] px-3 py-1.5 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"

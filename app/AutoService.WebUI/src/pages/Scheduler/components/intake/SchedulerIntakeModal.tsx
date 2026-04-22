@@ -64,6 +64,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             </button>
             <button
               type="button"
+              data-testid="scheduler-intake-create"
               onClick={() => {
                 actions.handleCreate();
               }}

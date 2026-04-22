@@ -73,6 +73,7 @@ packages/
 .env
 .env.*
 !.env.example
+.secrets
 *.local
 
 # ASP.NET local development settings
@@ -89,6 +90,9 @@ secrets.json
 *.pem
 *.key
 *.crt
+
+# Local GitHub Actions runner (act)
+.actrc
 
 # Docker / container local overrides
 docker-compose.override.yml

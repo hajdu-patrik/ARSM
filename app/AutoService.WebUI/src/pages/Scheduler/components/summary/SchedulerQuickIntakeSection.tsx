@@ -40,6 +40,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 
         <button
           type="button"
+          data-testid="scheduler-intake-open"
           onClick={onOpenIntake}
           disabled={selectedDate === null}
           className="inline-flex items-center justify-center rounded-xl bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"

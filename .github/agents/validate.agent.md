@@ -16,7 +16,7 @@ You are a fast validation agent. Your job is to validate build/type-check status
 2. **Frontend type-check**: Run `npx tsc --noEmit` from `app/AutoService.WebUI/` directory. Capture any errors.
 3. **Quality gate (required)**: Inspect changed source files and report violations for:
   - XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`) in touched code,
-  - Missing JSDoc-style comments on new/changed non-trivial classes/methods,
+  - Missing JSDoc-style comments on new/changed non-trivial classes/methods (detailed enforcement delegated to `coding-principles` agent),
   - Readability/scalability issues that clearly violate modern maintainability expectations.
 4. **Report**: Summarize results concisely:
    - Backend: PASS or FAIL (with error details)

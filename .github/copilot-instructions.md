@@ -38,13 +38,12 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 ## Code Documentation Style Rule (Mandatory)
 - When adding or changing non-trivial classes/methods, use JSDoc-style block comments.
 - Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
-- Run `/code-docs-sync` after code changes that introduce/modify classes or methods.
+- Use the `coding-principles` agent after code changes that introduce/modify classes or methods.
 
-## Endpoint Test Sync Rule (Mandatory)
-- After any API endpoint is added/changed/removed, run `/endpoint-tests-sync` before considering the task complete.
-- This keeps endpoint-level tests synchronized in:
-	- `tests/API/**/*.http` (including chunked subfolders)
-	- `tests/Database/**/*.sql` (including chunked subfolders)
+## Endpoint & Database Test Sync Rule (Mandatory)
+- After any API endpoint is added/changed/removed, run the `http-endpoint-test` agent for `.http` suites in `tests/API/`.
+- After schema or persistence model changes, run the `sql-database-test` agent for `.sql` suites in `tests/Database/`.
+- These two agents run independently and can execute in parallel.
 
 ## MCP Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
@@ -72,8 +71,10 @@ This project uses specialist agents for task decomposition and delegation. **All
 | **Frontend Specialist** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | **EF Migration** | EF Core migrations | Creating, validating, and troubleshooting migrations |
 | **Docs Sync** | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
-| **Code Docs Sync** | Source-code comment style | Enforces JSDoc-style comments for changed classes/methods and removes XML doc comments |
-| **Endpoint Test Sync** | .http and .sql test files | After API endpoint add/change/remove |
+| **Coding Principles** | Code style & quality enforcement | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
+| **HTTP Endpoint Test** | .http test files | After API endpoint add/change/remove |
+| **SQL Database Test** | .sql validation files | After schema or persistence model changes |
+| **E2E Playwright** | Playwright E2E tests | After frontend UI changes or backend DTO changes that affect the UI |
 | **Build Validator** | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
 
 **Agent files:** `.github/agents/*.agent.md` (Copilot) and `.claude/agents/*.md` (Claude Code) — both sets define the same specialist roles.
@@ -83,17 +84,24 @@ This project uses specialist agents for task decomposition and delegation. **All
 2. **Specialist execution** — identified agents execute in parallel where possible.
 3. **Validate** — always runs after code changes.
 4. **Docs sync (always)** — must run after every change. If changes touch skills, agents, or instruction files, those are updated too.
-5. **Code docs sync** — runs after class/method additions/changes to enforce JSDoc-only style.
-6. **Test endpoints** — runs after any API endpoint change.
+5. **Coding principles** — runs after class/method additions/changes to enforce code style and quality.
+6. **HTTP endpoint test** — runs after any API endpoint change.
+7. **SQL database test** — runs after schema or persistence model changes.
+8. **E2E Playwright** — runs after frontend UI or backend DTO changes that affect Playwright tests.
 
-## Copilot Skill Entry Points
-- Use `/mcp-context-policy` for MCP server interaction policy and Context Mode usage decisions.
-- Use `/config-driven-endpoints` for URL/port changes to enforce config-driven addressing and avoid hardcoded fallback endpoints.
-- Use `/ef-migration` for EF migration execution and troubleshooting.
-- Use `/docs-sync` to synchronize all CLAUDE.md and .github/instructions files with the actual codebase state after significant changes.
-- Use `/code-docs-sync` to enforce source-code documentation style (JSDoc-style comments, no XML comments).
-- Use `/endpoint-tests-sync` to update endpoint HTTP/SQL test suites after endpoint changes.
-- Keep README usage references concise; detailed policy/workflow logic belongs in skill files under `.github/skills/*/SKILL.md`.
+## Agent-First Workflow
+Use specialist agents instead of invoking skills directly. Skills serve as runbooks consumed by agents.
+
+| Agent | Skill runbook | Purpose |
+|-------|---------------|---------|
+| `docs-sync` | `autoservice-docs-sync` | Sync all documentation files with code state |
+| `coding-principles` | `autoservice-coding-principles` | Enforce code style, JSDoc comments, naming |
+| `http-endpoint-test` | `autoservice-http-endpoint-test` | Update .http test suites after endpoint changes |
+| `sql-database-test` | `autoservice-sql-database-test` | Update .sql validation suites after schema changes |
+| `migration` | `autoservice-ef-migration` | EF Core migration workflow and troubleshooting |
+| `e2e-playwright` | `autoservice-e2e-playwright` | Update Playwright E2E tests after UI/DTO changes |
+
+Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/SKILL.md`.
 
 ## Configuration-First Addressing Rule
 - Keep local ports and service endpoints in configuration files; do not hardcode runtime fallback URLs.
@@ -289,7 +297,8 @@ This project uses specialist agents for task decomposition and delegation. **All
 - Scheduler intake form sections keep grouped user/vehicle/task titles with unified field styles and explicit placeholders (including vehicle detail inputs), and existing-vehicle select keeps a disabled non-selectable placeholder option.
 - Scheduler intake lookup-dependent UI state resets when the lookup email changes or when lookup fails (clears stale vehicle/task sections before showing errors).
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
-- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`.
+- WebUI E2E testing uses Playwright (`@playwright/test`) with config in `app/AutoService.WebUI/playwright.config.ts` and specs under `app/AutoService.WebUI/tests/e2e`.
+- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`, `@playwright/test`.
 
 ## Code Change Policy for Copilot
 - Make minimal, task-focused changes; avoid broad refactors unless requested.
@@ -309,3 +318,6 @@ From `app/AutoService.WebUI`:
 - `npm install`
 - `npm run dev`
 - `npm run build`
+- `npm run e2e`
+- `npm run e2e:headed`
+- `npm run e2e:ui`

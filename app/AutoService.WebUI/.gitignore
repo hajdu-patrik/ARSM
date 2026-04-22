@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright
+/test-results/
+/test-artifacts/
+/playwright-report/
+/blob-report/
+/.playwright/
+/playwright/.cache/
+/playwright/.auth/

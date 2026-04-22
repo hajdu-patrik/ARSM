@@ -8,7 +8,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 
 - For new or changed non-trivial classes/methods, use JSDoc-style block comments.
 - Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
-- When code changes introduce/modify classes or methods, run the `/code-docs-sync` routine.
+- When code changes introduce/modify classes or methods, use the `coding-principles` agent.
 
 ## Authentication & Authorization
 
@@ -135,6 +135,17 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`vite.config.ts`**: In serve mode, dev server runs over HTTPS (`vite-plugin-mkcert`) on port from `PORT` env var (`strictPort: true`). In build mode, `manualChunks` splits vendor code into: `vendor-react` (react, react-dom, react-router-dom), `vendor-i18n` (i18next, react-i18next, i18next-browser-languagedetector), `vendor-ui` (lucide-react, zustand, axios).
 - **`public/robots.txt`**: Served statically — `User-agent: *`, `Allow: /`, `Disallow: /api/`.
 
+## E2E Testing (Playwright)
+
+- Frontend E2E uses `@playwright/test` with config in `playwright.config.ts`.
+- E2E test files live under `tests/e2e` (specs + page objects + support helpers).
+- Default base URL is `https://localhost:5173`; override with `PLAYWRIGHT_BASE_URL`.
+- Playwright web server runs `npm run dev`, ignores local HTTPS certificate errors for readiness checks, and reuses an already running dev server outside CI.
+- Supported scripts:
+  - `npm run e2e`
+  - `npm run e2e:headed`
+  - `npm run e2e:ui`
+
 ## Routing
 
 - `/login` → Login page (public-only; wrapped in `PublicOnlyRoute`).
@@ -217,6 +228,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - `i18next` + `react-i18next` – Internationalization.
 - `tailwindcss` – Styling (with dark mode support via `darkMode: 'class'`).
 - `jwt-decode` – JWT payload decoding.
+- `@playwright/test` – Frontend E2E testing.
 
 ## Security Notes
 

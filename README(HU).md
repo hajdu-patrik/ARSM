@@ -44,8 +44,10 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | **Frontend** | `AutoService.WebUI` | Komponensek, oldalak, store-ok, szolgáltatások, i18n, routing, stílusok |
 | **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
 | **Docs Sync** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
-| **Code Docs Sync** | Forráskód kommentek | JSDoc stílus kikényszerítése új/módosított osztályoknál/metódusoknál, XML kommentek tiltása |
-| **Teszt Endpointok** | .http/.sql tesztek | Endpoint tesztcsomagok frissítése API-változások után |
+| **Coding Principles** | Kódminőség & stílus | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
+| **HTTP Endpoint Test** | .http tesztfájlok | HTTP endpoint tesztcsomagok frissítése API-változások után |
+| **SQL Database Test** | .sql validációs fájlok | SQL validációs lekérdezések frissítése séma változások után |
+| **E2E Playwright** | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, page objectek frissítése UI-változásokkor |
 | **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
 
 **Standard workflow:**
@@ -54,26 +56,28 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 2. Backend + Frontend specialisták párhuzamosan dolgoznak
 3. Validáló ágens ellenőrzi a buildet
 4. Docs Sync ágens szinkronizálja a dokumentációt
-5. Code Docs Sync ágens ellenőrzi a forráskód kommentstílust
-6. Teszt Endpointok ágens szinkronizálja a teszteket
+5. Coding Principles ágens ellenőrzi a kódminőséget és stílust
+6. HTTP Endpoint Test ágens szinkronizálja a .http teszteket
+7. SQL Database Test ágens szinkronizálja a .sql validációkat
+8. E2E Playwright ágens frissíti a Playwright teszteket, amikor UI vagy DTO változik
 
 Ágensdefiníciók:
 
 - Claude Code: `.claude/agents/*.md`
 - GitHub Copilot: `.github/agents/*.agent.md`
 
-### Skillek (slash parancsok)
+### Skillek (agens runbookok)
 
-Újrahasználható runbookok, mindkét eszközből hívhatók slash parancsokkal.
+Újrahasználható runbookok, specialista ágensek használják. Az ágensek az elsődleges interfész — ágenseket hívj, ne közvetlenül skilleket.
 
-| Parancs | Cél |
-| ------- | --- |
-| `/docs-sync` | Összes CLAUDE.md, .github/instructions és ARSM-TL-DR.md szinkronizálása a kóddal |
-| `/code-docs-sync` | JSDoc alapú forráskód-komment szabályok kikényszerítése, XML kommentek eltávolítása |
-| `/endpoint-tests-sync` | .http és .sql tesztcsomagok frissítése endpointváltozások után |
-| `/ef-migration` | EF Core migrációs workflow és hibaelhárítás |
-| `/config-driven-endpoints` | Konfiguráció-alapú URL/port policy érvényesítése |
-| `/mcp-context-policy` | MCP szerver interakció és Context Mode használati policy |
+| Skill | Ágens | Cél |
+| ----- | ----- | --- |
+| `autoservice-docs-sync` | `docs-sync` | Összes CLAUDE.md, .github/instructions és ARSM-TL-DR.md szinkronizálása a kóddal |
+| `autoservice-coding-principles` | `coding-principles` | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
+| `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
+| `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
+| `autoservice-ef-migration` | `migration` | EF Core migrációs workflow és hibaelhárítás |
+| `autoservice-e2e-playwright` | `e2e-playwright` | Playwright E2E tesztek frissítése UI/DTO változások után |
 
 Skill források: `.github/skills/*/SKILL.md`
 
@@ -114,3 +118,50 @@ dotnet run --project AutoService.AppHost
 ```
 
 Ez elindítja a teljes helyi környezetet (API + infrastruktúra + kapcsolódó szolgáltatások).
+
+---
+
+## Lokális CI/CD act segítségével
+
+Ha el akarod kerülni a commit-push-fail kört workflow fejlesztés közben, futtasd a GitHub Actions lépéseket lokálisan `act`-tel.
+
+### Előfeltételek
+
+- Docker Desktop (vagy bármely futó Docker daemon)
+- Telepített `act`
+
+### act telepítése
+
+- Windows (Chocolatey): `choco install act-cli`
+- Windows (Scoop): `scoop install act`
+- macOS (Homebrew): `brew install act`
+- Linux: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
+
+### Legfontosabb parancsok
+
+Futtasd a repository gyökeréből:
+
+```bash
+act -l
+act
+act -W .github/workflows/dotnet.yml
+act -j build
+act pull_request -j playwright-e2e --secret-file .secrets
+```
+
+### Lokális secretek act-hez
+
+Hozz létre egy helyi `.secrets` fájlt (a `.gitignore` már kizárja), és add meg a szükséges értékeket:
+
+```text
+ARSM_TEST_MECHANIC_EMAIL=...
+ARSM_TEST_MECHANIC_PASSWORD=...
+ARSM_TEST_WRONG_PASSWORD=...
+ARSM_TEST_CUSTOMER_EMAIL=...
+```
+
+### Megjegyzések
+
+- A workflow `ubuntu-latest` környezetet használ, ezt az `act` jól tudja szimulálni.
+- A `playwright-e2e` job Docker + lokális secret értékeket igényel.
+- Első futáskor image méret választást kérhet; a `Medium` általában elegendő.

@@ -48,6 +48,12 @@ You are a focused backend agent working exclusively within `app/AutoService.ApiS
 3. Do NOT use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
 4. Keep comments short, human-readable, and intent-focused.
 
+## Config-Driven URL/Port Policy
+- Never hardcode runtime fallback URLs in source code.
+- API CORS `AllowedOrigins` must be explicitly configured (no permissive wildcard with credentials).
+- All service URLs and ports must reside in configuration files (`appsettings.json`, `launchSettings.json`).
+- Aspire wiring is the source of truth for cross-service communication.
+
 ## After completing your work
 - Run `dotnet build` from the `app` directory to verify compilation.
 - Report what endpoints were added/changed, what DTOs were created, and any migration needs.

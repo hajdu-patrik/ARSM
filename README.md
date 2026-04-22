@@ -44,8 +44,10 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 | **Frontend** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
 | **Docs Sync** | Documentation | Syncs all instruction files with current code after every change |
-| **Code Docs Sync** | Source-code comments | Enforces JSDoc-style comments for changed classes/methods and removes XML doc comments |
-| **Test Endpoints** | .http/.sql tests | Updates endpoint test suites after API changes |
+| **Coding Principles** | Code style & quality | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
+| **HTTP Endpoint Test** | .http test files | Updates HTTP endpoint test suites after API changes |
+| **SQL Database Test** | .sql validation files | Updates SQL validation suites after schema changes |
+| **E2E Playwright** | Playwright E2E tests | Maintains Playwright test suites, updates page objects when UI changes |
 | **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
 
 **Standard workflow:**
@@ -54,26 +56,28 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 2. Backend + Frontend specialists execute in parallel
 3. Validate agent checks the build
 4. Docs Sync agent updates project documentation
-5. Code Docs Sync agent enforces source-code comment style
-6. Test Endpoints agent syncs endpoint test suites
+5. Coding Principles agent enforces code style and quality
+6. HTTP Endpoint Test agent syncs .http test suites
+7. SQL Database Test agent syncs .sql validation suites
+8. E2E Playwright agent updates Playwright tests when UI or DTO changes affect the UI
 
 Agent definitions:
 
 - Claude Code: `.claude/agents/*.md`
 - GitHub Copilot: `.github/agents/*.agent.md`
 
-### Skills (Slash Commands)
+### Skills (Agent Runbooks)
 
-Reusable runbooks invoked via slash commands in both tools.
+Reusable runbooks consumed by specialist agents. Agents are the primary interface — invoke agents, not skills directly.
 
-| Command | Purpose |
-| ------- | ------- |
-| `/docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and ARSM-TL-DR.md with code |
-| `/code-docs-sync` | Enforce JSDoc-style source-code comments and remove XML doc comments |
-| `/endpoint-tests-sync` | Update .http and .sql test suites after endpoint changes |
-| `/ef-migration` | EF Core migration workflow and troubleshooting |
-| `/config-driven-endpoints` | Enforce config-driven URL/port policy |
-| `/mcp-context-policy` | MCP server interaction and Context Mode usage policy |
+| Skill | Used by agent | Purpose |
+| ----- | ------------- | ------- |
+| `autoservice-docs-sync` | `docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and ARSM-TL-DR.md with code |
+| `autoservice-coding-principles` | `coding-principles` | Enforce JSDoc comments, naming conventions, and structural quality |
+| `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
+| `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
+| `autoservice-ef-migration` | `migration` | EF Core migration workflow and troubleshooting |
+| `autoservice-e2e-playwright` | `e2e-playwright` | Update Playwright E2E tests after UI/DTO changes |
 
 Skill sources: `.github/skills/*/SKILL.md`
 
@@ -114,3 +118,50 @@ dotnet run --project AutoService.AppHost
 ```
 
 This starts the orchestrated local environment (API + infrastructure + related services).
+
+---
+
+## Local CI/CD With act
+
+To avoid the commit-push-fail cycle while developing workflows, run GitHub Actions locally with `act`.
+
+### Prerequisites
+
+- Docker Desktop (or another running Docker daemon)
+- `act` installed
+
+### Install act
+
+- Windows (Chocolatey): `choco install act-cli`
+- Windows (Scoop): `scoop install act`
+- macOS (Homebrew): `brew install act`
+- Linux: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
+
+### Typical Commands
+
+Run from repository root:
+
+```bash
+act -l
+act
+act -W .github/workflows/dotnet.yml
+act -j build
+act pull_request -j playwright-e2e --secret-file .secrets
+```
+
+### Local Secrets For act
+
+Create a local `.secrets` file (already ignored by `.gitignore`) and provide required values:
+
+```text
+ARSM_TEST_MECHANIC_EMAIL=...
+ARSM_TEST_MECHANIC_PASSWORD=...
+ARSM_TEST_WRONG_PASSWORD=...
+ARSM_TEST_CUSTOMER_EMAIL=...
+```
+
+### Notes
+
+- The workflow uses `ubuntu-latest`, which `act` can simulate well.
+- The `playwright-e2e` job needs Docker + local secret values.
+- First run may ask for runner image size selection; `Medium` is usually enough.

@@ -38,6 +38,7 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
           <span className="font-medium">{t('scheduler.intake.dueDateTime')}</span>
           <input
             type="datetime-local"
+            data-testid="scheduler-intake-due-datetime"
             value={dueDateTime}
             onChange={(event) => onDueDateTimeChange(event.target.value)}
             className={`intake-datetime-input ${FORM_FIELD_CLASS}`}
@@ -84,6 +85,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
           <span className="font-medium">{t('scheduler.intake.customerEmail')}</span>
           <input
             type="email"
+            data-testid="scheduler-intake-customer-email"
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
             placeholder={t('scheduler.intake.customerEmailPlaceholder')}
@@ -93,6 +95,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 
         <button
           type="button"
+          data-testid="scheduler-intake-search"
           onClick={onLookup}
           disabled={isSearching}
           className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
@@ -242,6 +245,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
         <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
           <span className="font-medium">{t('scheduler.intake.selectVehicle')}</span>
           <select
+            data-testid="scheduler-intake-existing-vehicle"
             value={existingVehicleId}
             onChange={(event) => onExistingVehicleIdChange(event.target.value)}
             className={FORM_FIELD_CLASS}
@@ -377,6 +381,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
       <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
         <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
         <textarea
+          data-testid="scheduler-intake-task-description"
           value={taskDescription}
           onChange={(event) => onTaskDescriptionChange(event.target.value)}
           placeholder={t('scheduler.intake.taskDescriptionPlaceholder')}
