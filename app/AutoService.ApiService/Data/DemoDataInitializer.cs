@@ -9,7 +9,6 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace AutoService.ApiService.DataInitialization;
 
@@ -52,7 +51,7 @@ public static class DemoDataInitializer
                 "Demo seeding requires 'DemoData:MechanicPassword'. Set it in appsettings.Local.json, user secrets, or environment variables.");
         }
 
-        if (ContainsTemplateMarker(mechanicPassword))
+        if (AutoService.ApiService.Configuration.TemplateMarkerDetector.ContainsTemplateMarker(mechanicPassword))
         {
             throw new InvalidOperationException(
                 "Demo seeding password 'DemoData:MechanicPassword' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a unique local password before startup.");
@@ -373,33 +372,6 @@ public static class DemoDataInitializer
         }
 
         return identityUser.Id;
-    }
-
-    private static bool ContainsTemplateMarker(string value)
-    {
-        if (value.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase)
-            || value.Contains("SET_UNIQUE_LOCAL", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        var normalized = NormalizeForMarkerDetection(value);
-        return normalized.Contains("CHANGEME", StringComparison.Ordinal)
-            || normalized.Contains("SETUNIQUELOCAL", StringComparison.Ordinal);
-    }
-
-    private static string NormalizeForMarkerDetection(string value)
-    {
-        var builder = new StringBuilder(value.Length);
-        foreach (var c in value)
-        {
-            if (char.IsLetterOrDigit(c))
-            {
-                builder.Append(char.ToUpperInvariant(c));
-            }
-        }
-
-        return builder.ToString();
     }
 
     private static async Task ResetLegacyBackfillDatasetAsync(AutoServiceDbContext db)

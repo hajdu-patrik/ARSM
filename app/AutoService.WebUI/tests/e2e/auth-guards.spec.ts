@@ -45,4 +45,16 @@ test.describe('Route guards', () => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/$/);
   });
+
+  test('authenticated non-admin visiting /admin/register is redirected to /', async ({ page }) => {
+    // AdminRoute redirects unauthenticated users to /login and authenticated
+    // non-admin users to /. This test verifies the non-admin branch: a regular
+    // mechanic (who IS authenticated but does NOT have isAdmin) must land on /
+    // rather than /login after navigating to the admin-only page.
+    const env = getAppointmentFlowEnv();
+    await loginAsMechanic(page, env.mechanicEmail, env.mechanicPassword);
+
+    await page.goto('/admin/register');
+    await expect(page).toHaveURL(/^\/$/, { timeout: 10_000 });
+  });
 });

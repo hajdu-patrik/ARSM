@@ -191,7 +191,7 @@ builder.Services
             RequireExpirationTime = true,
             RequireSignedTokens = true,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
 
@@ -253,8 +253,8 @@ builder.Services.AddCors(options =>
         corsPolicyBuilder
             .WithOrigins(webUiOrigins)
             .AllowCredentials()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+            .WithMethods("GET", "POST", "PUT", "DELETE")
+            .WithHeaders("Content-Type");
     });
 });
 
@@ -265,6 +265,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
 builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
 builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
+builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCleanupService>();
 
 // Build.
 var app = builder.Build();

@@ -34,8 +34,6 @@ export interface RegisterMechanicRequest {
  * Response returned after successful mechanic registration.
  */
 export interface RegisterMechanicResponse {
-  /** ASP.NET Identity user ID. */
-  identityUserId: string;
   /** Domain person identifier. */
   personId: number;
   /** Type of person (always {@code "mechanic"}). */

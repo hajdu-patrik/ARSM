@@ -6,10 +6,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: app
@@ -31,9 +33,11 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
 
+    - name: Check NuGet vulnerabilities
+      run: dotnet list package --vulnerable --include-transitive 2>&1 | tee /dev/stderr | grep -q "no vulnerable packages" || exit 1
+
   frontend-check:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: app/AutoService.WebUI
@@ -53,6 +57,9 @@ jobs:
 
     - name: Type-check
       run: npx tsc --noEmit
+
+    - name: Audit npm dependencies
+      run: npm audit --audit-level=high
 
   playwright-e2e:
     runs-on: ubuntu-latest
@@ -95,15 +102,25 @@ jobs:
 
     - name: Start application stack
       run: |
-        cd ../../app
-        dotnet run --project AutoService.AppHost &
-        sleep 30
+        dotnet run --project ../AutoService.AppHost &
+
+        echo "Waiting for services to become healthy..."
+        SECONDS=0
+        TIMEOUT=180
+        while ! curl -kfsS https://localhost:5173 > /dev/null 2>&1 || ! curl -kfsS https://localhost:5200/alive > /dev/null 2>&1; do
+          if [ "$SECONDS" -ge "$TIMEOUT" ]; then
+            echo "ERROR: Services did not become healthy within ${TIMEOUT}s"
+            exit 1
+          fi
+          sleep 2
+        done
+        echo "Application stack is ready!"
 
     - name: Run Playwright tests
       run: npx playwright test
 
     - name: Upload Playwright report
-      if: ${{ !cancelled() && github.actor != 'nektos/act' }}
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@v4
       with:
         name: playwright-report

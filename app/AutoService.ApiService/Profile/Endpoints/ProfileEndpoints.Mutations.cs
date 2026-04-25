@@ -360,8 +360,6 @@ public static partial class ProfileEndpoints
             return Results.ValidationProblem(identityErrors);
         }
 
-        await transaction.CommitAsync(cancellationToken);
-
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
         var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
 
@@ -369,6 +367,8 @@ public static partial class ProfileEndpoints
         {
             await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
         }
+
+        await transaction.CommitAsync(cancellationToken);
 
         httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
         httpContext.Response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });

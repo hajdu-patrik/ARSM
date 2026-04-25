@@ -72,3 +72,26 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
 
 ### [Negative][Appointments] Unauthenticated unclaim (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
+
+###
+
+### [Negative][Appointments] Unauthenticated admin assign mechanic to appointment (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
+
+###
+
+### [Negative][Appointments] Unauthenticated admin unassign mechanic from appointment (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
+
+###
+
+### [Negative][Appointments] Unauthenticated admin create appointment for customer (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/1/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": 1,
+  "scheduledDate": "2026-04-30T10:00:00",
+  "taskDescription": "Unauthenticated admin create should be blocked",
+  "mechanicIds": [1]
+}

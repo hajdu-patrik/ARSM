@@ -56,19 +56,22 @@
   - refresh token in HttpOnly cookie (`autoservice_rt`),
   - persisted hashed refresh token rows in `refreshtokens`.
 - Access-token JWT denylist rows are persisted in `revokedjwttokens` and cached in-memory for fast validation checks.
+- `TokenDenylistService.IsRevokedAsync` calls `cancellationToken.ThrowIfCancellationRequested()` at entry and lets `OperationCanceledException` propagate naturally — no swallowing of cancellation inside the method. The `OnTokenValidated` JWT bearer event catches `OperationCanceledException` only at the call site when `RequestAborted` is set, so a cancelled request cannot treat a revoked JWT as valid.
+- Shared TTL constants (`AccessTokenTtl = 10 min`, `RefreshTokenTtl = 7 days`) are declared as `private static readonly TimeSpan` fields in `AuthEndpoints.Helpers.cs` and reused by login, refresh, and cookie-option helpers.
+- `BuildAuthCookieOptions(TimeSpan ttl)` is a shared factory method in `AuthEndpoints.Helpers.cs`; `BuildAccessTokenCookieOptions` and `BuildRefreshTokenCookieOptions` delegate to it.
 - Auth log events include a `ClientIp` structured property: login success, login failure, and login lockout all log `ClientIp`; refresh success and revoked-token-reuse warning log `ClientIp`. `ResolveClientIpAddress(httpContext)` is computed once per handler and reused (including for the `CreatedByIpAddress` field on new `RefreshToken` DB rows).
 - `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) emits a `LogWarning` under logger category `Auth.AccessDenied` for every response with status code `401` or `403`. Structured properties: `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, `ClientIp` (`context.Connection.RemoteIpAddress`). Must be registered before `UseAuthentication()`.
 - Login failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, when a linked mechanic domain record is missing, and for existing customer email/phone identifiers (to reduce account enumeration); `429` during lockout/rate-limit.
 - Lockout: 5 failed attempts, 15-minute lockout.
 - Rate limit: 10 requests/min per client IP for login (`AuthLoginAttempts`) and 20 requests/min for refresh (`AuthRefreshAttempts`). Temporary login-ban window after login rate-limit rejection: 3 minutes.
 - JWT lifetime: 10 minutes. Refresh token lifetime: 7 days.
-- JWT clock skew: 1 minute. Issuer + audience validation enabled. Minimum secret: 32 bytes.
+- JWT clock skew: 30 seconds. Issuer + audience validation enabled. Minimum secret: 32 bytes.
 - Logout revokes refresh token session and denylists current JWT `jti` until token expiry.
 - JWT bearer handler reads access token from cookie and rejects denylised `jti` values.
 
 ## Auth Endpoints (Current)
 
-- `POST /api/auth/register` (authorized, AdminOnly policy)
+- `POST /api/auth/register` (authorized, AdminOnly policy) — `RegisterResponse` contains `PersonId`, `PersonType`, `Email` only; `IdentityUserId` is not exposed in the response
 - `POST /api/auth/login` (rate-limited)
 - `POST /api/auth/refresh` (rate-limited)
 - `POST /api/auth/logout` (authorized)
@@ -79,7 +82,7 @@
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
 - `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; validates due datetime, resolves customer by email (create fallback), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record; enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
-- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins; `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable
+- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, `422` with code `appointment_completed` if appointment is Completed, or `422` if unassign would leave the appointment without mechanics
@@ -114,7 +117,7 @@
 
 - `GET /api/profile` (authorized) — get current user's profile (name, email, phone, picture status)
 - `PUT /api/profile` (authorized) — update email, phone number, first name, middle name, last name
-- `DELETE /api/profile` (authorized, non-admin only) — delete current user profile after current-password confirmation (logs out and clears auth cookies). Returns 403 if the caller has the Admin role.
+- `DELETE /api/profile` (authorized, non-admin only) — delete current user profile after current-password confirmation (logs out and clears auth cookies). Returns 403 if the caller has the Admin role. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` (authorized) — change password (current + new + confirm)
 - `GET /api/profile/picture` (authorized) — get profile picture binary
 - `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
@@ -125,7 +128,7 @@
 
 ## Admin Endpoints (Current)
 
-- `GET /api/admin/mechanics` (authorized, AdminOnly policy) — list all mechanics with admin flag and `hasProfilePicture`
+- `GET /api/admin/mechanics` (authorized, AdminOnly policy) — list all mechanics with admin flag and `hasProfilePicture`; uses a Select projection to avoid materializing `ProfilePicture` blobs in the query
 - `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly policy) — delete a mechanic (revokes refresh tokens, removes identity + domain record). Deletion invariants run in a serializable transaction and returns 403 if target is an admin or if caller tries to delete themselves, 422 if deleting the mechanic would leave zero mechanics globally or leave any appointment without an assigned mechanic, 409 on serialization/deadlock/concurrency contention, and 500 if linked Identity user deletion fails (no partial-success response).
 
 ## API Documentation
@@ -150,7 +153,7 @@ Login-ban middleware remains in-process and uses deterministic cleanup schedulin
 - Connection string key: `ConnectionStrings:AutoServiceDb`
 - JWT keys: `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`
 - Startup fails fast if `ConnectionStrings:AutoServiceDb` or `JwtSettings:Secret` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`).
-- CORS allowed origins key: `Cors:AllowedOrigins` (explicit origins, `AllowCredentials()` enabled; current API appsettings default is `https://localhost:5173`)
+- CORS allowed origins key: `Cors:AllowedOrigins` (explicit origins, `AllowCredentials()` enabled, restricted methods `GET/POST/PUT/DELETE`, restricted headers `Content-Type`; current API appsettings default is `https://localhost:5173`)
 - Forwarded-header trust config: `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`
 - Local overrides: `appsettings.Local.json` (gitignored) or env vars (`ConnectionStrings__AutoServiceDb`, `JwtSettings__Secret`)
 - Never commit secrets or credentials.
@@ -159,15 +162,15 @@ Login-ban middleware remains in-process and uses deterministic cleanup schedulin
 ## Code Layout
 
 - `Program.cs` — service registration, middleware, endpoint mapping only. Calls `builder.AddServiceDefaults()` at the top and `app.MapDefaultEndpoints()` last.
-- `Auth/` — all auth endpoint files (map/register/login/helpers/contracts).
+- `Auth/` — auth endpoint and security files split into subfolders: `Auth/Endpoints/` (map/register/login/helpers/contracts/logout/validate/refresh/phone-normalization) and `Auth/Security/` (JwtTokenIssuer, TokenDenylistService). `Auth/Session/` holds `AuthCookieNames`.
 - `Appointments/` — appointment endpoint files (contracts/helpers/queries/mutations/registration), partial-class pattern mirroring `Auth/`.
 - `Profile/` — profile endpoint files (contracts/helpers/queries/mutations/profilepicture), partial-class pattern mirroring `Appointments/`.
 - `Admin/` — admin endpoint files (map/contracts/handlers), partial-class pattern. Mechanic list + delete.
 - `Customers/` — customer endpoint files (CustomerEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
 - `Vehicles/` — vehicle endpoint files (VehicleEndpoints.cs/Contracts/Queries/Mutations), partial-class pattern.
-- `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`).
+- `Configuration/` — startup configuration resolvers (`ConnectionStringResolver`, `JwtSettingsResolver`, `TemplateMarkerDetector`). `TemplateMarkerDetector` is a shared static helper used by both `JwtSettingsResolver` and `DemoDataInitializer` to detect unconfigured placeholder markers (`CHANGE_ME`, `SET_UNIQUE_LOCAL`, and punctuation-normalized variants) in secrets.
 - `Middleware/` — custom middleware classes (`LoginBanMiddleware`, `AuditAccessDeniedMiddleware`).
 - `Identity/`, `Linking/`, `Normalization/`, `Security/`, `Validation/` — grouped cross-cutting folders; keep contact normalization (`ContactNormalization`), name validation (`IsValidName`), token hash/expiry parsing (`TokenSecurity`), person-type resolution (`PersonTypeResolver`), image content-type detection (`ImageContentTypeDetector`), and shared validation error message constants (`ValidationMessages`) centralized here. Also contains `NameFieldsValidator` (centralized name-field validation with two entry points: `ValidateNames()` for dict-based error patterns used by auth register, and `GetNameError()` for early-return patterns used by customer, appointment, and profile endpoints) and `VehicleNumericValidation` (year/mileage/power/torque constants `MinYear`/`MaxYear`/`MaxMileageKm`/`MaxEnginePowerHp`/`MaxEngineTorqueNm` and helper methods `GetYearValidationError()`/`GetValidationError()` used by vehicle and appointment endpoints).
-- `Domain/` and `Security/` — model locations; keep business entities under `Domain/`, security entities under `Security/`, and unique value-object types under `Domain/UniqueTypes/`.
+- `Domain/` and `Security/` — model locations; keep business entities under `Domain/`, security entities under `Security/`, and unique value-object types under `Domain/UniqueTypes/`. `Security/ExpiredTokenCleanupService.cs` is a `BackgroundService` registered via `AddHostedService<ExpiredTokenCleanupService>()` that runs every hour to delete expired rows from `revokedjwttokens` and expired+revoked rows from `refreshtokens`, preventing unbounded table growth.
 - Cross-cutting logic in dedicated folders/files; keep `Program.cs` clean.
 - Keep comments concise and only for non-obvious logic.

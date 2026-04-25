@@ -227,7 +227,6 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - `libphonenumber-js` – Client-side identifier parsing/normalization for phone login.
 - `i18next` + `react-i18next` – Internationalization.
 - `tailwindcss` – Styling (with dark mode support via `darkMode: 'class'`).
-- `jwt-decode` – JWT payload decoding.
 - `@playwright/test` – Frontend E2E testing.
 
 ## Security Notes

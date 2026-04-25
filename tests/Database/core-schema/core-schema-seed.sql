@@ -186,3 +186,19 @@ SELECT table_name,
 FROM information_schema.columns
 WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
+
+
+-- ------------------------------------------------------------
+-- 14. PLACEHOLDER MARKER CHECK — people.Email and people.PhoneNumber
+--     Startup fails fast if secrets still contain template markers
+--     (CHANGE_ME, SET_UNIQUE_LOCAL, or punctuation-separated variants).
+--     Seeded demo data must never carry unconfigured placeholder values.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT "Id", "Email", "PhoneNumber"
+FROM people
+WHERE "Email"       ILIKE '%CHANGE_ME%'
+   OR "Email"       ILIKE '%SET_UNIQUE_LOCAL%'
+   OR "PhoneNumber" ILIKE '%CHANGE_ME%'
+   OR "PhoneNumber" ILIKE '%SET_UNIQUE_LOCAL%'
+ORDER BY "Id";

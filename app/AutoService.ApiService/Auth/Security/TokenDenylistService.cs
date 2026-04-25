@@ -77,10 +77,7 @@ internal sealed class TokenDenylistService(
      */
     public async Task<bool> IsRevokedAsync(string jwtId, CancellationToken cancellationToken = default)
     {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return false;
-        }
+        cancellationToken.ThrowIfCancellationRequested();
 
         var cacheKey = BuildKey(jwtId);
         if (memoryCache.TryGetValue(cacheKey, out _))
@@ -92,18 +89,10 @@ internal sealed class TokenDenylistService(
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AutoServiceDbContext>();
 
-        DateTime? expiresAtUtc;
-        try
-        {
-            expiresAtUtc = await db.RevokedJwtTokens
-                .Where(x => x.JwtId == jwtId && x.ExpiresAtUtc > nowUtc)
-                .Select(x => (DateTime?)x.ExpiresAtUtc)
-                .FirstOrDefaultAsync(cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return false;
-        }
+        var expiresAtUtc = await db.RevokedJwtTokens
+            .Where(x => x.JwtId == jwtId && x.ExpiresAtUtc > nowUtc)
+            .Select(x => (DateTime?)x.ExpiresAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (!expiresAtUtc.HasValue)
         {

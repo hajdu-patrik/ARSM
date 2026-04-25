@@ -16,7 +16,7 @@ Apply these rules whenever editing files in `tests/**`.
 ### API chunks
 
 - `tests/API/auth/` - register setup/rules/validation, login matrix, session lifecycle, health
-- `tests/API/appointments/` - intake, mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign
+- `tests/API/appointments/` - intake, mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign, admin create authz, unauthenticated access
 - `tests/API/customers/` - list/lookup, create, update, delete
 - `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete
 - `tests/API/profile/` - profile get/update, name validation/password, profile picture, account deletion
@@ -24,7 +24,7 @@ Apply these rules whenever editing files in `tests/**`.
 
 ### Database chunks
 
-- `tests/Database/identity-auth/` - identity/auth verification queries
+- `tests/Database/identity-auth/` - identity/auth verification queries, expired token cleanup checks
 - `tests/Database/feature-flow/` - operational state, customer/vehicle integrity, regression guards
 - `tests/Database/core-schema/` - schema/seed baseline checks
 

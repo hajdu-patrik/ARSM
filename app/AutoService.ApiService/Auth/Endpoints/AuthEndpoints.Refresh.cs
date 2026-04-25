@@ -101,10 +101,8 @@ public static partial class AuthEndpoints
             return Results.Unauthorized();
         }
 
-        var accessTokenTtl = TimeSpan.FromMinutes(10);
-        var refreshTokenTtl = TimeSpan.FromDays(7);
-        var accessTokenExpiresAtUtc = nowUtc.Add(accessTokenTtl);
-        var refreshTokenExpiresAtUtc = nowUtc.Add(refreshTokenTtl);
+        var accessTokenExpiresAtUtc = nowUtc.Add(AccessTokenTtl);
+        var refreshTokenExpiresAtUtc = nowUtc.Add(RefreshTokenTtl);
 
         var roles = await userManager.GetRolesAsync(identityUser);
         var newAccessToken = tokenIssuer.CreateToken(identityUser, mechanic, roles, accessTokenExpiresAtUtc);
@@ -126,12 +124,12 @@ public static partial class AuthEndpoints
         httpContext.Response.Cookies.Append(
             AuthCookieNames.AccessToken,
             newAccessToken,
-            BuildAccessTokenCookieOptions(accessTokenTtl));
+            BuildAccessTokenCookieOptions(AccessTokenTtl));
 
         httpContext.Response.Cookies.Append(
             AuthCookieNames.RefreshToken,
             newRefreshTokenValue,
-            BuildRefreshTokenCookieOptions(refreshTokenTtl));
+            BuildRefreshTokenCookieOptions(RefreshTokenTtl));
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, currentIpAddress);

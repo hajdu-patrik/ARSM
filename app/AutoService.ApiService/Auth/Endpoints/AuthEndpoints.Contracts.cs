@@ -25,8 +25,8 @@ public static partial class AuthEndpoints
         string? Specialization,  // Required for Mechanic; must match SpecializationType enum.
         IReadOnlyList<string>? Expertise); // Required for Mechanic; 1..10 unique ExpertiseType values.
 
-    /** Returned after a successful registration with identity and domain record IDs. */
-    internal sealed record RegisterResponse(string IdentityUserId, int PersonId, string PersonType, string Email);
+    /** Returned after a successful registration with domain record ID. */
+    internal sealed record RegisterResponse(int PersonId, string PersonType, string Email);
 
     /** POST /api/auth/login request body. Supply either Email or PhoneNumber and Password. */
     internal sealed record LoginRequest(string? Email, string? PhoneNumber, string Password);

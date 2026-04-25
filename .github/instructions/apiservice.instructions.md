@@ -58,14 +58,14 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Name fields (first name, middle name, last name) must be validated using `NameFieldsValidator` (which delegates to `ContactNormalization.IsValidName()` with pattern `^[\p{L}\-]+$`) at registration, profile update, and customer create/update. Use `ValidationMessages` constants for error messages.
 - Registration must reject duplicate phone numbers even when equivalent values are provided in different formats.
 - JWT token lifetime is 10 minutes.
-- JWT validation: issuer/audience validation enabled, lifetime validation enabled, clock skew 1 minute.
+- JWT validation: issuer/audience validation enabled, lifetime validation enabled, clock skew 30 seconds.
 - Keep cookie auth secure defaults for auth cookies (HttpOnly, Secure, SameSite, explicit Path).
-- CORS policy must allow explicit WebUI origins with credentials; configure via `Cors:AllowedOrigins`, `builder.Services.AddCors()`, and `app.UseCors()`. Current API appsettings default origin is `https://localhost:5173`.
+- CORS policy must allow explicit WebUI origins with credentials, restricted methods (`GET`, `POST`, `PUT`, `DELETE`), and restricted headers (`Content-Type`); configure via `Cors:AllowedOrigins`, `builder.Services.AddCors()`, and `app.UseCors()`. Current API appsettings default origin is `https://localhost:5173`.
 - For AI-assisted database verification, use `ai_agent_test_user` and run read-only `SELECT` queries only; never execute DML/DDL (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`) from AI SQL tooling.
 
 ## API Endpoints (Current)
 
-- `POST /api/auth/register` – Mechanic registration endpoint (AdminOnly); returns IdentityUserId + PersonId + PersonType + Email.
+- `POST /api/auth/register` – Mechanic registration endpoint (AdminOnly); returns `RegisterResponse(PersonId, PersonType, Email)`. `IdentityUserId` is not included in the response.
 - `POST /api/auth/login` – Email or phone + password → sets access + refresh cookies and returns profile info + expiration time.
 - `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie (rate-limited by `AuthRefreshAttempts`).
 - `POST /api/auth/logout` – Revokes refresh token session, denylists current JWT `jti`, clears auth cookies.
@@ -77,7 +77,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 - `GET /api/profile` — Get current user's profile data (name, email, phone, picture status).
 - `PUT /api/profile` — Update email, phone number, first name, middle name, last name. Email/phone normalized and uniqueness-checked; first/last name cannot be set to empty.
-- `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session.
+- `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
 - `GET /api/profile/picture` — Serve profile picture binary with content type header.
 - `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing).
@@ -90,7 +90,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 ### Admin Endpoints (`/api/admin`) — all require AdminOnly authorization
 
-- `GET /api/admin/mechanics` — List all mechanics with admin flag and `hasProfilePicture`.
+- `GET /api/admin/mechanics` — List all mechanics with admin flag and `hasProfilePicture`; uses a Select projection so `ProfilePicture` blobs are never materialized in memory.
 - `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Runs deletion invariant checks in a serializable transaction and returns 403 if target is admin or caller is deleting themselves, 422 if deleting would leave zero mechanics globally or would leave any appointment without assigned mechanics, 409 when concurrent contention causes serialization/deadlock/concurrency conflicts, and 500 if linked Identity user deletion fails (no partial-success response).
 - Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
 
@@ -121,7 +121,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
 - `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Looks up customer by normalized email (creates customer when missing), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record. Accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
-- `PUT /api/appointments/{id}` — Update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`). Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins. `scheduledDate` is immutable while `dueDateTime` and `taskDescription` remain editable.
+- `PUT /api/appointments/{id}` — Update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable. Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins.
 - `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, or returns `422` if unassign would leave the appointment without assigned mechanics.
@@ -153,6 +153,10 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - Environment variables override both.
 - Health endpoints: `app.MapDefaultEndpoints()` is called in Program.cs; maps `/health` and `/alive` in Development.
 - JWT denylist entries are persisted in `revokedjwttokens` and cached in memory for quick revocation checks.
+- `TokenDenylistService.IsRevokedAsync` calls `cancellationToken.ThrowIfCancellationRequested()` at entry; `OperationCanceledException` propagates naturally. The JWT bearer `OnTokenValidated` event catches it only at the call site when `RequestAborted` is set — a cancelled request cannot silently treat a revoked JWT as valid.
+- `ExpiredTokenCleanupService` (`Security/ExpiredTokenCleanupService.cs`) is a `BackgroundService` registered via `AddHostedService<ExpiredTokenCleanupService>()`. It runs every hour and deletes expired rows from `revokedjwttokens` and expired+revoked rows from `refreshtokens` to prevent unbounded table growth.
+- `TemplateMarkerDetector` (`Configuration/TemplateMarkerDetector.cs`) is a shared static helper that detects unconfigured placeholder markers (`CHANGE_ME`, `SET_UNIQUE_LOCAL`, including punctuation-normalized variants). It is used by `JwtSettingsResolver` and `DemoDataInitializer`; do not inline its logic elsewhere.
+- Shared TTL constants (`AccessTokenTtl = 10 min`, `RefreshTokenTtl = 7 days`) are declared as `private static readonly TimeSpan` fields in `AuthEndpoints.Helpers.cs`. `BuildAuthCookieOptions(TimeSpan ttl)` is the shared cookie factory; `BuildAccessTokenCookieOptions` and `BuildRefreshTokenCookieOptions` delegate to it.
 
 ## EF Core Rules
 

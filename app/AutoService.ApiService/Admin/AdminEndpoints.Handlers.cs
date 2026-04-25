@@ -27,12 +27,6 @@ public static partial class AdminEndpoints
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoints.ListMechanics");
 
-        var mechanics = await db.Mechanics
-            .AsNoTracking()
-            .OrderBy(m => m.Name.LastName)
-            .ThenBy(m => m.Name.FirstName)
-            .ToListAsync(cancellationToken);
-
         var adminIdentityUserIdSet = (await (
             from userRole in db.UserRoles.AsNoTracking()
             join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
@@ -41,24 +35,21 @@ public static partial class AdminEndpoints
             .ToListAsync(cancellationToken))
             .ToHashSet(StringComparer.Ordinal);
 
-        var items = new List<MechanicListItem>(mechanics.Count);
-
-        foreach (var mechanic in mechanics)
-        {
-            var isAdmin = mechanic.IdentityUserId is not null && adminIdentityUserIdSet.Contains(mechanic.IdentityUserId);
-            var hasProfilePicture = mechanic.ProfilePicture is not null && mechanic.ProfilePictureContentType is not null;
-
-            items.Add(new MechanicListItem(
-                mechanic.Id,
-                mechanic.Name.FirstName,
-                mechanic.Name.MiddleName,
-                mechanic.Name.LastName,
-                mechanic.Email,
-                mechanic.PhoneNumber,
-                mechanic.Specialization.ToString(),
-                isAdmin,
-                hasProfilePicture));
-        }
+        var items = await db.Mechanics
+            .AsNoTracking()
+            .OrderBy(m => m.Name.LastName)
+            .ThenBy(m => m.Name.FirstName)
+            .Select(m => new MechanicListItem(
+                m.Id,
+                m.Name.FirstName,
+                m.Name.MiddleName,
+                m.Name.LastName,
+                m.Email,
+                m.PhoneNumber,
+                m.Specialization.ToString(),
+                m.IdentityUserId != null && adminIdentityUserIdSet.Contains(m.IdentityUserId),
+                m.ProfilePicture != null && m.ProfilePictureContentType != null))
+            .ToListAsync(cancellationToken);
 
             logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", items.Count);
 
@@ -204,7 +195,7 @@ public static partial class AdminEndpoints
 
         private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
     {
-        for (var current = exception; current is not null; current = current.InnerException!)
+        for (Exception? current = exception; current is not null; current = current.InnerException)
         {
             if (current is DbUpdateConcurrencyException)
             {

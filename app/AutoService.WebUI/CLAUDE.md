@@ -166,7 +166,7 @@
 
 ## Key Dependencies
 
-`react-router-dom`, `axios`, `zustand`, `react-easy-crop`, `libphonenumber-js`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `@playwright/test`
+`react-router-dom`, `axios`, `zustand`, `react-easy-crop`, `libphonenumber-js`, `i18next`, `react-i18next`, `tailwindcss`, `@playwright/test`
 
 ## Security
 

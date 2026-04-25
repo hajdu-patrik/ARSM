@@ -142,7 +142,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - Keep schema constraints and indexes aligned with domain invariants.
 - Use `ConnectionStrings:AutoServiceDb` as the canonical connection key.
 - Configuration keys: `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`, `Cors:AllowedOrigins`, `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`.
-- API appsettings default CORS origin is `https://localhost:5173`.
+- API appsettings default CORS origin is `https://localhost:5173`. CORS policy restricts methods to `GET/POST/PUT/DELETE` and headers to `Content-Type`.
 - Never hardcode credentials in committed source code.
 - Prefer Aspire-injected configuration, environment variables, and gitignored local overrides.
 - Local standalone run (outside AppHost): provide the PostgreSQL connection string in `appsettings.Local.json` (gitignored) or via the `ConnectionStrings__AutoServiceDb` environment variable.
@@ -165,7 +165,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 
 ## Current API & Security Snapshot (Keep In Sync With Code)
 - Current mapped endpoints in `AutoService.ApiService`:
-	- `POST /api/auth/register` (authorized, AdminOnly)
+	- `POST /api/auth/register` (authorized, AdminOnly) — returns `RegisterResponse(PersonId, PersonType, Email)`; `IdentityUserId` is not included in the response
 	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`)
 	- `POST /api/auth/refresh` (rate-limited by policy `AuthRefreshAttempts`)
 	- `POST /api/auth/logout` (authorized)
@@ -173,7 +173,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
-	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`scheduledDate`, `dueDateTime`, `taskDescription`); legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins; `ScheduledDate` is immutable while `DueDateTime` and `TaskDescription` remain editable
+	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
@@ -182,14 +182,14 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
-	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users)
+	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users); `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion
 	- `POST /api/profile/change-password` (authorized) — change password
 	- `GET /api/profile/picture` (authorized) — get profile picture binary
 	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
 	- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
 	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (server validates image magic bytes and rejects MIME/content mismatches)
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
-	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag and `hasProfilePicture`
+	- `GET /api/admin/mechanics` (authorized, AdminOnly) — list all mechanics with admin flag and `hasProfilePicture`; uses a Select projection so `ProfilePicture` blobs are never materialized in memory
 	- `DELETE /api/admin/mechanics/{id}` (authorized, AdminOnly) — delete a mechanic (403 for admin targets or self-deletion; 422 if it would leave zero mechanics globally or orphan any appointment without assigned mechanics; 409 on concurrent contention/serialization conflict; 500 if linked identity deletion fails)
 	- `GET /api/customers` (authorized) — list all customers
 	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles; mechanic email also resolves successfully for own-car intake even when linked customer record is not yet materialized, returning an empty vehicle list)
@@ -229,7 +229,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- signed tokens only,
 	- issuer and audience validation enabled,
 	- lifetime validation enabled,
-	- clock skew set to `1` minute,
+	- clock skew set to `30` seconds,
 	- secret must be configured, must not contain template markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`), and must be at least `32` bytes,
 	- access token may be read from cookie,
 	- denylised `jti` values are rejected.
@@ -243,6 +243,10 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- custom login ban middleware (3-minute IP cooldown, deterministic 30-second cleanup cadence, max 5000 tracked clients),
 	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseAuthentication()`, `UseAuthorization()`.
 - Service defaults: `builder.AddServiceDefaults()` is called at startup (registers OpenTelemetry, health checks, service discovery). `app.MapDefaultEndpoints()` maps `/health` and `/alive` in Development.
+- `ExpiredTokenCleanupService` (`Security/ExpiredTokenCleanupService.cs`) is a `BackgroundService` registered via `AddHostedService<ExpiredTokenCleanupService>()`. It runs on a 1-hour interval and removes expired `revokedjwttokens` rows and expired+revoked `refreshtokens` rows.
+- `TokenDenylistService.IsRevokedAsync` calls `cancellationToken.ThrowIfCancellationRequested()` at entry; `OperationCanceledException` propagates to the caller. The JWT bearer `OnTokenValidated` event catches it only when `RequestAborted` is set — a cancelled request cannot silently bypass denylist enforcement.
+- `TemplateMarkerDetector` (`Configuration/TemplateMarkerDetector.cs`) is a shared static helper for detecting placeholder markers in secrets; used by `JwtSettingsResolver` and `DemoDataInitializer`.
+- Shared TTL constants (`AccessTokenTtl`, `RefreshTokenTtl`) and `BuildAuthCookieOptions(TimeSpan ttl)` factory are declared in `AuthEndpoints.Helpers.cs` and reused by login, refresh, and logout flows.
 - Profile-picture SSE broadcaster uses bounded channels (max 200 concurrent subscriptions, per-subscriber buffer size 32, `DropOldest` overflow strategy).
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
@@ -293,12 +297,13 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - Scheduler mobile calendar must preserve row baseline alignment using fixed day-number/indicator block heights, with taller week rows only when that week contains appointments.
 - AppointmentDetailModal import boundaries are stabilized via extracted presentational files (`AppointmentDetailModal.sections.tsx`, `AppointmentDetailModal.footer.tsx`) while preserving existing behavior.
 - Scheduler claim CTAs are rendered as full-width buttons in both appointment cards and detail footer when visible.
+- Claim button is hidden for overdue appointments; mechanic mutation controls are locked when the appointment is `Cancelled` or `Completed`.
 - Scheduler self-unassign control is hidden when the current mechanic is the sole assigned mechanic.
 - Scheduler intake form sections keep grouped user/vehicle/task titles with unified field styles and explicit placeholders (including vehicle detail inputs), and existing-vehicle select keeps a disabled non-selectable placeholder option.
 - Scheduler intake lookup-dependent UI state resets when the lookup email changes or when lookup fails (clears stale vehicle/task sections before showing errors).
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
 - WebUI E2E testing uses Playwright (`@playwright/test`) with config in `app/AutoService.WebUI/playwright.config.ts` and specs under `app/AutoService.WebUI/tests/e2e`.
-- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `jwt-decode`, `react-easy-crop`, `@playwright/test`.
+- Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `react-easy-crop`, `@playwright/test`.
 
 ## Code Change Policy for Copilot
 - Make minimal, task-focused changes; avoid broad refactors unless requested.

@@ -82,6 +82,13 @@ public static partial class AuthEndpoints
             var phoneNumberInUse = await userManager.Users
                 .AnyAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
 
+            if (!phoneNumberInUse)
+            {
+                phoneNumberInUse = await db.People
+                    .AsNoTracking()
+                    .AnyAsync(p => p.PhoneNumber != null && phoneLookupCandidates.Contains(p.PhoneNumber), cancellationToken);
+            }
+
             if (phoneNumberInUse)
             {
                 logger.LogInformation("Registration rejected: phone number already exists.");
@@ -160,7 +167,7 @@ public static partial class AuthEndpoints
         }
 
         logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}. ClientIp: {ClientIp}.", person.Id, identityUser.Id, clientIp);
-        return Results.Ok(new RegisterResponse(identityUser.Id, person.Id, PersonTypeResolver.Resolve(person), person.Email));
+        return Results.Ok(new RegisterResponse(person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 
     /**

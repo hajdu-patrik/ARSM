@@ -22,6 +22,8 @@ namespace AutoService.ApiService.Auth.Endpoints;
  */
 public static partial class AuthEndpoints
 {
+    private static readonly TimeSpan AccessTokenTtl = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan RefreshTokenTtl = TimeSpan.FromDays(7);
     /**
      * Converts an Identity error result into the RFC 7807 validation problem format
      * used by Results.ValidationProblem().
@@ -73,31 +75,19 @@ public static partial class AuthEndpoints
     private static string HashRefreshToken(string token)
         => TokenSecurity.HashSha256(token);
 
-        private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl)
+    private static CookieOptions BuildAuthCookieOptions(TimeSpan ttl) => new()
     {
-        return new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            IsEssential = true,
-            Path = "/",
-            MaxAge = ttl
-        };
-    }
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        IsEssential = true,
+        Path = "/",
+        MaxAge = ttl
+    };
 
-        private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl)
-    {
-        return new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            IsEssential = true,
-            Path = "/",
-            MaxAge = ttl
-        };
-    }
+    private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+
+    private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
 
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);

@@ -65,6 +65,26 @@ test.describe('Sidebar navigation – regular mechanic', () => {
     const flagAfter = await page.evaluate(() => localStorage.getItem('preferred-sidebar-collapsed'));
     expect(flagAfter).toBe(collapsedFlag);
   });
+
+  test('/tools skeleton page renders page heading when authenticated', async ({ page }) => {
+    // Navigate directly to /tools and verify the coming-soon panel renders.
+    // The page uses the `tools.pageTitle` i18n key which resolves to "Tools"
+    // in English, and the panel heading resolves to "Tools Management Coming Soon".
+    await page.goto('/tools');
+    await expect(page).toHaveURL(/\/tools/);
+    await expect(page.getByRole('heading', { name: 'Tools', level: 1 })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /Tools Management Coming Soon/i })).toBeVisible();
+  });
+
+  test('/inventory skeleton page renders page heading when authenticated', async ({ page }) => {
+    // Navigate directly to /inventory and verify the coming-soon panel renders.
+    // The page uses the `inventory.pageTitle` i18n key which resolves to "Inventory"
+    // in English, and the panel heading resolves to "Inventory Management Coming Soon".
+    await page.goto('/inventory');
+    await expect(page).toHaveURL(/\/inventory/);
+    await expect(page.getByRole('heading', { name: 'Inventory', level: 1 })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /Inventory Management Coming Soon/i })).toBeVisible();
+  });
 });
 
 test.describe('Sidebar navigation – admin user', () => {

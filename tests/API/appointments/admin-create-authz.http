@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - ADMIN CREATE AUTHORIZATION CHECKS
+# ─────────────────────────────────────────────────────────────
+# Tests that non-admin mechanics cannot use POST /api/customers/{id}/appointments.
+# Run in sequence: login as non-admin, attempt create (403), logout, retry (401).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@CustomerId = 1
+@VehicleId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Negative][Appointments] Non-admin mechanic cannot create appointment for customer (403 expected)
+# POST /api/customers/{customerId}/appointments requires AdminOnly policy.
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{VehicleId}},
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Non-admin create attempt — should be rejected with 403",
+  "mechanicIds": [1]
+}
+
+###
+
+### [Setup][Appointments] Logout non-admin session
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Negative][Appointments] Unauthenticated admin create appointment for customer (401 expected)
+# Confirms the endpoint is protected even with no session at all.
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Content-Type: application/json
+
+{
+  "vehicleId": {{VehicleId}},
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Unauthenticated admin create — should be rejected with 401",
+  "mechanicIds": [1]
+}
