@@ -7,11 +7,16 @@ on:
     branches: [ "main" ]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: app
@@ -34,10 +39,16 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Check NuGet vulnerabilities
+      shell: bash
       run: dotnet list package --vulnerable --include-transitive 2>&1 | tee /dev/stderr | grep -q "no vulnerable packages" || exit 1
 
   frontend-check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: app/AutoService.WebUI
