@@ -14,6 +14,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     
     runs-on: ${{ matrix.os }}
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     defaults:
       run:
         working-directory: app
@@ -46,6 +48,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         
     runs-on: ${{ matrix.os }}
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     defaults:
       run:
         working-directory: app/AutoService.WebUI
@@ -71,13 +75,10 @@ jobs:
 
   playwright-e2e:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     needs: [build, frontend-check]
-
-    defaults:
-      run:
-        working-directory: app/AutoService.WebUI
-
     env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       ARSM_TEST_MECHANIC_EMAIL: ${{ secrets.ARSM_TEST_MECHANIC_EMAIL }}
       ARSM_TEST_MECHANIC_PASSWORD: ${{ secrets.ARSM_TEST_MECHANIC_PASSWORD }}
       ARSM_TEST_WRONG_PASSWORD: ${{ secrets.ARSM_TEST_WRONG_PASSWORD }}
@@ -85,6 +86,10 @@ jobs:
       PORT: "5173"
       VITE_API_URL: https://localhost:5200
       PLAYWRIGHT_REUSE_EXISTING_SERVER: "1"
+
+    defaults:
+      run:
+        working-directory: app/AutoService.WebUI
 
     steps:
     - uses: actions/checkout@v4
@@ -109,7 +114,7 @@ jobs:
 
     - name: Start application stack
       run: |
-        dotnet run --project ../AutoService.AppHost &
+        dotnet run --project ../AutoService.AppHost > apphost_logs.txt 2>&1 &
 
         echo "Waiting for services to become healthy..."
         SECONDS=0
@@ -117,6 +122,8 @@ jobs:
         while ! curl -kfsS https://localhost:5173 > /dev/null 2>&1 || ! curl -kfsS https://localhost:5200/alive > /dev/null 2>&1; do
           if [ "$SECONDS" -ge "$TIMEOUT" ]; then
             echo "ERROR: Services did not become healthy within ${TIMEOUT}s"
+            echo "--- DUMPING APPHOST LOGS ---"
+            cat apphost_logs.txt
             exit 1
           fi
           sleep 2
