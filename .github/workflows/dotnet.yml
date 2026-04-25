@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     strategy:
@@ -75,7 +71,6 @@ jobs:
 
   playwright-e2e:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     needs: [build, frontend-check]
 
     defaults:
