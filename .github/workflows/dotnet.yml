@@ -14,8 +14,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     
     runs-on: ${{ matrix.os }}
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     defaults:
       run:
         working-directory: app
@@ -39,7 +37,10 @@ jobs:
 
     - name: Check NuGet vulnerabilities
       shell: bash
-      run: dotnet list package --vulnerable --include-transitive || true
+      run: |
+        set -o pipefail
+        dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
+        ! grep -qi 'has the following vulnerable packages' vuln-report.txt
 
   frontend-check:
     strategy:
@@ -48,8 +49,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         
     runs-on: ${{ matrix.os }}
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     defaults:
       run:
         working-directory: app/AutoService.WebUI
@@ -71,14 +70,12 @@ jobs:
       run: npx tsc --noEmit
 
     - name: Audit npm dependencies
-      run: npm audit --audit-level=high || true
+      run: npm audit --audit-level=high
 
   playwright-e2e:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     needs: [build, frontend-check]
     env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       ARSM_TEST_MECHANIC_EMAIL: ${{ secrets.ARSM_TEST_MECHANIC_EMAIL }}
       ARSM_TEST_MECHANIC_PASSWORD: ${{ secrets.ARSM_TEST_MECHANIC_PASSWORD }}
       ARSM_TEST_WRONG_PASSWORD: ${{ secrets.ARSM_TEST_WRONG_PASSWORD }}
