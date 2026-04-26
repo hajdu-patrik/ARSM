@@ -55,6 +55,22 @@ Content-Type: application/json
 
 ###
 
+### [Negative][Appointments] Unauthenticated appointment vehicle update (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/vehicle
+Content-Type: application/json
+
+{
+  "licensePlate": "UNAUTH-401",
+  "brand": "Ghost",
+  "model": "Rider",
+  "year": 2020,
+  "mileageKm": 0,
+  "enginePowerHp": 100,
+  "engineTorqueNm": 200
+}
+
+###
+
 ### [Negative][Appointments] Unauthenticated appointment status update (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/status
 Content-Type: application/json

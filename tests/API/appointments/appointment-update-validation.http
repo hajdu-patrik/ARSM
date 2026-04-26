@@ -57,13 +57,11 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Admin update with vehicle payload missing required fields (422 expected)
-# When any vehicle field is supplied, LicensePlate, Brand, and Model are all required.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Negative][Appointments] Admin vehicle update missing required fields (422 expected)
+# LicensePlate, Brand, and Model are required for /vehicle update payloads.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Content-Type: application/json
 
 {
-  "dueDateTime": "2026-04-25T16:00:00",
-  "taskDescription": "Partial vehicle payload should be rejected",
   "brand": "Volkswagen"
 }

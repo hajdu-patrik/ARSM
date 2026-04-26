@@ -41,13 +41,22 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Admin updates appointment dueDateTime/taskDescription and vehicle fields (vehicle edits persist)
+### [Positive][Appointments] Admin updates appointment dueDateTime/taskDescription
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Content-Type: application/json
 
 {
   "dueDateTime": "2026-04-22T16:15:00",
-  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez"
+}
+
+###
+
+### [Positive][Appointments] Admin updates appointment vehicle fields (vehicle edits persist)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Content-Type: application/json
+
+{
   "licensePlate": "ABC-101",
   "brand": "Volkswagen",
   "model": "Golf",
@@ -77,16 +86,8 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
 Content-Type: application/json
 
 {
-  "scheduledDate": "2026-04-20T10:45:00",
   "dueDateTime": "2026-04-22T16:15:00",
-  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
-  "licensePlate": "ABC-101",
-  "brand": "Volkswagen",
-  "model": "Golf",
-  "year": 2018,
-  "mileageKm": 124500,
-  "enginePowerHp": 112,
-  "engineTorqueNm": 252
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez"
 }
 
 ###
@@ -99,4 +100,20 @@ Content-Type: application/json
   "scheduledDate": "2030-01-01T10:45:00",
   "dueDateTime": "2030-01-03T16:15:00",
   "taskDescription": "Scheduled date change should be rejected"
+}
+
+###
+
+### [Negative][Appointments] Admin vehicle update fails when appointment does not exist (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/vehicle
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerHp": 112,
+  "engineTorqueNm": 252
 }

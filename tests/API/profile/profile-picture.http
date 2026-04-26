@@ -7,6 +7,7 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @MechanicPersonIdForPicture = 7
 @NonExistentPersonId = 99999
+@ProfilePictureEtag = "REPLACE_WITH_ETAG_FROM_PREVIOUS_200_RESPONSE"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -23,12 +24,26 @@ Content-Type: application/json
 ###
 
 ### [Positive][Profile] Get profile picture (200 or 404 if none)
+# When 200: expect response headers ETag and Cache-Control: public, max-age=3600
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
 ###
 
+### [Positive][Profile] Conditional get profile picture by ETag (304 expected when ETag matches)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+If-None-Match: {{ProfilePictureEtag}}
+
+###
+
 ### [Positive][Profile] Get mechanic profile picture by person id (200 or 404 if none)
+# When 200: expect response headers ETag and Cache-Control: public, max-age=3600
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+
+###
+
+### [Positive][Profile] Conditional get mechanic profile picture by ETag (304 expected when ETag matches)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+If-None-Match: {{ProfilePictureEtag}}
 
 ###
 

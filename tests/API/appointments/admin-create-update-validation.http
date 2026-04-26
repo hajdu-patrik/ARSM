@@ -37,7 +37,16 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2030-01-03T16:15:00",
-  "taskDescription": "Past appointment due and task update allowed",
+  "taskDescription": "Past appointment due and task update allowed"
+}
+
+###
+
+### [Positive][Appointments] Admin updates past appointment vehicle details (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}/vehicle
+Content-Type: application/json
+
+{
   "licensePlate": "DEF-404",
   "brand": "Ford",
   "model": "Focus",
@@ -50,12 +59,10 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Admin update rejects vehicle numeric values above max limits (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Content-Type: application/json
 
 {
-  "dueDateTime": "2026-04-22T16:15:00",
-  "taskDescription": "Admin update vehicle numeric max should be rejected",
   "licensePlate": "ABC-101",
   "brand": "Volkswagen",
   "model": "Golf",

@@ -35,6 +35,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (422 expected)
+# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -51,6 +52,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Register][Admin] Duplicate phone in another valid input format
+# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -68,6 +70,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace
+# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
