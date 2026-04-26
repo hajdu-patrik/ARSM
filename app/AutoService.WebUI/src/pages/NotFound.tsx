@@ -59,7 +59,7 @@ const NotFoundComponent = memo(function NotFound() {
 
   return (
     <div
-      className={`relative min-h-screen overflow-hidden ${isDark ? 'bg-[#09090F] text-[#EDE8FA]' : 'bg-[#ECECEF] text-[#2C2440]'}`}
+      className={`relative min-h-screen overflow-hidden ${isDark ? 'bg-arsm-surface-dark text-arsm-primary-dark' : 'bg-arsm-surface text-arsm-primary'}`}
     >
       <div
         aria-hidden="true"
@@ -76,15 +76,15 @@ const NotFoundComponent = memo(function NotFound() {
         <span
           aria-hidden="true"
           className={`pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none text-[50vw] font-black leading-none tracking-tight sm:text-[30vw] ${
-            isDark ? 'text-[#EDE8FA]/[0.08]' : 'text-[#2C2440]/[0.05]'
+            isDark ? 'text-arsm-primary-dark/[0.08]' : 'text-arsm-primary/[0.05]'
           }`}
         >
           404
         </span>
 
-        <section className="relative w-full max-w-[74rem] rounded-[28px] border border-[#D8D2E9] bg-[#F6F4FB]/95 p-4 shadow-[0_24px_72px_rgba(44,36,64,0.18)] backdrop-blur-sm dark:border-[#3A3154] dark:bg-[#13131B]/92 dark:shadow-[0_30px_80px_rgba(0,0,0,0.52)] max-[320px]:p-3 sm:p-6 lg:p-8">
+        <section className="relative w-full max-w-[74rem] rounded-[28px] border border-arsm-border bg-arsm-input/95 p-4 shadow-[0_24px_72px_rgba(44,36,64,0.18)] backdrop-blur-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark/92 dark:shadow-[0_30px_80px_rgba(0,0,0,0.52)] max-[320px]:p-3 sm:p-6 lg:p-8">
           <div className="grid items-stretch gap-4 md:grid-cols-[minmax(240px,1fr)_minmax(280px,1fr)] lg:gap-8">
-            <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-3xl border border-[#D8D2E9] bg-[#EFEBFA] p-4 dark:border-[#3A3154] dark:bg-[#241F33] max-[320px]:min-h-[210px] sm:min-h-[320px]">
+            <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-3xl border border-arsm-border bg-arsm-toggle-bg p-4 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.16)_48%,_rgba(201,179,255,0)_72%)] dark:bg-[radial-gradient(circle,_rgba(122,102,199,0.52)_0%,_rgba(122,102,199,0.16)_48%,_rgba(122,102,199,0)_72%)]"
@@ -97,28 +97,28 @@ const NotFoundComponent = memo(function NotFound() {
               />
             </div>
 
-            <div className="flex flex-col justify-center rounded-3xl border border-[#D8D2E9] bg-white/80 p-5 text-left dark:border-[#3A3154] dark:bg-[#1A1A25]/88 max-[320px]:p-4 sm:p-6">
-              <h1 className="text-[clamp(1.5rem,3.6vw,2.8rem)] text-center font-semibold leading-[1.06] tracking-tight text-[#2C2440] dark:text-[#EDE8FA]">
+            <div className="flex flex-col justify-center rounded-3xl border border-arsm-border bg-white/80 p-5 text-left dark:border-arsm-border-dark dark:bg-arsm-input-dark/88 max-[320px]:p-4 sm:p-6">
+              <h1 className="text-[clamp(1.5rem,3.6vw,2.8rem)] text-center font-semibold leading-[1.06] tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
                 {t('notFound.pageNotFound')}
               </h1>
 
-              <p className="mt-3 text-sm text-[#6A627F] dark:text-[#B9B0D3] sm:text-base text-center">
+              <p className="mt-3 text-sm text-arsm-muted dark:text-arsm-muted-dark sm:text-base text-center">
                 {t('notFound.subtitle')}
               </p>
 
               <button
                 type="button"
                 onClick={() => navigate(redirectTarget, { replace: true })}
-                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[#C9B3FF] px-8 py-3 text-sm font-semibold text-[#2C2440] shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-[#BFA6F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] dark:focus-visible:ring-[#8A75D64D] sm:w-auto sm:text-base"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent px-8 py-3 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 sm:w-auto sm:text-base"
               >
                 {t(ctaTextKey)}
               </button>
 
-              <div className="mt-6 border-t border-[#D8D2E9] pt-4 dark:border-[#3A3154] text-center">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-[#6A627F] dark:text-[#B9B0D3]">
+              <div className="mt-6 border-t border-arsm-border pt-4 dark:border-arsm-border-dark text-center">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-arsm-muted dark:text-arsm-muted-dark">
                   {t('notFound.redirectIn')}
                 </p>
-                <p className="mt-1 text-3xl font-semibold leading-none text-[#2C2440] dark:text-[#EDE8FA]">
+                <p className="mt-1 text-3xl font-semibold leading-none text-arsm-primary dark:text-arsm-primary-dark">
                   {String(secondsLeft).padStart(2, '0')}
                 </p>
               </div>

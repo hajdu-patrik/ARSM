@@ -50,7 +50,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
   return (
     <div className={cardClass}>
-      <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+      <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {t('settings.personalInfo')}
       </h2>
 

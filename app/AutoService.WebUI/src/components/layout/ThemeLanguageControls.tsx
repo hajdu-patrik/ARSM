@@ -17,13 +17,13 @@ interface ThemeLanguageControlsProps {
 const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-6 z-30 flex -translate-x-1/2 items-center gap-1.5 sm:left-auto sm:right-8 sm:top-6 sm:translate-x-0 sm:gap-3';
 
 /** Base Tailwind classes shared by both the language and theme buttons. */
-const BASE_BUTTON_CLASS = 'min-w-[52px] rounded-xl px-8 py-3 text-sm leading-none transition hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66]';
+const BASE_BUTTON_CLASS = 'min-w-[52px] rounded-xl px-8 py-3 text-sm leading-none transition hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40';
 
 /** Button variant styling for light theme. */
-const LIGHT_THEME_BUTTON_CLASS = 'bg-[#C9B3FF] text-[#2C2440] shadow-[0_8px_20px_rgba(111,84,173,0.28)] hover:bg-[#BFA6F7]';
+const LIGHT_THEME_BUTTON_CLASS = 'bg-arsm-accent text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.28)] hover:bg-arsm-accent-hover';
 
 /** Button variant styling for dark theme. */
-const DARK_THEME_BUTTON_CLASS = 'bg-[#7A66C7] text-[#F5F2FF] shadow-[0_8px_20px_rgba(111,84,173,0.28)] hover:bg-[#8A75D6] focus-visible:ring-[#8A75D64D]';
+const DARK_THEME_BUTTON_CLASS = 'bg-arsm-accent-dark text-arsm-hover shadow-[0_8px_20px_rgba(111,84,173,0.28)] hover:bg-arsm-accent-dark-hover focus-visible:ring-arsm-accent-dark-hover/30';
 
 /** Memoized language and theme toggle buttons with persisted preferences. */
 const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({

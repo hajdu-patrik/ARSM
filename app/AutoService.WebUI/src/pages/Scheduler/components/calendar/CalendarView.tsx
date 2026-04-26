@@ -140,32 +140,32 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className="bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] shadow-sm p-4 select-none">
+    <section className="bg-arsm-input dark:bg-arsm-card-dark rounded-2xl border border-arsm-border dark:border-arsm-border-dark shadow-sm p-4 select-none">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrev}
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
-          className={`p-1.5 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] transition-colors ${canGoPrev ? 'hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]' : 'opacity-50 cursor-not-allowed'}`}
+          className={`p-1.5 rounded-lg text-arsm-label dark:text-arsm-label-dark transition-colors ${canGoPrev ? 'hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark' : 'opacity-50 cursor-not-allowed'}`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA] capitalize">
+        <h3 className="text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark capitalize">
           {monthLabel}
         </h3>
         <button
           onClick={handleNext}
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
-          className={`p-1.5 rounded-lg text-[#5E5672] dark:text-[#CFC5EA] transition-colors ${canGoNext ? 'hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]' : 'opacity-50 cursor-not-allowed'}`}
+          className={`p-1.5 rounded-lg text-arsm-label dark:text-arsm-label-dark transition-colors ${canGoNext ? 'hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark' : 'opacity-50 cursor-not-allowed'}`}
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-[#6A627F] dark:text-[#B9B0D3] text-sm">
+        <div className="text-center py-8 text-arsm-muted dark:text-arsm-muted-dark text-sm">
           {t('scheduler.calendar.loading')}
         </div>
       ) : (
@@ -173,7 +173,7 @@ const CalendarViewComponent = memo(function CalendarView({
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7 gap-px mb-1">
             {dayHeaders.map((d) => (
-              <div key={d} className="text-center text-xs font-medium text-[#6A627F] dark:text-[#B9B0D3] py-1">
+              <div key={d} className="text-center text-xs font-medium text-arsm-muted dark:text-arsm-muted-dark py-1">
                 {d}
               </div>
             ))}
@@ -194,7 +194,7 @@ const CalendarViewComponent = memo(function CalendarView({
                       <>
                         <div className="flex h-7 items-center justify-center mb-0.5">
                           {day.isToday ? (
-                            <span className="bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF] rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
+                            <span className="bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
                               {day.date.getDate()}
                             </span>
                           ) : (
@@ -218,7 +218,7 @@ const CalendarViewComponent = memo(function CalendarView({
                             <span className="h-3.5 w-3.5" aria-hidden="true" />
                           )}
                           {day.appointments.length > 1 && (
-                            <span className="text-[8px] leading-none text-[#6A627F] dark:text-[#B9B0D3] font-semibold">
+                            <span className="text-[8px] leading-none text-arsm-muted dark:text-arsm-muted-dark font-semibold">
                               +{day.appointments.length - 1}
                             </span>
                           )}
@@ -236,7 +236,7 @@ const CalendarViewComponent = memo(function CalendarView({
                             </span>
                           ))}
                           {day.appointments.length > 3 && (
-                            <span className="text-[9px] text-[#6A627F] dark:text-[#B9B0D3] font-medium">
+                            <span className="text-[9px] text-arsm-muted dark:text-arsm-muted-dark font-medium">
                               +{day.appointments.length - 3}
                             </span>
                           )}
@@ -252,9 +252,9 @@ const CalendarViewComponent = memo(function CalendarView({
 
                     const dayClassName = `${rowHeightClass} p-1 rounded-lg flex flex-col items-center justify-start ${
                       day.isCurrentMonth
-                        ? 'text-[#2C2440] dark:text-[#EDE8FA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47]'
-                        : 'text-[#B9B0D3] dark:text-[#5E5672]'
-                    } ${day.isToday ? 'bg-[#EFEBFA] dark:bg-[#241F33]' : ''} ${isSelected ? 'ring-2 ring-[#C9B3FF] dark:ring-[#7A66C7]' : ''}`;
+                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark'
+                        : 'text-arsm-muted-dark dark:text-arsm-label'
+                    } ${day.isToday ? 'bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark' : ''} ${isSelected ? 'ring-2 ring-arsm-accent dark:ring-arsm-accent-dark' : ''}`;
 
                     if (day.isCurrentMonth && onDayClick) {
                       return (

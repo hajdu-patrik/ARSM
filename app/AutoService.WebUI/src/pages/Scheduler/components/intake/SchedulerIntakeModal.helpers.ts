@@ -1,9 +1,3 @@
-/**
- * SchedulerIntakeModal.helpers.ts
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { isAxiosError } from 'axios';
 import type {
   SchedulerCreateIntakeRequest,
@@ -30,12 +24,6 @@ function isIntakeApiError(value: unknown): value is IntakeApiError {
   return value.detail == null || typeof value.detail === 'string';
 }
 
-/**
- * getDefaultScheduledDate operation.
- *
- * @param Date Parameter.
- * @returns Return value.
- */
 export function getDefaultScheduledDate(selectedDate: Date): string {
   const now = new Date();
   return toDatetimeLocalValue(
@@ -49,12 +37,6 @@ export function getDefaultScheduledDate(selectedDate: Date): string {
   );
 }
 
-/**
- * getDefaultDueDate operation.
- *
- * @param Date Parameter.
- * @returns Return value.
- */
 export function getDefaultDueDate(selectedDate: Date): string {
   const next = new Date(selectedDate);
   next.setDate(selectedDate.getDate() + 3);
@@ -70,10 +52,7 @@ export function getDefaultDueDate(selectedDate: Date): string {
 }
 
 /**
- * mapIntakeErrorToKey operation.
- *
- * @param unknown Parameter.
- * @returns Return value.
+ * Maps known backend intake error details to localized frontend message keys.
  */
 export function mapIntakeErrorToKey(error: unknown): string {
   const detail =
@@ -102,22 +81,10 @@ export function mapIntakeErrorToKey(error: unknown): string {
   return 'scheduler.intake.errors.createFailed';
 }
 
-/**
- * Converts a datetime-local string to a serialized timestamp value.
- *
- * @param string Parameter.
- * @returns Return value.
- */
 export function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
-/**
- * buildVehiclePayload operation.
- *
- * @param VehicleFormState Parameter.
- * @returns Return value.
- */
 export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehicleRequest {
   return {
     licensePlate: vehicle.licensePlate.trim(),
@@ -130,14 +97,6 @@ export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehi
   };
 }
 
-/**
- * normalizeRangedNumberInput operation.
- *
- * @param string Parameter.
- * @param number Parameter.
- * @param number Parameter.
- * @returns Return value.
- */
 export function normalizeRangedNumberInput(rawValue: string, min: number, max: number): string {
   if (rawValue.trim() === '') {
     return '';
@@ -152,12 +111,6 @@ export function normalizeRangedNumberInput(rawValue: string, min: number, max: n
   return String(clamped);
 }
 
-/**
- * hasValidVehicleNumericValues operation.
- *
- * @param VehicleFormState Parameter.
- * @returns Return value.
- */
 export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean {
   const mileageKm = Number(vehicle.mileageKm);
   const enginePowerHp = Number(vehicle.enginePowerHp);
@@ -171,10 +124,7 @@ export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean
 }
 
 /**
- * getCreateValidationError operation.
- *
- * @param params Parameter.
- * @returns Return value.
+ * Validates intake form state before constructing the API request payload.
  */
 export function getCreateValidationError(params: {
   lookupState: LookupState;
@@ -214,10 +164,7 @@ export function getCreateValidationError(params: {
 }
 
 /**
- * enrichPayloadByLookupState operation.
- *
- * @param params Parameter.
- * @returns Return value.
+ * Enriches the base intake payload with lookup-dependent customer/vehicle data.
  */
 export function enrichPayloadByLookupState(params: {
   basePayload: SchedulerCreateIntakeRequest;

@@ -8,6 +8,18 @@ interface AppointmentResponse {
   id: number;
   dueDateTime: string;
   taskDescription: string;
+  vehicle?: {
+    mileageKm: number;
+  };
+}
+
+interface UpdateAppointmentRequest {
+  dueDateTime: string;
+  taskDescription: string;
+}
+
+interface UpdateAppointmentVehicleRequest {
+  mileageKm: number;
 }
 
 function matchesApiPath(response: Response, method: string, pathSuffix: string): boolean {
@@ -81,14 +93,80 @@ test.describe('Scheduler appointment detail', () => {
 
     await detail.setDueDateTime(newDueLocal);
 
+    const vehicleUpdatePath = `/api/appointments/${createdAppointment.id}/vehicle`;
+    let vehicleUpdateCount = 0;
+    const onResponse = (response: Response) => {
+      if (matchesApiPath(response, 'PUT', vehicleUpdatePath)) {
+        vehicleUpdateCount += 1;
+      }
+    };
+
+    page.on('response', onResponse);
+
     const updatePromise = page.waitForResponse(
       (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}`) && r.status() === 200,
     );
-    await detail.save();
-    const updateResponse = await updatePromise;
-    const updated = await updateResponse.json() as AppointmentResponse;
+    try {
+      await detail.save();
+      const updateResponse = await updatePromise;
+      const updateRequest = updateResponse.request().postDataJSON() as UpdateAppointmentRequest;
+      const updated = await updateResponse.json() as AppointmentResponse;
 
-    expect(new Date(updated.dueDateTime).getDate()).toBe(newDue.getDate());
+      expect(new Date(updated.dueDateTime).getDate()).toBe(newDue.getDate());
+      expect(updateRequest.taskDescription).toBeTruthy();
+      expect(updateRequest).not.toHaveProperty('licensePlate');
+      expect(updateRequest).not.toHaveProperty('brand');
+      expect(updateRequest).not.toHaveProperty('model');
+      expect(updateRequest).not.toHaveProperty('year');
+      expect(updateRequest).not.toHaveProperty('mileageKm');
+      expect(updateRequest).not.toHaveProperty('enginePowerHp');
+      expect(updateRequest).not.toHaveProperty('engineTorqueNm');
+
+      await expect.poll(() => vehicleUpdateCount, { timeout: 500 }).toBe(0);
+    } finally {
+      page.off('response', onResponse);
+    }
+  });
+
+  test('edit vehicle mileage and save issues split update calls', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.openAppointmentByTask(taskDescription);
+
+    const detail = new AppointmentDetailPage(page);
+    await detail.expectOpen();
+    await detail.startEdit();
+
+    const newMileageKm = 654321;
+    await detail.setVehicleMileageKm(String(newMileageKm));
+
+    const appointmentUpdatePromise = page.waitForResponse(
+      (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}`) && r.status() === 200,
+    );
+    const vehicleUpdatePromise = page.waitForResponse(
+      (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/vehicle`) && r.status() === 200,
+    );
+
+    await detail.save();
+
+    const appointmentUpdateResponse = await appointmentUpdatePromise;
+    const vehicleUpdateResponse = await vehicleUpdatePromise;
+    const appointmentUpdateRequest = appointmentUpdateResponse.request().postDataJSON() as UpdateAppointmentRequest;
+    const vehicleUpdateRequest = vehicleUpdateResponse.request().postDataJSON() as UpdateAppointmentVehicleRequest;
+    const vehicleUpdatedAppointment = await vehicleUpdateResponse.json() as AppointmentResponse;
+
+    expect(appointmentUpdateRequest.taskDescription).toBeTruthy();
+    expect(appointmentUpdateRequest).not.toHaveProperty('mileageKm');
+    expect(vehicleUpdateRequest.mileageKm).toBe(newMileageKm);
+    expect(vehicleUpdatedAppointment.vehicle?.mileageKm).toBe(newMileageKm);
+  });
+
+  test('detail modal shows customer name only', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.openAppointmentByTask(taskDescription);
+
+    const detail = new AppointmentDetailPage(page);
+    await detail.expectOpen();
+    await detail.expectCustomerNameOnlySection();
   });
 
   test('claim an unassigned appointment', async ({ page }) => {

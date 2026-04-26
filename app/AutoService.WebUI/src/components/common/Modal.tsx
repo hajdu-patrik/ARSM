@@ -71,7 +71,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-full ${widthClassName} rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-5 text-[#2C2440] shadow-[0_20px_56px_rgba(0,0,0,0.35)] dark:border-[#3A3154] dark:bg-[#13131B] dark:text-[#EDE8FA] sm:p-6`}
+        className={`relative w-full ${widthClassName} rounded-2xl border border-arsm-border bg-arsm-input p-5 text-arsm-primary shadow-[0_20px_56px_rgba(0,0,0,0.35)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
         style={{ animation: 'modal-enter 200ms ease-out' }}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -79,7 +79,7 @@ const ModalComponent = memo(function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-[#6A627F] transition hover:bg-[#E6DCF8] dark:text-[#B9B0D3] dark:hover:bg-[#322B47]"
+            className="rounded-md p-1 text-arsm-muted transition hover:bg-arsm-accent-subtle dark:text-arsm-muted-dark dark:hover:bg-arsm-hover-dark"
             aria-label={t('modal.close')}
           >
             <X className="h-5 w-5" />

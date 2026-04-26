@@ -66,8 +66,8 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
               key={opt.value}
               className={`relative flex cursor-pointer items-start gap-2 overflow-hidden rounded-lg border px-3 py-2 text-sm transition ${
                 expertise.includes(opt.value)
-                  ? 'border-[#C9B3FF] bg-[#EFEBFA] text-[#2C2440] dark:border-[#7A66C7] dark:bg-[#241F33] dark:text-[#F5F2FF]'
-                  : 'border-[#D8D2E9] bg-white text-[#5E5672] hover:bg-[#F6F4FB] dark:border-[#3A3154] dark:bg-[#13131B] dark:text-[#CFC5EA] dark:hover:bg-[#1A1A25]'
+                  ? 'border-arsm-accent bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover'
+                  : 'border-arsm-border bg-white text-arsm-label hover:bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-label-dark dark:hover:bg-arsm-input-dark'
               } ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
             >
               <input
@@ -80,12 +80,12 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
               <span
                 className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
                   expertise.includes(opt.value)
-                    ? 'border-[#C9B3FF] bg-[#C9B3FF] dark:border-[#7A66C7] dark:bg-[#7A66C7]'
-                    : 'border-[#D8D2E9] dark:border-[#3A3154]'
+                    ? 'border-arsm-accent bg-arsm-accent dark:border-arsm-accent-dark dark:bg-arsm-accent-dark'
+                    : 'border-arsm-border dark:border-arsm-border-dark'
                 }`}
               >
                 {expertise.includes(opt.value) && (
-                  <Check className="h-3 w-3 text-[#2C2440] dark:text-[#F5F2FF]" strokeWidth={3} />
+                  <Check className="h-3 w-3 text-arsm-primary dark:text-arsm-hover" strokeWidth={3} />
                 )}
               </span>
               <span className="min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">

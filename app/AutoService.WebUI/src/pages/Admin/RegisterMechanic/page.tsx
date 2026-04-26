@@ -183,14 +183,14 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
       <div className="space-y-6">
         <div className={cardClass}>
-          <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+          <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
             {t('admin.mechanicList')}
           </h2>
           <MechanicListSection refreshKey={mechanicListRefreshKey} />
         </div>
 
         <div className={cardClass}>
-          <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+          <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
             {t('admin.registerMechanic')}
           </h2>
 
@@ -231,7 +231,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-[#C9B3FF] py-3 text-sm font-semibold text-[#2C2440] shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-[#BFA6F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:bg-[#DCCDFA] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] dark:focus-visible:ring-[#8A75D64D] dark:disabled:bg-[#4B406E] sm:text-base"
+              className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
               aria-busy={isSubmitting}
             >
               {isSubmitting ? t('admin.submitting') : t('admin.submit')}

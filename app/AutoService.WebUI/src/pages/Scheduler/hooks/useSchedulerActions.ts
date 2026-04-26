@@ -17,6 +17,7 @@ import type {
   AppointmentStatus,
   SchedulerCreateIntakeRequest,
   UpdateAppointmentRequest,
+  UpdateAppointmentVehicleRequest,
 } from '../../../types/scheduler/scheduler.types';
 
 /** Configuration for {@link useSchedulerActions}. */
@@ -104,8 +105,17 @@ export function useSchedulerActions({
     showSuccessToast('scheduler.intake.createSuccess');
   }, [showSuccessToast, upsertAppointment]);
 
-  const handleUpdateAppointment = useCallback(async (id: number, request: UpdateAppointmentRequest) => {
-    const updated = await appointmentService.updateAppointment(id, request);
+  const handleUpdateAppointment = useCallback(async (
+    id: number,
+    request: UpdateAppointmentRequest,
+    vehicleRequest?: UpdateAppointmentVehicleRequest,
+  ) => {
+    let updated = await appointmentService.updateAppointment(id, request);
+
+    if (vehicleRequest) {
+      updated = await appointmentService.updateAppointmentVehicle(id, vehicleRequest);
+    }
+
     upsertAppointment(updated);
     setSelectedAppointment(updated);
     showSuccessToast('scheduler.detail.updateSuccess');

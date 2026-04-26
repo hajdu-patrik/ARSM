@@ -12,7 +12,6 @@
 export interface CustomerSummaryDto {
   id: number;
   fullName: string;
-  email: string;
 }
 
 /**
@@ -49,8 +48,6 @@ export interface MechanicSummaryDto {
   id: number;
   /** Full display name of the mechanic. */
   fullName: string;
-  /** Email address. */
-  email: string;
   /** Primary area of specialization (e.g. "Engine", "Transmission"). */
   specialization: string;
   /** List of additional expertise tags. */
@@ -213,7 +210,6 @@ export interface SchedulerCreateIntakeRequest {
 /**
  * Request payload for updating an existing appointment
  * ({@code PUT /api/appointments/{id}}).
- * Includes both appointment fields and vehicle fields for backend compatibility.
  */
 export interface UpdateAppointmentRequest {
   /** Optional scheduled service date for backward compatibility. */
@@ -222,6 +218,13 @@ export interface UpdateAppointmentRequest {
   dueDateTime: string;
   /** Updated task description. */
   taskDescription: string;
+}
+
+/**
+ * Request payload for updating appointment vehicle details
+ * ({@code PUT /api/appointments/{id}/vehicle}).
+ */
+export interface UpdateAppointmentVehicleRequest {
   /** Vehicle license plate number. */
   licensePlate: string;
   /** Vehicle manufacturer brand. */

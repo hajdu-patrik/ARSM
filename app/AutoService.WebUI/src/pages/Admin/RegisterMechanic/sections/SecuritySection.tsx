@@ -50,7 +50,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
         <button
           type="button"
           onClick={onToggleShowPassword}
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6F54AD] transition hover:bg-[#EDE5FF] hover:text-[#5E4698] dark:text-[#C9B3FF] dark:hover:bg-[#2A253B] dark:hover:text-[#E2D9FF]"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-arsm-accent-vivid transition hover:bg-arsm-accent-wash hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:bg-arsm-deep dark:hover:text-arsm-accent-tint"
           aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
         >
           {showPassword ? (
@@ -60,7 +60,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
           )}
         </button>
       </div>
-      <p className="mt-1 text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('admin.passwordHint')}</p>
+      <p className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('admin.passwordHint')}</p>
       <FormErrorMessage message={getFieldError('password')} className="mt-1 px-2 py-1 text-xs" />
     </div>
   );

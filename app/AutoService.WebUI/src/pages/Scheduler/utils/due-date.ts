@@ -47,7 +47,7 @@ export function getDueState(dueDateTime: string): DueState {
   if (Number.isNaN(dueTimestamp)) {
     return {
       isOverdue: false,
-      toneClassName: 'text-[#6A627F] dark:text-[#B9B0D3]',
+      toneClassName: 'text-arsm-muted dark:text-arsm-muted-dark',
       labelKey: 'scheduler.due.unknown',
     };
   }
@@ -71,7 +71,7 @@ export function getDueState(dueDateTime: string): DueState {
     isOverdue: false,
     toneClassName: diffMs < MS_PER_DAY
       ? 'text-amber-700 dark:text-amber-300'
-      : 'text-[#5E5672] dark:text-[#CFC5EA]',
+      : 'text-arsm-label dark:text-arsm-label-dark',
     labelKey: 'scheduler.due.daysLeft',
     labelValues: dueDuration,
   };

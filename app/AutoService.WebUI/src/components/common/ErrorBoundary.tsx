@@ -55,18 +55,18 @@ function ErrorFallback() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#ECECEF] dark:bg-[#09090F]">
-      <div className="mx-4 max-w-md rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-8 text-center dark:border-[#3A3154] dark:bg-[#13131B]">
-        <h1 className="mb-3 text-xl font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+    <div className="flex min-h-screen items-center justify-center bg-arsm-surface dark:bg-arsm-surface-dark">
+      <div className="mx-4 max-w-md rounded-2xl border border-arsm-border bg-arsm-input p-8 text-center dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+        <h1 className="mb-3 text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark">
           {t('errorBoundary.title', 'Something went wrong')}
         </h1>
-        <p className="mb-6 text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+        <p className="mb-6 text-sm text-arsm-muted dark:text-arsm-muted-dark">
           {t('errorBoundary.message', 'An unexpected error occurred. Please reload the page.')}
         </p>
         <button
           type="button"
           onClick={() => globalThis.location.reload()}
-          className="inline-flex items-center justify-center rounded-xl bg-[#C9B3FF] px-6 py-3 text-sm font-semibold text-[#2C2440] transition hover:bg-[#BFA6F7] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+          className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-6 py-3 text-sm font-semibold text-arsm-primary transition hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
         >
           {t('errorBoundary.reload', 'Reload page')}
         </button>
@@ -75,12 +75,6 @@ function ErrorFallback() {
   );
 }
 
-/**
- * ErrorBoundary operation.
- *
- * @param ErrorBoundaryProps Parameter.
- * @returns Return value.
- */
 export function ErrorBoundary({ children }: ErrorBoundaryProps) {
   return (
     <ErrorBoundaryInner fallback={<ErrorFallback />}>

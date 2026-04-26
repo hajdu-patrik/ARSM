@@ -135,7 +135,7 @@ const LoginComponent = memo(function Login() {
   const canSubmit = identifier.trim().length > 0 && password.trim().length > 0 && !isLoading;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#ECECEF] px-3 pb-6 pt-24 text-[#2C2440] dark:bg-[#09090F] dark:text-[#EDE8FA] sm:px-4 sm:pb-8 sm:pt-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-surface-dark dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.26)_32%,_rgba(201,179,255,0.1)_48%,_rgba(201,179,255,0)_72%)] dark:bg-[radial-gradient(circle,_rgba(122,102,199,0.7)_0%,_rgba(122,102,199,0.34)_34%,_rgba(122,102,199,0.14)_50%,_rgba(122,102,199,0)_72%)]"
@@ -148,7 +148,7 @@ const LoginComponent = memo(function Login() {
       <ThemeLanguageControls />
 
       <div className="relative z-10 w-full max-w-[28rem] max-[320px]:max-w-[19.5rem]">
-        <div className="rounded-3xl border border-[#D8D2E9] bg-white/95 p-5 shadow-[0_14px_44px_rgba(44,36,64,0.2)] backdrop-blur-sm dark:border-[#2C2440] dark:bg-[#13131Bee] dark:shadow-[0_20px_52px_rgba(0,0,0,0.55)] max-[320px]:p-4 sm:p-8">
+        <div className="rounded-3xl border border-arsm-border bg-arsm-card/95 p-5 shadow-[0_14px_44px_rgba(44,36,64,0.2)] backdrop-blur-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark/95 dark:shadow-[0_20px_52px_rgba(0,0,0,0.55)] max-[320px]:p-4 sm:p-8">
           <div className="relative mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
             <div className="mt-1 flex items-center justify-center">
               <Image
@@ -162,15 +162,15 @@ const LoginComponent = memo(function Login() {
                 className="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24"
               />
             </div>
-            <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-[#2C2440] dark:text-[#EDE8FA] sm:text-2xl">
+            <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-arsm-primary dark:text-arsm-primary-dark sm:text-2xl">
               {t('login.title')}
             </h1>
-            <p className="mt-2 text-sm text-[#6A627F] dark:text-[#B9B0D3]">{t('login.subtitle')}</p>
+            <p className="mt-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5" noValidate>
             <div>
-              <label htmlFor="identifier" className="mb-2 block text-sm font-medium text-[#5E5672] dark:text-[#CFC5EA]">
+              <label htmlFor="identifier" className="mb-2 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
                 {identifierLabel}
               </label>
               <input
@@ -185,14 +185,14 @@ const LoginComponent = memo(function Login() {
                   setSystemErrorKey(null);
                 }}
                 placeholder={identifierPlaceholder}
-                className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
+                className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
                 required
                 disabled={isLoading}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-[#5E5672] dark:text-[#CFC5EA]">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
                 {t('login.passwordPlaceholder')}
               </label>
               <div className="relative">
@@ -206,14 +206,14 @@ const LoginComponent = memo(function Login() {
                     setSystemErrorKey(null);
                   }}
                   placeholder={t('login.loginPassword')}
-                  className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 pr-12 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
+                  className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 pr-12 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
                   required
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6F54AD] transition hover:bg-[#EDE5FF] hover:text-[#5E4698] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] dark:text-[#C9B3FF] dark:hover:bg-[#2A253B] dark:hover:text-[#E2D9FF]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-purple-700 transition hover:bg-purple-100 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-accent dark:hover:bg-purple-950/40 dark:hover:text-purple-100"
                   aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   disabled={isLoading}
                 >
@@ -229,7 +229,7 @@ const LoginComponent = memo(function Login() {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-1.5 inline-flex w-full items-center justify-center rounded-xl bg-[#C9B3FF] py-3 text-sm font-semibold text-[#2C2440] shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-[#BFA6F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:bg-[#DCCDFA] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] dark:focus-visible:ring-[#8A75D64D] dark:disabled:bg-[#4B406E] sm:text-base"
+              className="mt-1.5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:bg-purple-200 dark:bg-arsm-accent-dark dark:text-purple-50 dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/30 dark:disabled:bg-purple-900/60 sm:text-base"
               aria-busy={isLoading}
             >
               {isLoading ? t('login.loading') : t('login.submit')}
@@ -239,7 +239,7 @@ const LoginComponent = memo(function Login() {
               <div
                 role="status"
                 aria-live="polite"
-                className="rounded-xl border border-[#E9A5A9] bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] p-3 text-[#A52A33] shadow-[0_8px_20px_rgba(165,42,51,0.12)] dark:border-[#8A3A42] dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-[#FFC3C8]"
+                className="rounded-xl border border-arsm-error-border bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] p-3 text-arsm-error-text shadow-[0_8px_20px_rgba(165,42,51,0.12)] dark:border-red-700 dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-red-200"
               >
                 <div className="flex items-start gap-2.5">
                   <TriangleAlert className="mt-0.5 h-4.5 w-4.5 flex-shrink-0" aria-hidden="true" />
@@ -249,17 +249,17 @@ const LoginComponent = memo(function Login() {
             ) : null}
 
             <fieldset className="pt-1.5" aria-label={t('login.loginMethodLabel')}>
-              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">
+              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
                 {t('login.loginMethodLabel')}
               </legend>
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#EFEBFA] p-1 dark:bg-[#241F33]">
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-arsm-toggle-bg p-1 dark:bg-arsm-toggle-bg-dark">
                 <button
                   type="button"
                   onClick={() => handleLoginMethodChange('email')}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] ${
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
                     loginMethod === 'email'
-                      ? 'bg-[#C9B3FF] text-[#2C2440] shadow-[0_8px_20px_rgba(111,84,173,0.28)] dark:bg-[#7A66C7] dark:text-[#F5F2FF]'
-                      : 'bg-transparent text-[#5E5672] hover:bg-[#E6DCF8] dark:text-[#CFC5EA] dark:hover:bg-[#322B47]'
+                      ? 'bg-arsm-accent text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.28)] dark:bg-arsm-accent-dark dark:text-purple-50'
+                      : 'bg-transparent text-arsm-label hover:bg-purple-100 dark:text-arsm-label-dark dark:hover:bg-purple-950/30'
                   }`}
                   aria-pressed={loginMethod === 'email'}
                   disabled={isLoading}
@@ -269,10 +269,10 @@ const LoginComponent = memo(function Login() {
                 <button
                   type="button"
                   onClick={() => handleLoginMethodChange('phone')}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] ${
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
                     loginMethod === 'phone'
-                      ? 'bg-[#C9B3FF] text-[#2C2440] shadow-[0_8px_20px_rgba(111,84,173,0.28)] dark:bg-[#7A66C7] dark:text-[#F5F2FF]'
-                      : 'bg-transparent text-[#5E5672] hover:bg-[#E6DCF8] dark:text-[#CFC5EA] dark:hover:bg-[#322B47]'
+                      ? 'bg-arsm-accent text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.28)] dark:bg-arsm-accent-dark dark:text-purple-50'
+                      : 'bg-transparent text-arsm-label hover:bg-purple-100 dark:text-arsm-label-dark dark:hover:bg-purple-950/30'
                   }`}
                   aria-pressed={loginMethod === 'phone'}
                   disabled={isLoading}
@@ -283,7 +283,7 @@ const LoginComponent = memo(function Login() {
             </fieldset>
           </form>
 
-          <p className="mt-4 text-xs text-[#6A627F] dark:text-[#B9B0D3] sm:mt-5 sm:text-sm">
+          <p className="mt-4 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:mt-5 sm:text-sm">
             {t('login.helpText')}
           </p>
         </div>

@@ -65,7 +65,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 
   return (
     <div className={cardClass}>
-      <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+      <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {t('settings.profilePicture')}
       </h2>
 
@@ -75,7 +75,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
             key={pictureKey}
             src={pictureUrl}
             alt={t('settings.profilePictureAlt')}
-            className="h-20 w-20 rounded-full object-cover border-2 border-[#C9B3FF] dark:border-[#7A66C7]"
+            className="h-20 w-20 rounded-full object-cover border-2 border-arsm-accent dark:border-arsm-accent-dark"
           />
         ) : (
           <div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ${fallbackColorClass}`}>
@@ -115,7 +115,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
         />
       </div>
 
-      <p className="mt-3 text-xs text-[#8A829F] dark:text-[#8C83A8]">
+      <p className="mt-3 text-xs text-arsm-placeholder dark:text-arsm-placeholder-dark">
         {t('settings.pictureHint')}
       </p>
     </div>

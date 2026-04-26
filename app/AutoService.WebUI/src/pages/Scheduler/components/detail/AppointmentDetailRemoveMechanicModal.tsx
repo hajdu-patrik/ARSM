@@ -1,9 +1,3 @@
-/**
- * AppointmentDetailRemoveMechanicModal.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../../../../components/common/Modal';
@@ -40,7 +34,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
             type="button"
             onClick={onClose}
             disabled={removingMechanicId !== null}
-            className="inline-flex items-center justify-center rounded-xl border border-[#D8D2E9] bg-transparent px-4 py-2 text-sm font-medium text-[#5E5672] transition hover:bg-[#EFEBFA] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:text-[#CFC5EA] dark:hover:bg-[#241F33]"
+            className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -63,7 +57,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
         </>
       )}
     >
-      <p className="break-words text-sm text-[#5E5672] [overflow-wrap:anywhere] dark:text-[#CFC5EA]">
+      <p className="break-words text-sm text-arsm-label [overflow-wrap:anywhere] dark:text-arsm-label-dark">
         {t('scheduler.detail.removeConfirmMessage', {
           name: pendingRemoveMechanic?.fullName ?? '',
         })}

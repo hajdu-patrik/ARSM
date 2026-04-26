@@ -12,6 +12,7 @@ import type {
   SchedulerCreateIntakeRequest,
   SchedulerCustomerLookupDto,
   UpdateAppointmentRequest,
+  UpdateAppointmentVehicleRequest,
   UpdateStatusRequest,
 } from '../../types/scheduler/scheduler.types';
 
@@ -53,11 +54,22 @@ export const appointmentService = {
   /**
    * Updates an existing appointment via {@code PUT /api/appointments/{id}}.
    * @param id - The appointment ID.
-   * @param request - Updated appointment and vehicle fields.
+   * @param request - Updated appointment fields.
    * @returns The updated appointment.
    */
   async updateAppointment(id: number, request: UpdateAppointmentRequest): Promise<AppointmentDto> {
     const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}`, request);
+    return response.data;
+  },
+
+  /**
+   * Updates appointment vehicle details via {@code PUT /api/appointments/{id}/vehicle}.
+   * @param id - The appointment ID.
+   * @param request - Updated vehicle fields.
+   * @returns The updated appointment.
+   */
+  async updateAppointmentVehicle(id: number, request: UpdateAppointmentVehicleRequest): Promise<AppointmentDto> {
+    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}/vehicle`, request);
     return response.data;
   },
 

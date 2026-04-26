@@ -126,17 +126,17 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     <section className="min-w-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <h2 className="text-xl font-bold text-[#2C2440] dark:text-[#EDE8FA]">
+        <h2 className="text-xl font-bold text-arsm-primary dark:text-arsm-primary-dark">
           {t('scheduler.monthList.title')}
         </h2>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center bg-[#EFEBFA] dark:bg-[#241F33] text-[#2C2440] dark:text-[#F5F2FF] text-xs font-medium px-3 py-1 rounded-full">
+          <span className="inline-flex items-center bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark text-arsm-primary dark:text-arsm-hover text-xs font-medium px-3 py-1 rounded-full">
             {t('scheduler.monthList.count', { count: appointments.length })}
           </span>
           {selectedDay !== null && (
             <button
               onClick={onClearFilter}
-              className="inline-flex items-center gap-1 bg-[#C9B3FF]/20 dark:bg-[#7A66C7]/20 text-[#5E5672] dark:text-[#CFC5EA] text-xs font-medium px-3 py-1 rounded-full hover:bg-[#C9B3FF]/40 dark:hover:bg-[#7A66C7]/40 transition-colors"
+              className="inline-flex items-center gap-1 bg-arsm-accent/20 dark:bg-arsm-accent-dark/20 text-arsm-label dark:text-arsm-label-dark text-xs font-medium px-3 py-1 rounded-full hover:bg-arsm-accent/40 dark:hover:bg-arsm-accent-dark/40 transition-colors"
             >
               <X className="w-3 h-3" />
               {t('scheduler.monthList.clearFilter')}
@@ -167,7 +167,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           value={selectedMechanicId ?? ''}
           onChange={(e) => setSelectedMechanicId(e.target.value ? Number(e.target.value) : null)}
           aria-label={t('scheduler.filter.allMechanics')}
-          className="text-xs font-medium px-3 py-1 rounded-full border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-[#2C2440] dark:text-[#EDE8FA] min-w-0 max-w-[10rem] truncate focus:outline-none"
+          className="text-xs font-medium px-3 py-1 rounded-full border border-arsm-border dark:border-arsm-border-dark bg-arsm-input dark:bg-arsm-input-dark text-arsm-primary dark:text-arsm-primary-dark min-w-0 max-w-[10rem] truncate focus:outline-none"
         >
           <option value="">{t('scheduler.filter.allMechanics')}</option>
           {uniqueMechanics.map(([id, name]) => (
@@ -179,7 +179,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <button
           onClick={() => setSortAsc((prev) => !prev)}
           title={sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
-          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full border border-[#D8D2E9] dark:border-[#3A3154] bg-[#F6F4FB] dark:bg-[#1A1A25] text-[#2C2440] dark:text-[#EDE8FA] hover:bg-[#E6DCF8] dark:hover:bg-[#322B47] transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full border border-arsm-border dark:border-arsm-border-dark bg-arsm-input dark:bg-arsm-input-dark text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark transition-colors"
         >
           <ArrowUpDown className="w-3 h-3" />
           {sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
@@ -190,11 +190,11 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[0, 1].map((i) => (
-            <div key={i} className="bg-[#F6F4FB] dark:bg-[#13131B] rounded-2xl border border-[#D8D2E9] dark:border-[#3A3154] p-4 h-48 animate-pulse">
-              <div className="h-4 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-2/3 mb-3" />
-              <div className="h-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-1/2 mb-3" />
-              <div className="h-16 bg-[#EFEBFA] dark:bg-[#241F33] rounded mb-3" />
-              <div className="h-3 bg-[#EFEBFA] dark:bg-[#241F33] rounded w-1/3" />
+            <div key={i} className="bg-arsm-input dark:bg-arsm-card-dark rounded-2xl border border-arsm-border dark:border-arsm-border-dark p-4 h-48 animate-pulse">
+              <div className="h-4 bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark rounded w-2/3 mb-3" />
+              <div className="h-3 bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark rounded w-1/2 mb-3" />
+              <div className="h-16 bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark rounded mb-3" />
+              <div className="h-3 bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark rounded w-1/3" />
             </div>
           ))}
         </div>
@@ -202,7 +202,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
 
       {/* Empty state */}
       {!isLoading && filtered.length === 0 && (
-        <div className="text-center py-12 text-[#6A627F] dark:text-[#B9B0D3]">
+        <div className="text-center py-12 text-arsm-muted dark:text-arsm-muted-dark">
           <p>{t(emptyMessageKey)}</p>
         </div>
       )}

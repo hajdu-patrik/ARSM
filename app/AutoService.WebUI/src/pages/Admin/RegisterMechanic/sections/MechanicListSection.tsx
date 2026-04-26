@@ -1,9 +1,3 @@
-/**
- * MechanicListSection.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
@@ -83,16 +77,16 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <div className="h-6 w-6 animate-spin rounded-full border-4 border-[#C9B3FF] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-4 border-arsm-accent border-t-transparent" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-5 dark:border-[#3A3154] dark:bg-[#13131B] sm:p-6">
+      <div className="rounded-2xl border border-arsm-border bg-arsm-input p-5 dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:p-6">
         {mechanics.length === 0 ? (
-          <p className="text-sm text-[#5E5672] dark:text-[#CFC5EA]">{t('admin.noMechanics')}</p>
+          <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
         ) : (
           <div className="space-y-3">
             {mechanics.map((mechanic) => {
@@ -105,7 +99,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
               return (
                 <div
                   key={mechanic.personId}
-                  className="flex items-start gap-3 rounded-xl border border-[#D8D2E9] bg-white px-4 py-3 dark:border-[#3A3154] dark:bg-[#1A1A25] sm:items-center"
+                  className="flex items-start gap-3 rounded-xl border border-arsm-border bg-white px-4 py-3 dark:border-arsm-border-dark dark:bg-arsm-input-dark sm:items-center"
                 >
                   <MechanicAvatar
                     mechanicId={mechanic.personId}
@@ -116,7 +110,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-medium text-[#2C2440] dark:text-[#EDE8FA]">
+                      <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
                         {displayName}
                       </p>
                       {mechanic.isAdmin && (
@@ -125,7 +119,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                         </span>
                       )}
                     </div>
-                    <p className="truncate text-xs text-[#5E5672] dark:text-[#CFC5EA]">{mechanic.email}</p>
+                    <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
                   </div>
 
                   {canRemoveMechanic && (
@@ -155,7 +149,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
               type="button"
               onClick={closeDeleteModal}
               disabled={isDeleting}
-              className="inline-flex items-center justify-center rounded-xl border border-[#D8D2E9] bg-transparent px-4 py-2 text-sm font-medium text-[#5E5672] transition hover:bg-[#EFEBFA] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:text-[#CFC5EA] dark:hover:bg-[#241F33]"
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
             >
               {t('settings.cancel')}
             </button>
@@ -170,7 +164,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
           </>
         )}
       >
-        <p className="break-words text-sm text-[#5E5672] dark:text-[#CFC5EA] [overflow-wrap:anywhere]">
+        <p className="break-words text-sm text-arsm-label dark:text-arsm-label-dark [overflow-wrap:anywhere]">
           {t('admin.deleteMechanicWarning', {
             name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
             email: deleteTarget?.email ?? '',

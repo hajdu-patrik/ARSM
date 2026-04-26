@@ -36,12 +36,12 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = 'border-[#F4C8CB] bg-[#FDF2F3] text-[#C13C45] dark:border-[#6A2D33] dark:bg-[#2B171A] dark:text-[#FF9AA0]';
+  let toastVariantClass = 'border-arsm-error-border-light bg-arsm-error-bg text-arsm-error-active dark:border-arsm-error-text-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
 
   if (toast.variant === 'success') {
     toastVariantClass = 'border-green-300 bg-green-50 text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300';
   } else if (isSystemErrorToast) {
-    toastVariantClass = 'border-[#E9A5A9] bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] text-[#A52A33] ring-1 ring-[#D76D73]/40 dark:border-[#8A3A42] dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-[#FFB7BC] dark:ring-[#8A3A42]/50';
+    toastVariantClass = 'border-arsm-error-border bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] text-arsm-error-text ring-1 ring-arsm-error-hover/40 dark:border-arsm-error-dark dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-arsm-error-soft dark:ring-arsm-error-dark/50';
   }
 
   return (
@@ -52,7 +52,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       {isSystemErrorToast ? (
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-1.5 bg-[#D4515C] dark:bg-[#A94750]"
+          className="absolute inset-y-0 left-0 w-1.5 bg-arsm-error-accent dark:bg-arsm-error-muted"
         />
       ) : null}
 
@@ -69,7 +69,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       </p>
 
       {isSystemErrorToast ? (
-        <span className="rounded-md border border-[#D76D73]/45 bg-white/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-[#A52A33] dark:border-[#8A3A42] dark:bg-white/10 dark:text-[#FFC8CB]">
+        <span className="rounded-md border border-arsm-error-hover/45 bg-white/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-white/10 dark:text-arsm-error-softest">
           500
         </span>
       ) : null}

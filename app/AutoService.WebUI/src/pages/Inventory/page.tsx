@@ -14,19 +14,19 @@ const InventoryPageComponent = memo(function InventoryPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="mb-6 text-2xl font-bold text-[#2C2440] dark:text-[#EDE8FA]">
+      <h1 className="mb-6 text-2xl font-bold text-arsm-primary dark:text-arsm-primary-dark">
         {t('inventory.pageTitle')}
       </h1>
 
-      <div className="rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] p-8 text-center dark:border-[#3A3154] dark:bg-[#13131B]">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#EFEBFA] dark:bg-[#241F33]">
+      <div className="rounded-2xl border border-arsm-border bg-arsm-input p-8 text-center dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark">
           <Package className="h-8 w-8 text-purple-500" strokeWidth={1.5} aria-hidden="true" />
         </div>
 
-        <h2 className="mb-2 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+        <h2 className="mb-2 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
           {t('inventory.comingSoonTitle')}
         </h2>
-        <p className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+        <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">
           {t('inventory.comingSoonDescription')}
         </p>
       </div>

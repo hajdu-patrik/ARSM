@@ -1,12 +1,11 @@
-/**
- * AppointmentDetailModal.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AppointmentDto, AppointmentStatus, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
+import type {
+  AppointmentDto,
+  AppointmentStatus,
+  UpdateAppointmentRequest,
+  UpdateAppointmentVehicleRequest,
+} from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import { useToastStore } from '../../../../store/toast.store';
 import { getDueState } from '../../utils/due-date';
@@ -34,7 +33,11 @@ interface AppointmentDetailModalProps {
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
-  readonly onUpdate: (id: number, request: UpdateAppointmentRequest) => Promise<void>;
+  readonly onUpdate: (
+    id: number,
+    request: UpdateAppointmentRequest,
+    vehicleRequest?: UpdateAppointmentVehicleRequest,
+  ) => Promise<void>;
 }
 
 const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
@@ -184,7 +187,11 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setIsSaving(true);
     setEditErrorKey(null);
     try {
-      await onUpdate(appointment.id, validationResult.request);
+      await onUpdate(
+        appointment.id,
+        validationResult.request.appointment,
+        validationResult.request.vehicle,
+      );
       setIsEditing(false);
       setEditForm(buildEditForm(buildUpdatedAppointmentSnapshot(appointment, validationResult.request)));
     } catch {

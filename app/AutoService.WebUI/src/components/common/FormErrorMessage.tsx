@@ -22,7 +22,7 @@ interface FormErrorMessageProps {
 
 /** Default Tailwind classes for the error message container (light + dark). */
 const DEFAULT_CLASS_NAME =
-  'rounded-lg border border-[#F4C8CB] bg-[#FDF2F3] px-3 py-2 text-sm font-medium text-[#C13C45] dark:border-[#6A2D33] dark:bg-[#2B171A] dark:text-[#FF9AA0]';
+  'rounded-lg border border-arsm-error-border-light bg-arsm-error-bg px-3 py-2 text-sm font-medium text-arsm-error-active dark:border-arsm-error-text-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
 
 /** Default visibility duration for inline error messages. */
 const INLINE_ERROR_DURATION_MS = 5000;

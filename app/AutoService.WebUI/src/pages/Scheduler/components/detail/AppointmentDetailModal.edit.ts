@@ -1,10 +1,13 @@
-/**
- * AppointmentDetailModal.edit.ts
- *
- * Auto-generated documentation header for this source file.
- */
+import type {
+  AppointmentDto,
+  UpdateAppointmentRequest,
+  UpdateAppointmentVehicleRequest,
+} from '../../../../types/scheduler/scheduler.types';
 
-import type { AppointmentDto, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
+export interface UpdateEditFormResult {
+  appointment: UpdateAppointmentRequest;
+  vehicle?: UpdateAppointmentVehicleRequest;
+}
 
 export interface EditFormState {
   dueDateTime: string;
@@ -24,12 +27,6 @@ export const VEHICLE_NUMERIC_LIMITS = {
   engineTorqueNm: { min: 0, max: 50000 },
 } as const;
 
-/**
- * buildEditForm operation.
- *
- * @param AppointmentDto Parameter.
- * @returns Return value.
- */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
     dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),
@@ -44,13 +41,6 @@ export function buildEditForm(appointment: AppointmentDto): EditFormState {
   };
 }
 
-/**
- * normalizeEditFieldValue operation.
- *
- * @param EditFormState Parameter.
- * @param string Parameter.
- * @returns Return value.
- */
 export function normalizeEditFieldValue(field: keyof EditFormState, value: string): string {
   if (!(field in VEHICLE_NUMERIC_LIMITS)) {
     return value;
@@ -64,17 +54,13 @@ export function normalizeEditFieldValue(field: keyof EditFormState, value: strin
 }
 
 /**
- * buildUpdateRequestFromEditForm operation.
- *
- * @param appointment Parameter.
- * @param editForm Parameter.
- * @param nowMs Parameter.
- * @returns Return value.
+ * Validates edit-form values and splits payloads into appointment and optional
+ * vehicle updates for the corresponding backend endpoints.
  */
 export function buildUpdateRequestFromEditForm(
   appointment: AppointmentDto,
   editForm: EditFormState,
-): { request: UpdateAppointmentRequest } | { errorKey: string } {
+): { request: UpdateEditFormResult } | { errorKey: string } {
   const taskDescription = editForm.taskDescription.trim();
   if (!taskDescription) {
     return { errorKey: 'scheduler.intake.errors.taskRequired' };
@@ -123,47 +109,64 @@ export function buildUpdateRequestFromEditForm(
     return { errorKey: 'scheduler.intake.errors.dueBeforeScheduled' };
   }
 
+  const appointmentRequest: UpdateAppointmentRequest = {
+    dueDateTime: new Date(dueMs).toISOString(),
+    taskDescription,
+  };
+
+  const vehicleRequest: UpdateAppointmentVehicleRequest = {
+    licensePlate,
+    brand,
+    model,
+    year,
+    mileageKm,
+    enginePowerHp,
+    engineTorqueNm,
+  };
+
+  const hasVehicleChanges =
+    appointment.vehicle.licensePlate.trim().toUpperCase() !== licensePlate ||
+    appointment.vehicle.brand.trim() !== brand ||
+    appointment.vehicle.model.trim() !== model ||
+    appointment.vehicle.year !== year ||
+    appointment.vehicle.mileageKm !== mileageKm ||
+    appointment.vehicle.enginePowerHp !== enginePowerHp ||
+    appointment.vehicle.engineTorqueNm !== engineTorqueNm;
+
   return {
     request: {
-      dueDateTime: new Date(dueMs).toISOString(),
-      taskDescription,
-      licensePlate,
-      brand,
-      model,
-      year,
-      mileageKm,
-      enginePowerHp,
-      engineTorqueNm,
+      appointment: appointmentRequest,
+      vehicle: hasVehicleChanges ? vehicleRequest : undefined,
     },
   };
 }
 
 /**
- * buildUpdatedAppointmentSnapshot operation.
- *
- * @param appointment Parameter.
- * @param request Parameter.
- * @returns Return value.
+ * Applies a successful edit result to the local appointment snapshot so the
+ * modal can reflect saved values without a full list refetch.
  */
 export function buildUpdatedAppointmentSnapshot(
   appointment: AppointmentDto,
-  request: UpdateAppointmentRequest,
+  request: UpdateEditFormResult,
 ): AppointmentDto {
+  const nextVehicle = request.vehicle
+    ? {
+      ...appointment.vehicle,
+      licensePlate: request.vehicle.licensePlate,
+      brand: request.vehicle.brand,
+      model: request.vehicle.model,
+      year: request.vehicle.year,
+      mileageKm: request.vehicle.mileageKm,
+      enginePowerHp: request.vehicle.enginePowerHp,
+      engineTorqueNm: request.vehicle.engineTorqueNm,
+    }
+    : appointment.vehicle;
+
   return {
     ...appointment,
-    scheduledDate: request.scheduledDate ?? appointment.scheduledDate,
-    dueDateTime: request.dueDateTime,
-    taskDescription: request.taskDescription,
-    vehicle: {
-      ...appointment.vehicle,
-      licensePlate: request.licensePlate,
-      brand: request.brand,
-      model: request.model,
-      year: request.year,
-      mileageKm: request.mileageKm,
-      enginePowerHp: request.enginePowerHp,
-      engineTorqueNm: request.engineTorqueNm,
-    },
+    dueDateTime: request.appointment.dueDateTime,
+    taskDescription: request.appointment.taskDescription,
+    vehicle: nextVehicle,
   };
 }
 

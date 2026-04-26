@@ -12,6 +12,7 @@ interface AppointmentResponse {
 
 interface UpdateAppointmentRequest {
   dueDateTime: string;
+  taskDescription: string;
 }
 
 /**
@@ -116,17 +117,40 @@ test.describe('Scheduler appointment flow', () => {
 
     await appointmentDetailPage.setDueDateTime(updatedDueDateTimeLocal);
 
+    const vehicleUpdatePath = `/api/appointments/${createdAppointment.id}/vehicle`;
+    let vehicleUpdateCount = 0;
+    const onResponse = (response: Response) => {
+      if (matchesApiPath(response, 'PUT', vehicleUpdatePath)) {
+        vehicleUpdateCount += 1;
+      }
+    };
+    page.on('response', onResponse);
+
     const updateResponsePromise = page.waitForResponse(
       (response) => matchesApiPath(response, 'PUT', `/api/appointments/${createdAppointment.id}`) && response.status() === 200,
     );
-    await appointmentDetailPage.save();
+    try {
+      await appointmentDetailPage.save();
 
-    const updateResponse = await updateResponsePromise;
-    const updateRequestPayload = updateResponse.request().postDataJSON() as UpdateAppointmentRequest;
-    const updatedAppointment = await updateResponse.json() as AppointmentResponse;
+      const updateResponse = await updateResponsePromise;
+      const updateRequestPayload = updateResponse.request().postDataJSON() as UpdateAppointmentRequest;
+      const updatedAppointment = await updateResponse.json() as AppointmentResponse;
 
-    const expectedDueEpoch = new Date(expectedUpdatedDueIso).getTime();
-    expect(new Date(updateRequestPayload.dueDateTime).getTime()).toBe(expectedDueEpoch);
-    expect(new Date(updatedAppointment.dueDateTime).getTime()).toBe(expectedDueEpoch);
+      const expectedDueEpoch = new Date(expectedUpdatedDueIso).getTime();
+      expect(new Date(updateRequestPayload.dueDateTime).getTime()).toBe(expectedDueEpoch);
+      expect(new Date(updatedAppointment.dueDateTime).getTime()).toBe(expectedDueEpoch);
+      expect(updateRequestPayload.taskDescription).toBeTruthy();
+      expect(updateRequestPayload).not.toHaveProperty('licensePlate');
+      expect(updateRequestPayload).not.toHaveProperty('brand');
+      expect(updateRequestPayload).not.toHaveProperty('model');
+      expect(updateRequestPayload).not.toHaveProperty('year');
+      expect(updateRequestPayload).not.toHaveProperty('mileageKm');
+      expect(updateRequestPayload).not.toHaveProperty('enginePowerHp');
+      expect(updateRequestPayload).not.toHaveProperty('engineTorqueNm');
+
+      await expect.poll(() => vehicleUpdateCount, { timeout: 500 }).toBe(0);
+    } finally {
+      page.off('response', onResponse);
+    }
   });
 });

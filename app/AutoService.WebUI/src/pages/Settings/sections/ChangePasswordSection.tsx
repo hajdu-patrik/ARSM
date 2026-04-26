@@ -50,7 +50,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
 
   return (
     <div className={cardClass}>
-      <h2 className="mb-4 text-lg font-semibold text-[#2C2440] dark:text-[#EDE8FA]">
+      <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {t('settings.changePassword')}
       </h2>
 
@@ -83,7 +83,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
             <button
               type="button"
               onClick={toggleShowCurrent}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A829F] hover:text-[#5E5672] dark:text-[#8C83A8] dark:hover:text-[#CFC5EA]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
               aria-label={showCurrent ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showCurrent ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -111,7 +111,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
             <button
               type="button"
               onClick={toggleShowNew}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A829F] hover:text-[#5E5672] dark:text-[#8C83A8] dark:hover:text-[#CFC5EA]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
               aria-label={showNew ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -139,7 +139,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
             <button
               type="button"
               onClick={toggleShowConfirm}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A829F] hover:text-[#5E5672] dark:text-[#8C83A8] dark:hover:text-[#CFC5EA]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
               aria-label={showConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

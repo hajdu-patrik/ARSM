@@ -1,9 +1,3 @@
-/**
- * AppointmentDetailModal.footer.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo } from 'react';
 import { Check } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -57,7 +51,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
         <button
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className="w-full rounded-xl bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] sm:w-auto sm:min-w-[10rem]"
+          className="w-full rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-colors hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover sm:w-auto sm:min-w-[10rem]"
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -68,7 +62,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           <button
             onClick={onCancelEdit}
             disabled={isSaving}
-            className="rounded-xl border border-[#D8D2E9] px-3 py-1.5 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#E6DCF8] disabled:opacity-50 dark:border-[#3A3154] dark:text-[#EDE8FA] dark:hover:bg-[#322B47]"
+            className="rounded-xl border border-arsm-border px-3 py-1.5 text-sm font-medium text-arsm-primary transition-colors hover:bg-arsm-accent-subtle disabled:opacity-50 dark:border-arsm-border-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark"
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -76,7 +70,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             data-testid="appointment-detail-save"
             onClick={onSave}
             disabled={isSaving}
-            className="rounded-xl bg-[#C9B3FF] px-3 py-1.5 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+            className="rounded-xl bg-arsm-accent px-3 py-1.5 text-sm font-semibold text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
           >
             {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
           </button>
@@ -94,7 +88,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           }}
           disabled={isUpdating}
           aria-label={t('scheduler.changeStatus')}
-          className="min-w-[11rem] flex-1 rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1.5 text-sm text-[#2C2440] disabled:opacity-50 focus:outline-none dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA]"
+          className="min-w-[11rem] flex-1 rounded-lg border border-arsm-border bg-arsm-input px-2 py-1.5 text-sm text-arsm-primary disabled:opacity-50 focus:outline-none dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark"
         >
           {STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
@@ -116,7 +110,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           <button
             onClick={onClaim}
             disabled={isClaiming}
-            className="w-full rounded-xl bg-[#C9B3FF] py-2 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+            className="w-full rounded-xl bg-arsm-accent py-2 text-sm font-medium text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
           >
             {isClaiming ? '...' : t('scheduler.claim')}
           </button>

@@ -1,9 +1,3 @@
-/**
- * SchedulerIntakeSections.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo } from 'react';
 import { Search, UserCheck, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -11,7 +5,7 @@ import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/sch
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
 
-const FORM_FIELD_CLASS = 'rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-3 py-2 text-sm text-[#2C2440] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]';
+const FORM_FIELD_CLASS = 'rounded-lg border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-accent/40 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-accent/24';
 const FORM_TEXTAREA_CLASS = `${FORM_FIELD_CLASS} resize-y`;
 
 interface SchedulerIntakeHeaderProps {
@@ -29,12 +23,12 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 }: SchedulerIntakeHeaderProps) {
   return (
     <>
-      <div className="rounded-xl border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 text-sm text-[#2C2440] dark:border-[#3A3154] dark:bg-[#241F33] dark:text-[#EDE8FA]">
+      <div className="rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.selectedDay')}</span> {selectedDayLabel}
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+        <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
           <span className="font-medium">{t('scheduler.intake.dueDateTime')}</span>
           <input
             type="datetime-local"
@@ -46,8 +40,8 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
         </label>
       </div>
 
-      <div className="rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 text-sm dark:border-[#3A3154] dark:bg-[#13131B]">
-        <span className="font-medium text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.statusLabel')}</span>
+      <div className="rounded-xl border border-arsm-border bg-arsm-input p-3 text-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+        <span className="font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.statusLabel')}</span>
         <p className="mt-1 inline-flex rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">
           {t('scheduler.status.inprogress')}
         </p>
@@ -76,12 +70,12 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
   onLookup,
 }: SchedulerIntakeLookupProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.userDetails')}</p>
-      <h3 className="text-sm font-semibold text-[#2C2440] dark:text-[#EDE8FA]">{t('scheduler.intake.customerLookup')}</h3>
+    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.userDetails')}</p>
+      <h3 className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('scheduler.intake.customerLookup')}</h3>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <label className="flex flex-1 flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+        <label className="flex flex-1 flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
           <span className="font-medium">{t('scheduler.intake.customerEmail')}</span>
           <input
             type="email"
@@ -98,7 +92,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
           data-testid="scheduler-intake-search"
           onClick={onLookup}
           disabled={isSearching}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+          className="inline-flex items-center justify-center gap-1 rounded-lg bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
         >
           <Search className="h-4 w-4" />
           {isSearching ? t('scheduler.intake.searching') : t('scheduler.intake.search')}
@@ -153,9 +147,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
   onCustomerPhoneChange,
 }: SchedulerIntakeCustomerFormProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B] lg:grid-cols-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3] lg:col-span-2">{t('scheduler.intake.personalInformation')}</p>
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+    <div className="grid grid-cols-1 gap-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">{t('scheduler.intake.personalInformation')}</p>
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.customerFirstName')}</span>
         <input
           value={customerFirstName}
@@ -165,7 +159,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.customerMiddleNameOptional')}</span>
         <input
           value={customerMiddleName}
@@ -175,7 +169,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.customerLastName')}</span>
         <input
           value={customerLastName}
@@ -185,7 +179,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.customerPhoneOptional')}</span>
         <input
           value={customerPhone}
@@ -218,9 +212,9 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
   onExistingVehicleIdChange,
 }: SchedulerIntakeVehicleModeProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
+    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
       {vehicleMode === 'existing' && (
-        <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.vehicleDetails')}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.vehicleDetails')}</p>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -228,21 +222,21 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
           type="button"
           onClick={() => onVehicleModeChange('existing')}
           disabled={!customerHasVehicles}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'existing' ? 'bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF]' : 'bg-[#EFEBFA] text-[#5E5672] dark:bg-[#241F33] dark:text-[#CFC5EA]'} disabled:opacity-50`}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'existing' ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark'} disabled:opacity-50`}
         >
           {t('scheduler.intake.useExistingVehicle')}
         </button>
         <button
           type="button"
           onClick={() => onVehicleModeChange('new')}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'new' ? 'bg-[#C9B3FF] text-[#2C2440] dark:bg-[#7A66C7] dark:text-[#F5F2FF]' : 'bg-[#EFEBFA] text-[#5E5672] dark:bg-[#241F33] dark:text-[#CFC5EA]'}`}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'new' ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark'}`}
         >
           {t('scheduler.intake.createNewVehicle')}
         </button>
       </div>
 
       {vehicleMode === 'existing' && (
-        <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+        <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
           <span className="font-medium">{t('scheduler.intake.selectVehicle')}</span>
           <select
             data-testid="scheduler-intake-existing-vehicle"
@@ -277,9 +271,9 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
   onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B] lg:grid-cols-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3] lg:col-span-2">{t('scheduler.intake.vehicleDetails')}</p>
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+    <div className="grid grid-cols-1 gap-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">{t('scheduler.intake.vehicleDetails')}</p>
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleLicensePlate')}</span>
         <input
           value={vehicle.licensePlate}
@@ -289,7 +283,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleBrand')}</span>
         <input
           value={vehicle.brand}
@@ -299,7 +293,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleModel')}</span>
         <input
           value={vehicle.model}
@@ -309,7 +303,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleYear')}</span>
         <input
           type="number"
@@ -322,7 +316,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleMileageKm')}</span>
         <input
           type="number"
@@ -335,7 +329,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleEnginePowerHp')}</span>
         <input
           type="number"
@@ -348,7 +342,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleEngineTorqueNm')}</span>
         <input
           type="number"
@@ -376,9 +370,9 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
   onTaskDescriptionChange,
 }: SchedulerIntakeTaskSectionProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] p-3 dark:border-[#3A3154] dark:bg-[#13131B]">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.taskDetails')}</p>
-      <label className="flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
+    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.taskDetails')}</p>
+      <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
         <textarea
           data-testid="scheduler-intake-task-description"

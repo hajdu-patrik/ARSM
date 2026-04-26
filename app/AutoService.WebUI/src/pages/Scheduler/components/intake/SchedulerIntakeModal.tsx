@@ -1,9 +1,3 @@
-/**
- * SchedulerIntakeModal.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchedulerCreateIntakeRequest } from '../../../../types/scheduler/scheduler.types';
@@ -58,7 +52,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-[#D8D2E9] px-4 py-2 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#E6DCF8] dark:border-[#3A3154] dark:text-[#EDE8FA] dark:hover:bg-[#322B47]"
+              className="rounded-lg border border-arsm-border px-4 py-2 text-sm font-medium text-arsm-primary transition-colors hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark"
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -69,7 +63,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
                 actions.handleCreate();
               }}
               disabled={state.isSubmitting}
-              className="rounded-lg bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6]"
+              className="rounded-lg bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
             >
               {state.isSubmitting ? t('scheduler.intake.creating') : t('scheduler.intake.create')}
             </button>

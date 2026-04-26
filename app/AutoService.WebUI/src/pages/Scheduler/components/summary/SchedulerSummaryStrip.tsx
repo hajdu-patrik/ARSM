@@ -24,12 +24,12 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
   t,
 }: SchedulerSummaryStripProps) {
   return (
-    <section className="rounded-2xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 shadow-sm dark:border-[#3A3154] dark:bg-[#13131B]">
+    <section className="rounded-2xl border border-arsm-border bg-arsm-input px-4 py-3 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-medium text-[#2C2440] dark:text-[#EDE8FA]">
+        <p className="text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
           {summaryDateText}
         </p>
-        <span className="inline-flex items-center rounded-full bg-[#EFEBFA] px-3 py-1 text-xs font-medium text-[#2C2440] dark:bg-[#241F33] dark:text-[#F5F2FF]">
+        <span className="inline-flex items-center rounded-full bg-arsm-toggle-bg px-3 py-1 text-xs font-medium text-arsm-primary dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
           {t('scheduler.scheduledCount', { count: summaryCount })}
         </span>
       </div>

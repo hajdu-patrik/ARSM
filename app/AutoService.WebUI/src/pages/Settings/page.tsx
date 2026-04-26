@@ -401,7 +401,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
   if (isLoadingProfile) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#C9B3FF] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-arsm-accent border-t-transparent" />
       </div>
     );
   }
@@ -493,7 +493,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
               type="button"
               onClick={closeDeleteModal}
               disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl border border-[#D8D2E9] bg-transparent px-4 py-2 text-sm font-medium text-[#5E5672] transition hover:bg-[#EFEBFA] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:text-[#CFC5EA] dark:hover:bg-[#241F33]"
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
             >
               {t('settings.cancel')}
             </button>
@@ -508,10 +508,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
           </>
         )}
       >
-        <p className="text-sm text-[#5E5672] dark:text-[#CFC5EA]">{t('settings.deleteProfileWarning')}</p>
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.deleteProfileWarning')}</p>
 
         <div className="mt-4">
-          <label htmlFor="delete-profile-password" className="mb-1.5 block text-sm font-medium text-[#5E5672] dark:text-[#CFC5EA]">
+          <label htmlFor="delete-profile-password" className="mb-1.5 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
             {t('settings.currentPassword')}
           </label>
           <input
@@ -522,7 +522,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
             placeholder={t('settings.currentPasswordPlaceholder')}
             autoComplete="current-password"
             disabled={isDeletingProfile}
-            className="w-full rounded-xl border border-[#D8D2E9] bg-[#F6F4FB] px-4 py-3 text-[15px] text-[#2C2440] placeholder-[#8A829F] outline-none transition focus-visible:border-[#C9B3FF] focus-visible:ring-2 focus-visible:ring-[#C9B3FF66] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] dark:placeholder-[#8C83A8] dark:focus-visible:border-[#C9B3FF] dark:focus-visible:ring-[#C9B3FF3D]"
+            className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-accent/24"
           />
           <FormErrorMessage message={deletePasswordError} className="mt-2" />
         </div>

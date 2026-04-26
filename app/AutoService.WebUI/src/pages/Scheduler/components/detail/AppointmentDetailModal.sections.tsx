@@ -1,9 +1,3 @@
-/**
- * AppointmentDetailModal.sections.tsx
- *
- * Auto-generated documentation header for this source file.
- */
-
 import { memo } from 'react';
 import { Clock3, LogOut, UserPlus, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -98,7 +92,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
 
       <CustomerSection
         fullName={appointment.vehicle.customer.fullName}
-        email={appointment.vehicle.customer.email}
         t={t}
       />
 
@@ -136,7 +129,7 @@ const HeaderSection = memo(function HeaderSection({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <StatusBadge status={appointmentStatus} />
-      <span className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">{formattedDate}</span>
+      <span className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{formattedDate}</span>
     </div>
   );
 });
@@ -159,18 +152,18 @@ const DueSection = memo(function DueSection({
   onDueDateTimeChange,
 }: DueSectionProps) {
   return (
-    <div className={`rounded-xl border px-4 py-3 ${dueState.isOverdue ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30' : 'border-[#D8D2E9] bg-[#EFEBFA] dark:border-[#3A3154] dark:bg-[#241F33]'}`}>
-      <div className="flex items-center gap-2 text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+    <div className={`rounded-xl border px-4 py-3 ${dueState.isOverdue ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30' : 'border-arsm-border bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark'}`}>
+      <div className="flex items-center gap-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">
         <Clock3 className="h-4 w-4" />
         {t('scheduler.due.label')}
       </div>
       <p className={`mt-1 max-w-full break-words text-base font-bold leading-tight sm:text-lg ${dueState.toneClassName}`}>
         {t(dueState.labelKey, dueState.labelValues)}
       </p>
-      <p className="mt-0.5 text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.due.exact', { date: dueDateLabel })}</p>
+      <p className="mt-0.5 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.due.exact', { date: dueDateLabel })}</p>
       {isEditing && (
-        <label className="mt-2 flex flex-col gap-1 text-sm text-[#2C2440] dark:text-[#EDE8FA]">
-          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.intake.dueDateTime')}</span>
+        <label className="mt-2 flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
+          <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.dueDateTime')}</span>
           <input
             type="datetime-local"
             data-testid="appointment-detail-due-datetime"
@@ -201,7 +194,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
 
   return (
     <div>
-      <h4 className="mb-2 text-base font-semibold text-[#2C2440] dark:text-[#EDE8FA]">{title}</h4>
+      <h4 className="mb-2 text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">{title}</h4>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <EditableVehicleRow
           label={t('scheduler.detail.licensePlate')}
@@ -209,7 +202,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           editValue={editForm?.licensePlate ?? ''}
           displayValue={vehicle.licensePlate}
           inputClassName={`${inputClassCompact} font-mono uppercase`}
-          displayClassName="truncate text-sm font-mono text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('licensePlate', value.toUpperCase())}
         />
 
@@ -219,7 +212,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           editValue={editForm?.brand ?? ''}
           displayValue={vehicle.brand}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('brand', value)}
         />
 
@@ -229,7 +222,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           editValue={editForm?.model ?? ''}
           displayValue={vehicle.model}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('model', value)}
         />
 
@@ -242,7 +235,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           min={1886}
           max={2100}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('year', value)}
         />
 
@@ -255,7 +248,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           min={0}
           max={1000000}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('mileageKm', value)}
         />
 
@@ -268,7 +261,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           min={0}
           max={50000}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('enginePowerHp', value)}
         />
 
@@ -281,7 +274,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, isEditing, ed
           min={0}
           max={50000}
           inputClassName={inputClassCompact}
-          displayClassName="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]"
+          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
           onChange={(value) => onEditField('engineTorqueNm', value)}
         />
       </div>
@@ -315,8 +308,8 @@ const EditableVehicleRow = memo(function EditableVehicleRow({
   onChange,
 }: EditableVehicleRowProps) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 dark:border-[#3A3154] dark:bg-[#241F33]">
-      <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{label}</span>
+    <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark">
+      <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
       {isEditing ? (
         <input
           type={inputType}
@@ -344,17 +337,17 @@ interface TaskSectionProps {
 const TaskSection = memo(function TaskSection({ isEditing, taskDescription, displayTask, t, onTaskChange }: TaskSectionProps) {
   return (
     <div>
-      <h4 className="mb-1 text-sm font-medium text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.task')}</h4>
-      <div className="rounded-lg border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 dark:border-[#3A3154] dark:bg-[#241F33]">
+      <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.task')}</h4>
+      <div className="rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark">
         {isEditing ? (
           <textarea
             value={taskDescription}
             onChange={(event) => onTaskChange(event.target.value)}
             rows={3}
-            className={`${inputClassCompact} px-3 py-2 text-[#2C2440] dark:text-[#EDE8FA]`}
+            className={`${inputClassCompact} px-3 py-2 text-arsm-primary dark:text-arsm-primary-dark`}
           />
         ) : (
-          <p className="break-words text-sm text-[#2C2440] dark:text-[#EDE8FA]">{displayTask}</p>
+          <p className="break-words text-sm text-arsm-primary dark:text-arsm-primary-dark">{displayTask}</p>
         )}
       </div>
     </div>
@@ -363,22 +356,17 @@ const TaskSection = memo(function TaskSection({ isEditing, taskDescription, disp
 
 interface CustomerSectionProps {
   readonly fullName: string;
-  readonly email: string;
   readonly t: TFunction;
 }
 
-const CustomerSection = memo(function CustomerSection({ fullName, email, t }: CustomerSectionProps) {
+const CustomerSection = memo(function CustomerSection({ fullName, t }: CustomerSectionProps) {
   return (
     <div>
-      <h4 className="mb-1 text-sm font-medium text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.customer')}</h4>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 dark:border-[#3A3154] dark:bg-[#241F33]">
-          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.customerName')}</span>
-          <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]" title={fullName}>{fullName}</span>
-        </div>
-        <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 dark:border-[#3A3154] dark:bg-[#241F33]">
-          <span className="text-xs text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.customerEmail')}</span>
-          <span className="truncate text-sm text-[#2C2440] dark:text-[#EDE8FA]" title={email}>{email}</span>
+      <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.customer')}</h4>
+      <div className="grid grid-cols-1 gap-2">
+        <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark">
+          <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.customerName')}</span>
+          <span className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark" title={fullName}>{fullName}</span>
         </div>
       </div>
     </div>
@@ -420,9 +408,9 @@ const MechanicsSection = memo(function MechanicsSection({
 }: MechanicsSectionProps) {
   return (
     <div>
-      <h4 className="mb-1 text-sm font-medium text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.mechanics')}</h4>
+      <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.mechanics')}</h4>
       {appointment.mechanics.length === 0 ? (
-        <p className="text-sm italic text-[#6A627F] dark:text-[#B9B0D3]">{t('scheduler.detail.noMechanics')}</p>
+        <p className="text-sm italic text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.noMechanics')}</p>
       ) : (
         <div className="flex flex-col gap-2">
           {appointment.mechanics.map((mechanic) => (
@@ -443,7 +431,7 @@ const MechanicsSection = memo(function MechanicsSection({
 
       {isAdmin && !isClosedForMechanicMutations && (
         <div className="mt-3">
-          <h5 className="mb-1.5 flex items-center gap-1 text-xs font-medium text-[#6A627F] dark:text-[#B9B0D3]">
+          <h5 className="mb-1.5 flex items-center gap-1 text-xs font-medium text-arsm-muted dark:text-arsm-muted-dark">
             <UserPlus className="h-3.5 w-3.5" />
             {t('scheduler.detail.addMechanic')}
           </h5>
@@ -452,7 +440,7 @@ const MechanicsSection = memo(function MechanicsSection({
               value={selectedNewMechanicId}
               onChange={(event) => onSelectNewMechanic(event.target.value)}
               aria-label={t('scheduler.detail.selectMechanic')}
-              className="w-full min-w-0 rounded-lg border border-[#D8D2E9] bg-[#F6F4FB] px-2 py-1.5 text-sm text-[#2C2440] focus:outline-none disabled:opacity-50 dark:border-[#3A3154] dark:bg-[#1A1A25] dark:text-[#EDE8FA] sm:flex-1"
+              className="w-full min-w-0 rounded-lg border border-arsm-border bg-arsm-input px-2 py-1.5 text-sm text-arsm-primary focus:outline-none disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark sm:flex-1"
             >
               <option value="">{t('scheduler.detail.selectMechanic')}</option>
               {availableMechanics.map((mechanic) => {
@@ -465,7 +453,7 @@ const MechanicsSection = memo(function MechanicsSection({
             <button
               onClick={onAdminAssign}
               disabled={isAssigning || !selectedNewMechanicId}
-              className="w-full shrink-0 rounded-lg bg-[#C9B3FF] px-3 py-1.5 text-sm font-medium text-[#2C2440] transition-colors hover:bg-[#BFA6F7] disabled:opacity-50 dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] sm:w-auto"
+              className="w-full shrink-0 rounded-lg bg-arsm-accent px-3 py-1.5 text-sm font-medium text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover sm:w-auto"
             >
               {isAssigning ? '...' : t('scheduler.detail.addMechanic')}
             </button>
@@ -498,7 +486,7 @@ const MechanicCard = memo(function MechanicCard({
   onQueueRemove,
 }: MechanicCardProps) {
   return (
-    <div className="rounded-lg border border-[#D8D2E9] bg-[#EFEBFA] px-3 py-2 dark:border-[#3A3154] dark:bg-[#241F33]">
+    <div className="rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark">
       <div className="flex items-start gap-2">
         <MechanicAvatar
           mechanicId={mechanic.id}
@@ -509,8 +497,8 @@ const MechanicCard = memo(function MechanicCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="break-words text-sm font-medium text-[#2C2440] dark:text-[#EDE8FA]">{mechanic.fullName}</span>
-            <span className="rounded-full bg-[#D8D2E9] px-2 py-0.5 text-xs text-[#2C2440] dark:bg-[#3A3154] dark:text-[#EDE8FA]">
+            <span className="break-words text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">{mechanic.fullName}</span>
+            <span className="rounded-full bg-arsm-border px-2 py-0.5 text-xs text-arsm-primary dark:bg-arsm-border-dark dark:text-arsm-primary-dark">
               {mechanic.specialization}
             </span>
           </div>
@@ -519,7 +507,7 @@ const MechanicCard = memo(function MechanicCard({
             {mechanic.expertise.map((expertise) => (
               <span
                 key={expertise}
-                className="max-w-full break-all rounded-full bg-[#C9B3FF]/30 px-2 py-0.5 text-xs text-[#5E5672] dark:bg-[#7A66C7]/30 dark:text-[#CFC5EA]"
+                className="max-w-full break-all rounded-full bg-arsm-accent/30 px-2 py-0.5 text-xs text-arsm-label dark:bg-arsm-accent-dark/30 dark:text-arsm-label-dark"
               >
                 {expertise}
               </span>

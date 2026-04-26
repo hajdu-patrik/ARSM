@@ -75,7 +75,7 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
       <img
         src={`${profileService.getMechanicProfilePictureUrl(mechanicId)}?v=${cacheBuster}`}
         alt={fullName}
-        className={`inline-flex shrink-0 overflow-hidden rounded-full border border-[#D8D2E9] object-cover dark:border-[#3A3154] ${sizeClassName} ${className ?? ''}`}
+        className={`inline-flex shrink-0 overflow-hidden rounded-full border border-arsm-border object-cover dark:border-arsm-border-dark ${sizeClassName} ${className ?? ''}`}
         onError={() => setFailedImageKey(imageCacheKey)}
       />
     );

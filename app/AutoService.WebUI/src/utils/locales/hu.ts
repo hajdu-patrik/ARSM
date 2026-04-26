@@ -1,9 +1,3 @@
-/**
- * hu.ts
- *
- * Auto-generated documentation header for this source file.
- */
-
 export const hu = {
   login: {
     title: 'Üdvözli az ARSM',

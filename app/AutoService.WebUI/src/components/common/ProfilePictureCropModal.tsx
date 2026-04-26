@@ -74,7 +74,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center rounded-xl border border-[#D8D2E9] bg-transparent px-4 py-2 text-sm font-medium text-[#5E5672] transition hover:bg-[#EFEBFA] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#3A3154] dark:text-[#CFC5EA] dark:hover:bg-[#241F33]"
+            className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
           >
             {t('settings.cancel')}
           </button>
@@ -85,7 +85,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
               void handleConfirm();
             }}
             disabled={isSubmitting || !croppedAreaPixels}
-            className="inline-flex items-center justify-center rounded-xl bg-[#C9B3FF] px-4 py-2 text-sm font-semibold text-[#2C2440] transition hover:bg-[#BFA6F7] disabled:cursor-not-allowed disabled:bg-[#DCCDFA] dark:bg-[#7A66C7] dark:text-[#F5F2FF] dark:hover:bg-[#8A75D6] dark:disabled:bg-[#4B406E]"
+            className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
           >
             {isSubmitting ? t('settings.uploading') : t('settings.cropAndUpload')}
           </button>
@@ -93,11 +93,11 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
       )}
     >
       <div className="space-y-4">
-        <p className="text-sm text-[#6A627F] dark:text-[#B9B0D3]">
+        <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">
           {t('settings.cropModalHint')}
         </p>
 
-        <div className="relative h-[320px] w-full overflow-hidden rounded-xl bg-[#09090F] sm:h-[360px]">
+        <div className="relative h-[320px] w-full overflow-hidden rounded-xl bg-arsm-surface-dark sm:h-[360px]">
           {imageSrc && (
             <Cropper
               image={imageSrc}
@@ -115,7 +115,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
           )}
         </div>
 
-        <label htmlFor="crop-zoom" className="block text-sm font-medium text-[#5E5672] dark:text-[#CFC5EA]">
+        <label htmlFor="crop-zoom" className="block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
           {t('settings.zoom')}
         </label>
         <input
