@@ -1,26 +1,13 @@
-/**
- * JwtTokenIssuer.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 namespace AutoService.ApiService.Auth.Security;
 
-/**
- * Contract for related backend behavior.
- */
 internal interface IJwtTokenIssuer
 {
     string CreateToken(
@@ -30,9 +17,6 @@ internal interface IJwtTokenIssuer
         DateTime expiresAtUtc);
 }
 
-/**
- * Backend type for API logic in this file.
- */
 internal sealed class JwtTokenIssuer : IJwtTokenIssuer
 {
     private readonly string issuer;
@@ -40,13 +24,6 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
     private readonly SigningCredentials signingCredentials;
     private readonly JwtSecurityTokenHandler tokenHandler = new();
 
-    /**
-     * JwtTokenIssuer operation.
-     *
-     * @param secret Parameter.
-     * @param issuer Parameter.
-     * @param audience Parameter.
-     */
     public JwtTokenIssuer(string secret, string issuer, string audience)
     {
         this.issuer = issuer;
@@ -56,15 +33,6 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
             SecurityAlgorithms.HmacSha256);
     }
 
-    /**
-     * CreateToken operation.
-     *
-     * @param identityUser Parameter.
-     * @param person Parameter.
-     * @param roles Parameter.
-     * @param expiresAtUtc Parameter.
-     * @returns Return value.
-     */
     public string CreateToken(
         IdentityUser identityUser,
         People person,

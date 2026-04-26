@@ -1,9 +1,3 @@
-/**
- * AppointmentEndpoints.Mutations.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
@@ -13,9 +7,6 @@ using Npgsql;
 
 namespace AutoService.ApiService.Appointments;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AppointmentEndpoints
 {
     /**

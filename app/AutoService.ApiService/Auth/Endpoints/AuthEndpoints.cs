@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Auth.Endpoints;

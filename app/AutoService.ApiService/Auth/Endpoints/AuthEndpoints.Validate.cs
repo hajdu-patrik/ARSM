@@ -1,16 +1,7 @@
-/**
- * AuthEndpoints.Validate.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Security.Claims;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AuthEndpoints
 {
     /**

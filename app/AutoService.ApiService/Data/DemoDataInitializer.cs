@@ -1,9 +1,3 @@
-/**
- * DemoDataInitializer.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
@@ -194,7 +188,7 @@ public static class DemoDataInitializer
                 ScheduledDate = DateTime.UtcNow.AddDays(2),
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(5),
-                TaskDescription = "Idoszakos olajcsere es altalanos atvizsgalas",
+                TaskDescription = "Periodic oil change and general inspection",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[0].Id,
                 Mechanics = new List<Mechanic> { mechanics[0] }
@@ -204,7 +198,7 @@ public static class DemoDataInitializer
                 ScheduledDate = DateTime.UtcNow.AddDays(4),
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(7),
-                TaskDescription = "Fekrendszer ellenorzes es betetcsere",
+                TaskDescription = "Brake system inspection and pad replacement",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[1].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
@@ -214,7 +208,7 @@ public static class DemoDataInitializer
                 ScheduledDate = DateTime.UtcNow.AddDays(-1),
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(2),
-                TaskDescription = "Motor diagnozis es kipufogo javitas",
+                TaskDescription = "Engine diagnostics and exhaust repair",
                 Status = ProgresStatus.InProgress,
                 VehicleId = vehicles[2].Id,
                 Mechanics = new List<Mechanic> { mechanics[2] }
@@ -224,7 +218,7 @@ public static class DemoDataInitializer
                 ScheduledDate = DateTime.UtcNow.AddDays(-7),
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(-4),
-                TaskDescription = "Futomu beallitas es kormanygeometria",
+                TaskDescription = "Suspension adjustment and wheel alignment",
                 Status = ProgresStatus.Completed,
                 VehicleId = vehicles[3].Id,
                 Mechanics = new List<Mechanic> { mechanics[0], mechanics[2] }
@@ -234,7 +228,7 @@ public static class DemoDataInitializer
                 ScheduledDate = DateTime.UtcNow.AddDays(-3),
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow,
-                TaskDescription = "Akkumulator csere es elektromos hiba keresese",
+                TaskDescription = "Battery replacement and electrical fault diagnosis",
                 Status = ProgresStatus.Cancelled,
                 VehicleId = vehicles[4].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
@@ -246,14 +240,14 @@ public static class DemoDataInitializer
         var daysInCurrentMonth = DateTime.DaysInMonth(nowUtc.Year, nowUtc.Month);
         var generatedTaskTemplates = new[]
         {
-            "Olajcsere es szurok ellenorzese",
-            "Fekrendszer diagnosztika",
-            "Futomu es gumi allapotfelmeres",
-            "Akkumulator es toltesi rendszer ellenorzes",
-            "Motor hibakod olvasas es teszt",
-            "Legkondicionalo rendszer karbantartas",
-            "Kipufogo rendszer atvizsgalas",
-            "Uzemanyag rendszer tisztitas"
+            "Oil change and filter inspection",
+            "Brake system diagnostics",
+            "Suspension and tire condition assessment",
+            "Battery and charging system check",
+            "Engine fault code reading and test",
+            "Air conditioning system maintenance",
+            "Exhaust system inspection",
+            "Fuel system cleaning"
         };
 
         for (var i = 0; i < 30; i++)

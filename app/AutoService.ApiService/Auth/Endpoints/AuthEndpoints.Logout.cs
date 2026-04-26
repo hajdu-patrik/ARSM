@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.Logout.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.IdentityModel.Tokens.Jwt;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
@@ -12,9 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AuthEndpoints
 {
     /**

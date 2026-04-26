@@ -1,9 +1,3 @@
-/**
- * Program.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Admin;
 using AutoService.ApiService.Appointments;
 using AutoService.ApiService.Auth.Endpoints;
@@ -269,6 +263,36 @@ builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCl
 
 // Build.
 var app = builder.Build();
+
+/**
+ * AllowedHosts validation for production safety.
+ *
+ * Outside Development, verifies that AllowedHosts configuration is:
+ * - explicitly set (not null or empty),
+ * - does not contain wildcard (*),
+ * - does not contain localhost.
+ *
+ * Fails fast at startup to prevent host-header injection attacks in production.
+ */
+if (!app.Environment.IsDevelopment())
+{
+    var allowedHosts = app.Configuration["AllowedHosts"];
+    var hosts = allowedHosts?
+        .Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+        .Select(static host => host.Trim())
+        .Where(static host => host.Length > 0)
+        .ToArray();
+
+    var hasUnsafeAllowedHosts = hosts is null
+        || hosts.Length == 0
+        || hosts.Any(static host => host == "*" || host.Equals("localhost", StringComparison.OrdinalIgnoreCase));
+
+    if (hasUnsafeAllowedHosts)
+    {
+        throw new InvalidOperationException(
+            "In non-Development environments, AllowedHosts must be explicitly configured and must not contain wildcard (*) or localhost.");
+    }
+}
 
 // Ensure the database is created and seeded with demo data at startup.
 await app.EnsureSeededAsync();

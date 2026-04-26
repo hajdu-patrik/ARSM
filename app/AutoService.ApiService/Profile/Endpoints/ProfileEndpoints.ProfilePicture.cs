@@ -1,9 +1,3 @@
-/**
- * ProfileEndpoints.ProfilePicture.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Identity;
@@ -14,19 +8,18 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class ProfileEndpoints
 {
     private static readonly TimeSpan ProfilePictureUpdatesIdleTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
+    private const int ProfilePictureCacheMaxAgeSeconds = 3600;
 
-        private static async Task<IResult> GetProfilePictureAsync(
+    private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -44,6 +37,14 @@ public static partial class ProfileEndpoints
             return Results.NotFound();
         }
 
+        var etag = BuildProfilePictureEtag(person.ProfilePicture);
+        AppendProfilePictureCacheHeaders(httpContext.Response, etag);
+
+        if (IsNotModified(httpContext.Request, etag))
+        {
+            return Results.StatusCode(StatusCodes.Status304NotModified);
+        }
+
         return Results.File(
             person.ProfilePicture,
             person.ProfilePictureContentType,
@@ -51,8 +52,9 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
-        private static async Task<IResult> GetMechanicProfilePictureAsync(
+    private static async Task<IResult> GetMechanicProfilePictureAsync(
         int personId,
+        HttpContext httpContext,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -71,6 +73,14 @@ public static partial class ProfileEndpoints
             return Results.NotFound();
         }
 
+        var etag = BuildProfilePictureEtag(mechanic.ProfilePicture);
+        AppendProfilePictureCacheHeaders(httpContext.Response, etag);
+
+        if (IsNotModified(httpContext.Request, etag))
+        {
+            return Results.StatusCode(StatusCodes.Status304NotModified);
+        }
+
         return Results.File(
             mechanic.ProfilePicture,
             mechanic.ProfilePictureContentType,
@@ -78,12 +88,15 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
-        private static async Task<IResult> StreamProfilePictureUpdatesAsync(
+    private static async Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
-        if (!broadcaster.TrySubscribe(out var subscriptionId, out var reader))
+        var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
+        var userId = int.TryParse(personIdClaim, out var pid) ? pid : 0;
+
+        if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
         {
             return Results.Problem(
                 detail: "Too many active profile picture update subscriptions. Please retry later.",
@@ -145,7 +158,7 @@ public static partial class ProfileEndpoints
         return Results.Empty;
     }
 
-        private static async Task<IResult> UploadProfilePictureAsync(
+    private static async Task<IResult> UploadProfilePictureAsync(
         [FromForm] IFormFile file,
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -223,7 +236,7 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile picture updated." });
     }
 
-        private static async Task<IResult> DeleteProfilePictureAsync(
+    private static async Task<IResult> DeleteProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         IProfilePictureUpdateBroadcaster broadcaster,
@@ -248,5 +261,52 @@ public static partial class ProfileEndpoints
             DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
 
         return Results.Ok(new { message = "Profile picture removed." });
+    }
+
+    /**
+     * Builds a strong ETag from the binary profile picture payload.
+     */
+    private static string BuildProfilePictureEtag(byte[] pictureBytes)
+    {
+        var hash = SHA256.HashData(pictureBytes);
+        return $"\"{Convert.ToHexString(hash)}\"";
+    }
+
+    /**
+     * Appends shared cache headers used by both profile-picture GET endpoints.
+     */
+    private static void AppendProfilePictureCacheHeaders(HttpResponse response, string etag)
+    {
+        response.Headers.CacheControl = $"public, max-age={ProfilePictureCacheMaxAgeSeconds}";
+        response.Headers.ETag = etag;
+    }
+
+    /**
+     * Evaluates If-None-Match values and returns true when the current ETag matches.
+     */
+    private static bool IsNotModified(HttpRequest request, string currentEtag)
+    {
+        if (!request.Headers.TryGetValue("If-None-Match", out var incomingValues))
+        {
+            return false;
+        }
+
+        foreach (var incomingValue in incomingValues)
+        {
+            if (string.IsNullOrWhiteSpace(incomingValue))
+            {
+                continue;
+            }
+
+            foreach (var token in incomingValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (token == "*" || string.Equals(token, currentEtag, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

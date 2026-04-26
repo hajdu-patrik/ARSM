@@ -1,43 +1,23 @@
-/**
- * TokenDenylistService.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Security;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoService.ApiService.Auth.Security;
 
-/**
- * Contract for related backend behavior.
- */
 internal interface ITokenDenylistService
 {
     Task RevokeAsync(string jwtId, DateTimeOffset expiresAtUtc, CancellationToken cancellationToken = default);
     Task<bool> IsRevokedAsync(string jwtId, CancellationToken cancellationToken = default);
 }
 
-/**
- * Backend type for API logic in this file.
- */
 internal sealed class TokenDenylistService(
     IMemoryCache memoryCache,
     IServiceScopeFactory scopeFactory) : ITokenDenylistService
 {
     private const string KeyPrefix = "denylist-jti:";
 
-    /**
-     * RevokeAsync operation.
-     *
-     * @param jwtId Parameter.
-     * @param expiresAtUtc Parameter.
-     * @param cancellationToken Parameter.
-     * @returns Return value.
-     */
     public async Task RevokeAsync(string jwtId, DateTimeOffset expiresAtUtc, CancellationToken cancellationToken = default)
     {
         var remaining = expiresAtUtc - DateTimeOffset.UtcNow;
@@ -68,13 +48,6 @@ internal sealed class TokenDenylistService(
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /**
-     * IsRevokedAsync operation.
-     *
-     * @param jwtId Parameter.
-     * @param cancellationToken Parameter.
-     * @returns Return value.
-     */
     public async Task<bool> IsRevokedAsync(string jwtId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -1,9 +1,3 @@
-/**
- * Appointment.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using AutoService.ApiService.Domain.UniqueTypes;

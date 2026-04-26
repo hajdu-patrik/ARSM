@@ -1,9 +1,3 @@
-/**
- * TokenSecurity.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -11,9 +5,6 @@ using System.Text;
 
 namespace AutoService.ApiService.Security;
 
-/**
- * Backend type for API logic in this file.
- */
 internal static class TokenSecurity
 {
         internal static string HashSha256(string value)

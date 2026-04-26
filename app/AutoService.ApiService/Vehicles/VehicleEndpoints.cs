@@ -1,9 +1,3 @@
-/**
- * VehicleEndpoints.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Vehicles;
@@ -15,32 +9,26 @@ namespace AutoService.ApiService.Vehicles;
  */
 public static partial class VehicleEndpoints
 {
-        /**
-         * MapVehicleEndpoints operation.
-         *
-         * @param endpoints Parameter.
-         * @returns Return value.
-         */
-        public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
     {
         // Nested routes scoped to a customer.
         var nested = endpoints.MapGroup("/api/customers/{customerId:int}/vehicles")
             .WithTags("Vehicles")
             .RequireAuthorization();
 
-            nested.MapGet("/", ListCustomerVehiclesAsync)
-                .Produces<List<VehicleDetailDto>>(StatusCodes.Status200OK)
-                .Produces(StatusCodes.Status401Unauthorized)
-                .ProducesProblem(StatusCodes.Status404NotFound);
+        nested.MapGet("/", ListCustomerVehiclesAsync)
+            .Produces<List<VehicleDetailDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
-            nested.MapPost("/", CreateVehicleAsync)
-                .RequireAuthorization("AdminOnly")
-                .Produces<VehicleDetailDto>(StatusCodes.Status201Created)
-                .Produces(StatusCodes.Status401Unauthorized)
-                .Produces(StatusCodes.Status403Forbidden)
-                .ProducesProblem(StatusCodes.Status404NotFound)
-                .ProducesProblem(StatusCodes.Status409Conflict)
-                .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        nested.MapPost("/", CreateVehicleAsync)
+            .RequireAuthorization("AdminOnly")
+            .Produces<VehicleDetailDto>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         // Flat routes for single-vehicle operations.
         var flat = endpoints.MapGroup("/api/vehicles")

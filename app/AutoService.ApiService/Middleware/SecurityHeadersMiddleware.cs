@@ -1,14 +1,5 @@
-/**
- * SecurityHeadersMiddleware.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 namespace AutoService.ApiService.Middleware;
 
-/**
- * Backend type for API logic in this file.
- */
 public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvironment environment)
 {
     private const string ContentTypeOptions = "nosniff";
@@ -17,13 +8,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
     private const string PermissionsPolicy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()";
     private const string ApiContentSecurityPolicy = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
 
-        /**
-         * InvokeAsync operation.
-         *
-         * @param context Parameter.
-         * @returns Return value.
-         */
-        public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context)
     {
         context.Response.OnStarting(static state =>
         {
@@ -51,7 +36,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
         await next(context);
     }
 
-        private static void AppendIfMissing(IHeaderDictionary headers, string name, string value)
+    private static void AppendIfMissing(IHeaderDictionary headers, string name, string value)
     {
         if (!headers.ContainsKey(name))
         {

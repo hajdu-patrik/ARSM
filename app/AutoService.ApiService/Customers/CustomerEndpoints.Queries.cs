@@ -1,9 +1,3 @@
-/**
- * CustomerEndpoints.Queries.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -15,9 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Customers;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class CustomerEndpoints
 {
         private static async Task<IResult> ListCustomersAsync(
@@ -154,9 +145,6 @@ public static partial class CustomerEndpoints
     }
 
     // Extended DTO for single-customer retrieval (includes vehicles).
-    /**
- * Immutable DTO used by API request and response flows.
- */
     private sealed record CustomerWithVehiclesDto(
         int Id,
         string FirstName,
@@ -166,9 +154,6 @@ public static partial class CustomerEndpoints
         string? PhoneNumber,
         IReadOnlyList<VehicleSummaryDto> Vehicles);
 
-    /**
- * Immutable DTO used by API request and response flows.
- */
     private sealed record VehicleSummaryDto(
         int Id,
         string LicensePlate,
@@ -176,9 +161,6 @@ public static partial class CustomerEndpoints
         string Model,
         int Year);
 
-    /**
- * Immutable DTO used by API request and response flows.
- */
     private sealed record SchedulerCustomerLookupDto(
         int Id,
         string FirstName,
@@ -188,9 +170,6 @@ public static partial class CustomerEndpoints
         string? PhoneNumber,
         IReadOnlyList<SchedulerVehicleLookupDto> Vehicles);
 
-    /**
- * Immutable DTO used by API request and response flows.
- */
     private sealed record SchedulerVehicleLookupDto(
         int Id,
         string LicensePlate,

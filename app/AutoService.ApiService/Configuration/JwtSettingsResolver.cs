@@ -1,9 +1,3 @@
-/**
- * JwtSettingsResolver.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Text;
 
 namespace AutoService.ApiService.Configuration;
@@ -15,13 +9,7 @@ namespace AutoService.ApiService.Configuration;
  */
 public static class JwtSettingsResolver
 {
-        /**
-         * ResolveSecret operation.
-         *
-         * @param configuration Parameter.
-         * @returns Return value.
-         */
-        public static string ResolveSecret(IConfiguration configuration)
+    public static string ResolveSecret(IConfiguration configuration)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable("JwtSettings__Secret");
         var fromConfiguration = configuration["JwtSettings:Secret"];
@@ -50,5 +38,4 @@ public static class JwtSettingsResolver
 
         return secret;
     }
-
 }

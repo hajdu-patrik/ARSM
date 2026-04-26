@@ -1,9 +1,3 @@
-/**
- * RefreshToken.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Domain;
 namespace AutoService.ApiService.Security;
 
@@ -35,16 +29,6 @@ public sealed class RefreshToken
 
     private RefreshToken() { }
 
-    /**
-     * RefreshToken operation.
-     *
-     * @param mechanicId Parameter.
-     * @param tokenHash Parameter.
-     * @param createdAtUtc Parameter.
-     * @param expiresAtUtc Parameter.
-     * @param createdByIpAddress Parameter.
-     * @param createdByUserAgent Parameter.
-     */
     public RefreshToken(
         int mechanicId,
         string tokenHash,
@@ -61,21 +45,9 @@ public sealed class RefreshToken
         CreatedByUserAgent = createdByUserAgent;
     }
 
-    /**
-     * IsActive operation.
-     *
-     * @param nowUtc Parameter.
-     * @returns Return value.
-     */
     public bool IsActive(DateTime nowUtc)
         => RevokedAtUtc is null && ExpiresAtUtc > nowUtc;
 
-    /**
-     * Revoke operation.
-     *
-     * @param revokedAtUtc Parameter.
-     * @param replacedByTokenHash Parameter.
-     */
     public void Revoke(DateTime revokedAtUtc, string? replacedByTokenHash = null)
     {
         RevokedAtUtc = revokedAtUtc;

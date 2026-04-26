@@ -1,54 +1,41 @@
-/**
- * ProfilePictureUpdateBroadcaster.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace AutoService.ApiService.Profile.Realtime;
 
-/**
- * Immutable DTO used by API request and response flows.
- */
 internal sealed record ProfilePictureUpdatedEvent(
     int PersonId,
     bool HasProfilePicture,
     long CacheBuster);
 
-/**
- * Contract for related backend behavior.
- */
 internal interface IProfilePictureUpdateBroadcaster
 {
-    bool TrySubscribe(out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader);
+    bool TrySubscribe(int userId, out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader);
 
     void Unsubscribe(Guid subscriptionId);
 
     void Publish(ProfilePictureUpdatedEvent updateEvent);
 }
 
-/**
- * Backend type for API logic in this file.
- */
 internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBroadcaster
 {
     private const int MaxConcurrentSubscriptions = 200;
+    private const int MaxSubscriptionsPerUser = 5;
     private const int PerSubscriberBufferSize = 32;
 
-    private readonly ConcurrentDictionary<Guid, Channel<ProfilePictureUpdatedEvent>> subscribers = new();
+    private readonly ConcurrentDictionary<Guid, (Channel<ProfilePictureUpdatedEvent> Channel, int UserId)> subscribers = new();
     private int subscriptionCount;
 
-        /**
-         * TrySubscribe operation.
-         *
-         * @param subscriptionId Parameter.
-         * @param reader Parameter.
-         * @returns Return value.
-         */
-        public bool TrySubscribe(out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader)
+    public bool TrySubscribe(int userId, out Guid subscriptionId, out ChannelReader<ProfilePictureUpdatedEvent> reader)
     {
+        var userCount = subscribers.Values.Count(s => s.UserId == userId);
+        if (userCount >= MaxSubscriptionsPerUser)
+        {
+            subscriptionId = Guid.Empty;
+            reader = null!;
+            return false;
+        }
+
         var newCount = Interlocked.Increment(ref subscriptionCount);
         if (newCount > MaxConcurrentSubscriptions)
         {
@@ -67,7 +54,7 @@ internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBro
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
-        if (!subscribers.TryAdd(subscriptionId, channel))
+        if (!subscribers.TryAdd(subscriptionId, (channel, userId)))
         {
             channel.Writer.TryComplete();
             Interlocked.Decrement(ref subscriptionCount);
@@ -80,30 +67,20 @@ internal sealed class ProfilePictureUpdateBroadcaster : IProfilePictureUpdateBro
         return true;
     }
 
-        /**
-         * Unsubscribe operation.
-         *
-         * @param subscriptionId Parameter.
-         */
-        public void Unsubscribe(Guid subscriptionId)
+    public void Unsubscribe(Guid subscriptionId)
     {
-        if (subscribers.TryRemove(subscriptionId, out var channel))
+        if (subscribers.TryRemove(subscriptionId, out var entry))
         {
-            channel.Writer.TryComplete();
+            entry.Channel.Writer.TryComplete();
             Interlocked.Decrement(ref subscriptionCount);
         }
     }
 
-        /**
-         * Publish operation.
-         *
-         * @param updateEvent Parameter.
-         */
-        public void Publish(ProfilePictureUpdatedEvent updateEvent)
+    public void Publish(ProfilePictureUpdatedEvent updateEvent)
     {
         foreach (var subscriber in subscribers)
         {
-            var channel = subscriber.Value;
+            var channel = subscriber.Value.Channel;
             if (!channel.Writer.TryWrite(updateEvent) && channel.Reader.Completion.IsCompleted)
             {
                 Unsubscribe(subscriber.Key);

@@ -8,8 +8,6 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-
 namespace AutoService.ApiService.Auth.Endpoints;
 
 /**
@@ -17,6 +15,8 @@ namespace AutoService.ApiService.Auth.Endpoints;
  */
 public static partial class AuthEndpoints
 {
+    private const string GenericRegistrationFailureMessage = "Registration failed. Please check your information, or the account may already exist.";
+
     /**
      * Handles POST /api/auth/register and creates a mechanic account.
      * Identity and domain records are persisted in one transaction.
@@ -57,10 +57,7 @@ public static partial class AuthEndpoints
         if (await userManager.FindByEmailAsync(email) is not null)
         {
             logger.LogInformation("Registration rejected: email already exists in Identity.");
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [nameof(request.Email)] = ["An account already exists with this email address."]
-            });
+            return CreateRegistrationFailedResult();
         }
 
         var peopleEmailInUse = await db.People
@@ -70,10 +67,7 @@ public static partial class AuthEndpoints
         if (peopleEmailInUse)
         {
             logger.LogInformation("Registration rejected: email already exists in People records.");
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [nameof(request.Email)] = ["An account already exists with this email address."]
-            });
+            return CreateRegistrationFailedResult();
         }
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
@@ -92,10 +86,7 @@ public static partial class AuthEndpoints
             if (phoneNumberInUse)
             {
                 logger.LogInformation("Registration rejected: phone number already exists.");
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    [nameof(request.PhoneNumber)] = ["An account already exists with this phone number."]
-                });
+                return CreateRegistrationFailedResult();
             }
         }
 
@@ -156,14 +147,11 @@ public static partial class AuthEndpoints
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        catch (DbUpdateException ex) when (Data.UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
         {
             await transaction.RollbackAsync(cancellationToken);
             logger.LogInformation("Registration failed due to unique constraint conflict on persisted data.");
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [nameof(request.Email)] = ["An account already exists with this email address."]
-            });
+            return CreateRegistrationFailedResult();
         }
 
         logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}. ClientIp: {ClientIp}.", person.Id, identityUser.Id, clientIp);
@@ -282,22 +270,11 @@ public static partial class AuthEndpoints
         return expertise;
     }
 
-    /**
-     * Determines whether a database update failed due to a unique key constraint.
-     *
-     * @param exception The thrown EF update exception.
-     * @return true when a nested PostgreSQL unique violation is found; otherwise false.
-     */
-    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
+    private static IResult CreateRegistrationFailedResult()
     {
-        for (Exception? current = exception; current is not null; current = current.InnerException)
+        return Results.ValidationProblem(new Dictionary<string, string[]>
         {
-            if (current is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
-            {
-                return true;
-            }
-        }
-
-        return false;
+            ["register"] = [GenericRegistrationFailureMessage],
+        });
     }
 }

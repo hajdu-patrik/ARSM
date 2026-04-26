@@ -1,16 +1,7 @@
-/**
- * LicensePlateNormalization.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Text.RegularExpressions;
 
 namespace AutoService.ApiService.Normalization;
 
-/**
- * Backend type for API logic in this file.
- */
 internal static partial class LicensePlateNormalization
 {
         internal static bool TryNormalizeEuropeanLicensePlate(

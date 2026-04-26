@@ -1,9 +1,3 @@
-/**
- * AppointmentEndpoints.Intake.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
@@ -13,16 +7,12 @@ using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace AutoService.ApiService.Appointments;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AppointmentEndpoints
 {
-        private static async Task<IResult> CreateIntakeAsync(
+    private static async Task<IResult> CreateIntakeAsync(
         SchedulerCreateIntakeRequest request,
         ClaimsPrincipal user,
         AutoServiceDbContext db,
@@ -358,7 +348,7 @@ public static partial class AppointmentEndpoints
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        catch (DbUpdateException ex) when (Data.UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
         {
             await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Intake creation failed due to unique constraint conflict.");
@@ -385,16 +375,4 @@ public static partial class AppointmentEndpoints
             _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
         };
 
-    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
-    {
-        for (Exception? current = exception; current is not null; current = current.InnerException)
-        {
-            if (current is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

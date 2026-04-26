@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace AutoService.ApiService.Middleware;
 
 /**
@@ -8,12 +11,6 @@ namespace AutoService.ApiService.Middleware;
  */
 public class AuditAccessDeniedMiddleware(RequestDelegate next)
 {
-    /**
-     * Invokes the next middleware, then logs a warning if the response status is 401 or 403.
-     *
-     * @param context The current HTTP context.
-     * @param loggerFactory Factory used to create the audit logger.
-     */
     public async Task InvokeAsync(HttpContext context, ILoggerFactory loggerFactory)
     {
         await next(context);
@@ -29,7 +26,14 @@ public class AuditAccessDeniedMiddleware(RequestDelegate next)
                 mechanicId,
                 context.Request.Method,
                 context.Request.Path,
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                HashClientIp(context.Connection.RemoteIpAddress?.ToString()));
         }
+    }
+
+    private static string HashClientIp(string? ip)
+    {
+        if (string.IsNullOrWhiteSpace(ip)) return "unknown";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
+        return $"sha256:{Convert.ToHexString(hash)[..12]}";
     }
 }

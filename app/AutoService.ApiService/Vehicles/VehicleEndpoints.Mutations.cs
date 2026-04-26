@@ -1,13 +1,4 @@
-/**
- * VehicleEndpoints.Mutations.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
@@ -15,16 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Vehicles;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class VehicleEndpoints
 {
     private const int MaxLicensePlateLength = 20;
     private const int MaxBrandLength = 50;
     private const int MaxModelLength = 50;
 
-        private static async Task<IResult> CreateVehicleAsync(
+    private static async Task<IResult> CreateVehicleAsync(
         int customerId,
         CreateVehicleRequest request,
         AutoServiceDbContext db,
@@ -115,13 +103,12 @@ public static partial class VehicleEndpoints
                 vehicle.Customer.Id,
                 vehicle.Customer.Name.FirstName,
                 vehicle.Customer.Name.MiddleName,
-                vehicle.Customer.Name.LastName,
-                vehicle.Customer.Email));
+                vehicle.Customer.Name.LastName));
 
         return Results.Created($"/api/vehicles/{vehicle.Id}", dto);
     }
 
-        private static async Task<IResult> UpdateVehicleAsync(
+    private static async Task<IResult> UpdateVehicleAsync(
         int id,
         UpdateVehicleRequest request,
         AutoServiceDbContext db,
@@ -196,7 +183,7 @@ public static partial class VehicleEndpoints
         return Results.NoContent();
     }
 
-        private static async Task<IResult> DeleteVehicleAsync(
+    private static async Task<IResult> DeleteVehicleAsync(
         int id,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)

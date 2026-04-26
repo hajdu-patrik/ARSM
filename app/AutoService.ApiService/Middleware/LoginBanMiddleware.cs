@@ -1,9 +1,3 @@
-/**
- * LoginBanMiddleware.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using System.Collections.Concurrent;
 using System.Globalization;
 
@@ -21,13 +15,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
     private const int MaxTrackedClients = 5000;
     private static long _nextCleanupAtUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        /**
-         * InvokeAsync operation.
-         *
-         * @param context Parameter.
-         * @returns Return value.
-         */
-        public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context)
     {
         if (context.Request.Path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase))
         {
@@ -58,12 +46,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
         await next(context);
     }
 
-        /**
-         * BanClient operation.
-         *
-         * @param context Parameter.
-         */
-        public static void BanClient(HttpContext context)
+    public static void BanClient(HttpContext context)
     {
         var key = ResolveClientKey(context);
         var now = DateTimeOffset.UtcNow;
@@ -86,7 +69,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
 
     public static int BanWindowSeconds => (int)Math.Ceiling(BanWindow.TotalSeconds);
 
-        private static string ResolveClientKey(HttpContext context)
+    private static string ResolveClientKey(HttpContext context)
     {
         var ip = context.Connection.RemoteIpAddress?.ToString();
         return string.IsNullOrWhiteSpace(ip) ? "unknown" : ip;
@@ -120,7 +103,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
         }
     }
 
-        private static void TrimToBound(DateTimeOffset now)
+    private static void TrimToBound(DateTimeOffset now)
     {
         CleanupExpiredEntries(now, force: true);
 

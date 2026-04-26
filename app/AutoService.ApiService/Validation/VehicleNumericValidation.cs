@@ -1,14 +1,5 @@
-/**
- * VehicleNumericValidation.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 namespace AutoService.ApiService.Validation;
 
-/**
- * Backend type for API logic in this file.
- */
 internal static class VehicleNumericValidation
 {
     internal const int MinYear = 1886;

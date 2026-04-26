@@ -48,7 +48,10 @@ var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
  * @return Persistent postgres server resource with fixed configured port,
  * data volume, and GSS encryption disabled for local environment compatibility.
  */
-var postgresServer = builder.AddPostgres("postgres", password: postgresPassword, port: postgresPort)
+var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
+                            // Use direct host-port binding to keep Docker and Aspire health checks aligned.
+                            .WithHostPort(postgresPort)
+                            .WithEndpoint("tcp", endpoint => endpoint.IsProxied = false)
                             .WithDataVolume("autoservice-postgres-data")
                             .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent)
                             .WithEnvironment("PGGSSENCMODE", "disable");

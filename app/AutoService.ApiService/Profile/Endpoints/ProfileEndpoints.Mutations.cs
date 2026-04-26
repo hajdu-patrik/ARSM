@@ -1,9 +1,3 @@
-/**
- * ProfileEndpoints.Mutations.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
@@ -21,9 +15,6 @@ using System.Security.Claims;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class ProfileEndpoints
 {
 

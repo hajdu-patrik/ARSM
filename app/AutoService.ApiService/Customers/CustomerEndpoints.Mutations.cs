@@ -1,9 +1,3 @@
-/**
- * CustomerEndpoints.Mutations.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -16,12 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Customers;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class CustomerEndpoints
 {
-        private static async Task<IResult> CreateCustomerAsync(
+    private static async Task<IResult> CreateCustomerAsync(
         CreateCustomerRequest request,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -102,7 +93,7 @@ public static partial class CustomerEndpoints
         return Results.Created($"/api/customers/{customer.Id}", dto);
     }
 
-        private static async Task<IResult> UpdateCustomerAsync(
+    private static async Task<IResult> UpdateCustomerAsync(
         int id,
         UpdateCustomerRequest request,
         AutoServiceDbContext db,
@@ -183,7 +174,7 @@ public static partial class CustomerEndpoints
         return Results.NoContent();
     }
 
-        private static async Task<IResult> DeleteCustomerAsync(
+    private static async Task<IResult> DeleteCustomerAsync(
         int id,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)

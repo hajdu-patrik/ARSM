@@ -1,9 +1,3 @@
-/**
- * AdminEndpoints.Handlers.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.AspNetCore.Identity;
@@ -14,9 +8,6 @@ using System.Data;
 
 namespace AutoService.ApiService.Admin;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AdminEndpoints
 {
         private static async Task<IResult> ListMechanicsAsync(

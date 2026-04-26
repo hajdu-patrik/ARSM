@@ -1,9 +1,3 @@
-/**
- * Customer.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Domain.UniqueTypes;
 using System.Diagnostics.CodeAnalysis;
 

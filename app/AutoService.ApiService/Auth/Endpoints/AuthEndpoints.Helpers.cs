@@ -1,9 +1,3 @@
-/**
- * AuthEndpoints.Helpers.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -17,9 +11,6 @@ using System.Text;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AuthEndpoints
 {
     private static readonly TimeSpan AccessTokenTtl = TimeSpan.FromMinutes(10);
@@ -92,9 +83,11 @@ public static partial class AuthEndpoints
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);
 
-        private static string? ResolveClientIpAddress(HttpContext httpContext)
+    private static string? ResolveClientIpAddress(HttpContext httpContext)
     {
         var ip = httpContext.Connection.RemoteIpAddress?.ToString();
-        return string.IsNullOrWhiteSpace(ip) ? null : ip;
+        if (string.IsNullOrWhiteSpace(ip)) return null;
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
+        return $"sha256:{Convert.ToHexString(hash)[..12]}";
     }
 }

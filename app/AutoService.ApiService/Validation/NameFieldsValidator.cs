@@ -1,16 +1,7 @@
-/**
- * NameFieldsValidator.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Validation;
 
-/**
- * Backend type for API logic in this file.
- */
 internal static class NameFieldsValidator
 {
     /**

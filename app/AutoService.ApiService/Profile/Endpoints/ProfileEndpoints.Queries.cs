@@ -1,9 +1,3 @@
-/**
- * ProfileEndpoints.Queries.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
@@ -13,9 +7,6 @@ using AutoService.ApiService.Validation;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class ProfileEndpoints
 {
         private static async Task<IResult> GetProfileAsync(

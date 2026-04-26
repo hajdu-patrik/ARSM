@@ -1,14 +1,5 @@
-/**
- * AuthEndpoints.Contracts.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Backend type for API logic in this file.
- */
 public static partial class AuthEndpoints
 {
     // ─── DTO contracts ────────────────────────────────────────────────────────

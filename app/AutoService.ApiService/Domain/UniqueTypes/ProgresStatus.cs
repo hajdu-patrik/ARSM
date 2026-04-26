@@ -1,15 +1,7 @@
-/**
- * ProgresStatus.cs
- *
- * Auto-generated documentation header for this source file.
- */
-
 namespace AutoService.ApiService.Domain.UniqueTypes;
 
-/**
- * Tracks the lifecycle state of a service appointment.
- * Persisted to the database as a string via EF Core value conversion.
- */
+// Known typo: should be "ProgressStatus". Renaming would require a breaking migration
+// and full schema rebuild. Tracked as intentional tech debt — rename in a future v2.0 migration.
 public enum ProgresStatus
 {
     InProgress, // Vehicle is currently being serviced.
