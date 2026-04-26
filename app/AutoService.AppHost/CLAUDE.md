@@ -9,6 +9,7 @@
 - Resource: `postgres`, database: `AutoServiceDb`.
 - Compatible connection key: `ConnectionStrings:AutoServiceDb`.
 - Port source: `appsettings.json` → `Ports:Postgres` (single source of truth).
+- Keep PostgreSQL TCP endpoint direct and non-proxied (`WithHostPort(...)` + `.WithEndpoint("tcp", endpoint => endpoint.IsProxied = false)`) so Docker binding and Aspire health checks stay aligned.
 - Persistent data volume: `autoservice-postgres-data`.
 - PostgreSQL container sets `PGGSSENCMODE=disable`.
 

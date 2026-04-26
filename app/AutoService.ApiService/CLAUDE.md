@@ -43,7 +43,7 @@
 - Registration is admin-only: requires `"AdminOnly"` authorization policy (caller must have `"Admin"` role in JWT).
 - Registration is transactional: `IdentityUser` + `Mechanic` domain record created together, linked by `IdentityUserId`.
 - Registration pre-checks normalized email collisions against both Identity users and domain `People` records (including passive customers) before account creation.
-- Registration maps database unique-constraint email races to a controlled validation error on `Email` instead of returning a generic server error.
+- Registration maps database unique-constraint email races to the same generic validation response used by duplicate pre-checks (for example `register`) instead of returning a generic server error.
 - Name validation (first name, middle name, last name) is enforced at register, profile update, and customer create/update: names may only contain Unicode letters and hyphens (`^[\p{L}\-]+$`). Validation uses `ContactNormalization.IsValidName()` and error messages from `ValidationMessages`.
 - Login accepts email or phone number.
 - Identifier normalization is mandatory across register/login:
@@ -60,13 +60,14 @@
 - Shared TTL constants (`AccessTokenTtl = 10 min`, `RefreshTokenTtl = 7 days`) are declared as `private static readonly TimeSpan` fields in `AuthEndpoints.Helpers.cs` and reused by login, refresh, and cookie-option helpers.
 - `BuildAuthCookieOptions(TimeSpan ttl)` is a shared factory method in `AuthEndpoints.Helpers.cs`; `BuildAccessTokenCookieOptions` and `BuildRefreshTokenCookieOptions` delegate to it.
 - Auth log events include a `ClientIp` structured property: login success, login failure, and login lockout all log `ClientIp`; refresh success and revoked-token-reuse warning log `ClientIp`. `ResolveClientIpAddress(httpContext)` is computed once per handler and reused (including for the `CreatedByIpAddress` field on new `RefreshToken` DB rows).
-- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) emits a `LogWarning` under logger category `Auth.AccessDenied` for every response with status code `401` or `403`. Structured properties: `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, `ClientIp` (`context.Connection.RemoteIpAddress`). Must be registered before `UseAuthentication()`.
+- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) emits a `LogWarning` under logger category `Auth.AccessDenied` for every response with status code `401` or `403`. Structured properties: `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, `ClientIp` (hashed as `sha256:<12hex>`). Must be registered before `UseAuthentication()`.
 - Login failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, when a linked mechanic domain record is missing, and for existing customer email/phone identifiers (to reduce account enumeration); `429` during lockout/rate-limit.
 - Lockout: 5 failed attempts, 15-minute lockout.
 - Rate limit: 10 requests/min per client IP for login (`AuthLoginAttempts`) and 20 requests/min for refresh (`AuthRefreshAttempts`). Temporary login-ban window after login rate-limit rejection: 3 minutes.
 - JWT lifetime: 10 minutes. Refresh token lifetime: 7 days.
 - JWT clock skew: 30 seconds. Issuer + audience validation enabled. Minimum secret: 32 bytes.
 - Logout revokes refresh token session and denylists current JWT `jti` until token expiry.
+- CSRF protection strategy: `SameSite=Strict` on all auth cookies provides implicit CSRF mitigation for modern browsers. No explicit CSRF token mechanism is used because `SameSite=Strict` prevents cross-origin cookie attachment in all request scenarios (including top-level navigations). This is sufficient for an API-only backend consumed by a same-origin SPA. Legacy browsers without `SameSite` support are not in scope for this application.
 - JWT bearer handler reads access token from cookie and rejects denylised `jti` values.
 
 ## Auth Endpoints (Current)
@@ -82,7 +83,8 @@
 - `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 - `GET /api/appointments/today` (authorized) — list today's appointments
 - `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; validates due datetime, resolves customer by email (create fallback), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record; enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
-- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics and admins
+- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; allowed for assigned mechanics and admins
+- `PUT /api/appointments/{id}/vehicle` (authorized) — update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`); allowed for assigned mechanics and admins
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, `422` with code `appointment_completed` if appointment is Completed, or `422` if unassign would leave the appointment without mechanics
@@ -119,9 +121,9 @@
 - `PUT /api/profile` (authorized) — update email, phone number, first name, middle name, last name
 - `DELETE /api/profile` (authorized, non-admin only) — delete current user profile after current-password confirmation (logs out and clears auth cookies). Returns 403 if the caller has the Admin role. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` (authorized) — change password (current + new + confirm)
-- `GET /api/profile/picture` (authorized) — get profile picture binary
-- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
-- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events), backed by bounded per-subscriber channels (max 200 subscriptions, buffer size 32, drop-oldest overflow mode)
+- `GET /api/profile/picture` (authorized) — get profile picture binary (`ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
+- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing; `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
+- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events), backed by bounded per-subscriber channels (max 200 subscriptions globally, max 5 subscriptions per user, buffer size 32, drop-oldest overflow mode)
 - `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (JPEG/PNG/WebP, max 512 KB, file bound from form payload). Server validates image magic bytes and rejects MIME/content mismatches.
 - `DELETE /api/profile/picture` (authorized) — remove profile picture
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
@@ -146,13 +148,14 @@ Security headers middleware adds `X-Content-Type-Options`, `X-Frame-Options`, `R
 
 Login-ban middleware remains in-process and uses deterministic cleanup scheduling (30-second interval) plus a max tracked-client bound (5000) to cap memory growth.
 
-`AuditAccessDeniedMiddleware` is registered between `UseCors` and `UseAuthentication` so it wraps the full auth pipeline and can observe the final response status code on the way out. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for any `401` or `403` response, including the structured properties `StatusCode`, `MechanicId` (from the `person_id` claim, null when unauthenticated), `Method`, `Path`, and `ClientIp`.
+`AuditAccessDeniedMiddleware` is registered between `UseCors` and `UseAuthentication` so it wraps the full auth pipeline and can observe the final response status code on the way out. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for any `401` or `403` response, including the structured properties `StatusCode`, `MechanicId` (from the `person_id` claim, null when unauthenticated), `Method`, `Path`, and hashed `ClientIp` (`sha256:<12hex>`).
 
 ## Configuration
 
 - Connection string key: `ConnectionStrings:AutoServiceDb`
 - JWT keys: `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`
 - Startup fails fast if `ConnectionStrings:AutoServiceDb` or `JwtSettings:Secret` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`).
+- Outside Development, startup fails fast if `AllowedHosts` is missing/empty or contains wildcard (`*`) or `localhost`.
 - CORS allowed origins key: `Cors:AllowedOrigins` (explicit origins, `AllowCredentials()` enabled, restricted methods `GET/POST/PUT/DELETE`, restricted headers `Content-Type`; current API appsettings default is `https://localhost:5173`)
 - Forwarded-header trust config: `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`
 - Local overrides: `appsettings.Local.json` (gitignored) or env vars (`ConnectionStrings__AutoServiceDb`, `JwtSettings__Secret`)

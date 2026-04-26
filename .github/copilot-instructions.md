@@ -173,7 +173,8 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
-	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; legacy vehicle fields in payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle; allowed for assigned mechanics or admins
+	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; allowed for assigned mechanics or admins
+	- `PUT /api/appointments/{id}/vehicle` (authorized) — update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`); allowed for assigned mechanics or admins
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
@@ -184,8 +185,8 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
 	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users); `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion
 	- `POST /api/profile/change-password` (authorized) — change password
-	- `GET /api/profile/picture` (authorized) — get profile picture binary
-	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing)
+	- `GET /api/profile/picture` (authorized) — get profile picture binary (supports `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
+	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing; supports `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
 	- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
 	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (server validates image magic bytes and rejects MIME/content mismatches)
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
@@ -206,7 +207,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
 	- Endpoint mapper registrations declare explicit OpenAPI response metadata (`Produces`, `ProducesProblem`, `ProducesValidationProblem`) so status/body documentation in OpenAPI/Scalar stays accurate without changing runtime behavior
 	- `GET /health` and `GET /alive` in Development (`app.MapDefaultEndpoints()`)
-- Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
+- Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `UpdateAppointmentVehicleRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
 - Auth and login behavior currently implemented:
 	- registration is mechanic-only and admin-only,
 	- login accepts email or phone number,
@@ -214,7 +215,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- phone inputs are normalized to canonical E.164 format (`+{countryCode}{nationalNumber}`), validated via libphonenumber, and restricted to the backend's accepted European country-code allowlist,
 	- register rejects duplicate phone numbers even if input format differs,
 	- register pre-checks normalized email collisions against both Identity users and domain `People` records (including passive customers),
-	- register maps unique-email database races to controlled validation errors on `Email`,
+	- register maps unique-email database races to the same generic validation response used by duplicate pre-checks (for example `register`),
 	- unknown/wrong credentials return generic `401` (`invalid_credentials`),
 	- existing customer email/phone identifiers follow the same generic `401` (`invalid_credentials`) path to reduce account enumeration,
 	- lockout is enabled (`5` failed attempts, `15` minutes lockout),
@@ -241,13 +242,15 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- security headers middleware appends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and API `Content-Security-Policy`; in Development CSP is skipped for `/openapi` and `/scalar` routes,
 	- `UseHsts()` outside Development,
 	- custom login ban middleware (3-minute IP cooldown, deterministic 30-second cleanup cadence, max 5000 tracked clients),
-	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseAuthentication()`, `UseAuthorization()`.
+	- `UseRateLimiter()`, `UseCors("WebUIPolicy")`, `UseMiddleware<AuditAccessDeniedMiddleware>()`, `UseAuthentication()`, `UseAuthorization()`.
 - Service defaults: `builder.AddServiceDefaults()` is called at startup (registers OpenTelemetry, health checks, service discovery). `app.MapDefaultEndpoints()` maps `/health` and `/alive` in Development.
 - `ExpiredTokenCleanupService` (`Security/ExpiredTokenCleanupService.cs`) is a `BackgroundService` registered via `AddHostedService<ExpiredTokenCleanupService>()`. It runs on a 1-hour interval and removes expired `revokedjwttokens` rows and expired+revoked `refreshtokens` rows.
 - `TokenDenylistService.IsRevokedAsync` calls `cancellationToken.ThrowIfCancellationRequested()` at entry; `OperationCanceledException` propagates to the caller. The JWT bearer `OnTokenValidated` event catches it only when `RequestAborted` is set — a cancelled request cannot silently bypass denylist enforcement.
 - `TemplateMarkerDetector` (`Configuration/TemplateMarkerDetector.cs`) is a shared static helper for detecting placeholder markers in secrets; used by `JwtSettingsResolver` and `DemoDataInitializer`.
 - Shared TTL constants (`AccessTokenTtl`, `RefreshTokenTtl`) and `BuildAuthCookieOptions(TimeSpan ttl)` factory are declared in `AuthEndpoints.Helpers.cs` and reused by login, refresh, and logout flows.
-- Profile-picture SSE broadcaster uses bounded channels (max 200 concurrent subscriptions, per-subscriber buffer size 32, `DropOldest` overflow strategy).
+- Profile-picture SSE broadcaster uses bounded channels (max 200 concurrent subscriptions globally, max 5 subscriptions per user, per-subscriber buffer size 32, `DropOldest` overflow strategy).
+- Auth and access-denied logs store `ClientIp` as a truncated SHA-256 hash (`sha256:<12hex>`), not as raw IP.
+- Outside Development, startup fails fast when `AllowedHosts` is missing/empty or contains wildcard (`*`) or `localhost`.
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
 	- seed generation adds 30 additional appointments in the current UTC month (including today and multiple same-day entries),
@@ -259,24 +262,27 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 
 ## API Test Coverage Snapshot
 - `tests/API/**/*.http` (chunked suites under `auth/`, `appointments/`, `customers/`, `profile/`, `admin/`, `vehicles/`) includes:
-	- register (email-only, email+phone, duplicates, invalid email/phone, invalid person type/expertise),
+	- register (email-only, email+phone, duplicates, invalid email/phone, invalid person type/expertise) with duplicate/domain-conflict expectations aligned to generic `register` validation responses,
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
-- `tests/API/appointments/*.http` (7 files) includes scheduler/admin appointment flows for:
+- `tests/API/appointments/*.http` (10 files) includes scheduler/admin appointment flows for:
 	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, duplicate new-vehicle license-plate conflict (`409`), vehicleId not found (`404`), and vehicle numeric max validation (`422`),
+	- split appointment update coverage: `PUT /api/appointments/{id}` for due/task updates and `PUT /api/appointments/{id}/vehicle` for vehicle-field updates/validation,
 	- appointment update immutability guard (`scheduledDate` change rejected with `422`) while due/task updates remain allowed,
 	- mechanic claim/unclaim guardrails: claim on cancelled/non-InProgress (`422`), duplicate claim (`409`), unclaim on cancelled/completed (`422`), unclaim when not assigned (`409`), unclaim when last mechanic (`422`), and 404 for non-existent appointments,
 	- status transitions: InProgress/Completed/Cancelled/reopen-from-cancelled, invalid status (`400`), non-assigned mechanic forbidden (`403`),
-	- admin assign/unassign guardrails: cancelled/completed (`422`), already assigned/not assigned (`409`), mechanic or appointment not found (`404`), last mechanic removal (`422`).
+	- admin assign/unassign guardrails: cancelled/completed (`422`), already assigned/not assigned (`409`), mechanic or appointment not found (`404`), last mechanic removal (`422`),
+	- unauthenticated matrix includes `PUT /api/appointments/{id}/vehicle` returning `401`.
 - `tests/API/profile/*.http` (4 files) includes:
 	- profile get and positive update flows (name, email, phone fields),
+	- profile picture cache semantics: `ETag` + `Cache-Control` header expectations and conditional `If-None-Match` requests for `304 Not Modified`,
 	- duplicate email/phone conflict (`409`/`422`), invalid format (`422`), empty name fields (`422`),
 	- name field character validation (space/digit/apostrophe rejection, `422`),
 	- change-password flows: wrong current password, too-short new password, confirmation mismatch (all `400`), positive change,
 	- account delete: wrong password (`400`), missing password body (`400`), admin self-delete forbidden (`403`), non-admin self-delete (`204`).
 - `tests/Database/**/*.sql` (chunked suites under `core-schema/`, `identity-auth/`, `feature-flow/`) covers schema baseline, identity/auth data checks, and feature-flow regression guards.
-- API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_ADMIN_PASSWORD}}` and `example.com` seed-style identifiers for deterministic local runs.
+- API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_TEST_ADMIN_PASSWORD}}` and `example.test` synthetic identifiers for deterministic local runs.
 
 ## Aspire Rules
 - `AutoService.AppHost` is the default local entry point.

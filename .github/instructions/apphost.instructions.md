@@ -15,6 +15,7 @@ description: "Use when editing Aspire orchestration and resource wiring in AutoS
 - Keep PostgreSQL wiring compatible with existing connection key `ConnectionStrings:AutoServiceDb`.
 - Resource: `postgres`, database: `AutoServiceDb`.
 - Port must come from AppHost configuration key `Ports:Postgres` (single source of truth).
+- Keep PostgreSQL TCP endpoint direct and non-proxied (`WithHostPort(...)` + `.WithEndpoint("tcp", endpoint => endpoint.IsProxied = false)`) so Docker host binding and Aspire health checks remain aligned.
 - Persistent data volume: `autoservice-postgres-data`.
 - PostgreSQL container sets `PGGSSENCMODE=disable`.
 

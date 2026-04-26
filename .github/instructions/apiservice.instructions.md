@@ -39,14 +39,14 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Startup must fail fast if `JwtSettings:Secret` still contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Keep login protections: lockout (5 failed attempts, 15 min lockout), rate limit (10 req/min), and temporary ban behavior (3 min) consistent unless explicitly requested.
 - Keep login-ban middleware in-process behavior deterministic: 30-second cleanup interval and max tracked-client bound (5000).
-- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) must remain registered between `UseCors` and `UseAuthentication`. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for every `401` or `403` response, including `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, and `ClientIp` structured properties.
+- `AuditAccessDeniedMiddleware` (`Middleware/AuditAccessDeniedMiddleware.cs`) must remain registered between `UseCors` and `UseAuthentication`. It logs a structured `LogWarning` under logger category `Auth.AccessDenied` for every `401` or `403` response, including `StatusCode`, `MechanicId` (from `person_id` claim), `Method`, `Path`, and hashed `ClientIp` (`sha256:<12hex>`) structured properties.
 - Auth log events (login success, login failure, login lockout, refresh success, refresh revoked-token reuse) must include a `ClientIp` structured property. Use `ResolveClientIpAddress(httpContext)` computed once per handler and reuse it for both log calls and the `CreatedByIpAddress` field on new `RefreshToken` DB rows.
 - Keep auth input normalization consistent across register/login:
   - emails are trimmed + lowercased,
   - phone numbers are normalized to canonical E.164 (`+{countryCode}{nationalNumber}`),
   - accepted phone numbers must be valid European numbers according to libphonenumber and the backend European country-code allowlist.
 - Registration must pre-check normalized email collisions against both Identity users and domain `People` records (including passive customers).
-- Registration must map unique-constraint email races to controlled validation errors on `Email`.
+- Registration must map unique-constraint email races to the same generic validation response used by duplicate pre-checks (for example `register`) to avoid account enumeration.
 - Keep contact normalization, name validation, token-security helpers, person-type resolution, image content-type detection, and shared validation error message constants centralized in the current grouped top-level folders and reuse them from endpoint files:
   - `Normalization/ContactNormalization.cs`
   - `Security/TokenSecurity.cs`
@@ -79,9 +79,9 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `PUT /api/profile` — Update email, phone number, first name, middle name, last name. Email/phone normalized and uniqueness-checked; first/last name cannot be set to empty.
 - `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
-- `GET /api/profile/picture` — Serve profile picture binary with content type header.
-- `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing).
-- `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload), backed by bounded per-subscriber channels (max 200 subscriptions, buffer size 32, drop-oldest overflow mode).
+- `GET /api/profile/picture` — Serve profile picture binary with content type header; include `ETag` and `Cache-Control: public, max-age=3600`, and return `304 Not Modified` when `If-None-Match` matches.
+- `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing); include `ETag` and `Cache-Control: public, max-age=3600`, and return `304 Not Modified` when `If-None-Match` matches.
+- `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload), backed by bounded per-subscriber channels (max 200 subscriptions globally, max 5 subscriptions per user, buffer size 32, drop-oldest overflow mode).
 - `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only. Server validates image magic bytes and rejects declared MIME/content mismatches.
 - `DELETE /api/profile/picture` — Remove profile picture.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/profile` works directly).
@@ -121,7 +121,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `GET /api/appointments?year=&month=` — List appointments for a given month (defaults to current month if omitted; year: 2000-2100, month: 1-12).
 - `GET /api/appointments/today` — List today's UTC-range appointments.
 - `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Looks up customer by normalized email (creates customer when missing), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record. Accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
-- `PUT /api/appointments/{id}` — Update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable. Legacy vehicle fields in the payload are accepted for backward compatibility and, when provided, are validated (including numeric max constraints) and persisted to the linked vehicle. Customer fields are unchanged by this endpoint. Allowed for assigned mechanics or admins.
+- `PUT /api/appointments/{id}` — Update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable. Customer/vehicle fields are unchanged by this endpoint. Allowed for assigned mechanics or admins.
+- `PUT /api/appointments/{id}/vehicle` — Update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`) for an appointment. Allowed for assigned mechanics or admins.
 - `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, or returns `422` if unassign would leave the appointment without assigned mechanics.
@@ -129,7 +130,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin assigns any mechanic to an appointment. Returns 404 if mechanic/appointment not found, 409 if already assigned (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, or returns `422` with code `appointment_completed` if appointment is Completed.
 - `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly) — Admin removes any mechanic from an appointment. Returns 404 if appointment not found, 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, or returns `422` if removal would leave the appointment without assigned mechanics.
 - Group root endpoints are mapped without requiring a trailing slash (for example, `/api/appointments` works directly).
-- Appointment DTOs: `AppointmentDto` (includes `IntakeCreatedAt` and `DueDateTime`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `SchedulerCreateIntakeRequest`.
+- Appointment DTOs: `AppointmentDto` (includes `IntakeCreatedAt` and `DueDateTime`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `UpdateAppointmentVehicleRequest`, `SchedulerCreateIntakeRequest`.
 - Endpoint files follow partial-class pattern in `Appointments/` folder (mirroring `Auth/` structure).
 
 ## API Documentation
@@ -144,6 +145,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Connection string key: `ConnectionStrings:AutoServiceDb`.
 - JWT settings: `JwtSettings:Secret` (min 32 bytes), `JwtSettings:Issuer`, `JwtSettings:Audience`.
 - Startup must fail fast if `ConnectionStrings:AutoServiceDb` or `JwtSettings:Secret` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
+- Outside Development, startup must fail fast if `AllowedHosts` is missing/empty or contains wildcard (`*`) or `localhost`.
 - CORS settings: `Cors:AllowedOrigins` (required explicit origins for credentialed cross-origin requests).
 - Forwarded-header trust settings: `ForwardedHeaders:ForwardLimit`, `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks`.
 - Demo seeding: Outside Development, require `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`; fail fast when `DemoData:MechanicPassword` contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
