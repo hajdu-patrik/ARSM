@@ -31,7 +31,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ###
 
-### [Positive][Session] Refresh authenticated session (requires refresh cookie)
+### [Positive][Session] Refresh authenticated session (204 expected; requires refresh cookie)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 
 ###

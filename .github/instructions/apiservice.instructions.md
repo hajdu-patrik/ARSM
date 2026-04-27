@@ -21,13 +21,13 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
   - `Customer` 1..* `Vehicle`,
   - `Vehicle` 1..* `Appointment`,
   - `Appointment` *..* `Mechanic` (join table).
-- `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress` (there is no `Scheduled` value).
+- `ProgressStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress` (there is no `Scheduled` value).
 - `Appointment` entity has `DateTime IntakeCreatedAt`, `DateTime DueDateTime`, `DateTime? CompletedAt`, and `DateTime? CanceledAt`; status transitions auto-set/clear completion/cancel timestamps.
 - `AppointmentDto` includes `IntakeCreatedAt`, `DueDateTime`, `CompletedAt`, and `CanceledAt` fields.
 - Use DTO contracts at API boundaries, do not expose EF entities directly.
 - Prefer async EF methods and cancellation tokens.
 - Place new migrations in Data/Migrations.
-- Current migrations are: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
+- Current migrations are: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`, `PostSecurityPayloadHardening`.
 
 ## Authentication & Security
 
@@ -66,10 +66,10 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 ## API Endpoints (Current)
 
 - `POST /api/auth/register` – Mechanic registration endpoint (AdminOnly); returns `RegisterResponse(PersonId, PersonType, Email)`. `IdentityUserId` is not included in the response.
-- `POST /api/auth/login` – Email or phone + password → sets access + refresh cookies and returns profile info + expiration time.
-- `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie (rate-limited by `AuthRefreshAttempts`).
+- `POST /api/auth/login` – Email or phone + password → sets access + refresh cookies and returns `LoginResponse(PersonId, IsAdmin)`.
+- `POST /api/auth/refresh` – Rotates refresh token and reissues access cookie (rate-limited by `AuthRefreshAttempts`); returns `204 No Content` with no response body.
 - `POST /api/auth/logout` – Revokes refresh token session, denylists current JWT `jti`, clears auth cookies.
-- `GET /api/auth/validate` – Returns person linkage data for valid authenticated session.
+- `GET /api/auth/validate` – Returns `ValidateTokenResponse(PersonId, IsAdmin)` for valid authenticated session.
 - `POST /api/auth/login` accepts normalized email/phone identifier input and supports backward-compatible phone-in-email field fallback.
 - `POST /api/auth/login` failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, when a linked mechanic domain record is missing, and when an existing customer email/phone identifier is used (to reduce account enumeration); `429` for lockout/rate-limit.
 
@@ -80,7 +80,7 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `DELETE /api/profile` — Delete current user's profile after validating current password. Returns 403 if caller is admin. Clears auth cookies and invalidates active session. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` — Change password (CurrentPassword + NewPassword + ConfirmNewPassword). Uses Identity `ChangePasswordAsync`.
 - `GET /api/profile/picture` — Serve profile picture binary with content type header; include `ETag` and `Cache-Control: public, max-age=3600`, and return `304 Not Modified` when `If-None-Match` matches.
-- `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 404 if mechanic/picture missing); include `ETag` and `Cache-Control: public, max-age=3600`, and return `304 Not Modified` when `If-None-Match` matches.
+- `GET /api/profile/picture/{personId}` — Serve mechanic profile picture binary by mechanic person id (authorized; 403 unless caller is admin or requesting own personId; 404 if mechanic/picture missing); include `ETag` and `Cache-Control: public, max-age=3600`, and return `304 Not Modified` when `If-None-Match` matches.
 - `GET /api/profile/picture/updates` — Server-Sent Events stream for profile-picture updates (`profile-picture-updated` events with personId/hasProfilePicture/cacheBuster payload), backed by bounded per-subscriber channels (max 200 subscriptions globally, max 5 subscriptions per user, buffer size 32, drop-oldest overflow mode).
 - `PUT /api/profile/picture` — Upload profile picture (multipart/form-data, file bound from form payload). Max 512 KB, JPEG/PNG/WebP only. Server validates image magic bytes and rejects declared MIME/content mismatches.
 - `DELETE /api/profile/picture` — Remove profile picture.
@@ -166,4 +166,4 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Keep schema constraints and indexes aligned with domain invariants.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
-- Seeding includes legacy-state recovery: if migrated/backfilled data exists for customer-side tables but mechanics/identity bootstrap is missing, the initializer resets the inconsistent legacy dataset and reseeds deterministic demo data.
+- Seeding includes legacy-state recovery: if migrated/backfilled data exists for customer-side tables but mechanics/identity bootstrap is missing, the initializer resets the inconsistent legacy dataset using explicit EF set-based deletes (`ExecuteDeleteAsync`, no raw `TRUNCATE`) and reseeds deterministic demo data.

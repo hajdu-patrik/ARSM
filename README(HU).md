@@ -159,9 +159,3 @@ ARSM_TEST_MECHANIC_PASSWORD=...
 ARSM_TEST_WRONG_PASSWORD=...
 ARSM_TEST_CUSTOMER_EMAIL=...
 ```
-
-### Megjegyzések
-
-- A workflow `ubuntu-latest` környezetet használ, ezt az `act` jól tudja szimulálni.
-- A `playwright-e2e` job Docker + lokális secret értékeket igényel.
-- Első futáskor image méret választást kérhet; a `Medium` általában elegendő.

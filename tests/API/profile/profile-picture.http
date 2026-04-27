@@ -3,6 +3,8 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @MechanicPersonIdForPicture = 7
@@ -35,13 +37,33 @@ If-None-Match: {{ProfilePictureEtag}}
 
 ###
 
-### [Positive][Profile] Get mechanic profile picture by person id (200 or 404 if none)
-# When 200: expect response headers ETag and Cache-Control: public, max-age=3600
+### [Negative][Profile] Non-admin cannot get another mechanic profile picture by person id (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
 
 ###
 
-### [Positive][Profile] Conditional get mechanic profile picture by ETag (304 expected when ETag matches)
+### [Setup][Profile] Logout non-admin before admin picture checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Setup][Profile] Login as admin for person-id picture checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Profile] Admin can get mechanic profile picture by person id (200 or 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+
+###
+
+### [Positive][Profile] Admin conditional get mechanic profile picture by ETag (304 expected when ETag matches)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
 If-None-Match: {{ProfilePictureEtag}}
 

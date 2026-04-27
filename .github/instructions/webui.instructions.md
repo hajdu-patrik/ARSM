@@ -73,6 +73,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/pages/Scheduler/components/intake/SchedulerIntakeModal.tsx`** + `useSchedulerIntakeForm` + `SchedulerIntakeSections`: Vehicle numeric inputs clamp to documented max ranges client-side and map backend numeric validation errors.
 - **`src/pages/Scheduler/utils/due-date.ts`**: Shared due-state helper (`today`/`overdue`/`days left`) used by scheduler cards and detail views; also exports `buildSelectedDayIso` and `toDatetimeLocalValue` helpers used by intake.
 - **`src/pages/Scheduler/components/shared/MechanicAvatar.tsx`**: Shared mechanic avatar renderer; deterministic color fallback by mechanic ID and mechanic-specific profile picture endpoint (`/api/profile/picture/{personId}`) when available.
+- **`src/pages/Scheduler/components/shared/MechanicAvatar.tsx`**: Shared mechanic avatar renderer; deterministic color fallback by mechanic ID and mechanic-specific profile picture endpoint (`/api/profile/picture/{personId}`) when available. Backend allows this endpoint only for admin users or when `{personId}` equals the caller's own person id (otherwise `403`), so UI must gracefully keep fallback avatars.
 - **`src/services/profile/profile-picture-live.service.ts`**: Shared realtime profile-picture update channel using SSE (`/api/profile/picture/updates`) + window event fan-out (`autoservice:profile-picture-updated`) so navbar and scheduler avatars refresh immediately. Reconnect is auth-aware and lifecycle-token guarded, attempts `/api/auth/refresh` on SSE errors, clears auth and stops reconnect attempts on refresh `401/403` (session expiry/auth clear), and teardown clears reconnect timer/event-source handles when the last subscriber unsubscribes.
 - **`src/pages/Scheduler/components/calendar/MonthAppointmentList.tsx`**: Monthly appointment list rendered as one continuous sorted card grid. Supports day filtering (`selectedDay` prop) with a "Show all" clear chip, displays loading skeletons while data loads. Header badge count always displays the full month total (`appointments.length`) regardless of selected day or active filters. Filter bar includes status filter chips (toggleable, colored per status), a mechanic dropdown (populated dynamically from appointments) with `aria-label` from `scheduler.filter.allMechanics` i18n key, and a date sort toggle (asc/desc); all filters are combinable with each other and with `selectedDay`. Layout rule: mobile is single-column full width, non-mobile is two columns, and if exactly one appointment card is visible it spans full width.
 - **`src/pages/Scheduler/utils/scheduler-datetime.ts`**: Shared scheduler date/time formatting and calendar-day comparison helpers used by scheduler components and hooks.
@@ -122,7 +123,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - **`src/store/toast.store.ts`**: Zustand store for global toasts (message key + interpolation values, duration, remove actions).
 - **`src/services/http/api.client.ts`**: Axios instance with credentialed cookie requests and refresh retry; requires `VITE_API_URL` from environment (no hardcoded URL fallback).
 - **`index.html` metadata baseline**: static description/robots/Open Graph/Twitter/title tags exist in `index.html`; canonical is runtime-managed by `SeoManager` (no static canonical tag in `index.html`).
-- **`src/types/auth/login.types.ts`**: TypeScript interfaces for auth API contracts (LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse, RefreshResponse, JwtPayload).
+- **`src/types/auth/login.types.ts`**: TypeScript interfaces for auth API contracts (LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse, JwtPayload). Login and validate responses return PersonId + IsAdmin only; refresh returns 204 No Content with no response body.
 - **`src/types/scheduler/scheduler.types.ts`**: TypeScript interfaces for scheduler (`AppointmentDto` includes `intakeCreatedAt`, `dueDateTime`, `completedAt?`, `canceledAt?`, plus `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`; `AppointmentStatus` is `'InProgress' | 'Completed' | 'Cancelled'`; includes `CalendarDay`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `UpdateAppointmentVehicleRequest`, `SchedulerCustomerLookupDto`, `SchedulerVehicleLookupDto`, `SchedulerNewVehicleRequest`, `SchedulerCreateIntakeRequest`).
 - **`src/types/profile/profile.types.ts`**: TypeScript interfaces for profile (`ProfileData`, `UpdateProfileRequest` (firstName?, lastName?, email?, phoneNumber?, middleName?), `ChangePasswordRequest`, `DeleteProfileRequest`).
 - **`src/utils/avatar.ts`**: Deterministic fallback avatar utilities.
@@ -164,10 +165,10 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 ## API Integration
 
 - **Auth endpoints**:
-  - `POST /api/auth/login` – (email or phoneNumber) + password → cookie session + profile.
-  - `POST /api/auth/refresh` – refresh token rotation + access cookie reissue (server rate-limited by `AuthRefreshAttempts`).
+  - `POST /api/auth/login` – (email or phoneNumber) + password → cookie session + `LoginResponse(personId, isAdmin)`.
+  - `POST /api/auth/refresh` – refresh token rotation + access cookie reissue (server rate-limited by `AuthRefreshAttempts`); returns `204 No Content` with no response body.
   - `POST /api/auth/logout` – refresh revoke + cookie clear; returns `204 No Content` on success.
-  - `GET /api/auth/validate` – validate active authenticated session.
+  - `GET /api/auth/validate` – validate active authenticated session; returns `ValidateTokenResponse(personId, isAdmin)`.
   - `POST /api/auth/login` failure semantics: generic `401 invalid_credentials` for unknown identifier, wrong password, linked mechanic-domain-record gaps, and existing customer email/phone identifiers (enumeration-resistant); `429` lockout/rate-limit.
 - **Appointment endpoints**:
   - `GET /api/appointments?year=&month=` – list appointments for a month (authorized).
@@ -187,7 +188,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
   - `POST /api/profile/change-password` – change password (authorized).
   - `DELETE /api/profile` – delete current user profile after current-password confirmation (authorized, returns 403 for admin users).
   - `GET /api/profile/picture` – get profile picture (authorized).
-  - `GET /api/profile/picture/{personId}` – get a mechanic profile picture by person id (authorized, scheduler avatars).
+  - `GET /api/profile/picture/{personId}` – get a mechanic profile picture by person id (authorized, scheduler avatars; backend returns `403` unless caller is admin or requesting own person id).
   - `GET /api/profile/picture/updates` – SSE stream for realtime profile picture update events (authorized).
   - `PUT /api/profile/picture` – upload profile picture, multipart/form-data (authorized).
   - `DELETE /api/profile/picture` – delete profile picture (authorized).

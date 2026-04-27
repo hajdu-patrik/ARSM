@@ -159,9 +159,3 @@ ARSM_TEST_MECHANIC_PASSWORD=...
 ARSM_TEST_WRONG_PASSWORD=...
 ARSM_TEST_CUSTOMER_EMAIL=...
 ```
-
-### Notes
-
-- The workflow uses `ubuntu-latest`, which `act` can simulate well.
-- The `playwright-e2e` job needs Docker + local secret values.
-- First run may ask for runner image size selection; `Medium` is usually enough.

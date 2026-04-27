@@ -133,9 +133,9 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - The EF Core provider is `Npgsql.EntityFrameworkCore.PostgreSQL`; use `options.UseNpgsql(...)` in `Program.cs`.
 - Keep model configuration centralized in `Data/AutoServiceDbContext.cs`.
 - Place new migrations in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`, `PostSecurityPayloadHardening`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: calls `MigrateAsync()` then seeds mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
-- Demo seeding includes legacy-state recovery: if a migrated/backfilled dataset contains customer-side data but lacks mechanics/identity linkage, the initializer resets that inconsistent dataset and reseeds deterministic demo data.
+- Demo seeding includes legacy-state recovery: if a migrated/backfilled dataset contains customer-side data but lacks mechanics/identity linkage, the initializer resets that inconsistent dataset using explicit EF set-based deletes (`ExecuteDeleteAsync`, no raw `TRUNCATE`) and reseeds deterministic demo data.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Startup/seeding must fail fast if `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret`, or `DemoData:MechanicPassword` still contains template markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Prefer async EF methods for I/O (`SaveChangesAsync`, `ToListAsync`, etc.).
@@ -166,10 +166,10 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 ## Current API & Security Snapshot (Keep In Sync With Code)
 - Current mapped endpoints in `AutoService.ApiService`:
 	- `POST /api/auth/register` (authorized, AdminOnly) — returns `RegisterResponse(PersonId, PersonType, Email)`; `IdentityUserId` is not included in the response
-	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`)
-	- `POST /api/auth/refresh` (rate-limited by policy `AuthRefreshAttempts`)
+	- `POST /api/auth/login` (rate-limited by policy `AuthLoginAttempts`) — returns `LoginResponse(PersonId, IsAdmin)`
+	- `POST /api/auth/refresh` (rate-limited by policy `AuthRefreshAttempts`) — returns `204 No Content` with no response body
 	- `POST /api/auth/logout` (authorized)
-	- `GET /api/auth/validate` (authorized)
+	- `GET /api/auth/validate` (authorized) — returns `ValidateTokenResponse(PersonId, IsAdmin)`
 	- `GET /api/appointments?year=&month=` (authorized) — list appointments for a month
 	- `GET /api/appointments/today` (authorized) — list today's appointments
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
@@ -186,7 +186,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users); `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion
 	- `POST /api/profile/change-password` (authorized) — change password
 	- `GET /api/profile/picture` (authorized) — get profile picture binary (supports `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
-	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing; supports `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
+	- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (403 unless caller is admin or requesting own personId; 404 if mechanic/picture missing; supports `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
 	- `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events)
 	- `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (server validates image magic bytes and rejects MIME/content mismatches)
 	- `DELETE /api/profile/picture` (authorized) — remove profile picture
@@ -207,7 +207,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
 	- Endpoint mapper registrations declare explicit OpenAPI response metadata (`Produces`, `ProducesProblem`, `ProducesValidationProblem`) so status/body documentation in OpenAPI/Scalar stays accurate without changing runtime behavior
 	- `GET /health` and `GET /alive` in Development (`app.MapDefaultEndpoints()`)
-- Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto`, `UpdateStatusRequest`, `UpdateAppointmentRequest`, `UpdateAppointmentVehicleRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
+- Appointment endpoints use DTOs (`AppointmentDto` includes `IntakeCreatedAt` and `DueDateTime`, plus `CompletedAt`/`CanceledAt`), `VehicleDto`, `CustomerSummaryDto`, `MechanicSummaryDto` (Id, FullName, Specialization, HasProfilePicture; expertise field removed), `UpdateStatusRequest`, `UpdateAppointmentRequest`, `UpdateAppointmentVehicleRequest`, and `SchedulerCreateIntakeRequest`, and follow partial-class pattern in `Appointments/` folder.
 - Auth and login behavior currently implemented:
 	- registration is mechanic-only and admin-only,
 	- login accepts email or phone number,
@@ -254,6 +254,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - Seeding and credential safety:
 	- `DemoDataInitializer` runs migrations on startup,
 	- seed generation adds 30 additional appointments in the current UTC month (including today and multiple same-day entries),
+	- legacy backfill reset uses explicit EF set-based deletes (`ExecuteDeleteAsync`), not raw `TRUNCATE`,
 	- demo seeding outside Development requires `DemoData:EnableSeeding=true`,
 	- `DemoData:MechanicPassword` is required when seeding is enabled,
 	- placeholder marker values (`CHANGE_ME`, `SET_UNIQUE_LOCAL`, including punctuation-separated variants) in DB/JWT/seeding secrets fail fast at startup/seeding.
