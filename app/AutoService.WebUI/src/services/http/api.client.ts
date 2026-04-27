@@ -11,7 +11,6 @@
 import axios from 'axios';
 import type { AxiosError, AxiosInstance } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
-import type { RefreshResponse } from '../../types/auth/login.types';
 
 /** Base API URL read from environment configuration. */
 const API_URL = import.meta.env.VITE_API_URL;
@@ -133,7 +132,7 @@ apiClient.interceptors.response.use(
 
     try {
       refreshPromise ??= apiClient
-        .post<RefreshResponse>(REFRESH_PATH)
+        .post(REFRESH_PATH)
         .then(() => undefined)
         .finally(() => {
           refreshPromise = null;

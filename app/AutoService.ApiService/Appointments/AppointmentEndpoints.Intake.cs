@@ -320,7 +320,7 @@ public static partial class AppointmentEndpoints
             IntakeCreatedAt = DateTime.UtcNow,
             DueDateTime = dueDateTimeUtc,
             TaskDescription = taskDescription,
-            Status = ProgresStatus.InProgress,
+            Status = ProgressStatus.InProgress,
             Vehicle = vehicle,
             Mechanics = new List<Mechanic> { mechanic }
         };

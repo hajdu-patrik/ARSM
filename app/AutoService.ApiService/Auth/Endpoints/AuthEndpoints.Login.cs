@@ -1,7 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
-using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
@@ -187,7 +186,7 @@ public static partial class AuthEndpoints
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, clientIp);
-        return Results.Ok(new LoginResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
+        return Results.Ok(new LoginResponse(mechanic.Id, isAdmin));
     }
 
     /**

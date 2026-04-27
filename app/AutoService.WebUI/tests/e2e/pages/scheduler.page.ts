@@ -141,7 +141,21 @@ export class SchedulerPage {
   async openAppointmentByTask(taskDescription: string): Promise<void> {
     const taskText = this.page.getByText(taskDescription, { exact: true });
     await expect(taskText).toBeVisible({ timeout: 15_000 });
-    await taskText.click();
+
+    const card = this.page
+      .locator('div')
+      .filter({ has: this.page.getByText(taskDescription, { exact: true }) })
+      .filter({ has: this.page.locator('button[aria-label]') })
+      .first();
+
+    const overlayButton = card.locator('button[aria-label]').first();
+    if (await overlayButton.isVisible().catch(() => false)) {
+      await overlayButton.click();
+      return;
+    }
+
+    // Fallback for legacy markup where task text itself remains directly clickable.
+    await taskText.click({ force: true });
   }
 
   /** Asserts the intake button is disabled. */

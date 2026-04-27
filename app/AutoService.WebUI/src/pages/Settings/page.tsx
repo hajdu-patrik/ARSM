@@ -400,8 +400,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   if (isLoadingProfile) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-arsm-accent border-t-transparent" />
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
       </div>
     );
   }
@@ -461,13 +461,14 @@ const SettingsPageComponent = memo(function SettingsPage() {
         />
 
         {!user?.isAdmin && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/40 dark:bg-red-900/20 sm:p-6">
-            <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">{t('settings.deleteProfileTitle')}</h2>
-            <p className="mt-2 text-sm text-red-700 dark:text-red-300/90">{t('settings.deleteProfileDescription')}</p>
+          <div className="relative overflow-hidden rounded-2xl border border-arsm-error-border-light bg-arsm-error-bg p-5 shadow-[0_8px_24px_rgba(170,44,53,0.06)] dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:shadow-[0_10px_28px_rgba(170,44,53,0.04)] sm:p-6">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(215,82,94,0.06)_0%,rgba(215,82,94,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(215,82,94,0.08)_0%,rgba(215,82,94,0)_100%)]" />
+            <h2 className="text-lg font-semibold text-arsm-error-text dark:text-arsm-error-soft">{t('settings.deleteProfileTitle')}</h2>
+            <p className="mt-2 text-sm text-arsm-error-hover dark:text-arsm-error-text-light/85">{t('settings.deleteProfileDescription')}</p>
             <button
               type="button"
               onClick={openDeleteModal}
-              className="mt-4 inline-flex items-center justify-center rounded-xl border border-red-300 bg-transparent px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+              className="mt-4 inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-5 py-2.5 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_8px_20px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_8px_20px_rgba(215,82,94,0.08)]"
             >
               {t('settings.deleteProfileButton')}
             </button>
@@ -501,7 +502,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
               type="button"
               onClick={() => { void handleDeleteProfile(); }}
               disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
             >
               {isDeletingProfile ? t('settings.deletingProfile') : t('settings.confirmDeleteProfile')}
             </button>

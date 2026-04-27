@@ -7,6 +7,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { profileService } from '../../../../services/profile/profile.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
+import { useAuthStore } from '../../../../store/auth.store';
 import { getDeterministicAvatarColor } from '../../../../utils/avatar';
 
 /** Props for the {@link MechanicAvatar} component. */
@@ -42,6 +43,7 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
   sizeClassName = 'h-7 w-7 text-xs',
   className,
 }: MechanicAvatarProps) {
+  const currentUser = useAuthStore((state) => state.user);
   const [liveHasProfilePicture, setLiveHasProfilePicture] = useState<boolean | null>(null);
   const [failedImageKey, setFailedImageKey] = useState<string | null>(null);
   const [cacheBuster, setCacheBuster] = useState(0);
@@ -65,8 +67,9 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
   }, [mechanicId]);
 
   const resolvedHasProfilePicture = liveHasProfilePicture ?? hasProfilePicture;
+  const canReadMechanicPicture = currentUser?.isAdmin === true || currentUser?.personId === mechanicId;
   const imageCacheKey = `${mechanicId}:${cacheBuster}:${resolvedHasProfilePicture ? '1' : '0'}`;
-  const shouldShowProfilePicture = resolvedHasProfilePicture && failedImageKey !== imageCacheKey;
+  const shouldShowProfilePicture = canReadMechanicPicture && resolvedHasProfilePicture && failedImageKey !== imageCacheKey;
   const initials = useMemo(() => getInitialsFromFullName(fullName), [fullName]);
   const fallbackColorClass = getDeterministicAvatarColor(mechanicId);
 

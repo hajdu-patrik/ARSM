@@ -11,7 +11,7 @@
   - `Customer` 1..* `Vehicle`
   - `Vehicle` 1..* `Appointment`
   - `Appointment` *..*  `Mechanic` (join table)
-- `ProgresStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress`.
+- `ProgressStatus` enum values: `InProgress`, `Completed`, `Cancelled`. Default on new appointments is `InProgress`.
 - `Appointment` entity has `DateTime IntakeCreatedAt`, `DateTime DueDateTime`, `DateTime? CompletedAt`, and `DateTime? CanceledAt`; status transitions auto-set/clear the completion/cancel timestamps.
 - `AppointmentDto` includes `IntakeCreatedAt`, `DueDateTime`, `CompletedAt`, and `CanceledAt` fields.
 - Never expose EF entities directly from API boundaries — use DTO contracts.
@@ -21,10 +21,10 @@
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL` — use `options.UseNpgsql(...)`.
 - Model config centralized in `Data/AutoServiceDbContext.cs`.
 - New migrations go in `Data/Migrations`.
-- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`.
+- Current migrations: `InitialCreate`, `AddIdentityAndIdentityUserId`, `AddRefreshTokensAndCookieAuth`, `AddProfilePicture`, `AddAppointmentTimestamps`, `BackfillDemoData`, `AddAppointmentIntakeAndDueDateTime`, `AddRevokedJwtTokenDenylist`, `NormalizePhoneNumbersToE164`, `PostSecurityPayloadHardening`.
 - `DemoDataInitializer.EnsureSeededAsync()` runs on startup: `MigrateAsync()` + ensure Admin role + seed mechanics (with Identity accounts), customers (plain records), vehicles, and appointments when tables are empty. Seeding includes 30 additional generated appointments in the current UTC month (including today and multiple same-day entries).
 - Admin role seeding is idempotent and runs on every startup (before the "is data already seeded?" guard), ensuring the `"Admin"` Identity role exists and is assigned to the first mechanic (Gabor Kovacs).
-- Legacy migrated/backfilled customer-only states are auto-recovered: if mechanics/identity linkage is missing while customer-side data exists, the initializer resets the inconsistent dataset and reseeds deterministic demo data.
+- Legacy migrated/backfilled customer-only states are auto-recovered: if mechanics/identity linkage is missing while customer-side data exists, the initializer resets the inconsistent dataset using explicit EF set-based deletes (`ExecuteDeleteAsync`, no raw `TRUNCATE`) and reseeds deterministic demo data.
 - Outside Development, seeding requires `DemoData:EnableSeeding=true` and `DemoData:MechanicPassword`.
 - Startup/seeding fails fast if `ConnectionStrings:AutoServiceDb`, `JwtSettings:Secret`, or `DemoData:MechanicPassword` still contains template placeholder markers (for example `CHANGE_ME` or `SET_UNIQUE_LOCAL`, including punctuation-separated variants).
 - Prefer async EF methods (`SaveChangesAsync`, `ToListAsync`, etc.) with cancellation tokens.
@@ -35,7 +35,7 @@
 - Named policy `"AdminOnly"` requires `ClaimTypes.Role == "Admin"`.
 - JWT tokens include role claims via `UserManager.GetRolesAsync()` — added as `ClaimTypes.Role`.
 - `CreateJwtTokenAsync` is async and accepts `UserManager<IdentityUser>` to resolve roles.
-- All auth responses (`LoginResponse`, `RefreshResponse`, `ValidateTokenResponse`) include `bool IsAdmin`.
+- Auth responses: `LoginResponse` and `ValidateTokenResponse` return `int PersonId` and `bool IsAdmin` (no other fields); refresh returns `204 No Content` with no response body.
 
 ## Auth Implementation
 
@@ -73,10 +73,10 @@
 ## Auth Endpoints (Current)
 
 - `POST /api/auth/register` (authorized, AdminOnly policy) — `RegisterResponse` contains `PersonId`, `PersonType`, `Email` only; `IdentityUserId` is not exposed in the response
-- `POST /api/auth/login` (rate-limited)
-- `POST /api/auth/refresh` (rate-limited)
+- `POST /api/auth/login` (rate-limited) — returns `LoginResponse(PersonId, IsAdmin)`
+- `POST /api/auth/refresh` (rate-limited) — returns `204 No Content` with no response body
 - `POST /api/auth/logout` (authorized)
-- `GET /api/auth/validate` (authorized)
+- `GET /api/auth/validate` (authorized) — returns `ValidateTokenResponse(PersonId, IsAdmin)`
 
 ## Appointment Endpoints (Current)
 
@@ -122,7 +122,7 @@
 - `DELETE /api/profile` (authorized, non-admin only) — delete current user profile after current-password confirmation (logs out and clears auth cookies). Returns 403 if the caller has the Admin role. `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion.
 - `POST /api/profile/change-password` (authorized) — change password (current + new + confirm)
 - `GET /api/profile/picture` (authorized) — get profile picture binary (`ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
-- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (404 if mechanic/picture missing; `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
+- `GET /api/profile/picture/{personId}` (authorized) — get mechanic profile picture binary by person id (403 unless caller is admin or requesting own personId; 404 if mechanic/picture missing; `ETag` + `Cache-Control: public, max-age=3600`; returns `304 Not Modified` when `If-None-Match` matches)
 - `GET /api/profile/picture/updates` (authorized) — SSE stream for realtime profile-picture updates (`profile-picture-updated` events), backed by bounded per-subscriber channels (max 200 subscriptions globally, max 5 subscriptions per user, buffer size 32, drop-oldest overflow mode)
 - `PUT /api/profile/picture` (authorized, multipart/form-data) — upload profile picture (JPEG/PNG/WebP, max 512 KB, file bound from form payload). Server validates image magic bytes and rejects MIME/content mismatches.
 - `DELETE /api/profile/picture` (authorized) — remove profile picture

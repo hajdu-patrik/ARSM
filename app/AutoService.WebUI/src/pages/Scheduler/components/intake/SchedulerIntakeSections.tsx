@@ -5,7 +5,7 @@ import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/sch
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
 
-const FORM_FIELD_CLASS = 'rounded-lg border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-accent/40 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-accent/24';
+const FORM_FIELD_CLASS = 'w-full rounded-xl border border-arsm-border bg-white/80 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:ring-arsm-focus-ring/24';
 const FORM_TEXTAREA_CLASS = `${FORM_FIELD_CLASS} resize-y`;
 
 interface SchedulerIntakeHeaderProps {
@@ -23,8 +23,10 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 }: SchedulerIntakeHeaderProps) {
   return (
     <>
-      <div className="rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-primary-dark">
-        <span className="font-medium">{t('scheduler.intake.selectedDay')}</span> {selectedDayLabel}
+      <div className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input/90 px-4 py-3 text-sm text-arsm-primary shadow-[0_10px_22px_rgba(45,36,64,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.35)]">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(205,184,255,0.2)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.2)_0%,rgba(138,118,214,0)_100%)]" />
+        <span className="relative font-medium">{t('scheduler.intake.selectedDay')}</span>
+        <span className="relative ml-1">{selectedDayLabel}</span>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
@@ -40,9 +42,9 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
         </label>
       </div>
 
-      <div className="rounded-xl border border-arsm-border bg-arsm-input p-3 text-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+      <div className="rounded-2xl border border-arsm-border bg-arsm-input p-3.5 text-sm shadow-[0_8px_20px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_10px_22px_rgba(3,5,14,0.3)]">
         <span className="font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.statusLabel')}</span>
-        <p className="mt-1 inline-flex rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">
+        <p className="mt-1 inline-flex rounded-full border border-arsm-warning-border/60 bg-arsm-warning-bg px-2.5 py-0.5 text-xs font-semibold text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark">
           {t('scheduler.status.inprogress')}
         </p>
       </div>
@@ -70,7 +72,8 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
   onLookup,
 }: SchedulerIntakeLookupProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+    <div className="relative space-y-3 overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_26px_rgba(3,5,14,0.34)]">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(205,184,255,0.18)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.18)_0%,rgba(138,118,214,0)_100%)]" />
       <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.userDetails')}</p>
       <h3 className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('scheduler.intake.customerLookup')}</h3>
 
@@ -92,7 +95,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
           data-testid="scheduler-intake-search"
           onClick={onLookup}
           disabled={isSearching}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+          className="inline-flex items-center justify-center gap-1 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_18px_rgba(111,84,173,0.22)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_24px_rgba(111,84,173,0.28)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.44)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_12px_24px_rgba(8,10,20,0.52)]"
         >
           <Search className="h-4 w-4" />
           {isSearching ? t('scheduler.intake.searching') : t('scheduler.intake.search')}
@@ -100,7 +103,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
       </div>
 
       {lookupState === 'found' && customerLookup && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-950/30 dark:text-green-200">
+        <div className="fade-in-up rounded-xl border border-arsm-success-border/60 bg-arsm-success-bg px-3.5 py-2.5 text-sm text-arsm-success-text shadow-[0_4px_12px_rgba(34,197,94,0.06)] dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
           <div className="flex items-center gap-2 font-semibold">
             <UserCheck className="h-4 w-4" />
             {t('scheduler.intake.customerFound')}
@@ -111,7 +114,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
       )}
 
       {lookupState === 'not-found' && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="fade-in-up rounded-xl border border-arsm-warning-border/60 bg-arsm-warning-bg px-3.5 py-2.5 text-sm text-arsm-warning-text shadow-[0_4px_12px_rgba(245,158,11,0.06)] dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark">
           <div className="flex items-center gap-2 font-semibold">
             <UserPlus className="h-4 w-4" />
             {t('scheduler.intake.customerNotFound')}
@@ -147,7 +150,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
   onCustomerPhoneChange,
 }: SchedulerIntakeCustomerFormProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.3)] lg:grid-cols-2">
       <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">{t('scheduler.intake.personalInformation')}</p>
       <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.customerFirstName')}</span>
@@ -212,7 +215,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
   onExistingVehicleIdChange,
 }: SchedulerIntakeVehicleModeProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+    <div className="space-y-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.3)]">
       {vehicleMode === 'existing' && (
         <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.vehicleDetails')}</p>
       )}
@@ -222,14 +225,14 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
           type="button"
           onClick={() => onVehicleModeChange('existing')}
           disabled={!customerHasVehicles}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'existing' ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark'} disabled:opacity-50`}
+          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'existing' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary shadow-[0_6px_14px_rgba(111,84,173,0.22)] dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(8,10,20,0.42)]' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'} disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {t('scheduler.intake.useExistingVehicle')}
         </button>
         <button
           type="button"
           onClick={() => onVehicleModeChange('new')}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${vehicleMode === 'new' ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark'}`}
+          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'new' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary shadow-[0_6px_14px_rgba(111,84,173,0.22)] dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(8,10,20,0.42)]' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'}`}
         >
           {t('scheduler.intake.createNewVehicle')}
         </button>
@@ -271,7 +274,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
   onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.3)] lg:grid-cols-2">
       <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">{t('scheduler.intake.vehicleDetails')}</p>
       <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.vehicleLicensePlate')}</span>
@@ -370,7 +373,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
   onTaskDescriptionChange,
 }: SchedulerIntakeTaskSectionProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+    <div className="space-y-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.3)]">
       <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.taskDetails')}</p>
       <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
@@ -381,7 +384,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
           placeholder={t('scheduler.intake.taskDescriptionPlaceholder')}
           maxLength={200}
           rows={4}
-          className={FORM_TEXTAREA_CLASS}
+          className={`${FORM_TEXTAREA_CLASS} min-h-[7rem]`}
         />
       </label>
     </div>

@@ -1,7 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
-using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
@@ -27,7 +26,7 @@ public static partial class AuthEndpoints
      * @param tokenIssuer JWT issuer service.
      * @param loggerFactory Logger factory used to create endpoint logger.
      * @param cancellationToken Request cancellation token.
-     * @return 200 OK with refreshed auth payload, or 401 when refresh cannot proceed.
+      * @return 204 No Content when refresh succeeds, or 401 when refresh cannot proceed.
      */
     private static async Task<IResult> RefreshAsync(
         HttpContext httpContext,
@@ -133,7 +132,7 @@ public static partial class AuthEndpoints
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, currentIpAddress);
-        return Results.Ok(new RefreshResponse(accessTokenExpiresAtUtc, mechanic.Id, PersonTypeResolver.Resolve(mechanic), identityUser.Email ?? mechanic.Email, isAdmin));
+        return Results.NoContent();
     }
 
     /**

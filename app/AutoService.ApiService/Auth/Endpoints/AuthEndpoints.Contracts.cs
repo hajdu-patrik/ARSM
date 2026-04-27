@@ -23,11 +23,8 @@ public static partial class AuthEndpoints
     internal sealed record LoginRequest(string? Email, string? PhoneNumber, string Password);
 
     /** Returned after a successful login when auth cookies were set. */
-    internal sealed record LoginResponse(DateTime ExpiresAtUtc, int PersonId, string PersonType, string Email, bool IsAdmin);
-
-    /** Returned after a successful refresh when new auth cookies were set. */
-    internal sealed record RefreshResponse(DateTime ExpiresAtUtc, int PersonId, string PersonType, string Email, bool IsAdmin);
+    internal sealed record LoginResponse(int PersonId, bool IsAdmin);
 
     /** Returned by GET /api/auth/validate when the token is valid. */
-    internal sealed record ValidateTokenResponse(int PersonId, string PersonType, string Email, bool IsAdmin);
+    internal sealed record ValidateTokenResponse(int PersonId, bool IsAdmin);
 }

@@ -1,75 +1,16 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * Tailwind CSS v4 config.
+ *
+ * Design tokens (colors, etc.) are defined in src/index.css via @theme.
+ * Dark mode variant is declared there too via @custom-variant.
+ * This file only needs to specify template paths for content scanning.
+ *
+ * @type {import('tailwindcss').Config}
+ */
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
-    extend: {
-      colors: {
-        purple: {
-          50: '#f6f4fb',
-          100: '#ede8fa',
-          200: '#dcd5ef',
-          300: '#c7bce0',
-          400: '#ada0cc',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-        },
-        'arsm-surface': '#ECECEF',
-        'arsm-surface-dark': '#09090F',
-        'arsm-card': '#FFFFFF',
-        'arsm-card-dark': '#13131B',
-        'arsm-primary': '#2C2440',
-        'arsm-primary-dark': '#EDE8FA',
-        'arsm-muted': '#6A627F',
-        'arsm-muted-dark': '#B9B0D3',
-        'arsm-label': '#5E5672',
-        'arsm-label-dark': '#CFC5EA',
-        'arsm-border': '#D8D2E9',
-        'arsm-border-dark': '#3A3154',
-        'arsm-input': '#F6F4FB',
-        'arsm-input-dark': '#1A1A25',
-        'arsm-placeholder': '#8A829F',
-        'arsm-placeholder-dark': '#8C83A8',
-        'arsm-accent': '#C9B3FF',
-        'arsm-accent-hover': '#BFA6F7',
-        'arsm-accent-dark': '#7A66C7',
-        'arsm-accent-dark-hover': '#8A75D6',
-        'arsm-accent-subtle': '#E6DCF8',
-        'arsm-accent-border': '#DCCDFA',
-        'arsm-focus-ring': '#C9B3FF',
-        'arsm-hover': '#F5F2FF',
-        'arsm-hover-dark': '#322B47',
-        'arsm-ring-dark': '#4B406E',
-        'arsm-toggle-bg': '#EFEBFA',
-        'arsm-toggle-bg-dark': '#241F33',
-        'arsm-deep': '#2A253B',
-        'arsm-deepest': '#0E0E16',
-        'arsm-error-bg': '#FDF2F3',
-        'arsm-error-bg-dark': '#2B171A',
-        'arsm-error-border': '#E9A5A9',
-        'arsm-error-border-light': '#F4C8CB',
-        'arsm-error-text': '#A52A33',
-        'arsm-error-text-dark': '#6A2D33',
-        'arsm-error-text-light': '#FF9AA0',
-        'arsm-error-hover': '#D76D73',
-        'arsm-error-active': '#C13C45',
-        'arsm-error-dark': '#8A3A42',
-        'arsm-error-accent': '#D4515C',
-        'arsm-error-muted': '#A94750',
-        'arsm-error-soft': '#FFB7BC',
-        'arsm-error-softest': '#FFC8CB',
-        'arsm-accent-deep': '#5E4698',
-        'arsm-accent-vivid': '#6F54AD',
-        'arsm-accent-wash': '#EDE5FF',
-        'arsm-accent-tint': '#E2D9FF',
-      },
-    },
-  },
-  darkMode: 'class',
   plugins: [],
 }

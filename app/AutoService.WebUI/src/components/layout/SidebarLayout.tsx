@@ -73,6 +73,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   const [profilePersonId, setProfilePersonId] = useState<number | null>(user?.personId ?? null);
   const [profileFirstName, setProfileFirstName] = useState<string | null>(null);
   const [profileLastName, setProfileLastName] = useState<string | null>(null);
+  const [profileEmail, setProfileEmail] = useState<string | null>(null);
   const [hasProfilePicture, setHasProfilePicture] = useState(false);
   const [avatarCacheBuster, setAvatarCacheBuster] = useState(0);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
@@ -86,6 +87,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
       setProfilePersonId(null);
       setProfileFirstName(null);
       setProfileLastName(null);
+      setProfileEmail(null);
       setHasProfilePicture(false);
       setAvatarCacheBuster(0);
       setAvatarLoadFailed(false);
@@ -96,6 +98,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     // Reset avatar-related state immediately on user switch to avoid showing stale picture.
     setProfileFirstName(null);
     setProfileLastName(null);
+    setProfileEmail(null);
     setHasProfilePicture(false);
     setAvatarLoadFailed(false);
     setAvatarCacheBuster(Date.now());
@@ -118,6 +121,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         setProfilePersonId(profile.personId);
         setProfileFirstName(profile.firstName ?? null);
         setProfileLastName(profile.lastName ?? null);
+        setProfileEmail(profile.email);
         setHasProfilePicture(profile.hasProfilePicture);
         setAvatarLoadFailed(false);
         setAvatarCacheBuster(Date.now());
@@ -180,8 +184,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     setMobileOpen(false);
   }, []);
 
-  const initials = getAvatarInitials(profileFirstName, profileLastName, user?.email);
-  const fallbackAvatarColorClass = getDeterministicAvatarColor(profilePersonId ?? user?.personId ?? user?.email);
+  const initials = getAvatarInitials(profileFirstName, profileLastName, profileEmail);
+  const fallbackAvatarColorClass = getDeterministicAvatarColor(profilePersonId ?? user?.personId ?? profileEmail);
   const shouldShowProfilePicture = hasProfilePicture && !avatarLoadFailed;
   const profilePictureUrl = `${profileService.getProfilePictureUrl()}?pid=${profilePersonId ?? 'me'}&v=${avatarCacheBuster}`;
   const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
@@ -198,10 +202,10 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         to={item.path}
         onClick={closeMobile}
         className={({ isActive }) =>
-          `flex items-center rounded-xl text-sm font-medium transition-colors duration-200 ${
+          `group flex items-center rounded-xl border text-sm font-medium transition-all duration-200 ${
             isActive
-              ? 'bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark text-arsm-primary dark:text-arsm-hover'
-              : 'text-arsm-label dark:text-arsm-label-dark hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark'
+              ? 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary shadow-[0_8px_18px_rgba(45,36,64,0.12),0_0_0_1px_rgba(188,165,255,0.15)_inset] dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(5,8,20,0.5),0_0_0_1px_rgba(138,118,214,0.15)_inset]'
+              : 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark'
           }`
         }
         title={collapsed ? t(item.labelKey) : undefined}
@@ -221,7 +225,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex h-[73px] items-center border-b border-arsm-border dark:border-arsm-border-dark px-2">
+      <div className="flex h-[73px] items-center border-b border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_100%)] px-2 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_100%)]">
         <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
           <img
             src={logoSrc}
@@ -246,7 +250,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         <button
           onClick={toggleCollapse}
           title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-          className="flex items-center w-full rounded-xl text-arsm-label dark:text-arsm-label-dark hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark transition-colors duration-200"
+          className="flex w-full items-center rounded-xl border border-transparent text-arsm-label transition-colors duration-200 hover:border-arsm-border hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
         >
           <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
             <ChevronsLeft
@@ -262,7 +266,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
       </div>
 
       {/* Bottom section: Profile -> Settings -> Logout */}
-      <div className="border-t border-arsm-border dark:border-arsm-border-dark px-2 py-3 space-y-1">
+      <div className="space-y-1 border-t border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.42)_100%)] px-2 py-3 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.03)_100%)]">
         {/* Profile */}
         <div className="flex items-center ">
           <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0 select-none pointer-events-none">
@@ -270,7 +274,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
               <img
                 src={profilePictureUrl}
                 alt={t('settings.profilePictureAlt')}
-                className="w-8 h-8 rounded-full object-cover border border-arsm-border dark:border-arsm-border-dark"
+                className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover shadow-[0_6px_14px_rgba(45,36,64,0.2)] ring-2 ring-arsm-accent/15 dark:border-arsm-accent-dark/50 dark:shadow-[0_8px_16px_rgba(3,5,14,0.55)] dark:ring-arsm-accent-dark/15"
                 onError={() => setAvatarLoadFailed(true)}
               />
             ) : (
@@ -287,7 +291,9 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
                 {profileFirstName} {profileLastName}
               </p>
             )}
-            <p className="text-xs text-arsm-label dark:text-arsm-label-dark truncate">{user?.email}</p>
+            {profileEmail && (
+              <p className="text-xs text-arsm-label dark:text-arsm-label-dark truncate">{profileEmail}</p>
+            )}
           </div>
         </div>
 
@@ -298,7 +304,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         <button
           onClick={() => { void handleLogout(); }}
           title={t('layout.logout')}
-          className="flex items-center w-full rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+          className="flex w-full items-center rounded-xl border border-transparent text-arsm-error-active transition-colors duration-200 hover:border-arsm-error-border-light hover:bg-arsm-error-bg dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
         >
           <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
             <LogOut className="h-5 w-5" />
@@ -314,20 +320,25 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   );
 
   return (
-    <div className="flex h-screen h-dvh overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+    <div className="relative flex h-screen h-dvh overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_8%,rgba(190,166,250,0.18)_0%,rgba(190,166,250,0)_34%),radial-gradient(circle_at_90%_14%,rgba(229,214,255,0.22)_0%,rgba(229,214,255,0)_38%)] dark:bg-[radial-gradient(circle_at_10%_8%,rgba(142,121,216,0.24)_0%,rgba(142,121,216,0)_36%),radial-gradient(circle_at_90%_14%,rgba(48,42,85,0.34)_0%,rgba(48,42,85,0)_42%)]"
+      />
+
       {/* Mobile overlay */}
       {mobileOpen && (
         <button
           type="button"
           aria-label={t('sidebar.closeOverlay')}
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-[radial-gradient(circle_at_30%_20%,rgba(12,14,24,0.36)_0%,rgba(12,14,24,0.62)_52%,rgba(6,8,16,0.76)_100%)] md:hidden"
           onClick={closeMobile}
         />
       )}
 
       {/* Sidebar - mobile drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-arsm-input dark:bg-arsm-card-dark border-r border-arsm-border dark:border-arsm-border-dark transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-arsm-border bg-arsm-input shadow-[0_20px_44px_rgba(18,14,34,0.22)] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_24px_48px_rgba(4,6,14,0.66)] md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -336,7 +347,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 
       {/* Sidebar - desktop */}
       <aside
-        className={`hidden md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col bg-arsm-input dark:bg-arsm-card-dark border-r border-arsm-border dark:border-arsm-border-dark will-change-[width] transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
+        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input shadow-[0_12px_34px_rgba(22,16,38,0.14)] transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_14px_38px_rgba(4,6,14,0.56)] md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${
           collapsed ? 'md:w-[68px]' : 'md:w-64'
         }`}
       >
@@ -350,12 +361,12 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         }`}
       >
         {/* Top bar */}
-        <header className="flex h-[73px] shrink-0 items-center justify-between px-4 bg-arsm-input dark:bg-arsm-card-dark border-b border-arsm-border dark:border-arsm-border-dark">
+        <header className="flex h-[73px] shrink-0 items-center justify-between border-b border-arsm-border bg-arsm-input/90 px-4 backdrop-blur-xl dark:border-arsm-border-dark dark:bg-arsm-card-dark/85">
           {/* Mobile hamburger */}
           <button
             onClick={toggleMobile}
             title={t('sidebar.openMenu')}
-            className="md:hidden p-2 rounded-lg hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark text-arsm-label dark:text-arsm-label-dark min-w-[44px]"
+            className="min-w-[44px] rounded-lg p-2 text-arsm-label transition-colors hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark md:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>

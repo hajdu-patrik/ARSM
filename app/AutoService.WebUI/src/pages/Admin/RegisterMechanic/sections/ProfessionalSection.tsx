@@ -46,7 +46,9 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
           disabled={isSubmitting}
           required
         >
-          <option value="">{t('admin.selectSpecialization')}</option>
+          <option value="" disabled>
+            {t('admin.selectSpecialization')}
+          </option>
           {SPECIALIZATION_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {t(opt.labelKey)}

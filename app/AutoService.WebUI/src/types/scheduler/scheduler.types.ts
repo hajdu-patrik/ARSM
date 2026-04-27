@@ -1,10 +1,4 @@
-/**
- * Scheduler API request and response types.
- *
- * Defines the contracts for appointment management including scheduling,
- * intake creation, status updates, customer/vehicle lookups, and calendar views.
- * @module scheduler/scheduler.types
- */
+/** Scheduler request/response type contracts. */
 
 /**
  * Summary representation of a customer associated with a vehicle.
@@ -50,8 +44,6 @@ export interface MechanicSummaryDto {
   fullName: string;
   /** Primary area of specialization (e.g. "Engine", "Transmission"). */
   specialization: string;
-  /** List of additional expertise tags. */
-  expertise: string[];
   /** Whether the mechanic has an uploaded profile picture. */
   hasProfilePicture: boolean;
 }

@@ -34,7 +34,7 @@ public static partial class AuthEndpoints
 
         group.MapPost("/refresh", RefreshAsync)
             .RequireRateLimiting("AuthRefreshAttempts")
-            .Produces<RefreshResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 

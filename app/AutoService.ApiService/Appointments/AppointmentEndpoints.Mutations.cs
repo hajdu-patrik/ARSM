@@ -136,7 +136,7 @@ public static partial class AppointmentEndpoints
             IntakeCreatedAt = DateTime.UtcNow,
             DueDateTime = scheduledDateUtc,
             TaskDescription = taskDescription,
-            Status = ProgresStatus.InProgress,
+            Status = ProgressStatus.InProgress,
             VehicleId = vehicle.Id,
             Vehicle = vehicle,
             Mechanics = mechanics
@@ -195,12 +195,12 @@ public static partial class AppointmentEndpoints
             return Results.NotFound(new { code = "appointment_not_found" });
         }
 
-        if (appointment.Status == ProgresStatus.Cancelled)
+        if (appointment.Status == ProgressStatus.Cancelled)
         {
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
-        if (appointment.Status != ProgresStatus.InProgress)
+        if (appointment.Status != ProgressStatus.InProgress)
         {
             return Results.UnprocessableEntity(new { code = "appointment_not_in_progress" });
         }
@@ -266,12 +266,12 @@ public static partial class AppointmentEndpoints
             return Results.NotFound(new { code = "appointment_not_found" });
         }
 
-        if (appointment.Status == ProgresStatus.Cancelled)
+        if (appointment.Status == ProgressStatus.Cancelled)
         {
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
-        if (appointment.Status == ProgresStatus.Completed)
+        if (appointment.Status == ProgressStatus.Completed)
         {
             return Results.UnprocessableEntity(new { code = "appointment_completed" });
         }
@@ -334,12 +334,12 @@ public static partial class AppointmentEndpoints
             return Results.NotFound(new { code = "appointment_not_found" });
         }
 
-        if (appointment.Status == ProgresStatus.Cancelled)
+        if (appointment.Status == ProgressStatus.Cancelled)
         {
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
-        if (appointment.Status == ProgresStatus.Completed)
+        if (appointment.Status == ProgressStatus.Completed)
         {
             return Results.UnprocessableEntity(new { code = "appointment_completed" });
         }
@@ -398,12 +398,12 @@ public static partial class AppointmentEndpoints
             return Results.NotFound(new { code = "appointment_not_found" });
         }
 
-        if (appointment.Status == ProgresStatus.Cancelled)
+        if (appointment.Status == ProgressStatus.Cancelled)
         {
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
-        if (appointment.Status == ProgresStatus.Completed)
+        if (appointment.Status == ProgressStatus.Completed)
         {
             return Results.UnprocessableEntity(new { code = "appointment_completed" });
         }
@@ -450,10 +450,10 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.UpdateStatus");
 
-        if (!Enum.TryParse<ProgresStatus>(request.Status, ignoreCase: true, out var newStatus))
+        if (!Enum.TryParse<ProgressStatus>(request.Status, ignoreCase: true, out var newStatus))
         {
             logger.LogWarning("UpdateStatus rejected: invalid status value {Status}.", request.Status);
-            return Results.BadRequest(new { code = "invalid_status", error = $"Valid statuses: {string.Join(", ", Enum.GetNames<ProgresStatus>())}" });
+            return Results.BadRequest(new { code = "invalid_status", error = $"Valid statuses: {string.Join(", ", Enum.GetNames<ProgressStatus>())}" });
         }
 
         var personIdClaim = user.FindFirst("person_id")?.Value;
@@ -482,17 +482,17 @@ public static partial class AppointmentEndpoints
 
         appointment.Status = newStatus;
 
-        if (newStatus == ProgresStatus.Completed)
+        if (newStatus == ProgressStatus.Completed)
         {
             appointment.CompletedAt = DateTime.UtcNow;
             appointment.CanceledAt = null;
         }
-        else if (newStatus == ProgresStatus.Cancelled)
+        else if (newStatus == ProgressStatus.Cancelled)
         {
             appointment.CanceledAt = DateTime.UtcNow;
             appointment.CompletedAt = null;
         }
-        else if (newStatus == ProgresStatus.InProgress)
+        else if (newStatus == ProgressStatus.InProgress)
         {
             appointment.CompletedAt = null;
             appointment.CanceledAt = null;

@@ -50,6 +50,7 @@ public static partial class ProfileEndpoints
             .Produces(StatusCodes.Status200OK, contentType: "image/png")
             .Produces(StatusCodes.Status200OK, contentType: "image/webp")
             .Produces(StatusCodes.Status304NotModified)
+            .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized);
 

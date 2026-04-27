@@ -28,7 +28,7 @@ public class Appointment
     public required string TaskDescription { get; set; }
 
     // Defaults to InProgress on creation; updated as the appointment progresses.
-    public ProgresStatus Status { get; set; } = ProgresStatus.InProgress;
+    public ProgressStatus Status { get; set; } = ProgressStatus.InProgress;
 
     public DateTime? CompletedAt { get; set; }
     public DateTime? CanceledAt { get; set; }

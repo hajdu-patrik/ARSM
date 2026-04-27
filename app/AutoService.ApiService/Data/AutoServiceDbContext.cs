@@ -23,12 +23,7 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
 
-    /**
-     * Configures entity mapping, constraints, indexes and relationships.
-     *
-     * @param modelBuilder The builder used to configure model metadata.
-     * @return No return value.
-     */
+    /** Configures entity mappings, constraints, and relationships. */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

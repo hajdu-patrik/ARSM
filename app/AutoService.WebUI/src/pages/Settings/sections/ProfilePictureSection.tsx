@@ -75,7 +75,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
             key={pictureKey}
             src={pictureUrl}
             alt={t('settings.profilePictureAlt')}
-            className="h-20 w-20 rounded-full object-cover border-2 border-arsm-accent dark:border-arsm-accent-dark"
+            className="h-20 w-20 rounded-full object-cover border-2 border-arsm-accent/50 shadow-[0_8px_20px_rgba(97,67,154,0.16)] ring-3 ring-arsm-accent/15 dark:border-arsm-accent-dark/60 dark:shadow-[0_8px_20px_rgba(8,10,20,0.4)] dark:ring-arsm-accent-dark/15"
           />
         ) : (
           <div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ${fallbackColorClass}`}>
@@ -98,7 +98,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
               type="button"
               onClick={onRemove}
               disabled={isUploading}
-              className="inline-flex items-center justify-center rounded-xl border border-red-300 bg-transparent px-6 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-70 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus-visible:ring-red-700"
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-6 py-3 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_16px_rgba(215,82,94,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_16px_rgba(215,82,94,0.06)] dark:focus-visible:ring-arsm-error-dark/40"
             >
               {t('settings.removePicture')}
             </button>

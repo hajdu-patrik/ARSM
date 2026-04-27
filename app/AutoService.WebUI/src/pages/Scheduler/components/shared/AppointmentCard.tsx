@@ -4,7 +4,7 @@
  * license plate, and a claim button for unassigned in-progress appointments.
  * @module AppointmentCard
  */
-import { memo, useState, useCallback, type KeyboardEvent, type ReactNode } from 'react';
+import { memo, useState, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Clock3 } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
@@ -34,7 +34,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const [isClaiming, setIsClaiming] = useState(false);
 
   const isAssigned = currentMechanicId !== undefined &&
-    appointment.mechanics.some((m) => m.id === currentMechanicId);
+    appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
   const dueState = getDueState(appointment.dueDateTime);
 
   const handleClaim = useCallback(async () => {
@@ -46,20 +46,9 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     }
   }, [onClaim, appointment.id]);
 
-  const handleCardKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.currentTarget !== event.target) {
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick?.();
-    }
-  }, [onClick]);
-
   const { vehicle } = appointment;
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
-  const cardClassName = `bg-arsm-input dark:bg-arsm-card-dark rounded-2xl border border-arsm-border dark:border-arsm-border-dark shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-3${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40' : ''}`;
+  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-3${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40' : ''}`;
 
   const cardContent: ReactNode = (
     <>
@@ -82,7 +71,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       </div>
 
       {/* Task description */}
-      <div className="bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark rounded-lg px-3 py-2 text-sm border border-arsm-border dark:border-arsm-border-dark">
+      <div className="rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.48)] dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark mb-0.5">{t('scheduler.repairTask')}</p>
         <p className="break-words text-arsm-primary dark:text-arsm-primary-dark">{appointment.taskDescription}</p>
       </div>
@@ -103,24 +92,24 @@ const AppointmentCardComponent = memo(function AppointmentCard({
         <div className="min-w-0 flex-1">
           <span className="mb-1 block text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.mechanics')}</span>
           <div className="flex flex-wrap items-center gap-1.5">
-            {appointment.mechanics.map((m) => (
+            {appointment.mechanics.map((mechanic) => (
               <MechanicAvatar
-                key={m.id}
-                mechanicId={m.id}
-                fullName={m.fullName}
-                hasProfilePicture={m.hasProfilePicture}
+                key={mechanic.id}
+                mechanicId={mechanic.id}
+                fullName={mechanic.fullName}
+                hasProfilePicture={mechanic.hasProfilePicture}
               />
             ))}
           </div>
         </div>
-        <span className="inline-block shrink-0 bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark text-arsm-primary dark:text-arsm-hover text-xs font-mono px-2 py-0.5 rounded border border-arsm-border dark:border-arsm-border-dark">
+        <span className="inline-block shrink-0 rounded border border-arsm-border bg-arsm-toggle-bg px-2 py-0.5 font-mono text-xs text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
           {vehicle.licensePlate}
         </span>
       </div>
 
       {/* Claim button or Assigned label */}
       {isAssigned && (
-        <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-medium mt-1">
+        <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_12px_rgba(34,197,94,0.1)] dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:shadow-[0_4px_12px_rgba(34,197,94,0.06)]">
           <Check className="w-4 h-4" />
           {t('scheduler.assigned')}
         </div>
@@ -131,7 +120,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           <button
             onClick={(e) => { e.stopPropagation(); void handleClaim(); }}
             disabled={isClaiming}
-            className="w-full rounded-xl bg-arsm-accent py-2 text-sm font-medium text-arsm-primary transition-colors hover:bg-arsm-accent-hover disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+            className="pointer-events-auto w-full rounded-xl bg-arsm-accent py-2 text-sm font-semibold text-arsm-primary shadow-[0_10px_22px_rgba(97,67,154,0.24)] transition duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(97,67,154,0.3)] disabled:opacity-50 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_12px_24px_rgba(8,10,20,0.5)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_16px_30px_rgba(8,10,20,0.58)]"
           >
             {isClaiming ? '...' : t('scheduler.claim')}
           </button>
@@ -142,13 +131,16 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
   if (onClick) {
     return (
-      <div
-        onClick={onClick}
-        onKeyDown={handleCardKeyDown}
-        tabIndex={0}
-        className={`${cardClassName} w-full text-left`}
-      >
-        {cardContent}
+      <div className={`${cardClassName} relative w-full text-left`}>
+        <button
+          type="button"
+          onClick={onClick}
+          className="absolute inset-0 z-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40"
+          aria-label={t('scheduler.detail.title')}
+        />
+        <div className="relative z-10 pointer-events-none">
+          {cardContent}
+        </div>
       </div>
     );
   }

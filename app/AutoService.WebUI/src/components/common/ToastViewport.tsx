@@ -36,18 +36,18 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = 'border-arsm-error-border-light bg-arsm-error-bg text-arsm-error-active dark:border-arsm-error-text-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
+  let toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
 
   if (toast.variant === 'success') {
-    toastVariantClass = 'border-green-300 bg-green-50 text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300';
+    toastVariantClass = 'border-arsm-success-border bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
   } else if (isSystemErrorToast) {
-    toastVariantClass = 'border-arsm-error-border bg-[linear-gradient(145deg,#FFF2F2_0%,#FFE7E8_100%)] text-arsm-error-text ring-1 ring-arsm-error-hover/40 dark:border-arsm-error-dark dark:bg-[linear-gradient(145deg,rgba(73,26,31,0.92)_0%,rgba(52,16,20,0.92)_100%)] dark:text-arsm-error-soft dark:ring-arsm-error-dark/50';
+    toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
   }
 
   return (
     <output
       aria-live="polite"
-      className={`pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-xl border px-4 py-3 text-sm font-medium shadow-[0_10px_28px_rgba(44,36,64,0.2)] backdrop-blur ${toastVariantClass}`}
+      className={`toast-enter pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 text-sm font-medium shadow-[0_16px_40px_rgba(18,14,34,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur-md ${toastVariantClass}`}
     >
       {isSystemErrorToast ? (
         <span
@@ -77,7 +77,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       <button
         type="button"
         onClick={() => removeToast(toast.id)}
-        className="rounded-md p-1 opacity-80 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+        className="rounded-md p-1 opacity-80 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/12"
         aria-label={t('toast.dismiss')}
       >
         <X className="h-4 w-4" />
@@ -97,7 +97,7 @@ const ToastViewportComponent = memo(function ToastViewport() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[120] flex justify-center px-3 sm:px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-5 z-[120] flex justify-center px-3 sm:px-4">
       <div className="flex w-full max-w-md flex-col gap-2">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} />

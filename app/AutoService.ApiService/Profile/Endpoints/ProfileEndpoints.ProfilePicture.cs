@@ -19,6 +19,13 @@ public static partial class ProfileEndpoints
     private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
     private const int ProfilePictureCacheMaxAgeSeconds = 3600;
 
+    /**
+     * Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture.
+     * @param httpContext - Current HTTP context.
+     * @param db - Database context.
+     * @param cancellationToken - Cancellation token.
+     * @return Profile picture binary with ETag support, or 404 if not found.
+     */
     private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -52,12 +59,34 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
+    /**
+     * Handles {@code GET /api/profile/picture/{personId}} to retrieve a mechanic's profile picture.
+     * @param personId - Target mechanic's person ID.
+     * @param httpContext - Current HTTP context.
+     * @param db - Database context.
+     * @param cancellationToken - Cancellation token.
+     * @return Profile picture binary with ETag support, 403 if forbidden, or 404 if not found.
+     */
     private static async Task<IResult> GetMechanicProfilePictureAsync(
         int personId,
         HttpContext httpContext,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
+        var currentPerson = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        if (currentPerson is null)
+        {
+            return Results.Problem(
+                detail: "Linked person record not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var isAdmin = httpContext.User.IsInRole("Admin");
+        if (!isAdmin && currentPerson.Id != personId)
+        {
+            return Results.Forbid();
+        }
+
         var mechanic = await db.People
             .AsNoTracking()
             .OfType<Mechanic>()
@@ -88,6 +117,13 @@ public static partial class ProfileEndpoints
             enableRangeProcessing: false);
     }
 
+    /**
+     * Handles {@code GET /api/profile/picture/updates} SSE stream for real-time profile picture updates.
+     * @param httpContext - Current HTTP context.
+     * @param broadcaster - Profile picture update broadcaster service.
+     * @param cancellationToken - Cancellation token.
+     * @return SSE stream with {@code profile-picture-updated} events, or 503 if subscription limit reached.
+     */
     private static async Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,

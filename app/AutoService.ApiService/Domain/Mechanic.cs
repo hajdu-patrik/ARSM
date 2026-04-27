@@ -34,12 +34,7 @@ public class Mechanic : People
     }
 
 
-    /**
-     * Sets and validates mechanic expertise values.
-     *
-     * @param expertise Expertise values that must contain 1..10 unique items.
-     * @return No return value.
-     */
+    /** Sets mechanic expertise and enforces the 1..10 unique-item rule. */
     public void SetExpertise(IEnumerable<ExpertiseType> expertise)
     {
         var distinct = expertise.Distinct().ToList();

@@ -24,12 +24,12 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
   t,
 }: SchedulerSummaryStripProps) {
   return (
-    <section className="rounded-2xl border border-arsm-border bg-arsm-input px-4 py-3 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+    <section className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input px-4 py-3.5 shadow-[0_12px_28px_rgba(28,22,46,0.09),0_0_0_1px_rgba(255,255,255,0.5)_inset] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_16px_34px_rgba(3,5,14,0.56),0_0_0_1px_rgba(255,255,255,0.04)_inset]">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+        <p className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
           {summaryDateText}
         </p>
-        <span className="inline-flex items-center rounded-full bg-arsm-toggle-bg px-3 py-1 text-xs font-medium text-arsm-primary dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
+        <span className="inline-flex items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
           {t('scheduler.scheduledCount', { count: summaryCount })}
         </span>
       </div>

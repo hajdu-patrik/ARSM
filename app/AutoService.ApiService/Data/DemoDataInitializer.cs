@@ -189,7 +189,7 @@ public static class DemoDataInitializer
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(5),
                 TaskDescription = "Periodic oil change and general inspection",
-                Status = ProgresStatus.InProgress,
+                Status = ProgressStatus.InProgress,
                 VehicleId = vehicles[0].Id,
                 Mechanics = new List<Mechanic> { mechanics[0] }
             },
@@ -199,7 +199,7 @@ public static class DemoDataInitializer
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(7),
                 TaskDescription = "Brake system inspection and pad replacement",
-                Status = ProgresStatus.InProgress,
+                Status = ProgressStatus.InProgress,
                 VehicleId = vehicles[1].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
             },
@@ -209,7 +209,7 @@ public static class DemoDataInitializer
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(2),
                 TaskDescription = "Engine diagnostics and exhaust repair",
-                Status = ProgresStatus.InProgress,
+                Status = ProgressStatus.InProgress,
                 VehicleId = vehicles[2].Id,
                 Mechanics = new List<Mechanic> { mechanics[2] }
             },
@@ -219,7 +219,7 @@ public static class DemoDataInitializer
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow.AddDays(-4),
                 TaskDescription = "Suspension adjustment and wheel alignment",
-                Status = ProgresStatus.Completed,
+                Status = ProgressStatus.Completed,
                 VehicleId = vehicles[3].Id,
                 Mechanics = new List<Mechanic> { mechanics[0], mechanics[2] }
             },
@@ -229,7 +229,7 @@ public static class DemoDataInitializer
                 IntakeCreatedAt = DateTime.UtcNow,
                 DueDateTime = DateTime.UtcNow,
                 TaskDescription = "Battery replacement and electrical fault diagnosis",
-                Status = ProgresStatus.Cancelled,
+                Status = ProgressStatus.Cancelled,
                 VehicleId = vehicles[4].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
             }
@@ -279,18 +279,18 @@ public static class DemoDataInitializer
                 }
             }
 
-            var status = ProgresStatus.InProgress;
+            var status = ProgressStatus.InProgress;
             DateTime? completedAt = null;
             DateTime? canceledAt = null;
 
             if (scheduledDateUtc < nowUtc.Date && i % 7 == 0)
             {
-                status = ProgresStatus.Cancelled;
+                status = ProgressStatus.Cancelled;
                 canceledAt = scheduledDateUtc.AddHours(1);
             }
             else if (scheduledDateUtc < nowUtc.Date && i % 5 == 0)
             {
-                status = ProgresStatus.Completed;
+                status = ProgressStatus.Completed;
                 completedAt = scheduledDateUtc.AddHours(2);
             }
 
@@ -370,23 +370,20 @@ public static class DemoDataInitializer
 
     private static async Task ResetLegacyBackfillDatasetAsync(AutoServiceDbContext db)
     {
-        await db.Database.ExecuteSqlRawAsync(
-            """
-            TRUNCATE TABLE
-                appointmentmechanics,
-                appointments,
-                vehicles,
-                refreshtokens,
-                revokedjwttokens,
-                people,
-                "AspNetUserTokens",
-                "AspNetUserRoles",
-                "AspNetUserLogins",
-                "AspNetUserClaims",
-                "AspNetRoleClaims",
-                "AspNetUsers",
-                "AspNetRoles"
-            RESTART IDENTITY CASCADE;
-            """);
+        // Use explicit set-based deletes to avoid raw TRUNCATE execution.
+        await db.UserTokens.ExecuteDeleteAsync();
+        await db.UserRoles.ExecuteDeleteAsync();
+        await db.UserLogins.ExecuteDeleteAsync();
+        await db.UserClaims.ExecuteDeleteAsync();
+        await db.RoleClaims.ExecuteDeleteAsync();
+
+        await db.RefreshTokens.ExecuteDeleteAsync();
+        await db.RevokedJwtTokens.ExecuteDeleteAsync();
+        await db.Appointments.ExecuteDeleteAsync();
+        await db.Vehicles.ExecuteDeleteAsync();
+        await db.People.ExecuteDeleteAsync();
+
+        await db.Users.ExecuteDeleteAsync();
+        await db.Roles.ExecuteDeleteAsync();
     }
 }

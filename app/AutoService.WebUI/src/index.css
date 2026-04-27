@@ -1,5 +1,110 @@
 @import "tailwindcss";
+
+/* Dark mode activated by a `.dark` class on any ancestor */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ARSM Design Tokens
+   All brand colors are defined here as Tailwind v4 @theme variables.
+   Usage: bg-arsm-surface, text-arsm-primary, border-arsm-border, etc.
+   ───────────────────────────────────────────────────────────────────────────── */
+@theme {
+
+  /* ── Purple palette (base scale, used for accent derivation) ──────────────── */
+  --color-purple-50:  #f8f6ff;
+  --color-purple-100: #efe9ff;
+  --color-purple-200: #dfd2fb;
+  --color-purple-300: #cbb7f2;
+  --color-purple-400: #a98fe0;
+  --color-purple-500: #8a68cf;
+  --color-purple-600: #7653ba;  /* link / brand mid */
+  --color-purple-700: #61439a;
+  --color-purple-800: #4f367e;
+  --color-purple-900: #3e2b62;
+
+  /* ── App shell — page background & card surfaces ─────────────────────────── */
+  --color-arsm-surface:      #f2f0f8;  /* page background (light) */
+  --color-arsm-surface-dark: #080a14;  /* page background (dark)  */
+  --color-arsm-card:         #ffffff;  /* card / panel (light)    */
+  --color-arsm-card-dark:    #141726;  /* card / panel (dark)     */
+
+  /* ── Deep backgrounds — used for very dark overlays / disabled inputs ─────── */
+  --color-arsm-deep:    #2c2640;  /* deep panel (dark mode context)    */
+  --color-arsm-deepest: #0d1020;  /* deepest overlay / disabled input  */
+
+  /* ── Text ─────────────────────────────────────────────────────────────────── */
+  --color-arsm-primary:      #2d2440;  /* primary text (light)         */
+  --color-arsm-primary-dark: #f2edff;  /* primary text (dark)          */
+  --color-arsm-muted:        #6a6185;  /* secondary / helper text (light) */
+  --color-arsm-muted-dark:   #b8aed6;  /* secondary / helper text (dark)  */
+  --color-arsm-label:        #5c5375;  /* form labels / sidebar items (light) */
+  --color-arsm-label-dark:   #cec4eb;  /* form labels / sidebar items (dark)  */
+
+  /* ── Borders & dividers ───────────────────────────────────────────────────── */
+  --color-arsm-border:      #d9d1ec;  /* default border (light) */
+  --color-arsm-border-dark: #3a355a;  /* default border (dark)  */
+
+  /* ── Form inputs ──────────────────────────────────────────────────────────── */
+  --color-arsm-input:            #f8f5ff;  /* input background (light)    */
+  --color-arsm-input-dark:       #1b1f33;  /* input background (dark)     */
+  --color-arsm-placeholder:      #8a81a6;  /* placeholder text (light)    */
+  --color-arsm-placeholder-dark: #958ab8;  /* placeholder text (dark)     */
+
+  /* ── Primary accent — pastel purple CTA buttons, highlights ──────────────── */
+  --color-arsm-accent:           #cdb8ff;  /* accent fill (light)               */
+  --color-arsm-accent-hover:     #bea7f6;  /* accent fill on hover (light)      */
+  --color-arsm-accent-dark:      #8a76d6;  /* accent fill (dark)                */
+  --color-arsm-accent-dark-hover: #9b87e6; /* accent fill on hover (dark)       */
+  --color-arsm-accent-subtle:    #eee6ff;  /* very light accent bg (hover areas)*/
+  --color-arsm-accent-border:    #ddd0fa;  /* accent-tinted border / disabled button fill */
+  --color-arsm-accent-deep:      #5f4698;  /* deep accent text / icon emphasis  */
+  --color-arsm-accent-vivid:     #6e53ad;  /* vivid accent text (badges, labels)*/
+  --color-arsm-accent-wash:      #f1e9ff;  /* very pale accent wash (badge bg)  */
+  --color-arsm-accent-tint:      #e6dbff;  /* light accent tint (hover icon bg) */
+
+  /* ── Interactive states ───────────────────────────────────────────────────── */
+  --color-arsm-focus-ring:      #bca5ff;  /* focus ring color              */
+  --color-arsm-hover:           #f4eeff;  /* hover bg overlay (light); also dark button text */
+  --color-arsm-hover-dark:      #2e2a49;  /* hover bg overlay (dark)       */
+  --color-arsm-ring-dark:       #4d4572;  /* disabled button fill (dark)   */
+  --color-arsm-toggle-bg:       #efeafc;  /* secondary button hover (light)*/
+  --color-arsm-toggle-bg-dark:  #25223d;  /* secondary button hover (dark) */
+
+  /* ── Semantic — error (red) ───────────────────────────────────────────────── */
+  --color-arsm-error-bg:           #fff2f3;  /* error banner bg (light)         */
+  --color-arsm-error-bg-dark:      #2a171d;  /* error banner bg (dark)          */
+  --color-arsm-error-border:       #eaabb0;  /* error border (light)            */
+  --color-arsm-error-border-light: #f7ccd0;  /* softer error border             */
+  --color-arsm-error-text:         #aa2c35;  /* error text (light)              */
+  --color-arsm-error-text-light:   #ff9fa8;  /* error text (dark mode)          */
+  --color-arsm-error-hover:        #d86872;  /* error ring / interactive hover  */
+  --color-arsm-error-active:       #c73f49;  /* error destructive action text   */
+  --color-arsm-error-dark:         #8d3a44;  /* error border/bg (dark mode)     */
+  --color-arsm-error-accent:       #d7525e;  /* error icon / accent stripe      */
+  --color-arsm-error-muted:        #aa4a56;  /* error toast stripe (dark mode)  */
+  --color-arsm-error-soft:         #ffc0c6;  /* soft error chip text (dark)     */
+  --color-arsm-error-softest:      #ffd0d4;  /* softest error bg (hover state)  */
+
+  /* ── Semantic — success (green) ──────────────────────────────────────────── */
+  --color-arsm-success-bg:          #f0fff5;  /* success banner bg (light)       */
+  --color-arsm-success-bg-dark:     #142a1e;  /* success banner bg (dark)        */
+  --color-arsm-success-border:      #a3e4b8;  /* success border (light)          */
+  --color-arsm-success-border-dark: #2d6b42;  /* success border (dark)           */
+  --color-arsm-success-text:        #1a7a3a;  /* success text (light)            */
+  --color-arsm-success-text-dark:   #7ddba3;  /* success text (dark)             */
+  --color-arsm-success-accent:      #22c55e;  /* success dot / active badge fill */
+  --color-arsm-success-soft:        #bbf7d0;  /* success badge bg (light)        */
+
+  /* ── Semantic — warning (amber) ──────────────────────────────────────────── */
+  --color-arsm-warning-bg:          #fffbeb;  /* warning banner bg (light)       */
+  --color-arsm-warning-bg-dark:     #2a2314;  /* warning banner bg (dark)        */
+  --color-arsm-warning-border:      #fcd34d;  /* warning border (light)          */
+  --color-arsm-warning-border-dark: #6b5c2d;  /* warning border (dark)           */
+  --color-arsm-warning-text:        #a16207;  /* warning text (light)            */
+  --color-arsm-warning-text-dark:   #fcd34d;  /* warning text (dark)             */
+  --color-arsm-warning-accent:      #f59e0b;  /* warning dot / active badge fill */
+}
+
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
 /* stylelint-disable-next-line at-rule-no-unknown */
@@ -7,6 +112,9 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Typography — Inter with a system-font fallback for reduced CLS
+   ───────────────────────────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Inter fallback';
   src: local('Segoe UI'), local('system-ui'), local('Arial');
@@ -16,20 +124,27 @@
   line-gap-override: 0%;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base layer — global element resets and theming
+   ───────────────────────────────────────────────────────────────────────────── */
 @layer base {
   html {
     height: 100%;
     font-family: 'Inter', 'Inter fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
     scrollbar-width: thin;
-    scrollbar-color: #8f83b8 #ece8f5;
+    scrollbar-color: #8d7fb9 #ebe5f7;
   }
 
   body {
     min-height: 100%;
     margin: 0;
     overflow: hidden;
-    background-color: #ECECEF;
-    color: #2C2440;
+    background-color: #f2f0f8;
+    background-image:
+      radial-gradient(circle at 14% 9%, rgba(182, 157, 255, 0.18) 0%, rgba(182, 157, 255, 0) 38%),
+      radial-gradient(circle at 87% 16%, rgba(229, 214, 255, 0.26) 0%, rgba(229, 214, 255, 0) 42%),
+      linear-gradient(180deg, #f8f6ff 0%, #f2f0f8 100%);
+    color: #2d2440;
     font-family: inherit;
     line-height: 1.5;
   }
@@ -39,12 +154,16 @@
   }
 
   .dark body {
-    background-color: #09090F;
-    color: #EDE8FA;
+    background-color: #080a14;
+    background-image:
+      radial-gradient(circle at 13% 11%, rgba(142, 121, 216, 0.24) 0%, rgba(142, 121, 216, 0) 42%),
+      radial-gradient(circle at 84% 16%, rgba(51, 43, 87, 0.4) 0%, rgba(51, 43, 87, 0) 46%),
+      linear-gradient(180deg, #0c1020 0%, #080a14 100%);
+    color: #f2edff;
   }
 
   .dark {
-    scrollbar-color: #b8add8 #262136;
+    scrollbar-color: #c0b2e8 #251f3d;
   }
 
   input,
@@ -61,105 +180,207 @@
   }
 
   select option {
-    background-color: #f6f4fb;
-    color: #2c2440;
+    background-color: #f8f5ff;
+    color: #2d2440;
   }
 
   select option:hover,
   select option:focus,
   select option:checked {
-    color: #2c2440;
-    background: #efebfa linear-gradient(0deg, #efebfa, #efebfa);
+    color: #2d2440;
+    background: #eee6ff linear-gradient(0deg, #eee6ff, #eee6ff);
   }
 
   .dark select option {
-    background-color: #1a1a25;
-    color: #ede8fa;
+    background-color: #1b1f33;
+    color: #f2edff;
   }
 
   .dark select option:hover,
   .dark select option:focus,
   .dark select option:checked {
-    color: #ede8fa;
-    background: #241f33 linear-gradient(0deg, #241f33, #241f33);
+    color: #f2edff;
+    background: #25223d linear-gradient(0deg, #25223d, #25223d);
   }
 
   select:focus {
     outline: none;
-    border-color: #C9B3FF;
-    box-shadow: 0 0 0 2px rgba(201, 179, 255, 0.4);
+    border-color: #bca5ff;
+    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.38);
   }
 
   .dark select:focus {
-    border-color: #C9B3FF;
-    box-shadow: 0 0 0 2px rgba(201, 179, 255, 0.24);
+    border-color: #bca5ff;
+    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.26);
   }
 
   a {
-    color: #7A66C7;
+    color: #7653ba;
     font-weight: 500;
     transition: color 0.2s;
   }
 
   a:hover {
-    color: #5E4698;
+    color: #5f4698;
   }
 
   .dark a {
-    color: #C9B3FF;
+    color: #cdb8ff;
   }
 
   .dark a:hover {
-    color: #E2D9FF;
+    color: #e6dbff;
   }
 
   button {
-    @apply transition-all duration-200;
+    @apply transition-all duration-200 ease-out;
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Autofill overrides — MUST stay outside @layer to be unlayered author-origin
+   styles, guaranteeing they win over the browser's UA autofill sheet and any
+   layered Tailwind utilities (layers always lose to unlayered author rules).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #2d2440;
+  caret-color: #2d2440;
+  box-shadow: 0 0 0 1000px #f8f5ff inset;
+  -webkit-box-shadow: 0 0 0 1000px #f8f5ff inset;
+  /* 9999s transition freezes the background so the browser never reverts it */
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Dark mode — html.dark for explicit element+class specificity */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f2edff;
+  caret-color: #f2edff;
+  box-shadow: 0 0 0 1000px #1b1f33 inset;
+  -webkit-box-shadow: 0 0 0 1000px #1b1f33 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Keyframe animations
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Modal panel slides up from slight offset */
 @keyframes modal-enter {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translateY(8px) scale(0.965);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* Toast notification slides down from top */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Toast notification slides out upward */
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.94);
+    filter: blur(2px);
+  }
+}
+
+/* Skeleton loading shimmer sweep */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Accent-colored expanding ring pulse */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(188, 165, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0);
+  }
+}
+
+/* General fade-in from below (used via .fade-in-up) */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Scrollbar styling (Webkit + Firefox)
+   ───────────────────────────────────────────────────────────────────────────── */
 *::-webkit-scrollbar {
   width: 12px;
   height: 12px;
 }
 
 *::-webkit-scrollbar-track {
-  background: #ece8f5;
+  background: #ebe5f7;
   border-radius: 9999px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #8f83b8;
-  border: 2px solid #ece8f5;
+  background: #8d7fb9;
+  border: 2px solid #ebe5f7;
   border-radius: 9999px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #7f72a8;
+  background: #796ba4;
 }
 
 .dark *::-webkit-scrollbar-track {
-  background: #262136;
+  background: #251f3d;
 }
 
 .dark *::-webkit-scrollbar-thumb {
-  background: #b8add8;
-  border: 2px solid #262136;
+  background: #c0b2e8;
+  border: 2px solid #251f3d;
 }
 
 .dark *::-webkit-scrollbar-thumb:hover {
-  background: #cdc4e7;
+  background: #d5c9f3;
 }
 
 @media (max-width: 768px) {
@@ -173,24 +394,31 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Component utilities
+   Reusable CSS-only patterns that cannot be expressed cleanly with Tailwind
+   utility classes alone (pseudo-elements, browser-native parts, animations).
+   ───────────────────────────────────────────────────────────────────────────── */
 @layer components {
+  /* Invert the browser date/time picker icon for dark-on-light inputs */
   .intake-datetime-input::-webkit-calendar-picker-indicator {
     filter: brightness(0) saturate(100%) invert(100%);
     opacity: 1;
     cursor: pointer;
   }
 
+  /* Profile picture crop — zoom range slider */
   .crop-zoom-slider {
     -webkit-appearance: none;
     appearance: none;
     height: 6px;
     border-radius: 9999px;
-    background: #d8d2e9;
+    background: #ddd0fa;
     outline: none;
   }
 
   .dark .crop-zoom-slider {
-    background: #3a3154;
+    background: #3a355a;
   }
 
   .crop-zoom-slider::-webkit-slider-thumb {
@@ -199,37 +427,69 @@
     width: 16px;
     height: 16px;
     border-radius: 9999px;
-    border: 2px solid #f6f4fb;
-    background: #7a66c7;
+    border: 2px solid #f8f5ff;
+    background: #8a76d6;
     cursor: pointer;
   }
 
   .dark .crop-zoom-slider::-webkit-slider-thumb {
-    border-color: #13131b;
-    background: #c9b3ff;
+    border-color: #141726;
+    background: #cdb8ff;
   }
 
   .crop-zoom-slider::-moz-range-track {
     height: 6px;
     border-radius: 9999px;
-    background: #d8d2e9;
+    background: #ddd0fa;
   }
 
   .dark .crop-zoom-slider::-moz-range-track {
-    background: #3a3154;
+    background: #3a355a;
   }
 
   .crop-zoom-slider::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border-radius: 9999px;
-    border: 2px solid #f6f4fb;
-    background: #7a66c7;
+    border: 2px solid #f8f5ff;
+    background: #8a76d6;
     cursor: pointer;
   }
 
   .dark .crop-zoom-slider::-moz-range-thumb {
-    border-color: #13131b;
-    background: #c9b3ff;
+    border-color: #141726;
+    background: #cdb8ff;
+  }
+
+  /* Trigger class applied by ToastViewport on enter */
+  .toast-enter {
+    animation: toast-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Skeleton placeholder — applied to loading placeholder blocks */
+  .shimmer-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(188, 165, 255, 0.06) 25%,
+      rgba(188, 165, 255, 0.14) 50%,
+      rgba(188, 165, 255, 0.06) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+
+  .dark .shimmer-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(188, 165, 255, 0.04) 25%,
+      rgba(188, 165, 255, 0.1) 50%,
+      rgba(188, 165, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Entrance animation for banners, error blocks, etc. */
+  .fade-in-up {
+    animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 }

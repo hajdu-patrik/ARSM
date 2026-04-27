@@ -76,15 +76,16 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-10">
-        <div className="h-6 w-6 animate-spin rounded-full border-4 border-arsm-accent border-t-transparent" />
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="rounded-2xl border border-arsm-border bg-arsm-input p-5 dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:p-6">
+      <div className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-5 shadow-[0_12px_28px_rgba(45,36,64,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_16px_32px_rgba(3,5,14,0.38)] sm:p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(205,184,255,0.18)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.18)_0%,rgba(138,118,214,0)_100%)]" />
         {mechanics.length === 0 ? (
           <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
         ) : (
@@ -99,7 +100,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
               return (
                 <div
                   key={mechanic.personId}
-                  className="flex items-start gap-3 rounded-xl border border-arsm-border bg-white px-4 py-3 dark:border-arsm-border-dark dark:bg-arsm-input-dark sm:items-center"
+                  className="relative flex items-start gap-3 rounded-xl border border-arsm-border bg-white px-4 py-3 shadow-[0_4px_12px_rgba(28,22,46,0.06)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(28,22,46,0.1)] dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:shadow-[0_4px_12px_rgba(3,5,14,0.24)] dark:hover:shadow-[0_10px_20px_rgba(3,5,14,0.4)] sm:items-center"
                 >
                   <MechanicAvatar
                     mechanicId={mechanic.personId}
@@ -114,7 +115,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                         {displayName}
                       </p>
                       {mechanic.isAdmin && (
-                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
                           Admin
                         </span>
                       )}
@@ -127,7 +128,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                       type="button"
                       onClick={() => openDeleteModal(mechanic)}
                       title={t('admin.deleteMechanic')}
-                      className="ml-auto flex-shrink-0 rounded-lg p-2 text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/20"
+                      className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.32)] dark:focus-visible:ring-arsm-error-dark/35"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -157,7 +158,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
               type="button"
               onClick={() => { void handleDelete(); }}
               disabled={isDeleting}
-              className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
             >
               {isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}
             </button>

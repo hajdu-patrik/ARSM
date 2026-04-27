@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
@@ -14,13 +12,7 @@ public static partial class AuthEndpoints
     private static IResult ValidateTokenAsync(HttpContext httpContext)
     {
         var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        var personType = httpContext.User.FindFirst("person_type")?.Value;
-        var email = httpContext.User.FindFirst(ClaimTypes.Email)?.Value
-            ?? httpContext.User.FindFirst("email")?.Value;
-
-        if (!int.TryParse(personIdClaim, out var personId) ||
-            string.IsNullOrWhiteSpace(personType) ||
-            string.IsNullOrWhiteSpace(email))
+        if (!int.TryParse(personIdClaim, out var personId))
         {
             return Results.Problem(
                 detail: "Token claims are incomplete.",
@@ -28,6 +20,6 @@ public static partial class AuthEndpoints
         }
 
         var isAdmin = httpContext.User.IsInRole("Admin");
-        return Results.Ok(new ValidateTokenResponse(personId, personType, email, isAdmin));
+        return Results.Ok(new ValidateTokenResponse(personId, isAdmin));
     }
 }

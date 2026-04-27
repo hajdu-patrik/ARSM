@@ -34,7 +34,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
             type="button"
             onClick={onClose}
             disabled={removingMechanicId !== null}
-            className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg hover:shadow-[0_6px_16px_rgba(45,36,64,0.08)] disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:shadow-[0_6px_16px_rgba(3,5,14,0.28)]"
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -50,14 +50,14 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
               });
             }}
             disabled={removingMechanicId !== null || isCancelled}
-            className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+            className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_14px_28px_rgba(215,82,94,0.32)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
           >
             {t('scheduler.detail.removeMechanic')}
           </button>
         </>
       )}
     >
-      <p className="break-words text-sm text-arsm-label [overflow-wrap:anywhere] dark:text-arsm-label-dark">
+      <p className="break-words rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-3 text-sm text-arsm-label shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] [overflow-wrap:anywhere] dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 dark:text-arsm-label-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         {t('scheduler.detail.removeConfirmMessage', {
           name: pendingRemoveMechanic?.fullName ?? '',
         })}

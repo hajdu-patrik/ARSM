@@ -1,10 +1,4 @@
-/**
- * Appointment service for scheduler operations.
- *
- * Provides appointment CRUD, customer lookup, intake creation,
- * mechanic claim/unclaim, status updates, and admin assign/unassign flows.
- * @module services/scheduler/appointment.service
- */
+/** Scheduler appointment API service. */
 
 import { apiClient } from '../http/api.client';
 import type {

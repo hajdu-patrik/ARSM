@@ -57,7 +57,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
       {successMessage && (
         <output
           aria-live="polite"
-          className="mb-4 block rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300"
+          className="fade-in-up mb-4 block rounded-xl border border-arsm-success-border bg-arsm-success-bg px-4 py-2.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_14px_rgba(34,197,94,0.08)] dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark"
         >
           {successMessage}
         </output>

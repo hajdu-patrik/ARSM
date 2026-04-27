@@ -140,25 +140,30 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className="bg-arsm-input dark:bg-arsm-card-dark rounded-2xl border border-arsm-border dark:border-arsm-border-dark shadow-sm p-4 select-none">
+    <section className="relative select-none overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-4 shadow-[0_14px_32px_rgba(28,22,46,0.1),0_0_0_1px_rgba(255,255,255,0.5)_inset] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_20px_42px_rgba(3,5,14,0.6),0_0_0_1px_rgba(255,255,255,0.04)_inset]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
+      />
+
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrev}
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
-          className={`p-1.5 rounded-lg text-arsm-label dark:text-arsm-label-dark transition-colors ${canGoPrev ? 'hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark' : 'opacity-50 cursor-not-allowed'}`}
+          className={`rounded-lg border p-1.5 text-arsm-label transition-colors dark:text-arsm-label-dark ${canGoPrev ? 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark' : 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60'}`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark capitalize">
+        <h3 className="text-lg font-semibold tracking-tight text-arsm-primary dark:text-arsm-primary-dark capitalize">
           {monthLabel}
         </h3>
         <button
           onClick={handleNext}
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
-          className={`p-1.5 rounded-lg text-arsm-label dark:text-arsm-label-dark transition-colors ${canGoNext ? 'hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark' : 'opacity-50 cursor-not-allowed'}`}
+          className={`rounded-lg border p-1.5 text-arsm-label transition-colors dark:text-arsm-label-dark ${canGoNext ? 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark' : 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60'}`}
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -173,7 +178,7 @@ const CalendarViewComponent = memo(function CalendarView({
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7 gap-px mb-1">
             {dayHeaders.map((d) => (
-              <div key={d} className="text-center text-xs font-medium text-arsm-muted dark:text-arsm-muted-dark py-1">
+              <div key={d} className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-arsm-muted dark:text-arsm-muted-dark">
                 {d}
               </div>
             ))}
@@ -194,7 +199,7 @@ const CalendarViewComponent = memo(function CalendarView({
                       <>
                         <div className="flex h-7 items-center justify-center mb-0.5">
                           {day.isToday ? (
-                            <span className="bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-arsm-accent text-sm font-semibold text-arsm-primary shadow-[0_6px_14px_rgba(97,67,154,0.28)] ring-2 ring-arsm-accent/30 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(8,10,20,0.5)] dark:ring-arsm-accent-dark/30">
                               {day.date.getDate()}
                             </span>
                           ) : (
@@ -208,7 +213,7 @@ const CalendarViewComponent = memo(function CalendarView({
                             day.appointments.slice(0, 1).map((appt) => (
                               <span
                                 key={appt.id}
-                                className={`h-3.5 min-w-3.5 rounded-full px-1 text-white text-[8px] leading-none flex items-center justify-center font-bold ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                                className={`flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
                                 title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
                               >
                                 {appt.vehicle.brand[0]}
@@ -229,7 +234,7 @@ const CalendarViewComponent = memo(function CalendarView({
                           {day.appointments.slice(0, 3).map((appt) => (
                             <span
                               key={`desktop-${appt.id}`}
-                              className={`w-5 h-5 rounded-full text-white text-[9px] flex items-center justify-center font-bold ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                              className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
                               title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
                             >
                               {appt.vehicle.brand[0]}
@@ -252,9 +257,9 @@ const CalendarViewComponent = memo(function CalendarView({
 
                     const dayClassName = `${rowHeightClass} p-1 rounded-lg flex flex-col items-center justify-start ${
                       day.isCurrentMonth
-                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark'
-                        : 'text-arsm-muted-dark dark:text-arsm-label'
-                    } ${day.isToday ? 'bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark' : ''} ${isSelected ? 'ring-2 ring-arsm-accent dark:ring-arsm-accent-dark' : ''}`;
+                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover hover:shadow-[inset_0_0_0_1px_rgba(188,165,255,0.35)] dark:hover:bg-arsm-hover-dark dark:hover:shadow-[inset_0_0_0_1px_rgba(157,135,230,0.38)]'
+                        : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
+                    } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${isSelected ? 'ring-2 ring-arsm-accent bg-arsm-accent-wash/65 dark:ring-arsm-accent-dark dark:bg-arsm-hover-dark/75' : ''}`;
 
                     if (day.isCurrentMonth && onDayClick) {
                       return (
