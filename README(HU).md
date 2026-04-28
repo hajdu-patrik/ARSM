@@ -45,9 +45,9 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
 | **Docs Sync** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
 | **Coding Principles** | Kódminőség & stílus | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
-| **HTTP Endpoint Test** | .http tesztfájlok | HTTP endpoint tesztcsomagok frissítése API-változások után |
-| **SQL Database Test** | .sql validációs fájlok | SQL validációs lekérdezések frissítése séma változások után |
-| **E2E Playwright** | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, page objectek frissítése UI-változásokkor |
+| **HTTP Endpoint Test** | .http tesztfájlok | HTTP endpoint tesztcsomagok frissítése, ha viselkedés/új feature API-szerződést érint, vagy ha explicit kérés érkezik |
+| **SQL Database Test** | .sql validációs fájlok | SQL validációs lekérdezések frissítése, ha viselkedés/új feature séma-perzisztencia viselkedést érint, vagy ha explicit kérés érkezik |
+| **E2E Playwright Test** | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, ha viselkedés/új feature UI/DTO-látható flowt érint, vagy ha explicit kérés érkezik |
 | **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
 
 **Standard workflow:**
@@ -57,9 +57,11 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 3. Validáló ágens ellenőrzi a buildet
 4. Docs Sync ágens szinkronizálja a dokumentációt
 5. Coding Principles ágens ellenőrzi a kódminőséget és stílust
-6. HTTP Endpoint Test ágens szinkronizálja a .http teszteket
-7. SQL Database Test ágens szinkronizálja a .sql validációkat
-8. E2E Playwright ágens frissíti a Playwright teszteket, amikor UI vagy DTO változik
+6. HTTP Endpoint Test ágens a .http teszteket csak viselkedés/új feature API-szerződés változásnál szinkronizálja (vagy explicit prompt-kérésre)
+7. SQL Database Test ágens a .sql validációkat csak viselkedés/új feature séma/perzisztencia változásnál szinkronizálja (vagy explicit prompt-kérésre)
+8. E2E Playwright Test ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
+
+Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnevezés, komment, formázás, csak dokumentáció) a HTTP/SQL/Playwright tesztágensek kimaradnak, és csak Docs Sync fut. Ha a prompt explicit tesztfuttatást vagy tesztkészítést/frissítést kér, a kért tesztágensek kötelezően futnak.
 
 Ágensdefiníciók:
 
@@ -77,7 +79,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
 | `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
 | `autoservice-ef-migration` | `migration` | EF Core migrációs workflow és hibaelhárítás |
-| `autoservice-e2e-playwright` | `e2e-playwright` | Playwright E2E tesztek frissítése UI/DTO változások után |
+| `autoservice-e2e-playwright` | `e2e-playwright-test` | Playwright E2E tesztek frissítése UI/DTO változások után |
 
 Skill források: `.github/skills/*/SKILL.md`
 
@@ -143,10 +145,8 @@ Futtasd a repository gyökeréből:
 
 ```bash
 act -l
-act
-act -W .github/workflows/dotnet.yml
-act -j build
-act pull_request -j playwright-e2e --secret-file .secrets
+act -j backend-build frontend-build
+act pull_request -W .github/workflows/dotnet.yml -j playwright-e2e --matrix os:ubuntu-latest -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --secret-file .secrets --container-architecture linux/amd64
 ```
 
 ### Lokális secretek act-hez

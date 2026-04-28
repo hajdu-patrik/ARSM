@@ -35,29 +35,3 @@ SELECT COUNT(*) AS expired_revoked_refresh_token_rows
 FROM refreshtokens
 WHERE "ExpiresAtUtc" <= NOW()
   AND "RevokedAtUtc" IS NOT NULL;
-
-
--- ------------------------------------------------------------
--- 3. ACTIVE REFRESH TOKEN SUMMARY — per mechanic
---    Non-expired, non-revoked tokens grouped by mechanic.
---    Expected after fresh seed: 0 rows (no sessions until first login).
--- ------------------------------------------------------------
-SELECT p."Id"    AS mechanic_id,
-       p."Email" AS mechanic_email,
-       COUNT(*)  AS active_token_count
-FROM refreshtokens rt
-JOIN people p ON p."Id" = rt."MechanicId"
-WHERE rt."ExpiresAtUtc" > NOW()
-  AND rt."RevokedAtUtc" IS NULL
-GROUP BY p."Id", p."Email"
-ORDER BY active_token_count DESC, p."Email";
-
-
--- ------------------------------------------------------------
--- 4. JWT DENYLIST GROWTH CHECK — total row count
---    A steadily growing count between cleanup cycles indicates
---    active logout/revocation activity. A count that never drops
---    may mean the cleanup service is not running.
--- ------------------------------------------------------------
-SELECT COUNT(*) AS total_jwt_denylist_rows
-FROM revokedjwttokens;

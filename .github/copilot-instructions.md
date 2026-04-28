@@ -40,10 +40,12 @@ Prioritize maintainable, domain-safe, incremental changes that align with the ex
 - Do not use XML documentation comments (`/// <summary>`, `/// <param>`, `/// <returns>`).
 - Use the `coding-principles` agent after code changes that introduce/modify classes or methods.
 
-## Endpoint & Database Test Sync Rule (Mandatory)
-- After any API endpoint is added/changed/removed, run the `http-endpoint-test` agent for `.http` suites in `tests/API/`.
-- After schema or persistence model changes, run the `sql-database-test` agent for `.sql` suites in `tests/Database/`.
-- These two agents run independently and can execute in parallel.
+## Conditional Test Execution Rule (Mandatory)
+- Development default: for non-behavioral changes (for example refactor, naming, comments, formatting, docs-only updates, or internal restructuring without contract/flow changes), do **not** run `http-endpoint-test`, `sql-database-test`, or `e2e-playwright-test`.
+- Run test skills when behavior changes or a new feature is introduced that affects API/UI/schema behavior.
+- Always honor explicit user requests: if the prompt directly asks to run tests or create/update test suites, run the requested test agents regardless of change size.
+- If there is no behavior/feature change and no explicit test request, run `docs-sync` only for the test-skill layer.
+- When both API and schema behavior changed, `http-endpoint-test` and `sql-database-test` remain parallelizable.
 
 ## MCP Policy (Workspace)
 - Keep MCP server setup intentionally minimal and project-focused.
@@ -72,9 +74,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 | **EF Migration** | EF Core migrations | Creating, validating, and troubleshooting migrations |
 | **Docs Sync** | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
 | **Coding Principles** | Code style & quality enforcement | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
-| **HTTP Endpoint Test** | .http test files | After API endpoint add/change/remove |
-| **SQL Database Test** | .sql validation files | After schema or persistence model changes |
-| **E2E Playwright** | Playwright E2E tests | After frontend UI changes or backend DTO changes that affect the UI |
+| **HTTP Endpoint Test** | .http test files | Run when behavior/new feature changes API contract, or when explicitly requested by the user |
+| **SQL Database Test** | .sql validation files | Run when behavior/new feature changes schema/persistence behavior, or when explicitly requested by the user |
+| **E2E Playwright Test** | Playwright E2E tests | Run when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested by the user |
 | **Build Validator** | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
 
 **Agent files:** `.github/agents/*.agent.md` (Copilot) and `.claude/agents/*.md` (Claude Code) — both sets define the same specialist roles.
@@ -85,9 +87,9 @@ This project uses specialist agents for task decomposition and delegation. **All
 3. **Validate** — always runs after code changes.
 4. **Docs sync (always)** — must run after every change. If changes touch skills, agents, or instruction files, those are updated too.
 5. **Coding principles** — runs after class/method additions/changes to enforce code style and quality.
-6. **HTTP endpoint test** — runs after any API endpoint change.
-7. **SQL database test** — runs after schema or persistence model changes.
-8. **E2E Playwright** — runs after frontend UI or backend DTO changes that affect Playwright tests.
+6. **HTTP endpoint test** — run only when behavior/new feature changes API contract, or when explicitly requested by the user.
+7. **SQL database test** — run only when behavior/new feature changes schema/persistence behavior, or when explicitly requested by the user.
+8. **E2E Playwright Test** — run only when behavior/new feature changes UI/DTO-visible behavior, or when explicitly requested by the user.
 
 ## Agent-First Workflow
 Use specialist agents instead of invoking skills directly. Skills serve as runbooks consumed by agents.
@@ -99,7 +101,7 @@ Use specialist agents instead of invoking skills directly. Skills serve as runbo
 | `http-endpoint-test` | `autoservice-http-endpoint-test` | Update .http test suites after endpoint changes |
 | `sql-database-test` | `autoservice-sql-database-test` | Update .sql validation suites after schema changes |
 | `migration` | `autoservice-ef-migration` | EF Core migration workflow and troubleshooting |
-| `e2e-playwright` | `autoservice-e2e-playwright` | Update Playwright E2E tests after UI/DTO changes |
+| `e2e-playwright-test` | `autoservice-e2e-playwright` | Update Playwright E2E tests after UI/DTO changes |
 
 Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/SKILL.md`.
 
@@ -176,11 +178,11 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; allowed for assigned mechanics or admins
 	- `PUT /api/appointments/{id}/vehicle` (authorized) — update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`); allowed for assigned mechanics or admins
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
-	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
+	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
 	- `PUT /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin assigns a mechanic (`422` with code `appointment_cancelled` if Cancelled, or `422` with code `appointment_completed` if Completed)
 	- `DELETE /api/appointments/{id}/assign/{mechanicId}` (authorized, AdminOnly) — admin removes a mechanic (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if removal would leave appointment without mechanics)
-	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; auto-sets CompletedAt/CanceledAt timestamps and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
+	- `PUT /api/appointments/{id}/status` (authorized) — update appointment status; idempotent when requested status is unchanged (returns existing DTO without timestamp churn), auto-sets CompletedAt/CanceledAt on actual status changes, and allows transitioning Cancelled appointments back to InProgress/Completed (including past-dated appointments)
 	- `GET /api/profile` (authorized) — get current user profile (name, email, phone, picture status)
 	- `PUT /api/profile` (authorized) — update current user profile (email/phone/firstName/middleName/lastName)
 	- `DELETE /api/profile` (authorized, non-admin) — delete current user profile after current-password validation (returns 403 for admin users); `tokenDenylistService.RevokeAsync()` is called before `transaction.CommitAsync()` to ensure the JWT is denylisted atomically with the deletion
@@ -271,7 +273,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, duplicate new-vehicle license-plate conflict (`409`), vehicleId not found (`404`), and vehicle numeric max validation (`422`),
 	- split appointment update coverage: `PUT /api/appointments/{id}` for due/task updates and `PUT /api/appointments/{id}/vehicle` for vehicle-field updates/validation,
 	- appointment update immutability guard (`scheduledDate` change rejected with `422`) while due/task updates remain allowed,
-	- mechanic claim/unclaim guardrails: claim on cancelled/non-InProgress (`422`), duplicate claim (`409`), unclaim on cancelled/completed (`422`), unclaim when not assigned (`409`), unclaim when last mechanic (`422`), and 404 for non-existent appointments,
+	- mechanic claim/unclaim guardrails: claim on cancelled/completed/other non-InProgress (`422`), duplicate claim (`409`), unclaim on cancelled/completed (`422`), unclaim when not assigned (`409`), unclaim when last mechanic (`422`), and 404 for non-existent appointments,
 	- status transitions: InProgress/Completed/Cancelled/reopen-from-cancelled, invalid status (`400`), non-assigned mechanic forbidden (`403`),
 	- admin assign/unassign guardrails: cancelled/completed (`422`), already assigned/not assigned (`409`), mechanic or appointment not found (`404`), last mechanic removal (`422`),
 	- unauthenticated matrix includes `PUT /api/appointments/{id}/vehicle` returning `401`.
@@ -305,7 +307,12 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - AppointmentDetailModal import boundaries are stabilized via extracted presentational files (`AppointmentDetailModal.sections.tsx`, `AppointmentDetailModal.footer.tsx`) while preserving existing behavior.
 - Scheduler claim CTAs are rendered as full-width buttons in both appointment cards and detail footer when visible.
 - Claim button is hidden for overdue appointments; mechanic mutation controls are locked when the appointment is `Cancelled` or `Completed`.
+- Scheduler detail mechanic assign/unassign/remove controls use a shared busy lock while mutation requests are in flight.
+- Scheduler remove-mechanic confirmation modal auto-closes if the appointment becomes `Cancelled` while the modal is open (unless a remove request is already in flight).
 - Scheduler self-unassign control is hidden when the current mechanic is the sole assigned mechanic.
+- Settings `PersonalInfoSection` name fields expose `aria-invalid` plus inline field-level errors when validation fails.
+- Settings `ChangePasswordSection` includes a read-only, visually hidden username autocomplete helper input (`name="username"`, `autoComplete="username"`) wired from the current profile email.
+- Admin `SecuritySection` password input includes `autoComplete="new-password"`, `aria-invalid`, and `aria-describedby` wiring to hint/error text.
 - Scheduler intake form sections keep grouped user/vehicle/task titles with unified field styles and explicit placeholders (including vehicle detail inputs), and existing-vehicle select keeps a disabled non-selectable placeholder option.
 - Scheduler intake lookup-dependent UI state resets when the lookup email changes or when lookup fails (clears stale vehicle/task sections before showing errors).
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).

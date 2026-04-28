@@ -14,6 +14,7 @@ import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
+  readonly usernameForAutocomplete: string;
   readonly currentPassword: string;
   readonly newPassword: string;
   readonly confirmNewPassword: string;
@@ -21,12 +22,16 @@ interface ChangePasswordSectionProps {
   readonly onCurrentPasswordChange: (value: string) => void;
   readonly onNewPasswordChange: (value: string) => void;
   readonly onConfirmNewPasswordChange: (value: string) => void;
-  readonly onSubmit: (e: React.SyntheticEvent) => void;
+  readonly onSubmit: (event: React.SyntheticEvent) => void;
   readonly getFieldError: (field: string) => string | undefined;
   readonly successMessage: string | null;
 }
 
+/**
+ * Renders the settings password-change form with accessibility-aware inputs.
+ */
 const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
+  usernameForAutocomplete,
   currentPassword,
   newPassword,
   confirmNewPassword,
@@ -44,9 +49,9 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const toggleShowCurrent = useCallback(() => setShowCurrent((v) => !v), []);
-  const toggleShowNew = useCallback(() => setShowNew((v) => !v), []);
-  const toggleShowConfirm = useCallback(() => setShowConfirm((v) => !v), []);
+  const toggleShowCurrent = useCallback(() => setShowCurrent((isVisible) => !isVisible), []);
+  const toggleShowNew = useCallback(() => setShowNew((isVisible) => !isVisible), []);
+  const toggleShowConfirm = useCallback(() => setShowConfirm((isVisible) => !isVisible), []);
 
   return (
     <div className={cardClass}>
@@ -64,6 +69,18 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
       )}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        {/* Hidden username field helps password managers pair current/new password fields. */}
+        <input
+          type="text"
+          name="username"
+          autoComplete="username"
+          value={usernameForAutocomplete}
+          readOnly
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+        />
+
         <div>
           <label htmlFor="settings-currentPassword" className={labelClass}>
             {t('settings.currentPassword')}

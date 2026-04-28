@@ -47,6 +47,15 @@ Content-Type: application/json
 
 ###
 
+### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
+# Claim now returns explicit completed-state validation.
+# Expected error code: appointment_completed.
+### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
+
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+
+###
+
 ### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
 # Self-unclaim is blocked when status is Completed.
 # Expected error code: appointment_completed.

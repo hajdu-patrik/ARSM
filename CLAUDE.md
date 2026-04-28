@@ -36,9 +36,9 @@ This project uses specialist agents for both Claude Code (`.claude/agents/`) and
 | `migration` | sonnet | EF Core migrations | Creating, validating, and troubleshooting migrations |
 | `docs-sync` | sonnet | Documentation files | **Always runs after changes** — syncs CLAUDE.md, .github/instructions, copilot-instructions.md, ARSM-TL-DR.md |
 | `coding-principles` | sonnet | Code style & quality enforcement | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
-| `http-endpoint-test` | sonnet | .http test files | After API endpoint add/change/remove |
-| `sql-database-test` | sonnet | .sql validation files | After schema or persistence model changes |
-| `e2e-playwright` | sonnet | Playwright E2E tests | After frontend UI changes or backend DTO changes that affect the UI |
+| `http-endpoint-test` | sonnet | .http test files | Run when behavior/new feature changes API contract, or when explicitly requested by the user |
+| `sql-database-test` | sonnet | .sql validation files | Run when behavior/new feature changes schema/persistence behavior, or when explicitly requested by the user |
+| `e2e-playwright-test` | sonnet | Playwright E2E tests | Run when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested by the user |
 | `validate` | haiku | Build + type-check | Fast post-change validation (backend build + frontend tsc) |
 
 **Mandatory workflow:**
@@ -47,9 +47,9 @@ This project uses specialist agents for both Claude Code (`.claude/agents/`) and
 3. **Validate** — always runs after code changes to catch build/type errors.
 4. **Docs sync (always)** — the `docs-sync` agent must run after every change to synchronize all documentation files. If changes touch skills, agents, or instruction files, those are updated too.
 5. **Coding principles** — the `coding-principles` agent must run after class/method additions or changes to enforce code style and quality.
-6. **HTTP endpoint test** — runs after any API endpoint change.
-7. **SQL database test** — runs after schema or persistence model changes (often pairs with `migration`).
-8. **E2E Playwright** — the `e2e-playwright` agent must run after UI component or DTO changes to keep Playwright tests aligned.
+6. **HTTP endpoint test** — run only when behavior/new feature changes API contract, or when explicitly requested by the user.
+7. **SQL database test** — run only when behavior/new feature changes schema/persistence behavior (often pairs with `migration`), or when explicitly requested by the user.
+8. **E2E Playwright Test** — run only when behavior/new feature changes UI/DTO-visible behavior, or when explicitly requested by the user.
 
 ## Team & Operations Core Rules
 
@@ -57,6 +57,6 @@ This project uses specialist agents for both Claude Code (`.claude/agents/`) and
 - **Conflict Prevention:** For parallel work, respect folder-level ownership to prevent merge conflicts.
 - **Documentation Sync (Mandatory):** After any change that affects API endpoints, EF migrations, middleware pipeline, WebUI pages/components/routes, dependencies (NuGet or npm), AppHost resource wiring, or configuration keys — run `/docs-sync` before considering the task complete. This keeps all `CLAUDE.md` and `.github/instructions/` files in sync with the actual code.
 - **Code Documentation Style (Mandatory):** For new or changed non-trivial classes/methods, use JSDoc-style block comments. Do not use XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`). Run the `coding-principles` agent when these code changes are introduced.
-- **Endpoint Test Sync (Mandatory):** After any API endpoint is added/changed/removed, run the `http-endpoint-test` agent for `.http` suites in `tests/API/` and the `sql-database-test` agent for `.sql` suites in `tests/Database/`.
+- **Conditional Test Execution (Mandatory):** During development, skip `http-endpoint-test`, `sql-database-test`, and `e2e-playwright-test` for non-behavioral changes; run them only for behavior/new-feature changes or when the user explicitly asks for test run/update creation in the prompt. If there is no behavior/feature change and no explicit test request, run `docs-sync` only for the test-skill layer.
 - **AI SQL Safety (Mandatory):** For AI-assisted database verification, use `ai_agent_test_user` and execute read-only `SELECT` queries only. Never run DML/DDL (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`) from AI SQL tooling.
-- **Scheduler Doc Accuracy:** Keep frontend docs aligned with current scheduler UX details, including mobile calendar baseline alignment, auth-expired (`401/403`) vs generic load-toast messaging, intake lookup-state reset behavior and placeholder coverage, and AppointmentDetailModal import-boundary refactors that preserve behavior.
+- **Scheduler Doc Accuracy:** Keep frontend docs aligned with current scheduler UX details, including mobile calendar baseline alignment, auth-expired (`401/403`) vs generic load-toast messaging, intake lookup-state reset behavior and placeholder coverage, AppointmentDetailModal import-boundary refactors that preserve behavior, remove-mechanic modal auto-close on cancelled status changes, shared busy-lock behavior across mechanic mutation controls, and current settings/admin accessibility wiring (`aria-invalid`, `aria-describedby`, `autoComplete`, and the hidden username autocomplete helper input in Settings change-password forms).

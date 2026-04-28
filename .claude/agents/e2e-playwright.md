@@ -1,10 +1,10 @@
 ---
-name: e2e-playwright
-description: "E2E Playwright agent. Maintains Playwright test suites, updates page objects and selectors when UI changes, and runs E2E validation."
+name: e2e-playwright-test
+description: "E2E Playwright Test agent. Maintains Playwright test suites, updates page objects and selectors when UI changes, and runs E2E validation."
 model: sonnet
 ---
 
-# E2E Playwright Agent - Playwright Test Maintenance
+# E2E Playwright Test Agent - Playwright Test Maintenance
 
 You are a QA automation agent responsible for Playwright end-to-end tests in `app/AutoService.WebUI/tests/e2e/`.
 

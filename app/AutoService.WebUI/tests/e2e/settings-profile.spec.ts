@@ -45,6 +45,31 @@ test.describe('Settings – profile management', () => {
     );
   });
 
+  test('personal info name fields expose autocomplete and first-name inline validation', async ({ page }) => {
+    const settings = new SettingsPage(page);
+    await settings.goto();
+
+    await settings.expectNameAutocompleteAttributes();
+
+    const originalFirstName = await settings.getFirstNameValue();
+    await settings.clearFirstName();
+
+    const invalidUpdatePromise = page.waitForResponse(
+      (r) => r.url().includes('/api/profile') && r.request().method() === 'PUT' && r.status() >= 400,
+    );
+    await settings.submitPersonalInfo();
+    await invalidUpdatePromise;
+
+    await settings.expectFirstNameInvalidWithInlineError();
+
+    await settings.fillFirstName(originalFirstName);
+    const restorePromise = page.waitForResponse(
+      (r) => r.url().includes('/api/profile') && r.request().method() === 'PUT' && r.status() === 200,
+    );
+    await settings.submitPersonalInfo();
+    await restorePromise;
+  });
+
   test('password change with mismatched confirm shows error', async ({ page }) => {
     const settings = new SettingsPage(page);
     await settings.goto();
@@ -77,7 +102,7 @@ test.describe('Settings – profile management', () => {
     await settings.fillPasswordChange(env.wrongPassword, 'ValidNew123!', 'ValidNew123!');
 
     const changePromise = page.waitForResponse(
-      (r) => r.url().includes('/api/profile/password') && r.request().method() === 'PUT',
+      (r) => r.url().includes('/api/profile/change-password') && r.request().method() === 'POST',
     );
     await settings.submitPasswordChange();
     const resp = await changePromise;
@@ -93,7 +118,7 @@ test.describe('Settings – profile management', () => {
     const tempPassword = `Temp${Date.now()}!`;
 
     const changePromise = page.waitForResponse(
-      (r) => r.url().includes('/api/profile/password') && r.request().method() === 'PUT',
+      (r) => r.url().includes('/api/profile/change-password') && r.request().method() === 'POST',
     );
     await settings.fillPasswordChange(env.mechanicPassword, tempPassword, tempPassword);
     await settings.submitPasswordChange();
@@ -101,7 +126,7 @@ test.describe('Settings – profile management', () => {
 
     if (resp.status() === 200) {
       const revertPromise = page.waitForResponse(
-        (r) => r.url().includes('/api/profile/password') && r.request().method() === 'PUT',
+        (r) => r.url().includes('/api/profile/change-password') && r.request().method() === 'POST',
       );
       await settings.fillPasswordChange(tempPassword, env.mechanicPassword, env.mechanicPassword);
       await settings.submitPasswordChange();

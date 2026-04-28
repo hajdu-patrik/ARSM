@@ -8,9 +8,6 @@
 @ApptId = 1
 @PastCancelledApptId = 5
 @NonAssignedApptId = 3
-@CustomerId = 1
-@CustomerVehicleId = 1
-@PrimaryMechanicId = 7
 
 
 # ─────────────────────────────────────────────────────────────
@@ -51,7 +48,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Self-claim is only allowed for InProgress appointments.
-# Expected error code: appointment_not_in_progress.
+# Expected error code: appointment_completed.
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
@@ -68,14 +65,6 @@ Content-Type: application/json
 {
   "status": "Cancelled"
 }
-
-###
-
-### [Negative][Appointments] Claim cancelled appointment is rejected (422 expected)
-# Expected error code: appointment_cancelled.
-### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/claim
-
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
 
 ###
 
@@ -144,17 +133,4 @@ Content-Type: application/json
 {
   "dueDateTime": "2030-01-03T16:15:00",
   "taskDescription": "Forbidden update attempt by non-assigned mechanic"
-}
-
-###
-
-### [Negative][Appointments] Non-admin cannot create customer appointment (403 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-17T09:00:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
 }

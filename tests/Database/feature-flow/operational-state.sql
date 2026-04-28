@@ -87,29 +87,7 @@ WHERE "PersonType" = 'Mechanic';
 
 
 -- ------------------------------------------------------------
--- 6. REFRESH TOKEN SESSION ROTATION CHAIN
---    Shows TokenHash -> ReplacedByTokenHash links and broken chain flags.
--- ------------------------------------------------------------
-SELECT rt."Id" AS token_id,
-       rt."MechanicId",
-       rt."TokenHash",
-       rt."ReplacedByTokenHash",
-       next_rt."Id" AS replacement_token_id,
-       rt."CreatedAtUtc",
-       rt."RevokedAtUtc",
-       rt."ExpiresAtUtc",
-       CASE
-           WHEN rt."ReplacedByTokenHash" IS NULL THEN FALSE
-           WHEN next_rt."Id" IS NULL THEN TRUE
-           ELSE FALSE
-       END AS has_broken_rotation_link
-FROM refreshtokens rt
-LEFT JOIN refreshtokens next_rt ON next_rt."TokenHash" = rt."ReplacedByTokenHash"
-ORDER BY rt."MechanicId", rt."CreatedAtUtc";
-
-
--- ------------------------------------------------------------
--- 7. MECHANIC DELETION INTEGRITY
+-- 6. MECHANIC DELETION INTEGRITY
 --    Verifies there are no orphaned rows after mechanic deletion.
 --    Expected: 0 rows.
 -- ------------------------------------------------------------
@@ -137,7 +115,7 @@ WHERE p."Id" IS NULL;
 
 
 -- ------------------------------------------------------------
--- 8. ADMIN MECHANIC LIST CONSISTENCY
+-- 7. ADMIN MECHANIC LIST CONSISTENCY
 --    Cross-checks mechanics against Identity admin role membership and picture flag projection.
 -- ------------------------------------------------------------
 SELECT p."Id" AS mechanic_id,

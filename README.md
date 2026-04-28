@@ -45,9 +45,9 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 | **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
 | **Docs Sync** | Documentation | Syncs all instruction files with current code after every change |
 | **Coding Principles** | Code style & quality | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
-| **HTTP Endpoint Test** | .http test files | Updates HTTP endpoint test suites after API changes |
-| **SQL Database Test** | .sql validation files | Updates SQL validation suites after schema changes |
-| **E2E Playwright** | Playwright E2E tests | Maintains Playwright test suites, updates page objects when UI changes |
+| **HTTP Endpoint Test** | .http test files | Updates HTTP endpoint test suites when behavior/new feature changes API contract, or when explicitly requested |
+| **SQL Database Test** | .sql validation files | Updates SQL validation suites when behavior/new feature changes schema/persistence behavior, or when explicitly requested |
+| **E2E Playwright Test** | Playwright E2E tests | Maintains Playwright test suites when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested |
 | **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
 
 **Standard workflow:**
@@ -57,9 +57,11 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 3. Validate agent checks the build
 4. Docs Sync agent updates project documentation
 5. Coding Principles agent enforces code style and quality
-6. HTTP Endpoint Test agent syncs .http test suites
-7. SQL Database Test agent syncs .sql validation suites
-8. E2E Playwright agent updates Playwright tests when UI or DTO changes affect the UI
+6. HTTP Endpoint Test agent syncs .http test suites only for behavior/new feature API contract changes (or explicit prompt request)
+7. SQL Database Test agent syncs .sql validation suites only for behavior/new feature schema/persistence changes (or explicit prompt request)
+8. E2E Playwright Test agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
+
+Default development policy: for non-behavioral changes (refactor, naming, comments, formatting, docs-only), skip HTTP/SQL/Playwright test agents and run Docs Sync only. If a prompt explicitly asks to run/create/update tests, the requested test agents must run.
 
 Agent definitions:
 
@@ -77,7 +79,7 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
 | `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
 | `autoservice-ef-migration` | `migration` | EF Core migration workflow and troubleshooting |
-| `autoservice-e2e-playwright` | `e2e-playwright` | Update Playwright E2E tests after UI/DTO changes |
+| `autoservice-e2e-playwright` | `e2e-playwright-test` | Update Playwright E2E tests after UI/DTO changes |
 
 Skill sources: `.github/skills/*/SKILL.md`
 
@@ -143,10 +145,8 @@ Run from repository root:
 
 ```bash
 act -l
-act
-act -W .github/workflows/dotnet.yml
-act -j build
-act pull_request -j playwright-e2e --secret-file .secrets
+act -j backend-build frontend-build
+act pull_request -W .github/workflows/dotnet.yml -j playwright-e2e --matrix os:ubuntu-latest -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --secret-file .secrets --container-architecture linux/amd64
 ```
 
 ### Local Secrets For act

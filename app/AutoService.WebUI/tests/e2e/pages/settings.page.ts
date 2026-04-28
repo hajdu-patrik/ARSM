@@ -6,6 +6,18 @@ import { expect, type Page } from '@playwright/test';
 export class SettingsPage {
   constructor(private readonly page: Page) {}
 
+  private firstNameInput() {
+    return this.page.locator('#settings-firstName');
+  }
+
+  private middleNameInput() {
+    return this.page.locator('#settings-middleName');
+  }
+
+  private lastNameInput() {
+    return this.page.locator('#settings-lastName');
+  }
+
   /** Navigates to the settings page and waits for profile data to load. */
   async goto(): Promise<void> {
     await this.page.goto('/settings');
@@ -14,23 +26,40 @@ export class SettingsPage {
 
   /** Asserts the settings page has loaded profile data. */
   async expectLoaded(): Promise<void> {
-    await expect(this.page.locator('input[id="firstName"], input[name="firstName"]').first()).toBeVisible({ timeout: 15_000 });
+    await expect(this.firstNameInput()).toBeVisible({ timeout: 15_000 });
   }
 
   /** Updates the middle name field value. */
   async fillMiddleName(value: string): Promise<void> {
-    const field = this.page.locator('input').filter({ has: this.page.locator('[placeholder]') }).nth(2);
-    await field.fill(value);
+    await this.middleNameInput().fill(value);
   }
 
   /** Fills the personal info first name field. */
   async fillFirstName(value: string): Promise<void> {
-    await this.page.locator('input[id="firstName"], input[name="firstName"]').first().fill(value);
+    await this.firstNameInput().fill(value);
+  }
+
+  /** Clears the personal info first name field. */
+  async clearFirstName(): Promise<void> {
+    await this.firstNameInput().fill('');
   }
 
   /** Returns the value of the first name input. */
   async getFirstNameValue(): Promise<string> {
-    return this.page.locator('input[id="firstName"], input[name="firstName"]').first().inputValue();
+    return this.firstNameInput().inputValue();
+  }
+
+  /** Asserts personal-info name fields expose expected autocomplete metadata. */
+  async expectNameAutocompleteAttributes(): Promise<void> {
+    await expect(this.firstNameInput()).toHaveAttribute('autocomplete', 'given-name');
+    await expect(this.middleNameInput()).toHaveAttribute('autocomplete', 'additional-name');
+    await expect(this.lastNameInput()).toHaveAttribute('autocomplete', 'family-name');
+  }
+
+  /** Asserts first-name validation state and inline field-level error visibility. */
+  async expectFirstNameInvalidWithInlineError(): Promise<void> {
+    await expect(this.firstNameInput()).toHaveAttribute('aria-invalid', 'true');
+    await expect(this.firstNameInput().locator('xpath=ancestor::div[1]').getByRole('alert')).toBeVisible();
   }
 
   /** Clicks the personal info save/update button. */

@@ -2,6 +2,14 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    private sealed record ErrorCodeResponse(string Code);
+
+    /**
+     * Maps appointment and customer-appointment endpoints to the route builder.
+     *
+     * @param endpoints Endpoint route builder.
+     * @return Route builder with appointment endpoints registered.
+     */
     public static IEndpointRouteBuilder MapAppointmentEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/appointments")
@@ -44,7 +52,7 @@ public static partial class AppointmentEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<object>(StatusCodes.Status404NotFound)
             .Produces<object>(StatusCodes.Status409Conflict)
-            .Produces<object>(StatusCodes.Status422UnprocessableEntity);
+            .Produces<ErrorCodeResponse>(StatusCodes.Status422UnprocessableEntity);
 
         group.MapDelete("/{id}/claim", UnclaimAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)

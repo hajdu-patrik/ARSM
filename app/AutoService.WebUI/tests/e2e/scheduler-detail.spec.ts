@@ -1,7 +1,7 @@
-import { expect, test, type Response } from '@playwright/test';
+import { expect, test, type Page, type Response } from '@playwright/test';
 import { SchedulerPage } from './pages/scheduler.page';
 import { AppointmentDetailPage } from './pages/appointment-detail.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
+import { getAdminFlowEnv, getAppointmentFlowEnv } from './support/e2e-env';
 import { initBrowserState, loginAsMechanic } from './support/auth.helper';
 
 interface AppointmentResponse {
@@ -36,6 +36,37 @@ function toDatetimeLocalValue(date: Date): string {
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
+async function createTodayIntakeAppointment(
+  page: Page,
+  customerEmail: string,
+  taskDescription: string,
+): Promise<AppointmentResponse> {
+  const scheduler = new SchedulerPage(page);
+  await scheduler.expectLoaded();
+  await scheduler.selectTodayCalendarDay();
+  await scheduler.openIntakeModal();
+
+  const lookupPromise = page.waitForResponse(
+    (r) => matchesApiPath(r, 'GET', '/api/customers/by-email') && r.status() === 200,
+  );
+  await scheduler.lookupCustomerByEmail(customerEmail);
+  await lookupPromise;
+
+  await scheduler.selectFirstExistingVehicle();
+  await scheduler.fillTaskDescription(taskDescription);
+
+  const createPromise = page.waitForResponse(
+    (r) => matchesApiPath(r, 'POST', '/api/appointments/intake') && r.status() >= 200 && r.status() < 300,
+  );
+  await scheduler.createIntake();
+  const createResponse = await createPromise;
+  const createdAppointment = await createResponse.json() as AppointmentResponse;
+
+  await expect(page.getByRole('dialog', { name: 'New Intake' })).toBeHidden();
+
+  return createdAppointment;
+}
+
 test.describe('Scheduler appointment detail', () => {
   let createdAppointment: AppointmentResponse;
   let taskDescription: string;
@@ -45,30 +76,8 @@ test.describe('Scheduler appointment detail', () => {
     await initBrowserState(page);
     await loginAsMechanic(page, env.mechanicEmail, env.mechanicPassword);
 
-    const scheduler = new SchedulerPage(page);
-    await scheduler.expectLoaded();
-    await scheduler.selectTodayCalendarDay();
-    await scheduler.openIntakeModal();
-
-    const lookupPromise = page.waitForResponse(
-      (r) => matchesApiPath(r, 'GET', '/api/customers/by-email') && r.status() === 200,
-    );
-    await scheduler.lookupCustomerByEmail(env.existingCustomerEmail);
-    await lookupPromise;
-
-    await scheduler.selectFirstExistingVehicle();
-
     taskDescription = `Playwright detail ${Date.now()}`;
-    await scheduler.fillTaskDescription(taskDescription);
-
-    const createPromise = page.waitForResponse(
-      (r) => matchesApiPath(r, 'POST', '/api/appointments/intake') && r.status() >= 200 && r.status() < 300,
-    );
-    await scheduler.createIntake();
-    const createResponse = await createPromise;
-    createdAppointment = await createResponse.json() as AppointmentResponse;
-
-    await expect(page.getByRole('dialog', { name: 'New Intake' })).toBeHidden();
+    createdAppointment = await createTodayIntakeAppointment(page, env.existingCustomerEmail, taskDescription);
   });
 
   test('open appointment detail modal by clicking card', async ({ page }) => {
@@ -176,18 +185,119 @@ test.describe('Scheduler appointment detail', () => {
     const detail = new AppointmentDetailPage(page);
     await detail.expectOpen();
 
-    const claimBtn = page.getByRole('dialog', { name: 'Appointment Details' })
-      .getByRole('button', { name: /claim/i });
-    const isClaimVisible = await claimBtn.isVisible().catch(() => false);
+    const isClaimVisible = await detail.isClaimButtonVisible();
 
     if (isClaimVisible) {
       const claimPromise = page.waitForResponse(
-        (r) => r.url().includes(`/api/appointments/${createdAppointment.id}/claim`) && r.request().method() === 'PUT',
+        (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/claim`) && r.status() === 200,
       );
       await detail.clickClaim();
       await claimPromise;
     }
 
     expect(true).toBe(true);
+  });
+
+  test('cancelled appointment hides claim and self-unassign mechanic actions', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.openAppointmentByTask(taskDescription);
+
+    const detail = new AppointmentDetailPage(page);
+    await detail.expectOpen();
+
+    if (await detail.isClaimButtonVisible()) {
+      const claimPromise = page.waitForResponse(
+        (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/claim`) && r.status() === 200,
+      );
+      await detail.clickClaim();
+      await claimPromise;
+    }
+
+    if (!await detail.isStatusSelectVisible()) {
+      test.skip(true, 'Status selector unavailable for this appointment context.');
+    }
+
+    const hadUnclaimButton = await detail.isUnclaimButtonVisible();
+
+    const statusPromise = page.waitForResponse(
+      (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/status`) && r.status() === 200,
+    );
+    await detail.changeStatus('Cancelled');
+    await statusPromise;
+
+    const statusText = (await detail.getStatusBadgeText()).toLowerCase();
+    expect(statusText).toContain('cancel');
+
+    await detail.expectClaimHidden();
+    if (hadUnclaimButton) {
+      await detail.expectUnclaimHidden();
+    }
+  });
+});
+
+test.describe('Scheduler appointment detail admin remove mechanic modal', () => {
+  let createdAppointment: AppointmentResponse;
+  let taskDescription: string;
+
+  test.beforeEach(async ({ page }) => {
+    const adminEnv = getAdminFlowEnv();
+    if (!adminEnv) {
+      test.skip(true, 'Admin credentials not configured');
+      return;
+    }
+
+    const env = getAppointmentFlowEnv();
+    await initBrowserState(page);
+    await loginAsMechanic(page, adminEnv.adminEmail, adminEnv.adminPassword);
+
+    taskDescription = `Playwright admin detail ${Date.now()}`;
+    createdAppointment = await createTodayIntakeAppointment(page, env.existingCustomerEmail, taskDescription);
+  });
+
+  test('remove-mechanic confirmation auto-closes when appointment becomes cancelled', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.openAppointmentByTask(taskDescription);
+
+    const detail = new AppointmentDetailPage(page);
+    await detail.expectOpen();
+
+    if (await detail.isClaimButtonVisible()) {
+      const claimPromise = page.waitForResponse(
+        (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/claim`) && r.status() === 200,
+      );
+      await detail.clickClaim();
+      await claimPromise;
+    }
+
+    if (!await detail.isStatusSelectVisible()) {
+      test.skip(true, 'Status selector unavailable; admin is not assigned to this appointment.');
+    }
+
+    if (!await detail.isRemoveMechanicButtonVisible()) {
+      const mechanicIdToAssign = await detail.selectFirstAvailableMechanicForAssign();
+      test.skip(!mechanicIdToAssign, 'No additional mechanics available for remove-mechanic scenario.');
+
+      const assignPromise = page.waitForResponse(
+        (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/assign/${mechanicIdToAssign}`)
+          && r.status() === 200,
+      );
+      await detail.clickAddMechanic();
+      await assignPromise;
+    }
+
+    if (!await detail.isRemoveMechanicButtonVisible()) {
+      test.skip(true, 'Remove-mechanic action is unavailable for this appointment in current data.');
+    }
+
+    await detail.openFirstRemoveMechanicConfirmation();
+    await detail.expectRemoveMechanicConfirmationOpen();
+
+    const cancelResponse = await page.request.put(
+      `/api/appointments/${createdAppointment.id}/status`,
+      { data: { status: 'Cancelled' } },
+    );
+    expect(cancelResponse.ok()).toBeTruthy();
+
+    await detail.expectRemoveMechanicConfirmationClosed(20_000);
   });
 });

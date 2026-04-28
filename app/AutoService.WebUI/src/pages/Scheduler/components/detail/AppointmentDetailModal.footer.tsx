@@ -6,6 +6,9 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
 
+/**
+ * Type guard that narrows select values to supported appointment statuses.
+ */
 function isAppointmentStatus(value: string): value is AppointmentStatus {
   return STATUS_OPTIONS_SET.has(value);
 }
@@ -28,6 +31,10 @@ interface AppointmentDetailFooterProps {
   readonly onClaim: () => void;
 }
 
+/**
+ * Renders footer actions for edit, status transition, assignment state, and claiming.
+ * Keeps mutually exclusive controls hidden while editing is active.
+ */
 export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   appointment,
   canEdit,
@@ -45,6 +52,9 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   onStatusChange,
   onClaim,
 }: AppointmentDetailFooterProps) {
+  const isClosedForMechanicMutations = appointment.status === 'Cancelled' || appointment.status === 'Completed';
+  const shouldRenderClaimButton = !isClosedForMechanicMutations && shouldShowClaimButton;
+
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
       {canEdit && !isEditing && (
@@ -105,7 +115,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
         </div>
       )}
 
-      {!isEditing && shouldShowClaimButton && (
+      {!isEditing && shouldRenderClaimButton && (
         <div className="flex w-full justify-center">
           <button
             onClick={onClaim}

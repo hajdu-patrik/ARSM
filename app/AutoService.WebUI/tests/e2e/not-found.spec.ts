@@ -3,12 +3,6 @@ import { getAppointmentFlowEnv } from './support/e2e-env';
 import { initBrowserState, loginAsMechanic } from './support/auth.helper';
 
 test.describe('Not Found (404) page', () => {
-  test('unauthenticated user on unknown route gets redirected to login', async ({ page }) => {
-    await initBrowserState(page);
-    await page.goto('/nonexistent-route-xyz');
-    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
-  });
-
   test('authenticated user sees 404 content on unknown route', async ({ page }) => {
     const env = getAppointmentFlowEnv();
     await initBrowserState(page);

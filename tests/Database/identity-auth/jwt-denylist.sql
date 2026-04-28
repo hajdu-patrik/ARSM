@@ -6,7 +6,7 @@
 --    Expected after fresh seed with no prior logins: 0 rows.
 -- ------------------------------------------------------------
 SELECT rjt."Id",
-       rjt."Jti",
+    rjt."JwtId",
        rjt."ExpiresAtUtc",
        rjt."RevokedAtUtc",
        (rjt."ExpiresAtUtc" > NOW()) AS is_still_within_token_lifetime

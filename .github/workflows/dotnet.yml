@@ -119,17 +119,29 @@ jobs:
 
         echo "Waiting for services to become healthy..."
         SECONDS=0
-        TIMEOUT=180
-        while ! curl -kfsS https://localhost:5173 > /dev/null 2>&1 || ! curl -kfsS https://localhost:5200/alive > /dev/null 2>&1; do
+        TIMEOUT=300
+        while true; do
+          WEB_HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" https://localhost:5173 || true)
+          API_HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" https://localhost:5200/api/auth/validate || true)
+
+          # Consider WebUI ready once it responds over HTTPS (any non-000 status).
+          # Consider API ready when auth endpoint responds (401 is expected without cookies).
+          if [ "$WEB_HTTP_CODE" != "000" ] && [ "$API_HTTP_CODE" != "000" ]; then
+            echo "Application stack is ready! (webui=$WEB_HTTP_CODE api=$API_HTTP_CODE)"
+            break
+          fi
+
           if [ "$SECONDS" -ge "$TIMEOUT" ]; then
             echo "ERROR: Services did not become healthy within ${TIMEOUT}s"
             echo "--- DUMPING APPHOST LOGS ---"
             cat apphost_logs.txt
+            echo "--- LAST HEALTHCHECK STATUS ---"
+            echo "webui_http_code=${WEB_HTTP_CODE:-N/A}"
+            echo "api_http_code=${API_HTTP_CODE:-N/A}"
             exit 1
           fi
           sleep 2
         done
-        echo "Application stack is ready!"
 
     - name: Run Playwright tests
       run: npx playwright test

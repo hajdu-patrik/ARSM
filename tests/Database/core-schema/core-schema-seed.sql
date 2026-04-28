@@ -202,3 +202,44 @@ WHERE "Email"       ILIKE '%CHANGE_ME%'
    OR "PhoneNumber" ILIKE '%CHANGE_ME%'
    OR "PhoneNumber" ILIKE '%SET_UNIQUE_LOCAL%'
 ORDER BY "Id";
+
+
+-- ------------------------------------------------------------
+-- 15. CRITICAL SCHEMA CONTRACTS (INDEXES + CHECK CONSTRAINTS)
+--     Confirms persistence contracts from AutoServiceDbContext and migrations.
+-- ------------------------------------------------------------
+SELECT contract_type,
+  contract_name,
+  source_table,
+  details
+FROM (
+    SELECT 'check_constraint'::text AS contract_type,
+      c.conname AS contract_name,
+      t.relname AS source_table,
+      pg_get_constraintdef(c.oid) AS details
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE c.contype = 'c'
+      AND t.relname IN ('people', 'vehicles')
+
+    UNION ALL
+
+    SELECT 'index'::text AS contract_type,
+      i.indexname AS contract_name,
+      i.tablename AS source_table,
+      i.indexdef AS details
+    FROM pg_indexes i
+    WHERE i.tablename IN ('people', 'vehicles', 'appointments', 'refreshtokens', 'revokedjwttokens')
+      AND i.indexname IN (
+     'IX_people_Email',
+     'IX_people_IdentityUserId',
+     'IX_vehicles_LicensePlate',
+     'IX_appointments_ScheduledDate',
+     'IX_appointments_DueDateTime',
+     'IX_refreshtokens_TokenHash',
+     'IX_refreshtokens_MechanicId_ExpiresAtUtc',
+     'IX_revokedjwttokens_JwtId',
+     'IX_revokedjwttokens_ExpiresAtUtc'
+      )
+) contracts
+ORDER BY contract_type, source_table, contract_name;

@@ -6,9 +6,13 @@ import { initBrowserState, loginAsMechanic } from './support/auth.helper';
 test.describe('Admin – mechanic registration', () => {
   test.beforeEach(async ({ page }) => {
     const admin = getAdminFlowEnv();
-    test.skip(!admin, 'Admin credentials not configured');
+    if (!admin) {
+      test.skip(true, 'Admin credentials not configured');
+      return;
+    }
+
     await initBrowserState(page);
-    await loginAsMechanic(page, admin!.adminEmail, admin!.adminPassword);
+    await loginAsMechanic(page, admin.adminEmail, admin.adminPassword);
   });
 
   test('register a new mechanic successfully', async ({ page }) => {
@@ -33,7 +37,11 @@ test.describe('Admin – mechanic registration', () => {
   });
 
   test('duplicate email shows validation error', async ({ page }) => {
-    const admin = getAdminFlowEnv()!;
+    const admin = getAdminFlowEnv();
+    if (!admin) {
+      throw new Error('Admin credentials not configured');
+    }
+
     const adminPage = new AdminPage(page);
     await adminPage.goto();
 
@@ -63,6 +71,13 @@ test.describe('Admin – mechanic registration', () => {
     await adminPage.goto();
 
     await adminPage.expectSubmitDisabled();
+  });
+
+  test('security password input exposes accessibility metadata', async ({ page }) => {
+    const adminPage = new AdminPage(page);
+    await adminPage.goto();
+
+    await adminPage.expectPasswordFieldAccessibility();
   });
 
   test('expertise chips are interactive', async ({ page }) => {

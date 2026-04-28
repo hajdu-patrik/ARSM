@@ -448,6 +448,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
         />
 
         <ChangePasswordSection
+          usernameForAutocomplete={email}
           currentPassword={currentPassword}
           newPassword={newPassword}
           confirmNewPassword={confirmNewPassword}

@@ -12,6 +12,10 @@ interface MechanicListSectionProps {
   readonly refreshKey: number;
 }
 
+/**
+ * Renders the admin mechanic roster with optional delete actions.
+ * Reloads the list on refresh-key changes and profile-picture update events.
+ */
 export const MechanicListSection = memo(function MechanicListSection({ refreshKey }: MechanicListSectionProps) {
   const { t } = useTranslation();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
@@ -22,6 +26,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
   const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  /** Fetches the current mechanic list for the admin panel. */
   const loadMechanics = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -58,13 +63,14 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
     setDeleteTarget(null);
   }, [isDeleting]);
 
+  /** Deletes the selected mechanic after confirmation. */
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
 
     try {
       await adminService.deleteMechanic(deleteTarget.personId);
-      setMechanics((prev) => prev.filter((m) => m.personId !== deleteTarget.personId));
+      setMechanics((prev) => prev.filter((mechanicItem) => mechanicItem.personId !== deleteTarget.personId));
       showSuccessToast('admin.mechanicDeleted', { email: deleteTarget.email });
       setDeleteTarget(null);
     } catch {
@@ -84,61 +90,58 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-5 shadow-[0_12px_28px_rgba(45,36,64,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_16px_32px_rgba(3,5,14,0.38)] sm:p-6">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(205,184,255,0.18)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.18)_0%,rgba(138,118,214,0)_100%)]" />
-        {mechanics.length === 0 ? (
-          <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
-        ) : (
-          <div className="space-y-3">
-            {mechanics.map((mechanic) => {
-              const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
-              const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
-              const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
-                .filter(Boolean)
-                .join(' ');
+      {mechanics.length === 0 ? (
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
+      ) : (
+        <div className="space-y-3">
+          {mechanics.map((mechanic) => {
+            const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
+            const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
+            const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
+              .filter(Boolean)
+              .join(' ');
 
-              return (
-                <div
-                  key={mechanic.personId}
-                  className="relative flex items-start gap-3 rounded-xl border border-arsm-border bg-white px-4 py-3 shadow-[0_4px_12px_rgba(28,22,46,0.06)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(28,22,46,0.1)] dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:shadow-[0_4px_12px_rgba(3,5,14,0.24)] dark:hover:shadow-[0_10px_20px_rgba(3,5,14,0.4)] sm:items-center"
-                >
-                  <MechanicAvatar
-                    mechanicId={mechanic.personId}
-                    fullName={displayName}
-                    hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-                    sizeClassName="h-10 w-10 text-sm"
-                  />
+            return (
+              <div
+                key={mechanic.personId}
+                className="relative flex items-start gap-3 rounded-xl border border-arsm-border bg-white px-4 py-3 shadow-[0_4px_12px_rgba(28,22,46,0.06)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(28,22,46,0.1)] dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:shadow-[0_4px_12px_rgba(3,5,14,0.24)] dark:hover:shadow-[0_10px_20px_rgba(3,5,14,0.4)] sm:items-center"
+              >
+                <MechanicAvatar
+                  mechanicId={mechanic.personId}
+                  fullName={displayName}
+                  hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
+                  sizeClassName="h-10 w-10 text-sm"
+                />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
-                        {displayName}
-                      </p>
-                      {mechanic.isAdmin && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
-                          Admin
-                        </span>
-                      )}
-                    </div>
-                    <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+                      {displayName}
+                    </p>
+                    {mechanic.isAdmin && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
+                        Admin
+                      </span>
+                    )}
                   </div>
-
-                  {canRemoveMechanic && (
-                    <button
-                      type="button"
-                      onClick={() => openDeleteModal(mechanic)}
-                      title={t('admin.deleteMechanic')}
-                      className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.32)] dark:focus-visible:ring-arsm-error-dark/35"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+                  <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+
+                {canRemoveMechanic && (
+                  <button
+                    type="button"
+                    onClick={() => openDeleteModal(mechanic)}
+                    title={t('admin.deleteMechanic')}
+                    className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.32)] dark:focus-visible:ring-arsm-error-dark/35"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <Modal
         isOpen={deleteTarget !== null}

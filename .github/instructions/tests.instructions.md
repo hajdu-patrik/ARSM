@@ -74,5 +74,7 @@ For API `.http` suites:
 ## Agent Workflow Alignment
 
 - Route endpoint-test updates through the endpoint test sync workflow.
+- For non-behavioral development changes (refactor, naming, comments, formatting, docs-only, internal restructuring with no contract/flow change) and no explicit test request, run docs-sync only for the test-skill layer.
+- Run `http-endpoint-test`, `sql-database-test`, and `e2e-playwright-test` only when behavior/new-feature changes require them, or when the user explicitly requests test run/update creation.
 - After endpoint behavior changes, sync both API `.http` and database `.sql` suites.
 - Keep test guidance consistent with project-level `CLAUDE.md` and `.github` instructions.

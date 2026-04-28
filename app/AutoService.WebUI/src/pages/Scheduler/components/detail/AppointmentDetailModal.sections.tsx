@@ -396,6 +396,10 @@ interface MechanicsSectionProps {
   readonly onAdminAssign: () => void;
 }
 
+/**
+ * Renders mechanic assignment controls and keeps all mechanic mutations mutually exclusive.
+ * This prevents overlapping requests from creating stale or conflicting modal state.
+ */
 const MechanicsSection = memo(function MechanicsSection({
   appointment,
   currentMechanicId,
@@ -412,6 +416,8 @@ const MechanicsSection = memo(function MechanicsSection({
   onSelectNewMechanic,
   onAdminAssign,
 }: MechanicsSectionProps) {
+  const isMechanicMutationBusy = isAssigning || isUnclaiming || removingMechanicId !== null;
+
   return (
     <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 shadow-[0_10px_22px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-input-dark/65 dark:shadow-[0_12px_24px_rgba(3,5,14,0.32)]">
       <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.mechanics')}</h4>
@@ -425,11 +431,18 @@ const MechanicsSection = memo(function MechanicsSection({
               mechanic={mechanic}
               canUnclaim={!isClosedForMechanicMutations && !isAdmin && appointment.mechanics.length > 1 && currentMechanicId !== undefined && mechanic.id === currentMechanicId}
               canRemove={!isClosedForMechanicMutations && isAdmin && appointment.mechanics.length > 1}
+              isMechanicMutationLocked={isClosedForMechanicMutations || isMechanicMutationBusy}
               isUnclaiming={isUnclaiming}
-              isRemoveDisabled={removingMechanicId === mechanic.id || isClosedForMechanicMutations}
+              isRemoveDisabled={isClosedForMechanicMutations || isMechanicMutationBusy}
               t={t}
               onUnclaim={onUnclaim}
-              onQueueRemove={() => onQueueRemoveMechanic({ id: mechanic.id, fullName: mechanic.fullName })}
+              onQueueRemove={() => {
+                if (isClosedForMechanicMutations || isMechanicMutationBusy) {
+                  return;
+                }
+
+                onQueueRemoveMechanic({ id: mechanic.id, fullName: mechanic.fullName });
+              }}
             />
           ))}
         </div>
@@ -445,6 +458,7 @@ const MechanicsSection = memo(function MechanicsSection({
             <select
               value={selectedNewMechanicId}
               onChange={(event) => onSelectNewMechanic(event.target.value)}
+              disabled={isMechanicMutationBusy}
               aria-label={t('scheduler.detail.selectMechanic')}
               className="w-full min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:focus-visible:ring-arsm-focus-ring/22 sm:flex-1"
             >
@@ -458,7 +472,7 @@ const MechanicsSection = memo(function MechanicsSection({
             </select>
             <button
               onClick={onAdminAssign}
-              disabled={isAssigning || !selectedNewMechanicId}
+              disabled={isMechanicMutationBusy || !selectedNewMechanicId}
               className="w-full shrink-0 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary shadow-[0_8px_18px_rgba(111,84,173,0.22)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_24px_rgba(111,84,173,0.28)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.44)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_12px_24px_rgba(8,10,20,0.52)] sm:w-auto"
             >
               {isAssigning ? '...' : t('scheduler.detail.addMechanic')}
@@ -474,6 +488,7 @@ interface MechanicCardProps {
   readonly mechanic: AppointmentDto['mechanics'][number];
   readonly canUnclaim: boolean;
   readonly canRemove: boolean;
+  readonly isMechanicMutationLocked: boolean;
   readonly isUnclaiming: boolean;
   readonly isRemoveDisabled: boolean;
   readonly t: TFunction;
@@ -485,6 +500,7 @@ const MechanicCard = memo(function MechanicCard({
   mechanic,
   canUnclaim,
   canRemove,
+  isMechanicMutationLocked,
   isUnclaiming,
   isRemoveDisabled,
   t,
@@ -515,7 +531,7 @@ const MechanicCard = memo(function MechanicCard({
           {canUnclaim && (
             <button
               onClick={onUnclaim}
-              disabled={isUnclaiming}
+              disabled={isMechanicMutationLocked || isUnclaiming}
               title={t('scheduler.detail.unassignMe')}
               className="inline-flex items-center gap-1 rounded-lg border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.35)]"
             >

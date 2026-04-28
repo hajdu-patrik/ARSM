@@ -6,6 +6,14 @@ import { expect, type Page } from '@playwright/test';
 export class AdminPage {
   constructor(private readonly page: Page) {}
 
+  private registrationForm() {
+    return this.page.locator('form').first();
+  }
+
+  private passwordInput() {
+    return this.page.locator('#reg-password');
+  }
+
   /** Navigates to the admin page and waits for content. */
   async goto(): Promise<void> {
     await this.page.goto('/admin/register');
@@ -32,15 +40,12 @@ export class AdminPage {
     password: string;
     specialization?: string;
   }): Promise<void> {
-    const form = this.page.locator('form');
+    const form = this.registrationForm();
 
-    const inputs = form.locator('input');
-    await inputs.nth(0).fill(data.firstName);
-    await inputs.nth(2).fill(data.lastName);
-    await inputs.nth(3).fill(data.email);
-
-    const passwordInput = form.locator('input[type="password"], input[autocomplete="new-password"]').first();
-    await passwordInput.fill(data.password);
+    await form.locator('#firstName').fill(data.firstName);
+    await form.locator('#lastName').fill(data.lastName);
+    await form.locator('#reg-email').fill(data.email);
+    await this.passwordInput().fill(data.password);
 
     if (data.specialization) {
       const select = form.locator('select').first();
@@ -48,15 +53,23 @@ export class AdminPage {
     }
   }
 
+  /** Asserts password input accessibility metadata used by the security section. */
+  async expectPasswordFieldAccessibility(): Promise<void> {
+    await expect(this.passwordInput()).toHaveAttribute('autocomplete', 'new-password');
+    await expect(this.passwordInput()).toHaveAttribute('aria-invalid', /^(true|false)$/);
+    await expect(this.passwordInput()).toHaveAttribute('aria-describedby', /(^|\s)reg-credential-hint(\s|$)/);
+    await expect(this.page.locator('#reg-credential-hint')).toBeVisible();
+  }
+
   /** Clicks the submit button on the registration form. */
   async submitRegistration(): Promise<void> {
-    const form = this.page.locator('form');
+    const form = this.registrationForm();
     await form.locator('button[type="submit"]').click();
   }
 
   /** Asserts the submit button is disabled. */
   async expectSubmitDisabled(): Promise<void> {
-    const form = this.page.locator('form');
+    const form = this.registrationForm();
     await expect(form.locator('button[type="submit"]')).toBeDisabled();
   }
 

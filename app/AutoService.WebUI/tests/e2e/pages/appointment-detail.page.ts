@@ -10,6 +10,34 @@ export class AppointmentDetailPage {
     return this.page.getByRole('dialog', { name: 'Appointment Details' });
   }
 
+  private claimButton() {
+    return this.dialog().getByRole('button', { name: /claim/i });
+  }
+
+  private unclaimButton() {
+    return this.dialog().getByRole('button', { name: /unassign me/i });
+  }
+
+  private statusSelect() {
+    return this.dialog().locator('select[aria-label]').last();
+  }
+
+  private addMechanicSelect() {
+    return this.dialog().getByRole('combobox', { name: /select mechanic/i });
+  }
+
+  private addMechanicButton() {
+    return this.dialog().getByRole('button', { name: /add mechanic/i });
+  }
+
+  private removeMechanicButtons() {
+    return this.dialog().locator('button[title="Remove mechanic"]');
+  }
+
+  private removeMechanicConfirmDialog() {
+    return this.page.getByRole('dialog', { name: /confirm mechanic removal/i });
+  }
+
   private vehicleInputByLabel(label: string) {
     return this.dialog()
       .locator('span', { hasText: label })
@@ -94,23 +122,95 @@ export class AppointmentDetailPage {
 
   /** Clicks the claim button if visible. */
   async clickClaim(): Promise<void> {
-    await this.dialog().getByRole('button', { name: /claim/i }).click();
+    await this.claimButton().click();
   }
 
   /** Clicks the "Unassign me" button if visible. */
   async clickUnclaim(): Promise<void> {
-    await this.dialog().getByRole('button', { name: /unassign me/i }).click();
+    await this.unclaimButton().click();
   }
 
   /** Changes the appointment status via the status select. */
   async changeStatus(status: string): Promise<void> {
-    const select = this.dialog().locator('select[aria-label]').last();
-    await select.selectOption({ label: status });
+    await this.statusSelect().selectOption({ label: status });
   }
 
   /** Returns the text of the status badge in the detail modal. */
   async getStatusBadgeText(): Promise<string> {
     const badge = this.dialog().locator('[class*="rounded-full"], [class*="badge"]').first();
     return (await badge.textContent()) ?? '';
+  }
+
+  /** Returns true when the claim action is currently visible. */
+  async isClaimButtonVisible(): Promise<boolean> {
+    return this.claimButton().isVisible().catch(() => false);
+  }
+
+  /** Asserts the claim action is not visible (hidden or not rendered). */
+  async expectClaimHidden(): Promise<void> {
+    await expect(this.claimButton()).toHaveCount(0);
+  }
+
+  /** Returns true when the self-unassign action is currently visible. */
+  async isUnclaimButtonVisible(): Promise<boolean> {
+    return this.unclaimButton().isVisible().catch(() => false);
+  }
+
+  /** Asserts the self-unassign action is not visible (hidden or not rendered). */
+  async expectUnclaimHidden(): Promise<void> {
+    await expect(this.unclaimButton()).toHaveCount(0);
+  }
+
+  /** Returns true when status change select is available. */
+  async isStatusSelectVisible(): Promise<boolean> {
+    return this.statusSelect().isVisible().catch(() => false);
+  }
+
+  /** Selects first available mechanic from the admin assign dropdown. */
+  async selectFirstAvailableMechanicForAssign(): Promise<string | null> {
+    const select = this.addMechanicSelect();
+    const isVisible = await select.isVisible().catch(() => false);
+    if (!isVisible) {
+      return null;
+    }
+
+    const options = select.locator('option:not([value=""])');
+    const optionCount = await options.count();
+    if (optionCount < 1) {
+      return null;
+    }
+
+    const selectedValue = await options.first().getAttribute('value');
+    if (!selectedValue) {
+      return null;
+    }
+
+    await select.selectOption(selectedValue);
+    return selectedValue;
+  }
+
+  /** Clicks the admin add-mechanic action. */
+  async clickAddMechanic(): Promise<void> {
+    await this.addMechanicButton().click();
+  }
+
+  /** Returns true when at least one admin remove-mechanic action is visible. */
+  async isRemoveMechanicButtonVisible(): Promise<boolean> {
+    return this.removeMechanicButtons().first().isVisible().catch(() => false);
+  }
+
+  /** Opens the remove-mechanic confirmation modal from the first visible remove action. */
+  async openFirstRemoveMechanicConfirmation(): Promise<void> {
+    await this.removeMechanicButtons().first().click();
+  }
+
+  /** Asserts the remove-mechanic confirmation modal is open. */
+  async expectRemoveMechanicConfirmationOpen(): Promise<void> {
+    await expect(this.removeMechanicConfirmDialog()).toBeVisible();
+  }
+
+  /** Asserts the remove-mechanic confirmation modal is closed. */
+  async expectRemoveMechanicConfirmationClosed(timeout = 5_000): Promise<void> {
+    await expect(this.removeMechanicConfirmDialog()).toHaveCount(0, { timeout });
   }
 }

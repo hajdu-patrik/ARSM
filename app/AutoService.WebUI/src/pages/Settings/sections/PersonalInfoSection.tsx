@@ -25,7 +25,7 @@ interface PersonalInfoSectionProps {
   readonly onLastNameChange: (value: string) => void;
   readonly onEmailChange: (value: string) => void;
   readonly onPhoneNumberChange: (value: string) => void;
-  readonly onSubmit: (e: React.SyntheticEvent) => void;
+  readonly onSubmit: (event: React.SyntheticEvent) => void;
   readonly getFieldError: (field: string) => string | undefined;
   readonly successMessage: string | null;
 }
@@ -47,6 +47,11 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   successMessage,
 }: PersonalInfoSectionProps) {
   const { t } = useTranslation();
+  const firstNameError = getFieldError('FirstName');
+  const middleNameError = getFieldError('MiddleName');
+  const lastNameError = getFieldError('LastName');
+  const emailError = getFieldError('Email');
+  const phoneNumberError = getFieldError('PhoneNumber');
 
   return (
     <div className={cardClass}>
@@ -73,11 +78,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-firstName"
               type="text"
               value={firstName}
-              onChange={(e) => onFirstNameChange(filterNameInput(e.target.value))}
+              onChange={(event) => onFirstNameChange(filterNameInput(event.target.value))}
               placeholder={t('settings.firstNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
+              autoComplete="given-name"
+              aria-invalid={!!firstNameError}
             />
+            <FormErrorMessage message={firstNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
 
           <div>
@@ -88,11 +96,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-middleName"
               type="text"
               value={middleName}
-              onChange={(e) => onMiddleNameChange(filterNameInput(e.target.value))}
+              onChange={(event) => onMiddleNameChange(filterNameInput(event.target.value))}
               placeholder={t('settings.middleNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
+              autoComplete="additional-name"
+              aria-invalid={!!middleNameError}
             />
+            <FormErrorMessage message={middleNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
 
           <div>
@@ -103,11 +114,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               id="settings-lastName"
               type="text"
               value={lastName}
-              onChange={(e) => onLastNameChange(filterNameInput(e.target.value))}
+              onChange={(event) => onLastNameChange(filterNameInput(event.target.value))}
               placeholder={t('settings.lastNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
+              autoComplete="family-name"
+              aria-invalid={!!lastNameError}
             />
+            <FormErrorMessage message={lastNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
         </div>
 
@@ -119,13 +133,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             id="settings-email"
             type="email"
             value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
+            onChange={(event) => onEmailChange(event.target.value)}
             placeholder={t('settings.emailPlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
-            aria-invalid={!!getFieldError('Email')}
+            autoComplete="email"
+            aria-invalid={!!emailError}
           />
-          <FormErrorMessage message={getFieldError('Email')} className="mt-1 px-2 py-1 text-xs" />
+          <FormErrorMessage message={emailError} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <div>
@@ -137,13 +152,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             type="tel"
             inputMode="tel"
             value={phoneNumber}
-            onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
+            onChange={(event) => onPhoneNumberChange(filterPhoneInput(event.target.value))}
             placeholder={t('settings.phonePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
-            aria-invalid={!!getFieldError('PhoneNumber')}
+            autoComplete="tel"
+            aria-invalid={!!phoneNumberError}
           />
-          <FormErrorMessage message={getFieldError('PhoneNumber')} className="mt-1 px-2 py-1 text-xs" />
+          <FormErrorMessage message={phoneNumberError} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <button

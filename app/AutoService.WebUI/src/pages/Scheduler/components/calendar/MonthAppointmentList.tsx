@@ -48,6 +48,19 @@ const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: 
   },
 };
 
+/** Matches placeholder profile-name fragments produced by test flows. */
+const PLACEHOLDER_MECHANIC_NAME_PATTERN = /\bupdated(first|middle|last)\b/i;
+
+/**
+ * Returns whether a mechanic full name looks like test placeholder content.
+ *
+ * @param fullName - Mechanic full name from appointment payload.
+ * @returns True when the name should be hidden from the filter dropdown.
+ */
+function isPlaceholderMechanicName(fullName: string): boolean {
+  return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName);
+}
+
 const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   appointments,
   isLoading,
@@ -78,8 +91,13 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     const map = new Map<number, string>();
     for (const appt of appointments) {
       for (const m of appt.mechanics) {
+        const normalizedName = m.fullName.trim();
+        if (normalizedName.length === 0 || isPlaceholderMechanicName(normalizedName)) {
+          continue;
+        }
+
         if (!map.has(m.id)) {
-          map.set(m.id, m.fullName);
+          map.set(m.id, normalizedName);
         }
       }
     }

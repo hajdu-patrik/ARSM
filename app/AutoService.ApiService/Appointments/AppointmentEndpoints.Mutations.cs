@@ -200,6 +200,11 @@ public static partial class AppointmentEndpoints
             return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
         }
 
+        if (appointment.Status == ProgressStatus.Completed)
+        {
+            return Results.UnprocessableEntity(new { code = "appointment_completed" });
+        }
+
         if (appointment.Status != ProgressStatus.InProgress)
         {
             return Results.UnprocessableEntity(new { code = "appointment_not_in_progress" });
@@ -478,6 +483,12 @@ public static partial class AppointmentEndpoints
         {
             logger.LogWarning("UpdateStatus forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
             return Results.Forbid();
+        }
+
+        if (appointment.Status == newStatus)
+        {
+            logger.LogInformation("UpdateStatus no-op for appointment {AppointmentId}; status already {Status}.", id, newStatus);
+            return Results.Ok(ToDto(appointment));
         }
 
         appointment.Status = newStatus;

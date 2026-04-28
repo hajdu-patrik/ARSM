@@ -1,5 +1,5 @@
 ---
-name: E2E Playwright
+name: E2E Playwright Test
 description: Maintains Playwright test suites, updates page objects and selectors when UI changes, and runs E2E validation.
 tools:
   - read
@@ -8,7 +8,7 @@ tools:
   - search
 ---
 
-# E2E Playwright Agent - Playwright Test Maintenance
+# E2E Playwright Test Agent - Playwright Test Maintenance
 
 You are a QA automation agent responsible for Playwright end-to-end tests in `app/AutoService.WebUI/tests/e2e/`.
 

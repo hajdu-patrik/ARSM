@@ -6,7 +6,7 @@
  * @module SidebarLayout
  */
 import { memo, useCallback, useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronsLeft, LogOut, Menu, Package, Settings, Shield, Wrench } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
@@ -63,6 +63,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 }: SidebarLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const theme = useThemeStore((state) => state.theme);
 
@@ -201,13 +202,17 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         key={item.key}
         to={item.path}
         onClick={closeMobile}
-        className={({ isActive }) =>
-          `group flex items-center rounded-xl border text-sm font-medium transition-all duration-200 ${
-            isActive
+        className={({ isActive }) => {
+          const isSchedulerRoute = item.key === 'scheduler'
+            && (location.pathname === '/' || location.pathname === '/scheduler' || location.pathname === '/dashboard');
+          const resolvedIsActive = isActive || isSchedulerRoute;
+
+          return `group flex items-center rounded-xl border text-sm font-medium transition-all duration-200 ${
+            resolvedIsActive
               ? 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary shadow-[0_8px_18px_rgba(45,36,64,0.12),0_0_0_1px_rgba(188,165,255,0.15)_inset] dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(5,8,20,0.5),0_0_0_1px_rgba(138,118,214,0.15)_inset]'
               : 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark'
-          }`
-        }
+          }`;
+        }}
         title={collapsed ? t(item.labelKey) : undefined}
       >
         <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">

@@ -29,6 +29,10 @@ const SecuritySectionComponent = memo(function SecuritySection({
   getFieldError,
 }: SecuritySectionProps) {
   const { t } = useTranslation();
+  const credentialError = getFieldError('password');
+  const credentialHintId = 'reg-credential-hint';
+  const credentialErrorId = 'reg-credential-error';
+  const credentialDescribedBy = credentialError ? `${credentialHintId} ${credentialErrorId}` : credentialHintId;
 
   return (
     <div>
@@ -40,12 +44,15 @@ const SecuritySectionComponent = memo(function SecuritySection({
           id="reg-password"
           type={showPassword ? 'text' : 'password'}
           value={password}
-          onChange={(e) => onPasswordChange(e.target.value)}
+          onChange={(event) => onPasswordChange(event.target.value)}
           placeholder={t('admin.passwordPlaceholder')}
           className={inputClass}
           disabled={isSubmitting}
           required
           minLength={8}
+          autoComplete="new-password"
+          aria-invalid={!!credentialError}
+          aria-describedby={credentialDescribedBy}
         />
         <button
           type="button"
@@ -60,8 +67,8 @@ const SecuritySectionComponent = memo(function SecuritySection({
           )}
         </button>
       </div>
-      <p className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('admin.passwordHint')}</p>
-      <FormErrorMessage message={getFieldError('password')} className="mt-1 px-2 py-1 text-xs" />
+      <p id={credentialHintId} className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('admin.passwordHint')}</p>
+      <FormErrorMessage id={credentialError ? credentialErrorId : undefined} message={credentialError} className="mt-1 px-2 py-1 text-xs" />
     </div>
   );
 });
