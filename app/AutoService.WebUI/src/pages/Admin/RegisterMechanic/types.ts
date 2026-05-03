@@ -12,6 +12,7 @@ export interface RegisterMechanicFormValues {
   lastName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   phoneNumber: string;
   specialization: string;
   expertise: string[];

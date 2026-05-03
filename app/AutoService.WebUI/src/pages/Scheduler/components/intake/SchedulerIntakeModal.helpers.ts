@@ -52,7 +52,15 @@ export function getDefaultDueDate(selectedDate: Date): string {
 }
 
 /**
- * Maps known backend intake error details to localized frontend message keys.
+ * Maps a known backend intake error to a localized frontend message key.
+ *
+ * Checks are evaluated in priority order: duplicate license plate is tested
+ * before the generic license plate pattern to ensure the correct i18n key is
+ * returned when both strings would otherwise match.
+ *
+ * @param error - The caught error value from an intake API call.
+ * @returns A dot-separated i18n key string for the matching error condition,
+ *   falling back to `'scheduler.intake.errors.createFailed'` for unknown errors.
  */
 export function mapIntakeErrorToKey(error: unknown): string {
   const detail =
@@ -71,6 +79,7 @@ export function mapIntakeErrorToKey(error: unknown): string {
   if (detail.includes('vehicle.licenseplate, vehicle.brand, and vehicle.model are required')) {
     return 'scheduler.intake.errors.vehicleRequiredFields';
   }
+  if (detail.includes('vehicle with this license plate already exists')) return 'scheduler.intake.errors.licensePlateExists';
   if (detail.includes('license plate')) return 'scheduler.intake.errors.licensePlateInvalid';
   if (detail.includes('vehicle.year must be between 1886 and 2100')) return 'scheduler.intake.errors.vehicleYearInvalid';
   if (detail.includes('must be non-negative')) return 'scheduler.intake.errors.vehicleNumberInvalid';

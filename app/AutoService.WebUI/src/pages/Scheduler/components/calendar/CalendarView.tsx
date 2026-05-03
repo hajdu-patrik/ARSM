@@ -12,7 +12,7 @@ import type { AppointmentDto, CalendarDay } from '../../../../types/scheduler/sc
 
 /** Props for the {@link CalendarView} component. */
 interface CalendarViewProps {
-  /** All appointments for the displayed month. */
+  /** Appointments for the displayed month and adjacent overflow days. */
   readonly appointments: AppointmentDto[];
   /** Calendar year to display. */
   readonly year: number;
@@ -76,6 +76,10 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
   return days;
 }
 
+/**
+ * Renders the monthly scheduler calendar with responsive appointment indicators,
+ * bounded month navigation, and optional current-month day selection.
+ */
 const CalendarViewComponent = memo(function CalendarView({
   appointments,
   year,
@@ -95,8 +99,8 @@ const CalendarViewComponent = memo(function CalendarView({
     const formatter = new Intl.DateTimeFormat(i18n.language, { weekday: 'short' });
     // Generate Mon-Sun
     return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(2024, 0, i + 1); // 2024-01-01 is a Monday
-      return formatter.format(d);
+      const sampleDate = new Date(2024, 0, i + 1); // 2024-01-01 is a Monday
+      return formatter.format(sampleDate);
     });
   }, [i18n.language]);
 
@@ -177,9 +181,9 @@ const CalendarViewComponent = memo(function CalendarView({
         <>
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7 gap-px mb-1">
-            {dayHeaders.map((d) => (
-              <div key={d} className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-arsm-muted dark:text-arsm-muted-dark">
-                {d}
+            {dayHeaders.map((dayLabel) => (
+              <div key={dayLabel} className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-arsm-muted dark:text-arsm-muted-dark">
+                {dayLabel}
               </div>
             ))}
           </div>
@@ -195,6 +199,9 @@ const CalendarViewComponent = memo(function CalendarView({
                   {week.map((day) => {
                     const dayNum = day.date.getDate();
                     const isSelected = day.isCurrentMonth && selectedDay === dayNum;
+                    const overflowBadgeToneClass = day.isCurrentMonth
+                      ? ''
+                      : 'opacity-50 saturate-75';
                     const dayContent = (
                       <>
                         <div className="flex h-7 items-center justify-center mb-0.5">
@@ -213,7 +220,7 @@ const CalendarViewComponent = memo(function CalendarView({
                             day.appointments.slice(0, 1).map((appt) => (
                               <span
                                 key={appt.id}
-                                className={`flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                                className={`flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'} ${overflowBadgeToneClass}`}
                                 title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
                               >
                                 {appt.vehicle.brand[0]}
@@ -223,7 +230,7 @@ const CalendarViewComponent = memo(function CalendarView({
                             <span className="h-3.5 w-3.5" aria-hidden="true" />
                           )}
                           {day.appointments.length > 1 && (
-                            <span className="text-[8px] leading-none text-arsm-muted dark:text-arsm-muted-dark font-semibold">
+                            <span className={`text-[8px] leading-none text-arsm-muted dark:text-arsm-muted-dark font-semibold ${overflowBadgeToneClass}`}>
                               +{day.appointments.length - 1}
                             </span>
                           )}
@@ -234,14 +241,14 @@ const CalendarViewComponent = memo(function CalendarView({
                           {day.appointments.slice(0, 3).map((appt) => (
                             <span
                               key={`desktop-${appt.id}`}
-                              className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'}`}
+                              className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white shadow-sm ${STATUS_DOT_COLORS[appt.status] ?? 'bg-slate-400'} ${overflowBadgeToneClass}`}
                               title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
                             >
                               {appt.vehicle.brand[0]}
                             </span>
                           ))}
                           {day.appointments.length > 3 && (
-                            <span className="text-[9px] text-arsm-muted dark:text-arsm-muted-dark font-medium">
+                            <span className={`text-[9px] text-arsm-muted dark:text-arsm-muted-dark font-medium ${overflowBadgeToneClass}`}>
                               +{day.appointments.length - 3}
                             </span>
                           )}

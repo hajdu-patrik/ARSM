@@ -33,6 +33,8 @@ export function canSubmitForm(values: RegisterMechanicFormValues, isSubmitting: 
     values.lastName.trim().length > 0 &&
     values.email.trim().length > 0 &&
     values.password.length >= 8 &&
+    values.confirmPassword.length >= 8 &&
+    values.password === values.confirmPassword &&
     values.specialization.length > 0 &&
     values.expertise.length > 0 &&
     !isSubmitting
@@ -47,6 +49,7 @@ export function emptyRegisterMechanicFormValues(): RegisterMechanicFormValues {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phoneNumber: '',
     specialization: '',
     expertise: [],

@@ -72,6 +72,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
+  // Confirmation modals
+  const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
+  const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
+
   const normalizeFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
     return normalizeServerFieldErrors(errors, mapSettingsValidationMessageToKey);
   }, []);
@@ -162,8 +166,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
     [passwordFieldErrors],
   );
 
-  const handleProfileSubmit = useCallback(async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  /**
+   * Executes the profile update API call after confirmation.
+   * Syncs local form state with the returned profile on success and shows
+   * inline field errors or a toast on failure.
+   */
+  const handleProfileSaveConfirmed = useCallback(async () => {
+    setIsProfileSaveConfirmOpen(false);
     setProfileFieldErrors({});
     setIsUpdatingProfile(true);
 
@@ -197,6 +206,18 @@ const SettingsPageComponent = memo(function SettingsPage() {
     }
   }, [email, firstName, lastName, middleName, normalizeFieldErrors, phoneNumber, showErrorToast, showSuccessToast]);
 
+  const handleProfileSaveRequest = useCallback((e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setIsProfileSaveConfirmOpen(true);
+  }, []);
+
+  /**
+   * Normalizes password-related server field errors into a consistent shape.
+   * Maps CurrentPassword, ConfirmNewPassword, and NewPassword keys,
+   * routing unknown keys to NewPassword.
+   * @param errors - Raw server field errors from the password change response.
+   * @returns Normalized field errors with translated message keys.
+   */
   const mapPasswordErrors = useCallback((errors: FieldErrors): FieldErrors => {
     const mapped: FieldErrors = {};
 
@@ -217,6 +238,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return mapped;
   }, []);
 
+  /**
+   * Handles API errors from a password change request.
+   * Sets inline field errors for 422/400 responses; falls back to an error toast.
+   * @param err - The error thrown during the password change call.
+   */
   const handlePasswordChangeFailure = useCallback((err: unknown) => {
     if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
       showErrorToast('toast.passwordChangeFailed');
@@ -236,20 +262,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showErrorToast('toast.passwordChangeFailed');
   }, [mapPasswordErrors, showErrorToast]);
 
-  const handlePasswordSubmit = useCallback(async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setPasswordFieldErrors({});
-
-    if (newPassword.length < 8) {
-      setPasswordFieldErrors({ NewPassword: ['settings.passwordTooShort'] });
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      setPasswordFieldErrors({ ConfirmNewPassword: ['settings.passwordsDoNotMatch'] });
-      return;
-    }
-
+  /**
+   * Executes the password change API call after confirmation.
+   * Clears password fields on success and delegates error display to
+   * {@link handlePasswordChangeFailure}.
+   */
+  const handlePasswordChangeConfirmed = useCallback(async () => {
+    setIsPasswordChangeConfirmOpen(false);
     setIsChangingPassword(true);
     try {
       await profileService.changePassword({ currentPassword, newPassword, confirmNewPassword });
@@ -270,6 +289,34 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showSuccessToast,
   ]);
 
+  /**
+   * Validates the password change form and opens the confirmation modal.
+   * Sets inline errors for passwords that are too short or do not match.
+   * @param e - The form submit event.
+   */
+  const handlePasswordChangeRequest = useCallback((e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setPasswordFieldErrors({});
+
+    if (newPassword.length < 8) {
+      setPasswordFieldErrors({ NewPassword: ['settings.passwordTooShort'] });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordFieldErrors({ ConfirmNewPassword: ['settings.passwordsDoNotMatch'] });
+      return;
+    }
+
+    setIsPasswordChangeConfirmOpen(true);
+  }, [newPassword, confirmNewPassword]);
+
+  /**
+   * Handles API errors from a profile delete request.
+   * Shows an inline password error for current-password failures;
+   * falls back to an error toast for all other cases.
+   * @param err - The error thrown during the profile delete call.
+   */
   const handleDeleteProfileFailure = useCallback((err: unknown) => {
     if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
       showErrorToast('toast.profileDeleteFailed');
@@ -289,6 +336,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showErrorToast('toast.profileDeleteFailed');
   }, [showErrorToast]);
 
+  /**
+   * Validates the selected picture file (extension and size), converts it to
+   * a data-URL, and opens the crop modal.
+   * @param file - The picture file selected by the user.
+   */
   const handleSelectPicture = useCallback(async (file: File) => {
     if (!isAllowedPictureExtension(file.name)) {
       showErrorToast('toast.pictureInvalidType');
@@ -314,6 +366,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setPendingPictureFileName(null);
   }, []);
 
+  /**
+   * Uploads the cropped picture blob to the server.
+   * Updates local profile state and broadcasts a live-update event on success.
+   * @param blob - The cropped image blob produced by the crop modal.
+   */
   const handleConfirmPictureCrop = useCallback(async (blob: Blob) => {
     if (!profile) {
       return;
@@ -340,6 +397,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
     }
   }, [closePictureCropModal, pendingPictureFileName, profile, showErrorToast, showSuccessToast]);
 
+  /**
+   * Deletes the current user's profile picture from the server.
+   * Updates local profile state and broadcasts a live-update event on success.
+   */
   const handleRemovePicture = useCallback(async () => {
     if (!profile) {
       return;
@@ -375,6 +436,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setDeletePasswordError(null);
   }, [isDeletingProfile]);
 
+  /**
+   * Validates the current-password input, then deletes the user's profile.
+   * Clears auth state, shows a success toast, and redirects to login on success.
+   */
   const handleDeleteProfile = useCallback(async () => {
     if (!deletePassword.trim()) {
       setDeletePasswordError('settings.currentPasswordRequired');
@@ -442,7 +507,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
           onLastNameChange={setLastName}
           onEmailChange={setEmail}
           onPhoneNumberChange={setPhoneNumber}
-          onSubmit={(e) => { void handleProfileSubmit(e); }}
+          onSubmit={handleProfileSaveRequest}
           getFieldError={getProfileFieldError}
           successMessage={null}
         />
@@ -456,7 +521,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
           onCurrentPasswordChange={setCurrentPassword}
           onNewPasswordChange={setNewPassword}
           onConfirmNewPasswordChange={setConfirmNewPassword}
-          onSubmit={(e) => { void handlePasswordSubmit(e); }}
+          onSubmit={handlePasswordChangeRequest}
           getFieldError={getPasswordFieldError}
           successMessage={null}
         />
@@ -484,6 +549,62 @@ const SettingsPageComponent = memo(function SettingsPage() {
         onCancel={closePictureCropModal}
         onConfirm={handleConfirmPictureCrop}
       />
+
+      <Modal
+        isOpen={isProfileSaveConfirmOpen}
+        onClose={() => { if (!isUpdatingProfile) setIsProfileSaveConfirmOpen(false); }}
+        title={t('settings.confirmSaveTitle')}
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setIsProfileSaveConfirmOpen(false)}
+              disabled={isUpdatingProfile}
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            >
+              {t('settings.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handleProfileSaveConfirmed(); }}
+              disabled={isUpdatingProfile}
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+            >
+              {isUpdatingProfile ? t('settings.saving') : t('settings.confirmSave')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.confirmSaveMessage')}</p>
+      </Modal>
+
+      <Modal
+        isOpen={isPasswordChangeConfirmOpen}
+        onClose={() => { if (!isChangingPassword) setIsPasswordChangeConfirmOpen(false); }}
+        title={t('settings.confirmPasswordChangeTitle')}
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setIsPasswordChangeConfirmOpen(false)}
+              disabled={isChangingPassword}
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            >
+              {t('settings.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handlePasswordChangeConfirmed(); }}
+              disabled={isChangingPassword}
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+            >
+              {isChangingPassword ? t('settings.changingPassword') : t('settings.confirmPasswordChange')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.confirmPasswordChangeMessage')}</p>
+      </Modal>
 
       <Modal
         isOpen={isDeleteModalOpen}

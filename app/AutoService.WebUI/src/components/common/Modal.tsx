@@ -7,7 +7,6 @@
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
 
 /** Props for the {@link Modal} component. */
 interface ModalProps {
@@ -79,16 +78,8 @@ const ModalComponent = memo(function Modal({
           className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
         />
 
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-arsm-muted transition hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:text-arsm-muted-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark"
-            aria-label={t('modal.close')}
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
         <div>{children}</div>

@@ -83,6 +83,15 @@ export function mapValidationMessageToKey(message: string, context: ValidationCo
     return `${context}.errors.invalidName`;
   }
 
+  if (
+    normalized.includes('cannot be empty') ||
+    normalized.includes('is required') ||
+    normalized.includes('must not be blank') ||
+    normalized.includes('field is required')
+  ) {
+    return `${context}.errors.fieldRequired`;
+  }
+
   if (context === 'settings') {
     if (normalized.includes('current password is invalid') || normalized.includes('password is incorrect')) {
       return 'settings.errors.currentPasswordInvalid';

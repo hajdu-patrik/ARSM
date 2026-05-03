@@ -462,7 +462,7 @@ const MechanicsSection = memo(function MechanicsSection({
               aria-label={t('scheduler.detail.selectMechanic')}
               className="w-full min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:focus-visible:ring-arsm-focus-ring/22 sm:flex-1"
             >
-              <option value="">{t('scheduler.detail.selectMechanic')}</option>
+              <option value="" disabled hidden>{t('scheduler.detail.selectMechanic')}</option>
               {availableMechanics.map((mechanic) => {
                 const name = [mechanic.firstName, mechanic.middleName, mechanic.lastName].filter(Boolean).join(' ');
                 return (

@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
 import { Trash2 } from 'lucide-react';
 import { adminService } from '../../../../services/admin/admin.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
@@ -73,8 +74,26 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
       setMechanics((prev) => prev.filter((mechanicItem) => mechanicItem.personId !== deleteTarget.personId));
       showSuccessToast('admin.mechanicDeleted', { email: deleteTarget.email });
       setDeleteTarget(null);
-    } catch {
-      showErrorToast('admin.mechanicDeleteFailed');
+    } catch (err) {
+      if (isAxiosError<{ detail?: string }>(err)) {
+        const status = err.response?.status;
+        const detail = err.response?.data?.detail ?? '';
+        if (status === 422 && detail.includes('appointments would be left without')) {
+          showErrorToast('admin.mechanicDeleteHasAppointments');
+        } else if (status === 422 && detail.includes('last remaining mechanic')) {
+          showErrorToast('admin.mechanicDeleteLastMechanic');
+        } else if (status === 403) {
+          showErrorToast('admin.mechanicDeleteForbidden');
+        } else if (status === 409) {
+          showErrorToast('admin.mechanicDeleteConflict');
+        } else if (status === 500) {
+          showErrorToast('admin.mechanicDeleteIdentityFailed');
+        } else {
+          showErrorToast('admin.mechanicDeleteFailed');
+        }
+      } else {
+        showErrorToast('admin.mechanicDeleteFailed');
+      }
     } finally {
       setIsDeleting(false);
     }

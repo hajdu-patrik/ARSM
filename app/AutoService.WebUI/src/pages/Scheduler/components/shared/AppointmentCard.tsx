@@ -48,7 +48,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
   const { vehicle } = appointment;
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
-  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-3${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40' : ''}`;
+  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-4${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40' : ''}`;
 
   const cardContent: ReactNode = (
     <>
@@ -64,10 +64,12 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       </div>
 
       {/* Vehicle specs */}
-      <div className="grid grid-cols-2 gap-2 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:grid-cols-3">
-        <span className="truncate">{t('scheduler.specs.mileage', { value: vehicle.mileageKm.toLocaleString() })}</span>
-        <span className="truncate">{t('scheduler.specs.torque', { value: vehicle.engineTorqueNm })}</span>
-        <span className="truncate">{t('scheduler.specs.power', { value: vehicle.enginePowerHp })}</span>
+      <div className="rounded-lg border border-arsm-border bg-arsm-toggle-bg px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark">
+        <div className="grid grid-cols-2 gap-2 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:grid-cols-3">
+          <span className="truncate">{t('scheduler.specs.mileage', { value: vehicle.mileageKm.toLocaleString() })}</span>
+          <span className="truncate">{t('scheduler.specs.torque', { value: vehicle.engineTorqueNm })}</span>
+          <span className="truncate">{t('scheduler.specs.power', { value: vehicle.enginePowerHp })}</span>
+        </div>
       </div>
 
       {/* Task description */}

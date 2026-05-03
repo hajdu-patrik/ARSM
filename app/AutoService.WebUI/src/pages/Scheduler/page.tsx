@@ -27,6 +27,10 @@ import { useSchedulerSummary } from './hooks/useSchedulerSummary';
 import { useSchedulerDataSync } from './hooks/useSchedulerDataSync';
 import { useSchedulerActions } from './hooks/useSchedulerActions';
 
+/**
+ * Composes and coordinates the scheduler page sections and modal flows.
+ * Keeps selected appointment content synchronized with store updates.
+ */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
@@ -128,7 +132,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       />
 
       <CalendarView
-        appointments={store.monthAppointments}
+        appointments={store.calendarAppointments}
         year={store.calendarYear}
         month={store.calendarMonth}
         isLoading={store.isLoadingMonth}

@@ -18,6 +18,8 @@ interface SchedulerState {
   todayAppointments: AppointmentDto[];
   /** Appointments for the currently viewed calendar month. */
   monthAppointments: AppointmentDto[];
+  /** Appointments used by the month grid, including leading/trailing overflow days. */
+  calendarAppointments: AppointmentDto[];
   /** Currently viewed calendar year. */
   calendarYear: number;
   /** Currently viewed calendar month (1–12). */
@@ -34,6 +36,8 @@ interface SchedulerState {
   setTodayAppointments: (appts: AppointmentDto[]) => void;
   /** Replaces the month appointment list. */
   setMonthAppointments: (appts: AppointmentDto[]) => void;
+  /** Replaces calendar-grid appointments, including adjacent month overflow days. */
+  setCalendarAppointments: (appts: AppointmentDto[]) => void;
   /** Navigates to a different calendar month, clearing the selected day. */
   setCalendarMonth: (year: number, month: number) => void;
   /** Sets or clears the selected day within the current month. */
@@ -41,11 +45,11 @@ interface SchedulerState {
   /** Inserts or updates an appointment in both today and month lists as appropriate. */
   upsertAppointment: (updated: AppointmentDto) => void;
   /** Updates the today loading state. */
-  setIsLoadingToday: (v: boolean) => void;
+  setIsLoadingToday: (isLoadingToday: boolean) => void;
   /** Updates the month loading state. */
-  setIsLoadingMonth: (v: boolean) => void;
+  setIsLoadingMonth: (isLoadingMonth: boolean) => void;
   /** Sets or clears the error message. */
-  setError: (e: string | null) => void;
+  setError: (error: string | null) => void;
 }
 
 /** {@code sessionStorage} key for persisting the scheduler view state per tab. */
@@ -123,10 +127,12 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
   const initNow = new Date();
   const initialSessionState = readSessionState(initNow);
 
+  /** Checks whether a date matches the provided year-month-day tuple. */
   const isSameDay = (date: Date, year: number, month: number, day: number) => {
     return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
   };
 
+  /** Inserts or replaces an appointment by id while preserving array order. */
   const upsertById = (appointments: AppointmentDto[], updated: AppointmentDto): AppointmentDto[] => {
     const existingIndex = appointments.findIndex((appointment) => appointment.id === updated.id);
     if (existingIndex === -1) {
@@ -141,6 +147,7 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
   return {
     todayAppointments: [],
     monthAppointments: [],
+    calendarAppointments: [],
     calendarYear: initialSessionState.year,
     calendarMonth: initialSessionState.month,
     selectedDay: initialSessionState.day,
@@ -149,6 +156,7 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
     error: null,
     setTodayAppointments: (appts) => set({ todayAppointments: appts }),
     setMonthAppointments: (appts) => set({ monthAppointments: appts }),
+    setCalendarAppointments: (appts) => set({ calendarAppointments: appts }),
     setCalendarMonth: (year, month) =>
       set(() => {
         writeSessionState({ year, month, day: null });

@@ -46,7 +46,13 @@ export class SchedulerPage {
   async getSelectedDayTestId(): Promise<string | null> {
     const selected = this.page.locator('[data-testid^="calendar-day-"][class*="ring-2"]');
     if ((await selected.count()) === 0) return null;
-    return selected.first().getAttribute('data-testid');
+    return selected.first().evaluate((element) => {
+      if (!(element instanceof HTMLElement)) {
+        return null;
+      }
+
+      return element.dataset.testid ?? null;
+    });
   }
 
   /** Clicks the month navigation forward button. */
@@ -72,6 +78,42 @@ export class SchedulerPage {
   async getMonthHeaderText(): Promise<string> {
     const header = this.page.locator('h2, [class*="font-semibold"]').filter({ hasText: /\d{4}/ }).first();
     return (await header.textContent()) ?? '';
+  }
+
+  /** Returns the number of overflow-day appointment badges that use the faded tone class. */
+  async getFadedOverflowBadgeCount(): Promise<number> {
+    const overflowDayCells = this.page.locator('div[class*="text-arsm-muted/75"]');
+    const fadedBadges = overflowDayCells.locator('span[class*="rounded-full"][class*="opacity-50"]');
+    return fadedBadges.count();
+  }
+
+  /**
+   * Looks for at least one faded overflow-day appointment badge in nearby month views.
+   *
+   * @returns True when a faded overflow badge is found.
+   */
+  async hasFadedOverflowBadgeInNearbyMonths(): Promise<boolean> {
+    if ((await this.getFadedOverflowBadgeCount()) > 0) {
+      return true;
+    }
+
+    await this.navigateNextMonth();
+    await this.page.waitForTimeout(400);
+    if ((await this.getFadedOverflowBadgeCount()) > 0) {
+      return true;
+    }
+
+    await this.navigatePrevMonth();
+    await this.page.waitForTimeout(400);
+    await this.navigatePrevMonth();
+    await this.page.waitForTimeout(400);
+    if ((await this.getFadedOverflowBadgeCount()) > 0) {
+      return true;
+    }
+
+    await this.navigateNextMonth();
+    await this.page.waitForTimeout(400);
+    return false;
   }
 
   /** Opens the scheduler intake modal for the selected day. */

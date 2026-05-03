@@ -303,18 +303,24 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - Ensure layouts are responsive on desktop and mobile.
 - Keep API access logic in `src/services` and keep components focused on UI/state.
 - Scheduler load-error UX must distinguish auth-expired (`401/403`) failures from generic load failures using dedicated i18n toast keys.
-- Scheduler mobile calendar must preserve row baseline alignment using fixed day-number/indicator block heights, with taller week rows only when that week contains appointments.
+- Scheduler mobile calendar must preserve row baseline alignment using fixed day-number/indicator block heights, with taller week rows only when that week contains appointments, and adjacent-month overflow day cells must render appointment badges in a faded style.
 - AppointmentDetailModal import boundaries are stabilized via extracted presentational files (`AppointmentDetailModal.sections.tsx`, `AppointmentDetailModal.footer.tsx`) while preserving existing behavior.
 - Scheduler claim CTAs are rendered as full-width buttons in both appointment cards and detail footer when visible.
 - Claim button is hidden for overdue appointments; mechanic mutation controls are locked when the appointment is `Cancelled` or `Completed`.
 - Scheduler detail mechanic assign/unassign/remove controls use a shared busy lock while mutation requests are in flight.
 - Scheduler remove-mechanic confirmation modal auto-closes if the appointment becomes `Cancelled` while the modal is open (unless a remove request is already in flight).
 - Scheduler self-unassign control is hidden when the current mechanic is the sole assigned mechanic.
+- Scheduler detail mechanic assignment select placeholder `<option value="">` uses `disabled hidden` attributes to prevent re-selecting it after initial assignment.
+- Admin mechanic delete (`MechanicListSection`) maps backend error responses to specific i18n toast keys: 422 with `'appointments would be left without'` → `admin.mechanicDeleteHasAppointments`; 422 with `'last remaining mechanic'` → `admin.mechanicDeleteLastMechanic`; 403 → `admin.mechanicDeleteForbidden`; 409 → `admin.mechanicDeleteConflict`; 500 → `admin.mechanicDeleteIdentityFailed`; other → `admin.mechanicDeleteFailed`.
 - Settings `PersonalInfoSection` name fields expose `aria-invalid` plus inline field-level errors when validation fails.
 - Settings `ChangePasswordSection` includes a read-only, visually hidden username autocomplete helper input (`name="username"`, `autoComplete="username"`) wired from the current profile email.
-- Admin `SecuritySection` password input includes `autoComplete="new-password"`, `aria-invalid`, and `aria-describedby` wiring to hint/error text.
+- Admin `SecuritySection` has password and confirm-password inputs with independent show/hide toggles; both include `autoComplete="new-password"`, `aria-invalid`, and `aria-describedby` wiring to hint/error text; confirm-password field is frontend-only (no backend change).
+- `Modal.tsx` has no X close button; modals close via backdrop overlay click or Escape key only.
+- Admin registration shows a confirmation modal (`confirmRegisterTitle`/`confirmRegisterMessage`) before submitting; Settings page shows confirmation modals before profile info save (`confirmSaveTitle`) and before password change (`confirmPasswordChangeTitle`).
 - Scheduler intake form sections keep grouped user/vehicle/task titles with unified field styles and explicit placeholders (including vehicle detail inputs), and existing-vehicle select keeps a disabled non-selectable placeholder option.
 - Scheduler intake lookup-dependent UI state resets when the lookup email changes or when lookup fails (clears stale vehicle/task sections before showing errors).
+- Scheduler intake `mapIntakeErrorToKey` checks for `'vehicle with this license plate already exists'` before the generic `'already exists'` check to surface `scheduler.intake.errors.licensePlateExists` for duplicate license plate submissions.
+- `AppointmentCard` uses `gap-4` for section spacing; the vehicle specs grid is wrapped in a bordered `rounded-lg` container (`border-arsm-border bg-arsm-toggle-bg px-3 py-2`) matching the visual style of task and due-state sections.
 - Vite dev server runs over HTTPS via `vite-plugin-mkcert` (`server.https: true`).
 - WebUI E2E testing uses Playwright (`@playwright/test`) with config in `app/AutoService.WebUI/playwright.config.ts` and specs under `app/AutoService.WebUI/tests/e2e`.
 - Key dependencies: `react-router-dom`, `axios`, `zustand`, `i18next`, `react-i18next`, `tailwindcss`, `react-easy-crop`, `@playwright/test`.

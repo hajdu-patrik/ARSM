@@ -17,6 +17,7 @@ import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
 import { MechanicListSection } from './sections/MechanicListSection';
+import { Modal } from '../../../components/common/Modal';
 import { mapAdminValidationMessageToKey, normalizeServerFieldErrors } from '../../../utils/serverValidation';
 import type { FieldErrors, RegisterMechanicFormValues } from './types';
 
@@ -27,6 +28,9 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
   const [formValues, setFormValues] = useState<RegisterMechanicFormValues>(emptyRegisterMechanicFormValues);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRegisterConfirmOpen, setIsRegisterConfirmOpen] = useState(false);
+  const [pendingRegisterEmail, setPendingRegisterEmail] = useState('');
   const [mechanicListRefreshKey, setMechanicListRefreshKey] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +42,12 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
   const fieldErrors = useMemo(() => normalizeFieldErrors(rawFieldErrors), [normalizeFieldErrors, rawFieldErrors]);
 
+  /**
+   * Extracts only the email and phone number field errors from a full server error map.
+   * Used to show contact-field errors inline without triggering a generic toast.
+   * @param errors - The full server field errors dictionary.
+   * @returns A filtered dictionary containing only email and phone number errors.
+   */
   const pickInlineContactFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
     const emailErrors = errors.email ?? errors.Email;
     const phoneErrors = errors.phoneNumber ?? errors.PhoneNumber;
@@ -93,6 +103,10 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setShowPassword((prev) => !prev);
   }, []);
 
+  const handleToggleShowConfirmPassword = useCallback(() => {
+    setShowConfirmPassword((prev) => !prev);
+  }, []);
+
   const handleFirstNameChange = useCallback((value: string) => {
     setFieldValue('firstName', value);
   }, [setFieldValue]);
@@ -117,6 +131,10 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setFieldValue('password', value);
   }, [setFieldValue]);
 
+  const handleConfirmPasswordChange = useCallback((value: string) => {
+    setFieldValue('confirmPassword', value);
+  }, [setFieldValue]);
+
   const handleSpecializationChange = useCallback((value: string) => {
     setFieldValue('specialization', value);
   }, [setFieldValue]);
@@ -124,9 +142,16 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const resetForm = useCallback(() => {
     setFormValues(emptyRegisterMechanicFormValues());
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setRawFieldErrors({});
   }, []);
 
+  /**
+   * Handles API errors from the registration submission.
+   * Shows inline field errors for 422/400 responses and falls back to toast messages
+   * for authorization failures or unexpected errors.
+   * @param err - The error thrown during registration request.
+   */
   const handleSubmitError = useCallback((err: unknown) => {
     if (!isAxiosError<{ errors?: Record<string, string[]>; detail?: string }>(err)) {
       showErrorToast('admin.genericError');
@@ -155,27 +180,48 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     showErrorToast('admin.genericError');
   }, [pickInlineContactFieldErrors, showErrorToast]);
 
+  /**
+   * Handles form submission: validates password confirmation, captures pending email,
+   * and opens the registration confirmation modal.
+   * @param e - The form submit event.
+   */
   const handleSubmit = useCallback(
-    async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
       setRawFieldErrors({});
-      setIsSubmitting(true);
 
-      try {
-        const request = buildRegisterMechanicRequest(formValues);
-        const response = await adminService.registerMechanic(request);
-
-        showSuccessToast('admin.successMessage', { email: response.email });
-        resetForm();
-        setMechanicListRefreshKey((k) => k + 1);
-      } catch (err) {
-        handleSubmitError(err);
-      } finally {
-        setIsSubmitting(false);
+      if (formValues.password !== formValues.confirmPassword) {
+        setRawFieldErrors({ confirmPassword: ['admin.passwordMismatch'] });
+        return;
       }
+
+      setPendingRegisterEmail(formValues.email.trim());
+      setIsRegisterConfirmOpen(true);
     },
-    [formValues, handleSubmitError, resetForm, showSuccessToast],
+    [formValues],
   );
+
+  /**
+   * Executes the mechanic registration API call after confirmation.
+   * Resets the form and triggers a mechanic list refresh on success.
+   */
+  const handleRegisterConfirmed = useCallback(async () => {
+    setIsRegisterConfirmOpen(false);
+    setIsSubmitting(true);
+
+    try {
+      const request = buildRegisterMechanicRequest(formValues);
+      const response = await adminService.registerMechanic(request);
+
+      showSuccessToast('admin.successMessage', { email: response.email });
+      resetForm();
+      setMechanicListRefreshKey((k) => k + 1);
+    } catch (err) {
+      handleSubmitError(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formValues, handleSubmitError, resetForm, showSuccessToast]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
@@ -212,10 +258,14 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
             <SecuritySection
               password={formValues.password}
+              confirmPassword={formValues.confirmPassword}
               showPassword={showPassword}
+              showConfirmPassword={showConfirmPassword}
               isSubmitting={isSubmitting}
               onPasswordChange={handlePasswordChange}
+              onConfirmPasswordChange={handleConfirmPasswordChange}
               onToggleShowPassword={handleToggleShowPassword}
+              onToggleShowConfirmPassword={handleToggleShowConfirmPassword}
               getFieldError={getErrorForField}
             />
 
@@ -239,6 +289,36 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
           </form>
         </div>
       </div>
+
+      <Modal
+        isOpen={isRegisterConfirmOpen}
+        onClose={() => { if (!isSubmitting) setIsRegisterConfirmOpen(false); }}
+        title={t('admin.confirmRegisterTitle')}
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setIsRegisterConfirmOpen(false)}
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            >
+              {t('settings.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handleRegisterConfirmed(); }}
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+            >
+              {isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+          {t('admin.confirmRegisterMessage', { email: pendingRegisterEmail })}
+        </p>
+      </Modal>
     </div>
   );
 });

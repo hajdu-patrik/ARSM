@@ -29,6 +29,14 @@ interface UseSchedulerDataSyncArgs {
   readonly showErrorToast: (key: string) => void;
 }
 
+/** Calendar view coordinates for a concrete month. */
+interface CalendarMonthView {
+  /** Calendar year. */
+  readonly year: number;
+  /** Calendar month (1-based). */
+  readonly month: number;
+}
+
 /** Returns `true` when the error is an Axios 401 or 403 response (session expired). */
 function isAuthExpiredError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) {
@@ -36,6 +44,45 @@ function isAuthExpiredError(error: unknown): boolean {
   }
 
   return error.response?.status === 401 || error.response?.status === 403;
+}
+
+/**
+ * Returns previous/current/next month views for the provided calendar month.
+ *
+ * @param year - Calendar year.
+ * @param month - Calendar month (1-based).
+ * @returns Adjacent views in prev-current-next order.
+ */
+function getAdjacentMonthViews(year: number, month: number): readonly [CalendarMonthView, CalendarMonthView, CalendarMonthView] {
+  const currentDate = new Date(year, month - 1, 1);
+  const previousDate = new Date(year, month - 2, 1);
+  const nextDate = new Date(year, month, 1);
+
+  return [
+    { year: previousDate.getFullYear(), month: previousDate.getMonth() + 1 },
+    { year: currentDate.getFullYear(), month: currentDate.getMonth() + 1 },
+    { year: nextDate.getFullYear(), month: nextDate.getMonth() + 1 },
+  ];
+}
+
+/**
+ * Merges appointment arrays and removes duplicates by appointment id.
+ *
+ * @param appointmentGroups - Appointment groups to flatten and de-duplicate.
+ * @returns A de-duplicated list preserving first-seen order.
+ */
+function mergeUniqueAppointments(...appointmentGroups: readonly AppointmentDto[][]): AppointmentDto[] {
+  const merged = new Map<number, AppointmentDto>();
+
+  for (const group of appointmentGroups) {
+    for (const appointment of group) {
+      if (!merged.has(appointment.id)) {
+        merged.set(appointment.id, appointment);
+      }
+    }
+  }
+
+  return Array.from(merged.values());
 }
 
 /**
@@ -94,6 +141,22 @@ export function useSchedulerDataSync({
     [],
   );
 
+  const applyCalendarAppointmentsIfCurrent = useCallback(
+    (requestId: number, year: number, month: number, appointments: AppointmentDto[]) => {
+      const currentView = currentMonthViewRef.current;
+      if (
+        monthDataRequestIdRef.current !== requestId ||
+        currentView.year !== year ||
+        currentView.month !== month
+      ) {
+        return;
+      }
+
+      useSchedulerStore.getState().setCalendarAppointments(appointments);
+    },
+    [],
+  );
+
   useEffect(() => {
     currentMonthViewRef.current = {
       year: calendarYear,
@@ -148,9 +211,32 @@ export function useSchedulerDataSync({
       schedulerState.setIsLoadingMonth(true);
 
       try {
-        const data = await appointmentService.getByMonth(requestedYear, requestedMonth);
+        const [prevView, currentView, nextView] = getAdjacentMonthViews(requestedYear, requestedMonth);
+        const [previousMonthAppointments, currentMonthAppointments, nextMonthAppointments] = await Promise.all([
+          appointmentService.getByMonth(prevView.year, prevView.month),
+          appointmentService.getByMonth(currentView.year, currentView.month),
+          appointmentService.getByMonth(nextView.year, nextView.month),
+        ]);
+
+        const calendarAppointments = mergeUniqueAppointments(
+          previousMonthAppointments,
+          currentMonthAppointments,
+          nextMonthAppointments,
+        );
+
         if (!cancelled) {
-          applyMonthAppointmentsIfCurrent(dataRequestId, requestedYear, requestedMonth, data);
+          applyMonthAppointmentsIfCurrent(
+            dataRequestId,
+            requestedYear,
+            requestedMonth,
+            currentMonthAppointments,
+          );
+          applyCalendarAppointmentsIfCurrent(
+            dataRequestId,
+            requestedYear,
+            requestedMonth,
+            calendarAppointments,
+          );
         }
       } catch (error) {
         if (!cancelled) {
@@ -168,6 +254,7 @@ export function useSchedulerDataSync({
       cancelled = true;
     };
   }, [
+    applyCalendarAppointmentsIfCurrent,
     applyMonthAppointmentsIfCurrent,
     calendarMonth,
     calendarYear,
@@ -187,13 +274,35 @@ export function useSchedulerDataSync({
 
       isBackgroundRefreshingRef.current = true;
       try {
-        const [today, month] = await Promise.all([
+        const [prevView, currentView, nextView] = getAdjacentMonthViews(
+          requestedView.year,
+          requestedView.month,
+        );
+        const [today, previousMonthAppointments, currentMonthAppointments, nextMonthAppointments] = await Promise.all([
           appointmentService.getToday(),
-          appointmentService.getByMonth(requestedView.year, requestedView.month),
+          appointmentService.getByMonth(prevView.year, prevView.month),
+          appointmentService.getByMonth(currentView.year, currentView.month),
+          appointmentService.getByMonth(nextView.year, nextView.month),
         ]);
+        const calendarAppointments = mergeUniqueAppointments(
+          previousMonthAppointments,
+          currentMonthAppointments,
+          nextMonthAppointments,
+        );
 
         applyTodayAppointmentsIfCurrent(todayRequestId, today);
-        applyMonthAppointmentsIfCurrent(monthRequestId, requestedView.year, requestedView.month, month);
+        applyMonthAppointmentsIfCurrent(
+          monthRequestId,
+          requestedView.year,
+          requestedView.month,
+          currentMonthAppointments,
+        );
+        applyCalendarAppointmentsIfCurrent(
+          monthRequestId,
+          requestedView.year,
+          requestedView.month,
+          calendarAppointments,
+        );
         backgroundRefreshErrorShownRef.current = false;
       } catch (error) {
         if (!backgroundRefreshErrorShownRef.current) {
@@ -205,6 +314,7 @@ export function useSchedulerDataSync({
       }
     };
   }, [
+    applyCalendarAppointmentsIfCurrent,
     applyMonthAppointmentsIfCurrent,
     applyTodayAppointmentsIfCurrent,
     nextMonthDataRequestId,

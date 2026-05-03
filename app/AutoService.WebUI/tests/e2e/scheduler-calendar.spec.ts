@@ -71,4 +71,12 @@ test.describe('Scheduler calendar navigation', () => {
     const selectedAfter = await scheduler.getSelectedDayTestId();
     expect(selectedAfter).toBeNull();
   });
+
+  test('adjacent-month overflow cells render faded appointment badges when appointments exist', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.expectLoaded();
+
+    const hasFadedOverflowBadge = await scheduler.hasFadedOverflowBadgeInNearbyMonths();
+    expect(hasFadedOverflowBadge).toBeTruthy();
+  });
 });
