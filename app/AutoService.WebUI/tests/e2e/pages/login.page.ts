@@ -21,9 +21,18 @@ export class LoginPage {
    */
   async submitWithEmail(email: string, password: string): Promise<void> {
     await this.switchToEmail();
-    await this.page.locator('#identifier').fill(email);
-    await this.page.locator('#password').fill(password);
-    await this.page.getByRole('button', { name: 'Login', exact: true }).click();
+    const identifierInput = this.page.locator('#identifier');
+    const passwordInput = this.page.locator('#password');
+    const submitButton = this.page.getByRole('button', { name: 'Login', exact: true });
+
+    await identifierInput.fill(email);
+    await expect(identifierInput).toHaveValue(email);
+
+    await passwordInput.fill(password);
+    await expect(passwordInput).toHaveValue(password);
+
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
   }
 
   /**
@@ -34,9 +43,18 @@ export class LoginPage {
    */
   async submitWithPhone(phone: string, password: string): Promise<void> {
     await this.switchToPhone();
-    await this.page.locator('#identifier').fill(phone);
-    await this.page.locator('#password').fill(password);
-    await this.page.getByRole('button', { name: 'Login', exact: true }).click();
+    const identifierInput = this.page.locator('#identifier');
+    const passwordInput = this.page.locator('#password');
+    const submitButton = this.page.getByRole('button', { name: 'Login', exact: true });
+
+    await identifierInput.fill(phone);
+    await expect(identifierInput).toHaveValue(phone);
+
+    await passwordInput.fill(password);
+    await expect(passwordInput).toHaveValue(password);
+
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
   }
 
   /** Switches login method to email. */

@@ -8,7 +8,7 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, ChevronsLeft, LogOut, Menu, Package, Settings, Shield, Wrench } from 'lucide-react';
+import { CalendarDays, ChevronsLeft, LogOut, Menu, Settings, Shield, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 import { authService } from '../../services/auth/auth.service';
@@ -29,11 +29,10 @@ interface NavItem {
   path: string;
 }
 
-/** Default main navigation items (scheduler, tools, inventory). */
+/** Default main navigation items. */
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
-  { key: 'tools', labelKey: 'nav.tools', icon: Wrench, path: '/tools' },
-  { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
+  { key: 'customers', labelKey: 'nav.customers', icon: Users, path: '/customers' },
 ];
 
 /** Admin-only navigation item (mechanic registration). */
@@ -225,7 +224,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     );
   };
 
-  const primaryNavItems = user?.isAdmin ? [ADMIN_NAV_ITEM, ...navItems] : navItems;
+  const primaryNavItems = navItems;
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -270,7 +269,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         </button>
       </div>
 
-      {/* Bottom section: Profile -> Settings -> Logout */}
+      {/* Bottom section: Profile -> (Admin) -> Settings -> Logout */}
       <div className="space-y-1 border-t border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.42)_100%)] px-2 py-3 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.03)_100%)]">
         {/* Profile */}
         <div className="flex items-center ">
@@ -301,6 +300,9 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
             )}
           </div>
         </div>
+
+        {/* Admin */}
+        {user?.isAdmin && renderNavLink(ADMIN_NAV_ITEM)}
 
         {/* Settings */}
         {renderNavLink(SETTINGS_NAV_ITEM)}

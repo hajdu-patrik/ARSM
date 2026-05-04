@@ -8,6 +8,12 @@ namespace AutoService.ApiService.Customers;
  */
 public static partial class CustomerEndpoints
 {
+    /**
+     * Maps customer endpoints to the route builder.
+     *
+     * @param endpoints Endpoint route builder.
+     * @returns Route builder with customer endpoints registered.
+     */
     public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();
@@ -28,27 +34,21 @@ public static partial class CustomerEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateCustomerAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces<CustomerDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapPut("/{id:int}", UpdateCustomerAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapDelete("/{id:int}", DeleteCustomerAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;

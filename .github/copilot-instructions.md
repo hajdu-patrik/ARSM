@@ -177,6 +177,8 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `POST /api/appointments/intake` (authorized) — scheduler intake creation with email-based customer lookup/create fallback (including mechanic-email owner-link resolution), due datetime validation, and vehicle numeric max validation on new-vehicle payloads
 	- `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; allowed for assigned mechanics or admins
 	- `PUT /api/appointments/{id}/vehicle` (authorized) — update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`); allowed for assigned mechanics or admins
+	- `GET /api/customers/{customerId}/appointments` (authorized) — list customer repair history across all customer vehicles; supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date)
+	- `GET /api/vehicles/{vehicleId}/appointments` (authorized) — list repair history for a vehicle; supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date)
 	- `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle (validation + 201 Created)
 	- `PUT /api/appointments/{id}/claim` (authorized) — mechanic claims an appointment only when status is `InProgress` (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses)
 	- `DELETE /api/appointments/{id}/claim` (authorized) — mechanic unassigns from an appointment (`422` with code `appointment_cancelled` if Cancelled, `422` with code `appointment_completed` if Completed, or `422` if unassign would leave appointment without mechanics)
@@ -197,14 +199,14 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- `GET /api/customers` (authorized) — list all customers
 	- `GET /api/customers/by-email` (authorized) — lookup customer by email for scheduler intake (returns customer + vehicles; mechanic email also resolves successfully for own-car intake even when linked customer record is not yet materialized, returning an empty vehicle list)
 	- `GET /api/customers/{id}` (authorized) — get customer with vehicle list
-	- `POST /api/customers` (authorized, AdminOnly) — create customer record
-	- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
-	- `DELETE /api/customers/{id}` (authorized, AdminOnly) — delete customer and cascaded vehicles
+	- `POST /api/customers` (authorized) — create customer record
+	- `PUT /api/customers/{id}` (authorized) — update customer record
+	- `DELETE /api/customers/{id}` (authorized) — delete customer and cascaded vehicles
 	- `GET /api/customers/{customerId}/vehicles` (authorized) — list vehicles for a customer
 	- `GET /api/vehicles/{id}` (authorized) — get single vehicle with customer summary
-	- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer
-	- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record
-	- `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
+	- `POST /api/customers/{customerId}/vehicles` (authorized) — create vehicle for a customer
+	- `PUT /api/vehicles/{id}` (authorized) — update vehicle record
+	- `DELETE /api/vehicles/{id}` (authorized) — delete vehicle and cascaded appointments
 	- `GET /openapi/v1.json` in Development (`app.MapOpenApi()`)
 	- Scalar API Reference at `/scalar/v1` in Development (`app.MapScalarApiReference()`)
 	- Endpoint mapper registrations declare explicit OpenAPI response metadata (`Produces`, `ProducesProblem`, `ProducesValidationProblem`) so status/body documentation in OpenAPI/Scalar stays accurate without changing runtime behavior
@@ -269,14 +271,16 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- login (email normalization and phone format matrix),
 	- cookie session lifecycle (validate/refresh/logout + unauthorized follow-ups, logout success returning `204`),
 	- security manual tests for denylist bypass and rotated refresh replay attempts.
-- `tests/API/appointments/*.http` (10 files) includes scheduler/admin appointment flows for:
+- `tests/API/appointments/*.http` (11 files) includes scheduler/admin appointment flows for:
 	- scheduler intake with existing/new customer and vehicle paths, mechanic-email linked-customer flow, duplicate new-vehicle license-plate conflict (`409`), vehicleId not found (`404`), and vehicle numeric max validation (`422`),
+	- customer and vehicle repair-history reads via `GET /api/customers/{customerId}/appointments` and `GET /api/vehicles/{vehicleId}/appointments`, including optional `?descending=true` sort mode,
 	- split appointment update coverage: `PUT /api/appointments/{id}` for due/task updates and `PUT /api/appointments/{id}/vehicle` for vehicle-field updates/validation,
 	- appointment update immutability guard (`scheduledDate` change rejected with `422`) while due/task updates remain allowed,
 	- mechanic claim/unclaim guardrails: claim on cancelled/completed/other non-InProgress (`422`), duplicate claim (`409`), unclaim on cancelled/completed (`422`), unclaim when not assigned (`409`), unclaim when last mechanic (`422`), and 404 for non-existent appointments,
 	- status transitions: InProgress/Completed/Cancelled/reopen-from-cancelled, invalid status (`400`), non-assigned mechanic forbidden (`403`),
 	- admin assign/unassign guardrails: cancelled/completed (`422`), already assigned/not assigned (`409`), mechanic or appointment not found (`404`), last mechanic removal (`422`),
 	- unauthenticated matrix includes `PUT /api/appointments/{id}/vehicle` returning `401`.
+- `tests/API/customers/*.http` and `tests/API/vehicles/*.http` include updated authz expectations where authenticated non-admin mechanics can execute create/update write flows.
 - `tests/API/profile/*.http` (4 files) includes:
 	- profile get and positive update flows (name, email, phone fields),
 	- profile picture cache semantics: `ETag` + `Cache-Control` header expectations and conditional `If-None-Match` requests for `304 Not Modified`,
@@ -286,6 +290,7 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 	- account delete: wrong password (`400`), missing password body (`400`), admin self-delete forbidden (`403`), non-admin self-delete (`204`).
 - `tests/Database/**/*.sql` (chunked suites under `core-schema/`, `identity-auth/`, `feature-flow/`) covers schema baseline, identity/auth data checks, and feature-flow regression guards.
 - API HTTP suites use environment-driven admin credentials via `{{$processEnv ARSM_TEST_ADMIN_PASSWORD}}` and `example.test` synthetic identifiers for deterministic local runs.
+- WebUI Playwright coverage includes customers navigation/page behavior in `app/AutoService.WebUI/tests/e2e/customers-registry.spec.ts` and `app/AutoService.WebUI/tests/e2e/sidebar-navigation.spec.ts`.
 
 ## Aspire Rules
 - `AutoService.AppHost` is the default local entry point.
@@ -311,6 +316,8 @@ Agent files: `.github/agents/*.agent.md` — skill runbooks: `.github/skills/*/S
 - Scheduler remove-mechanic confirmation modal auto-closes if the appointment becomes `Cancelled` while the modal is open (unless a remove request is already in flight).
 - Scheduler self-unassign control is hidden when the current mechanic is the sole assigned mechanic.
 - Scheduler detail mechanic assignment select placeholder `<option value="">` uses `disabled hidden` attributes to prevent re-selecting it after initial assignment.
+- Sidebar main navigation order is scheduler -> customers -> tools -> inventory for non-admin users (admin users get admin -> scheduler -> customers -> tools -> inventory).
+- Customers registry route `/customers` is protected and provides customer+vehicle CRUD, realtime name search with clear-X reset, list sort toggle, and customer/vehicle repair-history panels.
 - Admin mechanic delete (`MechanicListSection`) maps backend error responses to specific i18n toast keys: 422 with `'appointments would be left without'` → `admin.mechanicDeleteHasAppointments`; 422 with `'last remaining mechanic'` → `admin.mechanicDeleteLastMechanic`; 403 → `admin.mechanicDeleteForbidden`; 409 → `admin.mechanicDeleteConflict`; 500 → `admin.mechanicDeleteIdentityFailed`; other → `admin.mechanicDeleteFailed`.
 - Settings `PersonalInfoSection` name fields expose `aria-invalid` plus inline field-level errors when validation fails.
 - Settings `ChangePasswordSection` includes a read-only, visually hidden username autocomplete helper input (`name="username"`, `autoComplete="username"`) wired from the current profile email.

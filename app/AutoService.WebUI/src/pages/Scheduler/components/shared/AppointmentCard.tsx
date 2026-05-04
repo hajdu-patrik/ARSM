@@ -48,7 +48,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
   const { vehicle } = appointment;
   const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
-  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-4${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40' : ''}`;
+  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-5${onClick ? ' cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40' : ''}`;
 
   const cardContent: ReactNode = (
     <>
@@ -90,7 +90,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       </div>
 
       {/* Mechanics + License plate */}
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 border-t border-arsm-border/70 pt-3 dark:border-arsm-border-dark/70">
         <div className="min-w-0 flex-1">
           <span className="mb-1 block text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.mechanics')}</span>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -111,7 +111,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
       {/* Claim button or Assigned label */}
       {isAssigned && (
-        <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_12px_rgba(34,197,94,0.1)] dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:shadow-[0_4px_12px_rgba(34,197,94,0.06)]">
+        <div className="mt-1 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_12px_rgba(34,197,94,0.1)] dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:shadow-[0_4px_12px_rgba(34,197,94,0.06)]">
           <Check className="w-4 h-4" />
           {t('scheduler.assigned')}
         </div>

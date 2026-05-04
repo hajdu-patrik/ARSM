@@ -18,10 +18,6 @@ interface UpdateAppointmentRequest {
   taskDescription: string;
 }
 
-interface UpdateAppointmentVehicleRequest {
-  mileageKm: number;
-}
-
 function matchesApiPath(response: Response, method: string, pathSuffix: string): boolean {
   return response.request().method() === method
     && new URL(response.url()).pathname.endsWith(pathSuffix);
@@ -88,6 +84,16 @@ test.describe('Scheduler appointment detail', () => {
     await detail.expectOpen();
   });
 
+  test('close appointment detail modal from header close action', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.openAppointmentByTask(taskDescription);
+
+    const detail = new AppointmentDetailPage(page);
+    await detail.expectOpen();
+    await detail.close();
+    await detail.expectClosed();
+  });
+
   test('edit due date and save', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.openAppointmentByTask(taskDescription);
@@ -137,36 +143,14 @@ test.describe('Scheduler appointment detail', () => {
     }
   });
 
-  test('edit vehicle mileage and save issues split update calls', async ({ page }) => {
+  test('edit mode keeps vehicle fields read-only', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.openAppointmentByTask(taskDescription);
 
     const detail = new AppointmentDetailPage(page);
     await detail.expectOpen();
     await detail.startEdit();
-
-    const newMileageKm = 654321;
-    await detail.setVehicleMileageKm(String(newMileageKm));
-
-    const appointmentUpdatePromise = page.waitForResponse(
-      (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}`) && r.status() === 200,
-    );
-    const vehicleUpdatePromise = page.waitForResponse(
-      (r) => matchesApiPath(r, 'PUT', `/api/appointments/${createdAppointment.id}/vehicle`) && r.status() === 200,
-    );
-
-    await detail.save();
-
-    const appointmentUpdateResponse = await appointmentUpdatePromise;
-    const vehicleUpdateResponse = await vehicleUpdatePromise;
-    const appointmentUpdateRequest = appointmentUpdateResponse.request().postDataJSON() as UpdateAppointmentRequest;
-    const vehicleUpdateRequest = vehicleUpdateResponse.request().postDataJSON() as UpdateAppointmentVehicleRequest;
-    const vehicleUpdatedAppointment = await vehicleUpdateResponse.json() as AppointmentResponse;
-
-    expect(appointmentUpdateRequest.taskDescription).toBeTruthy();
-    expect(appointmentUpdateRequest).not.toHaveProperty('mileageKm');
-    expect(vehicleUpdateRequest.mileageKm).toBe(newMileageKm);
-    expect(vehicleUpdatedAppointment.vehicle?.mileageKm).toBe(newMileageKm);
+    await detail.expectVehicleFieldsReadOnlyInEdit();
   });
 
   test('detail modal shows customer name only', async ({ page }) => {

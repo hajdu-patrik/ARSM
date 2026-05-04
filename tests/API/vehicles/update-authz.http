@@ -28,7 +28,7 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Vehicles] Logout admin, login as non-admin for forbidden update check
+### [Setup][Vehicles] Logout admin, login as non-admin for update check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 
 ###
@@ -44,7 +44,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Vehicles] Non-admin cannot update vehicle (403 expected)
+### [Positive][Vehicles] Non-admin can update vehicle (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
 Content-Type: application/json
 

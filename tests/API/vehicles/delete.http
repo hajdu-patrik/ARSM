@@ -30,7 +30,7 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleI
 
 ###
 
-### [Setup][Vehicles] Logout admin, login as non-admin for forbidden delete check
+### [Setup][Vehicles] Logout admin, login as non-admin for delete auth check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 
 ###
@@ -46,8 +46,8 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Vehicles] Non-admin cannot delete vehicle (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+### [Negative][Vehicles] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 
 ###
 

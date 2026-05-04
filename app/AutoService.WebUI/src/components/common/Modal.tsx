@@ -22,6 +22,8 @@ interface ModalProps {
   readonly footer?: ReactNode;
   /** Tailwind max-width class for the dialog. Defaults to `'max-w-lg'`. */
   readonly widthClassName?: string;
+  /** Optional right-aligned header action area. */
+  readonly headerAction?: ReactNode;
 }
 
 /** Memoized modal dialog with portal rendering, backdrop, and keyboard dismissal. */
@@ -32,6 +34,7 @@ const ModalComponent = memo(function Modal({
   children,
   footer,
   widthClassName = 'max-w-lg',
+  headerAction,
 }: ModalProps) {
   const { t } = useTranslation();
   const NativeDialog = 'dialog';
@@ -78,8 +81,9 @@ const ModalComponent = memo(function Modal({
           className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
         />
 
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          {headerAction && <div className="shrink-0">{headerAction}</div>}
         </div>
 
         <div>{children}</div>

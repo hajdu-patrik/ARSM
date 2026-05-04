@@ -28,7 +28,8 @@ export class SidebarPage {
 
   /** Clicks the sidebar collapse/expand toggle button. */
   async toggleCollapse(): Promise<void> {
-    const collapseBtn = this.page.locator('aside button').first();
+    const collapseBtn = this.page.locator('aside:visible button[title*="navbar" i]').first();
+    await expect(collapseBtn).toBeVisible();
     await collapseBtn.click();
   }
 }

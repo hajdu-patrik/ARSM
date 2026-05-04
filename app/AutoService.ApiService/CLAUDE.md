@@ -85,6 +85,8 @@
 - `POST /api/appointments/intake` (authorized) — create scheduler intake appointment for selected day; validates due datetime, resolves customer by email (create fallback), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record; enforces vehicle numeric max constraints for new-vehicle payloads, and auto-assigns the requesting mechanic
 - `PUT /api/appointments/{id}` (authorized) — update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable; allowed for assigned mechanics and admins
 - `PUT /api/appointments/{id}/vehicle` (authorized) — update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`); allowed for assigned mechanics and admins
+- `GET /api/customers/{customerId}/appointments` (authorized) — list customer repair history across all customer vehicles; supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date)
+- `GET /api/vehicles/{vehicleId}/appointments` (authorized) — list repair history for a vehicle; supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date)
 - `POST /api/customers/{customerId}/appointments` (authorized, AdminOnly) — create an appointment for a customer's vehicle with request validation (vehicle ownership, mechanic IDs, task, scheduled date); returns 201 Created
 - `PUT /api/appointments/{id}/claim` (authorized) — current mechanic self-assigns to an appointment only when status is `InProgress`; returns `422` with code `appointment_cancelled` if appointment is Cancelled, `422` with code `appointment_completed` if appointment is Completed, or `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses; race-condition uniqueness violations are caught via `PostgresException { SqlState: UniqueViolation }` (not broad `DbUpdateException`)
 - `DELETE /api/appointments/{id}/claim` (authorized) — current mechanic self-unassigns from an appointment; returns `422` with code `appointment_cancelled` if appointment is Cancelled, `422` with code `appointment_completed` if appointment is Completed, or `422` if unassign would leave the appointment without mechanics
@@ -98,9 +100,9 @@
 - `GET /api/customers` (authorized) — list all customers (id, name, email, phone, vehicle count)
 - `GET /api/customers/by-email?email=` (authorized) — scheduler customer lookup by normalized email; returns customer with vehicle list, and mechanic email lookups also succeed for own-car intake even before a linked customer record exists (empty vehicle list)
 - `GET /api/customers/{id}` (authorized) — get single customer with vehicle list
-- `POST /api/customers` (authorized, AdminOnly) — create customer record (firstName, middleName?, lastName, email, phoneNumber?)
-- `PUT /api/customers/{id}` (authorized, AdminOnly) — update customer record
-- `DELETE /api/customers/{id}` (authorized, AdminOnly) — delete customer and cascaded vehicles
+- `POST /api/customers` (authorized) — create customer record (firstName, middleName?, lastName, email, phoneNumber?)
+- `PUT /api/customers/{id}` (authorized) — update customer record
+- `DELETE /api/customers/{id}` (authorized) — delete customer and cascaded vehicles
 - Customer DTOs: `CustomerDto`, `CreateCustomerRequest`, `UpdateCustomerRequest`.
 - Endpoint files follow partial-class pattern in `Customers/` folder (CustomerEndpoints.cs / Contracts / Queries / Mutations).
 - Customers are passive records — no Identity account, no `IdentityUserId`.
@@ -109,9 +111,9 @@
 
 - `GET /api/customers/{customerId}/vehicles` (authorized) — list all vehicles for a customer
 - `GET /api/vehicles/{id}` (authorized) — get single vehicle with customer summary
-- `POST /api/customers/{customerId}/vehicles` (authorized, AdminOnly) — create vehicle for a customer; license plate normalized to uppercase and validated against supported European formatting rules
-- `PUT /api/vehicles/{id}` (authorized, AdminOnly) — update vehicle record with the same European license-plate validation rules
-- `DELETE /api/vehicles/{id}` (authorized, AdminOnly) — delete vehicle and cascaded appointments
+- `POST /api/customers/{customerId}/vehicles` (authorized) — create vehicle for a customer; license plate normalized to uppercase and validated against supported European formatting rules
+- `PUT /api/vehicles/{id}` (authorized) — update vehicle record with the same European license-plate validation rules
+- `DELETE /api/vehicles/{id}` (authorized) — delete vehicle and cascaded appointments
 - Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
 - Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
 

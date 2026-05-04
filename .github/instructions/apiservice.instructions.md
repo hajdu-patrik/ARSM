@@ -94,25 +94,25 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `DELETE /api/admin/mechanics/{id}` — Delete a mechanic (revokes refresh tokens, removes identity + domain record). Runs deletion invariant checks in a serializable transaction and returns 403 if target is admin or caller is deleting themselves, 422 if deleting would leave zero mechanics globally or would leave any appointment without assigned mechanics, 409 when concurrent contention causes serialization/deadlock/concurrency conflicts, and 500 if linked Identity user deletion fails (no partial-success response).
 - Endpoint files follow partial-class pattern in `Admin/` folder (contracts/handlers).
 
-### Customer Endpoints (`/api/customers`) — all require authorization; write operations require AdminOnly
+### Customer Endpoints (`/api/customers`) — all require authorization
 
 - `GET /api/customers` — List all customers (id, name, email, phone, vehicleCount).
 - `GET /api/customers/by-email?email=` — Scheduler lookup by normalized customer email. Returns customer details with vehicles; mechanic email lookups also return `200` for own-car intake even if the linked customer record is not yet materialized (empty vehicle list); `404` if not found, `422` for invalid email.
 - `GET /api/customers/{id}` — Get single customer with embedded vehicle list.
-- `POST /api/customers` (AdminOnly) — Create a customer record (firstName, middleName?, lastName, email, phoneNumber?). Returns 201 Created. Returns 409 on duplicate email, 422 on missing required fields.
-- `PUT /api/customers/{id}` (AdminOnly) — Update customer record. Returns 204 No Content. Returns 404/409/422 as appropriate.
-- `DELETE /api/customers/{id}` (AdminOnly) — Delete customer and cascade vehicles. Returns 204 No Content, 404 if not found.
+- `POST /api/customers` — Create a customer record (firstName, middleName?, lastName, email, phoneNumber?). Returns 201 Created. Returns 409 on duplicate email, 422 on missing required fields.
+- `PUT /api/customers/{id}` — Update customer record. Returns 204 No Content. Returns 404/409/422 as appropriate.
+- `DELETE /api/customers/{id}` — Delete customer and cascade vehicles. Returns 204 No Content, 404 if not found.
 - Customer DTOs: `CustomerDto`, `CreateCustomerRequest`, `UpdateCustomerRequest`.
 - Endpoint files follow partial-class pattern in `Customers/` folder (CustomerEndpoints.cs / Contracts / Queries / Mutations).
 - Customers are passive records — no Identity account, no `IdentityUserId`.
 
-### Vehicle Endpoints — all require authorization; write operations require AdminOnly
+### Vehicle Endpoints — all require authorization
 
 - `GET /api/customers/{customerId}/vehicles` — List all vehicles for a customer. Returns 404 if customer not found.
 - `GET /api/vehicles/{id}` — Get single vehicle with customer summary. Returns 404 if not found.
-- `POST /api/customers/{customerId}/vehicles` (AdminOnly) — Create a vehicle for a customer. License plate is normalized to uppercase and must match supported European formatting (Latin/Greek/Cyrillic letters + digits with common separators). Returns 201 Created. Returns 404 if customer not found, 409 on duplicate plate, 422 on validation errors.
-- `PUT /api/vehicles/{id}` (AdminOnly) — Update vehicle record with the same European license-plate validation rules. Returns 204 No Content. Returns 404/409/422 as appropriate.
-- `DELETE /api/vehicles/{id}` (AdminOnly) — Delete vehicle and cascade appointments. Returns 204 No Content, 404 if not found.
+- `POST /api/customers/{customerId}/vehicles` — Create a vehicle for a customer. License plate is normalized to uppercase and must match supported European formatting (Latin/Greek/Cyrillic letters + digits with common separators). Returns 201 Created. Returns 404 if customer not found, 409 on duplicate plate, 422 on validation errors.
+- `PUT /api/vehicles/{id}` — Update vehicle record with the same European license-plate validation rules. Returns 204 No Content. Returns 404/409/422 as appropriate.
+- `DELETE /api/vehicles/{id}` — Delete vehicle and cascade appointments. Returns 204 No Content, 404 if not found.
 - Vehicle DTOs: `VehicleDetailDto`, `CustomerSummaryDto`, `CreateVehicleRequest`, `UpdateVehicleRequest`.
 - Endpoint files follow partial-class pattern in `Vehicles/` folder (VehicleEndpoints.cs / Contracts / Queries / Mutations).
 
@@ -123,6 +123,8 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - `POST /api/appointments/intake` — Scheduler intake creation endpoint. Requires customer email, scheduled date, due datetime, and task description. Looks up customer by normalized email (creates customer when missing), and for not-found lookups allows intake without manual `CustomerFirstName`/`CustomerLastName` when the email belongs to a mechanic so backend can resolve mechanic-email owner linking via generated customer-owner linkage email and create/use the linked customer record. Accepts either `vehicleId` or new `vehicle` payload, enforces vehicle numeric max constraints for new-vehicle payloads, always creates `InProgress` appointment, and auto-assigns the requesting mechanic.
 - `PUT /api/appointments/{id}` — Update appointment fields (`dueDateTime`, `taskDescription`); `scheduledDate` is always immutable. Customer/vehicle fields are unchanged by this endpoint. Allowed for assigned mechanics or admins.
 - `PUT /api/appointments/{id}/vehicle` — Update linked vehicle fields (`licensePlate`, `brand`, `model`, `year`, `mileageKm`, `enginePowerHp`, `engineTorqueNm`) for an appointment. Allowed for assigned mechanics or admins.
+- `GET /api/customers/{customerId}/appointments` — List customer repair history across all customer vehicles. Supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date).
+- `GET /api/vehicles/{vehicleId}/appointments` — List vehicle repair history. Supports optional `?descending=true` newest-first sorting (default is oldest-first by scheduled date).
 - `POST /api/customers/{customerId}/appointments` (AdminOnly) — Create an appointment for a customer's vehicle. Validates positive `vehicleId`, non-empty `taskDescription` (max 200), unique positive `mechanicIds`, required `scheduledDate`, customer/vehicle existence and ownership, and mechanic IDs. Returns 201 Created.
 - `PUT /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-assigns to an appointment only when status is `InProgress`. Returns 409 if already claimed (race-condition uniqueness violations caught via `PostgresException { SqlState: UniqueViolation }`, not broad `DbUpdateException`), returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, and returns `422` with code `appointment_not_in_progress` for other non-`InProgress` statuses.
 - `DELETE /api/appointments/{id}/claim` — Current mechanic (from JWT `person_id`) self-unassigns from an appointment. Returns 409 if not assigned, returns `422` with code `appointment_cancelled` if appointment is Cancelled, returns `422` with code `appointment_completed` if appointment is Completed, or returns `422` if unassign would leave the appointment without assigned mechanics.

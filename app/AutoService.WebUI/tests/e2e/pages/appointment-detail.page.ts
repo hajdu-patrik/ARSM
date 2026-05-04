@@ -38,14 +38,6 @@ export class AppointmentDetailPage {
     return this.page.getByRole('dialog', { name: /confirm mechanic removal/i });
   }
 
-  private vehicleInputByLabel(label: string) {
-    return this.dialog()
-      .locator('span', { hasText: label })
-      .first()
-      .locator('xpath=ancestor::div[1]')
-      .locator('input');
-  }
-
   /** Waits until the appointment detail modal is visible. */
   async expectOpen(): Promise<void> {
     await expect(this.dialog()).toBeVisible();
@@ -88,13 +80,9 @@ export class AppointmentDetailPage {
     }
   }
 
-  /**
-   * Updates the vehicle mileage field while in edit mode.
-   *
-   * @param mileageKm - Numeric mileage value to set.
-   */
-  async setVehicleMileageKm(mileageKm: string): Promise<void> {
-    await this.vehicleInputByLabel('Mileage (km)').fill(mileageKm);
+  /** Asserts that vehicle fields remain read-only while the modal is in edit mode. */
+  async expectVehicleFieldsReadOnlyInEdit(): Promise<void> {
+    await expect(this.dialog().locator('input[type="number"]')).toHaveCount(0);
   }
 
   /**
@@ -118,6 +106,11 @@ export class AppointmentDetailPage {
     } else {
       await this.dialog().getByRole('button', { name: /close/i }).click();
     }
+  }
+
+  /** Closes the detail modal from view mode. */
+  async close(): Promise<void> {
+    await this.dialog().getByRole('button', { name: /close/i }).click();
   }
 
   /** Clicks the claim button if visible. */

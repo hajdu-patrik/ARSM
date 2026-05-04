@@ -73,6 +73,19 @@ public static partial class CustomerEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        if (normalizedPhone is not null)
+        {
+            var phoneExists = await db.People
+                .AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken);
+
+            if (phoneExists)
+            {
+                return Results.Problem(
+                    detail: "A person with this phone number already exists.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+        }
+
         var customer = new Customer(
             new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim()),
             normalizedEmail,
@@ -163,6 +176,19 @@ public static partial class CustomerEndpoints
             return Results.Problem(
                 detail: "A person with this email already exists.",
                 statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (normalizedPhone is not null)
+        {
+            var phoneConflict = await db.People
+                .AnyAsync(p => p.PhoneNumber == normalizedPhone && p.Id != id, cancellationToken);
+
+            if (phoneConflict)
+            {
+                return Results.Problem(
+                    detail: "A person with this phone number already exists.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
         }
 
         customer.Name = new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim());

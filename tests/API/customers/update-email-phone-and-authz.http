@@ -9,6 +9,7 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@KnownCustomerPhone = +36304445566
 
 
 # ─────────────────────────────────────────────────────────────
@@ -56,7 +57,21 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Customers] Logout admin, login as non-admin for forbidden update check
+### [Negative][Customers] Update customer with duplicate phone conflict (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{KnownCustomerEmail}}",
+  "phoneNumber": "{{KnownCustomerPhone}}"
+}
+
+###
+
+### [Setup][Customers] Logout admin, login as non-admin for update check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 
 ###
@@ -72,7 +87,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Customers] Non-admin cannot update customer (403 expected)
+### [Positive][Customers] Non-admin can update customer (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
 Content-Type: application/json
 

@@ -8,7 +8,6 @@ export async function initBrowserState(page: Page): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('loading-page-seen', '1');
     localStorage.setItem('preferred-language', 'en');
-    localStorage.removeItem('autoservice-session-hint');
     sessionStorage.removeItem('scheduler-selected-view');
   });
 }

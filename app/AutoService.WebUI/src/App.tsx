@@ -18,13 +18,12 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SeoManager } from './components/seo/SeoManager';
 import './utils/i18n';
 
-const Login = lazy(() => import('./pages/Login/page').then(m => ({ default: m.Login })));
-const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then(m => ({ default: m.SchedulerPage })));
-const ToolsPage = lazy(() => import('./pages/Tools/page').then(m => ({ default: m.ToolsPage })));
-const InventoryPage = lazy(() => import('./pages/Inventory/page').then(m => ({ default: m.InventoryPage })));
-const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
-const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then(m => ({ default: m.RegisterMechanicPage })));
-const SettingsPage = lazy(() => import('./pages/Settings/page').then(m => ({ default: m.SettingsPage })));
+const Login = lazy(() => import('./pages/Login/page').then(moduleExports => ({ default: moduleExports.Login })));
+const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then(moduleExports => ({ default: moduleExports.SchedulerPage })));
+const CustomersPage = lazy(() => import('./pages/Customers/page').then(moduleExports => ({ default: moduleExports.CustomersPage })));
+const NotFound = lazy(() => import('./pages/NotFound').then(moduleExports => ({ default: moduleExports.NotFound })));
+const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then(moduleExports => ({ default: moduleExports.RegisterMechanicPage })));
+const SettingsPage = lazy(() => import('./pages/Settings/page').then(moduleExports => ({ default: moduleExports.SettingsPage })));
 
 /** Root component that wires routing, auth restoration, SEO, error boundary, and toast system. */
 function App() {
@@ -90,13 +89,11 @@ function App() {
           <Route path="/" element={schedulerElement} />
           <Route path="/scheduler" element={<Navigate to="/" replace />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/customers" element={<PrivateRoute><SidebarLayout><CustomersPage /></SidebarLayout></PrivateRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/register" element={<AdminRoute><SidebarLayout><RegisterMechanicPage /></SidebarLayout></AdminRoute>} />
 
-          {/* Placeholder Routes (Protected) */}
-          <Route path="/tools" element={<PrivateRoute><SidebarLayout><ToolsPage /></SidebarLayout></PrivateRoute>} />
-          <Route path="/inventory" element={<PrivateRoute><SidebarLayout><InventoryPage /></SidebarLayout></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><SidebarLayout><SettingsPage /></SidebarLayout></PrivateRoute>} />
 
           {/* 404 Not Found */}

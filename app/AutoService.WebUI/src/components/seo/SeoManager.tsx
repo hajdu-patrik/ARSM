@@ -90,17 +90,10 @@ export function SeoManager() {
       };
     }
 
-    if (path === '/tools') {
+    if (path === '/customers') {
       return {
-        pageTitle: t('tools.pageTitle'),
-        description: t('tools.comingSoonDescription'),
-      };
-    }
-
-    if (path === '/inventory') {
-      return {
-        pageTitle: t('inventory.pageTitle'),
-        description: t('inventory.comingSoonDescription'),
+        pageTitle: t('customers.pageTitle'),
+        description: t('customers.pageDescription'),
       };
     }
 

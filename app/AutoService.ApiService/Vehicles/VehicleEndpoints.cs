@@ -9,6 +9,12 @@ namespace AutoService.ApiService.Vehicles;
  */
 public static partial class VehicleEndpoints
 {
+    /**
+     * Maps vehicle endpoints to the route builder.
+     *
+     * @param endpoints Endpoint route builder.
+     * @returns Route builder with vehicle endpoints registered.
+     */
     public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
     {
         // Nested routes scoped to a customer.
@@ -22,10 +28,8 @@ public static partial class VehicleEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         nested.MapPost("/", CreateVehicleAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces<VehicleDetailDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
@@ -41,19 +45,15 @@ public static partial class VehicleEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         flat.MapPut("/{id:int}", UpdateVehicleAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         flat.MapDelete("/{id:int}", DeleteVehicleAsync)
-            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;

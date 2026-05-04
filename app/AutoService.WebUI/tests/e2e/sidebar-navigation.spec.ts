@@ -11,14 +11,24 @@ test.describe('Sidebar navigation – regular mechanic', () => {
     await loginAsMechanic(page, env.mechanicEmail, env.mechanicPassword);
   });
 
-  test('sidebar shows scheduler, tools, inventory nav items', async ({ page }) => {
+  test('sidebar shows scheduler/customers and hides tools/inventory links', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.expectLoaded();
 
     const sidebar = new SidebarPage(page);
     await sidebar.expectNavItemVisible('Scheduler');
-    await sidebar.expectNavItemVisible('Tools');
-    await sidebar.expectNavItemVisible('Inventory');
+    await sidebar.expectNavItemVisible('Customers');
+    await sidebar.expectNavItemHidden('Tools');
+    await sidebar.expectNavItemHidden('Inventory');
+  });
+
+  test('navigate to customers page via sidebar', async ({ page }) => {
+    const scheduler = new SchedulerPage(page);
+    await scheduler.expectLoaded();
+
+    const sidebar = new SidebarPage(page);
+    await sidebar.clickNavItem('Customers');
+    await expect(page).toHaveURL(/\/customers/);
   });
 
   test('navigate to settings via sidebar', async ({ page }) => {
@@ -28,24 +38,6 @@ test.describe('Sidebar navigation – regular mechanic', () => {
     const sidebar = new SidebarPage(page);
     await sidebar.clickNavItem('Settings');
     await expect(page).toHaveURL(/\/settings/);
-  });
-
-  test('navigate to tools page via sidebar', async ({ page }) => {
-    const scheduler = new SchedulerPage(page);
-    await scheduler.expectLoaded();
-
-    const sidebar = new SidebarPage(page);
-    await sidebar.clickNavItem('Tools');
-    await expect(page).toHaveURL(/\/tools/);
-  });
-
-  test('navigate to inventory page via sidebar', async ({ page }) => {
-    const scheduler = new SchedulerPage(page);
-    await scheduler.expectLoaded();
-
-    const sidebar = new SidebarPage(page);
-    await sidebar.clickNavItem('Inventory');
-    await expect(page).toHaveURL(/\/inventory/);
   });
 
   test('sidebar collapse persists after page reload', async ({ page }) => {
@@ -66,24 +58,12 @@ test.describe('Sidebar navigation – regular mechanic', () => {
     expect(flagAfter).toBe(collapsedFlag);
   });
 
-  test('/tools skeleton page renders page heading when authenticated', async ({ page }) => {
-    // Navigate directly to /tools and verify the coming-soon panel renders.
-    // The page uses the `tools.pageTitle` i18n key which resolves to "Tools"
-    // in English, and the panel heading resolves to "Tools Management Coming Soon".
+  test('removed tools and inventory routes now resolve to not found', async ({ page }) => {
     await page.goto('/tools');
-    await expect(page).toHaveURL(/\/tools/);
-    await expect(page.getByRole('heading', { name: 'Tools', level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('heading', { name: /Tools Management Coming Soon/i })).toBeVisible();
-  });
+    await expect(page.getByRole('heading', { name: /Page Not Found/i })).toBeVisible({ timeout: 10_000 });
 
-  test('/inventory skeleton page renders page heading when authenticated', async ({ page }) => {
-    // Navigate directly to /inventory and verify the coming-soon panel renders.
-    // The page uses the `inventory.pageTitle` i18n key which resolves to "Inventory"
-    // in English, and the panel heading resolves to "Inventory Management Coming Soon".
     await page.goto('/inventory');
-    await expect(page).toHaveURL(/\/inventory/);
-    await expect(page.getByRole('heading', { name: 'Inventory', level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('heading', { name: /Inventory Management Coming Soon/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Page Not Found/i })).toBeVisible({ timeout: 10_000 });
   });
 });
 
@@ -91,15 +71,20 @@ test.describe('Sidebar navigation – admin user', () => {
   test.beforeEach(async ({ page }) => {
     const admin = getAdminFlowEnv();
     test.skip(!admin, 'Admin credentials not configured');
+    if (!admin) {
+      return;
+    }
     await initBrowserState(page);
-    await loginAsMechanic(page, admin!.adminEmail, admin!.adminPassword);
+    await loginAsMechanic(page, admin.adminEmail, admin.adminPassword);
   });
 
-  test('admin sees admin nav item in sidebar', async ({ page }) => {
+  test('admin sees admin nav item and can navigate to admin page', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.expectLoaded();
 
     const sidebar = new SidebarPage(page);
     await sidebar.expectNavItemVisible('Admin');
+    await sidebar.clickNavItem('Admin');
+    await expect(page).toHaveURL(/\/admin\/register/);
   });
 });

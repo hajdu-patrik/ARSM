@@ -8,7 +8,7 @@ public static partial class AppointmentEndpoints
      * Maps appointment and customer-appointment endpoints to the route builder.
      *
      * @param endpoints Endpoint route builder.
-     * @return Route builder with appointment endpoints registered.
+     * @returns Route builder with appointment endpoints registered.
      */
     public static IEndpointRouteBuilder MapAppointmentEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -88,14 +88,29 @@ public static partial class AppointmentEndpoints
 
         var customerAppointments = endpoints.MapGroup("/api/customers/{customerId:int}/appointments")
             .WithTags("Appointments")
-            .RequireAuthorization("AdminOnly");
+            .RequireAuthorization();
+
+        customerAppointments.MapGet(string.Empty, GetByCustomerAsync)
+            .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         customerAppointments.MapPost(string.Empty, CreateForCustomerAsync)
+            .RequireAuthorization("AdminOnly")
             .Produces<AppointmentDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        var vehicleAppointments = endpoints.MapGroup("/api/vehicles/{vehicleId:int}/appointments")
+            .WithTags("Appointments")
+            .RequireAuthorization();
+
+        vehicleAppointments.MapGet(string.Empty, GetByVehicleAsync)
+            .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;
     }

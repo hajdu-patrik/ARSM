@@ -78,12 +78,14 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         onDueDateTimeChange={(value) => onEditField('dueDateTime', value)}
       />
 
+      <CustomerSection
+        fullName={appointment.vehicle.customer.fullName}
+        t={t}
+      />
+
       <VehicleSection
         appointment={appointment}
-        isEditing={isEditing}
-        editForm={editForm}
         t={t}
-        onEditField={onEditField}
       />
 
       <TaskSection
@@ -92,11 +94,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         displayTask={appointment.taskDescription}
         t={t}
         onTaskChange={(value) => onEditField('taskDescription', value)}
-      />
-
-      <CustomerSection
-        fullName={appointment.vehicle.customer.fullName}
-        t={t}
       />
 
       {!isEditing && (
@@ -185,149 +182,79 @@ const DueSection = memo(function DueSection({
 
 interface VehicleSectionProps {
   readonly appointment: AppointmentDto;
-  readonly isEditing: boolean;
-  readonly editForm: EditFormState | null;
   readonly t: TFunction;
-  readonly onEditField: (field: keyof EditFormState, value: string) => void;
 }
 
-const VehicleSection = memo(function VehicleSection({ appointment, isEditing, editForm, t, onEditField }: VehicleSectionProps) {
+const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleSectionProps) {
   const { vehicle } = appointment;
 
-  const title = isEditing && editForm
-    ? `${editForm.brand || vehicle.brand} ${editForm.model || vehicle.model} (${editForm.year || String(vehicle.year)})`
-    : `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
+  const title = `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
 
   return (
     <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 shadow-[0_10px_22px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-input-dark/65 dark:shadow-[0_12px_24px_rgba(3,5,14,0.32)]">
       <h4 className="mb-2 text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">{title}</h4>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.detail.licensePlate')}
-          isEditing={isEditing}
-          editValue={editForm?.licensePlate ?? ''}
           displayValue={vehicle.licensePlate}
-          inputClassName={`${inputClassCompact} font-mono uppercase`}
           displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('licensePlate', value.toUpperCase())}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleBrand')}
-          isEditing={isEditing}
-          editValue={editForm?.brand ?? ''}
           displayValue={vehicle.brand}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('brand', value)}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleModel')}
-          isEditing={isEditing}
-          editValue={editForm?.model ?? ''}
           displayValue={vehicle.model}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('model', value)}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleYear')}
-          isEditing={isEditing}
-          editValue={editForm?.year ?? ''}
           displayValue={String(vehicle.year)}
-          inputType="number"
-          min={1886}
-          max={2100}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('year', value)}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleMileageKm')}
-          isEditing={isEditing}
-          editValue={editForm?.mileageKm ?? ''}
           displayValue={`${vehicle.mileageKm.toLocaleString()} km`}
-          inputType="number"
-          min={0}
-          max={1000000}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('mileageKm', value)}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleEnginePowerHp')}
-          isEditing={isEditing}
-          editValue={editForm?.enginePowerHp ?? ''}
           displayValue={`${vehicle.enginePowerHp} HP`}
-          inputType="number"
-          min={0}
-          max={50000}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('enginePowerHp', value)}
         />
 
-        <EditableVehicleRow
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleEngineTorqueNm')}
-          isEditing={isEditing}
-          editValue={editForm?.engineTorqueNm ?? ''}
           displayValue={`${vehicle.engineTorqueNm} Nm`}
-          inputType="number"
-          min={0}
-          max={50000}
-          inputClassName={inputClassCompact}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
-          onChange={(value) => onEditField('engineTorqueNm', value)}
         />
       </div>
     </div>
   );
 });
 
-interface EditableVehicleRowProps {
+interface VehicleValueRowProps {
   readonly label: string;
-  readonly isEditing: boolean;
-  readonly editValue: string;
   readonly displayValue: string;
-  readonly inputType?: 'text' | 'number';
-  readonly min?: number;
-  readonly max?: number;
-  readonly inputClassName: string;
   readonly displayClassName: string;
-  readonly onChange: (value: string) => void;
 }
 
-const EditableVehicleRow = memo(function EditableVehicleRow({
+const VehicleValueRow = memo(function VehicleValueRow({
   label,
-  isEditing,
-  editValue,
   displayValue,
-  inputType = 'text',
-  min,
-  max,
-  inputClassName,
   displayClassName,
-  onChange,
-}: EditableVehicleRowProps) {
+}: VehicleValueRowProps) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-arsm-border bg-arsm-toggle-bg/90 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
-      {isEditing ? (
-        <input
-          type={inputType}
-          min={min}
-          max={max}
-          value={editValue}
-          onChange={(event) => onChange(event.target.value)}
-          className={inputClassName}
-        />
-      ) : (
-        <span className={displayClassName}>{displayValue}</span>
-      )}
+      <span className={displayClassName}>{displayValue}</span>
     </div>
   );
 });
@@ -343,19 +270,17 @@ interface TaskSectionProps {
 const TaskSection = memo(function TaskSection({ isEditing, taskDescription, displayTask, t, onTaskChange }: TaskSectionProps) {
   return (
     <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 shadow-[0_10px_22px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-input-dark/65 dark:shadow-[0_12px_24px_rgba(3,5,14,0.32)]">
-      <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.task')}</h4>
-      <div className="rounded-xl border border-arsm-border bg-arsm-toggle-bg/90 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-        {isEditing ? (
-          <textarea
-            value={taskDescription}
-            onChange={(event) => onTaskChange(event.target.value)}
-            rows={3}
-            className={`${inputClassCompact} min-h-[6.5rem] px-3 py-2 text-arsm-primary dark:text-arsm-primary-dark`}
-          />
-        ) : (
-          <p className="break-words text-sm text-arsm-primary dark:text-arsm-primary-dark">{displayTask}</p>
-        )}
-      </div>
+      <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.task')}</h4>
+      {isEditing ? (
+        <textarea
+          value={taskDescription}
+          onChange={(event) => onTaskChange(event.target.value)}
+          rows={3}
+          className={`${inputClassCompact} min-h-[6.5rem] px-3 py-2 text-arsm-primary dark:text-arsm-primary-dark`}
+        />
+      ) : (
+        <p className="break-words text-sm text-arsm-primary dark:text-arsm-primary-dark">{displayTask}</p>
+      )}
     </div>
   );
 });

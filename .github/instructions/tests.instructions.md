@@ -16,9 +16,9 @@ Apply these rules whenever editing files in `tests/**`.
 ### API chunks
 
 - `tests/API/auth/` - register setup/rules/validation, login matrix, session lifecycle, health
-- `tests/API/appointments/` - intake, mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign, admin create authz, unauthenticated access
-- `tests/API/customers/` - list/lookup, create, update, delete
-- `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete
+- `tests/API/appointments/` - intake, customer/vehicle repair history (`history-by-customer-vehicle.http`), mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign, admin create authz, unauthenticated access
+- `tests/API/customers/` - list/lookup, create, update, delete, and non-admin write authz regression coverage
+- `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete, and non-admin write authz regression coverage
 - `tests/API/profile/` - profile get/update, name validation/password, profile picture, account deletion
 - `tests/API/admin/` - list, delete invariants, authz
 
