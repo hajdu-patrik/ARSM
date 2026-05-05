@@ -18,6 +18,13 @@ namespace AutoService.ApiService.DataInitialization;
  */
 public static class DemoDataInitializer
 {
+    private static readonly string[] DemoMechanicEmails =
+    [
+        "gabor.kovacs@example.com",
+        "peter.nagy@example.com",
+        "mate.szabo@example.com"
+    ];
+
     /**
      * Applies pending migrations and inserts demo data when the database is empty.
      *
@@ -67,8 +74,11 @@ public static class DemoDataInitializer
             hasAppointments = false;
         }
 
+        await NormalizePersistedDataAsync(db);
+
         if (hasMechanics || hasCustomers || hasVehicles || hasAppointments || hasIdentityUsers)
         {
+            await EnsureDemoMechanicPasswordsAsync(userManager, mechanicPassword);
             // Ensure Admin role assignment still converges on already-seeded datasets.
             await EnsureAdminRoleAsync(userManager, roleManager);
             return;
@@ -220,6 +230,7 @@ public static class DemoDataInitializer
                 DueDateTime = DateTime.UtcNow.AddDays(-4),
                 TaskDescription = "Suspension adjustment and wheel alignment",
                 Status = ProgressStatus.Completed,
+                CompletedAt = DateTime.UtcNow.AddDays(-4),
                 VehicleId = vehicles[3].Id,
                 Mechanics = new List<Mechanic> { mechanics[0], mechanics[2] }
             },
@@ -230,6 +241,7 @@ public static class DemoDataInitializer
                 DueDateTime = DateTime.UtcNow,
                 TaskDescription = "Battery replacement and electrical fault diagnosis",
                 Status = ProgressStatus.Cancelled,
+                CanceledAt = DateTime.UtcNow.AddDays(-3).AddHours(1),
                 VehicleId = vehicles[4].Id,
                 Mechanics = new List<Mechanic> { mechanics[1] }
             }
@@ -311,6 +323,8 @@ public static class DemoDataInitializer
         db.Appointments.AddRange(appointments);
         await db.SaveChangesAsync();
 
+        await EnsureDemoMechanicPasswordsAsync(userManager, mechanicPassword);
+
         // Ensure role exists and first mechanic is assigned Admin after identity users were created.
         await EnsureAdminRoleAsync(userManager, roleManager);
     }
@@ -366,6 +380,132 @@ public static class DemoDataInitializer
         }
 
         return identityUser.Id;
+    }
+
+    private static async Task EnsureDemoMechanicPasswordsAsync(
+        UserManager<IdentityUser> userManager,
+        string configuredPassword)
+    {
+        foreach (var email in DemoMechanicEmails)
+        {
+            var user = await userManager.FindByEmailAsync(email);
+            if (user is null)
+            {
+                continue;
+            }
+
+            var passwordHash = user.PasswordHash;
+            if (string.IsNullOrWhiteSpace(passwordHash))
+            {
+                var addPasswordResult = await userManager.AddPasswordAsync(user, configuredPassword);
+                if (!addPasswordResult.Succeeded)
+                {
+                    var addPasswordErrors = string.Join(", ", addPasswordResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Demo seeding failed: could not set password for '{email}': {addPasswordErrors}");
+                }
+
+                continue;
+            }
+
+            var verificationResult = userManager.PasswordHasher.VerifyHashedPassword(user, passwordHash, configuredPassword);
+            if (verificationResult is PasswordVerificationResult.Success or PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                continue;
+            }
+
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+            var resetResult = await userManager.ResetPasswordAsync(user, resetToken, configuredPassword);
+            if (!resetResult.Succeeded)
+            {
+                var resetErrors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Demo seeding failed: could not synchronize password for '{email}': {resetErrors}");
+            }
+        }
+    }
+
+    private static async Task NormalizePersistedDataAsync(AutoServiceDbContext db)
+    {
+        await NormalizeAppointmentStatusTimestampsAsync(db);
+        await NormalizeDuplicatePhoneNumbersAsync(db);
+    }
+
+    private static async Task NormalizeAppointmentStatusTimestampsAsync(AutoServiceDbContext db)
+    {
+        var appointments = await db.Appointments
+            .Where(a =>
+                (a.Status == ProgressStatus.Completed && (a.CompletedAt == null || a.CanceledAt != null)) ||
+                (a.Status == ProgressStatus.Cancelled && (a.CanceledAt == null || a.CompletedAt != null)) ||
+                (a.Status == ProgressStatus.InProgress && (a.CompletedAt != null || a.CanceledAt != null)))
+            .ToListAsync();
+
+        if (appointments.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var appointment in appointments)
+        {
+            switch (appointment.Status)
+            {
+                case ProgressStatus.Completed:
+                    appointment.CompletedAt ??= appointment.DueDateTime >= appointment.ScheduledDate
+                        ? appointment.DueDateTime
+                        : appointment.ScheduledDate;
+                    appointment.CanceledAt = null;
+                    break;
+                case ProgressStatus.Cancelled:
+                    appointment.CanceledAt ??= appointment.ScheduledDate;
+                    appointment.CompletedAt = null;
+                    break;
+                case ProgressStatus.InProgress:
+                    appointment.CompletedAt = null;
+                    appointment.CanceledAt = null;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task NormalizeDuplicatePhoneNumbersAsync(AutoServiceDbContext db)
+    {
+        var peopleWithPhone = await db.People
+            .Where(p => p.PhoneNumber != null)
+            .ToListAsync();
+
+        if (peopleWithPhone.Count == 0)
+        {
+            return;
+        }
+
+        var seenPhones = new HashSet<string>(StringComparer.Ordinal);
+        var hasChanges = false;
+
+        foreach (var person in peopleWithPhone
+                     .OrderBy(p => p is Mechanic ? 0 : 1)
+                     .ThenBy(p => p.Id))
+        {
+            var phone = person.PhoneNumber;
+            if (phone is null)
+            {
+                continue;
+            }
+
+            if (!seenPhones.Add(phone))
+            {
+                person.PhoneNumber = null;
+                hasChanges = true;
+            }
+        }
+
+        if (!hasChanges)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task ResetLegacyBackfillDatasetAsync(AutoServiceDbContext db)

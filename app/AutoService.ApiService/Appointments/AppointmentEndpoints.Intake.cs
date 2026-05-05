@@ -192,11 +192,16 @@ public static partial class AppointmentEndpoints
             var customerMiddleName = middleName;
             var customerLastName = lastName;
 
-            if (linkedMechanicForEmail is not null)
+            if (normalizedPhone is not null)
             {
-                if (normalizedPhone is null)
+                var phoneInUse = await db.People
+                    .AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken);
+
+                if (phoneInUse)
                 {
-                    normalizedPhone = linkedMechanicForEmail.PhoneNumber;
+                    return Results.Problem(
+                        detail: "A person with this phone number already exists.",
+                        statusCode: StatusCodes.Status409Conflict);
                 }
             }
 
