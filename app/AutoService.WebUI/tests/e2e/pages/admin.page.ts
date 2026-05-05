@@ -46,6 +46,10 @@ export class AdminPage {
     await form.locator('#lastName').fill(data.lastName);
     await form.locator('#reg-email').fill(data.email);
     await this.passwordInput().fill(data.password);
+    const confirmPasswordInput = form.locator('#reg-confirm-password');
+    if (await confirmPasswordInput.count() > 0) {
+      await confirmPasswordInput.fill(data.password);
+    }
 
     if (data.specialization) {
       const select = form.locator('select').first();
@@ -65,6 +69,12 @@ export class AdminPage {
   async submitRegistration(): Promise<void> {
     const form = this.registrationForm();
     await form.locator('button[type="submit"]').click();
+
+    const confirmDialog = this.page.getByRole('dialog', { name: /confirm mechanic registration|confirm registration|confirm register/i });
+    const isOpen = await confirmDialog.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false);
+    if (isOpen) {
+      await confirmDialog.getByRole('button', { name: /confirm register|register/i }).click();
+    }
   }
 
   /** Asserts the submit button is disabled. */

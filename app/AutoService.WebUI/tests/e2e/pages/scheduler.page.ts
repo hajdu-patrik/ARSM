@@ -57,27 +57,23 @@ export class SchedulerPage {
 
   /** Clicks the month navigation forward button. */
   async navigateNextMonth(): Promise<void> {
-    const buttons = this.page.locator('button').filter({ has: this.page.locator('svg') });
-    const navButtons = this.page.locator('[class*="calendar"] button, [class*="Calendar"] button').filter({ has: this.page.locator('svg') });
-    if (await navButtons.count() >= 2) {
-      await navButtons.last().click();
-    } else {
-      await buttons.filter({ hasText: '' }).last().click();
-    }
+    const nextMonthButton = this.page.getByRole('button', { name: /next month/i }).first();
+    await expect(nextMonthButton).toBeVisible();
+    await nextMonthButton.click();
   }
 
   /** Clicks the month navigation back button. */
   async navigatePrevMonth(): Promise<void> {
-    const navButtons = this.page.locator('[class*="calendar"] button, [class*="Calendar"] button').filter({ has: this.page.locator('svg') });
-    if (await navButtons.count() >= 2) {
-      await navButtons.first().click();
-    }
+    const previousMonthButton = this.page.getByRole('button', { name: /previous month/i }).first();
+    await expect(previousMonthButton).toBeVisible();
+    await previousMonthButton.click();
   }
 
   /** Returns the visible month header text (e.g., "April 2026"). */
   async getMonthHeaderText(): Promise<string> {
-    const header = this.page.locator('h2, [class*="font-semibold"]').filter({ hasText: /\d{4}/ }).first();
-    return (await header.textContent()) ?? '';
+    const header = this.page.getByRole('heading', { level: 3 }).filter({ hasText: /\d{4}/ }).first();
+    await expect(header).toBeVisible();
+    return ((await header.textContent()) ?? '').trim();
   }
 
   /** Returns the number of overflow-day appointment badges that use the faded tone class. */
@@ -181,22 +177,20 @@ export class SchedulerPage {
    * @param taskDescription - Unique task description used during intake creation.
    */
   async openAppointmentByTask(taskDescription: string): Promise<void> {
-    const taskText = this.page.getByText(taskDescription, { exact: true });
-    await expect(taskText).toBeVisible({ timeout: 15_000 });
-
     const card = this.page
-      .locator('div')
+      .locator('div.relative.w-full.text-left')
       .filter({ has: this.page.getByText(taskDescription, { exact: true }) })
-      .filter({ has: this.page.locator('button[aria-label]') })
       .first();
 
-    const overlayButton = card.locator('button[aria-label]').first();
-    if (await overlayButton.isVisible().catch(() => false)) {
-      await overlayButton.click();
+    if ((await card.count()) > 0) {
+      await expect(card).toBeVisible({ timeout: 15_000 });
+      await card.getByRole('button', { name: /appointment details/i }).click();
       return;
     }
 
-    // Fallback for legacy markup where task text itself remains directly clickable.
+    // Backward-compatible fallback for older card markup.
+    const taskText = this.page.getByText(taskDescription, { exact: true });
+    await expect(taskText).toBeVisible({ timeout: 15_000 });
     await taskText.click({ force: true });
   }
 

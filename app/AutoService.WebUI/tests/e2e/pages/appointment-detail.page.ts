@@ -7,7 +7,7 @@ export class AppointmentDetailPage {
   constructor(private readonly page: Page) {}
 
   private dialog() {
-    return this.page.getByRole('dialog', { name: 'Appointment Details' });
+    return this.page.getByRole('dialog', { name: /appointment details/i });
   }
 
   private claimButton() {
@@ -89,7 +89,7 @@ export class AppointmentDetailPage {
    * Asserts the customer section shows name only and no customer email row.
    */
   async expectCustomerNameOnlySection(): Promise<void> {
-    await expect(this.dialog().getByText('Customer Name', { exact: true })).toBeVisible();
+    await expect(this.dialog().getByText('Name', { exact: true })).toBeVisible();
     await expect(this.dialog().getByText('Email', { exact: true })).toHaveCount(0);
   }
 

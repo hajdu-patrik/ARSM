@@ -18,6 +18,24 @@ export class SettingsPage {
     return this.page.locator('#settings-lastName');
   }
 
+  private newPasswordInput() {
+    return this.page.locator('#settings-newPassword');
+  }
+
+  private confirmPasswordInput() {
+    return this.page.locator('#settings-confirmPassword');
+  }
+
+  private async confirmModalIfVisible(modalTitle: RegExp, confirmButton: RegExp): Promise<void> {
+    const dialog = this.page.getByRole('dialog', { name: modalTitle });
+    const isOpen = await dialog.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false);
+    if (!isOpen) {
+      return;
+    }
+
+    await dialog.getByRole('button', { name: confirmButton }).click();
+  }
+
   /** Navigates to the settings page and waits for profile data to load. */
   async goto(): Promise<void> {
     await this.page.goto('/settings');
@@ -66,6 +84,7 @@ export class SettingsPage {
   async submitPersonalInfo(): Promise<void> {
     const forms = this.page.locator('form');
     await forms.first().locator('button[type="submit"]').click();
+    await this.confirmModalIfVisible(/confirm save/i, /save changes|confirm save|save/i);
   }
 
   /** Fills the change password form fields. */
@@ -80,6 +99,17 @@ export class SettingsPage {
   async submitPasswordChange(): Promise<void> {
     const forms = this.page.locator('form');
     await forms.nth(1).locator('button[type="submit"]').click();
+    await this.confirmModalIfVisible(/confirm password change/i, /change password|confirm password change/i);
+  }
+
+  /** Asserts the confirm-password field reports invalid state. */
+  async expectConfirmPasswordInvalid(): Promise<void> {
+    await expect(this.confirmPasswordInput()).toHaveAttribute('aria-invalid', 'true');
+  }
+
+  /** Asserts the new-password field reports invalid state. */
+  async expectNewPasswordInvalid(): Promise<void> {
+    await expect(this.newPasswordInput()).toHaveAttribute('aria-invalid', 'true');
   }
 
   /** Asserts that an inline error message containing the given text is visible. */

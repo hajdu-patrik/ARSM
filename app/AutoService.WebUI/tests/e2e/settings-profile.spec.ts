@@ -76,10 +76,7 @@ test.describe('Settings – profile management', () => {
 
     await settings.fillPasswordChange('anything', 'NewPass123!', 'Mismatch1!');
     await settings.submitPasswordChange();
-
-    await page.waitForTimeout(1_000);
-    const hasError = await page.getByText(/match|mismatch|confirm/i).isVisible().catch(() => false);
-    expect(hasError).toBe(true);
+    await settings.expectConfirmPasswordInvalid();
   });
 
   test('password change with too-short new password shows error', async ({ page }) => {
@@ -88,10 +85,7 @@ test.describe('Settings – profile management', () => {
 
     await settings.fillPasswordChange('anything', 'short', 'short');
     await settings.submitPasswordChange();
-
-    await page.waitForTimeout(1_000);
-    const hasError = await page.getByText(/8|short|length|character/i).isVisible().catch(() => false);
-    expect(hasError).toBe(true);
+    await settings.expectNewPasswordInvalid();
   });
 
   test('password change with wrong current password shows server error', async ({ page }) => {

@@ -46,64 +46,66 @@ test.describe('Theme and language controls', () => {
     const scheduler = new SchedulerPage(page);
     await scheduler.expectLoaded();
 
-    const huButton = page.getByRole('button', { name: 'HU' });
-    if (await huButton.isVisible()) {
-      await huButton.click();
-      await page.waitForTimeout(500);
+    const languageToggle = page.getByRole('button', { name: /^(EN|HU)$/ }).first();
+    await expect(languageToggle).toBeVisible();
 
-      const lang = await page.evaluate(() => document.documentElement.lang);
-      expect(lang).toBe('hu');
+    const initialLang = await page.evaluate(() => document.documentElement.lang);
+    if (initialLang !== 'hu') {
+      await languageToggle.click();
     }
+
+    await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('hu');
   });
 
   test('switch language to English updates UI text', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.expectLoaded();
 
-    const huButton = page.getByRole('button', { name: 'HU' });
-    if (await huButton.isVisible()) {
-      await huButton.click();
-      await page.waitForTimeout(300);
+    const languageToggle = page.getByRole('button', { name: /^(EN|HU)$/ }).first();
+    await expect(languageToggle).toBeVisible();
+
+    const initialLang = await page.evaluate(() => document.documentElement.lang);
+    if (initialLang !== 'hu') {
+      await languageToggle.click();
+      await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('hu');
     }
 
-    const enButton = page.getByRole('button', { name: 'EN' });
-    if (await enButton.isVisible()) {
-      await enButton.click();
-      await page.waitForTimeout(500);
-
-      const lang = await page.evaluate(() => document.documentElement.lang);
-      expect(lang).toBe('en');
-    }
+    await languageToggle.click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('en');
   });
 
   test('language preference persists across reload', async ({ page }) => {
     const scheduler = new SchedulerPage(page);
     await scheduler.expectLoaded();
 
-    const huButton = page.getByRole('button', { name: 'HU' });
-    if (await huButton.isVisible()) {
-      await huButton.click();
-      await page.waitForTimeout(300);
+    const languageToggle = page.getByRole('button', { name: /^(EN|HU)$/ }).first();
+    await expect(languageToggle).toBeVisible();
 
-      await page.reload();
-      await scheduler.expectLoaded();
+    await languageToggle.click();
+    await page.waitForTimeout(300);
 
-      const savedLang = await page.evaluate(() => localStorage.getItem('preferred-language'));
-      expect(savedLang).toBe('hu');
+    const expectedSavedLang = await page.evaluate(() => localStorage.getItem('preferred-language'));
+    expect(expectedSavedLang === 'en' || expectedSavedLang === 'hu').toBe(true);
 
-      const enButton = page.getByRole('button', { name: 'EN' });
-      if (await enButton.isVisible()) {
-        await enButton.click();
-      }
+    await page.reload();
+    await scheduler.expectLoaded();
+
+    const savedLang = await page.evaluate(() => localStorage.getItem('preferred-language'));
+    expect(savedLang).toBe(expectedSavedLang);
+
+    if (savedLang === 'hu') {
+      await page.getByRole('button', { name: /^(EN|HU)$/ }).first().click();
     }
   });
 
   test('language toggle is visible on login page', async ({ page }) => {
+    await page.context().clearCookies();
     await page.goto('/login');
-    await page.waitForTimeout(1_000);
 
-    const langButtons = page.getByRole('button', { name: /^(EN|HU)$/ });
-    const count = await langButtons.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    const langToggle = page.getByRole('button', { name: /^(EN|HU)$/ }).first();
+    await expect(langToggle).toBeVisible();
+
+    const count = await page.getByRole('button', { name: /^(EN|HU)$/ }).count();
+    expect(count).toBeGreaterThanOrEqual(1);
   });
 });
