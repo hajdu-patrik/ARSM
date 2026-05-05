@@ -42,6 +42,18 @@ import type {
   VehicleDetailDto,
 } from '../../types/customers/customers.types';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
+import {
+  buildCustomerDisplayName,
+  normalizeSearchValue,
+  formatDateTime,
+  mapCustomerValidationMessageToKey,
+  mapVehicleValidationMessageToKey,
+  hasServerFieldErrors,
+  parseVehicleNumericValues,
+  buildVehicleNumericFieldErrors,
+  type VehicleFormState,
+} from './helpers';
+import { RepairHistoryList } from './components/RepairHistoryList';
 
 type SortDirection = 'asc' | 'desc';
 type CustomerModalMode = 'create' | 'edit';
@@ -53,16 +65,6 @@ interface CustomerFormState {
   lastName: string;
   email: string;
   phoneNumber: string;
-}
-
-interface VehicleFormState {
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year: string;
-  mileageKm: string;
-  enginePowerHp: string;
-  engineTorqueNm: string;
 }
 
 interface DeleteVehicleTarget {
@@ -87,193 +89,6 @@ const EMPTY_VEHICLE_FORM: VehicleFormState = {
   enginePowerHp: '',
   engineTorqueNm: '',
 };
-
-/**
- * Returns a stable full-name representation used for sorting and display.
- *
- * @param customer Customer row data.
- * @returns Full name in last-first-middle order.
- */
-function buildCustomerDisplayName(customer: CustomerListItem): string {
-  return [customer.lastName, customer.firstName, customer.middleName]
-    .filter((value) => value && value.trim().length > 0)
-    .join(' ');
-}
-
-/**
- * Removes accents and lowercases input to support accent-insensitive search.
- *
- * @param value Raw input value.
- * @returns Normalized value suitable for contains matching.
- */
-function normalizeSearchValue(value: string): string {
-  return value
-    .normalize('NFD')
-    .replaceAll(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-/**
- * Formats a timestamp string to locale-aware date-time text.
- *
- * @param value ISO timestamp.
- * @param locale Current i18n locale.
- * @returns Human-readable date-time text.
- */
-function formatDateTime(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
-/**
- * Maps customer-validation messages to i18n keys.
- *
- * @param message Backend error detail.
- * @returns Customer page i18n key.
- */
-function mapCustomerValidationMessageToKey(message: string): string {
-  const normalized = message.trim().toLowerCase();
-
-  if (normalized.includes('already exists') && normalized.includes('email')) {
-    return 'customers.errors.emailExists';
-  }
-
-  if (normalized.includes('already exists') && normalized.includes('phone')) {
-    return 'customers.errors.phoneExists';
-  }
-
-  if (normalized.includes('email must be a valid email address')) {
-    return 'customers.errors.invalidEmail';
-  }
-
-  if (normalized.includes('phone number must be a valid european number')) {
-    return 'customers.errors.invalidPhone';
-  }
-
-  if (normalized.includes('may only contain letters and hyphens')) {
-    return 'customers.errors.invalidName';
-  }
-
-  if (normalized.includes('required') || normalized.includes('must not be blank')) {
-    return 'customers.errors.fieldRequired';
-  }
-
-  if (normalized.includes('customer not found')) {
-    return 'customers.errors.customerNotFound';
-  }
-
-  return 'customers.errors.saveFailed';
-}
-
-/**
- * Maps vehicle-validation messages to i18n keys.
- *
- * @param message Backend error detail.
- * @returns Vehicle-related i18n key.
- */
-function mapVehicleValidationMessageToKey(message: string): string {
-  const normalized = message.trim().toLowerCase();
-
-  if (normalized.includes('license plate format is invalid')) {
-    return 'customers.errors.vehicleLicensePlateInvalid';
-  }
-
-  if (normalized.includes('vehicle with this license plate already exists')) {
-    return 'customers.errors.vehicleLicensePlateExists';
-  }
-
-  if (normalized.includes('year must be between')) {
-    return 'customers.errors.vehicleYearInvalid';
-  }
-
-  if (normalized.includes('must be non-negative')) {
-    return 'customers.errors.vehicleNumberInvalid';
-  }
-
-  if (normalized.includes('vehicle not found')) {
-    return 'customers.errors.vehicleNotFound';
-  }
-
-  if (normalized.includes('customer not found')) {
-    return 'customers.errors.customerNotFound';
-  }
-
-  if (normalized.includes('required') || normalized.includes('must not be blank')) {
-    return 'customers.errors.fieldRequired';
-  }
-
-  return 'customers.errors.vehicleSaveFailed';
-}
-
-/**
- * Status badge style mapper for repair history rows.
- *
- * @param status Appointment status string.
- * @returns Tailwind class name for badge appearance.
- */
-function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'Completed':
-      return 'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
-    case 'Cancelled':
-      return 'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
-    default:
-      return 'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
-  }
-}
-
-interface RepairHistoryListProps {
-  readonly appointments: AppointmentDto[];
-  readonly locale: string;
-  readonly emptyMessage: string;
-}
-
-/** Renders a compact repair-history list. */
-const RepairHistoryList = memo(function RepairHistoryList({
-  appointments,
-  locale,
-  emptyMessage,
-}: RepairHistoryListProps) {
-  const { t } = useTranslation();
-
-  if (appointments.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-arsm-border bg-arsm-input px-4 py-3 text-sm text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark">
-        {emptyMessage}
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {appointments.map((appointment) => (
-        <article
-          key={appointment.id}
-          className="rounded-xl border border-arsm-border bg-white px-4 py-3 shadow-[0_4px_12px_rgba(28,22,46,0.06)] dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:shadow-[0_4px_12px_rgba(3,5,14,0.24)]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-              {formatDateTime(appointment.scheduledDate, locale)}
-            </p>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(appointment.status)}`}>
-              {t(`scheduler.status.${appointment.status.toLowerCase()}`)}
-            </span>
-          </div>
-
-          <p className="mt-2 text-sm text-arsm-label dark:text-arsm-label-dark">{appointment.taskDescription}</p>
-          <p className="mt-2 text-xs text-arsm-muted dark:text-arsm-muted-dark">
-            {appointment.vehicle.licensePlate} - {appointment.vehicle.brand} {appointment.vehicle.model}
-          </p>
-        </article>
-      ))}
-    </div>
-  );
-});
 
 /**
  * Customers registry page container that coordinates customer and vehicle CRUD,
@@ -522,7 +337,10 @@ const CustomersPageComponent = memo(function CustomersPage() {
           mapCustomerValidationMessageToKey,
         );
 
-        setCustomerFieldErrors(mappedFieldErrors);
+        if (hasServerFieldErrors(mappedFieldErrors)) {
+          setCustomerFieldErrors(mappedFieldErrors);
+          return;
+        }
 
         const detailKey = responseData?.detail
           ? mapCustomerValidationMessageToKey(responseData.detail)
@@ -633,6 +451,96 @@ const CustomersPageComponent = memo(function CustomersPage() {
     return getServerFieldError(vehicleFieldErrors, field);
   }, [vehicleFieldErrors]);
 
+  /** Applies create/update vehicle mutation and local-state synchronization. */
+  const persistVehicleMutation = useCallback(async (
+    customerId: number,
+    payload: CreateVehicleRequest | UpdateVehicleRequest,
+  ) => {
+    if (vehicleModalMode === 'create') {
+      const created = await customerRegistryService.createVehicle(customerId, payload);
+
+      setVehiclesByCustomerId((prev) => ({
+        ...prev,
+        [customerId]: [...(prev[customerId] ?? []), created],
+      }));
+
+      setCustomers((prev) => prev.map((item) => (
+        item.id === customerId
+          ? { ...item, vehicleCount: item.vehicleCount + 1 }
+          : item
+      )));
+
+      showSuccessToast('customers.toasts.vehicleCreated');
+      return;
+    }
+
+    if (editingVehicleId === null) {
+      return;
+    }
+
+    await customerRegistryService.updateVehicle(editingVehicleId, payload);
+
+    setVehiclesByCustomerId((prev) => ({
+      ...prev,
+      [customerId]: (prev[customerId] ?? []).map((vehicle) => (
+        vehicle.id === editingVehicleId
+          ? {
+            ...vehicle,
+            licensePlate: payload.licensePlate,
+            brand: payload.brand,
+            model: payload.model,
+            year: payload.year,
+            mileageKm: payload.mileageKm,
+            enginePowerHp: payload.enginePowerHp,
+            engineTorqueNm: payload.engineTorqueNm,
+          }
+          : vehicle
+      )),
+    }));
+
+    if (customerHistoryByCustomerId[customerId]) {
+      void loadCustomerHistory(customerId, true);
+    }
+
+    if (vehicleHistoryByVehicleId[editingVehicleId]) {
+      void loadVehicleHistory(editingVehicleId, true);
+    }
+
+    showSuccessToast('customers.toasts.vehicleUpdated');
+  }, [
+    customerHistoryByCustomerId,
+    editingVehicleId,
+    loadCustomerHistory,
+    loadVehicleHistory,
+    showSuccessToast,
+    vehicleHistoryByVehicleId,
+    vehicleModalMode,
+  ]);
+
+  /** Maps vehicle mutation failures to inline field errors or global toasts. */
+  const handleVehicleMutationFailure = useCallback((error: unknown) => {
+    if (isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+      const responseData = error.response?.data;
+      const mappedFieldErrors = normalizeServerFieldErrors(
+        extractServerFieldErrors(responseData),
+        mapVehicleValidationMessageToKey,
+      );
+
+      if (hasServerFieldErrors(mappedFieldErrors)) {
+        setVehicleFieldErrors(mappedFieldErrors);
+        return;
+      }
+
+      const detailKey = responseData?.detail
+        ? mapVehicleValidationMessageToKey(responseData.detail)
+        : 'customers.errors.vehicleSaveFailed';
+      showErrorToast(detailKey);
+      return;
+    }
+
+    showErrorToast('customers.errors.vehicleSaveFailed');
+  }, [showErrorToast]);
+
   /** Creates or updates a vehicle attached to a customer. */
   const handleSubmitVehicle = useCallback(async (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -643,13 +551,11 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
     setVehicleFieldErrors({});
 
-    const year = Number(vehicleForm.year);
-    const mileageKm = Number(vehicleForm.mileageKm);
-    const enginePowerHp = Number(vehicleForm.enginePowerHp);
-    const engineTorqueNm = Number(vehicleForm.engineTorqueNm);
+    const numericValues = parseVehicleNumericValues(vehicleForm);
+    const numericFieldErrors = buildVehicleNumericFieldErrors(numericValues);
 
-    if ([year, mileageKm, enginePowerHp, engineTorqueNm].some((value) => Number.isNaN(value))) {
-      showErrorToast('customers.errors.vehicleNumberInvalid');
+    if (hasServerFieldErrors(numericFieldErrors)) {
+      setVehicleFieldErrors(numericFieldErrors);
       return;
     }
 
@@ -657,94 +563,28 @@ const CustomersPageComponent = memo(function CustomersPage() {
       licensePlate: vehicleForm.licensePlate.trim(),
       brand: vehicleForm.brand.trim(),
       model: vehicleForm.model.trim(),
-      year,
-      mileageKm,
-      enginePowerHp,
-      engineTorqueNm,
+      year: numericValues.year,
+      mileageKm: numericValues.mileageKm,
+      enginePowerHp: numericValues.enginePowerHp,
+      engineTorqueNm: numericValues.engineTorqueNm,
     };
 
     setIsSavingVehicle(true);
 
     try {
-      if (vehicleModalMode === 'create') {
-        const created = await customerRegistryService.createVehicle(vehicleModalCustomerId, payload);
-
-        setVehiclesByCustomerId((prev) => ({
-          ...prev,
-          [vehicleModalCustomerId]: [...(prev[vehicleModalCustomerId] ?? []), created],
-        }));
-
-        setCustomers((prev) => prev.map((item) => (
-          item.id === vehicleModalCustomerId
-            ? { ...item, vehicleCount: item.vehicleCount + 1 }
-            : item
-        )));
-
-        showSuccessToast('customers.toasts.vehicleCreated');
-      } else if (editingVehicleId !== null) {
-        await customerRegistryService.updateVehicle(editingVehicleId, payload);
-
-        setVehiclesByCustomerId((prev) => ({
-          ...prev,
-          [vehicleModalCustomerId]: (prev[vehicleModalCustomerId] ?? []).map((vehicle) => (
-            vehicle.id === editingVehicleId
-              ? {
-                ...vehicle,
-                licensePlate: payload.licensePlate,
-                brand: payload.brand,
-                model: payload.model,
-                year: payload.year,
-                mileageKm: payload.mileageKm,
-                enginePowerHp: payload.enginePowerHp,
-                engineTorqueNm: payload.engineTorqueNm,
-              }
-              : vehicle
-          )),
-        }));
-
-        if (customerHistoryByCustomerId[vehicleModalCustomerId]) {
-          void loadCustomerHistory(vehicleModalCustomerId, true);
-        }
-
-        if (vehicleHistoryByVehicleId[editingVehicleId]) {
-          void loadVehicleHistory(editingVehicleId, true);
-        }
-
-        showSuccessToast('customers.toasts.vehicleUpdated');
-      }
+      await persistVehicleMutation(vehicleModalCustomerId, payload);
 
       setVehicleModalOpen(false);
     } catch (error) {
-      if (isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-        const responseData = error.response?.data;
-        const mappedFieldErrors = normalizeServerFieldErrors(
-          extractServerFieldErrors(responseData),
-          mapVehicleValidationMessageToKey,
-        );
-
-        setVehicleFieldErrors(mappedFieldErrors);
-
-        const detailKey = responseData?.detail
-          ? mapVehicleValidationMessageToKey(responseData.detail)
-          : 'customers.errors.vehicleSaveFailed';
-        showErrorToast(detailKey);
-      } else {
-        showErrorToast('customers.errors.vehicleSaveFailed');
-      }
+      handleVehicleMutationFailure(error);
     } finally {
       setIsSavingVehicle(false);
     }
   }, [
-    customerHistoryByCustomerId,
-    editingVehicleId,
-    loadCustomerHistory,
-    loadVehicleHistory,
-    showErrorToast,
-    showSuccessToast,
+    handleVehicleMutationFailure,
+    persistVehicleMutation,
     vehicleForm,
-    vehicleHistoryByVehicleId,
     vehicleModalCustomerId,
-    vehicleModalMode,
   ]);
 
   const openDeleteVehicleModal = useCallback((customerId: number, vehicle: VehicleDetailDto) => {
@@ -835,7 +675,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   }, []);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
       <header className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
           {t('customers.pageTitle')}
@@ -868,12 +708,12 @@ const CustomersPageComponent = memo(function CustomersPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             <button
               data-testid="customers-sort-toggle"
               type="button"
               onClick={toggleSortDirection}
-              className="inline-flex items-center gap-1 rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label transition hover:-translate-y-px hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark"
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label transition hover:-translate-y-px hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark sm:flex-none"
             >
               <ArrowUpDown className="h-4 w-4" />
               {sortDirection === 'asc' ? t('customers.sortAsc') : t('customers.sortDesc')}
@@ -883,7 +723,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               data-testid="customers-create-button"
               type="button"
               onClick={openCreateCustomerModal}
-              className="inline-flex items-center gap-1 rounded-xl bg-arsm-accent px-3 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(97,67,154,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-dark hover:shadow-[0_12px_26px_rgba(97,67,154,0.32)]"
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-arsm-accent px-3 py-2 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(97,67,154,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(97,67,154,0.32)] dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover sm:flex-none"
             >
               <Plus className="h-4 w-4" />
               {t('customers.createCustomer')}
@@ -919,7 +759,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
             <article
               key={customer.id}
               data-testid={`customer-card-${customer.id}`}
-              className="rounded-2xl border border-arsm-border bg-white shadow-[0_8px_20px_rgba(28,22,46,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.45)]"
+              className="rounded-2xl border border-arsm-border bg-arsm-card shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)] dark:hover:shadow-[0_12px_24px_rgba(3,5,14,0.58)]"
             >
               <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <button
@@ -973,7 +813,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
               {isExpanded && (
                 <div className="grid grid-cols-1 gap-4 border-t border-arsm-border bg-arsm-input/40 px-4 py-4 dark:border-arsm-border-dark dark:bg-arsm-input-dark/30 sm:px-5 lg:grid-cols-2">
-                  <section className="space-y-3 rounded-xl border border-arsm-border bg-white p-4 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+                  <section className="space-y-3 rounded-xl border border-arsm-border bg-arsm-card p-4 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)]">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                         <CarFront className="h-4 w-4" />
@@ -1061,7 +901,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                               </button>
 
                               {isVehicleHistoryOpen && (
-                                <div className="space-y-2 rounded-lg border border-arsm-border bg-white p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+                                <div className="space-y-2 rounded-lg border border-arsm-border bg-arsm-card p-3 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)]">
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="text-xs font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                                       {t('customers.vehicleHistoryTitle')}
@@ -1097,7 +937,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                     )}
                   </section>
 
-                  <section className="space-y-3 rounded-xl border border-arsm-border bg-white p-4 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+                  <section className="space-y-3 rounded-xl border border-arsm-border bg-arsm-card p-4 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)]">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                         <Wrench className="h-4 w-4" />
@@ -1137,6 +977,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isOpen={customerModalOpen}
         onClose={closeCustomerModal}
         title={customerModalMode === 'create' ? t('customers.createCustomer') : t('customers.editCustomer')}
+        widthClassName="max-w-3xl"
         footer={(
           <>
             <button
@@ -1256,7 +1097,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               type="button"
               onClick={() => { void handleDeleteCustomer(); }}
               disabled={isDeletingCustomer}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
             >
               {isDeletingCustomer ? t('customers.deleting') : t('customers.deleteCustomer')}
             </button>
@@ -1274,6 +1115,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isOpen={vehicleModalOpen}
         onClose={closeVehicleModal}
         title={vehicleModalMode === 'create' ? t('customers.createVehicle') : t('customers.editVehicle')}
+        widthClassName="max-w-3xl"
         footer={(
           <>
             <button
@@ -1425,7 +1267,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               type="button"
               onClick={() => { void handleDeleteVehicle(); }}
               disabled={isDeletingVehicle}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
             >
               {isDeletingVehicle ? t('customers.deleting') : t('customers.deleteVehicle')}
             </button>
