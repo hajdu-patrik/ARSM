@@ -63,6 +63,10 @@ const LoginComponent = memo(function Login() {
     resolvedError: ReturnType<typeof resolveLoginError>,
     method: LoginMethod,
   ) => {
+    if (resolvedError.key === 'login.serverError500' || resolvedError.key === 'login.databaseUnavailable') {
+      return;
+    }
+
     if (resolvedError.key === 'login.identifierNotFound') {
       showErrorToast(method === 'email' ? 'login.identifierNotFoundEmail' : 'login.identifierNotFoundPhone');
       return;
@@ -135,7 +139,7 @@ const LoginComponent = memo(function Login() {
   const canSubmit = identifier.trim().length > 0 && password.trim().length > 0 && !isLoading;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.26)_32%,_rgba(201,179,255,0.1)_48%,_rgba(201,179,255,0)_72%)] dark:bg-[radial-gradient(circle,_rgba(122,102,199,0.7)_0%,_rgba(122,102,199,0.34)_34%,_rgba(122,102,199,0.14)_50%,_rgba(122,102,199,0)_72%)]"

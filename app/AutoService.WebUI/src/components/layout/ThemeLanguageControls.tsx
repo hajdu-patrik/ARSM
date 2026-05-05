@@ -14,10 +14,10 @@ interface ThemeLanguageControlsProps {
 }
 
 /** Default wrapper class: fixed-position, centered on mobile, right-aligned on sm+. */
-const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-arsm-border/70 bg-arsm-card/85 px-2.5 py-2 shadow-[0_16px_36px_rgba(45,36,64,0.16),0_0_0_1px_rgba(255,255,255,0.4)_inset] backdrop-blur-xl sm:left-auto sm:right-7 sm:top-6 sm:translate-x-0 sm:gap-2 dark:border-arsm-border-dark/70 dark:bg-arsm-card-dark/82 dark:shadow-[0_20px_42px_rgba(5,8,20,0.65),0_0_0_1px_rgba(255,255,255,0.04)_inset]';
+const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-arsm-border/70 bg-arsm-card/85 px-2.5 py-2 shadow-[0_16px_36px_rgba(45,36,64,0.16),0_0_0_1px_rgba(255,255,255,0.4)_inset] backdrop-blur-xl max-[320px]:top-3.5 max-[320px]:gap-1 max-[320px]:px-2 max-[320px]:py-1.5 sm:left-auto sm:right-7 sm:top-6 sm:translate-x-0 sm:gap-2 dark:border-arsm-border-dark/70 dark:bg-arsm-card-dark/82 dark:shadow-[0_20px_42px_rgba(5,8,20,0.65),0_0_0_1px_rgba(255,255,255,0.04)_inset]';
 
 /** Base Tailwind classes shared by both the language and theme buttons. */
-const BASE_BUTTON_CLASS = 'min-w-[3.1rem] rounded-xl px-3.5 py-2.5 text-sm font-semibold leading-none tracking-wide transition duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45';
+const BASE_BUTTON_CLASS = 'min-w-[3.1rem] rounded-xl px-3.5 py-2.5 text-sm font-semibold leading-none tracking-wide transition duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 max-[320px]:min-w-[2.6rem] max-[320px]:px-2.5 max-[320px]:py-2 max-[320px]:text-xs max-[320px]:hover:translate-y-0';
 
 /** Button variant styling for light theme. */
 const LIGHT_THEME_BUTTON_CLASS = 'bg-arsm-accent text-arsm-primary shadow-[0_10px_22px_rgba(97,67,154,0.28)] hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(97,67,154,0.32)]';

@@ -5,7 +5,7 @@ import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/sch
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
 
-const FORM_FIELD_CLASS = 'w-full rounded-xl border border-arsm-border bg-white/80 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:ring-arsm-focus-ring/24';
+const FORM_FIELD_CLASS = 'w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:ring-arsm-focus-ring/24';
 const FORM_TEXTAREA_CLASS = `${FORM_FIELD_CLASS} resize-y`;
 
 interface SchedulerIntakeHeaderProps {
@@ -74,7 +74,6 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
   return (
     <div className="relative space-y-3 overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_26px_rgba(3,5,14,0.34)]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(205,184,255,0.18)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.18)_0%,rgba(138,118,214,0)_100%)]" />
-      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.userDetails')}</p>
       <h3 className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('scheduler.intake.customerLookup')}</h3>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -374,7 +373,6 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
 }: SchedulerIntakeTaskSectionProps) {
   return (
     <div className="space-y-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 shadow-[0_10px_24px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_12px_24px_rgba(3,5,14,0.3)]">
-      <p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.taskDetails')}</p>
       <label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
         <span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
         <textarea

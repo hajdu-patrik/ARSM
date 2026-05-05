@@ -44,7 +44,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
       isOpen={isOpen}
       onClose={onClose}
       title={t('scheduler.intake.title')}
-      widthClassName="max-w-4xl"
+      widthClassName="max-w-3xl"
       footer={state.lookupState === 'idle'
         ? null
         : (

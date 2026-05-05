@@ -3,7 +3,7 @@
  * Resolves i18n message keys and renders a styled error paragraph.
  * @module FormErrorMessage
  */
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /** Props for the {@link FormErrorMessage} component. */
@@ -24,9 +24,6 @@ interface FormErrorMessageProps {
 const DEFAULT_CLASS_NAME =
   'fade-in-up rounded-xl border border-arsm-error-border bg-arsm-error-bg px-3.5 py-2.5 text-sm font-semibold text-arsm-error-text shadow-[0_4px_12px_rgba(170,44,53,0.06)] dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:shadow-[0_4px_12px_rgba(170,44,53,0.04)]';
 
-/** Default visibility duration for inline error messages. */
-const INLINE_ERROR_DURATION_MS = 5000;
-
 /** Memoized form error message that resolves an i18n key and renders a styled alert paragraph. */
 const FormErrorMessageComponent = memo(function FormErrorMessage({
   message,
@@ -36,24 +33,8 @@ const FormErrorMessageComponent = memo(function FormErrorMessage({
   className,
 }: FormErrorMessageProps) {
   const { t } = useTranslation();
-  const messageToken = useMemo(() => Symbol(message ?? 'inline-error-message'), [message]);
-  const [dismissedToken, setDismissedToken] = useState<symbol | null>(null);
 
-  useEffect(() => {
-    if (!message) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setDismissedToken(messageToken);
-    }, INLINE_ERROR_DURATION_MS);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [message, messageToken]);
-
-  if (!message || dismissedToken === messageToken) {
+  if (!message) {
     return null;
   }
 

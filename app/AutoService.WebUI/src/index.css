@@ -61,6 +61,13 @@
   --color-arsm-accent-vivid:     #6e53ad;  /* vivid accent text (badges, labels)*/
   --color-arsm-accent-wash:      #f1e9ff;  /* very pale accent wash (badge bg)  */
   --color-arsm-accent-tint:      #e6dbff;  /* light accent tint (hover icon bg) */
+  --color-arsm-on-accent:        #ffffff;  /* text color on vivid accent fills   */
+  --color-arsm-on-accent-dark:   #f8f5ff;  /* text color on accent in dark mode  */
+
+  /* ── Neutral filter pills ────────────────────────────────────────────────── */
+  --color-arsm-neutral-pill:        #f3f4f6;  /* neutral filter bg (light)      */
+  --color-arsm-neutral-pill-hover:  #e5e7eb;  /* neutral filter hover (light)   */
+  --color-arsm-status-dot-fallback: #8a81a6;  /* fallback status indicator color */
 
   /* ── Interactive states ───────────────────────────────────────────────────── */
   --color-arsm-focus-ring:      #bca5ff;  /* focus ring color              */
@@ -248,10 +255,10 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-text-fill-color: #2d2440;
-  caret-color: #2d2440;
-  box-shadow: 0 0 0 1000px #f8f5ff inset;
-  -webkit-box-shadow: 0 0 0 1000px #f8f5ff inset;
+  -webkit-text-fill-color: var(--color-arsm-primary);
+  caret-color: var(--color-arsm-primary);
+  box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
   /* 9999s transition freezes the background so the browser never reverts it */
   transition: background-color 9999s ease-in-out 0s;
 }
@@ -261,10 +268,10 @@ html.dark input:-webkit-autofill,
 html.dark input:-webkit-autofill:hover,
 html.dark input:-webkit-autofill:focus,
 html.dark input:-webkit-autofill:active {
-  -webkit-text-fill-color: #f2edff;
-  caret-color: #f2edff;
-  box-shadow: 0 0 0 1000px #1b1f33 inset;
-  -webkit-box-shadow: 0 0 0 1000px #1b1f33 inset;
+  -webkit-text-fill-color: var(--color-arsm-primary-dark);
+  caret-color: var(--color-arsm-primary-dark);
+  box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
   transition: background-color 9999s ease-in-out 0s;
 }
 

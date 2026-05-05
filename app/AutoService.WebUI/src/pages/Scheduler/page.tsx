@@ -124,7 +124,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   }, [selectedAppointmentId, store.monthAppointments, store.todayAppointments]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+    <div className="flex flex-col gap-6 p-4 max-[320px]:p-3 sm:p-6 lg:p-8">
       <SchedulerSummaryStrip
         summaryDateText={summaryDateText}
         summaryCount={summaryCount}

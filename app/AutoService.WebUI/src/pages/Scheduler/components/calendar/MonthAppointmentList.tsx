@@ -35,15 +35,15 @@ const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancell
 /** Active/inactive Tailwind color classes for each status filter chip. */
 const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string }> = {
   InProgress: {
-    active: 'bg-arsm-warning-accent text-white shadow-[0_4px_12px_rgba(245,158,11,0.3)] dark:bg-arsm-warning-accent dark:text-white dark:shadow-[0_4px_12px_rgba(245,158,11,0.2)]',
+    active: 'bg-arsm-warning-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(245,158,11,0.3)] dark:bg-arsm-warning-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(245,158,11,0.2)]',
     inactive: 'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
   },
   Completed: {
-    active: 'bg-arsm-success-accent text-white shadow-[0_4px_12px_rgba(34,197,94,0.3)] dark:bg-arsm-success-accent dark:text-white dark:shadow-[0_4px_12px_rgba(34,197,94,0.2)]',
+    active: 'bg-arsm-success-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(34,197,94,0.3)] dark:bg-arsm-success-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(34,197,94,0.2)]',
     inactive: 'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
   },
   Cancelled: {
-    active: 'bg-arsm-error-accent text-white shadow-[0_4px_12px_rgba(215,82,94,0.3)] dark:bg-arsm-error-accent dark:text-white dark:shadow-[0_4px_12px_rgba(215,82,94,0.2)]',
+    active: 'bg-arsm-error-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(215,82,94,0.3)] dark:bg-arsm-error-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(215,82,94,0.2)]',
     inactive: 'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
   },
 };
@@ -189,7 +189,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           value={selectedMechanicId ?? ''}
           onChange={(e) => setSelectedMechanicId(e.target.value ? Number(e.target.value) : null)}
           aria-label={t('scheduler.filter.allMechanics')}
-          className="min-w-0 max-w-[10rem] truncate rounded-full border border-arsm-border bg-gray-100 px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-gray-200 focus:outline-none dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+          className="min-w-0 max-w-[10rem] truncate rounded-full border border-arsm-border bg-arsm-neutral-pill px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-neutral-pill-hover focus:outline-none dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
         >
           <option value="">{t('scheduler.filter.allMechanics')}</option>
           {uniqueMechanics.map(([id, name]) => (
@@ -201,7 +201,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <button
           onClick={() => setSortAsc((prev) => !prev)}
           title={sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
-          className="inline-flex items-center gap-1 rounded-full border border-arsm-border bg-gray-100 px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-gray-200 dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+          className="inline-flex items-center gap-1 rounded-full border border-arsm-border bg-arsm-neutral-pill px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-neutral-pill-hover dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
         >
           <ArrowUpDown className="w-3 h-3" />
           {sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
@@ -212,7 +212,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[0, 1].map((i) => (
-            <div key={i} className="h-52 rounded-2xl border border-arsm-border bg-arsm-input p-5 shadow-[0_12px_28px_rgba(28,22,46,0.08)] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_16px_34px_rgba(3,5,14,0.52)]">
+            <div key={i} className="h-52 rounded-2xl border border-arsm-border bg-arsm-card p-5 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)]">
               <div className="shimmer-skeleton h-5 rounded-lg w-2/3 mb-4" />
               <div className="shimmer-skeleton h-3.5 rounded-md w-1/2 mb-4" />
               <div className="shimmer-skeleton h-16 rounded-xl mb-4" />

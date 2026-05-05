@@ -345,7 +345,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
 
       {/* Sidebar - mobile drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-arsm-border bg-arsm-input shadow-[0_20px_44px_rgba(18,14,34,0.22)] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_24px_48px_rgba(4,6,14,0.66)] md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input shadow-[0_20px_44px_rgba(18,14,34,0.22)] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_24px_48px_rgba(4,6,14,0.66)] md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

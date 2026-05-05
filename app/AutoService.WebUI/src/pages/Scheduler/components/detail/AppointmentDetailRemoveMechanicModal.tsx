@@ -74,7 +74,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
               void handleConfirmRemove();
             }}
             disabled={isConfirmDisabled}
-            className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_14px_28px_rgba(215,82,94,0.32)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+            className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_10px_24px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_14px_28px_rgba(215,82,94,0.32)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
           >
             {t('scheduler.detail.removeMechanic')}
           </button>

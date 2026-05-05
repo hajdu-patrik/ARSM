@@ -61,10 +61,10 @@ const ModalComponent = memo(function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 max-[320px]:p-3 sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(16,18,32,0.24)_0%,rgba(16,18,32,0.56)_50%,rgba(8,10,20,0.74)_100%)] backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
         aria-label={t('modal.closeOverlay')}
         onClick={onClose}
       />
@@ -73,8 +73,8 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-full ${widthClassName} overflow-hidden rounded-3xl border border-arsm-border bg-arsm-input p-5 text-arsm-primary shadow-[0_26px_70px_rgba(13,10,30,0.32),0_0_0_1px_rgba(255,255,255,0.5)_inset] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_30px_74px_rgba(2,4,12,0.75),0_0_0_1px_rgba(255,255,255,0.06)_inset] sm:p-6`}
-        style={{ animation: 'modal-enter 240ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+        className={`relative w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary shadow-[0_18px_40px_rgba(13,10,30,0.28)] transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_22px_48px_rgba(2,4,12,0.68)] sm:p-6`}
+        style={{ animation: 'modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         <div
           aria-hidden="true"
