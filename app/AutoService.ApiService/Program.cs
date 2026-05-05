@@ -126,7 +126,8 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AutoServiceDbContext>()
-    .AddSignInManager();
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

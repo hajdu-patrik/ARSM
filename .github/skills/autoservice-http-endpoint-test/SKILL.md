@@ -21,6 +21,13 @@ If triggered by a new feature:
 - Include contract/validation checks (`400`, `409`, `422`) when payload semantics changed.
 - Keep status-code and error-key expectations aligned with current handlers.
 
+## Credentials Policy (Mandatory)
+- Credentials and host address are consumed from `tests/.env` (gitignored) via `{{$processEnv VAR_NAME}}`.
+- Template: `tests/.env.example` (committed — placeholder values only).
+- Variables: `AutoService_ApiService_HostAddress`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`.
+- Never write literal email/password/host values in `.http` files; always use `{{$processEnv VAR}}`.
+- If a variable is absent: surface the name, point to `tests/.env.example` — do not guess.
+
 ## Test Design Guardrails
 - Prefer `.http` files <= 180 lines.
 - Hard split required when a `.http` file exceeds 250 lines.

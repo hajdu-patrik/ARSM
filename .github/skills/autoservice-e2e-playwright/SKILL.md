@@ -20,6 +20,13 @@ If triggered by a new feature:
 - Add negative/guard scenarios when auth, role, or validation behavior changed.
 - Keep page-object methods aligned with changed selectors and interactions.
 
+## Credentials Policy (Mandatory)
+- Read credentials via `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `tests/e2e/support/e2e-env.ts`.
+- Variables consumed from `.secrets` (gitignored): `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`.
+- Never inline credentials; never hardcode email/password strings in spec or page-object files.
+- To run: `set -a && source .secrets && set +a && npx playwright test`.
+- If a variable is absent: surface the name, point to `.secrets` — do not guess.
+
 ## Test Design Guardrails
 - Prefer E2E spec files <= 180 lines where practical.
 - Hard split required when a spec file exceeds 250 lines.

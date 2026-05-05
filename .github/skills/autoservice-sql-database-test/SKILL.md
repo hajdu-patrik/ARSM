@@ -25,6 +25,12 @@ If triggered by a new feature:
 - Validate impacted identity/auth and feature-flow integrity constraints.
 - Remove stale checks that reference removed schema fields.
 
+## Credentials Policy (Mandatory)
+- SQL tests connect via the read-only `ai_agent_test_user` account.
+- Connection string is never embedded in SQL files or agent output.
+- Use `appsettings.Local.json` (gitignored) or environment injection for connection config.
+- If a connection detail is absent: surface the missing config key — do not guess or hardcode.
+
 ## Test Design Guardrails
 - Prefer SQL files <= 180 lines.
 - Hard split required when a SQL file exceeds 250 lines.
