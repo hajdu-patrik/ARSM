@@ -69,7 +69,7 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
               className={`relative flex cursor-pointer items-start gap-2 overflow-hidden rounded-lg border px-3 py-2 text-sm transition ${
                 expertise.includes(opt.value)
                   ? 'border-arsm-accent bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover'
-                  : 'border-arsm-border bg-white text-arsm-label hover:bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-label-dark dark:hover:bg-arsm-input-dark'
+                  : 'border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-label-dark dark:hover:bg-arsm-input-dark'
               } ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
             >
               <input

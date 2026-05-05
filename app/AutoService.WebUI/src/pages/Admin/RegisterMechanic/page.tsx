@@ -6,7 +6,7 @@
  * @module pages/Admin/RegisterMechanic/page
  */
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import { adminService } from '../../../services/admin/admin.service';
@@ -41,40 +41,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   }, []);
 
   const fieldErrors = useMemo(() => normalizeFieldErrors(rawFieldErrors), [normalizeFieldErrors, rawFieldErrors]);
-
-  /**
-   * Extracts only the email and phone number field errors from a full server error map.
-   * Used to show contact-field errors inline without triggering a generic toast.
-   * @param errors - The full server field errors dictionary.
-   * @returns A filtered dictionary containing only email and phone number errors.
-   */
-  const pickInlineContactFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    const emailErrors = errors.email ?? errors.Email;
-    const phoneErrors = errors.phoneNumber ?? errors.PhoneNumber;
-
-    const filtered: FieldErrors = {};
-    if (emailErrors?.length) {
-      filtered.email = emailErrors;
-    }
-    if (phoneErrors?.length) {
-      filtered.phoneNumber = phoneErrors;
-    }
-
-    return filtered;
-  }, []);
-
-  useEffect(() => {
-    const hasFieldErrors = Object.keys(fieldErrors).length > 0;
-    if (!hasFieldErrors) return;
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setRawFieldErrors({});
-    }, 5000);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [fieldErrors]);
 
   const setFieldValue = useCallback(
     <K extends keyof RegisterMechanicFormValues>(field: K, value: RegisterMechanicFormValues[K]) => {
@@ -160,15 +126,14 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
     if (err.response?.status === 422 || err.response?.status === 400) {
       const data = err.response.data;
-      const inlineErrors = data?.errors ? pickInlineContactFieldErrors(data.errors) : {};
+      const inlineErrors = data?.errors ?? {};
 
       if (Object.keys(inlineErrors).length > 0) {
         setRawFieldErrors(inlineErrors);
         return;
       }
 
-      // Keep validation feedback directly under relevant fields to avoid duplicate top-panel errors.
-      showErrorToast('admin.validationError');
+      showErrorToast('admin.genericError');
       return;
     }
 
@@ -178,7 +143,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     }
 
     showErrorToast('admin.genericError');
-  }, [pickInlineContactFieldErrors, showErrorToast]);
+  }, [showErrorToast]);
 
   /**
    * Handles form submission: validates password confirmation, captures pending email,
@@ -224,10 +189,11 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   }, [formValues, handleSubmitError, resetForm, showSuccessToast]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="sr-only">{t('admin.pageTitle')}</h1>
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-3xl">
+        <h1 className="sr-only">{t('admin.pageTitle')}</h1>
 
-      <div className="space-y-6">
+        <div className="space-y-6">
         <div className={cardClass}>
           <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
             {t('admin.mechanicList')}
@@ -287,6 +253,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               {isSubmitting ? t('admin.submitting') : t('admin.submit')}
             </button>
           </form>
+        </div>
         </div>
       </div>
 
