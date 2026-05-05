@@ -20,6 +20,7 @@ import { ProfilePictureSection } from './sections/ProfilePictureSection';
 import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 import { getFieldError, extractFieldErrors } from './helpers';
+import { hasFieldErrors, mapPasswordErrors, extractPasswordChangeErrors, extractDeleteProfileErrorKey } from './handlers';
 import type { ProfileData } from '../../types/profile/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
@@ -37,7 +38,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
-  const inlineErrorTtlMs = 5000;
 
   // Profile data
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -76,10 +76,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
   const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
 
-  const normalizeFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    return normalizeServerFieldErrors(errors, mapSettingsValidationMessageToKey);
-  }, []);
-
   // Load profile on mount
   useEffect(() => {
     let cancelled = false;
@@ -103,48 +99,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     void load();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    if (Object.keys(profileFieldErrors).length === 0) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setProfileFieldErrors({});
-    }, inlineErrorTtlMs);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [inlineErrorTtlMs, profileFieldErrors]);
-
-  useEffect(() => {
-    if (Object.keys(passwordFieldErrors).length === 0) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setPasswordFieldErrors({});
-    }, inlineErrorTtlMs);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [inlineErrorTtlMs, passwordFieldErrors]);
-
-  useEffect(() => {
-    if (!deletePasswordError) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setDeletePasswordError(null);
-    }, inlineErrorTtlMs);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [deletePasswordError, inlineErrorTtlMs]);
 
   const initials = useMemo(() => {
     if (!profile) return '';
@@ -188,54 +142,25 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } catch (err) {
       if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
         const data = err.response?.data;
-        const status = err.response?.status;
-        if ((status === 422 || status === 400) && data) {
-          const fieldErrs = extractFieldErrors(data);
-          if (Object.keys(fieldErrs).length > 0) {
-            setProfileFieldErrors(normalizeFieldErrors(fieldErrs));
-          }
-          else showErrorToast('toast.profileUpdateFailed');
-        } else {
-          showErrorToast('toast.profileUpdateFailed');
+        const normalizedFieldErrors = normalizeServerFieldErrors(extractFieldErrors(data), mapSettingsValidationMessageToKey);
+
+        if (hasFieldErrors(normalizedFieldErrors)) {
+          setProfileFieldErrors(normalizedFieldErrors);
+          return;
         }
+
+        showErrorToast('toast.profileUpdateFailed');
       } else {
         showErrorToast('toast.profileUpdateFailed');
       }
     } finally {
       setIsUpdatingProfile(false);
     }
-  }, [email, firstName, lastName, middleName, normalizeFieldErrors, phoneNumber, showErrorToast, showSuccessToast]);
+  }, [email, firstName, lastName, middleName, phoneNumber, showErrorToast, showSuccessToast]);
 
   const handleProfileSaveRequest = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault();
     setIsProfileSaveConfirmOpen(true);
-  }, []);
-
-  /**
-   * Normalizes password-related server field errors into a consistent shape.
-   * Maps CurrentPassword, ConfirmNewPassword, and NewPassword keys,
-   * routing unknown keys to NewPassword.
-   * @param errors - Raw server field errors from the password change response.
-   * @returns Normalized field errors with translated message keys.
-   */
-  const mapPasswordErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    const mapped: FieldErrors = {};
-
-    Object.entries(errors).forEach(([key, value]) => {
-      const normalizedValues = value.map((message) => mapSettingsValidationMessageToKey(message));
-
-      if (key === 'CurrentPassword' || key === 'PasswordMismatch') {
-        mapped.CurrentPassword = [...(mapped.CurrentPassword ?? []), ...normalizedValues];
-      } else if (key === 'ConfirmNewPassword') {
-        mapped.ConfirmNewPassword = [...(mapped.ConfirmNewPassword ?? []), ...normalizedValues];
-      } else if (key === 'NewPassword') {
-        mapped.NewPassword = [...(mapped.NewPassword ?? []), ...normalizedValues];
-      } else {
-        mapped.NewPassword = [...(mapped.NewPassword ?? []), ...normalizedValues];
-      }
-    });
-
-    return mapped;
   }, []);
 
   /**
@@ -244,23 +169,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
    * @param err - The error thrown during the password change call.
    */
   const handlePasswordChangeFailure = useCallback((err: unknown) => {
-    if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-      showErrorToast('toast.passwordChangeFailed');
+    const fieldErrors = extractPasswordChangeErrors(err);
+    if (fieldErrors) {
+      setPasswordFieldErrors(fieldErrors);
       return;
     }
-
-    const data = err.response?.data;
-    const status = err.response?.status;
-    if ((status === 422 || status === 400) && data) {
-      const fieldErrs = mapPasswordErrors(extractFieldErrors(data));
-      if (Object.keys(fieldErrs).length > 0) {
-        setPasswordFieldErrors(fieldErrs);
-        return;
-      }
-    }
-
     showErrorToast('toast.passwordChangeFailed');
-  }, [mapPasswordErrors, showErrorToast]);
+  }, [showErrorToast]);
 
   /**
    * Executes the password change API call after confirmation.
@@ -318,21 +233,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
    * @param err - The error thrown during the profile delete call.
    */
   const handleDeleteProfileFailure = useCallback((err: unknown) => {
-    if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-      showErrorToast('toast.profileDeleteFailed');
+    const errorKey = extractDeleteProfileErrorKey(err);
+    if (errorKey) {
+      setDeletePasswordError(errorKey);
       return;
     }
-
-    const data = err.response?.data;
-    const status = err.response?.status;
-    if ((status === 422 || status === 400) && data?.errors) {
-      const currentPasswordErrors = data.errors.CurrentPassword ?? data.errors.currentPassword;
-      if (currentPasswordErrors && currentPasswordErrors.length > 0) {
-        setDeletePasswordError(mapSettingsValidationMessageToKey(currentPasswordErrors[0]));
-        return;
-      }
-    }
-
     showErrorToast('toast.profileDeleteFailed');
   }, [showErrorToast]);
 
@@ -473,17 +378,20 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   if (loadErrorKey || !profile) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-        <FormErrorMessage message={loadErrorKey ?? 'settings.loadError'} />
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
+        <div className="mx-auto w-full max-w-3xl">
+          <FormErrorMessage message={loadErrorKey ?? 'settings.loadError'} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="sr-only">{t('settings.title')}</h1>
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-3xl">
+        <h1 className="sr-only">{t('settings.title')}</h1>
 
-      <div className="space-y-6">
+        <div className="space-y-6">
         <ProfilePictureSection
           hasProfilePicture={profile.hasProfilePicture}
           pictureUrl={profileService.getProfilePictureUrl()}
@@ -540,6 +448,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       <ProfilePictureCropModal
@@ -624,7 +533,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
               type="button"
               onClick={() => { void handleDeleteProfile(); }}
               disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
             >
               {isDeletingProfile ? t('settings.deletingProfile') : t('settings.confirmDeleteProfile')}
             </button>
