@@ -2,79 +2,30 @@
 applyTo: tests/**
 description: Use when editing API (.http) and Database (.sql) test suites under tests/. Enforces chunked layout, env-driven credentials, non-reusable test data, and read-only SQL verification policy.
 ---
-
 # Tests Instructions
 
-Apply these rules whenever editing files in `tests/**`.
+## Persona
+- Testing/security: Zsombor
+- Architecture oversight: Patrik
 
-## Suite Layout
+## Enforce
+- Keep chunked suite layout (`tests/API/**`, `tests/Database/**`).
+- Credentials via env vars only; generated data must be runtime-unique.
+- SQL files are read-only verification (`SELECT` only, no DML/DDL).
+- Keep this file synced with `tests/CLAUDE.md`.
 
-- API endpoint suites are chunked in `tests/API/**`.
-- Database verification suites are chunked in `tests/Database/**`.
-- Keep chunk files focused by area (auth, appointments, customers, vehicles, profile, admin).
+## Test Design Standards
+- Keep tests readable and focused; one responsibility per scenario block.
+- Avoid giant test files and high-coupling setup.
+- Use explicit intent in scenario naming and assertions.
 
-### API chunks
+## Size Guardrails
+- Preferred test file size <= 180 lines.
+- Hard limit: > 250 lines must be split by scenario.
 
-- `tests/API/auth/` - register setup/rules/validation, login matrix, session lifecycle, health
-- `tests/API/appointments/` - intake, customer/vehicle repair history (`history-by-customer-vehicle.http`), mechanic claim/unclaim, status transitions, admin create/update, admin assign/unassign, admin create authz, unauthenticated access
-- `tests/API/customers/` - list/lookup, create, update, delete, and non-admin write authz regression coverage
-- `tests/API/vehicles/` - list/get/create positive, create validation/authz, update, delete, and non-admin write authz regression coverage
-- `tests/API/profile/` - profile get/update, name validation/password, profile picture, account deletion
-- `tests/API/admin/` - list, delete invariants, authz
-
-### Database chunks
-
-- `tests/Database/identity-auth/` - identity/auth verification queries, expired token cleanup checks
-- `tests/Database/feature-flow/` - operational state, customer/vehicle integrity, regression guards
-- `tests/Database/core-schema/` - schema/seed baseline checks
-
-## Required Environment Variables
-
-For API `.http` suites:
-
-- `AutoService_ApiService_HostAddress`
-- `ARSM_TEST_ADMIN_EMAIL`
-- `ARSM_TEST_ADMIN_PASSWORD`
-- `ARSM_TEST_MECHANIC_EMAIL`
-- `ARSM_TEST_MECHANIC_PASSWORD`
-- `ARSM_TEST_MECHANIC_NEW_PASSWORD`
-- `ARSM_TEST_CUSTOMER_EMAIL`
-- `ARSM_TEST_PASSWORD`
-- `ARSM_TEST_WRONG_PASSWORD`
-
-## HTTP File Conventions
-
-- Ensure each `.http` file starts with a standard title banner and separator.
-- Keep a top-level variable block and include `@AutoService_ApiService_HostAddress` where requests depend on host resolution.
-- Prefer environment-driven variables via `{{$processEnv ...}}` for credentials and actor identities.
-
-## Data Hygiene
-
-- Never hardcode real or sensitive credentials in test files.
-- Prefer synthetic identifiers only (for example `example.test`).
-- For create flows, use run-scoped unique suffixes (`{{$timestamp}}`) to avoid reusable test data collisions.
-- Keep non-admin authentication requests mapped to non-admin password variables.
-
-## File Size Rule
-
-- If any `.http` or `.sql` test file exceeds 200 lines, split it into multiple files with corresponding descriptive names in the same folder.
-- Keep each file focused on a single logical area (for example claim/unclaim, status transitions, validation).
-
-## SQL Verification Rules
-
-- SQL files under `tests/Database/**` are read-only verification suites.
-- Only `SELECT` queries are allowed.
-- Do not add DML or DDL statements (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`).
-
-## Sync Requirement
-
-- Keep this file and `tests/CLAUDE.md` synchronized.
-- When test layout, env requirements, or policy changes, update both files in the same change.
-
-## Agent Workflow Alignment
-
-- Route endpoint-test updates through the endpoint test sync workflow.
-- For non-behavioral development changes (refactor, naming, comments, formatting, docs-only, internal restructuring with no contract/flow change) and no explicit test request, run docs-sync only for the test-skill layer.
-- Run `http-endpoint-test`, `sql-database-test`, and `e2e-playwright-test` only when behavior/new-feature changes require them, or when the user explicitly requests test run/update creation.
-- After endpoint behavior changes, sync both API `.http` and database `.sql` suites.
-- Keep test guidance consistent with project-level `CLAUDE.md` and `.github` instructions.
+## Trigger Gates
+- `http-endpoint-test` / `sql-database-test` / `e2e-playwright-test` run only on:
+  - explicit user request, or
+  - significant feature/structural behavior change.
+- If a new feature triggers these agents, generate missing coverage first.
+- Non-behavioral changes default: docs-sync only for test-layer docs.

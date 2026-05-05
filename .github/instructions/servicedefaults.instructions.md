@@ -2,25 +2,39 @@
 applyTo: "app/AutoService.ServiceDefaults/**"
 description: "Use when editing shared service defaults, health checks, resilience, and OpenTelemetry settings."
 ---
-# AutoService.ServiceDefaults Instructions
+# ServiceDefaults Instructions
 
-- Keep shared defaults generic and reusable across services.
-- Keep OpenTelemetry and resilience defaults enabled unless there is a strong reason to change them.
-- Keep health endpoint mapping behavior explicit and environment-aware.
-- Avoid service-specific business logic in this project.
-- Preserve compatibility with AppHost and ApiService startup conventions.
+## Persona
+- Architecture: Patrik
+- Backend/platform: Mark
+- QA/security: Zsombor
 
-## Package Baseline
+## Scope
+- Shared cross-service defaults only (`AutoService.ServiceDefaults`).
+- Health, resilience, service-discovery, and telemetry configuration patterns.
+- No business-domain behavior or feature-specific logic.
 
-- `Microsoft.Extensions.Http.Resilience` — `10.1.0`
-- `Microsoft.Extensions.ServiceDiscovery` — `10.1.0`
-- `OpenTelemetry.Exporter.OpenTelemetryProtocol` — `1.15.3`
-- `OpenTelemetry.Extensions.Hosting` — `1.15.3`
-- `OpenTelemetry.Instrumentation.AspNetCore` — `1.15.2`
-- `OpenTelemetry.Instrumentation.Http` — `1.15.1`
-- `OpenTelemetry.Instrumentation.Runtime` — `1.15.1`
+## Engineering Standards
+- Apply SOLID/OOP boundaries for extension methods and configuration helpers.
+- Keep responsibilities explicit: configuration composition, not application feature orchestration.
+- Use pattern-based extension only when it reduces duplication across services.
+- Document rationale for non-trivial default/pipeline changes.
 
-## Usage in ApiService
+## Enforce
+- Keep defaults generic and reusable across API/AppHost consumers.
+- Preserve telemetry/resilience/health defaults unless explicitly required to change.
+- Keep behavior config-first (environment/config keys over hardcoded runtime behavior).
+- Keep startup integration compatible with existing `AddServiceDefaults` and endpoint mapping usage.
 
-- `builder.AddServiceDefaults()` is called at the top of `Program.cs` (before service registration). Registers OpenTelemetry, health checks, and service discovery defaults.
-- `app.MapDefaultEndpoints()` is called last in endpoint mapping. Maps `/health` and `/alive` in the Development environment only.
+## Decomposition Guardrails
+- No god files/classes/methods.
+- Source files > 500 lines must be split.
+- Class/service > 300 lines must be split by responsibility.
+- Methods/functions should target <= 60 lines where practical.
+
+## Validation Workflow
+1. Verify change belongs to shared defaults scope.
+2. Check compatibility impact on ApiService/AppHost startup behavior.
+3. Ensure no service-specific assumptions leaked into shared defaults.
+4. Ensure docs remain synchronized (`app/AutoService.ServiceDefaults/CLAUDE.md`).
+5. Run `docs-sync` and `coding-principles` in the workflow when source changed.

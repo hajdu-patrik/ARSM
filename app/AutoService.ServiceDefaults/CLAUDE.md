@@ -1,22 +1,36 @@
-# AutoService.ServiceDefaults — Shared Defaults
+# AutoService.ServiceDefaults Rules
 
-- Keep shared defaults generic and reusable across services.
-- Keep OpenTelemetry and resilience defaults enabled unless there is a strong reason to change them.
-- Keep health endpoint mapping behavior explicit and environment-aware.
-- Avoid service-specific business logic in this project.
-- Preserve compatibility with AppHost and ApiService startup conventions.
+## Persona
+- Architecture authority: Patrik
+- Backend/platform execution: Mark
+- QA/security escalation: Zsombor
 
-## Package Baseline
+## Scope
+- Shared defaults only: telemetry, resilience, service discovery, and health behavior.
+- Cross-service startup composition helpers used by backend services.
+- No application feature/domain logic.
 
-- `Microsoft.Extensions.Http.Resilience` — `10.1.0`
-- `Microsoft.Extensions.ServiceDiscovery` — `10.1.0`
-- `OpenTelemetry.Exporter.OpenTelemetryProtocol` — `1.15.3`
-- `OpenTelemetry.Extensions.Hosting` — `1.15.3`
-- `OpenTelemetry.Instrumentation.AspNetCore` — `1.15.2`
-- `OpenTelemetry.Instrumentation.Http` — `1.15.1`
-- `OpenTelemetry.Instrumentation.Runtime` — `1.15.1`
+## Engineering Standards
+- Enforce SOLID/OOP boundaries for extension methods.
+- Keep one clear responsibility per extension/config helper.
+- Use reusable composition patterns only when they reduce duplication.
+- Include rationale for non-trivial defaults changes.
 
-## Usage in ApiService
+## Core Rules
+- Keep defaults generic and reusable.
+- Keep OpenTelemetry/resilience/health defaults enabled unless explicitly required otherwise.
+- Keep behavior config-driven; avoid hardcoded runtime assumptions.
+- Preserve compatibility with AppHost + ApiService startup patterns.
 
-- `builder.AddServiceDefaults()` is called at the top of `Program.cs` (before service registration). Registers OpenTelemetry, health checks, and service discovery defaults.
-- `app.MapDefaultEndpoints()` is called last in endpoint mapping. Maps `/health` and `/alive` in the Development environment only.
+## Decomposition Guardrails
+- No god files/classes/methods.
+- Source files > 500 lines must be split.
+- Class/service > 300 lines must be split by responsibility.
+- Method/function target <= 60 lines where practical.
+
+## Change Validation Checklist
+1. Shared-defaults scope confirmed (no feature-specific logic leaked in).
+2. Startup compatibility confirmed for AppHost/ApiService integration points.
+3. Telemetry/resilience/health behavior remains deterministic and documented.
+4. Counterpart docs remain aligned (`.github/instructions/servicedefaults.instructions.md`).
+5. `docs-sync` + `coding-principles` expected in workflow for source changes.

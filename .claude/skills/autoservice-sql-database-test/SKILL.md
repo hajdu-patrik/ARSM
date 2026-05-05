@@ -1,62 +1,41 @@
 ---
 name: autoservice-sql-database-test
-description: Sync SQL database validation suites in tests/Database/ after schema or persistence model changes.
+description: Maintain SQL validation suites with strict trigger-gating, read-only policy, and automatic feature-coverage generation.
 disable-model-invocation: true
 ---
 
-Use this skill whenever persistence model or schema changes affect database validation.
+Use this skill to sync `tests/Database/**/*.sql` only.
 
-## Goal
+## Trigger Gate (mandatory)
+Run only when:
+- explicitly requested, or
+- significant schema/persistence behavior change exists.
+Otherwise: return `SKIPPED`.
 
-Keep SQL validation suites synchronized with the current database schema and persistence model:
-- SQL suites in `tests/Database/` (including chunked subfolders)
+## New Feature Rule
+If triggered by a new feature:
+- auto-generate missing SQL validation coverage before executing/updating suites.
 
-## Managed test files
+## Safety
+- Use `ai_agent_test_user`.
+- Read-only `SELECT` only.
+- No DML/DDL.
 
-- `tests/Database/core-schema/*.sql`
-- `tests/Database/identity-auth/*.sql`
-- `tests/Database/feature-flow/*.sql`
-- `tests/Database/**/*.sql`
+## Coverage Requirements
+- Cover changed schema and persistence behavior with targeted verification queries.
+- Validate impacted identity/auth and feature-flow integrity constraints.
+- Remove stale checks that reference removed schema fields.
 
-## Trigger conditions
-
-Run when any of these change:
-- Entity model (`Data/AutoServiceDbContext.cs`, entity classes)
-- EF Core migrations (`Data/Migrations/`)
-- Persistence model affecting SQL validation semantics
-- Identity/auth schema changes
+## Test Design Guardrails
+- Prefer SQL files <= 180 lines.
+- Hard split required when a SQL file exceeds 250 lines.
+- Keep chunking by concern: `core-schema`, `identity-auth`, `feature-flow`.
+- Keep query intent explicit and deterministic.
 
 ## Workflow
-
-1. Read current entity model and migration state from source code (do not guess).
-2. Determine delta: new entity, changed column, new relationship, removed table.
-3. Update the correct SQL suite(s):
-   - Add new validation queries for schema changes
-   - Update existing queries for column/type changes
-   - Remove obsolete queries for deleted entities
-4. Ensure suite organization stays clean: `core-schema/` for tables/columns, `identity-auth/` for Identity tables, `feature-flow/` for business logic validation.
-
-## Safety rules
-
-- Use `ai_agent_test_user` for all queries.
-- Read-only `SELECT` queries only.
-- Never include DML/DDL (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`).
-
-## Required conventions
-
-- Keep existing test style and comments.
-- One validation concern per query where practical.
-- Keep query intent clear with comments.
-- Do not delete unrelated tests.
-
-## Validation checklist
-
-After updates, confirm:
-- [ ] SQL checks cover identity/auth and feature-flow integrity.
-- [ ] Schema validation matches current migration state.
-- [ ] No stale table/column references remain.
-- [ ] All queries use read-only SELECT with `ai_agent_test_user`.
-
-## Reporting
-
-Report: which schema deltas were detected, which `.sql` files were changed, which queries were added/updated/removed.
+1. Read schema/model deltas from entities, DbContext, and migrations.
+2. Map each delta to the proper SQL suite area.
+3. Add/update `SELECT` verification queries for changed behavior.
+4. Remove stale checks.
+5. Verify read-only policy is preserved (no DML/DDL).
+6. Report added/updated/removed queries and uncovered risks.

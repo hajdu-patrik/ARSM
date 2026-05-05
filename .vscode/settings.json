@@ -7,7 +7,8 @@
             "ssh": "Disabled",
             "previewLimit": 100,
             "server": "localhost",
-            "port": 55432,
+            "port": 50000,
+            "askForPassword": true,
             "sshOptions": {
                 "port": 22
             },
@@ -15,11 +16,7 @@
             "name": "Onlab",
             "username": "postgres",
             "database": "AutoServiceDb",
-            "connectionTimeout": 15,
-            "askForPassword": true,
-            "pgOptions": {
-                "ssl": false
-            }
+            "connectionTimeout": 15
         }
     ]
 }

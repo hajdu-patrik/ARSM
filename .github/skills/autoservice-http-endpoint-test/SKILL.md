@@ -1,60 +1,36 @@
 ---
 name: autoservice-http-endpoint-test
-description: Sync API HTTP test suites in tests/API/ whenever endpoints are added/changed/removed.
+description: Maintain HTTP API test suites with strict trigger-gating and automatic feature-coverage generation.
 ---
 
-Use this skill whenever API endpoint surface changes — HTTP test files only.
+Use this skill to sync `tests/API/**/*.http` only.
 
-## Goal
+## Trigger Gate (mandatory)
+Run only when:
+- explicitly requested, or
+- significant API contract/behavior change exists.
+Otherwise: return `SKIPPED`.
 
-Keep HTTP endpoint test assets synchronized with the current API behavior:
-- HTTP suites in `tests/API/` (including chunked subfolders)
+## New Feature Rule
+If triggered by a new feature:
+- auto-generate missing endpoint coverage before executing/updating tests.
 
-## Managed test files
+## Coverage Requirements
+- For each changed endpoint, include at least one positive and one negative scenario.
+- Include auth/role checks (`401`, `403`) when behavior depends on authorization.
+- Include contract/validation checks (`400`, `409`, `422`) when payload semantics changed.
+- Keep status-code and error-key expectations aligned with current handlers.
 
-- `tests/API/auth/*.http`
-- `tests/API/appointments/*.http`
-- `tests/API/customers/*.http`
-- `tests/API/profile/*.http`
-- `tests/API/admin/*.http`
-- `tests/API/vehicles/*.http`
-- `tests/API/**/*.http`
-
-## Trigger conditions
-
-Run when any of these change:
-- Endpoint mapping files (`Auth/*Endpoints*.cs`, `Appointments/*Endpoints*.cs`, `Profile/*Endpoints*.cs`, `Admin/*Endpoints*.cs`)
-- Request/response contracts used by endpoints
-- Auth/authorization behavior affecting endpoint outcomes (401/403/429, required role, lockout/rate-limit behavior)
+## Test Design Guardrails
+- Prefer `.http` files <= 180 lines.
+- Hard split required when a `.http` file exceeds 250 lines.
+- Keep chunk boundaries clear by domain responsibility.
+- Keep all credentials and host settings environment-driven.
 
 ## Workflow
-
-1. Read current endpoint mappings and contracts from source code (do not guess).
-2. Determine delta: new endpoint, removed endpoint, changed route/method/body/auth rule/response semantics.
-3. Update the correct HTTP suite(s):
-   - Add/update Positive and Negative blocks
-   - Keep setup/login/session prerequisites explicit
-   - Preserve variable-driven style (`@...`) and section separators
-4. Ensure suite naming and responsibility boundaries remain clean (auth/session vs appointments vs profile vs admin).
-
-## Required conventions
-
-- Keep existing test style and comments.
-- For each endpoint change, include at least one positive and one negative case when meaningful.
-- Keep admin/non-admin authorization checks explicit where relevant.
-- For appointment intake/update changes, keep explicit coverage for duplicate new-vehicle license-plate conflicts (`409`) and `scheduledDate` immutability enforcement (`422`).
-- Keep request field terminology aligned with current DTO naming (`scheduledDate`, `dueDateTime`) and ISO date-time formatting.
-- If multipart upload cannot be represented reliably in `.http`, keep a short `curl` note.
-- Do not delete unrelated tests.
-
-## Validation checklist
-
-After updates, confirm:
-- [ ] Every changed/new endpoint is represented in the correct `.http` suite.
-- [ ] Removed endpoints are removed from suites.
-- [ ] Status code expectations match current handlers.
-- [ ] No stale variables or cross-suite dependencies remain.
-
-## Reporting
-
-Report: which endpoint deltas were detected, which `.http` files were changed, which test cases were added/updated/removed.
+1. Read endpoint and contract deltas from mapper/contracts.
+2. Map each delta to the relevant `.http` suite file.
+3. Add/update positive and negative scenarios for changed behavior.
+4. Remove stale scenarios tied to removed or changed contracts.
+5. Validate variable usage and request consistency.
+6. Report added/updated/removed cases and residual coverage gaps.
