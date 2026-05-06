@@ -13,14 +13,14 @@ import { isAxiosError } from 'axios';
 import { profileService } from '../../services/profile/profile.service';
 import { useToastStore } from '../../store/toast.store';
 import { useAuthStore } from '../../store/auth.store';
-import { FormErrorMessage } from '../../components/common/FormErrorMessage';
-import { Modal } from '../../components/common/Modal';
 import { ProfilePictureCropModal } from '../../components/common/ProfilePictureCropModal';
 import { ProfilePictureSection } from './sections/ProfilePictureSection';
 import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
-import { getFieldError, extractFieldErrors } from './helpers';
-import { hasFieldErrors, mapPasswordErrors, extractPasswordChangeErrors, extractDeleteProfileErrorKey } from './handlers';
+import { DeleteProfileSection } from './sections/DeleteProfileSection';
+import { SettingsActionModals } from './SettingsActionModals';
+import { extractFieldErrors } from './helpers';
+import { hasFieldErrors, extractDeleteProfileErrorKey } from './handlers';
 import type { ProfileData } from '../../types/profile/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
@@ -42,7 +42,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
   // Profile data
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [loadErrorKey, setLoadErrorKey] = useState<string | null>(null);
 
   // Personal info form
   const [firstName, setFirstName] = useState('');
@@ -51,14 +50,12 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileFieldErrors, setProfileFieldErrors] = useState<FieldErrors>({});
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [passwordFieldErrors, setPasswordFieldErrors] = useState<FieldErrors>({});
 
   // Picture
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
@@ -69,12 +66,21 @@ const SettingsPageComponent = memo(function SettingsPage() {
   // Delete profile
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
-  const [deletePasswordError, setDeletePasswordError] = useState<string | null>(null);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
   // Confirmation modals
   const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
   const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
+
+  const getFirstFieldErrorMessage = useCallback((errors: FieldErrors): string | null => {
+    for (const values of Object.values(errors)) {
+      if (values.length > 0) {
+        return values[0];
+      }
+    }
+
+    return null;
+  }, []);
 
   // Load profile on mount
   useEffect(() => {
@@ -91,14 +97,16 @@ const SettingsPageComponent = memo(function SettingsPage() {
           setPhoneNumber(data.phoneNumber ?? '');
         }
       } catch {
-        if (!cancelled) setLoadErrorKey('settings.loadError');
+        if (!cancelled) {
+          showErrorToast('settings.loadError');
+        }
       } finally {
         if (!cancelled) setIsLoadingProfile(false);
       }
     };
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [showErrorToast]);
 
   const initials = useMemo(() => {
     if (!profile) return '';
@@ -110,24 +118,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return getDeterministicAvatarColor(profile.personId ?? profile.email);
   }, [profile]);
 
-  const getProfileFieldError = useCallback(
-    (field: string) => getFieldError(profileFieldErrors, field),
-    [profileFieldErrors],
-  );
-
-  const getPasswordFieldError = useCallback(
-    (field: string) => getFieldError(passwordFieldErrors, field),
-    [passwordFieldErrors],
-  );
-
   /**
    * Executes the profile update API call after confirmation.
-   * Syncs local form state with the returned profile on success and shows
-   * inline field errors or a toast on failure.
+    * Syncs local form state with the returned profile on success and shows
+    * a localized toast on failure.
    */
   const handleProfileSaveConfirmed = useCallback(async () => {
     setIsProfileSaveConfirmOpen(false);
-    setProfileFieldErrors({});
     setIsUpdatingProfile(true);
 
     try {
@@ -145,7 +142,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
         const normalizedFieldErrors = normalizeServerFieldErrors(extractFieldErrors(data), mapSettingsValidationMessageToKey);
 
         if (hasFieldErrors(normalizedFieldErrors)) {
-          setProfileFieldErrors(normalizedFieldErrors);
+          showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.profileUpdateFailed');
           return;
         }
 
@@ -156,7 +153,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsUpdatingProfile(false);
     }
-  }, [email, firstName, lastName, middleName, phoneNumber, showErrorToast, showSuccessToast]);
+  }, [email, firstName, getFirstFieldErrorMessage, lastName, middleName, phoneNumber, showErrorToast, showSuccessToast]);
 
   const handleProfileSaveRequest = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -165,17 +162,23 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   /**
    * Handles API errors from a password change request.
-   * Sets inline field errors for 422/400 responses; falls back to an error toast.
+    * Maps server validation payloads to localized message keys and surfaces
+    * a single toast message.
    * @param err - The error thrown during the password change call.
    */
   const handlePasswordChangeFailure = useCallback((err: unknown) => {
-    const fieldErrors = extractPasswordChangeErrors(err);
-    if (fieldErrors) {
-      setPasswordFieldErrors(fieldErrors);
-      return;
+    if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+      const data = err.response?.data;
+      const normalizedFieldErrors = normalizeServerFieldErrors(extractFieldErrors(data), mapSettingsValidationMessageToKey);
+
+      if (hasFieldErrors(normalizedFieldErrors)) {
+        showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.passwordChangeFailed');
+        return;
+      }
     }
+
     showErrorToast('toast.passwordChangeFailed');
-  }, [showErrorToast]);
+  }, [getFirstFieldErrorMessage, showErrorToast]);
 
   /**
    * Executes the password change API call after confirmation.
@@ -211,31 +214,30 @@ const SettingsPageComponent = memo(function SettingsPage() {
    */
   const handlePasswordChangeRequest = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault();
-    setPasswordFieldErrors({});
 
     if (newPassword.length < 8) {
-      setPasswordFieldErrors({ NewPassword: ['settings.passwordTooShort'] });
+      showErrorToast('settings.passwordTooShort');
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordFieldErrors({ ConfirmNewPassword: ['settings.passwordsDoNotMatch'] });
+      showErrorToast('settings.passwordsDoNotMatch');
       return;
     }
 
     setIsPasswordChangeConfirmOpen(true);
-  }, [newPassword, confirmNewPassword]);
+  }, [confirmNewPassword, newPassword, showErrorToast]);
 
   /**
    * Handles API errors from a profile delete request.
-   * Shows an inline password error for current-password failures;
-   * falls back to an error toast for all other cases.
+    * Maps the server error to a localized toast key when possible;
+    * falls back to a generic delete-failed toast.
    * @param err - The error thrown during the profile delete call.
    */
   const handleDeleteProfileFailure = useCallback((err: unknown) => {
     const errorKey = extractDeleteProfileErrorKey(err);
     if (errorKey) {
-      setDeletePasswordError(errorKey);
+      showErrorToast(errorKey);
       return;
     }
     showErrorToast('toast.profileDeleteFailed');
@@ -327,7 +329,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
-    setDeletePasswordError(null);
     setIsDeleteModalOpen(true);
   }, []);
 
@@ -338,7 +339,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
     setIsDeleteModalOpen(false);
     setDeletePassword('');
-    setDeletePasswordError(null);
   }, [isDeletingProfile]);
 
   /**
@@ -347,11 +347,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
    */
   const handleDeleteProfile = useCallback(async () => {
     if (!deletePassword.trim()) {
-      setDeletePasswordError('settings.currentPasswordRequired');
+      showErrorToast('settings.currentPasswordRequired');
       return;
     }
 
-    setDeletePasswordError(null);
     setIsDeletingProfile(true);
 
     try {
@@ -366,7 +365,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsDeletingProfile(false);
     }
-  }, [clearAuth, closeDeleteModal, deletePassword, handleDeleteProfileFailure, navigate, showSuccessToast]);
+  }, [clearAuth, closeDeleteModal, deletePassword, handleDeleteProfileFailure, navigate, showErrorToast, showSuccessToast]);
 
   if (isLoadingProfile) {
     return (
@@ -376,14 +375,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
     );
   }
 
-  if (loadErrorKey || !profile) {
-    return (
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
-        <div className="mx-auto w-full max-w-3xl">
-          <FormErrorMessage message={loadErrorKey ?? 'settings.loadError'} />
-        </div>
-      </div>
-    );
+  if (!profile) {
+    return null;
   }
 
   return (
@@ -392,62 +385,47 @@ const SettingsPageComponent = memo(function SettingsPage() {
         <h1 className="sr-only">{t('settings.title')}</h1>
 
         <div className="space-y-6">
-        <ProfilePictureSection
-          hasProfilePicture={profile.hasProfilePicture}
-          pictureUrl={profileService.getProfilePictureUrl()}
-          initials={initials}
-          fallbackColorClass={fallbackColorClass}
-          pictureKey={pictureKey}
-          isUploading={isUploadingPicture}
-          onSelectFile={(file) => { void handleSelectPicture(file); }}
-          onRemove={() => { void handleRemovePicture(); }}
-        />
+          <ProfilePictureSection
+            hasProfilePicture={profile.hasProfilePicture}
+            pictureUrl={profileService.getProfilePictureUrl()}
+            initials={initials}
+            fallbackColorClass={fallbackColorClass}
+            pictureKey={pictureKey}
+            isUploading={isUploadingPicture}
+            onSelectFile={(file) => { void handleSelectPicture(file); }}
+            onRemove={() => { void handleRemovePicture(); }}
+          />
 
-        <PersonalInfoSection
-          firstName={firstName}
-          middleName={middleName}
-          lastName={lastName}
-          email={email}
-          phoneNumber={phoneNumber}
-          isSubmitting={isUpdatingProfile}
-          onFirstNameChange={setFirstName}
-          onMiddleNameChange={setMiddleName}
-          onLastNameChange={setLastName}
-          onEmailChange={setEmail}
-          onPhoneNumberChange={setPhoneNumber}
-          onSubmit={handleProfileSaveRequest}
-          getFieldError={getProfileFieldError}
-          successMessage={null}
-        />
+          <PersonalInfoSection
+            firstName={firstName}
+            middleName={middleName}
+            lastName={lastName}
+            email={email}
+            phoneNumber={phoneNumber}
+            isSubmitting={isUpdatingProfile}
+            onFirstNameChange={setFirstName}
+            onMiddleNameChange={setMiddleName}
+            onLastNameChange={setLastName}
+            onEmailChange={setEmail}
+            onPhoneNumberChange={setPhoneNumber}
+            onSubmit={handleProfileSaveRequest}
+          />
 
-        <ChangePasswordSection
-          usernameForAutocomplete={email}
-          currentPassword={currentPassword}
-          newPassword={newPassword}
-          confirmNewPassword={confirmNewPassword}
-          isSubmitting={isChangingPassword}
-          onCurrentPasswordChange={setCurrentPassword}
-          onNewPasswordChange={setNewPassword}
-          onConfirmNewPasswordChange={setConfirmNewPassword}
-          onSubmit={handlePasswordChangeRequest}
-          getFieldError={getPasswordFieldError}
-          successMessage={null}
-        />
+          <ChangePasswordSection
+            usernameForAutocomplete={email}
+            currentPassword={currentPassword}
+            newPassword={newPassword}
+            confirmNewPassword={confirmNewPassword}
+            isSubmitting={isChangingPassword}
+            onCurrentPasswordChange={setCurrentPassword}
+            onNewPasswordChange={setNewPassword}
+            onConfirmNewPasswordChange={setConfirmNewPassword}
+            onSubmit={handlePasswordChangeRequest}
+          />
 
-        {!user?.isAdmin && (
-          <div className="relative overflow-hidden rounded-2xl border border-arsm-error-border-light bg-arsm-error-bg p-5 shadow-[0_8px_24px_rgba(170,44,53,0.06)] dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:shadow-[0_10px_28px_rgba(170,44,53,0.04)] sm:p-6">
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-[linear-gradient(180deg,rgba(215,82,94,0.06)_0%,rgba(215,82,94,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(215,82,94,0.08)_0%,rgba(215,82,94,0)_100%)]" />
-            <h2 className="text-lg font-semibold text-arsm-error-text dark:text-arsm-error-soft">{t('settings.deleteProfileTitle')}</h2>
-            <p className="mt-2 text-sm text-arsm-error-hover dark:text-arsm-error-text-light/85">{t('settings.deleteProfileDescription')}</p>
-            <button
-              type="button"
-              onClick={openDeleteModal}
-              className="mt-4 inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-5 py-2.5 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_8px_20px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_8px_20px_rgba(215,82,94,0.08)]"
-            >
-              {t('settings.deleteProfileButton')}
-            </button>
-          </div>
-        )}
+          {!user?.isAdmin && (
+            <DeleteProfileSection onDeleteRequest={openDeleteModal} />
+          )}
         </div>
       </div>
 
@@ -459,106 +437,22 @@ const SettingsPageComponent = memo(function SettingsPage() {
         onConfirm={handleConfirmPictureCrop}
       />
 
-      <Modal
-        isOpen={isProfileSaveConfirmOpen}
-        onClose={() => { if (!isUpdatingProfile) setIsProfileSaveConfirmOpen(false); }}
-        title={t('settings.confirmSaveTitle')}
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={() => setIsProfileSaveConfirmOpen(false)}
-              disabled={isUpdatingProfile}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-            >
-              {t('settings.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { void handleProfileSaveConfirmed(); }}
-              disabled={isUpdatingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
-            >
-              {isUpdatingProfile ? t('settings.saving') : t('settings.confirmSave')}
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.confirmSaveMessage')}</p>
-      </Modal>
-
-      <Modal
-        isOpen={isPasswordChangeConfirmOpen}
-        onClose={() => { if (!isChangingPassword) setIsPasswordChangeConfirmOpen(false); }}
-        title={t('settings.confirmPasswordChangeTitle')}
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={() => setIsPasswordChangeConfirmOpen(false)}
-              disabled={isChangingPassword}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-            >
-              {t('settings.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { void handlePasswordChangeConfirmed(); }}
-              disabled={isChangingPassword}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
-            >
-              {isChangingPassword ? t('settings.changingPassword') : t('settings.confirmPasswordChange')}
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.confirmPasswordChangeMessage')}</p>
-      </Modal>
-
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={closeDeleteModal}
-        title={t('settings.deleteProfileModalTitle')}
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={closeDeleteModal}
-              disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-            >
-              {t('settings.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { void handleDeleteProfile(); }}
-              disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
-            >
-              {isDeletingProfile ? t('settings.deletingProfile') : t('settings.confirmDeleteProfile')}
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.deleteProfileWarning')}</p>
-
-        <div className="mt-4">
-          <label htmlFor="delete-profile-password" className="mb-1.5 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
-            {t('settings.currentPassword')}
-          </label>
-          <input
-            id="delete-profile-password"
-            type="password"
-            value={deletePassword}
-            onChange={(event) => setDeletePassword(event.target.value)}
-            placeholder={t('settings.currentPasswordPlaceholder')}
-            autoComplete="current-password"
-            disabled={isDeletingProfile}
-            className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-accent/24"
-          />
-          <FormErrorMessage message={deletePasswordError} className="mt-2" />
-        </div>
-      </Modal>
+      <SettingsActionModals
+        isProfileSaveConfirmOpen={isProfileSaveConfirmOpen}
+        isUpdatingProfile={isUpdatingProfile}
+        onCloseProfileSaveConfirm={() => { if (!isUpdatingProfile) setIsProfileSaveConfirmOpen(false); }}
+        onConfirmProfileSave={() => { void handleProfileSaveConfirmed(); }}
+        isPasswordChangeConfirmOpen={isPasswordChangeConfirmOpen}
+        isChangingPassword={isChangingPassword}
+        onClosePasswordChangeConfirm={() => { if (!isChangingPassword) setIsPasswordChangeConfirmOpen(false); }}
+        onConfirmPasswordChange={() => { void handlePasswordChangeConfirmed(); }}
+        isDeleteModalOpen={isDeleteModalOpen}
+        isDeletingProfile={isDeletingProfile}
+        deletePassword={deletePassword}
+        onDeletePasswordChange={setDeletePassword}
+        onCloseDeleteModal={closeDeleteModal}
+        onConfirmDeleteProfile={() => { void handleDeleteProfile(); }}
+      />
     </div>
   );
 });
