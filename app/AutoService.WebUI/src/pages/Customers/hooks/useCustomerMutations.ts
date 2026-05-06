@@ -30,6 +30,7 @@ const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   phoneNumber: '',
 };
 
+/** External dependencies required by customer mutation handlers. */
 interface UseCustomerMutationsParams {
   showSuccessToast: (message: string) => void;
   showErrorToast: (message: string) => void;
@@ -41,6 +42,11 @@ interface UseCustomerMutationsParams {
   setExpandedCustomerIds: React.Dispatch<React.SetStateAction<Set<number>>>;
 }
 
+/**
+ * Encapsulates customer create/update/delete modal state and server mutations.
+ * @param params State setters and notification handlers required by mutation flows.
+ * @returns Modal state plus mutation actions for customer operations.
+ */
 export function useCustomerMutations({
   showSuccessToast,
   showErrorToast,

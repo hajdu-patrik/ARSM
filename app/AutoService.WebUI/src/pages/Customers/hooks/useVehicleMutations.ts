@@ -30,6 +30,7 @@ const EMPTY_VEHICLE_FORM: VehicleFormState = {
   engineTorqueNm: '',
 };
 
+/** External dependencies required by vehicle mutation handlers. */
 interface UseVehicleMutationsParams {
   showSuccessToast: (message: string) => void;
   showErrorToast: (message: string) => void;
@@ -44,6 +45,11 @@ interface UseVehicleMutationsParams {
   loadVehicleHistory: (vehicleId: number, force?: boolean) => Promise<void>;
 }
 
+/**
+ * Encapsulates vehicle create/update/delete modal state and mutation side effects.
+ * @param params Shared page state, loaders, and notification handlers.
+ * @returns Modal state plus mutation actions for vehicle operations.
+ */
 export function useVehicleMutations({
   showSuccessToast,
   showErrorToast,

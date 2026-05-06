@@ -5,11 +5,18 @@ import { customerRegistryService } from '../../../services/customers/customer-re
 import { buildCustomerDisplayName, normalizeSearchValue } from '../helpers';
 import type { CustomerSortField, SortDirection } from '../page.types';
 
+/** External dependencies for the customers list-state hook. */
 interface UseCustomersListStateParams {
   language: string;
   showErrorToast: (message: string) => void;
 }
 
+/**
+ * Manages Customers page read-side state: list loading, search/sort, expansion,
+ * and on-demand repair history loading for customers and vehicles.
+ * @param params Hook dependencies for locale-aware sorting and error surfacing.
+ * @returns Stateful values and actions consumed by the Customers page container.
+ */
 export function useCustomersListState({ language, showErrorToast }: UseCustomersListStateParams) {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);

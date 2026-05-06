@@ -12,6 +12,12 @@ import {
 } from '../helpers';
 import type { CreateVehicleRequest, UpdateVehicleRequest } from '../../../types/customers/customers.types';
 
+/**
+ * Normalizes server-side vehicle mutation failures and shows localized toast keys.
+ * @param error Caught mutation error.
+ * @param showErrorToast Error toast presenter.
+ * @param getFirstFieldErrorMessage Field-error extractor for multi-field responses.
+ */
 export function showVehicleMutationError(
   error: unknown,
   showErrorToast: (message: string) => void,
@@ -39,6 +45,11 @@ export function showVehicleMutationError(
   showErrorToast('customers.errors.vehicleSaveFailed');
 }
 
+/**
+ * Builds a validated vehicle payload from modal form state.
+ * @param form Vehicle form state with string-based numeric inputs.
+ * @returns Payload and optional field error key when numeric parsing fails.
+ */
 export function buildVehiclePayload(form: VehicleFormState): {
   payload: CreateVehicleRequest | UpdateVehicleRequest;
   fieldError: string | null;
