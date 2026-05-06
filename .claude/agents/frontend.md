@@ -35,6 +35,7 @@ model: opus
 
 ## Execution Rules
 - Read `app/AutoService.WebUI/CLAUDE.md` before editing.
+- Read `.claude/agents/ui-ux-style-profile.md` and `.agents/ui-ux-style-profile.md` before UI-facing edits.
 - Keep API logic in `src/services`, UI logic in components/hooks/pages.
 - Run `npx tsc --noEmit` (and build when needed) after changes.
 
