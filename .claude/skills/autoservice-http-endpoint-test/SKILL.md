@@ -6,6 +6,21 @@ disable-model-invocation: true
 
 Use this skill to sync `tests/API/**/*.http` only.
 
+## Why This Skill Exists
+
+- HTTP suites verify the real API contract at the boundary where status codes, auth rules, payload validation, and error keys matter.
+- This skill prevents contract drift between handlers, DTOs, and consumer expectations.
+
+## When to Use It
+
+- Use it for endpoint behavior changes, DTO validation changes, auth/role policy changes, or when the user explicitly asks for HTTP test execution or maintenance.
+- Do not use it for purely internal refactors that preserve the public API contract.
+
+## What Breaks If Ignored
+
+- Consumers can receive unexpected status codes, payloads, or auth failures without an early signal in the test layer.
+- Stale `.http` scenarios stop reflecting the live API and lose value as regression guards.
+
 ## Trigger Gate (mandatory)
 Run only when:
 - explicitly requested, or
@@ -21,6 +36,13 @@ If triggered by a new feature:
 - Include auth/role checks (`401`, `403`) when behavior depends on authorization.
 - Include contract/validation checks (`400`, `409`, `422`) when payload semantics changed.
 - Keep status-code and error-key expectations aligned with current handlers.
+
+## Credentials Policy (Mandatory)
+- Credentials and host address are consumed from `tests/.env` (gitignored) via `{{$processEnv VAR_NAME}}`.
+- Template: `tests/.env.example` (committed -- placeholder values only).
+- Variables: `AutoService_ApiService_HostAddress`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`.
+- Never write literal email/password/host values in `.http` files; always use `{{$processEnv VAR}}`.
+- If a variable is absent: surface the name, point to `tests/.env.example` -- do not guess.
 
 ## Test Design Guardrails
 - Prefer `.http` files <= 180 lines.

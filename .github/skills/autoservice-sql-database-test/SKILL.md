@@ -5,6 +5,21 @@ description: Maintain SQL validation suites with strict trigger-gating, read-onl
 
 Use this skill to sync `tests/Database/**/*.sql` only.
 
+## Why This Skill Exists
+
+- SQL verification catches persistence and integrity regressions that are not obvious from endpoint behavior alone.
+- This skill keeps read-only database assertions aligned with schema, identity, and feature-flow invariants without compromising safety.
+
+## When to Use It
+
+- Use it for schema changes, persistence behavior changes, seed-data expectation changes, or when the user explicitly asks for SQL verification execution or maintenance.
+- Do not use it for UI-only edits with no persistence impact.
+
+## What Breaks If Ignored
+
+- Silent schema drift, broken integrity assumptions, or identity linkage regressions can survive until late manual investigation.
+- SQL suites become stale and stop proving the invariants they were meant to protect.
+
 ## Trigger Gate (mandatory)
 Run only when:
 - explicitly requested, or

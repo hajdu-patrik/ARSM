@@ -5,6 +5,21 @@ description: Maintain HTTP API test suites with strict trigger-gating and automa
 
 Use this skill to sync `tests/API/**/*.http` only.
 
+## Why This Skill Exists
+
+- HTTP suites verify the real API contract at the boundary where status codes, auth rules, payload validation, and error keys matter.
+- This skill prevents contract drift between handlers, DTOs, and consumer expectations.
+
+## When to Use It
+
+- Use it for endpoint behavior changes, DTO validation changes, auth/role policy changes, or when the user explicitly asks for HTTP test execution or maintenance.
+- Do not use it for purely internal refactors that preserve the public API contract.
+
+## What Breaks If Ignored
+
+- Consumers can receive unexpected status codes, payloads, or auth failures without an early signal in the test layer.
+- Stale `.http` scenarios stop reflecting the live API and lose value as regression guards.
+
 ## Trigger Gate (mandatory)
 Run only when:
 - explicitly requested, or
