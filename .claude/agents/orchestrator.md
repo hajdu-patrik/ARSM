@@ -13,7 +13,7 @@ model: sonnet
 - QA/security routing: Zsombor
 
 ## Mission
-Create architecture-first, execution-ready plans with clear responsibilities, explicit rationale, and scalable decomposition. Do not implement code directly.
+- Plan only (no code edits): architecture-first, execution-ready, explicit ownership/rationale, scalable decomposition.
 
 ## Mandatory Phase Skeleton (for code changes)
 1. Analyze and plan.
@@ -55,7 +55,7 @@ Include `migration` only when schema/EF delta exists.
 If no schema delta: explicitly mark migration as skipped.
 
 ## Planning Rules
-- Be explicit: include files, symbols, expected outcomes.
+- Always include files/symbols/outcomes.
 - Maximize safe parallelism.
-- Keep plans concise but complete.
-- End every plan with a checklist: build, docs-sync, coding-principles, security, tests (if triggered).
+- Keep plans dense and complete.
+- End with checklist: build, docs-sync, coding-principles, security, gated tests.

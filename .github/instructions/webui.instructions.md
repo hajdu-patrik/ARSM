@@ -39,3 +39,8 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Frontend security remediation in workflow:
   - `npm audit fix`
   - re-run build/type checks.
+
+## Source-of-Truth Files
+- Routes: `src/App.tsx`
+- Shared styles: `src/utils/formStyles.ts`, `src/index.css`
+- Services/stores: `src/services/**`, `src/store/**`

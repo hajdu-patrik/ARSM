@@ -2,6 +2,12 @@
 
 # ARSM Copilot Instructions
 
+## Model Selection Policy (Auto Mode)
+- In auto/agent mode, **never** automatically select a model that costs more than 3× the baseline tier.
+- Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7 (any level)` and `gpt-5.5 (any level)`
+- Preferred auto-selection pool: `gpt-5.3-codex (high/xhigh)`, `gpt-5.4 (high/xhigh)`, `claude-sonnet 4.6 (high)`, `gemini 3.1 pro`, or equivalent tier models.
+- If a task genuinely requires a top-tier model, surface the suggestion to the user and wait for explicit approval before switching.
+
 ## Team Identity (Global)
 - Elite startup; enterprise-grade delivery standards.
 - Patrik (MIT, ex-Google): architecture + final quality authority.
@@ -66,32 +72,18 @@ No schema delta -> migration agent must skip.
 - Method/function target: <= 60 lines where practical.
 
 ## Credentials & Secrets Policy (Mandatory)
-
-All agent actions that involve credentials, passwords, connection strings, host addresses, or tokens **must** read from the designated secret files — never hardcode values in source, tests, scripts, or agent-generated output.
-
-### Secret Files (gitignored — never commit)
-| File | Scope | How consumed |
-|---|---|---|
-| `.secrets` (repo root) | E2E / Playwright tests | `set -a && source .secrets && set +a` before `npx playwright test` |
-| `tests/.env` | HTTP API tests (`.http` files) | `{{$processEnv VAR}}` in REST Client / HTTP Client |
-
-Template for `tests/.env`: `tests/.env.example` (committed, values are placeholders).
-
-### Key Variable Names
-- `ARSM_TEST_MECHANIC_EMAIL` / `ARSM_TEST_MECHANIC_PASSWORD` — non-admin mechanic login
-- `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD` — admin mechanic login
-- `ARSM_TEST_CUSTOMER_EMAIL` — passive customer (no login)
-- `ARSM_TEST_PASSWORD` / `ARSM_TEST_WRONG_PASSWORD` — shared positive/negative passwords
-- `ARSM_TEST_MECHANIC_NEW_PASSWORD` — used in password-change scenarios
-- `AutoService_ApiService_HostAddress` — API base URL for `.http` files
-- `ARSM_E2E_*` aliases — optional overrides accepted by `e2e-env.ts`
-
-### Rules for Agents
-- **HTTP / SQL tests**: Reference env vars via `{{$processEnv VAR_NAME}}`; never write literal email/password strings.
-- **E2E tests**: Read credentials via `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `tests/e2e/support/e2e-env.ts`; never inline credentials.
-- **EF migrations / seed scripts**: Never embed connection strings; use `appsettings.Local.json` (gitignored) or environment injection.
-- **Agent instructions to run tests**: Always include the `set -a && source .secrets && set +a` preamble before Playwright commands.
-- If a required variable is absent, surface the missing variable name and point to `tests/.env.example` or `.secrets` — do not guess or substitute a value.
+- Never hardcode credentials, passwords, connection strings, hosts, or tokens in source/tests/scripts/agent output.
+- Secret sources (gitignored):
+  - `.secrets` (repo root): E2E/Playwright runtime env (`set -a && source .secrets && set +a` before `npx playwright test`).
+  - `tests/.env`: HTTP `.http` tests via `{{$processEnv VAR_NAME}}`.
+- Template: `tests/.env.example` (placeholder values only).
+- Key vars: `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `AutoService_ApiService_HostAddress`, optional `ARSM_E2E_*` aliases.
+- Agent rules:
+  - HTTP/SQL tests: env vars only (`{{$processEnv ...}}`), never literal credentials.
+  - E2E tests: credentials only from `tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`).
+  - EF migrations/seed scripts: no embedded connection strings; use `appsettings.Local.json` (gitignored) or env injection.
+  - Playwright command instructions must include `.secrets` preamble.
+  - Missing variable: report exact name and point to `tests/.env.example` or `.secrets`; never guess.
 
 ## Core Rules
 - Config-first endpoints/ports; no runtime localhost fallback in code.

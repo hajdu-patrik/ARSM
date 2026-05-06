@@ -38,9 +38,9 @@ tools:
 
 ## Execution Rules
 - Read `app/AutoService.ApiService/CLAUDE.md` before editing.
-- Keep changes minimal and domain-safe.
+- Keep changes minimal/domain-safe.
 - Use async EF + cancellation tokens.
-- Run `dotnet build` from `app` after changes.
+- Run `dotnet build` from `app` after edits.
 
 ## Always-On Security Remediation (for backend code changes)
 1. Run `dotnet list package --vulnerable --include-transitive`.
