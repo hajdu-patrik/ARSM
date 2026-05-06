@@ -1,0 +1,236 @@
+import { useCallback, useState } from 'react';
+import { isAxiosError } from 'axios';
+import { customerRegistryService } from '../../../services/customers/customer-registry.service';
+import {
+  extractServerFieldErrors,
+  normalizeServerFieldErrors,
+  type ServerFieldErrors,
+} from '../../../utils/serverValidation';
+import {
+  hasServerFieldErrors,
+  mapCustomerValidationMessageToKey,
+} from '../helpers';
+import type {
+  CustomerFormState,
+  CustomerModalMode,
+} from '../page.types';
+import type {
+  CreateCustomerRequest,
+  CustomerListItem,
+  UpdateCustomerRequest,
+  VehicleDetailDto,
+} from '../../../types/customers/customers.types';
+import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+
+const EMPTY_CUSTOMER_FORM: CustomerFormState = {
+  firstName: '',
+  middleName: '',
+  lastName: '',
+  email: '',
+  phoneNumber: '',
+};
+
+interface UseCustomerMutationsParams {
+  showSuccessToast: (message: string) => void;
+  showErrorToast: (message: string) => void;
+  getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
+  setCustomers: React.Dispatch<React.SetStateAction<CustomerListItem[]>>;
+  setVehiclesByCustomerId: React.Dispatch<React.SetStateAction<Record<number, VehicleDetailDto[]>>>;
+  setCustomerHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, AppointmentDto[]>>>;
+  setActiveVehicleHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, number | null>>>;
+  setExpandedCustomerIds: React.Dispatch<React.SetStateAction<Set<number>>>;
+}
+
+export function useCustomerMutations({
+  showSuccessToast,
+  showErrorToast,
+  getFirstFieldErrorMessage,
+  setCustomers,
+  setVehiclesByCustomerId,
+  setCustomerHistoryByCustomerId,
+  setActiveVehicleHistoryByCustomerId,
+  setExpandedCustomerIds,
+}: UseCustomerMutationsParams) {
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [customerModalMode, setCustomerModalMode] = useState<CustomerModalMode>('create');
+  const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
+  const [customerForm, setCustomerForm] = useState<CustomerFormState>(EMPTY_CUSTOMER_FORM);
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+
+  const [deleteCustomerTarget, setDeleteCustomerTarget] = useState<CustomerListItem | null>(null);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+
+  const openCreateCustomerModal = useCallback(() => {
+    setCustomerModalMode('create');
+    setEditingCustomerId(null);
+    setCustomerForm(EMPTY_CUSTOMER_FORM);
+    setCustomerModalOpen(true);
+  }, []);
+
+  const openEditCustomerModal = useCallback((customer: CustomerListItem) => {
+    setCustomerModalMode('edit');
+    setEditingCustomerId(customer.id);
+    setCustomerForm({
+      firstName: customer.firstName,
+      middleName: customer.middleName ?? '',
+      lastName: customer.lastName,
+      email: customer.email,
+      phoneNumber: customer.phoneNumber ?? '',
+    });
+    setCustomerModalOpen(true);
+  }, []);
+
+  const closeCustomerModal = useCallback(() => {
+    if (isSavingCustomer) {
+      return;
+    }
+
+    setCustomerModalOpen(false);
+  }, [isSavingCustomer]);
+
+  const handleSubmitCustomer = useCallback(async (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    setIsSavingCustomer(true);
+
+    const payload: CreateCustomerRequest | UpdateCustomerRequest = {
+      firstName: customerForm.firstName.trim(),
+      middleName: customerForm.middleName.trim() || null,
+      lastName: customerForm.lastName.trim(),
+      email: customerForm.email.trim(),
+      phoneNumber: customerForm.phoneNumber.trim() || null,
+    };
+
+    try {
+      if (customerModalMode === 'create') {
+        const created = await customerRegistryService.createCustomer(payload);
+        setCustomers((prev) => [...prev, created]);
+        showSuccessToast('customers.toasts.customerCreated');
+      } else if (editingCustomerId !== null) {
+        await customerRegistryService.updateCustomer(editingCustomerId, payload);
+        setCustomers((prev) => prev.map((item) => (
+          item.id === editingCustomerId
+            ? {
+              ...item,
+              firstName: payload.firstName,
+              middleName: payload.middleName ?? null,
+              lastName: payload.lastName,
+              email: payload.email,
+              phoneNumber: payload.phoneNumber ?? null,
+            }
+            : item
+        )));
+        showSuccessToast('customers.toasts.customerUpdated');
+      }
+
+      setCustomerModalOpen(false);
+    } catch (error) {
+      if (isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+        const responseData = error.response?.data;
+        const mappedFieldErrors = normalizeServerFieldErrors(
+          extractServerFieldErrors(responseData),
+          mapCustomerValidationMessageToKey,
+        );
+
+        if (hasServerFieldErrors(mappedFieldErrors)) {
+          showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.saveFailed');
+          return;
+        }
+
+        const detailKey = responseData?.detail
+          ? mapCustomerValidationMessageToKey(responseData.detail)
+          : 'customers.errors.saveFailed';
+        showErrorToast(detailKey);
+      } else {
+        showErrorToast('customers.errors.saveFailed');
+      }
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  }, [
+    customerForm,
+    customerModalMode,
+    editingCustomerId,
+    getFirstFieldErrorMessage,
+    setCustomers,
+    showErrorToast,
+    showSuccessToast,
+  ]);
+
+  const openDeleteCustomerModal = useCallback((customer: CustomerListItem) => {
+    setDeleteCustomerTarget(customer);
+  }, []);
+
+  const closeDeleteCustomerModal = useCallback(() => {
+    if (isDeletingCustomer) {
+      return;
+    }
+
+    setDeleteCustomerTarget(null);
+  }, [isDeletingCustomer]);
+
+  const handleDeleteCustomer = useCallback(async () => {
+    if (!deleteCustomerTarget) {
+      return;
+    }
+
+    setIsDeletingCustomer(true);
+
+    try {
+      await customerRegistryService.deleteCustomer(deleteCustomerTarget.id);
+      setCustomers((prev) => prev.filter((item) => item.id !== deleteCustomerTarget.id));
+      setVehiclesByCustomerId((prev) => {
+        const next = { ...prev };
+        delete next[deleteCustomerTarget.id];
+        return next;
+      });
+      setCustomerHistoryByCustomerId((prev) => {
+        const next = { ...prev };
+        delete next[deleteCustomerTarget.id];
+        return next;
+      });
+      setActiveVehicleHistoryByCustomerId((prev) => {
+        const next = { ...prev };
+        delete next[deleteCustomerTarget.id];
+        return next;
+      });
+      setExpandedCustomerIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deleteCustomerTarget.id);
+        return next;
+      });
+
+      showSuccessToast('customers.toasts.customerDeleted');
+      setDeleteCustomerTarget(null);
+    } catch {
+      showErrorToast('customers.errors.deleteFailed');
+    } finally {
+      setIsDeletingCustomer(false);
+    }
+  }, [
+    deleteCustomerTarget,
+    setActiveVehicleHistoryByCustomerId,
+    setCustomerHistoryByCustomerId,
+    setCustomers,
+    setExpandedCustomerIds,
+    setVehiclesByCustomerId,
+    showErrorToast,
+    showSuccessToast,
+  ]);
+
+  return {
+    customerModalOpen,
+    customerModalMode,
+    customerForm,
+    setCustomerForm,
+    isSavingCustomer,
+    deleteCustomerTarget,
+    isDeletingCustomer,
+    openCreateCustomerModal,
+    openEditCustomerModal,
+    closeCustomerModal,
+    handleSubmitCustomer,
+    openDeleteCustomerModal,
+    closeDeleteCustomerModal,
+    handleDeleteCustomer,
+  };
+}
