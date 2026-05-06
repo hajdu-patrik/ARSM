@@ -5,7 +5,6 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import { inputClassCompact } from '../../../../utils/formStyles';
-import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
 
@@ -15,7 +14,6 @@ interface AppointmentDetailBodyProps {
   readonly isAdmin: boolean;
   readonly isEditing: boolean;
   readonly editForm: EditFormState | null;
-  readonly editErrorKey: string | null;
   readonly formattedDate: string;
   readonly dueDateLabel: string;
   readonly dueState: DueState;
@@ -43,7 +41,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   isAdmin,
   isEditing,
   editForm,
-  editErrorKey,
   formattedDate,
   dueDateLabel,
   dueState,
@@ -62,8 +59,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
 }: AppointmentDetailBodyProps) {
   return (
     <div className="flex max-h-[62vh] flex-col gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-0.5">
-      {editErrorKey && <FormErrorMessage message={editErrorKey} />}
-
       <HeaderSection
         appointmentStatus={appointment.status}
         formattedDate={formattedDate}
@@ -76,11 +71,6 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         dueDateTime={editForm?.dueDateTime ?? ''}
         t={t}
         onDueDateTimeChange={(value) => onEditField('dueDateTime', value)}
-      />
-
-      <CustomerSection
-        fullName={appointment.vehicle.customer.fullName}
-        t={t}
       />
 
       <VehicleSection
@@ -285,25 +275,6 @@ const TaskSection = memo(function TaskSection({ isEditing, taskDescription, disp
   );
 });
 
-interface CustomerSectionProps {
-  readonly fullName: string;
-  readonly t: TFunction;
-}
-
-const CustomerSection = memo(function CustomerSection({ fullName, t }: CustomerSectionProps) {
-  return (
-    <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 shadow-[0_10px_22px_rgba(45,36,64,0.07)] dark:border-arsm-border-dark dark:bg-arsm-input-dark/65 dark:shadow-[0_12px_24px_rgba(3,5,14,0.32)]">
-      <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.customer')}</h4>
-      <div className="grid grid-cols-1 gap-2">
-        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-arsm-border bg-arsm-toggle-bg/90 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.customerName')}</span>
-          <span className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark" title={fullName}>{fullName}</span>
-        </div>
-      </div>
-    </div>
-  );
-});
-
 interface MechanicsSectionProps {
   readonly appointment: AppointmentDto;
   readonly currentMechanicId: number | undefined;
@@ -398,7 +369,7 @@ const MechanicsSection = memo(function MechanicsSection({
             <button
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className="w-full shrink-0 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary shadow-[0_8px_18px_rgba(111,84,173,0.22)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_24px_rgba(111,84,173,0.28)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.44)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_12px_24px_rgba(8,10,20,0.52)] sm:w-auto"
+              className="w-full shrink-0 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover sm:w-auto"
             >
               {isAssigning ? '...' : t('scheduler.detail.addMechanic')}
             </button>
@@ -458,7 +429,7 @@ const MechanicCard = memo(function MechanicCard({
               onClick={onUnclaim}
               disabled={isMechanicMutationLocked || isUnclaiming}
               title={t('scheduler.detail.unassignMe')}
-              className="inline-flex items-center gap-1 rounded-lg border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.35)]"
+              className="inline-flex items-center gap-1 rounded-lg border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden md:inline">{isUnclaiming ? '...' : t('scheduler.detail.unassignMe')}</span>
@@ -470,7 +441,7 @@ const MechanicCard = memo(function MechanicCard({
               onClick={onQueueRemove}
               disabled={isRemoveDisabled}
               title={t('scheduler.detail.removeMechanic')}
-              className="rounded-lg p-1 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_5px_12px_rgba(215,82,94,0.1)] disabled:cursor-not-allowed disabled:opacity-50 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_5px_12px_rgba(22,10,12,0.3)]"
+              className="rounded-lg p-1 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg disabled:cursor-not-allowed disabled:opacity-50 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark"
             >
               <X className="h-4 w-4" />
             </button>

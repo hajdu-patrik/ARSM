@@ -98,7 +98,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
               type="button"
               onClick={onRemove}
               disabled={isUploading}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-6 py-3 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_16px_rgba(215,82,94,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_16px_rgba(215,82,94,0.06)] dark:focus-visible:ring-arsm-error-dark/40"
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-6 py-3 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/40"
             >
               {t('settings.removePicture')}
             </button>

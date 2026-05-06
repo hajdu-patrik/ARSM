@@ -61,7 +61,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
         <button
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className="w-full min-h-10 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(111,84,173,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_12px_24px_rgba(8,10,20,0.5)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_16px_30px_rgba(8,10,20,0.58)] dark:focus-visible:ring-arsm-focus-ring/24 sm:w-auto sm:min-w-[10rem]"
+          className="w-full min-h-10 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/24 sm:w-auto sm:min-w-[10rem]"
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -73,14 +73,14 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             data-testid="appointment-detail-save"
             onClick={onSave}
             disabled={isSaving}
-            className="min-h-10 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_24px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.46)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_12px_24px_rgba(8,10,20,0.54)]"
+            className="min-h-10 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
           >
             {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
           </button>
           <button
             onClick={onCancelEdit}
             disabled={isSaving}
-            className="min-h-10 rounded-xl border border-arsm-border bg-transparent px-3.5 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg hover:shadow-[0_6px_16px_rgba(45,36,64,0.08)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:shadow-[0_6px_16px_rgba(3,5,14,0.28)]"
+            className="min-h-10 rounded-xl border border-arsm-border bg-transparent px-3.5 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -120,7 +120,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           <button
             onClick={onClaim}
             disabled={isClaiming}
-            className="w-full rounded-xl bg-arsm-accent py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(111,84,173,0.32)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_12px_24px_rgba(8,10,20,0.5)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_16px_30px_rgba(8,10,20,0.58)]"
+            className="w-full rounded-xl bg-arsm-accent py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
           >
             {isClaiming ? '...' : t('scheduler.claim')}
           </button>

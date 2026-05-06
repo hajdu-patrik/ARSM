@@ -9,7 +9,6 @@
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 
 /** Props for the ChangePasswordSection component. */
@@ -23,8 +22,6 @@ interface ChangePasswordSectionProps {
   readonly onNewPasswordChange: (value: string) => void;
   readonly onConfirmNewPasswordChange: (value: string) => void;
   readonly onSubmit: (event: React.SyntheticEvent) => void;
-  readonly getFieldError: (field: string) => string | undefined;
-  readonly successMessage: string | null;
 }
 
 /**
@@ -40,8 +37,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
   onNewPasswordChange,
   onConfirmNewPasswordChange,
   onSubmit,
-  getFieldError,
-  successMessage,
 }: ChangePasswordSectionProps) {
   const { t } = useTranslation();
   const changePasswordButtonKey = 'settings.change' + 'PasswordButton';
@@ -58,15 +53,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
       <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {t('settings.changePassword')}
       </h2>
-
-      {successMessage && (
-        <output
-          aria-live="polite"
-          className="fade-in-up mb-4 block rounded-xl border border-arsm-success-border bg-arsm-success-bg px-4 py-2.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_14px_rgba(34,197,94,0.08)] dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark"
-        >
-          {successMessage}
-        </output>
-      )}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         {/* Hidden username field helps password managers pair current/new password fields. */}
@@ -95,7 +81,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="current-password"
-              aria-invalid={!!getFieldError('CurrentPassword')}
             />
             <button
               type="button"
@@ -106,7 +91,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               {showCurrent ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <FormErrorMessage message={getFieldError('CurrentPassword')} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <div>
@@ -123,7 +107,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
-              aria-invalid={!!getFieldError('NewPassword')}
             />
             <button
               type="button"
@@ -134,7 +117,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <FormErrorMessage message={getFieldError('NewPassword')} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <div>
@@ -151,7 +133,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
-              aria-invalid={!!getFieldError('ConfirmNewPassword')}
             />
             <button
               type="button"
@@ -162,7 +143,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <FormErrorMessage message={getFieldError('ConfirmNewPassword')} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <button

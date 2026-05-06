@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import { adminService } from '../../../services/admin/admin.service';
 import { useToastStore } from '../../../store/toast.store';
-import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues, getFieldError } from './helpers';
+import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues } from './helpers';
 import { cardClass } from './constants';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
@@ -34,13 +34,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const [mechanicListRefreshKey, setMechanicListRefreshKey] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rawFieldErrors, setRawFieldErrors] = useState<FieldErrors>({});
-
-  const normalizeFieldErrors = useCallback((errors: FieldErrors): FieldErrors => {
-    return normalizeServerFieldErrors(errors, mapAdminValidationMessageToKey);
-  }, []);
-
-  const fieldErrors = useMemo(() => normalizeFieldErrors(rawFieldErrors), [normalizeFieldErrors, rawFieldErrors]);
 
   const setFieldValue = useCallback(
     <K extends keyof RegisterMechanicFormValues>(field: K, value: RegisterMechanicFormValues[K]) => {
@@ -57,11 +50,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         : [...prev.expertise, value],
     }));
   }, []);
-
-  const getErrorForField = useCallback(
-    (field: string) => getFieldError(fieldErrors, field),
-    [fieldErrors],
-  );
 
   const canSubmit = useMemo(() => canSubmitForm(formValues, isSubmitting), [formValues, isSubmitting]);
 
@@ -109,7 +97,16 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setFormValues(emptyRegisterMechanicFormValues());
     setShowPassword(false);
     setShowConfirmPassword(false);
-    setRawFieldErrors({});
+  }, []);
+
+  const getFirstFieldErrorMessage = useCallback((errors: FieldErrors): string | null => {
+    for (const values of Object.values(errors)) {
+      if (values.length > 0) {
+        return values[0];
+      }
+    }
+
+    return null;
   }, []);
 
   /**
@@ -126,10 +123,10 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
     if (err.response?.status === 422 || err.response?.status === 400) {
       const data = err.response.data;
-      const inlineErrors = data?.errors ?? {};
+      const normalizedFieldErrors = normalizeServerFieldErrors(data?.errors ?? {}, mapAdminValidationMessageToKey);
 
-      if (Object.keys(inlineErrors).length > 0) {
-        setRawFieldErrors(inlineErrors);
+      if (Object.keys(normalizedFieldErrors).length > 0) {
+        showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'admin.genericError');
         return;
       }
 
@@ -143,7 +140,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     }
 
     showErrorToast('admin.genericError');
-  }, [showErrorToast]);
+  }, [getFirstFieldErrorMessage, showErrorToast]);
 
   /**
    * Handles form submission: validates password confirmation, captures pending email,
@@ -153,17 +150,16 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const handleSubmit = useCallback(
     (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
-      setRawFieldErrors({});
 
       if (formValues.password !== formValues.confirmPassword) {
-        setRawFieldErrors({ confirmPassword: ['admin.passwordMismatch'] });
+        showErrorToast('admin.passwordMismatch');
         return;
       }
 
       setPendingRegisterEmail(formValues.email.trim());
       setIsRegisterConfirmOpen(true);
     },
-    [formValues],
+    [formValues, showErrorToast],
   );
 
   /**
@@ -219,7 +215,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               onLastNameChange={handleLastNameChange}
               onEmailChange={handleEmailChange}
               onPhoneNumberChange={handlePhoneNumberChange}
-              getFieldError={getErrorForField}
             />
 
             <SecuritySection
@@ -232,7 +227,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               onConfirmPasswordChange={handleConfirmPasswordChange}
               onToggleShowPassword={handleToggleShowPassword}
               onToggleShowConfirmPassword={handleToggleShowConfirmPassword}
-              getFieldError={getErrorForField}
             />
 
             <ProfessionalSection
@@ -241,13 +235,12 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               isSubmitting={isSubmitting}
               onSpecializationChange={handleSpecializationChange}
               onToggleExpertise={toggleExpertise}
-              getFieldError={getErrorForField}
             />
 
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
+              className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
               aria-busy={isSubmitting}
             >
               {isSubmitting ? t('admin.submitting') : t('admin.submit')}
@@ -275,7 +268,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               type="button"
               onClick={() => { void handleRegisterConfirmed(); }}
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_20px_rgba(111,84,173,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(111,84,173,0.3)] disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
             >
               {isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}
             </button>

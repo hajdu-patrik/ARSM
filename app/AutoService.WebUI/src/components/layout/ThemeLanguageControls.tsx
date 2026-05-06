@@ -20,10 +20,10 @@ const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex -translate-x-1/2 i
 const BASE_BUTTON_CLASS = 'min-w-[3.1rem] rounded-xl px-3.5 py-2.5 text-sm font-semibold leading-none tracking-wide transition duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 max-[320px]:min-w-[2.6rem] max-[320px]:px-2.5 max-[320px]:py-2 max-[320px]:text-xs max-[320px]:hover:translate-y-0';
 
 /** Button variant styling for light theme. */
-const LIGHT_THEME_BUTTON_CLASS = 'bg-arsm-accent text-arsm-primary shadow-[0_10px_22px_rgba(97,67,154,0.28)] hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(97,67,154,0.32)]';
+const LIGHT_THEME_BUTTON_CLASS = 'bg-arsm-accent text-arsm-primary hover:bg-arsm-accent-hover';
 
 /** Button variant styling for dark theme. */
-const DARK_THEME_BUTTON_CLASS = 'bg-arsm-accent-dark text-arsm-hover shadow-[0_12px_24px_rgba(10,12,24,0.55)] hover:bg-arsm-accent-dark-hover hover:shadow-[0_16px_30px_rgba(10,12,24,0.62)] focus-visible:ring-arsm-focus-ring/35';
+const DARK_THEME_BUTTON_CLASS = 'bg-arsm-accent-dark text-arsm-hover hover:bg-arsm-accent-dark-hover focus-visible:ring-arsm-focus-ring/35';
 
 /** Memoized language and theme toggle buttons with persisted preferences. */
 const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({

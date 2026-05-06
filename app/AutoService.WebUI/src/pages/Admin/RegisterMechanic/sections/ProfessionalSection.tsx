@@ -8,9 +8,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
-import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS, inputClass, labelClass } from '../constants';
-import type { GetFieldError } from '../types';
 
 /** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {
@@ -19,7 +17,6 @@ interface ProfessionalSectionProps {
   readonly isSubmitting: boolean;
   readonly onSpecializationChange: (value: string) => void;
   readonly onToggleExpertise: (value: string) => void;
-  readonly getFieldError: GetFieldError;
 }
 
 const ProfessionalSectionComponent = memo(function ProfessionalSection({
@@ -28,7 +25,6 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
   isSubmitting,
   onSpecializationChange,
   onToggleExpertise,
-  getFieldError,
 }: ProfessionalSectionProps) {
   const { t } = useTranslation();
 
@@ -55,7 +51,6 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
             </option>
           ))}
         </select>
-        <FormErrorMessage message={getFieldError('specialization')} className="mt-1 px-2 py-1 text-xs" />
       </div>
 
       <div>
@@ -96,7 +91,6 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
             </label>
           ))}
         </div>
-        <FormErrorMessage message={getFieldError('expertise')} className="mt-1 px-2 py-1 text-xs" />
       </div>
     </>
   );

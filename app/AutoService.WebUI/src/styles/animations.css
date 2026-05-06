@@ -1,0 +1,78 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Keyframe animations
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Modal panel slides up from slight offset */
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast notification slides down from top */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Toast notification slides out upward */
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.94);
+    filter: blur(2px);
+  }
+}
+
+/* Skeleton loading shimmer sweep */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Accent-colored expanding ring pulse */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(188, 165, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0);
+  }
+}
+
+/* General fade-in from below (used via .fade-in-up) */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -5,9 +5,7 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { inputClass, labelClass } from '../constants';
-import type { GetFieldError } from '../types';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 
 /** Props for the BasicInfoSection component. */
@@ -23,7 +21,6 @@ interface BasicInfoSectionProps {
   readonly onLastNameChange: (value: string) => void;
   readonly onEmailChange: (value: string) => void;
   readonly onPhoneNumberChange: (value: string) => void;
-  readonly getFieldError: GetFieldError;
 }
 
 const BasicInfoSectionComponent = memo(function BasicInfoSection({
@@ -38,7 +35,6 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
   onLastNameChange,
   onEmailChange,
   onPhoneNumberChange,
-  getFieldError,
 }: BasicInfoSectionProps) {
   const { t } = useTranslation();
 
@@ -58,9 +54,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             required
-            aria-invalid={!!getFieldError('firstName')}
           />
-          <FormErrorMessage message={getFieldError('firstName')} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <div>
@@ -91,9 +85,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             required
-            aria-invalid={!!getFieldError('lastName')}
           />
-          <FormErrorMessage message={getFieldError('lastName')} className="mt-1 px-2 py-1 text-xs" />
         </div>
       </div>
 
@@ -110,9 +102,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           className={inputClass}
           disabled={isSubmitting}
           required
-          aria-invalid={!!getFieldError('email')}
         />
-        <FormErrorMessage message={getFieldError('email')} className="mt-1 px-2 py-1 text-xs" />
       </div>
 
       <div>
@@ -128,9 +118,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           placeholder={t('admin.phonePlaceholder')}
           className={inputClass}
           disabled={isSubmitting}
-          aria-invalid={!!getFieldError('phoneNumber')}
         />
-        <FormErrorMessage message={getFieldError('phoneNumber')} className="mt-1 px-2 py-1 text-xs" />
       </div>
     </>
   );

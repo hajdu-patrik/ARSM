@@ -1,0 +1,46 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Scrollbar styling (Webkit + Firefox)
+   ───────────────────────────────────────────────────────────────────────────── */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ebe5f7;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #8d7fb9;
+  border: 2px solid #ebe5f7;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #796ba4;
+}
+
+.dark *::-webkit-scrollbar-track {
+  background: #251f3d;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #c0b2e8;
+  border: 2px solid #251f3d;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #d5c9f3;
+}
+
+@media (max-width: 768px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}

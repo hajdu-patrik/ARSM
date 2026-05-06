@@ -94,7 +94,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
           data-testid="scheduler-intake-search"
           onClick={onLookup}
           disabled={isSearching}
-          className="inline-flex items-center justify-center gap-1 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary shadow-[0_8px_18px_rgba(111,84,173,0.22)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_24px_rgba(111,84,173,0.28)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.44)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_12px_24px_rgba(8,10,20,0.52)]"
+          className="inline-flex items-center justify-center gap-1 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-60 dark:bg-arsm-accent-dark dark:text-arsm-hover"
         >
           <Search className="h-4 w-4" />
           {isSearching ? t('scheduler.intake.searching') : t('scheduler.intake.search')}
@@ -224,14 +224,14 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
           type="button"
           onClick={() => onVehicleModeChange('existing')}
           disabled={!customerHasVehicles}
-          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'existing' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary shadow-[0_6px_14px_rgba(111,84,173,0.22)] dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(8,10,20,0.42)]' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'} disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'existing' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'} disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {t('scheduler.intake.useExistingVehicle')}
         </button>
         <button
           type="button"
           onClick={() => onVehicleModeChange('new')}
-          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'new' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary shadow-[0_6px_14px_rgba(111,84,173,0.22)] dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(8,10,20,0.42)]' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'}`}
+          className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'new' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'}`}
         >
           {t('scheduler.intake.createNewVehicle')}
         </button>
@@ -323,7 +323,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
         <input
           type="number"
           min={0}
-          max={1000000}
+          max={5000000}
           value={vehicle.mileageKm}
           onChange={(event) => onVehicleFieldChange('mileageKm', event.target.value)}
           placeholder={t('scheduler.intake.vehicleMileageKmPlaceholder')}

@@ -264,7 +264,7 @@ const CalendarViewComponent = memo(function CalendarView({
 
                     const dayClassName = `${rowHeightClass} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start ${
                       day.isCurrentMonth
-                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover hover:shadow-[inset_0_0_0_1px_rgba(188,165,255,0.35)] dark:hover:bg-arsm-hover-dark dark:hover:shadow-[inset_0_0_0_1px_rgba(157,135,230,0.38)]'
+                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover dark:hover:bg-arsm-hover-dark'
                         : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
                     } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${isSelected ? 'ring-2 ring-arsm-accent bg-arsm-accent-wash/65 dark:ring-arsm-accent-dark dark:bg-arsm-hover-dark/75' : ''}`;
 

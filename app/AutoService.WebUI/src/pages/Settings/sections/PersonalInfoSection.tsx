@@ -8,7 +8,6 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormErrorMessage } from '../../../components/common/FormErrorMessage';
 import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
@@ -26,8 +25,6 @@ interface PersonalInfoSectionProps {
   readonly onEmailChange: (value: string) => void;
   readonly onPhoneNumberChange: (value: string) => void;
   readonly onSubmit: (event: React.SyntheticEvent) => void;
-  readonly getFieldError: (field: string) => string | undefined;
-  readonly successMessage: string | null;
 }
 
 const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
@@ -43,30 +40,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   onEmailChange,
   onPhoneNumberChange,
   onSubmit,
-  getFieldError,
-  successMessage,
 }: PersonalInfoSectionProps) {
   const { t } = useTranslation();
-  const firstNameError = getFieldError('FirstName');
-  const middleNameError = getFieldError('MiddleName');
-  const lastNameError = getFieldError('LastName');
-  const emailError = getFieldError('Email');
-  const phoneNumberError = getFieldError('PhoneNumber');
 
   return (
     <div className={cardClass}>
       <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {t('settings.personalInfo')}
       </h2>
-
-      {successMessage && (
-        <output
-          aria-live="polite"
-          className="fade-in-up mb-4 block rounded-xl border border-arsm-success-border bg-arsm-success-bg px-4 py-2.5 text-sm font-semibold text-arsm-success-text shadow-[0_4px_14px_rgba(34,197,94,0.08)] dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark"
-        >
-          {successMessage}
-        </output>
-      )}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -83,9 +64,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="given-name"
-              aria-invalid={!!firstNameError}
             />
-            <FormErrorMessage message={firstNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
 
           <div>
@@ -101,9 +80,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="additional-name"
-              aria-invalid={!!middleNameError}
             />
-            <FormErrorMessage message={middleNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
 
           <div>
@@ -119,9 +96,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="family-name"
-              aria-invalid={!!lastNameError}
             />
-            <FormErrorMessage message={lastNameError} className="mt-1 px-2 py-1 text-xs" />
           </div>
         </div>
 
@@ -138,9 +113,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             autoComplete="email"
-            aria-invalid={!!emailError}
           />
-          <FormErrorMessage message={emailError} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <div>
@@ -157,9 +130,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             className={inputClass}
             disabled={isSubmitting}
             autoComplete="tel"
-            aria-invalid={!!phoneNumberError}
           />
-          <FormErrorMessage message={phoneNumberError} className="mt-1 px-2 py-1 text-xs" />
         </div>
 
         <button

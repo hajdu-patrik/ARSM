@@ -1,0 +1,99 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Component utilities
+   Reusable CSS-only patterns that cannot be expressed cleanly with Tailwind
+   utility classes alone (pseudo-elements, browser-native parts, animations).
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Invert the browser date/time picker icon for dark-on-light inputs */
+  .intake-datetime-input::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(100%);
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  /* Profile picture crop — zoom range slider */
+  .crop-zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: #ddd0fa;
+    outline: none;
+  }
+
+  .dark .crop-zoom-slider {
+    background: #3a355a;
+  }
+
+  .crop-zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: 2px solid #f8f5ff;
+    background: #8a76d6;
+    cursor: pointer;
+  }
+
+  .dark .crop-zoom-slider::-webkit-slider-thumb {
+    border-color: #141726;
+    background: #cdb8ff;
+  }
+
+  .crop-zoom-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: #ddd0fa;
+  }
+
+  .dark .crop-zoom-slider::-moz-range-track {
+    background: #3a355a;
+  }
+
+  .crop-zoom-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: 2px solid #f8f5ff;
+    background: #8a76d6;
+    cursor: pointer;
+  }
+
+  .dark .crop-zoom-slider::-moz-range-thumb {
+    border-color: #141726;
+    background: #cdb8ff;
+  }
+
+  /* Trigger class applied by ToastViewport on enter */
+  .toast-enter {
+    animation: toast-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Skeleton placeholder — applied to loading placeholder blocks */
+  .shimmer-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(188, 165, 255, 0.06) 25%,
+      rgba(188, 165, 255, 0.14) 50%,
+      rgba(188, 165, 255, 0.06) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+
+  .dark .shimmer-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(188, 165, 255, 0.04) 25%,
+      rgba(188, 165, 255, 0.1) 50%,
+      rgba(188, 165, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Entrance animation for banners, error blocks, etc. */
+  .fade-in-up {
+    animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}

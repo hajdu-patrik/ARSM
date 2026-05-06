@@ -1,8 +1,8 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchedulerCreateIntakeRequest } from '../../../../types/scheduler/scheduler.types';
-import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { Modal } from '../../../../components/common/Modal';
+import { useToastStore } from '../../../../store/toast.store';
 import { formatLongDate } from '../../utils/scheduler-datetime';
 import { useSchedulerIntakeForm } from '../../hooks/useSchedulerIntakeForm';
 import {
@@ -28,12 +28,21 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
   onSubmit,
 }: SchedulerIntakeModalProps) {
   const { t, i18n } = useTranslation();
+  const showErrorToast = useToastStore((state) => state.showError);
   const { state, derived, actions } = useSchedulerIntakeForm({
     isOpen,
     selectedDate,
     onClose,
     onSubmit,
   });
+
+  useEffect(() => {
+    if (!state.errorKey) {
+      return;
+    }
+
+    showErrorToast(state.errorKey);
+  }, [showErrorToast, state.errorKey]);
 
   const selectedDayLabel = useMemo(() => {
     return formatLongDate(selectedDate, i18n.language);
@@ -44,7 +53,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
       isOpen={isOpen}
       onClose={onClose}
       title={t('scheduler.intake.title')}
-      widthClassName="max-w-3xl"
+      widthClassName="max-w-2xl"
       footer={state.lookupState === 'idle'
         ? null
         : (
@@ -52,7 +61,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg hover:shadow-[0_6px_16px_rgba(45,36,64,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:shadow-[0_6px_16px_rgba(3,5,14,0.28)] dark:focus-visible:ring-arsm-focus-ring/24"
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:ring-arsm-focus-ring/24"
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -63,7 +72,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
                 actions.handleCreate();
               }}
               disabled={state.isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary shadow-[0_10px_24px_rgba(111,84,173,0.28)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_14px_28px_rgba(111,84,173,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_12px_24px_rgba(8,10,20,0.5)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_16px_30px_rgba(8,10,20,0.58)] dark:focus-visible:ring-arsm-focus-ring/24"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/24"
             >
               {state.isSubmitting ? t('scheduler.intake.creating') : t('scheduler.intake.create')}
             </button>
@@ -131,8 +140,6 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             onTaskDescriptionChange={actions.setTaskDescription}
           />
         )}
-
-        <FormErrorMessage message={state.errorKey} className="mt-2" />
       </div>
     </Modal>
   );

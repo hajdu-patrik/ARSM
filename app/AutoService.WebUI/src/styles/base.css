@@ -1,0 +1,132 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Typography — Inter with a system-font fallback for reduced CLS
+   ───────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Inter fallback';
+  src: local('Segoe UI'), local('system-ui'), local('Arial');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base layer — global element resets and theming
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    height: 100%;
+    font-family: 'Inter', 'Inter fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: #8d7fb9 #ebe5f7;
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background-color: #f2f0f8;
+    background-image:
+      radial-gradient(circle at 14% 9%, rgba(182, 157, 255, 0.18) 0%, rgba(182, 157, 255, 0) 38%),
+      radial-gradient(circle at 87% 16%, rgba(229, 214, 255, 0.26) 0%, rgba(229, 214, 255, 0) 42%),
+      linear-gradient(180deg, #f8f6ff 0%, #f2f0f8 100%);
+    color: #2d2440;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+
+  #root {
+    height: 100%;
+  }
+
+  .dark body {
+    background-color: #080a14;
+    background-image:
+      radial-gradient(circle at 13% 11%, rgba(142, 121, 216, 0.24) 0%, rgba(142, 121, 216, 0) 42%),
+      radial-gradient(circle at 84% 16%, rgba(51, 43, 87, 0.4) 0%, rgba(51, 43, 87, 0) 46%),
+      linear-gradient(180deg, #0c1020 0%, #080a14 100%);
+    color: #f2edff;
+  }
+
+  .dark {
+    scrollbar-color: #c0b2e8 #251f3d;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  select,
+  option,
+  optgroup {
+    transition: none !important;
+  }
+
+  select option {
+    background-color: #f8f5ff;
+    color: #2d2440;
+  }
+
+  select option:hover,
+  select option:focus,
+  select option:checked {
+    color: #2d2440;
+    background: #eee6ff linear-gradient(0deg, #eee6ff, #eee6ff);
+  }
+
+  .dark select option {
+    background-color: #1b1f33;
+    color: #f2edff;
+  }
+
+  .dark select option:hover,
+  .dark select option:focus,
+  .dark select option:checked {
+    color: #f2edff;
+    background: #25223d linear-gradient(0deg, #25223d, #25223d);
+  }
+
+  select:focus {
+    outline: none;
+    border-color: #bca5ff;
+    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.38);
+  }
+
+  .dark select:focus {
+    border-color: #bca5ff;
+    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.26);
+  }
+
+  a {
+    color: #7653ba;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  a:hover {
+    color: #5f4698;
+  }
+
+  .dark a {
+    color: #cdb8ff;
+  }
+
+  .dark a:hover {
+    color: #e6dbff;
+  }
+
+  button {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  button,
+  button:hover,
+  button:focus,
+  button:active,
+  button:disabled {
+    box-shadow: none !important;
+  }
+}

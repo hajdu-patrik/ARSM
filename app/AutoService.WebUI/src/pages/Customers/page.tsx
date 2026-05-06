@@ -22,12 +22,10 @@ import {
   X,
 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
-import { FormErrorMessage } from '../../components/common/FormErrorMessage';
 import { useToastStore } from '../../store/toast.store';
 import { customerRegistryService } from '../../services/customers/customer-registry.service';
 import {
   extractServerFieldErrors,
-  getServerFieldError,
   normalizeServerFieldErrors,
   type ServerFieldErrors,
 } from '../../utils/serverValidation';
@@ -45,7 +43,6 @@ import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import {
   buildCustomerDisplayName,
   normalizeSearchValue,
-  formatDateTime,
   mapCustomerValidationMessageToKey,
   mapVehicleValidationMessageToKey,
   hasServerFieldErrors,
@@ -56,6 +53,7 @@ import {
 import { RepairHistoryList } from './components/RepairHistoryList';
 
 type SortDirection = 'asc' | 'desc';
+type CustomerSortField = 'name' | 'vehicleCount';
 type CustomerModalMode = 'create' | 'edit';
 type VehicleModalMode = 'create' | 'edit';
 
@@ -102,6 +100,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<CustomerSortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedCustomerIds, setExpandedCustomerIds] = useState<Set<number>>(new Set());
 
@@ -121,7 +120,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const [customerModalMode, setCustomerModalMode] = useState<CustomerModalMode>('create');
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
   const [customerForm, setCustomerForm] = useState<CustomerFormState>(EMPTY_CUSTOMER_FORM);
-  const [customerFieldErrors, setCustomerFieldErrors] = useState<ServerFieldErrors>({});
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
 
   const [deleteCustomerTarget, setDeleteCustomerTarget] = useState<CustomerListItem | null>(null);
@@ -132,13 +130,22 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const [vehicleModalCustomerId, setVehicleModalCustomerId] = useState<number | null>(null);
   const [editingVehicleId, setEditingVehicleId] = useState<number | null>(null);
   const [vehicleForm, setVehicleForm] = useState<VehicleFormState>(EMPTY_VEHICLE_FORM);
-  const [vehicleFieldErrors, setVehicleFieldErrors] = useState<ServerFieldErrors>({});
   const [isSavingVehicle, setIsSavingVehicle] = useState(false);
 
   const [deleteVehicleTarget, setDeleteVehicleTarget] = useState<DeleteVehicleTarget | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
 
   const collator = useMemo(() => new Intl.Collator(i18n.language, { sensitivity: 'base' }), [i18n.language]);
+
+  const getFirstFieldErrorMessage = useCallback((errors: ServerFieldErrors): string | null => {
+    for (const values of Object.values(errors)) {
+      if (values.length > 0) {
+        return values[0];
+      }
+    }
+
+    return null;
+  }, []);
 
   /** Loads all customer rows. */
   const loadCustomers = useCallback(async () => {
@@ -225,15 +232,36 @@ const CustomersPageComponent = memo(function CustomersPage() {
     return [...filtered].sort((left, right) => {
       const leftName = buildCustomerDisplayName(left);
       const rightName = buildCustomerDisplayName(right);
-      const comparison = collator.compare(leftName, rightName);
-      return sortDirection === 'asc' ? comparison : -comparison;
+      const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
+
+      if (sortField === 'vehicleCount') {
+        const vehicleCountComparison = left.vehicleCount - right.vehicleCount;
+
+        if (vehicleCountComparison !== 0) {
+          return vehicleCountComparison * directionMultiplier;
+        }
+
+        return collator.compare(leftName, rightName);
+      }
+
+      const nameComparison = collator.compare(leftName, rightName);
+
+      if (nameComparison !== 0) {
+        return nameComparison * directionMultiplier;
+      }
+
+      return left.vehicleCount - right.vehicleCount;
     });
-  }, [collator, customers, normalizedSearchTerm, sortDirection]);
+  }, [collator, customers, normalizedSearchTerm, sortDirection, sortField]);
 
   const clearSearch = useCallback(() => setSearchTerm(''), []);
 
   const toggleSortDirection = useCallback(() => {
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  }, []);
+
+  const handleSortFieldChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortField(event.target.value as CustomerSortField);
   }, []);
 
   const toggleCustomerExpanded = useCallback((customerId: number) => {
@@ -262,7 +290,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
     setCustomerModalMode('create');
     setEditingCustomerId(null);
     setCustomerForm(EMPTY_CUSTOMER_FORM);
-    setCustomerFieldErrors({});
     setCustomerModalOpen(true);
   }, []);
 
@@ -276,7 +303,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
       email: customer.email,
       phoneNumber: customer.phoneNumber ?? '',
     });
-    setCustomerFieldErrors({});
     setCustomerModalOpen(true);
   }, []);
 
@@ -288,15 +314,10 @@ const CustomersPageComponent = memo(function CustomersPage() {
     setCustomerModalOpen(false);
   }, [isSavingCustomer]);
 
-  const getCustomerFieldError = useCallback((field: string) => {
-    return getServerFieldError(customerFieldErrors, field);
-  }, [customerFieldErrors]);
-
   /** Creates or updates a customer from modal form values. */
   const handleSubmitCustomer = useCallback(async (event: React.SyntheticEvent) => {
     event.preventDefault();
     setIsSavingCustomer(true);
-    setCustomerFieldErrors({});
 
     const payload: CreateCustomerRequest | UpdateCustomerRequest = {
       firstName: customerForm.firstName.trim(),
@@ -338,7 +359,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         );
 
         if (hasServerFieldErrors(mappedFieldErrors)) {
-          setCustomerFieldErrors(mappedFieldErrors);
+          showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.saveFailed');
           return;
         }
 
@@ -356,6 +377,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
     customerForm,
     customerModalMode,
     editingCustomerId,
+    getFirstFieldErrorMessage,
     showErrorToast,
     showSuccessToast,
   ]);
@@ -418,7 +440,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
     setVehicleModalCustomerId(customerId);
     setEditingVehicleId(null);
     setVehicleForm(EMPTY_VEHICLE_FORM);
-    setVehicleFieldErrors({});
     setVehicleModalOpen(true);
   }, []);
 
@@ -435,7 +456,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
       enginePowerHp: String(vehicle.enginePowerHp),
       engineTorqueNm: String(vehicle.engineTorqueNm),
     });
-    setVehicleFieldErrors({});
     setVehicleModalOpen(true);
   }, []);
 
@@ -446,10 +466,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
     setVehicleModalOpen(false);
   }, [isSavingVehicle]);
-
-  const getVehicleFieldError = useCallback((field: string) => {
-    return getServerFieldError(vehicleFieldErrors, field);
-  }, [vehicleFieldErrors]);
 
   /** Applies create/update vehicle mutation and local-state synchronization. */
   const persistVehicleMutation = useCallback(async (
@@ -527,7 +543,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
       );
 
       if (hasServerFieldErrors(mappedFieldErrors)) {
-        setVehicleFieldErrors(mappedFieldErrors);
+        showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.vehicleSaveFailed');
         return;
       }
 
@@ -539,7 +555,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
     }
 
     showErrorToast('customers.errors.vehicleSaveFailed');
-  }, [showErrorToast]);
+  }, [getFirstFieldErrorMessage, showErrorToast]);
 
   /** Creates or updates a vehicle attached to a customer. */
   const handleSubmitVehicle = useCallback(async (event: React.SyntheticEvent) => {
@@ -549,13 +565,11 @@ const CustomersPageComponent = memo(function CustomersPage() {
       return;
     }
 
-    setVehicleFieldErrors({});
-
     const numericValues = parseVehicleNumericValues(vehicleForm);
     const numericFieldErrors = buildVehicleNumericFieldErrors(numericValues);
 
     if (hasServerFieldErrors(numericFieldErrors)) {
-      setVehicleFieldErrors(numericFieldErrors);
+      showErrorToast(getFirstFieldErrorMessage(numericFieldErrors) ?? 'customers.errors.vehicleSaveFailed');
       return;
     }
 
@@ -581,8 +595,10 @@ const CustomersPageComponent = memo(function CustomersPage() {
       setIsSavingVehicle(false);
     }
   }, [
+    getFirstFieldErrorMessage,
     handleVehicleMutationFailure,
     persistVehicleMutation,
+    showErrorToast,
     vehicleForm,
     vehicleModalCustomerId,
   ]);
@@ -709,6 +725,24 @@ const CustomersPageComponent = memo(function CustomersPage() {
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+            <label
+              htmlFor="customers-sort-field"
+              className="sr-only"
+            >
+              {t('customers.sortBy')}
+            </label>
+            <select
+              id="customers-sort-field"
+              data-testid="customers-sort-field-select"
+              value={sortField}
+              onChange={handleSortFieldChange}
+              aria-label={t('customers.sortBy')}
+              className="min-w-[9.5rem] flex-1 rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label focus:border-arsm-accent dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark sm:flex-none"
+            >
+              <option value="name">{t('customers.sortFieldName')}</option>
+              <option value="vehicleCount">{t('customers.sortFieldVehicleCount')}</option>
+            </select>
+
             <button
               data-testid="customers-sort-toggle"
               type="button"
@@ -716,14 +750,14 @@ const CustomersPageComponent = memo(function CustomersPage() {
               className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label transition hover:-translate-y-px hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark sm:flex-none"
             >
               <ArrowUpDown className="h-4 w-4" />
-              {sortDirection === 'asc' ? t('customers.sortAsc') : t('customers.sortDesc')}
+              {sortDirection === 'asc' ? t('customers.sortDirectionAsc') : t('customers.sortDirectionDesc')}
             </button>
 
             <button
               data-testid="customers-create-button"
               type="button"
               onClick={openCreateCustomerModal}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-arsm-accent px-3 py-2 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(97,67,154,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_12px_26px_rgba(97,67,154,0.32)] dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover sm:flex-none"
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-arsm-accent px-3 py-2 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover sm:flex-none"
             >
               <Plus className="h-4 w-4" />
               {t('customers.createCustomer')}
@@ -977,7 +1011,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isOpen={customerModalOpen}
         onClose={closeCustomerModal}
         title={customerModalMode === 'create' ? t('customers.createCustomer') : t('customers.editCustomer')}
-        widthClassName="max-w-3xl"
+        widthClassName="max-w-2xl"
         footer={(
           <>
             <button
@@ -1011,9 +1045,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.firstNamePlaceholder')}
                 disabled={isSavingCustomer}
-                aria-invalid={!!getCustomerFieldError('FirstName')}
               />
-              <FormErrorMessage message={getCustomerFieldError('FirstName')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1026,9 +1058,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.middleNamePlaceholder')}
                 disabled={isSavingCustomer}
-                aria-invalid={!!getCustomerFieldError('MiddleName')}
               />
-              <FormErrorMessage message={getCustomerFieldError('MiddleName')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1041,9 +1071,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.lastNamePlaceholder')}
                 disabled={isSavingCustomer}
-                aria-invalid={!!getCustomerFieldError('LastName')}
               />
-              <FormErrorMessage message={getCustomerFieldError('LastName')} className="mt-1 px-2 py-1 text-xs" />
             </div>
           </div>
 
@@ -1057,9 +1085,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               className={inputClass}
               placeholder={t('customers.emailPlaceholder')}
               disabled={isSavingCustomer}
-              aria-invalid={!!getCustomerFieldError('Email')}
             />
-            <FormErrorMessage message={getCustomerFieldError('Email')} className="mt-1 px-2 py-1 text-xs" />
           </div>
 
           <div>
@@ -1072,9 +1098,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               className={inputClass}
               placeholder={t('customers.phonePlaceholder')}
               disabled={isSavingCustomer}
-              aria-invalid={!!getCustomerFieldError('PhoneNumber')}
             />
-            <FormErrorMessage message={getCustomerFieldError('PhoneNumber')} className="mt-1 px-2 py-1 text-xs" />
           </div>
         </form>
       </Modal>
@@ -1097,7 +1121,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               type="button"
               onClick={() => { void handleDeleteCustomer(); }}
               disabled={isDeletingCustomer}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
             >
               {isDeletingCustomer ? t('customers.deleting') : t('customers.deleteCustomer')}
             </button>
@@ -1115,7 +1139,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isOpen={vehicleModalOpen}
         onClose={closeVehicleModal}
         title={vehicleModalMode === 'create' ? t('customers.createVehicle') : t('customers.editVehicle')}
-        widthClassName="max-w-3xl"
+        widthClassName="max-w-2xl"
         footer={(
           <>
             <button
@@ -1149,9 +1173,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.licensePlatePlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('LicensePlate')}
               />
-              <FormErrorMessage message={getVehicleFieldError('LicensePlate')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1164,9 +1186,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.brandPlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('Brand')}
               />
-              <FormErrorMessage message={getVehicleFieldError('Brand')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1179,9 +1199,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.modelPlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('Model')}
               />
-              <FormErrorMessage message={getVehicleFieldError('Model')} className="mt-1 px-2 py-1 text-xs" />
             </div>
           </div>
 
@@ -1196,9 +1214,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.yearPlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('Year')}
               />
-              <FormErrorMessage message={getVehicleFieldError('Year')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1211,9 +1227,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.mileagePlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('MileageKm')}
               />
-              <FormErrorMessage message={getVehicleFieldError('MileageKm')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1226,9 +1240,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.enginePowerPlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('EnginePowerHp')}
               />
-              <FormErrorMessage message={getVehicleFieldError('EnginePowerHp')} className="mt-1 px-2 py-1 text-xs" />
             </div>
 
             <div>
@@ -1241,9 +1253,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
                 className={inputClass}
                 placeholder={t('customers.engineTorquePlaceholder')}
                 disabled={isSavingVehicle}
-                aria-invalid={!!getVehicleFieldError('EngineTorqueNm')}
               />
-              <FormErrorMessage message={getVehicleFieldError('EngineTorqueNm')} className="mt-1 px-2 py-1 text-xs" />
             </div>
           </div>
         </form>
@@ -1267,7 +1277,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
               type="button"
               onClick={() => { void handleDeleteVehicle(); }}
               disabled={isDeletingVehicle}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
             >
               {isDeletingVehicle ? t('customers.deleting') : t('customers.deleteVehicle')}
             </button>

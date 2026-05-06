@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
 import type {
   AppointmentDto,
   AppointmentStatus,
@@ -65,7 +64,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   const [selectedNewMechanicId, setSelectedNewMechanicId] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editErrorKey, setEditErrorKey] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
 
   const [removingMechanicId, setRemovingMechanicId] = useState<number | null>(null);
@@ -79,7 +77,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       initializedAppointmentIdRef.current = null;
       setEditForm(null);
       setIsEditing(false);
-      setEditErrorKey(null);
       setPendingRemoveMechanic(null);
       return;
     }
@@ -91,7 +88,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     initializedAppointmentIdRef.current = appointment.id;
     setEditForm(buildEditForm(appointment));
     setIsEditing(false);
-    setEditErrorKey(null);
     setPendingRemoveMechanic(null);
   }, [appointment, isOpen]);
 
@@ -181,12 +177,11 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
     const validationResult = buildUpdateRequestFromEditForm(appointment, editForm);
     if ('errorKey' in validationResult) {
-      setEditErrorKey(validationResult.errorKey);
+      showErrorToast(validationResult.errorKey);
       return;
     }
 
     setIsSaving(true);
-    setEditErrorKey(null);
     try {
       await onUpdate(appointment.id, validationResult.request.appointment);
       setIsEditing(false);
@@ -233,12 +228,10 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       onStartEdit={() => {
         setEditForm(buildEditForm(appointment));
         setIsEditing(true);
-        setEditErrorKey(null);
       }}
       onCancelEdit={() => {
         setEditForm(buildEditForm(appointment));
         setIsEditing(false);
-        setEditErrorKey(null);
       }}
       onSave={() => {
         void handleSave();
@@ -258,19 +251,8 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         isOpen={isOpen}
         onClose={onClose}
         title={t('scheduler.detail.title')}
-        widthClassName="max-w-3xl"
+        widthClassName="max-w-2xl"
         footer={footer}
-        headerAction={(
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('scheduler.detail.close')}
-            title={t('scheduler.detail.close')}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-arsm-border bg-arsm-input text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg hover:text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:text-arsm-primary-dark"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
       >
         <AppointmentDetailBody
           appointment={appointment}
@@ -278,7 +260,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           isAdmin={isAdmin}
           isEditing={isEditing}
           editForm={editForm}
-          editErrorKey={editErrorKey}
           formattedDate={formattedDate}
           dueDateLabel={dueDateLabel}
           dueState={dueState}

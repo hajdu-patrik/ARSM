@@ -158,6 +158,8 @@ export function useSchedulerIntakeForm({
   }, []);
 
   const handleCreate = useCallback(async () => {
+    setErrorKey(null);
+
     const normalizedEmail = email.trim().toLowerCase();
     const autoScheduledDate = getDefaultScheduledDate(selectedDate);
 

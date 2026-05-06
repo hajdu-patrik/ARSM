@@ -1,0 +1,30 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Autofill overrides — MUST stay outside @layer to be unlayered author-origin
+   styles, guaranteeing they win over the browser's UA autofill sheet and any
+   layered Tailwind utilities (layers always lose to unlayered author rules).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-arsm-primary);
+  caret-color: var(--color-arsm-primary);
+  box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
+  /* 9999s transition freezes the background so the browser never reverts it */
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Dark mode — html.dark for explicit element+class specificity */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-arsm-primary-dark);
+  caret-color: var(--color-arsm-primary-dark);
+  box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}

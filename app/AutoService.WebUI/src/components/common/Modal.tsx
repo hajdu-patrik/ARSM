@@ -7,6 +7,7 @@
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { ModalCloseButton } from './ModalCloseButton';
 
 /** Props for the {@link Modal} component. */
 interface ModalProps {
@@ -20,10 +21,8 @@ interface ModalProps {
   readonly children: ReactNode;
   /** Optional footer content (e.g. action buttons) rendered below the body. */
   readonly footer?: ReactNode;
-  /** Tailwind max-width class for the dialog. Defaults to `'max-w-lg'`. */
+  /** Tailwind max-width class for the dialog. Defaults to `'max-w-md'`. */
   readonly widthClassName?: string;
-  /** Optional right-aligned header action area. */
-  readonly headerAction?: ReactNode;
 }
 
 /** Memoized modal dialog with portal rendering, backdrop, and keyboard dismissal. */
@@ -33,8 +32,7 @@ const ModalComponent = memo(function Modal({
   title,
   children,
   footer,
-  widthClassName = 'max-w-lg',
-  headerAction,
+  widthClassName = 'max-w-md',
 }: ModalProps) {
   const { t } = useTranslation();
   const NativeDialog = 'dialog';
@@ -73,7 +71,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary shadow-[0_18px_40px_rgba(13,10,30,0.28)] transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_22px_48px_rgba(2,4,12,0.68)] sm:p-6`}
+        className={`relative w-[95%] sm:w-full ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary shadow-[0_18px_40px_rgba(13,10,30,0.28)] transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_22px_48px_rgba(2,4,12,0.68)] sm:p-6`}
         style={{ animation: 'modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         <div
@@ -83,7 +81,9 @@ const ModalComponent = memo(function Modal({
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-          {headerAction && <div className="shrink-0">{headerAction}</div>}
+          <div className="shrink-0">
+            <ModalCloseButton onClick={onClose} />
+          </div>
         </div>
 
         <div>{children}</div>

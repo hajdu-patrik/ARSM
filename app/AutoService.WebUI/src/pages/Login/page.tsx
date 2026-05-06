@@ -6,17 +6,15 @@
  * @module pages/Login/page
  */
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, TriangleAlert } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/auth/auth.service';
 import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
 import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
-
-type SystemLoginErrorKey = 'login.serverError500' | 'login.databaseUnavailable';
 
 type InvalidIdentifierReason = 'wrong_method_email' | 'wrong_method_phone' | 'format';
 
@@ -29,21 +27,6 @@ const LoginComponent = memo(function Login() {
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [systemErrorKey, setSystemErrorKey] = useState<SystemLoginErrorKey | null>(null);
-
-  useEffect(() => {
-    if (!systemErrorKey) {
-      return;
-    }
-
-    const timeoutId = globalThis.setTimeout(() => {
-      setSystemErrorKey(null);
-    }, 5000);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, [systemErrorKey]);
 
   const showInvalidIdentifierError = useCallback((reason: InvalidIdentifierReason) => {
     if (reason === 'wrong_method_email') {
@@ -63,10 +46,6 @@ const LoginComponent = memo(function Login() {
     resolvedError: ReturnType<typeof resolveLoginError>,
     method: LoginMethod,
   ) => {
-    if (resolvedError.key === 'login.serverError500' || resolvedError.key === 'login.databaseUnavailable') {
-      return;
-    }
-
     if (resolvedError.key === 'login.identifierNotFound') {
       showErrorToast(method === 'email' ? 'login.identifierNotFoundEmail' : 'login.identifierNotFoundPhone');
       return;
@@ -91,8 +70,6 @@ const LoginComponent = memo(function Login() {
     }
 
     setIsLoading(true);
-    setSystemErrorKey(null);
-
     try {
       const loginRequest = {
         email: parsedIdentifier.kind === 'email' ? parsedIdentifier.email : undefined,
@@ -104,11 +81,6 @@ const LoginComponent = memo(function Login() {
       navigate('/');
     } catch (err) {
       const resolvedError = resolveLoginError(err);
-
-      if (resolvedError.key === 'login.serverError500' || resolvedError.key === 'login.databaseUnavailable') {
-        setSystemErrorKey(resolvedError.key);
-      }
-
       showResolvedLoginError(resolvedError, loginMethod);
     } finally {
       setPassword('');
@@ -119,7 +91,6 @@ const LoginComponent = memo(function Login() {
   const handleLoginMethodChange = useCallback((method: LoginMethod) => {
     setLoginMethod(method);
     setIdentifier('');
-    setSystemErrorKey(null);
   }, []);
 
   const identifierLabel = useMemo(
@@ -191,7 +162,6 @@ const LoginComponent = memo(function Login() {
                 value={identifier}
                 onChange={(e) => {
                   setIdentifier(e.target.value);
-                  setSystemErrorKey(null);
                 }}
                 placeholder={identifierPlaceholder}
                 className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
@@ -212,7 +182,6 @@ const LoginComponent = memo(function Login() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    setSystemErrorKey(null);
                   }}
                   placeholder={t('login.loginPassword')}
                   className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 pr-12 text-[15px] text-arsm-primary placeholder-arsm-placeholder shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
@@ -238,26 +207,11 @@ const LoginComponent = memo(function Login() {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-1.5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary shadow-[0_12px_28px_rgba(97,67,154,0.28)] transition duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover hover:shadow-[0_16px_34px_rgba(97,67,154,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border disabled:shadow-none dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_14px_30px_rgba(8,10,20,0.58)] dark:hover:bg-arsm-accent-dark-hover dark:hover:shadow-[0_18px_36px_rgba(8,10,20,0.64)] dark:focus-visible:ring-arsm-focus-ring/30 dark:disabled:bg-arsm-ring-dark dark:disabled:shadow-none sm:text-base"
+              className="mt-1.5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary transition duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
               aria-busy={isLoading}
             >
               {isLoading ? t('login.loading') : t('login.submit')}
             </button>
-
-            {systemErrorKey ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="fade-in-up overflow-hidden rounded-2xl border border-arsm-error-border bg-arsm-error-bg p-3.5 text-arsm-error-text shadow-[0_10px_24px_rgba(165,42,51,0.12)] dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:shadow-[0_12px_28px_rgba(165,42,51,0.08)]"
-              >
-                <div className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-arsm-error-accent/15 dark:bg-arsm-error-accent/20">
-                    <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />
-                  </span>
-                  <p className="text-sm font-semibold leading-5">{t(systemErrorKey)}</p>
-                </div>
-              </div>
-            ) : null}
 
             <fieldset className="pt-1.5" aria-label={t('login.loginMethodLabel')}>
               <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
@@ -269,7 +223,7 @@ const LoginComponent = memo(function Login() {
                   onClick={() => handleLoginMethodChange('email')}
                   className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
                     loginMethod === 'email'
-                      ? 'bg-arsm-accent text-arsm-primary shadow-[0_8px_18px_rgba(97,67,154,0.24)] dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.48)]'
+                      ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
                       : 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
                   }`}
                   aria-pressed={loginMethod === 'email'}
@@ -282,7 +236,7 @@ const LoginComponent = memo(function Login() {
                   onClick={() => handleLoginMethodChange('phone')}
                   className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
                     loginMethod === 'phone'
-                      ? 'bg-arsm-accent text-arsm-primary shadow-[0_8px_18px_rgba(97,67,154,0.24)] dark:bg-arsm-accent-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(8,10,20,0.48)]'
+                      ? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
                       : 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
                   }`}
                   aria-pressed={loginMethod === 'phone'}

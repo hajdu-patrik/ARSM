@@ -1,0 +1,154 @@
+/**
+ * Shared full-page error display component.
+ *
+ * Renders a branded, responsive error card with a configurable image,
+ * background code, title, subtitle, CTA button, and optional countdown
+ * display. Designed to be router-independent so it can be used both in
+ * routed pages (NotFound, ServerError) and as an ErrorBoundary fallback.
+ *
+ * @module components/common/ErrorPage
+ */
+
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useThemeStore } from '../../store/theme.store';
+import { ThemeLanguageControls } from '../layout/ThemeLanguageControls';
+import { Image } from './Image';
+
+/** Props for the {@link ErrorPage} component. */
+interface ErrorPageProps {
+  /** Public path to the illustration image (e.g. `/Error-404.webp`). */
+  readonly imageSrc: string;
+  /** Accessible alt text for the illustration image. */
+  readonly imageAlt: string;
+  /**
+   * Large background watermark text (e.g. `"404"`, `"500"`).
+   * Rendered as a low-opacity decorative span behind the card.
+   */
+  readonly backgroundCode: string;
+  /** i18n key for the page heading. */
+  readonly titleKey: string;
+  /** i18n key for the subtitle paragraph. */
+  readonly subtitleKey: string;
+  /** i18n key for the primary CTA button label. */
+  readonly ctaTextKey: string;
+  /** Called when the CTA button is activated. */
+  readonly onCtaClick: () => void;
+  /** i18n key for the countdown label shown above remaining seconds. */
+  readonly countdownLabelKey?: string;
+  /**
+   * Remaining seconds for a countdown display.
+   * When provided, a countdown section is shown below the CTA.
+   * When omitted, the countdown section is hidden.
+   */
+  readonly secondsLeft?: number;
+}
+
+/**
+ * Inner implementation of the error page card layout.
+ * Separated for memo() wrapping while preserving display name.
+ */
+const ErrorPageComponent = memo(function ErrorPage({
+  imageSrc,
+  imageAlt,
+  backgroundCode,
+  titleKey,
+  subtitleKey,
+  ctaTextKey,
+  onCtaClick,
+  countdownLabelKey,
+  secondsLeft,
+}: ErrorPageProps) {
+  const { t } = useTranslation();
+  const theme = useThemeStore((state) => state.theme);
+  const isDark = theme === 'dark';
+
+  return (
+    <div
+      className={`relative min-h-screen overflow-hidden ${
+        isDark
+          ? 'bg-arsm-surface-dark text-arsm-primary-dark'
+          : 'bg-arsm-surface text-arsm-primary'
+      }`}
+    >
+      {/* Radial ambient glow */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full ${
+          isDark
+            ? 'bg-[radial-gradient(circle,_rgba(122,102,199,0.7)_0%,_rgba(122,102,199,0.34)_34%,_rgba(122,102,199,0.14)_50%,_rgba(122,102,199,0)_72%)]'
+            : 'bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.26)_32%,_rgba(201,179,255,0.1)_48%,_rgba(201,179,255,0)_72%)]'
+        }`}
+      />
+
+      <ThemeLanguageControls />
+
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1920px] items-center justify-center px-3 pt-24 sm:px-6 sm:pt-0">
+        {/* Large watermark background code */}
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none text-[50vw] font-black leading-none tracking-tight sm:text-[30vw] ${
+            isDark
+              ? 'text-arsm-primary-dark/[0.08]'
+              : 'text-arsm-primary/[0.05]'
+          }`}
+        >
+          {backgroundCode}
+        </span>
+
+        <section className="relative w-full max-w-[74rem] rounded-[28px] border border-arsm-border bg-arsm-input/95 p-4 shadow-[0_24px_72px_rgba(44,36,64,0.18)] backdrop-blur-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark/92 dark:shadow-[0_30px_80px_rgba(0,0,0,0.52)] max-[320px]:p-3 sm:p-6 lg:p-8">
+          <div className="grid items-stretch gap-4 md:grid-cols-[minmax(240px,1fr)_minmax(280px,1fr)] lg:gap-8">
+            {/* Illustration panel */}
+            <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-3xl border border-arsm-border bg-arsm-toggle-bg p-4 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.16)_48%,_rgba(201,179,255,0)_72%)] dark:bg-[radial-gradient(circle,_rgba(122,102,199,0.52)_0%,_rgba(122,102,199,0.16)_48%,_rgba(122,102,199,0)_72%)]"
+              />
+              <Image
+                src={imageSrc}
+                alt={imageAlt}
+                className="relative z-10 h-auto w-[min(78%,404px)] select-none max-[404px]:w-[76%]"
+                draggable={false}
+              />
+            </div>
+
+            {/* Content panel */}
+            <div className="flex flex-col justify-center rounded-3xl border border-arsm-border bg-white/80 p-5 text-left dark:border-arsm-border-dark dark:bg-arsm-input-dark/88 max-[320px]:p-4 sm:p-6">
+              <h1 className="text-[clamp(1.5rem,3.6vw,2.8rem)] text-center font-semibold leading-[1.06] tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+                {t(titleKey)}
+              </h1>
+
+              <p className="mt-3 text-sm text-arsm-muted dark:text-arsm-muted-dark sm:text-base text-center">
+                {t(subtitleKey)}
+              </p>
+
+              <button
+                type="button"
+                onClick={onCtaClick}
+                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent px-8 py-3 text-sm font-semibold text-arsm-primary transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 sm:w-auto sm:text-base"
+              >
+                {t(ctaTextKey)}
+              </button>
+
+              {secondsLeft !== undefined && (
+                <div className="mt-6 border-t border-arsm-border pt-4 dark:border-arsm-border-dark text-center">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-arsm-muted dark:text-arsm-muted-dark">
+                    {t(countdownLabelKey ?? 'notFound.redirectIn')}
+                  </p>
+                  <p className="mt-1 text-3xl font-semibold leading-none text-arsm-primary dark:text-arsm-primary-dark">
+                    {String(secondsLeft).padStart(2, '0')}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+});
+
+ErrorPageComponent.displayName = 'ErrorPage';
+
+/** Reusable full-page error card component for 404, 500, and similar error states. */
+export const ErrorPage = ErrorPageComponent;

@@ -6,9 +6,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { FormErrorMessage } from '../../../../components/common/FormErrorMessage';
 import { inputClass, labelClass } from '../constants';
-import type { GetFieldError } from '../types';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {
@@ -21,7 +19,6 @@ interface SecuritySectionProps {
   readonly onConfirmPasswordChange: (value: string) => void;
   readonly onToggleShowPassword: () => void;
   readonly onToggleShowConfirmPassword: () => void;
-  readonly getFieldError: GetFieldError;
 }
 
 const SecuritySectionComponent = memo(function SecuritySection({
@@ -34,15 +31,9 @@ const SecuritySectionComponent = memo(function SecuritySection({
   onConfirmPasswordChange,
   onToggleShowPassword,
   onToggleShowConfirmPassword,
-  getFieldError,
 }: SecuritySectionProps) {
   const { t } = useTranslation();
-  const credentialError = getFieldError('password');
-  const confirmPasswordError = getFieldError('confirmPassword');
   const credentialHintId = 'reg-credential-hint';
-  const credentialErrorId = 'reg-credential-error';
-  const credentialDescribedBy = credentialError ? `${credentialHintId} ${credentialErrorId}` : credentialHintId;
-  const confirmPasswordErrorId = 'reg-confirm-password-error';
 
   return (
     <div className="space-y-4">
@@ -62,8 +53,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
             required
             minLength={8}
             autoComplete="new-password"
-            aria-invalid={!!credentialError}
-            aria-describedby={credentialDescribedBy}
+            aria-describedby={credentialHintId}
           />
           <button
             type="button"
@@ -79,7 +69,6 @@ const SecuritySectionComponent = memo(function SecuritySection({
           </button>
         </div>
         <p id={credentialHintId} className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('admin.passwordHint')}</p>
-        <FormErrorMessage id={credentialError ? credentialErrorId : undefined} message={credentialError} className="mt-1 px-2 py-1 text-xs" />
       </div>
 
       <div>
@@ -98,8 +87,6 @@ const SecuritySectionComponent = memo(function SecuritySection({
             required
             minLength={8}
             autoComplete="new-password"
-            aria-invalid={!!confirmPasswordError}
-            aria-describedby={confirmPasswordError ? confirmPasswordErrorId : undefined}
           />
           <button
             type="button"
@@ -114,7 +101,6 @@ const SecuritySectionComponent = memo(function SecuritySection({
             )}
           </button>
         </div>
-        <FormErrorMessage id={confirmPasswordError ? confirmPasswordErrorId : undefined} message={confirmPasswordError} className="mt-1 px-2 py-1 text-xs" />
       </div>
     </div>
   );

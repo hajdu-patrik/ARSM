@@ -151,7 +151,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
                     type="button"
                     onClick={() => openDeleteModal(mechanic)}
                     title={t('admin.deleteMechanic')}
-                    className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg hover:shadow-[0_6px_14px_rgba(215,82,94,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:hover:shadow-[0_6px_14px_rgba(22,10,12,0.32)] dark:focus-visible:ring-arsm-error-dark/35"
+                    className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/35"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -180,7 +180,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
               type="button"
               onClick={() => { void handleDelete(); }}
               disabled={isDeleting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent shadow-[0_8px_20px_rgba(215,82,94,0.24)] transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active hover:shadow-[0_12px_26px_rgba(215,82,94,0.3)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:text-arsm-on-accent-dark"
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
             >
               {isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}
             </button>
