@@ -1,12 +1,16 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { SettingsPage } from './pages/settings.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { initBrowserState, loginAsMechanic } from './support/auth.helper';
 
+const THIS_FILE = fileURLToPath(import.meta.url);
+const THIS_DIR = path.dirname(THIS_FILE);
+
 function createTempImage(name: string, extension: string): string {
-  const dir = path.join(__dirname, '..', '..', 'test-artifacts');
+  const dir = path.join(THIS_DIR, '..', '..', 'test-artifacts');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   const filePath = path.join(dir, `${name}.${extension}`);
@@ -62,7 +66,7 @@ test.describe('Settings – profile picture', () => {
     await expect(cropDialog).toBeVisible({ timeout: 5_000 });
 
     const uploadPromise = page.waitForResponse(
-      (r) => r.url().includes('/api/profile/picture') && r.request().method() === 'POST',
+      (r) => r.url().includes('/api/profile/picture') && r.request().method() === 'PUT',
     );
     await settings.confirmCrop();
     const resp = await uploadPromise;
@@ -94,17 +98,12 @@ test.describe('Settings – profile picture', () => {
     await settings.goto();
 
     const invalidPath = createTempImage('test-invalid', 'gif');
-    fs.renameSync(invalidPath, invalidPath.replace('.gif', '.gif'));
+    fs.writeFileSync(invalidPath, Buffer.from('GIF89a'));
 
-    const gifPath = path.join(path.dirname(invalidPath), 'test-invalid.gif');
-    if (!fs.existsSync(gifPath)) {
-      fs.writeFileSync(gifPath, Buffer.from('GIF89a'));
-    }
-
-    await settings.uploadPicture(gifPath);
+    await settings.uploadPicture(invalidPath);
 
     await page.waitForTimeout(1_500);
-    const toast = page.getByText(/invalid|not allowed|type/i);
+    const toast = page.getByText('Only PNG, JPG, JPEG, and WebP images are allowed!');
     const toastVisible = await toast.isVisible().catch(() => false);
     expect(toastVisible).toBe(true);
   });

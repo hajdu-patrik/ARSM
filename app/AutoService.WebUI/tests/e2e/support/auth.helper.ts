@@ -19,5 +19,8 @@ export async function loginAsMechanic(page: Page, email: string, password: strin
   const loginPage = new LoginPage(page);
   await loginPage.goto();
   await loginPage.submitWithEmail(email, password);
-  await page.waitForURL(/\/$/);
+  await page.waitForURL((url) => {
+    const path = url.pathname.toLowerCase();
+    return path !== '/login' && path !== '/login/';
+  });
 }
