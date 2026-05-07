@@ -14,7 +14,7 @@ canonicalized AS (
            CASE
              WHEN raw_phone IS NULL OR BTRIM(raw_phone) = '' THEN NULL
              WHEN raw_phone ~ '^\+[1-9][0-9]{1,14}$' THEN raw_phone
-             WHEN raw_phone ~ '^[1-9][0-9]{1,14}$' THEN '+' || raw_phone
+             WHEN digits_only ~ '^[1-9][0-9]{1,14}$' THEN '+' || digits_only
              ELSE NULL
        END AS candidate_e164
   FROM normalized_identity_phone
