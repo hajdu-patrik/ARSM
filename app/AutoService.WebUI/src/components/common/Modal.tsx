@@ -1,7 +1,6 @@
 /**
- * Reusable modal dialog shell. Renders via a portal into `document.body`,
- * supports Escape-key dismissal, a backdrop overlay, and an optional footer.
- * Uses the `modal-enter` CSS keyframe animation defined in `index.css`.
+ * Reusable modal dialog shell rendered via a portal.
+ * Supports overlay click and Escape-key dismissal.
  * @module Modal
  */
 import { memo, useEffect, type ReactNode } from 'react';
@@ -9,23 +8,16 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ModalCloseButton } from './ModalCloseButton';
 
-/** Props for the {@link Modal} component. */
 interface ModalProps {
-  /** Whether the modal is currently visible. */
   readonly isOpen: boolean;
-  /** Callback invoked when the modal should close (overlay click, Escape, or X button). */
   readonly onClose: () => void;
-  /** Modal heading text, also used as the dialog `aria-label`. */
   readonly title: string;
-  /** Body content rendered inside the dialog. */
   readonly children: ReactNode;
-  /** Optional footer content (e.g. action buttons) rendered below the body. */
   readonly footer?: ReactNode;
-  /** Tailwind max-width class for the dialog. Defaults to `'max-w-md'`. */
   readonly widthClassName?: string;
+  readonly showCloseButton?: boolean;
 }
 
-/** Memoized modal dialog with portal rendering, backdrop, and keyboard dismissal. */
 const ModalComponent = memo(function Modal({
   isOpen,
   onClose,
@@ -33,6 +25,7 @@ const ModalComponent = memo(function Modal({
   children,
   footer,
   widthClassName = 'max-w-md',
+  showCloseButton = true,
 }: ModalProps) {
   const { t } = useTranslation();
   const NativeDialog = 'dialog';
@@ -71,7 +64,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-[95%] sm:w-full ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary shadow-[0_18px_40px_rgba(13,10,30,0.28)] transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark dark:shadow-[0_22px_48px_rgba(2,4,12,0.68)] sm:p-6`}
+        className={`relative w-[95%] sm:w-full ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
         style={{ animation: 'modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         <div
@@ -81,13 +74,14 @@ const ModalComponent = memo(function Modal({
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-          <div className="shrink-0">
-            <ModalCloseButton onClick={onClose} />
-          </div>
+          {showCloseButton && (
+            <div className="shrink-0">
+              <ModalCloseButton onClick={onClose} />
+            </div>
+          )}
         </div>
 
         <div>{children}</div>
-
         {footer && <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div>}
       </NativeDialog>
     </div>,
@@ -96,5 +90,4 @@ const ModalComponent = memo(function Modal({
 });
 
 ModalComponent.displayName = 'Modal';
-
 export const Modal = ModalComponent;

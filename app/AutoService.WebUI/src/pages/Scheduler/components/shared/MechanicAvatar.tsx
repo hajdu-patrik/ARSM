@@ -44,9 +44,12 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
   className,
 }: MechanicAvatarProps) {
   const currentUser = useAuthStore((state) => state.user);
-  const [liveHasProfilePicture, setLiveHasProfilePicture] = useState<boolean | null>(null);
+  const [liveProfilePicture, setLiveProfilePicture] = useState<{
+    mechanicId: number;
+    hasProfilePicture: boolean;
+    cacheBuster: number;
+  } | null>(null);
   const [failedImageKey, setFailedImageKey] = useState<string | null>(null);
-  const [cacheBuster, setCacheBuster] = useState(0);
 
   useEffect(() => {
     const handleProfilePictureUpdated = (event: Event) => {
@@ -55,8 +58,11 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
         return;
       }
 
-      setLiveHasProfilePicture(customEvent.detail?.hasProfilePicture ?? true);
-      setCacheBuster(customEvent.detail?.cacheBuster ?? Date.now());
+      setLiveProfilePicture({
+        mechanicId,
+        hasProfilePicture: customEvent.detail?.hasProfilePicture ?? true,
+        cacheBuster: customEvent.detail?.cacheBuster ?? Date.now(),
+      });
       setFailedImageKey(null);
     };
 
@@ -66,7 +72,9 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
     };
   }, [mechanicId]);
 
-  const resolvedHasProfilePicture = liveHasProfilePicture ?? hasProfilePicture;
+  const activeLiveProfilePicture = liveProfilePicture?.mechanicId === mechanicId ? liveProfilePicture : null;
+  const resolvedHasProfilePicture = activeLiveProfilePicture?.hasProfilePicture ?? hasProfilePicture;
+  const cacheBuster = activeLiveProfilePicture?.cacheBuster ?? `${mechanicId}-${resolvedHasProfilePicture ? '1' : '0'}`;
   const canReadMechanicPicture = currentUser?.isAdmin === true || currentUser?.personId === mechanicId;
   const imageCacheKey = `${mechanicId}:${cacheBuster}:${resolvedHasProfilePicture ? '1' : '0'}`;
   const shouldShowProfilePicture = canReadMechanicPicture && resolvedHasProfilePicture && failedImageKey !== imageCacheKey;

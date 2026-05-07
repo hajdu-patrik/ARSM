@@ -185,19 +185,21 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   }, [formValues, handleSubmitError, resetForm, showSuccessToast]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-3xl">
-        <h1 className="sr-only">{t('admin.pageTitle')}</h1>
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">{t('admin.pageTitle')}</h1>
+        </header>
 
         <div className="space-y-6">
-        <div className={cardClass}>
+        <section className={cardClass} aria-label={t('admin.mechanicList')}>
           <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
             {t('admin.mechanicList')}
           </h2>
           <MechanicListSection refreshKey={mechanicListRefreshKey} />
-        </div>
+        </section>
 
-        <div className={cardClass}>
+        <section className={cardClass} aria-label={t('admin.registerMechanic')}>
           <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
             {t('admin.registerMechanic')}
           </h2>
@@ -246,7 +248,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               {isSubmitting ? t('admin.submitting') : t('admin.submit')}
             </button>
           </form>
-        </div>
+        </section>
         </div>
       </div>
 
@@ -279,7 +281,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
           {t('admin.confirmRegisterMessage', { email: pendingRegisterEmail })}
         </p>
       </Modal>
-    </div>
+    </section>
   );
 });
 

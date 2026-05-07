@@ -1,3 +1,8 @@
+/**
+ * Footer component for appointment detail modal.
+ * Handles edit, status change, assignment badge, and claim actions.
+ * @module AppointmentDetailModal.footer
+ */
 import { memo } from 'react';
 import { Check } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -6,9 +11,6 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
 
-/**
- * Type guard that narrows select values to supported appointment statuses.
- */
 function isAppointmentStatus(value: string): value is AppointmentStatus {
   return STATUS_OPTIONS_SET.has(value);
 }
@@ -31,10 +33,6 @@ interface AppointmentDetailFooterProps {
   readonly onClaim: () => void;
 }
 
-/**
- * Renders footer actions for edit, status transition, assignment state, and claiming.
- * Keeps mutually exclusive controls hidden while editing is active.
- */
 export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   appointment,
   canEdit,
@@ -98,7 +96,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           }}
           disabled={isUpdating}
           aria-label={t('scheduler.changeStatus')}
-          className="min-h-10 min-w-[11rem] flex-1 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:focus-visible:ring-arsm-focus-ring/22"
+          className="min-h-10 min-w-[11rem] flex-1 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22"
         >
           {STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
@@ -109,18 +107,18 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       )}
 
       {isAssigned && !isEditing && (
-        <div className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1 text-sm font-semibold text-arsm-success-text shadow-[0_6px_14px_rgba(34,197,94,0.12)] dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:shadow-[0_6px_14px_rgba(12,18,14,0.35)]">
+        <div className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1 text-sm font-semibold text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
           <Check className="h-4 w-4" />
           {t('scheduler.assigned')}
         </div>
       )}
 
       {!isEditing && shouldRenderClaimButton && (
-        <div className="flex w-full justify-center">
+        <div className="flex w-full justify-end">
           <button
             onClick={onClaim}
             disabled={isClaiming}
-            className="w-full rounded-xl bg-arsm-accent py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+            className="rounded-lg bg-arsm-accent px-3 py-1.5 text-xs font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
           >
             {isClaiming ? '...' : t('scheduler.claim')}
           </button>

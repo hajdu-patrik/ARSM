@@ -52,19 +52,6 @@
   }
 }
 
-/* Accent-colored expanding ring pulse */
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(188, 165, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(188, 165, 255, 0);
-  }
-}
-
 /* General fade-in from below (used via .fade-in-up) */
 @keyframes fade-in-up {
   from {

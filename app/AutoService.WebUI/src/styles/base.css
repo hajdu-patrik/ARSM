@@ -92,12 +92,10 @@
   select:focus {
     outline: none;
     border-color: #bca5ff;
-    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.38);
   }
 
   .dark select:focus {
     border-color: #bca5ff;
-    box-shadow: 0 0 0 2px rgba(188, 165, 255, 0.26);
   }
 
   a {
@@ -122,11 +120,4 @@
     @apply transition-all duration-200 ease-out;
   }
 
-  button,
-  button:hover,
-  button:focus,
-  button:active,
-  button:disabled {
-    box-shadow: none !important;
-  }
 }

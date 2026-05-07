@@ -3,22 +3,22 @@
  *
  * Provides consistent color selection and initials generation for users
  * without profile pictures. Color is determined by a hash of the seed value,
- * selecting from a fixed 10-color Tailwind palette.
+ * selecting from a fixed ARSM token palette.
  * @module utils/avatar
  */
 
-/** Fixed palette of 10 Tailwind color class pairs for avatar backgrounds. */
+/** Fixed palette of ARSM token class pairs for avatar backgrounds. */
 const AVATAR_COLOR_CLASSES = [
-  'bg-rose-300 text-rose-900',
-  'bg-orange-300 text-orange-900',
-  'bg-amber-300 text-amber-900',
-  'bg-lime-300 text-lime-900',
-  'bg-emerald-300 text-emerald-900',
-  'bg-teal-300 text-teal-900',
-  'bg-cyan-300 text-cyan-900',
-  'bg-sky-300 text-sky-900',
-  'bg-indigo-300 text-indigo-900',
-  'bg-fuchsia-300 text-fuchsia-900',
+  'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover',
+  'bg-arsm-accent-subtle text-arsm-accent-vivid dark:bg-arsm-hover-dark dark:text-arsm-accent',
+  'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
+  'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
+  'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
+  'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark',
+  'bg-arsm-input text-arsm-primary dark:bg-arsm-input-dark dark:text-arsm-primary-dark',
+  'bg-arsm-accent-wash text-arsm-accent-deep dark:bg-arsm-hover-dark dark:text-arsm-accent',
+  'bg-arsm-success-soft text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
+  'bg-arsm-error-softest text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
 ] as const;
 
 /**

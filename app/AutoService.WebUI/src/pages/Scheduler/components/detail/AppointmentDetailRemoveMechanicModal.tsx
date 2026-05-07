@@ -10,12 +10,7 @@ interface AppointmentDetailRemoveMechanicModalProps {
   readonly onConfirmRemove: (mechanicId: number) => Promise<void>;
 }
 
-/**
- * Confirmation modal for admin mechanic removal actions.
- * Guards against stale confirm attempts when the appointment is cancelled
- * and keeps close/confirm interactions safe while a request is in flight.
- */
-export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDetailRemoveMechanicModal({
+const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentDetailRemoveMechanicModal({
   pendingRemoveMechanic,
   removingMechanicId,
   isCancelled,
@@ -23,6 +18,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
   onConfirmRemove,
 }: AppointmentDetailRemoveMechanicModalProps) {
   const { t } = useTranslation();
+
   const isMutationInFlight = removingMechanicId !== null;
   const isConfirmDisabled = isMutationInFlight || isCancelled || pendingRemoveMechanic === null;
 
@@ -45,7 +41,7 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
       await onConfirmRemove(pendingRemoveMechanic.id);
       onClose();
     } catch {
-      // Error toasts are handled by the scheduler action layer.
+      // Error toasts are emitted by the caller action layer.
     }
   }, [isConfirmDisabled, onClose, onConfirmRemove, pendingRemoveMechanic]);
 
@@ -81,11 +77,13 @@ export const AppointmentDetailRemoveMechanicModal = memo(function AppointmentDet
         </>
       )}
     >
-      <p className="break-words rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-3 text-sm text-arsm-label shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] [overflow-wrap:anywhere] dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 dark:text-arsm-label-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-        {t('scheduler.detail.removeConfirmMessage', {
-          name: pendingRemoveMechanic?.fullName ?? '',
-        })}
+      <p className="break-words rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-3 text-sm text-arsm-label [overflow-wrap:anywhere] dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 dark:text-arsm-label-dark">
+        {t('scheduler.detail.removeConfirmMessage', { name: pendingRemoveMechanic?.fullName ?? '' })}
       </p>
     </Modal>
   );
 });
+
+AppointmentDetailRemoveMechanicModalComponent.displayName = 'AppointmentDetailRemoveMechanicModal';
+
+export const AppointmentDetailRemoveMechanicModal = AppointmentDetailRemoveMechanicModalComponent;

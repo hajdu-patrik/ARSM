@@ -49,26 +49,29 @@ export function useSchedulerActions({
       const updated = await appointmentService.claim(id);
       upsertAppointment(updated);
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
+      showSuccessToast('scheduler.claimSuccess');
     } catch {
       showErrorToast('scheduler.claimError');
     }
-  }, [showErrorToast, setSelectedAppointment, upsertAppointment]);
+  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
 
   const handleStatusChange = useCallback(async (id: number, status: AppointmentStatus) => {
     try {
       const updated = await appointmentService.updateStatus(id, { status });
       upsertAppointment(updated);
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
+      showSuccessToast('scheduler.statusUpdateSuccess');
     } catch {
       showErrorToast('scheduler.statusUpdateError');
     }
-  }, [showErrorToast, setSelectedAppointment, upsertAppointment]);
+  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
 
   const handleUnclaim = useCallback(async (id: number) => {
     try {
       const updated = await appointmentService.unclaim(id);
       upsertAppointment(updated);
       setSelectedAppointment(updated);
+      showSuccessToast('scheduler.detail.unassignSuccess');
     } catch (err) {
       if (isAxiosError<{ code?: string }>(err) && err.response?.data?.code === 'appointment_cancelled') {
         showErrorToast('scheduler.detail.unassignCancelledError');
@@ -77,27 +80,29 @@ export function useSchedulerActions({
 
       showErrorToast('scheduler.detail.unassignError');
     }
-  }, [showErrorToast, setSelectedAppointment, upsertAppointment]);
+  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
 
   const handleAdminAssign = useCallback(async (appointmentId: number, mechanicId: number) => {
     try {
       const updated = await appointmentService.adminAssign(appointmentId, mechanicId);
       upsertAppointment(updated);
       setSelectedAppointment(updated);
+      showSuccessToast('scheduler.detail.assignSuccess');
     } catch {
       showErrorToast('scheduler.detail.assignError');
     }
-  }, [showErrorToast, setSelectedAppointment, upsertAppointment]);
+  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
 
   const handleAdminUnassign = useCallback(async (appointmentId: number, mechanicId: number) => {
     try {
       const updated = await appointmentService.adminUnassign(appointmentId, mechanicId);
       upsertAppointment(updated);
       setSelectedAppointment(updated);
+      showSuccessToast('scheduler.detail.adminUnassignSuccess');
     } catch {
       showErrorToast('scheduler.detail.adminUnassignError');
     }
-  }, [showErrorToast, setSelectedAppointment, upsertAppointment]);
+  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
 
   const handleCreateIntake = useCallback(async (request: SchedulerCreateIntakeRequest) => {
     const created = await appointmentService.createIntake(request);

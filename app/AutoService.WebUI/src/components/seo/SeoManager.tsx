@@ -25,7 +25,7 @@ const APP_NAME = 'ARSM';
  * Retrieves an existing `<meta>` tag or creates one if it does not exist.
  * Appends the new element to `<head>` when created.
  */
-function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:description' | 'og:type' | 'og:locale' | 'twitter:card' | 'twitter:title' | 'twitter:description', attribute: 'name' | 'property' = 'name') {
+function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:description' | 'og:type' | 'og:locale' | 'og:image' | 'og:url' | 'twitter:card' | 'twitter:title' | 'twitter:description' | 'twitter:image', attribute: 'name' | 'property' = 'name') {
   const selector = `meta[${attribute}="${name}"]`;
   const existing = document.head.querySelector<HTMLMetaElement>(selector);
 
@@ -37,6 +37,12 @@ function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:descr
   meta.setAttribute(attribute, name);
   document.head.appendChild(meta);
   return meta;
+}
+
+/** Resolves an absolute social-preview image URL from a public path. */
+function buildSocialImageUrl(path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${globalThis.location.origin}${normalizedPath}`;
 }
 
 /** Normalizes a route pathname for canonical URL generation. `/scheduler` and `/dashboard` map to `/`. */
@@ -125,6 +131,7 @@ export function SeoManager() {
     const htmlLang = i18n.resolvedLanguage?.startsWith('hu') ? 'hu' : 'en';
     const canonicalPath = normalizeCanonicalPath(location.pathname);
     const canonicalUrl = `${globalThis.location.origin}${canonicalPath}`;
+    const socialImageUrl = buildSocialImageUrl('/AppLogoFrameBlack.webp');
 
     document.title = fullTitle;
     document.documentElement.lang = htmlLang;
@@ -136,10 +143,13 @@ export function SeoManager() {
     getOrCreateMeta('og:description', 'property').content = config.description;
     getOrCreateMeta('og:type', 'property').content = 'website';
     getOrCreateMeta('og:locale', 'property').content = locale;
+    getOrCreateMeta('og:image', 'property').content = socialImageUrl;
+    getOrCreateMeta('og:url', 'property').content = canonicalUrl;
 
     getOrCreateMeta('twitter:card').content = 'summary';
     getOrCreateMeta('twitter:title').content = fullTitle;
     getOrCreateMeta('twitter:description').content = config.description;
+    getOrCreateMeta('twitter:image').content = socialImageUrl;
 
     getOrCreateCanonical().href = canonicalUrl;
   }, [config.description, config.pageTitle, config.robots, i18n.resolvedLanguage, location.pathname]);

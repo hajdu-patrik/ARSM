@@ -79,7 +79,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
           </div>
         )}
     >
-      <div className="max-h-[64vh] space-y-4 overflow-y-auto pr-1 pb-0.5">
+      <div className="max-h-[64vh] space-y-3 overflow-y-auto pr-1 pb-0.5">
         <SchedulerIntakeHeader
           selectedDayLabel={selectedDayLabel}
           dueDateTime={state.dueDateTime}

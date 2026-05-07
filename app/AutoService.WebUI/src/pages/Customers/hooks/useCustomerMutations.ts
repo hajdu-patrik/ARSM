@@ -60,6 +60,7 @@ export function useCustomerMutations({
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [customerModalMode, setCustomerModalMode] = useState<CustomerModalMode>('create');
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
+  const [editingCustomerSnapshot, setEditingCustomerSnapshot] = useState<CustomerListItem | null>(null);
   const [customerForm, setCustomerForm] = useState<CustomerFormState>(EMPTY_CUSTOMER_FORM);
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
 
@@ -69,6 +70,7 @@ export function useCustomerMutations({
   const openCreateCustomerModal = useCallback(() => {
     setCustomerModalMode('create');
     setEditingCustomerId(null);
+    setEditingCustomerSnapshot(null);
     setCustomerForm(EMPTY_CUSTOMER_FORM);
     setCustomerModalOpen(true);
   }, []);
@@ -76,6 +78,7 @@ export function useCustomerMutations({
   const openEditCustomerModal = useCallback((customer: CustomerListItem) => {
     setCustomerModalMode('edit');
     setEditingCustomerId(customer.id);
+    setEditingCustomerSnapshot(customer);
     setCustomerForm({
       firstName: customer.firstName,
       middleName: customer.middleName ?? '',
@@ -85,6 +88,54 @@ export function useCustomerMutations({
     });
     setCustomerModalOpen(true);
   }, []);
+
+  const hasRequiredFieldError = useCallback((errors: ServerFieldErrors, fieldName: string) => {
+    const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
+    return variants.some((variant) => (errors[variant] ?? []).includes('customers.errors.fieldRequired'));
+  }, []);
+
+  const restoreRequiredCustomerFields = useCallback((errors: ServerFieldErrors) => {
+    if (customerModalMode !== 'edit' || !editingCustomerSnapshot) {
+      return;
+    }
+
+    setCustomerForm((prev) => ({
+      ...prev,
+      firstName: !prev.firstName.trim() && hasRequiredFieldError(errors, 'firstName')
+        ? editingCustomerSnapshot.firstName
+        : prev.firstName,
+      lastName: !prev.lastName.trim() && hasRequiredFieldError(errors, 'lastName')
+        ? editingCustomerSnapshot.lastName
+        : prev.lastName,
+      email: !prev.email.trim() && hasRequiredFieldError(errors, 'email')
+        ? editingCustomerSnapshot.email
+        : prev.email,
+    }));
+  }, [customerModalMode, editingCustomerSnapshot, hasRequiredFieldError]);
+
+  const handleSubmitCustomerError = useCallback((error: unknown) => {
+    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+      showErrorToast('customers.errors.saveFailed');
+      return;
+    }
+
+    const responseData = error.response?.data;
+    const mappedFieldErrors = normalizeServerFieldErrors(
+      extractServerFieldErrors(responseData),
+      mapCustomerValidationMessageToKey,
+    );
+
+    if (hasServerFieldErrors(mappedFieldErrors)) {
+      restoreRequiredCustomerFields(mappedFieldErrors);
+      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.saveFailed');
+      return;
+    }
+
+    const detailKey = responseData?.detail
+      ? mapCustomerValidationMessageToKey(responseData.detail)
+      : 'customers.errors.saveFailed';
+    showErrorToast(detailKey);
+  }, [getFirstFieldErrorMessage, restoreRequiredCustomerFields, showErrorToast]);
 
   const closeCustomerModal = useCallback(() => {
     if (isSavingCustomer) {
@@ -130,25 +181,7 @@ export function useCustomerMutations({
 
       setCustomerModalOpen(false);
     } catch (error) {
-      if (isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-        const responseData = error.response?.data;
-        const mappedFieldErrors = normalizeServerFieldErrors(
-          extractServerFieldErrors(responseData),
-          mapCustomerValidationMessageToKey,
-        );
-
-        if (hasServerFieldErrors(mappedFieldErrors)) {
-          showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.saveFailed');
-          return;
-        }
-
-        const detailKey = responseData?.detail
-          ? mapCustomerValidationMessageToKey(responseData.detail)
-          : 'customers.errors.saveFailed';
-        showErrorToast(detailKey);
-      } else {
-        showErrorToast('customers.errors.saveFailed');
-      }
+      handleSubmitCustomerError(error);
     } finally {
       setIsSavingCustomer(false);
     }
@@ -156,9 +189,8 @@ export function useCustomerMutations({
     customerForm,
     customerModalMode,
     editingCustomerId,
-    getFirstFieldErrorMessage,
+    handleSubmitCustomerError,
     setCustomers,
-    showErrorToast,
     showSuccessToast,
   ]);
 

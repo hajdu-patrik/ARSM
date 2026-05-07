@@ -3,7 +3,7 @@ import type { VehicleDetailDto } from '../../types/customers/customers.types';
 /** Sort direction used by customer and history lists. */
 export type SortDirection = 'asc' | 'desc';
 /** Sortable customer list fields. */
-export type CustomerSortField = 'name' | 'vehicleCount';
+export type CustomerSortField = 'name';
 /** Mode for customer create/edit modal. */
 export type CustomerModalMode = 'create' | 'edit';
 /** Mode for vehicle create/edit modal. */

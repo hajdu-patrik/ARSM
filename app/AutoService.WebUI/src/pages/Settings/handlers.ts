@@ -8,8 +8,10 @@
 
 import { isAxiosError } from 'axios';
 import type { FieldErrors } from './types';
-import { mapSettingsValidationMessageToKey } from '../../utils/serverValidation';
+import { mapSettingsValidationMessageToKey, normalizeServerFieldErrors } from '../../utils/serverValidation';
 import { extractFieldErrors } from './helpers';
+
+const SETTINGS_REQUIRED_FIELD_KEY = 'settings.errors.fieldRequired';
 
 /**
  * Returns true when the field-error dictionary has at least one non-empty entry.
@@ -18,6 +20,26 @@ import { extractFieldErrors } from './helpers';
  */
 export function hasFieldErrors(errors: FieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
+}
+
+/** Returns whether a field has a required-field validation error under common server key casing variants. */
+export function fieldHasRequiredError(errors: FieldErrors, fieldName: string): boolean {
+  const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
+  return variants.some((variant) => (errors[variant] ?? []).includes(SETTINGS_REQUIRED_FIELD_KEY));
+}
+
+/** Extracts and localizes field errors from a profile-save response. */
+export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
+  if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+    return null;
+  }
+
+  const normalizedFieldErrors = normalizeServerFieldErrors(
+    extractFieldErrors(err.response?.data),
+    mapSettingsValidationMessageToKey,
+  );
+
+  return hasFieldErrors(normalizedFieldErrors) ? normalizedFieldErrors : null;
 }
 
 /**

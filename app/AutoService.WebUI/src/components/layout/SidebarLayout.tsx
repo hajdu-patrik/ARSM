@@ -1,10 +1,3 @@
-/**
- * Collapsible sidebar layout with responsive mobile drawer.
- * Provides main navigation, admin navigation, profile block with
- * live-updating avatar, settings link, and logout action.
- * Collapse preference persists in `localStorage`.
- * @module SidebarLayout
- */
 import { memo, useCallback, useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -13,62 +6,44 @@ import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 import { authService } from '../../services/auth/auth.service';
 import { profileService } from '../../services/profile/profile.service';
-import { PROFILE_PICTURE_UPDATED_EVENT, startProfilePictureLiveUpdates } from '../../services/profile/profile-picture-live.service';
+import {
+  PROFILE_PICTURE_UPDATED_EVENT,
+  startProfilePictureLiveUpdates,
+} from '../../services/profile/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 
-/** Describes a single sidebar navigation entry. */
 interface NavItem {
-  /** Unique key used as the React list key. */
   key: string;
-  /** i18n translation key for the link label. */
   labelKey: string;
-  /** Lucide icon component rendered beside the label. */
   icon: React.ComponentType<{ className?: string }>;
-  /** Route path the link navigates to. */
   path: string;
 }
 
-/** Default main navigation items. */
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
   { key: 'customers', labelKey: 'nav.customers', icon: Users, path: '/customers' },
 ];
 
-/** Admin-only navigation item (mechanic registration). */
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };
-
-/** Settings navigation item shown in the sidebar bottom section. */
 const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: '/settings' };
 
-/** Props for the {@link SidebarLayout} component. */
 interface SidebarLayoutProps {
-  /** Page content rendered in the main area beside the sidebar. */
   readonly children: React.ReactNode;
-  /** Override the default main navigation items. */
   readonly navItems?: NavItem[];
 }
 
-/** `localStorage` key for persisting the sidebar collapsed state. */
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
-
-/** Shared transition class for text reveal/hide animations. */
 const TEXT_TRANSITION = 'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
 
-/** Memoized sidebar layout with collapsible desktop sidebar and mobile drawer. */
-const SidebarLayoutComponent = memo(function SidebarLayout({
-  children,
-  navItems = DEFAULT_NAV_ITEMS,
-}: SidebarLayoutProps) {
+const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems = DEFAULT_NAV_ITEMS }: SidebarLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const theme = useThemeStore((state) => state.theme);
 
-  const [collapsed, setCollapsed] = useState(() => {
-    return localStorage.getItem(COLLAPSED_KEY) === 'true';
-  });
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profilePersonId, setProfilePersonId] = useState<number | null>(user?.personId ?? null);
   const [profileFirstName, setProfileFirstName] = useState<string | null>(null);
@@ -83,35 +58,34 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   }, [collapsed]);
 
   useEffect(() => {
-    if (!user) {
-      setProfilePersonId(null);
+    let isCancelled = false;
+
+    const loadProfileForAvatar = async () => {
+      await Promise.resolve();
+
+      if (isCancelled) {
+        return;
+      }
+
+      if (!user) {
+        setProfilePersonId(null);
+        setProfileFirstName(null);
+        setProfileLastName(null);
+        setProfileEmail(null);
+        setHasProfilePicture(false);
+        setAvatarCacheBuster(0);
+        setAvatarLoadFailed(false);
+        return;
+      }
+
+      setProfilePersonId(user.personId);
       setProfileFirstName(null);
       setProfileLastName(null);
       setProfileEmail(null);
       setHasProfilePicture(false);
-      setAvatarCacheBuster(0);
       setAvatarLoadFailed(false);
-      return;
-    }
+      setAvatarCacheBuster(Date.now());
 
-    setProfilePersonId(user.personId);
-    // Reset avatar-related state immediately on user switch to avoid showing stale picture.
-    setProfileFirstName(null);
-    setProfileLastName(null);
-    setProfileEmail(null);
-    setHasProfilePicture(false);
-    setAvatarLoadFailed(false);
-    setAvatarCacheBuster(Date.now());
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    const loadProfileForAvatar = async () => {
       try {
         const profile = await profileService.getProfile();
         if (isCancelled) {
@@ -126,7 +100,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         setAvatarLoadFailed(false);
         setAvatarCacheBuster(Date.now());
       } catch {
-        // Keep last known state to avoid avatar flicker on transient fetch failures.
+        // Keep prior state on transient profile fetch failures.
       }
     };
 
@@ -145,25 +119,21 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
   }, []);
 
   useEffect(() => {
-    const handleProfilePictureUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
+    const onProfilePictureUpdated = (event: Event) => {
+      const custom = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
       const currentPersonId = profilePersonId ?? user?.personId;
-      // Accept only updates that explicitly target the currently authenticated person.
-      if (typeof customEvent.detail?.personId !== 'number' || customEvent.detail.personId !== currentPersonId) {
+      if (typeof custom.detail?.personId !== 'number' || custom.detail.personId !== currentPersonId) {
         return;
       }
 
-      const nextHasProfilePicture = customEvent.detail?.hasProfilePicture ?? hasProfilePicture;
-      const nextCacheBuster = customEvent.detail?.cacheBuster ?? Date.now();
-
-      setHasProfilePicture(nextHasProfilePicture);
-      setAvatarCacheBuster(nextCacheBuster);
+      setHasProfilePicture(custom.detail?.hasProfilePicture ?? hasProfilePicture);
+      setAvatarCacheBuster(custom.detail?.cacheBuster ?? Date.now());
       setAvatarLoadFailed(false);
     };
 
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, onProfilePictureUpdated);
     return () => {
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, onProfilePictureUpdated);
     };
   }, [hasProfilePicture, profilePersonId, user?.personId]);
 
@@ -172,25 +142,15 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
     navigate('/login');
   }, [navigate]);
 
-  const toggleCollapse = useCallback(() => {
-    setCollapsed((prev) => !prev);
-  }, []);
-
-  const toggleMobile = useCallback(() => {
-    setMobileOpen((prev) => !prev);
-  }, []);
-
-  const closeMobile = useCallback(() => {
-    setMobileOpen(false);
-  }, []);
+  const toggleCollapse = useCallback(() => setCollapsed((prev) => !prev), []);
+  const toggleMobile = useCallback(() => setMobileOpen((prev) => !prev), []);
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
 
   const initials = getAvatarInitials(profileFirstName, profileLastName, profileEmail);
   const fallbackAvatarColorClass = getDeterministicAvatarColor(profilePersonId ?? user?.personId ?? profileEmail);
-  const shouldShowProfilePicture = hasProfilePicture && !avatarLoadFailed;
+  const showProfilePicture = hasProfilePicture && !avatarLoadFailed;
   const profilePictureUrl = `${profileService.getProfilePictureUrl()}?pid=${profilePersonId ?? 'me'}&v=${avatarCacheBuster}`;
   const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
-
-  /* Collapsed text class - applied only on md+ to hide text */
   const collapsedText = collapsed ? 'md:max-w-0 md:opacity-0' : 'md:max-w-[180px] md:opacity-100';
 
   const renderNavLink = (item: NavItem) => {
@@ -202,125 +162,95 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         to={item.path}
         onClick={closeMobile}
         className={({ isActive }) => {
-          const isSchedulerRoute = item.key === 'scheduler'
+          const isSchedulerRoute =
+            item.key === 'scheduler'
             && (location.pathname === '/' || location.pathname === '/scheduler' || location.pathname === '/dashboard');
-          const resolvedIsActive = isActive || isSchedulerRoute;
+          const active = isActive || isSchedulerRoute;
 
           return `group flex items-center rounded-xl border text-sm font-medium transition-all duration-200 ${
-            resolvedIsActive
-              ? 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary shadow-[0_8px_18px_rgba(45,36,64,0.12),0_0_0_1px_rgba(188,165,255,0.15)_inset] dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover dark:shadow-[0_10px_20px_rgba(5,8,20,0.5),0_0_0_1px_rgba(138,118,214,0.15)_inset]'
+            active
+              ? 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover'
               : 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark'
           }`;
         }}
         title={collapsed ? t(item.labelKey) : undefined}
       >
-        <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
+        <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
           <Icon className="h-5 w-5" />
         </span>
-        <span className={`${TEXT_TRANSITION} ${collapsedText}`}>
-          {t(item.labelKey)}
-        </span>
+        <span className={`${TEXT_TRANSITION} ${collapsedText}`}>{t(item.labelKey)}</span>
       </NavLink>
     );
   };
 
-  const primaryNavItems = navItems;
-
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
+    <div className="flex h-full flex-col">
       <div className="flex h-[73px] items-center border-b border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_100%)] px-2 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_100%)]">
-        <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
-          <img
-            src={logoSrc}
-            alt="AutoService"
-            className="h-8 w-8 object-contain select-none pointer-events-none"
-          />
+        <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+          <img src={logoSrc} alt="AutoService" className="h-8 w-8 select-none object-contain pointer-events-none" />
         </span>
-        <span
-          className={`${TEXT_TRANSITION} text-lg font-bold text-arsm-primary dark:text-arsm-primary-dark ${collapsedText}`}
-        >
-          ARSM
-        </span>
+        <span className={`${TEXT_TRANSITION} ${collapsedText} text-lg font-bold text-arsm-primary dark:text-arsm-primary-dark`}>ARSM</span>
       </div>
 
-      {/* Main nav */}
-      <nav className="flex-1 px-2 py-3 space-y-1">
-        {primaryNavItems.map(renderNavLink)}
-      </nav>
+      <nav className="flex-1 space-y-1 px-2 py-3">{navItems.map(renderNavLink)}</nav>
 
-      {/* Collapse toggle (desktop only) */}
-      <div className="hidden md:block px-2 py-1">
+      <div className="hidden px-2 py-1 md:block">
         <button
+          type="button"
           onClick={toggleCollapse}
           title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
           className="flex w-full items-center rounded-xl border border-transparent text-arsm-label transition-colors duration-200 hover:border-arsm-border hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
         >
-          <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
-            <ChevronsLeft
-              className={`h-5 w-5 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`}
-            />
+          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+            <ChevronsLeft className={`h-5 w-5 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
           </span>
-          <span
-            className={`${TEXT_TRANSITION} text-sm font-medium ${collapsedText}`}
-          >
-            {t('sidebar.collapse')}
-          </span>
+          <span className={`${TEXT_TRANSITION} ${collapsedText} text-sm font-medium`}>{t('sidebar.collapse')}</span>
         </button>
       </div>
 
-      {/* Bottom section: Profile -> (Admin) -> Settings -> Logout */}
       <div className="space-y-1 border-t border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.42)_100%)] px-2 py-3 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.03)_100%)]">
-        {/* Profile */}
-        <div className="flex items-center ">
-          <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0 select-none pointer-events-none">
-            {shouldShowProfilePicture ? (
+        <div className="flex items-center">
+          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center select-none pointer-events-none">
+            {showProfilePicture ? (
               <img
                 src={profilePictureUrl}
                 alt={t('settings.profilePictureAlt')}
-                className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover shadow-[0_6px_14px_rgba(45,36,64,0.2)] ring-2 ring-arsm-accent/15 dark:border-arsm-accent-dark/50 dark:shadow-[0_8px_16px_rgba(3,5,14,0.55)] dark:ring-arsm-accent-dark/15"
+                className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover ring-2 ring-arsm-accent/15 dark:border-arsm-accent-dark/50 dark:ring-arsm-accent-dark/15"
                 onError={() => setAvatarLoadFailed(true)}
               />
             ) : (
-              <div className={`w-8 h-8 rounded-full text-xs flex items-center justify-center font-bold ${fallbackAvatarColorClass}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${fallbackAvatarColorClass}`}>
                 {initials}
               </div>
             )}
           </span>
-          <div
-            className={`${TEXT_TRANSITION} min-w-0 ${collapsedText}`}
-          >
+          <div className={`${TEXT_TRANSITION} ${collapsedText} min-w-0`}>
             {profileFirstName && profileLastName && (
-              <p className="text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark truncate">
+              <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
                 {profileFirstName} {profileLastName}
               </p>
             )}
-            {profileEmail && (
-              <p className="text-xs text-arsm-label dark:text-arsm-label-dark truncate">{profileEmail}</p>
-            )}
+            {profileEmail && <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{profileEmail}</p>}
           </div>
         </div>
 
-        {/* Admin */}
         {user?.isAdmin && renderNavLink(ADMIN_NAV_ITEM)}
-
-        {/* Settings */}
         {renderNavLink(SETTINGS_NAV_ITEM)}
 
-        {/* Logout */}
         <button
-          onClick={() => { void handleLogout(); }}
+          type="button"
+          onClick={() => {
+            void handleLogout();
+          }}
           title={t('layout.logout')}
+          aria-label={t('layout.logout')}
           className="flex w-full items-center rounded-xl border border-transparent text-arsm-error-active transition-colors duration-200 hover:border-arsm-error-border-light hover:bg-arsm-error-bg dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
         >
-          <span className="inline-flex w-[52px] h-10 items-center justify-center flex-shrink-0">
+          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
             <LogOut className="h-5 w-5" />
           </span>
-          <span
-            className={`${TEXT_TRANSITION} text-sm font-medium ${collapsedText}`}
-          >
-            {t('layout.logout')}
-          </span>
+          <span className={`${TEXT_TRANSITION} ${collapsedText} text-sm font-medium`}>{t('layout.logout')}</span>
         </button>
       </div>
     </div>
@@ -333,7 +263,6 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_8%,rgba(190,166,250,0.18)_0%,rgba(190,166,250,0)_34%),radial-gradient(circle_at_90%_14%,rgba(229,214,255,0.22)_0%,rgba(229,214,255,0)_38%)] dark:bg-[radial-gradient(circle_at_10%_8%,rgba(142,121,216,0.24)_0%,rgba(142,121,216,0)_36%),radial-gradient(circle_at_90%_14%,rgba(48,42,85,0.34)_0%,rgba(48,42,85,0)_42%)]"
       />
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <button
           type="button"
@@ -343,36 +272,25 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
         />
       )}
 
-      {/* Sidebar - mobile drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input shadow-[0_20px_44px_rgba(18,14,34,0.22)] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_24px_48px_rgba(4,6,14,0.66)] md:hidden ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {sidebarContent}
       </aside>
 
-      {/* Sidebar - desktop */}
       <aside
-        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input shadow-[0_12px_34px_rgba(22,16,38,0.14)] transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_14px_38px_rgba(4,6,14,0.56)] md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${
-          collapsed ? 'md:w-[68px]' : 'md:w-64'
-        }`}
+        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] dark:border-arsm-border-dark dark:bg-arsm-card-dark md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-64'}`}
       >
         {sidebarContent}
       </aside>
 
-      {/* Main content */}
-      <div
-        className={`flex-1 min-h-0 flex flex-col min-w-0 transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
-          collapsed ? 'md:pl-[68px]' : 'md:pl-64'
-        }`}
-      >
-        {/* Top bar */}
+      <div className={`flex min-h-0 min-w-0 flex-1 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'md:pl-[68px]' : 'md:pl-64'}`}>
         <header className="flex h-[73px] shrink-0 items-center justify-between border-b border-arsm-border bg-arsm-input/90 px-4 backdrop-blur-xl dark:border-arsm-border-dark dark:bg-arsm-card-dark/85">
-          {/* Mobile hamburger */}
           <button
+            type="button"
             onClick={toggleMobile}
             title={t('sidebar.openMenu')}
+            aria-label={t('sidebar.openMenu')}
             className="min-w-[44px] rounded-lg p-2 text-arsm-label transition-colors hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark md:hidden"
           >
             <Menu className="h-5 w-5" />
@@ -383,15 +301,11 @@ const SidebarLayoutComponent = memo(function SidebarLayout({
           <ThemeLanguageControls className="flex items-center gap-1.5 sm:gap-3" />
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain">
-          {children}
-        </main>
+        <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain">{children}</main>
       </div>
     </div>
   );
 });
 
 SidebarLayoutComponent.displayName = 'SidebarLayout';
-
 export const SidebarLayout = SidebarLayoutComponent;

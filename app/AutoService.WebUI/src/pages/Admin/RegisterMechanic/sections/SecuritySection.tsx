@@ -34,6 +34,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
 }: SecuritySectionProps) {
   const { t } = useTranslation();
   const credentialHintId = 'reg-credential-hint';
+  const isConfirmPasswordInvalid = confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
     <div className="space-y-4">
@@ -87,6 +88,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
             required
             minLength={8}
             autoComplete="new-password"
+            aria-invalid={isConfirmPasswordInvalid}
           />
           <button
             type="button"

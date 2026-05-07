@@ -9,7 +9,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { isAxiosError } from 'axios';
 import { profileService } from '../../services/profile/profile.service';
 import { useToastStore } from '../../store/toast.store';
 import { useAuthStore } from '../../store/auth.store';
@@ -19,13 +18,16 @@ import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 import { DeleteProfileSection } from './sections/DeleteProfileSection';
 import { SettingsActionModals } from './SettingsActionModals';
-import { extractFieldErrors } from './helpers';
-import { hasFieldErrors, extractDeleteProfileErrorKey } from './handlers';
+import {
+  extractDeleteProfileErrorKey,
+  extractPasswordChangeErrors,
+  extractProfileSaveErrors,
+  fieldHasRequiredError,
+} from './handlers';
 import type { ProfileData } from '../../types/profile/profile.types';
 import type { FieldErrors } from './types';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { fileToImageSource } from '../../utils/imageCrop';
-import { mapSettingsValidationMessageToKey, normalizeServerFieldErrors } from '../../utils/serverValidation';
 import { isAllowedPictureExtension } from '../../utils/validation';
 import { emitProfilePictureUpdated } from '../../services/profile/profile-picture-live.service';
 
@@ -39,11 +41,9 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
 
-  // Profile data
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // Personal info form
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -51,26 +51,23 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
-  // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Picture
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [pictureKey, setPictureKey] = useState(0);
   const [pictureSource, setPictureSource] = useState<string | null>(null);
   const [pendingPictureFileName, setPendingPictureFileName] = useState<string | null>(null);
 
-  // Delete profile
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
-  // Confirmation modals
   const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
   const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
+  const [isPictureRemoveConfirmOpen, setIsPictureRemoveConfirmOpen] = useState(false);
 
   const getFirstFieldErrorMessage = useCallback((errors: FieldErrors): string | null => {
     for (const values of Object.values(errors)) {
@@ -82,7 +79,35 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return null;
   }, []);
 
-  // Load profile on mount
+  const restoreRequiredProfileFields = useCallback((errors: FieldErrors) => {
+    if (!profile) {
+      return;
+    }
+
+    if (!firstName.trim() && fieldHasRequiredError(errors, 'firstName')) {
+      setFirstName(profile.firstName);
+    }
+
+    if (!lastName.trim() && fieldHasRequiredError(errors, 'lastName')) {
+      setLastName(profile.lastName);
+    }
+
+    if (!email.trim() && fieldHasRequiredError(errors, 'email')) {
+      setEmail(profile.email);
+    }
+  }, [email, firstName, lastName, profile]);
+
+  const handleProfileSaveFailure = useCallback((err: unknown) => {
+    const normalizedFieldErrors = extractProfileSaveErrors(err);
+    if (normalizedFieldErrors) {
+      restoreRequiredProfileFields(normalizedFieldErrors);
+      showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.profileUpdateFailed');
+      return;
+    }
+
+    showErrorToast('toast.profileUpdateFailed');
+  }, [getFirstFieldErrorMessage, restoreRequiredProfileFields, showErrorToast]);
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -118,11 +143,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return getDeterministicAvatarColor(profile.personId ?? profile.email);
   }, [profile]);
 
-  /**
-   * Executes the profile update API call after confirmation.
-    * Syncs local form state with the returned profile on success and shows
-    * a localized toast on failure.
-   */
   const handleProfileSaveConfirmed = useCallback(async () => {
     setIsProfileSaveConfirmOpen(false);
     setIsUpdatingProfile(true);
@@ -137,54 +157,27 @@ const SettingsPageComponent = memo(function SettingsPage() {
       setPhoneNumber(updated.phoneNumber ?? '');
       showSuccessToast('toast.profileUpdated');
     } catch (err) {
-      if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-        const data = err.response?.data;
-        const normalizedFieldErrors = normalizeServerFieldErrors(extractFieldErrors(data), mapSettingsValidationMessageToKey);
-
-        if (hasFieldErrors(normalizedFieldErrors)) {
-          showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.profileUpdateFailed');
-          return;
-        }
-
-        showErrorToast('toast.profileUpdateFailed');
-      } else {
-        showErrorToast('toast.profileUpdateFailed');
-      }
+      handleProfileSaveFailure(err);
     } finally {
       setIsUpdatingProfile(false);
     }
-  }, [email, firstName, getFirstFieldErrorMessage, lastName, middleName, phoneNumber, showErrorToast, showSuccessToast]);
+  }, [email, firstName, handleProfileSaveFailure, lastName, middleName, phoneNumber, showSuccessToast]);
 
-  const handleProfileSaveRequest = useCallback((e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const handleProfileSaveRequest = useCallback((event: React.SyntheticEvent) => {
+    event.preventDefault();
     setIsProfileSaveConfirmOpen(true);
   }, []);
 
-  /**
-   * Handles API errors from a password change request.
-    * Maps server validation payloads to localized message keys and surfaces
-    * a single toast message.
-   * @param err - The error thrown during the password change call.
-   */
   const handlePasswordChangeFailure = useCallback((err: unknown) => {
-    if (isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
-      const data = err.response?.data;
-      const normalizedFieldErrors = normalizeServerFieldErrors(extractFieldErrors(data), mapSettingsValidationMessageToKey);
-
-      if (hasFieldErrors(normalizedFieldErrors)) {
-        showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.passwordChangeFailed');
-        return;
-      }
+    const normalizedFieldErrors = extractPasswordChangeErrors(err);
+    if (normalizedFieldErrors) {
+      showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.passwordChangeFailed');
+      return;
     }
 
     showErrorToast('toast.passwordChangeFailed');
   }, [getFirstFieldErrorMessage, showErrorToast]);
 
-  /**
-   * Executes the password change API call after confirmation.
-   * Clears password fields on success and delegates error display to
-   * {@link handlePasswordChangeFailure}.
-   */
   const handlePasswordChangeConfirmed = useCallback(async () => {
     setIsPasswordChangeConfirmOpen(false);
     setIsChangingPassword(true);
@@ -207,13 +200,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showSuccessToast,
   ]);
 
-  /**
-   * Validates the password change form and opens the confirmation modal.
-   * Sets inline errors for passwords that are too short or do not match.
-   * @param e - The form submit event.
-   */
-  const handlePasswordChangeRequest = useCallback((e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const handlePasswordChangeRequest = useCallback((event: React.SyntheticEvent) => {
+    event.preventDefault();
 
     if (newPassword.length < 8) {
       showErrorToast('settings.passwordTooShort');
@@ -228,12 +216,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setIsPasswordChangeConfirmOpen(true);
   }, [confirmNewPassword, newPassword, showErrorToast]);
 
-  /**
-   * Handles API errors from a profile delete request.
-    * Maps the server error to a localized toast key when possible;
-    * falls back to a generic delete-failed toast.
-   * @param err - The error thrown during the profile delete call.
-   */
   const handleDeleteProfileFailure = useCallback((err: unknown) => {
     const errorKey = extractDeleteProfileErrorKey(err);
     if (errorKey) {
@@ -243,11 +225,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showErrorToast('toast.profileDeleteFailed');
   }, [showErrorToast]);
 
-  /**
-   * Validates the selected picture file (extension and size), converts it to
-   * a data-URL, and opens the crop modal.
-   * @param file - The picture file selected by the user.
-   */
   const handleSelectPicture = useCallback(async (file: File) => {
     if (!isAllowedPictureExtension(file.name)) {
       showErrorToast('toast.pictureInvalidType');
@@ -273,11 +250,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setPendingPictureFileName(null);
   }, []);
 
-  /**
-   * Uploads the cropped picture blob to the server.
-   * Updates local profile state and broadcasts a live-update event on success.
-   * @param blob - The cropped image blob produced by the crop modal.
-   */
   const handleConfirmPictureCrop = useCallback(async (blob: Blob) => {
     if (!profile) {
       return;
@@ -291,7 +263,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
       await profileService.uploadProfilePicture(croppedFile);
       setProfile((prev) => prev ? { ...prev, hasProfilePicture: true } : prev);
-      setPictureKey((k) => k + 1);
+      setPictureKey((previousKey) => previousKey + 1);
       closePictureCropModal();
 
       emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: true });
@@ -304,10 +276,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     }
   }, [closePictureCropModal, pendingPictureFileName, profile, showErrorToast, showSuccessToast]);
 
-  /**
-   * Deletes the current user's profile picture from the server.
-   * Updates local profile state and broadcasts a live-update event on success.
-   */
   const handleRemovePicture = useCallback(async () => {
     if (!profile) {
       return;
@@ -317,15 +285,22 @@ const SettingsPageComponent = memo(function SettingsPage() {
     try {
       await profileService.deleteProfilePicture();
       setProfile((prev) => prev ? { ...prev, hasProfilePicture: false } : prev);
-      setPictureKey((k) => k + 1);
+      setPictureKey((previousKey) => previousKey + 1);
       emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: false });
       showSuccessToast('toast.pictureRemoved');
+      setIsPictureRemoveConfirmOpen(false);
     } catch {
       showErrorToast('toast.pictureRemoveFailed');
     } finally {
       setIsUploadingPicture(false);
     }
   }, [profile, showErrorToast, showSuccessToast]);
+
+  const handleRemovePictureRequest = useCallback(() => {
+    if (!isUploadingPicture) {
+      setIsPictureRemoveConfirmOpen(true);
+    }
+  }, [isUploadingPicture]);
 
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
@@ -341,10 +316,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     setDeletePassword('');
   }, [isDeletingProfile]);
 
-  /**
-   * Validates the current-password input, then deletes the user's profile.
-   * Clears auth state, shows a success toast, and redirects to login on success.
-   */
   const handleDeleteProfile = useCallback(async () => {
     if (!deletePassword.trim()) {
       showErrorToast('settings.currentPasswordRequired');
@@ -380,51 +351,62 @@ const SettingsPageComponent = memo(function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-3xl">
-        <h1 className="sr-only">{t('settings.title')}</h1>
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+            {t('settings.title')}
+          </h1>
+        </header>
 
         <div className="space-y-6">
-          <ProfilePictureSection
-            hasProfilePicture={profile.hasProfilePicture}
-            pictureUrl={profileService.getProfilePictureUrl()}
-            initials={initials}
-            fallbackColorClass={fallbackColorClass}
-            pictureKey={pictureKey}
-            isUploading={isUploadingPicture}
-            onSelectFile={(file) => { void handleSelectPicture(file); }}
-            onRemove={() => { void handleRemovePicture(); }}
-          />
+          <section aria-label={t('settings.profilePicture')}>
+            <ProfilePictureSection
+              hasProfilePicture={profile.hasProfilePicture}
+              pictureUrl={profileService.getProfilePictureUrl()}
+              initials={initials}
+              fallbackColorClass={fallbackColorClass}
+              pictureKey={pictureKey}
+              isUploading={isUploadingPicture}
+              onSelectFile={(file) => { void handleSelectPicture(file); }}
+              onRemove={handleRemovePictureRequest}
+            />
+          </section>
 
-          <PersonalInfoSection
-            firstName={firstName}
-            middleName={middleName}
-            lastName={lastName}
-            email={email}
-            phoneNumber={phoneNumber}
-            isSubmitting={isUpdatingProfile}
-            onFirstNameChange={setFirstName}
-            onMiddleNameChange={setMiddleName}
-            onLastNameChange={setLastName}
-            onEmailChange={setEmail}
-            onPhoneNumberChange={setPhoneNumber}
-            onSubmit={handleProfileSaveRequest}
-          />
+          <section aria-label={t('settings.personalInfo')}>
+            <PersonalInfoSection
+              firstName={firstName}
+              middleName={middleName}
+              lastName={lastName}
+              email={email}
+              phoneNumber={phoneNumber}
+              isSubmitting={isUpdatingProfile}
+              onFirstNameChange={setFirstName}
+              onMiddleNameChange={setMiddleName}
+              onLastNameChange={setLastName}
+              onEmailChange={setEmail}
+              onPhoneNumberChange={setPhoneNumber}
+              onSubmit={handleProfileSaveRequest}
+            />
+          </section>
 
-          <ChangePasswordSection
-            usernameForAutocomplete={email}
-            currentPassword={currentPassword}
-            newPassword={newPassword}
-            confirmNewPassword={confirmNewPassword}
-            isSubmitting={isChangingPassword}
-            onCurrentPasswordChange={setCurrentPassword}
-            onNewPasswordChange={setNewPassword}
-            onConfirmNewPasswordChange={setConfirmNewPassword}
-            onSubmit={handlePasswordChangeRequest}
-          />
+          <section aria-label={t('settings.changePassword')}>
+            <ChangePasswordSection
+              currentPassword={currentPassword}
+              newPassword={newPassword}
+              confirmNewPassword={confirmNewPassword}
+              isSubmitting={isChangingPassword}
+              onCurrentPasswordChange={setCurrentPassword}
+              onNewPasswordChange={setNewPassword}
+              onConfirmNewPasswordChange={setConfirmNewPassword}
+              onSubmit={handlePasswordChangeRequest}
+            />
+          </section>
 
           {!user?.isAdmin && (
-            <DeleteProfileSection onDeleteRequest={openDeleteModal} />
+            <section aria-label={t('settings.deleteProfileTitle')}>
+              <DeleteProfileSection onDeleteRequest={openDeleteModal} />
+            </section>
           )}
         </div>
       </div>
@@ -438,6 +420,10 @@ const SettingsPageComponent = memo(function SettingsPage() {
       />
 
       <SettingsActionModals
+        isPictureRemoveConfirmOpen={isPictureRemoveConfirmOpen}
+        isUploadingPicture={isUploadingPicture}
+        onClosePictureRemoveConfirm={() => { if (!isUploadingPicture) setIsPictureRemoveConfirmOpen(false); }}
+        onConfirmPictureRemove={() => { void handleRemovePicture(); }}
         isProfileSaveConfirmOpen={isProfileSaveConfirmOpen}
         isUpdatingProfile={isUpdatingProfile}
         onCloseProfileSaveConfirm={() => { if (!isUpdatingProfile) setIsProfileSaveConfirmOpen(false); }}
@@ -453,7 +439,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
         onCloseDeleteModal={closeDeleteModal}
         onConfirmDeleteProfile={() => { void handleDeleteProfile(); }}
       />
-    </div>
+    </section>
   );
 });
 

@@ -35,7 +35,7 @@ i18next
     detection: {
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'preferred-language',
-      caches: ['localStorage'],
+      caches: [],
       excludeCacheFor: ['cimode'],
     },
   });

@@ -41,7 +41,10 @@ const StatusBadgeComponent = memo(function StatusBadge({ status, className = '' 
   const { t } = useTranslation();
 
   return (
-    <span className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${STATUS_COLORS[status]} ${className}`}>
+    <span
+      data-testid="appointment-status-badge"
+      className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-normal ${STATUS_COLORS[status]} ${className}`}
+    >
       <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} aria-hidden="true" />
       {t(STATUS_I18N_KEY[status])}
     </span>

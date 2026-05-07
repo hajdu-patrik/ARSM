@@ -6,10 +6,11 @@
  * @module pages/Customers/page
  */
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
+import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
 import { useCustomerMutations } from './hooks/useCustomerMutations';
 import { useVehicleMutations } from './hooks/useVehicleMutations';
@@ -18,6 +19,7 @@ import { CustomerListSection } from './components/CustomerListSection';
 import { CustomersToolbar } from './components/CustomersToolbar';
 import { DeleteCustomerModal } from './components/DeleteCustomerModal';
 import { DeleteVehicleModal } from './components/DeleteVehicleModal';
+import { HistoryAppointmentModal } from './components/HistoryAppointmentModal';
 import { VehicleFormModal } from './components/VehicleFormModal';
 
 /**
@@ -28,6 +30,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
+  const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
   const getFirstFieldErrorMessage = useCallback((errors: ServerFieldErrors): string | null => {
     for (const values of Object.values(errors)) {
@@ -93,6 +96,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
       <CustomerListSection
         t={t}
         locale={i18n.language}
+        searchTerm={listState.searchTerm}
         filteredCustomers={listState.filteredCustomers}
         isLoadingCustomers={listState.isLoadingCustomers}
         expandedCustomerIds={listState.expandedCustomerIds}
@@ -114,6 +118,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         onToggleCustomerHistorySort={listState.toggleCustomerHistorySort}
         onToggleVehicleHistory={listState.toggleVehicleHistory}
         onToggleVehicleHistorySort={listState.toggleVehicleHistorySort}
+        onOpenHistoryAppointment={setHistoryAppointment}
       />
 
       <CustomerFormModal
@@ -132,7 +137,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isDeleting={customerMutations.isDeletingCustomer}
         t={t}
         onClose={customerMutations.closeDeleteCustomerModal}
-        onConfirm={() => { void customerMutations.handleDeleteCustomer(); }}
+        onConfirm={customerMutations.handleDeleteCustomer}
       />
 
       <VehicleFormModal
@@ -151,7 +156,14 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isDeleting={vehicleMutations.isDeletingVehicle}
         t={t}
         onClose={vehicleMutations.closeDeleteVehicleModal}
-        onConfirm={() => { void vehicleMutations.handleDeleteVehicle(); }}
+        onConfirm={vehicleMutations.handleDeleteVehicle}
+      />
+
+      <HistoryAppointmentModal
+        appointment={historyAppointment}
+        locale={i18n.language}
+        isOpen={historyAppointment !== null}
+        onClose={() => setHistoryAppointment(null)}
       />
     </div>
   );

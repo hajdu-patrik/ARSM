@@ -13,7 +13,6 @@ import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
-  readonly usernameForAutocomplete: string;
   readonly currentPassword: string;
   readonly newPassword: string;
   readonly confirmNewPassword: string;
@@ -28,7 +27,6 @@ interface ChangePasswordSectionProps {
  * Renders the settings password-change form with accessibility-aware inputs.
  */
 const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
-  usernameForAutocomplete,
   currentPassword,
   newPassword,
   confirmNewPassword,
@@ -55,18 +53,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        {/* Hidden username field helps password managers pair current/new password fields. */}
-        <input
-          type="text"
-          name="username"
-          autoComplete="username"
-          value={usernameForAutocomplete}
-          readOnly
-          tabIndex={-1}
-          aria-hidden="true"
-          className="sr-only"
-        />
-
         <div>
           <label htmlFor="settings-currentPassword" className={labelClass}>
             {t('settings.currentPassword')}
@@ -80,7 +66,11 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               placeholder={t('settings.currentPasswordPlaceholder')}
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
-              autoComplete="current-password"
+              autoComplete="new-password"
+              name="settings-current-password-no-autofill"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
             />
             <button
               type="button"
@@ -107,6 +97,10 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
+              name="settings-new-password"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
             />
             <button
               type="button"
@@ -117,6 +111,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
+          <p className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('settings.passwordHint')}</p>
         </div>
 
         <div>
@@ -133,6 +128,10 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
               autoComplete="new-password"
+              name="settings-confirm-password"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
             />
             <button
               type="button"
@@ -151,7 +150,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
           className={`w-full sm:w-auto ${buttonClass}`}
           aria-busy={isSubmitting}
         >
-          {isSubmitting ? t('settings.changingPassword') : t(changePasswordButtonKey)}
+          {isSubmitting ? t('settings.changingCredentials') : t(changePasswordButtonKey)}
         </button>
       </form>
     </div>

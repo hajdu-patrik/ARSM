@@ -11,8 +11,6 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--color-arsm-primary);
   caret-color: var(--color-arsm-primary);
-  box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
-  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input) inset;
   /* 9999s transition freezes the background so the browser never reverts it */
   transition: background-color 9999s ease-in-out 0s;
 }
@@ -24,7 +22,5 @@ html.dark input:-webkit-autofill:focus,
 html.dark input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--color-arsm-primary-dark);
   caret-color: var(--color-arsm-primary-dark);
-  box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
-  -webkit-box-shadow: 0 0 0 1000px var(--color-arsm-input-dark) inset;
   transition: background-color 9999s ease-in-out 0s;
 }

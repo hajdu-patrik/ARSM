@@ -68,6 +68,8 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   const [removingMechanicId, setRemovingMechanicId] = useState<number | null>(null);
   const [pendingRemoveMechanic, setPendingRemoveMechanic] = useState<{ id: number; fullName: string } | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<AppointmentStatus | null>(null);
+  const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
 
   const initializedAppointmentIdRef = useRef<number | null>(null);
   const { allMechanics } = useAdminMechanics(isAdmin, isOpen);
@@ -78,6 +80,8 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       setEditForm(null);
       setIsEditing(false);
       setPendingRemoveMechanic(null);
+      setPendingStatusChange(null);
+      setIsUnclaimConfirmOpen(false);
       return;
     }
 
@@ -89,6 +93,8 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setEditForm(buildEditForm(appointment));
     setIsEditing(false);
     setPendingRemoveMechanic(null);
+    setPendingStatusChange(null);
+    setIsUnclaimConfirmOpen(false);
   }, [appointment, isOpen]);
 
   const handleClaim = useCallback(async () => {
@@ -104,20 +110,21 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     }
   }, [appointment, onClaim]);
 
-  const handleStatusChange = useCallback(async (status: AppointmentStatus) => {
-    if (!appointment) {
+  const handleStatusChangeConfirmed = useCallback(async () => {
+    if (!appointment || pendingStatusChange === null) {
       return;
     }
 
     setIsUpdating(true);
     try {
-      await onStatusChange(appointment.id, status);
+      await onStatusChange(appointment.id, pendingStatusChange);
+      setPendingStatusChange(null);
     } finally {
       setIsUpdating(false);
     }
-  }, [appointment, onStatusChange]);
+  }, [appointment, onStatusChange, pendingStatusChange]);
 
-  const handleUnclaim = useCallback(async () => {
+  const handleUnclaimConfirmed = useCallback(async () => {
     if (!appointment) {
       return;
     }
@@ -125,6 +132,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setIsUnclaiming(true);
     try {
       await onUnclaim(appointment.id);
+      setIsUnclaimConfirmOpen(false);
     } finally {
       setIsUnclaiming(false);
     }
@@ -237,7 +245,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         void handleSave();
       }}
       onStatusChange={(status) => {
-        void handleStatusChange(status);
+        setPendingStatusChange(status);
       }}
       onClaim={() => {
         void handleClaim();
@@ -272,7 +280,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           t={t}
           onEditField={handleEditField}
           onUnclaim={() => {
-            void handleUnclaim();
+            setIsUnclaimConfirmOpen(true);
           }}
           onQueueRemoveMechanic={setPendingRemoveMechanic}
           onSelectNewMechanic={setSelectedNewMechanicId}
@@ -289,6 +297,78 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         onClose={() => setPendingRemoveMechanic(null)}
         onConfirmRemove={handleAdminRemove}
       />
+
+      <Modal
+        isOpen={pendingStatusChange !== null}
+        onClose={() => {
+          if (!isUpdating) {
+            setPendingStatusChange(null);
+          }
+        }}
+        title={t('scheduler.detail.statusChangeConfirmTitle')}
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setPendingStatusChange(null)}
+              disabled={isUpdating}
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            >
+              {t('scheduler.intake.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleStatusChangeConfirmed();
+              }}
+              disabled={isUpdating || pendingStatusChange === null}
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+            >
+              {isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+          {t('scheduler.detail.statusChangeConfirmMessage', {
+            status: pendingStatusChange ? t(`scheduler.status.${pendingStatusChange.toLowerCase()}`) : '',
+          })}
+        </p>
+      </Modal>
+
+      <Modal
+        isOpen={isUnclaimConfirmOpen}
+        onClose={() => {
+          if (!isUnclaiming) {
+            setIsUnclaimConfirmOpen(false);
+          }
+        }}
+        title={t('scheduler.detail.unassignConfirmTitle')}
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setIsUnclaimConfirmOpen(false)}
+              disabled={isUnclaiming}
+              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            >
+              {t('scheduler.intake.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleUnclaimConfirmed();
+              }}
+              disabled={isUnclaiming}
+              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
+            >
+              {isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.unassignConfirmMessage')}</p>
+      </Modal>
     </>
   );
 });

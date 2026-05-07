@@ -10,190 +10,195 @@ import type { MechanicListItem } from '../../../../services/admin/admin.service'
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 
 interface MechanicListSectionProps {
-  readonly refreshKey: number;
+	readonly refreshKey: number;
 }
 
-/**
- * Renders the admin mechanic roster with optional delete actions.
- * Reloads the list on refresh-key changes and profile-picture update events.
- */
+/** Renders the admin mechanic roster with optional delete actions. */
 export const MechanicListSection = memo(function MechanicListSection({ refreshKey }: MechanicListSectionProps) {
-  const { t } = useTranslation();
-  const showSuccessToast = useToastStore((state) => state.showSuccess);
-  const showErrorToast = useToastStore((state) => state.showError);
+	const { t } = useTranslation();
+	const showSuccessToast = useToastStore((state) => state.showSuccess);
+	const showErrorToast = useToastStore((state) => state.showError);
 
-  const [mechanics, setMechanics] = useState<MechanicListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+	const [mechanics, setMechanics] = useState<MechanicListItem[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
-  /** Fetches the current mechanic list for the admin panel. */
-  const loadMechanics = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminService.listMechanics();
-      setMechanics(data);
-    } catch {
-      showErrorToast('admin.mechanicListError');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showErrorToast]);
+	const loadMechanics = useCallback(async () => {
+		setIsLoading(true);
+		try {
+			const data = await adminService.listMechanics();
+			setMechanics(data);
+		} catch {
+			showErrorToast('admin.mechanicListError');
+		} finally {
+			setIsLoading(false);
+		}
+	}, [showErrorToast]);
 
-  useEffect(() => {
-    void loadMechanics();
-  }, [loadMechanics, refreshKey]);
+	useEffect(() => {
+		void loadMechanics();
+	}, [loadMechanics, refreshKey]);
 
-  useEffect(() => {
-    const handleProfilePictureUpdated = () => {
-      void loadMechanics();
-    };
+	useEffect(() => {
+		const handleProfilePictureUpdated = () => {
+			void loadMechanics();
+		};
 
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
-    return () => {
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
-    };
-  }, [loadMechanics]);
+		globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+		return () => {
+			globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+		};
+	}, [loadMechanics]);
 
-  const openDeleteModal = useCallback((mechanic: MechanicListItem) => {
-    setDeleteTarget(mechanic);
-  }, []);
+	const openDeleteModal = useCallback((mechanic: MechanicListItem) => {
+		setDeleteTarget(mechanic);
+	}, []);
 
-  const closeDeleteModal = useCallback(() => {
-    if (isDeleting) return;
-    setDeleteTarget(null);
-  }, [isDeleting]);
+	const closeDeleteModal = useCallback(() => {
+		if (isDeleting) {
+			return;
+		}
 
-  /** Deletes the selected mechanic after confirmation. */
-  const handleDelete = useCallback(async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
+		setDeleteTarget(null);
+	}, [isDeleting]);
 
-    try {
-      await adminService.deleteMechanic(deleteTarget.personId);
-      setMechanics((prev) => prev.filter((mechanicItem) => mechanicItem.personId !== deleteTarget.personId));
-      showSuccessToast('admin.mechanicDeleted', { email: deleteTarget.email });
-      setDeleteTarget(null);
-    } catch (err) {
-      if (isAxiosError<{ detail?: string }>(err)) {
-        const status = err.response?.status;
-        const detail = err.response?.data?.detail ?? '';
-        if (status === 422 && detail.includes('appointments would be left without')) {
-          showErrorToast('admin.mechanicDeleteHasAppointments');
-        } else if (status === 422 && detail.includes('last remaining mechanic')) {
-          showErrorToast('admin.mechanicDeleteLastMechanic');
-        } else if (status === 403) {
-          showErrorToast('admin.mechanicDeleteForbidden');
-        } else if (status === 409) {
-          showErrorToast('admin.mechanicDeleteConflict');
-        } else if (status === 500) {
-          showErrorToast('admin.mechanicDeleteIdentityFailed');
-        } else {
-          showErrorToast('admin.mechanicDeleteFailed');
-        }
-      } else {
-        showErrorToast('admin.mechanicDeleteFailed');
-      }
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [deleteTarget, showErrorToast, showSuccessToast]);
+	const handleDelete = useCallback(async () => {
+		if (!deleteTarget) {
+			return;
+		}
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
-      </div>
-    );
-  }
+		setIsDeleting(true);
+		try {
+			await adminService.deleteMechanic(deleteTarget.personId);
+			setMechanics((previousMechanics) => (
+				previousMechanics.filter((mechanicItem) => mechanicItem.personId !== deleteTarget.personId)
+			));
+			showSuccessToast('admin.mechanicDeleted', { email: deleteTarget.email });
+			setDeleteTarget(null);
+		} catch (error) {
+			if (isAxiosError<{ detail?: string }>(error)) {
+				const status = error.response?.status;
+				const detail = error.response?.data?.detail ?? '';
 
-  return (
-    <>
-      {mechanics.length === 0 ? (
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
-      ) : (
-        <div className="space-y-3">
-          {mechanics.map((mechanic) => {
-            const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
-            const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
-            const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
-              .filter(Boolean)
-              .join(' ');
+				if (status === 422 && detail.includes('appointments would be left without')) {
+					showErrorToast('admin.mechanicDeleteHasAppointments');
+				} else if (status === 422 && detail.includes('last remaining mechanic')) {
+					showErrorToast('admin.mechanicDeleteLastMechanic');
+				} else if (status === 403) {
+					showErrorToast('admin.mechanicDeleteForbidden');
+				} else if (status === 409) {
+					showErrorToast('admin.mechanicDeleteConflict');
+				} else if (status === 500) {
+					showErrorToast('admin.mechanicDeleteIdentityFailed');
+				} else {
+					showErrorToast('admin.mechanicDeleteFailed');
+				}
+			} else {
+				showErrorToast('admin.mechanicDeleteFailed');
+			}
+		} finally {
+			setIsDeleting(false);
+		}
+	}, [deleteTarget, showErrorToast, showSuccessToast]);
 
-            return (
-              <div
-                key={mechanic.personId}
-                className="relative flex items-start gap-3 rounded-xl border border-arsm-border bg-arsm-card px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)] dark:hover:shadow-[0_12px_24px_rgba(3,5,14,0.58)] sm:items-center"
-              >
-                <MechanicAvatar
-                  mechanicId={mechanic.personId}
-                  fullName={displayName}
-                  hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-                  sizeClassName="h-10 w-10 text-sm"
-                />
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<div className="h-8 w-8 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
+			</div>
+		);
+	}
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
-                      {displayName}
-                    </p>
-                    {mechanic.isAdmin && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
-                </div>
+	return (
+		<>
+			{mechanics.length === 0 ? (
+				<p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
+			) : (
+				<div className="space-y-3">
+					{mechanics.map((mechanic) => {
+						const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
+						const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
+						const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
+							.filter(Boolean)
+							.join(' ');
 
-                {canRemoveMechanic && (
-                  <button
-                    type="button"
-                    onClick={() => openDeleteModal(mechanic)}
-                    title={t('admin.deleteMechanic')}
-                    className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/35"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+						return (
+							<div
+								key={mechanic.personId}
+								className="relative flex items-start gap-3 rounded-xl border border-arsm-border bg-arsm-card px-4 py-3 transition-all duration-200 hover:-translate-y-px dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:items-center"
+							>
+								<MechanicAvatar
+									mechanicId={mechanic.personId}
+									fullName={displayName}
+									hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
+									sizeClassName="h-10 w-10 text-sm"
+								/>
 
-      <Modal
-        isOpen={deleteTarget !== null}
-        onClose={closeDeleteModal}
-        title={t('admin.deleteMechanicModalTitle')}
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={closeDeleteModal}
-              disabled={isDeleting}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-            >
-              {t('settings.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { void handleDelete(); }}
-              disabled={isDeleting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
-            >
-              {isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}
-            </button>
-          </>
-        )}
-      >
-        <p className="break-words text-sm text-arsm-label dark:text-arsm-label-dark [overflow-wrap:anywhere]">
-          {t('admin.deleteMechanicWarning', {
-            name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
-            email: deleteTarget?.email ?? '',
-          })}
-        </p>
-      </Modal>
-    </>
-  );
+								<div className="min-w-0 flex-1">
+									<div className="flex flex-wrap items-center gap-2">
+										<p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+											{displayName}
+										</p>
+										{mechanic.isAdmin && (
+											<span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
+												Admin
+											</span>
+										)}
+									</div>
+									<p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
+								</div>
+
+								{canRemoveMechanic && (
+									<button
+										type="button"
+										onClick={() => openDeleteModal(mechanic)}
+										title={t('admin.deleteMechanic')}
+										className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/35"
+									>
+										<Trash2 className="h-4 w-4" />
+									</button>
+								)}
+							</div>
+						);
+					})}
+				</div>
+			)}
+
+			<Modal
+				isOpen={deleteTarget !== null}
+				onClose={closeDeleteModal}
+				title={t('admin.deleteMechanicModalTitle')}
+				footer={(
+					<>
+						<button
+							type="button"
+							onClick={closeDeleteModal}
+							disabled={isDeleting}
+							className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+						>
+							{t('settings.cancel')}
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								void handleDelete();
+							}}
+							disabled={isDeleting}
+							className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
+						>
+							{isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}
+						</button>
+					</>
+				)}
+			>
+				<p className="break-words text-sm text-arsm-label dark:text-arsm-label-dark [overflow-wrap:anywhere]">
+					{t('admin.deleteMechanicWarning', {
+						name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
+						email: deleteTarget?.email ?? '',
+					})}
+				</p>
+			</Modal>
+		</>
+	);
 });

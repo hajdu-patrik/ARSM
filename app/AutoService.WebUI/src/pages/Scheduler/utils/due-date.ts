@@ -11,7 +11,7 @@
 export interface DueState {
   /** Whether the due datetime has already passed. */
   isOverdue: boolean;
-  /** Tailwind color class reflecting the urgency tone (red/amber/neutral). */
+  /** Tailwind color class reflecting the urgency tone. */
   toneClassName: string;
   /** i18n translation key describing the due state. */
   labelKey: string;
@@ -59,7 +59,7 @@ export function getDueState(dueDateTime: string): DueState {
     const overdueDuration = splitDuration(Math.abs(diffMs));
     return {
       isOverdue: true,
-      toneClassName: 'text-red-700 dark:text-red-300',
+      toneClassName: 'text-arsm-error-text dark:text-arsm-error-text-light',
       labelKey: 'scheduler.due.overdueByDays',
       labelValues: overdueDuration,
     };
@@ -70,7 +70,7 @@ export function getDueState(dueDateTime: string): DueState {
   return {
     isOverdue: false,
     toneClassName: diffMs < MS_PER_DAY
-      ? 'text-amber-700 dark:text-amber-300'
+      ? 'text-arsm-warning-text dark:text-arsm-warning-text-dark'
       : 'text-arsm-label dark:text-arsm-label-dark',
     labelKey: 'scheduler.due.daysLeft',
     labelValues: dueDuration,

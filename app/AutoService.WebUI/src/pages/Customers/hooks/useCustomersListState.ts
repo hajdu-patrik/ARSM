@@ -122,16 +122,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
       const rightName = buildCustomerDisplayName(right);
       const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
 
-      if (sortField === 'vehicleCount') {
-        const vehicleCountComparison = left.vehicleCount - right.vehicleCount;
-
-        if (vehicleCountComparison !== 0) {
-          return vehicleCountComparison * directionMultiplier;
-        }
-
-        return collator.compare(leftName, rightName);
-      }
-
       const nameComparison = collator.compare(leftName, rightName);
 
       if (nameComparison !== 0) {
@@ -140,7 +130,7 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
 
       return left.vehicleCount - right.vehicleCount;
     });
-  }, [collator, customers, normalizedSearchTerm, sortDirection, sortField]);
+  }, [collator, customers, normalizedSearchTerm, sortDirection]);
 
   const clearSearch = useCallback(() => setSearchTerm(''), []);
   const toggleSortDirection = useCallback(() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc')), []);

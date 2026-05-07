@@ -6,7 +6,7 @@
  * @module pages/Customers/helpers
  */
 
-import type { CustomerListItem, VehicleDetailDto } from '../../types/customers/customers.types';
+import type { CustomerListItem } from '../../types/customers/customers.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
 
 /** Structured numeric values extracted from vehicle form inputs. */
@@ -59,13 +59,19 @@ export function normalizeSearchValue(value: string): string {
  * @returns Human-readable date-time text.
  */
 export function formatDateTime(value: string, locale: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 }
 
 /**

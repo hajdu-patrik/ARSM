@@ -1,64 +1,41 @@
-/**
- * Monthly appointment list rendered as a continuous sorted card grid.
- * Provides status filter chips, mechanic dropdown filter, date sort toggle,
- * day filtering, and loading skeletons. All filters combine with each other
- * and with the selected day.
- * @module MonthAppointmentList
- */
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ArrowUpDown, CalendarDays } from 'lucide-react';
+import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { AppointmentCard } from '../shared/AppointmentCard';
 
-/** Props for the {@link MonthAppointmentList} component. */
 interface MonthAppointmentListProps {
-  /** All appointments for the current month. */
   readonly appointments: AppointmentDto[];
-  /** Whether appointment data is currently loading. */
   readonly isLoading: boolean;
-  /** ID of the currently authenticated mechanic. */
   readonly currentMechanicId: number | undefined;
-  /** Currently selected day filter, or null if showing all days. */
   readonly selectedDay: number | null;
-  /** Callback to claim an appointment by ID. */
   readonly onClaim: (id: number) => Promise<void>;
-  /** Callback when an appointment card is clicked to open detail. */
+  readonly onUnclaim: (id: number) => Promise<void>;
   readonly onCardClick: (appointment: AppointmentDto) => void;
-  /** Callback to clear the day filter. */
   readonly onClearFilter: () => void;
 }
 
-/** Ordered list of status values available as filter chips. */
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 
-/** Active/inactive Tailwind color classes for each status filter chip. */
 const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string }> = {
   InProgress: {
-    active: 'bg-arsm-warning-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(245,158,11,0.3)] dark:bg-arsm-warning-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(245,158,11,0.2)]',
+    active: 'bg-arsm-warning-accent text-arsm-on-accent dark:bg-arsm-warning-accent dark:text-arsm-on-accent-dark',
     inactive: 'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
   },
   Completed: {
-    active: 'bg-arsm-success-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(34,197,94,0.3)] dark:bg-arsm-success-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(34,197,94,0.2)]',
+    active: 'bg-arsm-success-accent text-arsm-on-accent dark:bg-arsm-success-accent dark:text-arsm-on-accent-dark',
     inactive: 'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
   },
   Cancelled: {
-    active: 'bg-arsm-error-accent text-arsm-on-accent shadow-[0_4px_12px_rgba(215,82,94,0.3)] dark:bg-arsm-error-accent dark:text-arsm-on-accent-dark dark:shadow-[0_4px_12px_rgba(215,82,94,0.2)]',
-    inactive: 'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
+    active: 'bg-arsm-error-accent text-arsm-on-accent dark:bg-arsm-error-accent dark:text-arsm-on-accent-dark',
+    inactive: 'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-dark',
   },
 };
 
-/** Matches placeholder profile-name fragments produced by test flows. */
-const PLACEHOLDER_MECHANIC_NAME_PATTERN = /\bupdated(first|middle|last)\b/i;
+const PLACEHOLDER_MECHANIC_NAME_PATTERN = /^(?:unknown|ismeretlen|n\/a|none|-+)$/i;
 
-/**
- * Returns whether a mechanic full name looks like test placeholder content.
- *
- * @param fullName - Mechanic full name from appointment payload.
- * @returns True when the name should be hidden from the filter dropdown.
- */
 function isPlaceholderMechanicName(fullName: string): boolean {
-  return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName);
+  return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName.trim());
 }
 
 const MonthAppointmentListComponent = memo(function MonthAppointmentList({
@@ -67,10 +44,12 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   currentMechanicId,
   selectedDay,
   onClaim,
+  onUnclaim,
   onCardClick,
   onClearFilter,
 }: MonthAppointmentListProps) {
   const { t } = useTranslation();
+
   const [selectedStatuses, setSelectedStatuses] = useState<Set<AppointmentStatus>>(new Set());
   const [selectedMechanicId, setSelectedMechanicId] = useState<number | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -90,34 +69,32 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   const uniqueMechanics = useMemo(() => {
     const map = new Map<number, string>();
     for (const appt of appointments) {
-      for (const m of appt.mechanics) {
-        const normalizedName = m.fullName.trim();
+      for (const mechanic of appt.mechanics) {
+        const normalizedName = mechanic.fullName.trim();
         if (normalizedName.length === 0 || isPlaceholderMechanicName(normalizedName)) {
           continue;
         }
 
-        if (!map.has(m.id)) {
-          map.set(m.id, normalizedName);
+        if (!map.has(mechanic.id)) {
+          map.set(mechanic.id, normalizedName);
         }
       }
     }
+
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [appointments]);
 
   const filtered = useMemo(() => {
     let result = appointments;
 
-    // Day filter
     if (selectedDay !== null) {
       result = result.filter((a) => new Date(a.scheduledDate).getDate() === selectedDay);
     }
 
-    // Status filter
     if (selectedStatuses.size > 0) {
       result = result.filter((a) => selectedStatuses.has(a.status));
     }
 
-    // Mechanic filter
     if (selectedMechanicId !== null) {
       result = result.filter((a) => a.mechanics.some((m) => m.id === selectedMechanicId));
     }
@@ -136,45 +113,90 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   }, [filtered, sortAsc]);
 
   const shouldSpanSingleCard = sortedAppointments.length === 1;
-  const emptyMessageKey = selectedDay === null
-    ? 'scheduler.monthList.empty'
-    : 'scheduler.monthList.emptyFiltered';
+  const emptyMessageKey = selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
+
+  let listContent: ReactNode;
+  if (isLoading) {
+    listContent = (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div
+            key={`month-skeleton-${index}`}
+            className="min-h-40 animate-pulse rounded-2xl border border-arsm-border bg-arsm-card dark:border-arsm-border-dark dark:bg-arsm-input-dark"
+          />
+        ))}
+      </div>
+    );
+  } else if (sortedAppointments.length === 0) {
+    listContent = (
+      <div className="rounded-xl border border-arsm-border border-dashed bg-arsm-toggle-bg px-4 py-8 text-center text-sm text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-muted-dark">
+        {t(emptyMessageKey)}
+      </div>
+    );
+  } else {
+    listContent = (
+      <div className={`grid grid-cols-1 gap-3 md:grid-cols-2 ${shouldSpanSingleCard ? 'md:grid-cols-1' : ''}`}>
+        {sortedAppointments.map((appointment) => (
+          <AppointmentCard
+            key={appointment.id}
+            appointment={appointment}
+            currentMechanicId={currentMechanicId}
+            onClaim={onClaim}
+            onUnclaim={onUnclaim}
+            onClick={() => onCardClick(appointment)}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <section className="min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <h2 className="text-xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
-          {t('scheduler.monthList.title')}
-        </h2>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary shadow-[0_6px_14px_rgba(45,36,64,0.1)] dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover dark:shadow-[0_8px_16px_rgba(5,8,20,0.45)]">
-            {t('scheduler.monthList.count', { count: appointments.length })}
-          </span>
+    <section className="rounded-2xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col">
+          <h3 className="truncate text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-lg">
+            {t('scheduler.monthList.title')}
+          </h3>
+          <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark sm:text-sm">
+            {t('scheduler.monthList.count', { count: sortedAppointments.length })}
+          </p>
+        </div>
+
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setSortAsc((v) => !v)}
+            className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border bg-arsm-accent-subtle px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-accent-wash max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80"
+            title={t('scheduler.monthList.sortByDate')}
+          >
+            <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
+          </button>
+
           {selectedDay !== null && (
             <button
+              type="button"
               onClick={onClearFilter}
-              className="inline-flex items-center gap-1 rounded-full border border-arsm-border bg-arsm-accent-subtle px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:border-arsm-accent/55 hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80"
+              className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border bg-arsm-accent-subtle px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:border-arsm-accent/55 hover:bg-arsm-accent-wash max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80"
             >
-              <X className="w-3 h-3" />
-              {t('scheduler.monthList.clearFilter')}
+              <X className="h-3 w-3 shrink-0" />
+              <span className="truncate">{t('scheduler.monthList.clearFilter')}</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {/* Status chips */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((status) => {
           const isActive = selectedStatuses.has(status);
           const colors = STATUS_CHIP_COLORS[status];
           const chipStateClass = isActive
-            ? `${colors.active} border-transparent shadow-sm`
+            ? `${colors.active} border-transparent`
             : `${colors.inactive} border-arsm-border dark:border-arsm-border-dark`;
 
           return (
             <button
+              type="button"
               key={status}
               onClick={() => toggleStatus(status)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:opacity-90 ${chipStateClass}`}
@@ -184,74 +206,26 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           );
         })}
 
-        {/* Mechanic dropdown */}
-        <select
-          value={selectedMechanicId ?? ''}
-          onChange={(e) => setSelectedMechanicId(e.target.value ? Number(e.target.value) : null)}
-          aria-label={t('scheduler.filter.allMechanics')}
-          className="min-w-0 max-w-[10rem] truncate rounded-full border border-arsm-border bg-arsm-neutral-pill px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-neutral-pill-hover focus:outline-none dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-        >
-          <option value="">{t('scheduler.filter.allMechanics')}</option>
-          {uniqueMechanics.map(([id, name]) => (
-            <option key={id} value={id}>{name}</option>
-          ))}
-        </select>
-
-        {/* Sort toggle */}
-        <button
-          onClick={() => setSortAsc((prev) => !prev)}
-          title={sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
-          className="inline-flex items-center gap-1 rounded-full border border-arsm-border bg-arsm-neutral-pill px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-neutral-pill-hover dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
-        >
-          <ArrowUpDown className="w-3 h-3" />
-          {sortAsc ? t('scheduler.filter.sortAsc') : t('scheduler.filter.sortDesc')}
-        </button>
+        <div className="min-w-0 basis-full overflow-hidden sm:basis-auto">
+          <select
+            value={selectedMechanicId ?? ''}
+            onChange={(e) => setSelectedMechanicId(e.target.value === '' ? null : Number(e.target.value))}
+            className="w-full min-w-0 max-w-full truncate rounded-lg border border-arsm-border bg-arsm-card px-2.5 py-1.5 text-xs text-arsm-primary transition-colors hover:bg-arsm-hover dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark"
+          >
+            <option value="">{t('scheduler.monthList.mechanicAll')}</option>
+            {uniqueMechanics.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Loading skeleton */}
-      {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[0, 1].map((i) => (
-            <div key={i} className="h-52 rounded-2xl border border-arsm-border bg-arsm-card p-5 shadow-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:shadow-[0_8px_18px_rgba(3,5,14,0.45)]">
-              <div className="shimmer-skeleton h-5 rounded-lg w-2/3 mb-4" />
-              <div className="shimmer-skeleton h-3.5 rounded-md w-1/2 mb-4" />
-              <div className="shimmer-skeleton h-16 rounded-xl mb-4" />
-              <div className="shimmer-skeleton h-3.5 rounded-md w-1/3" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && filtered.length === 0 && (
-        <div className="fade-in-up rounded-2xl border border-dashed border-arsm-border/70 bg-arsm-input/60 py-14 text-center dark:border-arsm-border-dark/60 dark:bg-arsm-card-dark/40">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-arsm-toggle-bg dark:bg-arsm-toggle-bg-dark">
-            <CalendarDays className="h-6 w-6 text-arsm-muted dark:text-arsm-muted-dark" />
-          </div>
-          <p className="text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">{t(emptyMessageKey)}</p>
-        </div>
-      )}
-
-      {/* Continuous appointment grid */}
-      {!isLoading && sortedAppointments.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {sortedAppointments.map((appointment) => (
-            <div key={appointment.id} className={shouldSpanSingleCard ? 'sm:col-span-2' : ''}>
-              <AppointmentCard
-                appointment={appointment}
-                currentMechanicId={currentMechanicId}
-                onClaim={onClaim}
-                onClick={() => onCardClick(appointment)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      {listContent}
     </section>
   );
 });
 
 MonthAppointmentListComponent.displayName = 'MonthAppointmentList';
-
-/** Memoized monthly appointment list with filtering, sorting, and card grid. */
 export const MonthAppointmentList = MonthAppointmentListComponent;

@@ -1,7 +1,6 @@
 /**
- * App-wide toast notification viewport. Renders a fixed overlay of
- * auto-dismissing success/error toasts with i18n-resolved messages.
- * Toast messages store i18n keys so visible toasts update on language change.
+ * App-wide toast notification viewport.
+ * Renders top-center auto-dismissing success/error toasts with i18n keys.
  * @module ToastViewport
  */
 import { memo, useEffect } from 'react';
@@ -14,17 +13,16 @@ const SYSTEM_ERROR_TOAST_KEYS = new Set([
   'login.databaseUnavailable',
 ]);
 
-/** Props for the internal {@link ToastItem} component. */
 interface ToastItemProps {
-  /** The toast message data to render. */
   readonly toast: ToastMessage;
 }
 
-/** Single toast notification with auto-dismiss timer, variant styling, and manual dismiss button. */
 const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   const { t } = useTranslation();
   const removeToast = useToastStore((state) => state.removeToast);
-  const isSystemErrorToast = toast.variant === 'error' && SYSTEM_ERROR_TOAST_KEYS.has(toast.messageKey);
+
+  const isSystemErrorToast = toast.variant === 'error'
+    && SYSTEM_ERROR_TOAST_KEYS.has(toast.messageKey);
 
   useEffect(() => {
     const timeoutId = globalThis.setTimeout(() => {
@@ -47,7 +45,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   return (
     <output
       aria-live="polite"
-      className={`toast-enter pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 text-sm font-medium shadow-[0_16px_40px_rgba(18,14,34,0.28),0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur-md ${toastVariantClass}`}
+      className={`toast-enter pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 text-sm font-medium backdrop-blur-md ${toastVariantClass}`}
     >
       {isSystemErrorToast ? (
         <span
@@ -57,16 +55,10 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       ) : null}
 
       <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center">
-        {toast.variant === 'success' ? (
-          <Check className="h-5 w-5" />
-        ) : (
-          <CircleAlert className="h-5 w-5" />
-        )}
+        {toast.variant === 'success' ? <Check className="h-5 w-5" /> : <CircleAlert className="h-5 w-5" />}
       </span>
 
-      <p className="flex-1 leading-5">
-        {t(toast.messageKey, toast.messageValues)}
-      </p>
+      <p className="flex-1 leading-5">{t(toast.messageKey, toast.messageValues)}</p>
 
       {isSystemErrorToast ? (
         <span className="rounded-md border border-arsm-error-hover/45 bg-white/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-white/10 dark:text-arsm-error-softest">
@@ -88,7 +80,6 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
 ToastItem.displayName = 'ToastItem';
 
-/** Fixed-position container that renders all active toasts at the top of the viewport. */
 const ToastViewportComponent = memo(function ToastViewport() {
   const toasts = useToastStore((state) => state.toasts);
 

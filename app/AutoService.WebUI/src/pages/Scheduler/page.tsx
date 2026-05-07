@@ -124,39 +124,54 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   }, [selectedAppointmentId, store.monthAppointments, store.todayAppointments]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 max-[320px]:p-3 sm:p-6 lg:p-8">
-      <SchedulerSummaryStrip
-        summaryDateText={summaryDateText}
-        summaryCount={summaryCount}
-        t={t}
-      />
+    <section className="flex flex-col gap-6 p-4 max-[320px]:p-3 sm:p-6 lg:p-8">
+      <h1 className="sr-only">{t('nav.scheduler')}</h1>
 
-      <CalendarView
-        appointments={store.calendarAppointments}
-        year={store.calendarYear}
-        month={store.calendarMonth}
-        isLoading={store.isLoadingMonth}
-        onMonthChange={(year, month) => store.setCalendarMonth(year, month)}
-        onDayClick={handleDayClick}
-        selectedDay={store.selectedDay}
-      />
+      <section aria-label={t('scheduler.plannerSpace')}>
+        <h2 className="sr-only">{t('scheduler.plannerSpace')}</h2>
+        <SchedulerSummaryStrip
+          summaryDateText={summaryDateText}
+          summaryCount={summaryCount}
+          t={t}
+        />
+      </section>
 
-      <SchedulerQuickIntakeSection
-        selectedDateLabel={selectedDateLabel}
-        selectedDate={selectedDate}
-        t={t}
-        onOpenIntake={handleOpenIntake}
-      />
+      <section aria-label={t('nav.scheduler')}>
+        <h2 className="sr-only">{t('nav.scheduler')}</h2>
+        <CalendarView
+          appointments={store.calendarAppointments}
+          year={store.calendarYear}
+          month={store.calendarMonth}
+          isLoading={store.isLoadingMonth}
+          onMonthChange={(year, month) => store.setCalendarMonth(year, month)}
+          onDayClick={handleDayClick}
+          selectedDay={store.selectedDay}
+        />
+      </section>
 
-      <MonthAppointmentList
-        appointments={store.monthAppointments}
-        isLoading={store.isLoadingMonth}
-        currentMechanicId={user?.personId}
-        selectedDay={store.selectedDay}
-        onClaim={handleClaim}
-        onCardClick={handleCardClick}
-        onClearFilter={() => store.setSelectedDay(null)}
-      />
+      <section aria-label={t('scheduler.intake.quickTitle')}>
+        <h2 className="sr-only">{t('scheduler.intake.quickTitle')}</h2>
+        <SchedulerQuickIntakeSection
+          selectedDateLabel={selectedDateLabel}
+          selectedDate={selectedDate}
+          t={t}
+          onOpenIntake={handleOpenIntake}
+        />
+      </section>
+
+      <section aria-label={t('scheduler.monthList.title')}>
+        <h2 className="sr-only">{t('scheduler.monthList.title')}</h2>
+        <MonthAppointmentList
+          appointments={store.monthAppointments}
+          isLoading={store.isLoadingMonth}
+          currentMechanicId={user?.personId}
+          selectedDay={store.selectedDay}
+          onClaim={handleClaim}
+          onUnclaim={handleUnclaim}
+          onCardClick={handleCardClick}
+          onClearFilter={() => store.setSelectedDay(null)}
+        />
+      </section>
 
       <AppointmentDetailModal
         appointment={selectedAppointment}
@@ -180,7 +195,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
           onSubmit={handleCreateIntake}
         />
       )}
-    </div>
+    </section>
   );
 });
 
