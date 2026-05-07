@@ -6,6 +6,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { buttonClass, insetSurfaceClass } from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerQuickIntakeSection} component. */
 interface SchedulerQuickIntakeSectionProps {
@@ -27,7 +28,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 	onOpenIntake,
 }: SchedulerQuickIntakeSectionProps) {
 	return (
-		<section className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-4 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+		<section className={`${insetSurfaceClass} relative overflow-hidden p-4`}>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h3 className="text-base font-semibold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
@@ -45,7 +46,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+					className={buttonClass}
 				>
 					{t('scheduler.intake.open')}
 				</button>

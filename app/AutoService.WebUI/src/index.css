@@ -5,6 +5,7 @@
 @import "./styles/animations.css";
 @import "./styles/scrollbars.css";
 @import "./styles/components.css";
+@import "./styles/design-system.css";
 
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;

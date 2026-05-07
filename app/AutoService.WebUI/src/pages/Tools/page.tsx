@@ -6,23 +6,21 @@
 import { memo } from 'react';
 import { Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { pageShellCompactClass, pageTitleClass } from '../../utils/formStyles';
 
 const ToolsPageComponent = memo(function ToolsPage() {
 	const { t } = useTranslation();
 
 	return (
-		<div className="mx-auto max-w-2xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
-			<h1 className="mb-6 text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+		<div className={pageShellCompactClass}>
+			<h1 className={`${pageTitleClass} mb-6`}>
 				{t('tools.pageTitle')}
 			</h1>
 
-			<div className="fade-in-up relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-10 text-center max-[320px]:p-6 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
-				<div
-					aria-hidden="true"
-					className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
-				/>
+			<div className="arsm-coming-soon-card fade-in-up">
+				<div aria-hidden="true" className="arsm-coming-soon-sheen" />
 
-				<div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-arsm-accent/25 bg-arsm-accent-wash dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark">
+				<div className="arsm-coming-soon-icon-badge">
 					<Wrench
 						className="h-9 w-9 text-arsm-accent-vivid dark:text-arsm-accent"
 						strokeWidth={1.5}
@@ -37,7 +35,7 @@ const ToolsPageComponent = memo(function ToolsPage() {
 					{t('tools.comingSoonDescription')}
 				</p>
 
-				<div className="mx-auto mt-6 h-1 w-16 rounded-full bg-arsm-accent/30 dark:bg-arsm-accent-dark/30" aria-hidden="true" />
+				<div className="arsm-coming-soon-divider" aria-hidden="true" />
 			</div>
 		</div>
 	);

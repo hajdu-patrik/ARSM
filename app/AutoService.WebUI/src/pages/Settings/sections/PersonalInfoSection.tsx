@@ -8,7 +8,7 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
+import { buttonClass, cardClass, inputClass, labelClass, sectionTitleClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
 /** Props for the PersonalInfoSection component. */
@@ -45,7 +45,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
   return (
     <div className={cardClass}>
-      <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+      <h2 className={sectionTitleClass}>
         {t('settings.personalInfo')}
       </h2>
 

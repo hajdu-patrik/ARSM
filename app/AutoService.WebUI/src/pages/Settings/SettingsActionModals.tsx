@@ -6,7 +6,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../../components/common/Modal';
-import { inputClass, labelClass } from './constants';
+import { buttonClass, dangerButtonClass, inputClass, labelClass, secondaryButtonClass } from './constants';
 
 interface SettingsActionModalsProps {
   readonly isPictureRemoveConfirmOpen: boolean;
@@ -57,13 +57,14 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
         isOpen={isPictureRemoveConfirmOpen}
         onClose={onClosePictureRemoveConfirm}
         title={t('settings.confirmPictureRemoveTitle')}
+        showCloseButton={false}
         footer={(
           <>
             <button
               type="button"
               onClick={onClosePictureRemoveConfirm}
               disabled={isUploadingPicture}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+              className={secondaryButtonClass}
             >
               {t('settings.cancel')}
             </button>
@@ -71,7 +72,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               type="button"
               onClick={onConfirmPictureRemove}
               disabled={isUploadingPicture}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
+              className={dangerButtonClass}
             >
               {isUploadingPicture ? t('settings.uploading') : t('settings.confirmPictureRemove')}
             </button>
@@ -85,13 +86,14 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
         isOpen={isProfileSaveConfirmOpen}
         onClose={onCloseProfileSaveConfirm}
         title={t('settings.confirmSaveTitle')}
+        showCloseButton={false}
         footer={(
           <>
             <button
               type="button"
               onClick={onCloseProfileSaveConfirm}
               disabled={isUpdatingProfile}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+              className={secondaryButtonClass}
             >
               {t('settings.cancel')}
             </button>
@@ -99,7 +101,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               type="button"
               onClick={onConfirmProfileSave}
               disabled={isUpdatingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+              className={buttonClass}
             >
               {isUpdatingProfile ? t('settings.saving') : t('settings.confirmSave')}
             </button>
@@ -113,13 +115,14 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
         isOpen={isPasswordChangeConfirmOpen}
         onClose={onClosePasswordChangeConfirm}
         title={t('settings.confirmPasswordChangeTitle')}
+        showCloseButton={false}
         footer={(
           <>
             <button
               type="button"
               onClick={onClosePasswordChangeConfirm}
               disabled={isChangingPassword}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+              className={secondaryButtonClass}
             >
               {t('settings.cancel')}
             </button>
@@ -127,7 +130,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               type="button"
               onClick={onConfirmPasswordChange}
               disabled={isChangingPassword}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+              className={buttonClass}
             >
               {isChangingPassword ? t('settings.changingCredentials') : t('settings.confirmPasswordChange')}
             </button>
@@ -141,13 +144,14 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
         isOpen={isDeleteModalOpen}
         onClose={onCloseDeleteModal}
         title={t('settings.deleteProfileModalTitle')}
+        showCloseButton={false}
         footer={(
           <>
             <button
               type="button"
               onClick={onCloseDeleteModal}
               disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+              className={secondaryButtonClass}
             >
               {t('settings.cancel')}
             </button>
@@ -155,7 +159,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               type="button"
               onClick={onConfirmDeleteProfile}
               disabled={isDeletingProfile}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-error-accent px-4 py-2.5 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-active disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-on-accent-dark"
+              className={dangerButtonClass}
             >
               {isDeletingProfile ? t('settings.deletingProfile') : t('settings.confirmDeleteProfile')}
             </button>

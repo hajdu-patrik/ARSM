@@ -94,7 +94,7 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
 
   return (
     <div
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold ${sizeClassName} ${fallbackColorClass} ${className ?? ''}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-arsm-border font-bold dark:border-arsm-border-dark ${sizeClassName} ${fallbackColorClass} ${className ?? ''}`}
       title={fullName}
       aria-label={fullName}
     >

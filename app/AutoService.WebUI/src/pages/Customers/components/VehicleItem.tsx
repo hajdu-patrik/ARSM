@@ -8,9 +8,13 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, Pencil, Trash2, Wrench } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
+import {
+	compactActionButtonAccentClass,
+	compactActionButtonDangerClass,
+	compactActionButtonNeutralClass,
+} from '../../../utils/formStyles';
+import type { SortDirection } from '../page.types';
 import { RepairHistoryList } from './RepairHistoryList';
-
-type SortDirection = 'asc' | 'desc';
 
 interface VehicleItemProps {
 	t: TFunction;
@@ -46,7 +50,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 	const displayedVehicleHistory = vehicleHistorySort === 'asc' ? vehicleHistory : [...vehicleHistory].reverse();
 
 	return (
-		<div key={vehicle.id} className="min-w-0 space-y-3">
+		<div className="min-w-0 space-y-3">
 			<div className="space-y-3">
 				<div className="min-w-0">
 					<p className="truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{vehicle.licensePlate}</p>
@@ -83,7 +87,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onToggleVehicleHistory(customerId, vehicle.id)}
-					className="mt-1 inline-flex w-full min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-accent/45 bg-arsm-accent-subtle px-2.5 py-1.5 text-xs font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-toggle-bg-dark sm:w-auto"
+					className={`${compactActionButtonAccentClass} mt-1 w-full sm:w-auto`}
 				>
 					<Wrench className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{isVehicleHistoryOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory')}</span>
@@ -98,7 +102,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							<button
 								type="button"
 								onClick={() => onToggleVehicleHistorySort(vehicle.id)}
-								className="inline-flex w-full min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border px-2 py-1 text-xs font-medium text-arsm-label transition hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark sm:w-auto"
+								className={`${compactActionButtonNeutralClass} w-full px-2 py-1 sm:w-auto`}
 							>
 								<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
 								<span className="truncate">{vehicleHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -125,7 +129,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onOpenEditVehicleModal(customerId, vehicle)}
-					className="inline-flex w-full min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-accent/45 bg-arsm-accent-subtle px-2.5 py-1.5 text-xs font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-toggle-bg-dark sm:w-auto"
+					className={`${compactActionButtonAccentClass} w-full sm:w-auto`}
 				>
 					<Pencil className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{t('customers.editVehicle')}</span>
@@ -134,7 +138,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onOpenDeleteVehicleModal(customerId, vehicle)}
-					className="inline-flex w-full min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-error-border px-2 py-1 text-xs font-medium text-arsm-error-accent transition hover:bg-arsm-error-bg dark:border-arsm-error-border-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark sm:w-auto"
+					className={`${compactActionButtonDangerClass} w-full px-2 py-1 sm:w-auto`}
 				>
 					<Trash2 className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{t('customers.deleteVehicle')}</span>

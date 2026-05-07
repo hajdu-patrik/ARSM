@@ -6,6 +6,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { insetSurfaceClass } from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerSummaryStrip} component. */
 interface SchedulerSummaryStripProps {
@@ -24,7 +25,7 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 	t,
 }: SchedulerSummaryStripProps) {
 	return (
-		<section className="relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input px-4 py-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+		<section className={`${insetSurfaceClass} relative overflow-hidden px-4 py-3.5`}>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 				<p className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{summaryDateText}</p>
 				<span className="inline-flex items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">

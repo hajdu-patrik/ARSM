@@ -2,11 +2,18 @@ import { memo } from 'react';
 import { Search, UserCheck, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
+import {
+	buttonClass,
+	getTogglePillClass,
+	insetSurfaceClass,
+	intakeDateTimeInputClass,
+	intakeFieldLabelClass,
+	intakeFieldWrapperClass,
+	intakeInputClass,
+	intakeTextareaClass,
+} from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
-
-const FORM_FIELD_CLASS = 'w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
-const FORM_TEXTAREA_CLASS = `${FORM_FIELD_CLASS} resize-y`;
 
 interface SchedulerIntakeHeaderProps {
 	readonly selectedDayLabel: string;
@@ -33,19 +40,19 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 			</div>
 
 			<div className="grid grid-cols-1 gap-3">
-				<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-					<span className="font-medium">{t('scheduler.intake.dueDateTime')}</span>
+				<label className={intakeFieldWrapperClass}>
+					<span className={intakeFieldLabelClass}>{t('scheduler.intake.dueDateTime')}</span>
 					<input
 						type="datetime-local"
 						data-testid="scheduler-intake-due-datetime"
 						value={dueDateTime}
 						onChange={(event) => onDueDateTimeChange(event.target.value)}
-						className={`intake-datetime-input ${FORM_FIELD_CLASS}`}
+						className={intakeDateTimeInputClass}
 					/>
 				</label>
 			</div>
 
-			<div className="rounded-2xl border border-arsm-border bg-arsm-input p-3.5 text-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+			<div className={`${insetSurfaceClass} p-3.5 text-sm`}>
 				<span className="font-medium text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.intake.statusLabel')}</span>
 				<p className="mt-1 inline-flex rounded-full border border-arsm-warning-border/60 bg-arsm-warning-bg px-2.5 py-0.5 text-xs font-semibold text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark">
 					{t('scheduler.status.inprogress')}
@@ -75,7 +82,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 	onLookup,
 }: SchedulerIntakeLookupProps) {
 	return (
-		<div className="relative space-y-3 overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+		<div className={`${insetSurfaceClass} relative space-y-3 overflow-hidden p-3.5`}>
 			<div
 				aria-hidden="true"
 				className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(205,184,255,0.18)_0%,rgba(205,184,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(138,118,214,0.18)_0%,rgba(138,118,214,0)_100%)]"
@@ -85,15 +92,15 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 			</h3>
 
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-				<label className="flex flex-1 flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-					<span className="font-medium">{t('scheduler.intake.customerEmail')}</span>
+				<label className={`flex-1 ${intakeFieldWrapperClass}`}>
+					<span className={intakeFieldLabelClass}>{t('scheduler.intake.customerEmail')}</span>
 					<input
 						type="email"
 						data-testid="scheduler-intake-customer-email"
 						value={email}
 						onChange={(event) => onEmailChange(event.target.value)}
 						placeholder={t('scheduler.intake.customerEmailPlaceholder')}
-						className={FORM_FIELD_CLASS}
+						className={intakeInputClass}
 					/>
 				</label>
 
@@ -102,7 +109,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 					data-testid="scheduler-intake-search"
 					onClick={onLookup}
 					disabled={isSearching}
-					className="inline-flex items-center justify-center gap-1 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-60 dark:bg-arsm-accent-dark dark:text-arsm-hover"
+					className={buttonClass}
 				>
 					<Search className="h-4 w-4" />
 					{isSearching ? t('scheduler.intake.searching') : t('scheduler.intake.search')}
@@ -159,48 +166,48 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
 	onCustomerPhoneChange,
 }: SchedulerIntakeCustomerFormProps) {
 	return (
-		<div className="grid grid-cols-1 gap-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+		<div className={`${insetSurfaceClass} grid grid-cols-1 gap-3 p-3.5 lg:grid-cols-2`}>
 			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">
 				{t('scheduler.intake.personalInformation')}
 			</p>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.customerFirstName')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.customerFirstName')}</span>
 				<input
 					value={customerFirstName}
 					onChange={(event) => onCustomerFirstNameChange(filterNameInput(event.target.value))}
 					placeholder={t('scheduler.intake.customerFirstNamePlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.customerMiddleNameOptional')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.customerMiddleNameOptional')}</span>
 				<input
 					value={customerMiddleName}
 					onChange={(event) => onCustomerMiddleNameChange(filterNameInput(event.target.value))}
 					placeholder={t('scheduler.intake.customerMiddleNamePlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.customerLastName')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.customerLastName')}</span>
 				<input
 					value={customerLastName}
 					onChange={(event) => onCustomerLastNameChange(filterNameInput(event.target.value))}
 					placeholder={t('scheduler.intake.customerLastNamePlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.customerPhoneOptional')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.customerPhoneOptional')}</span>
 				<input
 					value={customerPhone}
 					onChange={(event) => onCustomerPhoneChange(filterPhoneInput(event.target.value))}
 					placeholder={t('scheduler.intake.customerPhonePlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 		</div>
@@ -227,7 +234,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
 	onExistingVehicleIdChange,
 }: SchedulerIntakeVehicleModeProps) {
 	return (
-		<div className="space-y-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+		<div className={`${insetSurfaceClass} space-y-3 p-3.5`}>
 			{vehicleMode === 'existing' && (
 				<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
 					{t('scheduler.intake.vehicleDetails')}
@@ -239,27 +246,27 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
 					type="button"
 					onClick={() => onVehicleModeChange('existing')}
 					disabled={!customerHasVehicles}
-					className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'existing' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'} disabled:cursor-not-allowed disabled:opacity-50`}
+					className={getTogglePillClass(vehicleMode === 'existing')}
 				>
 					{t('scheduler.intake.useExistingVehicle')}
 				</button>
 				<button
 					type="button"
 					onClick={() => onVehicleModeChange('new')}
-					className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${vehicleMode === 'new' ? 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover' : 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark'}`}
+					className={getTogglePillClass(vehicleMode === 'new')}
 				>
 					{t('scheduler.intake.createNewVehicle')}
 				</button>
 			</div>
 
 			{vehicleMode === 'existing' && (
-				<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-					<span className="font-medium">{t('scheduler.intake.selectVehicle')}</span>
+				<label className={intakeFieldWrapperClass}>
+					<span className={intakeFieldLabelClass}>{t('scheduler.intake.selectVehicle')}</span>
 					<select
 						data-testid="scheduler-intake-existing-vehicle"
 						value={existingVehicleId}
 						onChange={(event) => onExistingVehicleIdChange(event.target.value)}
-						className={FORM_FIELD_CLASS}
+						className={intakeInputClass}
 					>
 						<option value="" disabled hidden>
 							{t('scheduler.intake.selectVehiclePlaceholder')}
@@ -288,43 +295,43 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 	onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
 	return (
-		<div className="grid grid-cols-1 gap-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:grid-cols-2">
+		<div className={`${insetSurfaceClass} grid grid-cols-1 gap-3 p-3.5 lg:grid-cols-2`}>
 			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">
 				{t('scheduler.intake.vehicleDetails')}
 			</p>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleLicensePlate')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleLicensePlate')}</span>
 				<input
 					value={vehicle.licensePlate}
 					onChange={(event) => onVehicleFieldChange('licensePlate', event.target.value.toUpperCase())}
 					placeholder={t('scheduler.intake.vehicleLicensePlatePlaceholder')}
-					className={`${FORM_FIELD_CLASS} uppercase`}
+					className={`${intakeInputClass} uppercase`}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleBrand')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleBrand')}</span>
 				<input
 					value={vehicle.brand}
 					onChange={(event) => onVehicleFieldChange('brand', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleBrandPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleModel')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleModel')}</span>
 				<input
 					value={vehicle.model}
 					onChange={(event) => onVehicleFieldChange('model', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleModelPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleYear')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleYear')}</span>
 				<input
 					type="number"
 					min={1886}
@@ -332,12 +339,12 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 					value={vehicle.year}
 					onChange={(event) => onVehicleFieldChange('year', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleYearPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleMileageKm')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleMileageKm')}</span>
 				<input
 					type="number"
 					min={0}
@@ -345,12 +352,12 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 					value={vehicle.mileageKm}
 					onChange={(event) => onVehicleFieldChange('mileageKm', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleMileageKmPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleEnginePowerHp')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleEnginePowerHp')}</span>
 				<input
 					type="number"
 					min={0}
@@ -358,12 +365,12 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 					value={vehicle.enginePowerHp}
 					onChange={(event) => onVehicleFieldChange('enginePowerHp', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleEnginePowerHpPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.vehicleEngineTorqueNm')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.vehicleEngineTorqueNm')}</span>
 				<input
 					type="number"
 					min={0}
@@ -371,7 +378,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 					value={vehicle.engineTorqueNm}
 					onChange={(event) => onVehicleFieldChange('engineTorqueNm', event.target.value)}
 					placeholder={t('scheduler.intake.vehicleEngineTorqueNmPlaceholder')}
-					className={FORM_FIELD_CLASS}
+					className={intakeInputClass}
 				/>
 			</label>
 		</div>
@@ -390,9 +397,9 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
 	onTaskDescriptionChange,
 }: SchedulerIntakeTaskSectionProps) {
 	return (
-		<div className="space-y-3 rounded-2xl border border-arsm-border bg-arsm-input p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
-			<label className="flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-				<span className="font-medium">{t('scheduler.intake.taskDescription')}</span>
+		<div className={`${insetSurfaceClass} space-y-3 p-3.5`}>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{t('scheduler.intake.taskDescription')}</span>
 				<textarea
 					data-testid="scheduler-intake-task-description"
 					value={taskDescription}
@@ -400,7 +407,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
 					placeholder={t('scheduler.intake.taskDescriptionPlaceholder')}
 					maxLength={200}
 					rows={4}
-					className={`${FORM_TEXTAREA_CLASS} min-h-[7rem]`}
+					className={`${intakeTextareaClass} min-h-[7rem]`}
 				/>
 			</label>
 		</div>

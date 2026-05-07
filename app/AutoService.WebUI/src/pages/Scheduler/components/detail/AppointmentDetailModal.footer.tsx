@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { Check } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
+import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
@@ -57,9 +58,10 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
     <div className="flex w-full flex-wrap items-center gap-2">
       {canEdit && !isEditing && (
         <button
+          type="button"
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className="w-full min-h-10 rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/24 sm:w-auto sm:min-w-[10rem]"
+          className={`${buttonClass} w-full px-4 py-2.5 sm:w-auto sm:min-w-[10rem]`}
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -68,17 +70,19 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       {isEditing && (
         <>
           <button
+            type="button"
             data-testid="appointment-detail-save"
             onClick={onSave}
             disabled={isSaving}
-            className="min-h-10 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+            className={`${buttonClass} px-3.5 py-2`}
           >
             {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
           </button>
           <button
+            type="button"
             onClick={onCancelEdit}
             disabled={isSaving}
-            className="min-h-10 rounded-xl border border-arsm-border bg-transparent px-3.5 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+            className={`${secondaryButtonClass} px-3.5 py-2`}
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -116,9 +120,10 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       {!isEditing && shouldRenderClaimButton && (
         <div className="flex w-full justify-end">
           <button
+            type="button"
             onClick={onClaim}
             disabled={isClaiming}
-            className="rounded-lg bg-arsm-accent px-3 py-1.5 text-xs font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover"
+            className={`${buttonClass} min-h-0 rounded-lg px-3 py-1.5 text-xs`}
           >
             {isClaiming ? '...' : t('scheduler.claim')}
           </button>

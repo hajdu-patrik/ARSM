@@ -6,9 +6,9 @@
  * @module pages/Customers/page
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ServerFieldErrors } from '../../utils/serverValidation';
+import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
@@ -21,6 +21,12 @@ import { DeleteCustomerModal } from './components/DeleteCustomerModal';
 import { DeleteVehicleModal } from './components/DeleteVehicleModal';
 import { HistoryAppointmentModal } from './components/HistoryAppointmentModal';
 import { VehicleFormModal } from './components/VehicleFormModal';
+import {
+  pageHeaderWithSubtitleClass,
+  pageShellClass,
+  pageSubtitleClass,
+  pageTitleClass,
+} from '../../utils/formStyles';
 
 /**
  * Customers registry page container that coordinates customer and vehicle CRUD,
@@ -32,16 +38,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const showErrorToast = useToastStore((state) => state.showError);
   const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
-  const getFirstFieldErrorMessage = useCallback((errors: ServerFieldErrors): string | null => {
-    for (const values of Object.values(errors)) {
-      if (values.length > 0) {
-        return values[0];
-      }
-    }
-
-    return null;
-  }, []);
-
   const listState = useCustomersListState({
     language: i18n.language,
     showErrorToast,
@@ -51,11 +47,9 @@ const CustomersPageComponent = memo(function CustomersPage() {
     showSuccessToast,
     showErrorToast,
     getFirstFieldErrorMessage,
-    setCustomers: listState.setCustomers,
-    setVehiclesByCustomerId: listState.setVehiclesByCustomerId,
-    setCustomerHistoryByCustomerId: listState.setCustomerHistoryByCustomerId,
-    setActiveVehicleHistoryByCustomerId: listState.setActiveVehicleHistoryByCustomerId,
-    setExpandedCustomerIds: listState.setExpandedCustomerIds,
+    applyCustomerCreated: listState.applyCustomerCreated,
+    applyCustomerUpdated: listState.applyCustomerUpdated,
+    applyCustomerDeleted: listState.applyCustomerDeleted,
   });
 
   const vehicleMutations = useVehicleMutations({
@@ -64,21 +58,20 @@ const CustomersPageComponent = memo(function CustomersPage() {
     getFirstFieldErrorMessage,
     customerHistoryByCustomerId: listState.customerHistoryByCustomerId,
     vehicleHistoryByVehicleId: listState.vehicleHistoryByVehicleId,
-    setCustomers: listState.setCustomers,
-    setVehiclesByCustomerId: listState.setVehiclesByCustomerId,
-    setVehicleHistoryByVehicleId: listState.setVehicleHistoryByVehicleId,
-    setActiveVehicleHistoryByCustomerId: listState.setActiveVehicleHistoryByCustomerId,
+    applyVehicleCreated: listState.applyVehicleCreated,
+    applyVehicleUpdated: listState.applyVehicleUpdated,
+    applyVehicleDeleted: listState.applyVehicleDeleted,
     loadCustomerHistory: listState.loadCustomerHistory,
     loadVehicleHistory: listState.loadVehicleHistory,
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+    <div className={`${pageShellClass} flex flex-col gap-6`}>
+      <header className={pageHeaderWithSubtitleClass}>
+        <h1 className={pageTitleClass}>
           {t('customers.pageTitle')}
         </h1>
-        <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.pageDescription')}</p>
+        <p className={pageSubtitleClass}>{t('customers.pageDescription')}</p>
       </header>
 
       <CustomersToolbar

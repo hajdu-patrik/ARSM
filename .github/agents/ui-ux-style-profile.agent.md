@@ -1,6 +1,6 @@
 ---
 name: ui-ux-style-profile
-description: Copilot-facing UI/UX harness for AutoService.WebUI styling, responsiveness, semantic tokens, toast behavior, and component consistency.
+description: Copilot-facing wrapper for the central AutoService.WebUI interaction clarity, accessibility, feedback, responsiveness, token, toast, and confirmation policy.
 tools:
   - read
   - edit

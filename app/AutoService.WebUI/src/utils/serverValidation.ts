@@ -141,3 +141,18 @@ export function normalizeServerFieldErrors(
     ]),
   );
 }
+
+/**
+ * Returns the first available message from a field-errors dictionary.
+ * @param errors - Field errors map where each key contains one or more messages.
+ * @returns The first discovered message or {@code null} when empty.
+ */
+export function getFirstFieldErrorMessage(errors: ServerFieldErrors): string | null {
+  for (const values of Object.values(errors)) {
+    if (values.length > 0) {
+      return values[0];
+    }
+  }
+
+  return null;
+}

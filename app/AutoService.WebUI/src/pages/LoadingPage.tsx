@@ -178,7 +178,6 @@ const LoadingPageComponent = memo(function LoadingPage() {
             height: 'clamp(124px, 40vw, 250px)',
             border: '1px solid #C9B3FF26',
             backgroundColor: '#C9B3FF1A',
-            boxShadow: '0 0 36px #C9B3FF70, 0 0 88px #C9B3FF30',
           }}
         >
           <Image

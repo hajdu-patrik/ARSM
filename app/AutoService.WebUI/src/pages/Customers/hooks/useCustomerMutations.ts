@@ -18,9 +18,7 @@ import type {
   CreateCustomerRequest,
   CustomerListItem,
   UpdateCustomerRequest,
-  VehicleDetailDto,
 } from '../../../types/customers/customers.types';
-import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
 const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   firstName: '',
@@ -35,11 +33,9 @@ interface UseCustomerMutationsParams {
   showSuccessToast: (message: string) => void;
   showErrorToast: (message: string) => void;
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
-  setCustomers: React.Dispatch<React.SetStateAction<CustomerListItem[]>>;
-  setVehiclesByCustomerId: React.Dispatch<React.SetStateAction<Record<number, VehicleDetailDto[]>>>;
-  setCustomerHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, AppointmentDto[]>>>;
-  setActiveVehicleHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, number | null>>>;
-  setExpandedCustomerIds: React.Dispatch<React.SetStateAction<Set<number>>>;
+  applyCustomerCreated: (customer: CustomerListItem) => void;
+  applyCustomerUpdated: (customerId: number, payload: UpdateCustomerRequest) => void;
+  applyCustomerDeleted: (customerId: number) => void;
 }
 
 /**
@@ -51,11 +47,9 @@ export function useCustomerMutations({
   showSuccessToast,
   showErrorToast,
   getFirstFieldErrorMessage,
-  setCustomers,
-  setVehiclesByCustomerId,
-  setCustomerHistoryByCustomerId,
-  setActiveVehicleHistoryByCustomerId,
-  setExpandedCustomerIds,
+  applyCustomerCreated,
+  applyCustomerUpdated,
+  applyCustomerDeleted,
 }: UseCustomerMutationsParams) {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [customerModalMode, setCustomerModalMode] = useState<CustomerModalMode>('create');
@@ -160,22 +154,11 @@ export function useCustomerMutations({
     try {
       if (customerModalMode === 'create') {
         const created = await customerRegistryService.createCustomer(payload);
-        setCustomers((prev) => [...prev, created]);
+        applyCustomerCreated(created);
         showSuccessToast('customers.toasts.customerCreated');
       } else if (editingCustomerId !== null) {
         await customerRegistryService.updateCustomer(editingCustomerId, payload);
-        setCustomers((prev) => prev.map((item) => (
-          item.id === editingCustomerId
-            ? {
-              ...item,
-              firstName: payload.firstName,
-              middleName: payload.middleName ?? null,
-              lastName: payload.lastName,
-              email: payload.email,
-              phoneNumber: payload.phoneNumber ?? null,
-            }
-            : item
-        )));
+        applyCustomerUpdated(editingCustomerId, payload);
         showSuccessToast('customers.toasts.customerUpdated');
       }
 
@@ -189,8 +172,9 @@ export function useCustomerMutations({
     customerForm,
     customerModalMode,
     editingCustomerId,
+    applyCustomerCreated,
+    applyCustomerUpdated,
     handleSubmitCustomerError,
-    setCustomers,
     showSuccessToast,
   ]);
 
@@ -215,27 +199,7 @@ export function useCustomerMutations({
 
     try {
       await customerRegistryService.deleteCustomer(deleteCustomerTarget.id);
-      setCustomers((prev) => prev.filter((item) => item.id !== deleteCustomerTarget.id));
-      setVehiclesByCustomerId((prev) => {
-        const next = { ...prev };
-        delete next[deleteCustomerTarget.id];
-        return next;
-      });
-      setCustomerHistoryByCustomerId((prev) => {
-        const next = { ...prev };
-        delete next[deleteCustomerTarget.id];
-        return next;
-      });
-      setActiveVehicleHistoryByCustomerId((prev) => {
-        const next = { ...prev };
-        delete next[deleteCustomerTarget.id];
-        return next;
-      });
-      setExpandedCustomerIds((prev) => {
-        const next = new Set(prev);
-        next.delete(deleteCustomerTarget.id);
-        return next;
-      });
+      applyCustomerDeleted(deleteCustomerTarget.id);
 
       showSuccessToast('customers.toasts.customerDeleted');
       setDeleteCustomerTarget(null);
@@ -246,11 +210,7 @@ export function useCustomerMutations({
     }
   }, [
     deleteCustomerTarget,
-    setActiveVehicleHistoryByCustomerId,
-    setCustomerHistoryByCustomerId,
-    setCustomers,
-    setExpandedCustomerIds,
-    setVehiclesByCustomerId,
+    applyCustomerDeleted,
     showErrorToast,
     showSuccessToast,
   ]);

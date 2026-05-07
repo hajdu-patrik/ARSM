@@ -18,6 +18,7 @@ import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 import { DeleteProfileSection } from './sections/DeleteProfileSection';
 import { SettingsActionModals } from './SettingsActionModals';
+import { pageHeaderClass, pageShellClass, pageShellNarrowClass, pageTitleClass, sectionStackClass } from './constants';
 import {
   extractDeleteProfileErrorKey,
   extractPasswordChangeErrors,
@@ -26,12 +27,9 @@ import {
 } from './handlers';
 import type { ProfileData } from '../../types/profile/profile.types';
 import type { FieldErrors } from './types';
+import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
-import { fileToImageSource } from '../../utils/imageCrop';
-import { isAllowedPictureExtension } from '../../utils/validation';
-import { emitProfilePictureUpdated } from '../../services/profile/profile-picture-live.service';
-
-const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
+import { useProfilePictureSettings } from './hooks/useProfilePictureSettings';
 
 const SettingsPageComponent = memo(function SettingsPage() {
   const navigate = useNavigate();
@@ -56,28 +54,30 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
-  const [pictureKey, setPictureKey] = useState(0);
-  const [pictureSource, setPictureSource] = useState<string | null>(null);
-  const [pendingPictureFileName, setPendingPictureFileName] = useState<string | null>(null);
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
   const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
   const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
-  const [isPictureRemoveConfirmOpen, setIsPictureRemoveConfirmOpen] = useState(false);
 
-  const getFirstFieldErrorMessage = useCallback((errors: FieldErrors): string | null => {
-    for (const values of Object.values(errors)) {
-      if (values.length > 0) {
-        return values[0];
-      }
-    }
-
-    return null;
-  }, []);
+  const {
+    isUploadingPicture,
+    pictureKey,
+    pictureSource,
+    isPictureRemoveConfirmOpen,
+    setIsPictureRemoveConfirmOpen,
+    handleSelectPicture,
+    closePictureCropModal,
+    handleConfirmPictureCrop,
+    handleRemovePicture,
+    handleRemovePictureRequest,
+  } = useProfilePictureSettings({
+    profile,
+    setProfile,
+    showSuccessToast,
+    showErrorToast,
+  });
 
   const restoreRequiredProfileFields = useCallback((errors: FieldErrors) => {
     if (!profile) {
@@ -225,83 +225,6 @@ const SettingsPageComponent = memo(function SettingsPage() {
     showErrorToast('toast.profileDeleteFailed');
   }, [showErrorToast]);
 
-  const handleSelectPicture = useCallback(async (file: File) => {
-    if (!isAllowedPictureExtension(file.name)) {
-      showErrorToast('toast.pictureInvalidType');
-      return;
-    }
-
-    if (file.size > MAX_PROFILE_PICTURE_BYTES) {
-      showErrorToast('toast.pictureTooLarge', { maxKb: Math.floor(MAX_PROFILE_PICTURE_BYTES / 1024) });
-      return;
-    }
-
-    try {
-      const imageSource = await fileToImageSource(file);
-      setPendingPictureFileName(file.name);
-      setPictureSource(imageSource);
-    } catch {
-      showErrorToast('toast.pictureCropFailed');
-    }
-  }, [showErrorToast]);
-
-  const closePictureCropModal = useCallback(() => {
-    setPictureSource(null);
-    setPendingPictureFileName(null);
-  }, []);
-
-  const handleConfirmPictureCrop = useCallback(async (blob: Blob) => {
-    if (!profile) {
-      return;
-    }
-
-    setIsUploadingPicture(true);
-
-    try {
-      const finalFileName = pendingPictureFileName?.replace(/\.[^.]+$/, '') ?? 'profile-picture';
-      const croppedFile = new File([blob], `${finalFileName}.png`, { type: blob.type || 'image/png' });
-
-      await profileService.uploadProfilePicture(croppedFile);
-      setProfile((prev) => prev ? { ...prev, hasProfilePicture: true } : prev);
-      setPictureKey((previousKey) => previousKey + 1);
-      closePictureCropModal();
-
-      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: true });
-
-      showSuccessToast('toast.pictureUploaded');
-    } catch {
-      showErrorToast('toast.pictureUploadFailed');
-    } finally {
-      setIsUploadingPicture(false);
-    }
-  }, [closePictureCropModal, pendingPictureFileName, profile, showErrorToast, showSuccessToast]);
-
-  const handleRemovePicture = useCallback(async () => {
-    if (!profile) {
-      return;
-    }
-
-    setIsUploadingPicture(true);
-    try {
-      await profileService.deleteProfilePicture();
-      setProfile((prev) => prev ? { ...prev, hasProfilePicture: false } : prev);
-      setPictureKey((previousKey) => previousKey + 1);
-      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: false });
-      showSuccessToast('toast.pictureRemoved');
-      setIsPictureRemoveConfirmOpen(false);
-    } catch {
-      showErrorToast('toast.pictureRemoveFailed');
-    } finally {
-      setIsUploadingPicture(false);
-    }
-  }, [profile, showErrorToast, showSuccessToast]);
-
-  const handleRemovePictureRequest = useCallback(() => {
-    if (!isUploadingPicture) {
-      setIsPictureRemoveConfirmOpen(true);
-    }
-  }, [isUploadingPicture]);
-
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
     setIsDeleteModalOpen(true);
@@ -351,15 +274,15 @@ const SettingsPageComponent = memo(function SettingsPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
-      <div className="mx-auto w-full max-w-3xl">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+    <section className={pageShellClass}>
+      <div className={pageShellNarrowClass}>
+        <header className={pageHeaderClass}>
+          <h1 className={pageTitleClass}>
             {t('settings.title')}
           </h1>
         </header>
 
-        <div className="space-y-6">
+        <div className={sectionStackClass}>
           <section aria-label={t('settings.profilePicture')}>
             <ProfilePictureSection
               hasProfilePicture={profile.hasProfilePicture}

@@ -27,4 +27,16 @@ export const EXPERTISE_OPTIONS: OptionItem[] = [
   { value: 'Bodywork', labelKey: 'admin.expertise.bodywork' },
 ];
 
-export { inputClass, labelClass, cardClass } from '../../../utils/formStyles';
+export {
+  buttonClass,
+  cardClass,
+  inputClass,
+  labelClass,
+  pageHeaderClass,
+  pageShellClass,
+  pageShellNarrowClass,
+  pageTitleClass,
+  secondaryButtonClass,
+  sectionStackClass,
+  sectionTitleClass,
+} from '../../../utils/formStyles';

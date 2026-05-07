@@ -6,7 +6,8 @@
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { AppointmentDto, CalendarDay } from '../../../../types/scheduler/scheduler.types';
+import type { AppointmentDto, AppointmentStatus, CalendarDay } from '../../../../types/scheduler/scheduler.types';
+import { insetSurfaceClass } from '../../../../utils/formStyles';
 
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
@@ -18,11 +19,29 @@ interface CalendarViewProps {
   readonly selectedDay?: number | null;
 }
 
-const STATUS_DOT_COLORS: Record<string, string> = {
+const STATUS_DOT_COLORS: Record<AppointmentStatus, string> = {
   InProgress: 'bg-arsm-warning-accent',
   Completed: 'bg-arsm-success-accent',
   Cancelled: 'bg-arsm-error-accent',
 };
+
+const NAV_BUTTON_BASE_CLASS = 'rounded-lg border p-1.5 text-arsm-label transition-colors max-[320px]:p-1 dark:text-arsm-label-dark';
+const NAV_BUTTON_ENABLED_CLASS = 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark';
+const NAV_BUTTON_DISABLED_CLASS = 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60';
+
+function getNavButtonClass(isEnabled: boolean): string {
+  return `${NAV_BUTTON_BASE_CLASS} ${isEnabled ? NAV_BUTTON_ENABLED_CLASS : NAV_BUTTON_DISABLED_CLASS}`;
+}
+
+/**
+ * Formats a Date into local YYYY-MM-DD for scheduler day bucketing.
+ * This avoids UTC conversion drift from Date#toISOString.
+ */
+function formatLocalDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+}
 
 function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[]): CalendarDay[] {
   const firstDay = new Date(year, month - 1, 1);
@@ -31,11 +50,16 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
 
   const startDate = new Date(year, month - 1, 1 - mondayOffset);
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = formatLocalDateKey(today);
 
   const appointmentsByDate = new Map<string, AppointmentDto[]>();
   for (const appt of appointments) {
-    const dateKey = new Date(appt.scheduledDate).toISOString().slice(0, 10);
+    const scheduledAt = new Date(appt.scheduledDate);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      continue;
+    }
+
+    const dateKey = formatLocalDateKey(scheduledAt);
     const current = appointmentsByDate.get(dateKey);
     if (current) {
       current.push(appt);
@@ -48,7 +72,7 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
   for (let i = 0; i < 42; i += 1) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const dateStr = formatLocalDateKey(date);
 
     days.push({
       date,
@@ -59,6 +83,40 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
   }
 
   return days;
+}
+
+function getEarliestAppointmentForDay(dayAppointments: AppointmentDto[]): AppointmentDto | null {
+  if (dayAppointments.length === 0) {
+    return null;
+  }
+
+  let earliestAppointment = dayAppointments[0];
+  let earliestTimestamp = Number.POSITIVE_INFINITY;
+
+  for (const appointment of dayAppointments) {
+    const appointmentTimestamp = new Date(appointment.scheduledDate).getTime();
+    if (!Number.isNaN(appointmentTimestamp) && appointmentTimestamp < earliestTimestamp) {
+      earliestAppointment = appointment;
+      earliestTimestamp = appointmentTimestamp;
+    }
+  }
+
+  return earliestAppointment;
+}
+
+function trimTrailingNextMonthOnlyWeeks(weeks: CalendarDay[][]): CalendarDay[][] {
+  const trimmedWeeks = [...weeks];
+
+  while (trimmedWeeks.length > 4) {
+    const lastWeek = trimmedWeeks.at(-1);
+    if (!lastWeek || lastWeek.some((day) => day.isCurrentMonth)) {
+      break;
+    }
+
+    trimmedWeeks.pop();
+  }
+
+  return trimmedWeeks;
 }
 
 const CalendarViewComponent = memo(function CalendarView({
@@ -87,7 +145,8 @@ const CalendarViewComponent = memo(function CalendarView({
     for (let i = 0; i < calendarDays.length; i += 7) {
       weeks.push(calendarDays.slice(i, i + 7));
     }
-    return weeks;
+
+    return trimTrailingNextMonthOnlyWeeks(weeks);
   }, [calendarDays]);
 
   const now = new Date();
@@ -108,7 +167,7 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className="relative select-none overflow-hidden rounded-2xl border border-arsm-border bg-arsm-input p-3 max-[320px]:p-2.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:p-4">
+    <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:p-2.5 sm:p-4`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
@@ -116,14 +175,11 @@ const CalendarViewComponent = memo(function CalendarView({
 
       <div className="mb-3 flex items-center justify-between max-[320px]:mb-2.5">
         <button
+          type="button"
           onClick={handlePrev}
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
-          className={`rounded-lg border p-1.5 text-arsm-label transition-colors max-[320px]:p-1 dark:text-arsm-label-dark ${
-            canGoPrev
-              ? 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark'
-              : 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60'
-          }`}
+          className={getNavButtonClass(canGoPrev)}
         >
           <ChevronLeft className="h-5 w-5 max-[320px]:h-4 max-[320px]:w-4" />
         </button>
@@ -133,14 +189,11 @@ const CalendarViewComponent = memo(function CalendarView({
         </h3>
 
         <button
+          type="button"
           onClick={handleNext}
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
-          className={`rounded-lg border p-1.5 text-arsm-label transition-colors max-[320px]:p-1 dark:text-arsm-label-dark ${
-            canGoNext
-              ? 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark'
-              : 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60'
-          }`}
+          className={getNavButtonClass(canGoNext)}
         >
           <ChevronRight className="h-5 w-5 max-[320px]:h-4 max-[320px]:w-4" />
         </button>
@@ -164,11 +217,12 @@ const CalendarViewComponent = memo(function CalendarView({
           <div className="space-y-px">
             {calendarWeeks.map((week) => {
               const hasAppointmentsInWeek = week.some((day) => day.appointments.length > 0);
-              const weekKey = `week-${week[0]?.date.toISOString() ?? 'unknown'}`;
+              const weekKey = `week-${week[0] ? formatLocalDateKey(week[0].date) : 'unknown'}`;
 
               return (
                 <div key={weekKey} className="grid grid-cols-7 gap-px">
                   {week.map((day) => {
+                    const earliestAppointment = getEarliestAppointmentForDay(day.appointments);
                     const dayNum = day.date.getDate();
                     const isSelected = day.isCurrentMonth && selectedDay === dayNum;
                     const overflowTone = day.isCurrentMonth ? '' : 'opacity-50 saturate-75';
@@ -196,33 +250,34 @@ const CalendarViewComponent = memo(function CalendarView({
                           )}
                         </div>
 
-                        <div className="mt-0.5 flex h-4 max-w-full flex-wrap items-center justify-center gap-1 overflow-hidden leading-none">
-                          {day.appointments.length > 0 ? (
-                            day.appointments.slice(0, 3).map((appt) => (
+                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center gap-1 leading-none">
+                          {earliestAppointment ? (
+                            <div className={`inline-flex items-center gap-1 ${overflowTone}`}>
                               <span
-                                key={appt.id}
-                                className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[appt.status] ?? 'bg-arsm-status-dot-fallback'} ${overflowTone}`}
-                                title={`${appt.vehicle.brand} - ${appt.taskDescription}`}
+                                className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[earliestAppointment.status] ?? 'bg-arsm-status-dot-fallback'}`}
+                                title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
                               />
-                            ))
+                              {day.appointments.length > 1 && (
+                                <span className="inline-flex min-h-[0.95rem] min-w-[0.95rem] items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-1 text-[7px] font-semibold leading-none text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark">
+                                  +{day.appointments.length - 1}
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="h-2.5 w-2.5" aria-hidden="true" />
-                          )}
-                          {day.appointments.length > 3 && (
-                            <span className={`shrink-0 text-[8px] font-semibold leading-none text-arsm-muted max-[320px]:text-[7px] dark:text-arsm-muted-dark ${overflowTone}`}>
-                              +{day.appointments.length - 3}
-                            </span>
                           )}
                         </div>
                       </>
                     );
+
+                    const dayKey = formatLocalDateKey(day.date);
 
                     if (day.isCurrentMonth && onDayClick) {
                       const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
                       return (
                         <button
                           type="button"
-                          key={day.date.toISOString()}
+                          key={dayKey}
                           data-testid={dayTestId}
                           aria-label={dayTestId}
                           onClick={() => onDayClick(dayNum)}
@@ -234,7 +289,7 @@ const CalendarViewComponent = memo(function CalendarView({
                     }
 
                     return (
-                      <div key={day.date.toISOString()} className={dayClassName}>
+                      <div key={dayKey} className={dayClassName}>
                         {content}
                       </div>
                     );

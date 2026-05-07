@@ -12,14 +12,28 @@ import { isAxiosError } from 'axios';
 import { adminService } from '../../../services/admin/admin.service';
 import { useToastStore } from '../../../store/toast.store';
 import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues } from './helpers';
-import { cardClass } from './constants';
+import {
+  buttonClass,
+  cardClass,
+  pageHeaderClass,
+  pageShellClass,
+  pageShellNarrowClass,
+  pageTitleClass,
+  secondaryButtonClass,
+  sectionStackClass,
+  sectionTitleClass,
+} from './constants';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
 import { MechanicListSection } from './sections/MechanicListSection';
 import { Modal } from '../../../components/common/Modal';
-import { mapAdminValidationMessageToKey, normalizeServerFieldErrors } from '../../../utils/serverValidation';
-import type { FieldErrors, RegisterMechanicFormValues } from './types';
+import {
+  getFirstFieldErrorMessage,
+  mapAdminValidationMessageToKey,
+  normalizeServerFieldErrors,
+} from '../../../utils/serverValidation';
+import type { RegisterMechanicFormValues } from './types';
 
 const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const { t } = useTranslation();
@@ -99,16 +113,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setShowConfirmPassword(false);
   }, []);
 
-  const getFirstFieldErrorMessage = useCallback((errors: FieldErrors): string | null => {
-    for (const values of Object.values(errors)) {
-      if (values.length > 0) {
-        return values[0];
-      }
-    }
-
-    return null;
-  }, []);
-
   /**
    * Handles API errors from the registration submission.
    * Shows inline field errors for 422/400 responses and falls back to toast messages
@@ -140,7 +144,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     }
 
     showErrorToast('admin.genericError');
-  }, [getFirstFieldErrorMessage, showErrorToast]);
+  }, [showErrorToast]);
 
   /**
    * Handles form submission: validates password confirmation, captures pending email,
@@ -185,70 +189,70 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   }, [formValues, handleSubmitError, resetForm, showSuccessToast]);
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-6 max-[320px]:px-3 max-[320px]:py-5 sm:px-6 sm:py-8">
-      <div className="mx-auto w-full max-w-3xl">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">{t('admin.pageTitle')}</h1>
+    <section className={pageShellClass}>
+      <div className={pageShellNarrowClass}>
+        <header className={pageHeaderClass}>
+          <h1 className={pageTitleClass}>{t('admin.pageTitle')}</h1>
         </header>
 
-        <div className="space-y-6">
-        <section className={cardClass} aria-label={t('admin.mechanicList')}>
-          <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-            {t('admin.mechanicList')}
-          </h2>
-          <MechanicListSection refreshKey={mechanicListRefreshKey} />
-        </section>
+        <div className={sectionStackClass}>
+          <section className={cardClass} aria-label={t('admin.mechanicList')}>
+            <h2 className={sectionTitleClass}>
+              {t('admin.mechanicList')}
+            </h2>
+            <MechanicListSection refreshKey={mechanicListRefreshKey} />
+          </section>
 
-        <section className={cardClass} aria-label={t('admin.registerMechanic')}>
-          <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-            {t('admin.registerMechanic')}
-          </h2>
+          <section className={cardClass} aria-label={t('admin.registerMechanic')}>
+            <h2 className={sectionTitleClass}>
+              {t('admin.registerMechanic')}
+            </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <BasicInfoSection
-              firstName={formValues.firstName}
-              middleName={formValues.middleName}
-              lastName={formValues.lastName}
-              email={formValues.email}
-              phoneNumber={formValues.phoneNumber}
-              isSubmitting={isSubmitting}
-              onFirstNameChange={handleFirstNameChange}
-              onMiddleNameChange={handleMiddleNameChange}
-              onLastNameChange={handleLastNameChange}
-              onEmailChange={handleEmailChange}
-              onPhoneNumberChange={handlePhoneNumberChange}
-            />
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <BasicInfoSection
+                firstName={formValues.firstName}
+                middleName={formValues.middleName}
+                lastName={formValues.lastName}
+                email={formValues.email}
+                phoneNumber={formValues.phoneNumber}
+                isSubmitting={isSubmitting}
+                onFirstNameChange={handleFirstNameChange}
+                onMiddleNameChange={handleMiddleNameChange}
+                onLastNameChange={handleLastNameChange}
+                onEmailChange={handleEmailChange}
+                onPhoneNumberChange={handlePhoneNumberChange}
+              />
 
-            <SecuritySection
-              password={formValues.password}
-              confirmPassword={formValues.confirmPassword}
-              showPassword={showPassword}
-              showConfirmPassword={showConfirmPassword}
-              isSubmitting={isSubmitting}
-              onPasswordChange={handlePasswordChange}
-              onConfirmPasswordChange={handleConfirmPasswordChange}
-              onToggleShowPassword={handleToggleShowPassword}
-              onToggleShowConfirmPassword={handleToggleShowConfirmPassword}
-            />
+              <SecuritySection
+                password={formValues.password}
+                confirmPassword={formValues.confirmPassword}
+                showPassword={showPassword}
+                showConfirmPassword={showConfirmPassword}
+                isSubmitting={isSubmitting}
+                onPasswordChange={handlePasswordChange}
+                onConfirmPasswordChange={handleConfirmPasswordChange}
+                onToggleShowPassword={handleToggleShowPassword}
+                onToggleShowConfirmPassword={handleToggleShowConfirmPassword}
+              />
 
-            <ProfessionalSection
-              specialization={formValues.specialization}
-              expertise={formValues.expertise}
-              isSubmitting={isSubmitting}
-              onSpecializationChange={handleSpecializationChange}
-              onToggleExpertise={toggleExpertise}
-            />
+              <ProfessionalSection
+                specialization={formValues.specialization}
+                expertise={formValues.expertise}
+                isSubmitting={isSubmitting}
+                onSpecializationChange={handleSpecializationChange}
+                onToggleExpertise={toggleExpertise}
+              />
 
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary transition hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-accent/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-accent-dark-hover/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
-              aria-busy={isSubmitting}
-            >
-              {isSubmitting ? t('admin.submitting') : t('admin.submit')}
-            </button>
-          </form>
-        </section>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className={`mt-2 w-full ${buttonClass} sm:text-base`}
+                aria-busy={isSubmitting}
+              >
+                {isSubmitting ? t('admin.submitting') : t('admin.submit')}
+              </button>
+            </form>
+          </section>
         </div>
       </div>
 
@@ -256,13 +260,14 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         isOpen={isRegisterConfirmOpen}
         onClose={() => { if (!isSubmitting) setIsRegisterConfirmOpen(false); }}
         title={t('admin.confirmRegisterTitle')}
+        showCloseButton={false}
         footer={(
           <>
             <button
               type="button"
               onClick={() => setIsRegisterConfirmOpen(false)}
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition hover:bg-arsm-toggle-bg disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+              className={secondaryButtonClass}
             >
               {t('settings.cancel')}
             </button>
@@ -270,7 +275,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               type="button"
               onClick={() => { void handleRegisterConfirmed(); }}
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2.5 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:disabled:bg-arsm-ring-dark"
+              className={buttonClass}
             >
               {isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}
             </button>

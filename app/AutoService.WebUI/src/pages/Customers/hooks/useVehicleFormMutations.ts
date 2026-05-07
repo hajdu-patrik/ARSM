@@ -9,7 +9,6 @@ import type { ServerFieldErrors } from '../../../utils/serverValidation';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type {
   CreateVehicleRequest,
-  CustomerListItem,
   UpdateVehicleRequest,
   VehicleDetailDto,
 } from '../../../types/customers/customers.types';
@@ -45,8 +44,12 @@ interface UseVehicleFormMutationsParams {
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
   vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
-  setCustomers: React.Dispatch<React.SetStateAction<CustomerListItem[]>>;
-  setVehiclesByCustomerId: React.Dispatch<React.SetStateAction<Record<number, VehicleDetailDto[]>>>;
+  applyVehicleCreated: (customerId: number, createdVehicle: VehicleDetailDto) => void;
+  applyVehicleUpdated: (
+    customerId: number,
+    vehicleId: number,
+    payload: CreateVehicleRequest | UpdateVehicleRequest,
+  ) => void;
   loadCustomerHistory: (customerId: number, force?: boolean) => Promise<void>;
   loadVehicleHistory: (vehicleId: number, force?: boolean) => Promise<void>;
 }
@@ -62,8 +65,8 @@ export function useVehicleFormMutations({
   getFirstFieldErrorMessage,
   customerHistoryByCustomerId,
   vehicleHistoryByVehicleId,
-  setCustomers,
-  setVehiclesByCustomerId,
+  applyVehicleCreated,
+  applyVehicleUpdated,
   loadCustomerHistory,
   loadVehicleHistory,
 }: UseVehicleFormMutationsParams) {
@@ -158,41 +161,16 @@ export function useVehicleFormMutations({
   }, [isSavingVehicle]);
 
   const applyCreatedVehicleToState = useCallback((customerId: number, createdVehicle: VehicleDetailDto) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: [...(prev[customerId] ?? []), createdVehicle],
-    }));
-
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? { ...item, vehicleCount: item.vehicleCount + 1 }
-        : item
-    )));
-  }, [setCustomers, setVehiclesByCustomerId]);
+    applyVehicleCreated(customerId, createdVehicle);
+  }, [applyVehicleCreated]);
 
   const applyUpdatedVehicleToState = useCallback((
     customerId: number,
     vehicleId: number,
     payload: CreateVehicleRequest | UpdateVehicleRequest,
   ) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: (prev[customerId] ?? []).map((vehicle) => (
-        vehicle.id === vehicleId
-          ? {
-            ...vehicle,
-            licensePlate: payload.licensePlate,
-            brand: payload.brand,
-            model: payload.model,
-            year: payload.year,
-            mileageKm: payload.mileageKm,
-            enginePowerHp: payload.enginePowerHp,
-            engineTorqueNm: payload.engineTorqueNm,
-          }
-          : vehicle
-      )),
-    }));
-  }, [setVehiclesByCustomerId]);
+    applyVehicleUpdated(customerId, vehicleId, payload);
+  }, [applyVehicleUpdated]);
 
   const reloadCachedHistoryIfNeeded = useCallback((customerId: number, vehicleId: number) => {
     if (customerHistoryByCustomerId[customerId]) {

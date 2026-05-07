@@ -48,6 +48,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           <input
             id="firstName"
             type="text"
+            autoComplete="given-name"
             value={firstName}
             onChange={(e) => onFirstNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.firstNamePlaceholder')}
@@ -64,6 +65,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           <input
             id="middleName"
             type="text"
+            autoComplete="additional-name"
             value={middleName}
             onChange={(e) => onMiddleNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.middleNamePlaceholder')}
@@ -79,6 +81,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           <input
             id="lastName"
             type="text"
+            autoComplete="family-name"
             value={lastName}
             onChange={(e) => onLastNameChange(filterNameInput(e.target.value))}
             placeholder={t('admin.lastNamePlaceholder')}
@@ -96,6 +99,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
         <input
           id="reg-email"
           type="email"
+          autoComplete="username"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           placeholder={t('admin.emailPlaceholder')}
@@ -113,6 +117,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           id="reg-phone"
           type="tel"
           inputMode="tel"
+          autoComplete="tel"
           value={phoneNumber}
           onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
           placeholder={t('admin.phonePlaceholder')}

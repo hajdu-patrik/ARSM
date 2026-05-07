@@ -5,6 +5,7 @@ import { Modal } from '../../../../components/common/Modal';
 import { useToastStore } from '../../../../store/toast.store';
 import { formatLongDate } from '../../utils/scheduler-datetime';
 import { useSchedulerIntakeForm } from '../../hooks/useSchedulerIntakeForm';
+import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
 import {
   SchedulerIntakeCustomerForm,
   SchedulerIntakeHeader,
@@ -61,7 +62,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-arsm-border bg-transparent px-4 py-2 text-sm font-medium text-arsm-label transition-all duration-200 hover:-translate-y-px hover:bg-arsm-toggle-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:ring-arsm-focus-ring/24"
+              className={`${secondaryButtonClass} w-full sm:w-auto`}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -72,7 +73,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
                 actions.handleCreate();
               }}
               disabled={state.isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl bg-arsm-accent px-4 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/24"
+              className={`${buttonClass} w-full sm:w-auto`}
             >
               {state.isSubmitting ? t('scheduler.intake.creating') : t('scheduler.intake.create')}
             </button>

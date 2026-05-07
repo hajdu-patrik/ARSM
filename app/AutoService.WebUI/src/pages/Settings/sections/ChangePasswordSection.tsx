@@ -9,7 +9,7 @@
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { inputClass, labelClass, cardClass, buttonClass } from '../constants';
+import { buttonClass, cardClass, inputClass, labelClass, sectionTitleClass } from '../constants';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
@@ -26,7 +26,7 @@ interface ChangePasswordSectionProps {
 /**
  * Renders the settings password-change form with accessibility-aware inputs.
  */
-const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
+const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   currentPassword,
   newPassword,
   confirmNewPassword,
@@ -37,7 +37,6 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
   onSubmit,
 }: ChangePasswordSectionProps) {
   const { t } = useTranslation();
-  const changePasswordButtonKey = 'settings.change' + 'PasswordButton';
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -48,11 +47,21 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
 
   return (
     <div className={cardClass}>
-      <h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+      <h2 className={sectionTitleClass}>
         {t('settings.changePassword')}
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <input
+          type="text"
+          name="username"
+          autoComplete="username"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          defaultValue=""
+        />
+
         <div>
           <label htmlFor="settings-currentPassword" className={labelClass}>
             {t('settings.currentPassword')}
@@ -66,7 +75,7 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
               placeholder={t('settings.currentPasswordPlaceholder')}
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
-              autoComplete="new-password"
+              autoComplete="current-password"
               name="settings-current-password-no-autofill"
               data-lpignore="true"
               data-1p-ignore="true"
@@ -150,14 +159,14 @@ const ChangeSecretSectionComponent = memo(function ChangeSecretSection({
           className={`w-full sm:w-auto ${buttonClass}`}
           aria-busy={isSubmitting}
         >
-          {isSubmitting ? t('settings.changingCredentials') : t(changePasswordButtonKey)}
+          {isSubmitting ? t('settings.changingCredentials') : t('settings.changePasswordButton')}
         </button>
       </form>
     </div>
   );
 });
 
-ChangeSecretSectionComponent.displayName = 'ChangeSecretSection';
+ChangePasswordSectionComponent.displayName = ChangePasswordSectionComponent.name;
 
 /** Password update section rendered on the settings page. */
-export const ChangePasswordSection = ChangeSecretSectionComponent;
+export const ChangePasswordSection = ChangePasswordSectionComponent;

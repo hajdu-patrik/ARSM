@@ -26,6 +26,7 @@ import { SchedulerQuickIntakeSection } from './components/summary/SchedulerQuick
 import { useSchedulerSummary } from './hooks/useSchedulerSummary';
 import { useSchedulerDataSync } from './hooks/useSchedulerDataSync';
 import { useSchedulerActions } from './hooks/useSchedulerActions';
+import { pageShellClass } from '../../utils/formStyles';
 
 /**
  * Composes and coordinates the scheduler page sections and modal flows.
@@ -36,7 +37,16 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const user = useAuthStore((state) => state.user);
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
-  const store = useSchedulerStore();
+  const todayAppointments = useSchedulerStore((state) => state.todayAppointments);
+  const monthAppointments = useSchedulerStore((state) => state.monthAppointments);
+  const calendarAppointments = useSchedulerStore((state) => state.calendarAppointments);
+  const calendarYear = useSchedulerStore((state) => state.calendarYear);
+  const calendarMonth = useSchedulerStore((state) => state.calendarMonth);
+  const selectedDay = useSchedulerStore((state) => state.selectedDay);
+  const isLoadingMonth = useSchedulerStore((state) => state.isLoadingMonth);
+  const setSelectedDay = useSchedulerStore((state) => state.setSelectedDay);
+  const setCalendarMonth = useSchedulerStore((state) => state.setCalendarMonth);
+  const upsertAppointment = useSchedulerStore((state) => state.upsertAppointment);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDto | null>(null);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const {
@@ -45,17 +55,17 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     summaryDateText,
     summaryCount,
   } = useSchedulerSummary({
-    selectedDay: store.selectedDay,
-    calendarYear: store.calendarYear,
-    calendarMonth: store.calendarMonth,
-    monthAppointments: store.monthAppointments,
-    todayAppointmentsCount: store.todayAppointments.length,
+    selectedDay,
+    calendarYear,
+    calendarMonth,
+    monthAppointments,
+    todayAppointmentsCount: todayAppointments.length,
     locale: i18n.language,
     t,
   });
   useSchedulerDataSync({
-    calendarYear: store.calendarYear,
-    calendarMonth: store.calendarMonth,
+    calendarYear,
+    calendarMonth,
     showErrorToast,
   });
 
@@ -68,7 +78,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     handleCreateIntake,
     handleUpdateAppointment,
   } = useSchedulerActions({
-    upsertAppointment: store.upsertAppointment,
+    upsertAppointment,
     setSelectedAppointment,
     showSuccessToast,
     showErrorToast,
@@ -77,9 +87,9 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const handleCardClick = useCallback((appt: AppointmentDto) => setSelectedAppointment(appt), []);
 
   const handleDayClick = useCallback((day: number) => {
-    const nextDay = store.selectedDay === day ? null : day;
-    store.setSelectedDay(nextDay);
-  }, [store]);
+    const nextDay = selectedDay === day ? null : day;
+    setSelectedDay(nextDay);
+  }, [selectedDay, setSelectedDay]);
 
   const handleCloseModal = useCallback(() => setSelectedAppointment(null), []);
 
@@ -101,8 +111,8 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     }
 
     const latest =
-      store.monthAppointments.find((item) => item.id === selectedAppointmentId)
-      ?? store.todayAppointments.find((item) => item.id === selectedAppointmentId);
+      monthAppointments.find((item) => item.id === selectedAppointmentId)
+      ?? todayAppointments.find((item) => item.id === selectedAppointmentId);
 
     if (!latest) {
       return;
@@ -121,10 +131,10 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     return () => {
       globalThis.cancelAnimationFrame(frameId);
     };
-  }, [selectedAppointmentId, store.monthAppointments, store.todayAppointments]);
+  }, [selectedAppointmentId, monthAppointments, todayAppointments]);
 
   return (
-    <section className="flex flex-col gap-6 p-4 max-[320px]:p-3 sm:p-6 lg:p-8">
+    <section className={`${pageShellClass} flex flex-col gap-6`}>
       <h1 className="sr-only">{t('nav.scheduler')}</h1>
 
       <section aria-label={t('scheduler.plannerSpace')}>
@@ -139,13 +149,13 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       <section aria-label={t('nav.scheduler')}>
         <h2 className="sr-only">{t('nav.scheduler')}</h2>
         <CalendarView
-          appointments={store.calendarAppointments}
-          year={store.calendarYear}
-          month={store.calendarMonth}
-          isLoading={store.isLoadingMonth}
-          onMonthChange={(year, month) => store.setCalendarMonth(year, month)}
+          appointments={calendarAppointments}
+          year={calendarYear}
+          month={calendarMonth}
+          isLoading={isLoadingMonth}
+          onMonthChange={(year, month) => setCalendarMonth(year, month)}
           onDayClick={handleDayClick}
-          selectedDay={store.selectedDay}
+          selectedDay={selectedDay}
         />
       </section>
 
@@ -162,14 +172,14 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       <section aria-label={t('scheduler.monthList.title')}>
         <h2 className="sr-only">{t('scheduler.monthList.title')}</h2>
         <MonthAppointmentList
-          appointments={store.monthAppointments}
-          isLoading={store.isLoadingMonth}
+          appointments={monthAppointments}
+          isLoading={isLoadingMonth}
           currentMechanicId={user?.personId}
-          selectedDay={store.selectedDay}
+          selectedDay={selectedDay}
           onClaim={handleClaim}
           onUnclaim={handleUnclaim}
           onCardClick={handleCardClick}
-          onClearFilter={() => store.setSelectedDay(null)}
+          onClearFilter={() => setSelectedDay(null)}
         />
       </section>
 

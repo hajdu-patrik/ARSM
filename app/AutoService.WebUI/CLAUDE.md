@@ -19,9 +19,8 @@
 ## UI/UX Guardrails
 
 - Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
-- Preserve 320px containment for dense flex/grid rows, dropdowns, action clusters, and calendar/status indicators.
-- Flatten nested card surfaces unless a nested card is the primary repeated object.
-- Route mutation outcomes through localized top-center toasts; use confirmation modals for destructive or high-stakes actions.
+- Treat the central profile as authoritative for tokens, interaction clarity and choice control, 320px mobile-first containment, feedback latency, error recovery, accessibility ergonomics, surface flattening, content-alignment contract, toast feedback, and confirmation-modal policy.
+- Do not duplicate or override central profile details here; update the central profile first, then sync wrappers/instructions for parity.
 
 ## Engineering Standards
 
@@ -60,6 +59,6 @@
 ## Source-of-Truth Files
 
 - Routes: `src/App.tsx`
-- Shared styles: `src/utils/formStyles.ts`, `src/index.css`
+- Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
 - UI/UX policy: `.agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

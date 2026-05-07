@@ -5,10 +5,7 @@
  */
 import { useCallback, useState } from 'react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import type {
-  CustomerListItem,
-  VehicleDetailDto,
-} from '../../../types/customers/customers.types';
+import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
 import type { DeleteVehicleTarget } from '../page.types';
 
@@ -17,10 +14,7 @@ interface UseVehicleDeleteMutationsParams {
   showSuccessToast: (message: string) => void;
   showErrorToast: (message: string) => void;
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
-  setCustomers: React.Dispatch<React.SetStateAction<CustomerListItem[]>>;
-  setVehiclesByCustomerId: React.Dispatch<React.SetStateAction<Record<number, VehicleDetailDto[]>>>;
-  setVehicleHistoryByVehicleId: React.Dispatch<React.SetStateAction<Record<number, AppointmentDto[]>>>;
-  setActiveVehicleHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, number | null>>>;
+  applyVehicleDeleted: (customerId: number, vehicleId: number) => void;
   loadCustomerHistory: (customerId: number, force?: boolean) => Promise<void>;
 }
 
@@ -33,10 +27,7 @@ export function useVehicleDeleteMutations({
   showSuccessToast,
   showErrorToast,
   customerHistoryByCustomerId,
-  setCustomers,
-  setVehiclesByCustomerId,
-  setVehicleHistoryByVehicleId,
-  setActiveVehicleHistoryByCustomerId,
+  applyVehicleDeleted,
   loadCustomerHistory,
 }: UseVehicleDeleteMutationsParams) {
   const [deleteVehicleTarget, setDeleteVehicleTarget] = useState<DeleteVehicleTarget | null>(null);
@@ -55,32 +46,8 @@ export function useVehicleDeleteMutations({
   }, [isDeletingVehicle]);
 
   const applyDeletedVehicleToState = useCallback((target: DeleteVehicleTarget) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [target.customerId]: (prev[target.customerId] ?? []).filter(
-        (vehicle) => vehicle.id !== target.vehicle.id,
-      ),
-    }));
-
-    setCustomers((prev) => prev.map((item) => (
-      item.id === target.customerId
-        ? { ...item, vehicleCount: Math.max(0, item.vehicleCount - 1) }
-        : item
-    )));
-
-    setVehicleHistoryByVehicleId((prev) => {
-      const next = { ...prev };
-      delete next[target.vehicle.id];
-      return next;
-    });
-
-    setActiveVehicleHistoryByCustomerId((prev) => ({
-      ...prev,
-      [target.customerId]: prev[target.customerId] === target.vehicle.id
-        ? null
-        : prev[target.customerId],
-    }));
-  }, [setActiveVehicleHistoryByCustomerId, setCustomers, setVehicleHistoryByVehicleId, setVehiclesByCustomerId]);
+    applyVehicleDeleted(target.customerId, target.vehicle.id);
+  }, [applyVehicleDeleted]);
 
   const reloadCustomerHistoryIfNeeded = useCallback((customerId: number) => {
     if (customerHistoryByCustomerId[customerId]) {

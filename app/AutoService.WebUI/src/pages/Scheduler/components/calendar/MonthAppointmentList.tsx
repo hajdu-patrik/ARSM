@@ -2,6 +2,11 @@ import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
+import {
+  compactSelectClass,
+  insetSurfaceClass,
+  schedulerMiniNeutralActionButtonClass,
+} from '../../../../utils/formStyles';
 import { AppointmentCard } from '../shared/AppointmentCard';
 
 interface MonthAppointmentListProps {
@@ -38,6 +43,16 @@ function isPlaceholderMechanicName(fullName: string): boolean {
   return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName.trim());
 }
 
+/** Parses mechanic filter select values and safely resets the filter for invalid input. */
+function parseMechanicFilterValue(value: string): number | null {
+  if (value === '') {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
 const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   appointments,
   isLoading,
@@ -67,7 +82,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   }, []);
 
   const uniqueMechanics = useMemo(() => {
-    const map = new Map<number, string>();
+    const mechanicNameById = new Map<number, string>();
     for (const appt of appointments) {
       for (const mechanic of appt.mechanics) {
         const normalizedName = mechanic.fullName.trim();
@@ -75,16 +90,16 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           continue;
         }
 
-        if (!map.has(mechanic.id)) {
-          map.set(mechanic.id, normalizedName);
+        if (!mechanicNameById.has(mechanic.id)) {
+          mechanicNameById.set(mechanic.id, normalizedName);
         }
       }
     }
 
-    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+    return Array.from(mechanicNameById.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [appointments]);
 
-  const filtered = useMemo(() => {
+  const filteredAppointments = useMemo(() => {
     let result = appointments;
 
     if (selectedDay !== null) {
@@ -103,14 +118,14 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   }, [appointments, selectedDay, selectedStatuses, selectedMechanicId]);
 
   const sortedAppointments = useMemo(() => {
-    const sorted = [...filtered];
+    const sorted = [...filteredAppointments];
     sorted.sort((a, b) => {
       const aTs = new Date(a.scheduledDate).getTime();
       const bTs = new Date(b.scheduledDate).getTime();
       return sortAsc ? aTs - bTs : bTs - aTs;
     });
     return sorted;
-  }, [filtered, sortAsc]);
+  }, [filteredAppointments, sortAsc]);
 
   const shouldSpanSingleCard = sortedAppointments.length === 1;
   const emptyMessageKey = selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
@@ -151,7 +166,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   }
 
   return (
-    <section className="rounded-2xl border border-arsm-border bg-arsm-input p-3 dark:border-arsm-border-dark dark:bg-arsm-card-dark sm:p-4">
+    <section className={`${insetSurfaceClass} p-3 sm:p-4`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <h3 className="truncate text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-lg">
@@ -165,8 +180,8 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           <button
             type="button"
-            onClick={() => setSortAsc((v) => !v)}
-            className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border bg-arsm-accent-subtle px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:bg-arsm-accent-wash max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80"
+            onClick={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
+            className={`${schedulerMiniNeutralActionButtonClass} hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/80`}
             title={t('scheduler.monthList.sortByDate')}
           >
             <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
@@ -177,7 +192,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
             <button
               type="button"
               onClick={onClearFilter}
-              className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border bg-arsm-accent-subtle px-3 py-1 text-xs font-medium text-arsm-label transition-colors hover:border-arsm-accent/55 hover:bg-arsm-accent-wash max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80"
+              className={`${schedulerMiniNeutralActionButtonClass} hover:border-arsm-accent/55 hover:bg-arsm-accent-wash dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80`}
             >
               <X className="h-3 w-3 shrink-0" />
               <span className="truncate">{t('scheduler.monthList.clearFilter')}</span>
@@ -209,8 +224,8 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         <div className="min-w-0 basis-full overflow-hidden sm:basis-auto">
           <select
             value={selectedMechanicId ?? ''}
-            onChange={(e) => setSelectedMechanicId(e.target.value === '' ? null : Number(e.target.value))}
-            className="w-full min-w-0 max-w-full truncate rounded-lg border border-arsm-border bg-arsm-card px-2.5 py-1.5 text-xs text-arsm-primary transition-colors hover:bg-arsm-hover dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark"
+            onChange={(event) => setSelectedMechanicId(parseMechanicFilterValue(event.target.value))}
+            className={`${compactSelectClass} w-full min-w-0 max-w-full truncate rounded-lg bg-arsm-card px-2.5 py-1.5 text-xs hover:bg-arsm-hover dark:bg-arsm-input-dark dark:hover:bg-arsm-hover-dark`}
           >
             <option value="">{t('scheduler.monthList.mechanicAll')}</option>
             {uniqueMechanics.map(([id, name]) => (

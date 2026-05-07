@@ -3,4 +3,20 @@
  * @module pages/Settings/constants
  */
 
-export { inputClass, readonlyInputClass, labelClass, cardClass, buttonClass } from '../../utils/formStyles';
+export {
+	actionClusterClass,
+	buttonClass,
+	cardClass,
+	dangerButtonClass,
+	inputClass,
+	labelClass,
+	pageHeaderClass,
+	pageShellClass,
+	pageShellNarrowClass,
+	pageSubtitleClass,
+	pageTitleClass,
+	readonlyInputClass,
+	secondaryButtonClass,
+	sectionStackClass,
+	sectionTitleClass,
+} from '../../utils/formStyles';

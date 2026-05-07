@@ -30,7 +30,7 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 	onOpenAppointment,
 }: RepairHistoryListProps) {
 	if (appointments.length === 0) {
-		return <p className="text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{emptyMessage}</p>;
+		return <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{emptyMessage}</p>;
 	}
 
 	return (

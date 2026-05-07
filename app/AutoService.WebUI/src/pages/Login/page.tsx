@@ -11,6 +11,7 @@ import { authService } from '../../services/auth/auth.service';
 import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
+import { buttonClass, inputClass, labelClass } from '../../utils/formStyles';
 import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
 
 type InvalidIdentifierReason = 'wrong_method_email' | 'wrong_method_phone' | 'format';
@@ -150,7 +151,7 @@ const LoginComponent = memo(function Login() {
 
 					<form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5" noValidate>
 						<div>
-							<label htmlFor="identifier" className="mb-2 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
+							<label htmlFor="identifier" className={labelClass}>
 								{identifierLabel}
 							</label>
 							<input
@@ -164,14 +165,14 @@ const LoginComponent = memo(function Login() {
 									setIdentifier(event.target.value);
 								}}
 								placeholder={identifierPlaceholder}
-								className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
+								className={inputClass}
 								required
 								disabled={isLoading}
 							/>
 						</div>
 
 						<div>
-							<label htmlFor="password" className="mb-2 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
+							<label htmlFor="password" className={labelClass}>
 								{t('login.passwordPlaceholder')}
 							</label>
 							<div className="relative">
@@ -184,7 +185,7 @@ const LoginComponent = memo(function Login() {
 										setPassword(event.target.value);
 									}}
 									placeholder={t('login.loginPassword')}
-									className="w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 pr-12 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/25"
+									className={`${inputClass} pr-12`}
 									required
 									disabled={isLoading}
 								/>
@@ -207,7 +208,7 @@ const LoginComponent = memo(function Login() {
 						<button
 							type="submit"
 							disabled={!canSubmit}
-							className="mt-1.5 inline-flex w-full items-center justify-center rounded-xl bg-arsm-accent py-3 text-sm font-semibold text-arsm-primary transition duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:bg-arsm-accent-border dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/30 dark:disabled:bg-arsm-ring-dark sm:text-base"
+							className={`${buttonClass} mt-1.5 w-full sm:text-base`}
 							aria-busy={isLoading}
 						>
 							{isLoading ? t('login.loading') : t('login.submit')}

@@ -1,11 +1,9 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
-import { cardClass } from '../../../utils/formStyles';
+import { actionClusterClass, buttonClass, cardClass, secondaryButtonClass } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
-
-type SortDirection = 'asc' | 'desc';
-type CustomerSortField = 'name';
+import type { CustomerSortField, SortDirection } from '../page.types';
 
 interface CustomersToolbarProps {
 	t: TFunction;
@@ -56,7 +54,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 					)}
 				</div>
 
-				<div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+				<div className={`${actionClusterClass} w-full sm:w-auto sm:flex-nowrap`}>
 					<label htmlFor="customers-sort-field" className="sr-only">
 						{t('customers.sortBy')}
 					</label>
@@ -77,7 +75,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						data-testid="customers-sort-toggle"
 						type="button"
 						onClick={onToggleSortDirection}
-						className="inline-flex min-w-0 max-w-full flex-1 items-center justify-center gap-1 rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label transition hover:-translate-y-px hover:bg-arsm-accent-subtle max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark sm:flex-none"
+						className={`${secondaryButtonClass} min-w-0 max-w-full flex-1 max-[350px]:basis-full sm:flex-none`}
 					>
 						<ArrowUpDown className="h-4 w-4 shrink-0" />
 						<span className="truncate">{sortDirection === 'asc' ? t('customers.sortDirectionAsc') : t('customers.sortDirectionDesc')}</span>
@@ -87,7 +85,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						data-testid="customers-create-button"
 						type="button"
 						onClick={onOpenCreateCustomerModal}
-						className="inline-flex min-w-0 max-w-full flex-1 items-center justify-center gap-1 rounded-xl bg-arsm-accent px-3 py-2 text-sm font-semibold text-arsm-on-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover max-[350px]:basis-full dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover sm:flex-none"
+						className={`${buttonClass} min-w-0 max-w-full flex-1 max-[350px]:basis-full sm:flex-none`}
 					>
 						<Plus className="h-4 w-4 shrink-0" />
 						<span className="truncate">{t('customers.createCustomer')}</span>

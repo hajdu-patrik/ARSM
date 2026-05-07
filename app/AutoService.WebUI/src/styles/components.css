@@ -22,7 +22,7 @@
   }
 
   .dark .crop-zoom-slider {
-    background: #3a355a;
+    background: #56608a;
   }
 
   .crop-zoom-slider::-webkit-slider-thumb {
@@ -37,7 +37,7 @@
   }
 
   .dark .crop-zoom-slider::-webkit-slider-thumb {
-    border-color: #141726;
+    border-color: #1a2033;
     background: #cdb8ff;
   }
 
@@ -48,7 +48,7 @@
   }
 
   .dark .crop-zoom-slider::-moz-range-track {
-    background: #3a355a;
+    background: #56608a;
   }
 
   .crop-zoom-slider::-moz-range-thumb {
@@ -61,7 +61,7 @@
   }
 
   .dark .crop-zoom-slider::-moz-range-thumb {
-    border-color: #141726;
+    border-color: #1a2033;
     background: #cdb8ff;
   }
 

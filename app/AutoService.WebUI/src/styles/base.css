@@ -49,7 +49,7 @@
   }
 
   .dark {
-    scrollbar-color: #c0b2e8 #251f3d;
+    scrollbar-color: #ddd5f2 #1f2742;
   }
 
   input,
@@ -78,15 +78,15 @@
   }
 
   .dark select option {
-    background-color: #1b1f33;
-    color: #f2edff;
+    background-color: #202841;
+    color: #f6f3ff;
   }
 
   .dark select option:hover,
   .dark select option:focus,
   .dark select option:checked {
-    color: #f2edff;
-    background: #25223d linear-gradient(0deg, #25223d, #25223d);
+    color: #f6f3ff;
+    background: #2d3658 linear-gradient(0deg, #2d3658, #2d3658);
   }
 
   select:focus {
@@ -118,6 +118,16 @@
 
   button {
     @apply transition-all duration-200 ease-out;
+  }
+
+  ::selection {
+    background: #b998ff;
+    color: #1b1231;
+  }
+
+  .dark ::selection {
+    background: #b8a5ff;
+    color: #090d19;
   }
 
 }

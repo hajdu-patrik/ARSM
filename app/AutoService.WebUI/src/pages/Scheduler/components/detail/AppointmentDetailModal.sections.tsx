@@ -4,9 +4,28 @@ import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
-import { inputClassCompact } from '../../../../utils/formStyles';
+import {
+  buttonClass,
+  compactSelectClass,
+  inputClassCompact,
+  schedulerAccentTagClass,
+  schedulerDetailPanelClass,
+  schedulerDetailRowClass,
+  schedulerMiniDangerActionButtonClass,
+} from '../../../../utils/formStyles';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
+
+interface MechanicOption {
+  readonly personId: number;
+  readonly firstName: string;
+  readonly middleName: string | null;
+  readonly lastName: string;
+}
+
+function getMechanicOptionDisplayName(mechanic: MechanicOption): string {
+  return [mechanic.firstName, mechanic.middleName, mechanic.lastName].filter(Boolean).join(' ');
+}
 
 interface AppointmentDetailBodyProps {
   readonly appointment: AppointmentDto;
@@ -17,12 +36,7 @@ interface AppointmentDetailBodyProps {
   readonly formattedDate: string;
   readonly dueDateLabel: string;
   readonly dueState: DueState;
-  readonly availableMechanics: Array<{
-    personId: number;
-    firstName: string;
-    middleName: string | null;
-    lastName: string;
-  }>;
+  readonly availableMechanics: MechanicOption[];
   readonly selectedNewMechanicId: string;
   readonly isAssigning: boolean;
   readonly isClosedForMechanicMutations: boolean;
@@ -113,7 +127,7 @@ const HeaderSection = memo(function HeaderSection({
   formattedDate,
 }: HeaderSectionProps) {
   return (
-    <div className="rounded-xl border border-arsm-border bg-arsm-input/80 px-3.5 py-2.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/70">
+    <div className={`${schedulerDetailRowClass} px-3.5 py-2.5`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <StatusBadge status={appointmentStatus} />
         <span className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{formattedDate}</span>
@@ -187,7 +201,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
   const title = `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
 
   return (
-    <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65">
+    <div className={schedulerDetailPanelClass}>
       <h4 className="mb-2 text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {title}
       </h4>
@@ -244,7 +258,7 @@ const VehicleValueRow = memo(function VehicleValueRow({
   displayClassName,
 }: VehicleValueRowProps) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-arsm-border bg-arsm-toggle-bg/90 px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark/80">
+    <div className={`${schedulerDetailRowClass} flex min-w-0 items-center justify-between gap-3`}>
       <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
       <span className={displayClassName}>{displayValue}</span>
     </div>
@@ -267,7 +281,7 @@ const TaskSection = memo(function TaskSection({
   onTaskChange,
 }: TaskSectionProps) {
   return (
-    <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65">
+    <div className={schedulerDetailPanelClass}>
       <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
         {t('scheduler.detail.task')}
       </h4>
@@ -293,12 +307,7 @@ interface MechanicsSectionProps {
   readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly removingMechanicId: number | null;
-  readonly availableMechanics: Array<{
-    personId: number;
-    firstName: string;
-    middleName: string | null;
-    lastName: string;
-  }>;
+  readonly availableMechanics: MechanicOption[];
   readonly selectedNewMechanicId: string;
   readonly t: TFunction;
   readonly onUnclaim: () => void;
@@ -330,7 +339,7 @@ const MechanicsSection = memo(function MechanicsSection({
   const isMechanicMutationBusy = isAssigning || isUnclaiming || removingMechanicId !== null;
 
   return (
-    <div className="rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65">
+    <div className={schedulerDetailPanelClass}>
       <h4 className="mb-1 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
         {t('scheduler.detail.mechanics')}
       </h4>
@@ -382,18 +391,15 @@ const MechanicsSection = memo(function MechanicsSection({
               onChange={(event) => onSelectNewMechanic(event.target.value)}
               disabled={isMechanicMutationBusy}
               aria-label={t('scheduler.detail.selectMechanic')}
-              className="w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22 sm:flex-1"
+              className={`${compactSelectClass} w-full min-w-0 max-w-full truncate sm:flex-1`}
             >
               <option value="" disabled hidden>
                 {t('scheduler.detail.selectMechanic')}
               </option>
               {availableMechanics.map((mechanic) => {
-                const name = [mechanic.firstName, mechanic.middleName, mechanic.lastName]
-                  .filter(Boolean)
-                  .join(' ');
                 return (
                   <option key={mechanic.personId} value={mechanic.personId}>
-                    {name}
+                    {getMechanicOptionDisplayName(mechanic)}
                   </option>
                 );
               })}
@@ -402,7 +408,7 @@ const MechanicsSection = memo(function MechanicsSection({
               type="button"
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className="w-full shrink-0 rounded-xl bg-arsm-accent px-3.5 py-2 text-sm font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:bg-arsm-accent-hover disabled:cursor-not-allowed disabled:opacity-50 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover sm:w-auto"
+              className={`${buttonClass} w-full shrink-0 px-3.5 py-2 sm:w-auto`}
             >
               {isAssigning ? '...' : t('scheduler.detail.addMechanic')}
             </button>
@@ -443,7 +449,7 @@ const MechanicCard = memo(function MechanicCard({
     : t('scheduler.detail.unassignOther');
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl border border-arsm-border bg-arsm-toggle-bg/90 px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark/80">
+    <div className={`${schedulerDetailRowClass} min-w-0 overflow-hidden`}>
       <div className="flex items-center gap-3 max-[350px]:flex-col max-[350px]:items-stretch">
         <MechanicAvatar
           mechanicId={mechanic.id}
@@ -457,7 +463,7 @@ const MechanicCard = memo(function MechanicCard({
             <span className="min-w-0 truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
               {mechanic.fullName}
             </span>
-            <span className="max-w-full truncate rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
+            <span className={schedulerAccentTagClass}>
               {mechanic.specialization}
             </span>
           </div>
@@ -470,7 +476,7 @@ const MechanicCard = memo(function MechanicCard({
               onClick={onUnclaim}
               disabled={isMechanicMutationLocked || isUnclaiming}
               title={t('scheduler.detail.unassignMe')}
-              className="inline-flex w-auto shrink-0 items-center gap-1 rounded-lg border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full max-[350px]:justify-center dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80"
+              className={schedulerMiniDangerActionButtonClass}
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden md:inline">
@@ -485,7 +491,7 @@ const MechanicCard = memo(function MechanicCard({
               onClick={onQueueRemove}
               disabled={isRemoveDisabled}
               title={removeActionLabel}
-              className="inline-flex w-auto shrink-0 items-center gap-1 rounded-lg border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full max-[350px]:justify-center dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80"
+              className={schedulerMiniDangerActionButtonClass}
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="truncate">{removeActionLabel}</span>

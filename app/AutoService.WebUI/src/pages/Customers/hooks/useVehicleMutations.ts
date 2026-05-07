@@ -1,7 +1,8 @@
 import type { ServerFieldErrors } from '../../../utils/serverValidation';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type {
-  CustomerListItem,
+  CreateVehicleRequest,
+  UpdateVehicleRequest,
   VehicleDetailDto,
 } from '../../../types/customers/customers.types';
 import { useVehicleDeleteMutations } from './useVehicleDeleteMutations';
@@ -14,10 +15,13 @@ interface UseVehicleMutationsParams {
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
   vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
-  setCustomers: React.Dispatch<React.SetStateAction<CustomerListItem[]>>;
-  setVehiclesByCustomerId: React.Dispatch<React.SetStateAction<Record<number, VehicleDetailDto[]>>>;
-  setVehicleHistoryByVehicleId: React.Dispatch<React.SetStateAction<Record<number, AppointmentDto[]>>>;
-  setActiveVehicleHistoryByCustomerId: React.Dispatch<React.SetStateAction<Record<number, number | null>>>;
+  applyVehicleCreated: (customerId: number, createdVehicle: VehicleDetailDto) => void;
+  applyVehicleUpdated: (
+    customerId: number,
+    vehicleId: number,
+    payload: CreateVehicleRequest | UpdateVehicleRequest,
+  ) => void;
+  applyVehicleDeleted: (customerId: number, vehicleId: number) => void;
   loadCustomerHistory: (customerId: number, force?: boolean) => Promise<void>;
   loadVehicleHistory: (vehicleId: number, force?: boolean) => Promise<void>;
 }
@@ -33,10 +37,9 @@ export function useVehicleMutations({
   getFirstFieldErrorMessage,
   customerHistoryByCustomerId,
   vehicleHistoryByVehicleId,
-  setCustomers,
-  setVehiclesByCustomerId,
-  setVehicleHistoryByVehicleId,
-  setActiveVehicleHistoryByCustomerId,
+  applyVehicleCreated,
+  applyVehicleUpdated,
+  applyVehicleDeleted,
   loadCustomerHistory,
   loadVehicleHistory,
 }: UseVehicleMutationsParams) {
@@ -46,8 +49,8 @@ export function useVehicleMutations({
     getFirstFieldErrorMessage,
     customerHistoryByCustomerId,
     vehicleHistoryByVehicleId,
-    setCustomers,
-    setVehiclesByCustomerId,
+    applyVehicleCreated,
+    applyVehicleUpdated,
     loadCustomerHistory,
     loadVehicleHistory,
   });
@@ -56,10 +59,7 @@ export function useVehicleMutations({
     showSuccessToast,
     showErrorToast,
     customerHistoryByCustomerId,
-    setCustomers,
-    setVehiclesByCustomerId,
-    setVehicleHistoryByVehicleId,
-    setActiveVehicleHistoryByCustomerId,
+    applyVehicleDeleted,
     loadCustomerHistory,
   });
 

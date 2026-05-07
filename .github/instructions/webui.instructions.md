@@ -15,14 +15,12 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Dark/light parity + responsive behavior.
 - Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, `box-shadow`, `transition-shadow`) on WebUI elements.
 - Central UI/UX source of truth: `.agents/ui-ux-style-profile.md`.
-- Keep service calls in `src/services`; no hardcoded `VITE_API_URL` fallback.
-- Preserve auth/session, route guards, scheduler core behavior.
+- Keep API logic in `src/services`; keep UI logic in pages/components/hooks; no hardcoded `VITE_API_URL` fallback.
 
 ## UI/UX Guardrails
 - Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
-- Preserve 320px containment for dense flex/grid rows, dropdowns, action clusters, and calendar/status indicators.
-- Flatten nested card surfaces unless a nested card is the primary repeated object.
-- Route mutation outcomes through localized top-center toasts; use confirmation modals for destructive or high-stakes actions.
+- Treat the central profile as authoritative for tokens, interaction clarity and choice control, 320px mobile-first containment, feedback latency, error recovery, accessibility ergonomics, surface flattening, content-alignment contract, toast feedback, and confirmation-modal policy.
+- Do not duplicate or override central profile details here; update the central profile first, then sync wrappers/instructions for parity.
 
 ## Engineering Standards
 - Apply SOLID and OOP to component/hook/service boundaries.
@@ -37,9 +35,14 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Components/hooks/services > 300 lines must be split by responsibility.
 - Functions should be <= 60 lines where practical.
 
-## Routing Gates
-- Heavy test agents only on explicit request or significant UI/DTO-visible structural change.
-- Heavy test triggered by new feature -> generate missing coverage first.
+## Auth/State
+- Cookie-session flow with backend authority.
+- Preserve route guards and sidebar/nav behavior.
+- Preserve scheduler behavior and status-driven rules.
+
+## Testing/Execution Policy
+- Heavy test agents (HTTP/SQL/E2E): only explicit request or significant feature/structural behavior change.
+- If heavy tests are triggered by new UI/DTO feature: generate missing coverage first.
 
 ## Always-On
 - `docs-sync` always, auto-remediate docs drift.
@@ -50,6 +53,6 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 
 ## Source-of-Truth Files
 - Routes: `src/App.tsx`
-- Shared styles: `src/utils/formStyles.ts`, `src/index.css`
+- Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
 - UI/UX policy: `.agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

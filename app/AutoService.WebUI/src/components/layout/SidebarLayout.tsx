@@ -12,6 +12,7 @@ import {
 } from '../../services/profile/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
+import { sidebarIconSlotClass } from '../../utils/formStyles';
 
 interface NavItem {
   key: string;
@@ -175,7 +176,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
         }}
         title={collapsed ? t(item.labelKey) : undefined}
       >
-        <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+        <span className={sidebarIconSlotClass}>
           <Icon className="h-5 w-5" />
         </span>
         <span className={`${TEXT_TRANSITION} ${collapsedText}`}>{t(item.labelKey)}</span>
@@ -186,7 +187,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
   const sidebarContent = (
     <div className="flex h-full flex-col">
       <div className="flex h-[73px] items-center border-b border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_100%)] px-2 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_100%)]">
-        <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+        <span className={sidebarIconSlotClass}>
           <img src={logoSrc} alt="AutoService" className="h-8 w-8 select-none object-contain pointer-events-none" />
         </span>
         <span className={`${TEXT_TRANSITION} ${collapsedText} text-lg font-bold text-arsm-primary dark:text-arsm-primary-dark`}>ARSM</span>
@@ -202,7 +203,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
           aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
           className="flex w-full items-center rounded-xl border border-transparent text-arsm-label transition-colors duration-200 hover:border-arsm-border hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
         >
-          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+          <span className={sidebarIconSlotClass}>
             <ChevronsLeft className={`h-5 w-5 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
           </span>
           <span className={`${TEXT_TRANSITION} ${collapsedText} text-sm font-medium`}>{t('sidebar.collapse')}</span>
@@ -211,7 +212,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
 
       <div className="space-y-1 border-t border-arsm-border bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.42)_100%)] px-2 py-3 dark:border-arsm-border-dark dark:bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.03)_100%)]">
         <div className="flex items-center">
-          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center select-none pointer-events-none">
+          <span className={`${sidebarIconSlotClass} select-none pointer-events-none`}>
             {showProfilePicture ? (
               <img
                 src={profilePictureUrl}
@@ -247,7 +248,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
           aria-label={t('layout.logout')}
           className="flex w-full items-center rounded-xl border border-transparent text-arsm-error-active transition-colors duration-200 hover:border-arsm-error-border-light hover:bg-arsm-error-bg dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
         >
-          <span className="inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center">
+          <span className={sidebarIconSlotClass}>
             <LogOut className="h-5 w-5" />
           </span>
           <span className={`${TEXT_TRANSITION} ${collapsedText} text-sm font-medium`}>{t('layout.logout')}</span>

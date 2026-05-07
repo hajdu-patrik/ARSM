@@ -5,7 +5,7 @@
  */
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cardClass, buttonClass } from '../constants';
+import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, sectionTitleClass } from '../constants';
 
 interface ProfilePictureSectionProps {
 	readonly hasProfilePicture: boolean;
@@ -51,7 +51,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 
 	return (
 		<div className={cardClass}>
-			<h2 className="mb-4 text-lg font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+			<h2 className={sectionTitleClass}>
 				{t('settings.profilePicture')}
 			</h2>
 
@@ -69,7 +69,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 					</div>
 				)}
 
-				<div className="flex flex-col gap-2 sm:flex-row">
+				<div className={actionClusterClass}>
 					<button type="button" onClick={handleUploadClick} disabled={isUploading} className={buttonClass}>
 						{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}
 					</button>
@@ -79,7 +79,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 							type="button"
 							onClick={onRemove}
 							disabled={isUploading}
-							className="inline-flex items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-6 py-3 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/40"
+							className={dangerButtonClass}
 						>
 							{t('settings.removePicture')}
 						</button>

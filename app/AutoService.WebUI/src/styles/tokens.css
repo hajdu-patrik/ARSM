@@ -22,37 +22,37 @@
 
   /* ── App shell — page background & card surfaces ─────────────────────────── */
   --color-arsm-surface:      #f2f0f8;  /* page background (light) */
-  --color-arsm-surface-dark: #080a14;  /* page background (dark)  */
+  --color-arsm-surface-dark: #060914;  /* page background (dark)  */
   --color-arsm-card:         #ffffff;  /* card / panel (light)    */
-  --color-arsm-card-dark:    #141726;  /* card / panel (dark)     */
+  --color-arsm-card-dark:    #1a2033;  /* card / panel (dark)     */
 
   /* ── Deep backgrounds — used for very dark overlays / disabled inputs ─────── */
-  --color-arsm-deep:    #2c2640;  /* deep panel (dark mode context)    */
-  --color-arsm-deepest: #0d1020;  /* deepest overlay / disabled input  */
+  --color-arsm-deep:    #32395a;  /* deep panel (dark mode context)    */
+  --color-arsm-deepest: #0c1120;  /* deepest overlay / disabled input  */
 
   /* ── Text ─────────────────────────────────────────────────────────────────── */
   --color-arsm-primary:      #2d2440;  /* primary text (light)         */
-  --color-arsm-primary-dark: #f2edff;  /* primary text (dark)          */
+  --color-arsm-primary-dark: #f6f3ff;  /* primary text (dark)          */
   --color-arsm-muted:        #6a6185;  /* secondary / helper text (light) */
-  --color-arsm-muted-dark:   #b8aed6;  /* secondary / helper text (dark)  */
+  --color-arsm-muted-dark:   #cdc5e6;  /* secondary / helper text (dark)  */
   --color-arsm-label:        #5c5375;  /* form labels / sidebar items (light) */
-  --color-arsm-label-dark:   #cec4eb;  /* form labels / sidebar items (dark)  */
+  --color-arsm-label-dark:   #e0d8f4;  /* form labels / sidebar items (dark)  */
 
   /* ── Borders & dividers ───────────────────────────────────────────────────── */
   --color-arsm-border:      #d9d1ec;  /* default border (light) */
-  --color-arsm-border-dark: #3a355a;  /* default border (dark)  */
+  --color-arsm-border-dark: #56608a;  /* default border (dark)  */
 
   /* ── Form inputs ──────────────────────────────────────────────────────────── */
   --color-arsm-input:            #f8f5ff;  /* input background (light)    */
-  --color-arsm-input-dark:       #1b1f33;  /* input background (dark)     */
+  --color-arsm-input-dark:       #202841;  /* input background (dark)     */
   --color-arsm-placeholder:      #8a81a6;  /* placeholder text (light)    */
-  --color-arsm-placeholder-dark: #958ab8;  /* placeholder text (dark)     */
+  --color-arsm-placeholder-dark: #b1a8ce;  /* placeholder text (dark)     */
 
   /* ── Primary accent — pastel purple CTA buttons, highlights ──────────────── */
   --color-arsm-accent:           #cdb8ff;  /* accent fill (light)               */
   --color-arsm-accent-hover:     #bea7f6;  /* accent fill on hover (light)      */
-  --color-arsm-accent-dark:      #8a76d6;  /* accent fill (dark)                */
-  --color-arsm-accent-dark-hover: #9b87e6; /* accent fill on hover (dark)       */
+  --color-arsm-accent-dark:      #9a86e8;  /* accent fill (dark)                */
+  --color-arsm-accent-dark-hover: #ad99f2; /* accent fill on hover (dark)       */
   --color-arsm-accent-subtle:    #eee6ff;  /* very light accent bg (hover areas)*/
   --color-arsm-accent-border:    #ddd0fa;  /* accent-tinted border / disabled button fill */
   --color-arsm-accent-deep:      #5f4698;  /* deep accent text / icon emphasis  */
@@ -65,26 +65,26 @@
   /* ── Neutral filter pills ────────────────────────────────────────────────── */
   --color-arsm-neutral-pill:        #f3f4f6;  /* neutral filter bg (light)      */
   --color-arsm-neutral-pill-hover:  #e5e7eb;  /* neutral filter hover (light)   */
-  --color-arsm-status-dot-fallback: #8a81a6;  /* fallback status indicator color */
+  --color-arsm-status-dot-fallback: #c9bfdc;  /* fallback status indicator color */
 
   /* ── Interactive states ───────────────────────────────────────────────────── */
   --color-arsm-focus-ring:      #bca5ff;  /* focus ring color              */
   --color-arsm-hover:           #f4eeff;  /* hover bg overlay (light); also dark button text */
-  --color-arsm-hover-dark:      #2e2a49;  /* hover bg overlay (dark)       */
-  --color-arsm-ring-dark:       #4d4572;  /* disabled button fill (dark)   */
+  --color-arsm-hover-dark:      #35406a;  /* hover bg overlay (dark)       */
+  --color-arsm-ring-dark:       #6976a8;  /* disabled button fill (dark)   */
   --color-arsm-toggle-bg:       #efeafc;  /* secondary button hover (light)*/
-  --color-arsm-toggle-bg-dark:  #25223d;  /* secondary button hover (dark) */
+  --color-arsm-toggle-bg-dark:  #2d3658;  /* secondary button hover (dark) */
 
   /* ── Semantic — error (red) ───────────────────────────────────────────────── */
   --color-arsm-error-bg:           #fff2f3;  /* error banner bg (light)         */
-  --color-arsm-error-bg-dark:      #2a171d;  /* error banner bg (dark)          */
+  --color-arsm-error-bg-dark:      #3a1f28;  /* error banner bg (dark)          */
   --color-arsm-error-border:       #eaabb0;  /* error border (light)            */
   --color-arsm-error-border-light: #f7ccd0;  /* softer error border             */
   --color-arsm-error-text:         #aa2c35;  /* error text (light)              */
-  --color-arsm-error-text-light:   #ff9fa8;  /* error text (dark mode)          */
+  --color-arsm-error-text-light:   #ffc3c9;  /* error text (dark mode)          */
   --color-arsm-error-hover:        #d86872;  /* error ring / interactive hover  */
   --color-arsm-error-active:       #c73f49;  /* error destructive action text   */
-  --color-arsm-error-dark:         #8d3a44;  /* error border/bg (dark mode)     */
+  --color-arsm-error-dark:         #b0606a;  /* error border/bg (dark mode)     */
   --color-arsm-error-accent:       #d7525e;  /* error icon / accent stripe      */
   --color-arsm-error-muted:        #aa4a56;  /* error toast stripe (dark mode)  */
   --color-arsm-error-soft:         #ffc0c6;  /* soft error chip text (dark)     */
@@ -92,20 +92,20 @@
 
   /* ── Semantic — success (green) ──────────────────────────────────────────── */
   --color-arsm-success-bg:          #f0fff5;  /* success banner bg (light)       */
-  --color-arsm-success-bg-dark:     #142a1e;  /* success banner bg (dark)        */
+  --color-arsm-success-bg-dark:     #173425;  /* success banner bg (dark)        */
   --color-arsm-success-border:      #a3e4b8;  /* success border (light)          */
-  --color-arsm-success-border-dark: #2d6b42;  /* success border (dark)           */
+  --color-arsm-success-border-dark: #3f8d5a;  /* success border (dark)           */
   --color-arsm-success-text:        #1a7a3a;  /* success text (light)            */
-  --color-arsm-success-text-dark:   #7ddba3;  /* success text (dark)             */
+  --color-arsm-success-text-dark:   #98e5b5;  /* success text (dark)             */
   --color-arsm-success-accent:      #22c55e;  /* success dot / active badge fill */
   --color-arsm-success-soft:        #bbf7d0;  /* success badge bg (light)        */
 
   /* ── Semantic — warning (amber) ──────────────────────────────────────────── */
   --color-arsm-warning-bg:          #fffbeb;  /* warning banner bg (light)       */
-  --color-arsm-warning-bg-dark:     #2a2314;  /* warning banner bg (dark)        */
+  --color-arsm-warning-bg-dark:     #3a3118;  /* warning banner bg (dark)        */
   --color-arsm-warning-border:      #fcd34d;  /* warning border (light)          */
-  --color-arsm-warning-border-dark: #6b5c2d;  /* warning border (dark)           */
+  --color-arsm-warning-border-dark: #8e7838;  /* warning border (dark)           */
   --color-arsm-warning-text:        #a16207;  /* warning text (light)            */
-  --color-arsm-warning-text-dark:   #fcd34d;  /* warning text (dark)             */
+  --color-arsm-warning-text-dark:   #ffd978;  /* warning text (dark)             */
   --color-arsm-warning-accent:      #f59e0b;  /* warning dot / active badge fill */
 }

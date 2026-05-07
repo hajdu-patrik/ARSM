@@ -1,6 +1,6 @@
 ---
 name: ui-ux-style-profile
-description: Claude-facing wrapper for the central AutoService.WebUI styling, responsiveness, toast, and confirmation profile.
+description: Claude-facing wrapper for the central AutoService.WebUI interaction clarity, accessibility, feedback, responsiveness, token, toast, and confirmation policy.
 model: sonnet
 ---
 

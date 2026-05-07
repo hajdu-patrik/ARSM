@@ -1,0 +1,324 @@
+/* -------------------------------------------------------------------------
+   ARSM Design System Primitives
+   Shared structural/layout/button classes for consistent UI composition.
+   ------------------------------------------------------------------------- */
+@layer components {
+  .arsm-page-shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 80rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .arsm-page-shell-narrow {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 48rem;
+  }
+
+  .arsm-page-shell-compact {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 42rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .arsm-page-header {
+    margin-bottom: 1rem;
+  }
+
+  .arsm-page-header-with-subtitle {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .arsm-page-title {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-arsm-primary);
+  }
+
+  .dark .arsm-page-title {
+    color: var(--color-arsm-primary-dark);
+  }
+
+  .arsm-page-subtitle {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-arsm-muted);
+  }
+
+  .dark .arsm-page-subtitle {
+    color: var(--color-arsm-muted-dark);
+  }
+
+  .arsm-section-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .arsm-section-title {
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--color-arsm-primary);
+  }
+
+  .dark .arsm-section-title {
+    color: var(--color-arsm-primary-dark);
+  }
+
+  .arsm-card-surface {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid var(--color-arsm-border);
+    background-color: var(--color-arsm-card);
+    padding: 1.25rem;
+    transition: all 200ms ease;
+  }
+
+  .dark .arsm-card-surface {
+    border-color: var(--color-arsm-border-dark);
+    background-color: var(--color-arsm-card-dark);
+  }
+
+  .arsm-surface-inset {
+    border-radius: 1rem;
+    border: 1px solid var(--color-arsm-border);
+    background-color: var(--color-arsm-input);
+  }
+
+  .dark .arsm-surface-inset {
+    border-color: var(--color-arsm-border-dark);
+    background-color: var(--color-arsm-card-dark);
+  }
+
+  .arsm-action-cluster {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arsm-btn-primary,
+  .arsm-btn-secondary,
+  .arsm-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    transition: all 200ms ease;
+    border: 1px solid transparent;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+  }
+
+  .arsm-btn-primary:focus-visible,
+  .arsm-btn-secondary:focus-visible,
+  .arsm-btn-danger:focus-visible {
+    outline: none;
+  }
+
+  .arsm-btn-primary {
+    background-color: var(--color-arsm-accent);
+    color: var(--color-arsm-primary);
+  }
+
+  .arsm-btn-primary:hover {
+    transform: translateY(-1px);
+    background-color: var(--color-arsm-accent-hover);
+  }
+
+  .arsm-btn-primary:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-focus-ring) 45%, transparent);
+    outline-offset: 2px;
+  }
+
+  .arsm-btn-primary:disabled {
+    cursor: not-allowed;
+    background-color: var(--color-arsm-accent-border);
+    transform: none;
+  }
+
+  .dark .arsm-btn-primary {
+    background-color: var(--color-arsm-accent-dark);
+    color: var(--color-arsm-primary);
+  }
+
+  .dark .arsm-btn-primary:hover {
+    background-color: var(--color-arsm-accent-dark-hover);
+  }
+
+  .dark .arsm-btn-primary:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-focus-ring) 32%, transparent);
+  }
+
+  .dark .arsm-btn-primary:disabled {
+    background-color: var(--color-arsm-ring-dark);
+  }
+
+  .arsm-btn-secondary {
+    border-color: var(--color-arsm-border);
+    background-color: transparent;
+    color: var(--color-arsm-label);
+    font-weight: 500;
+  }
+
+  .arsm-btn-secondary:hover {
+    background-color: var(--color-arsm-toggle-bg);
+  }
+
+  .dark .arsm-btn-secondary {
+    border-color: var(--color-arsm-border-dark);
+    color: var(--color-arsm-label-dark);
+  }
+
+  .dark .arsm-btn-secondary:hover {
+    background-color: var(--color-arsm-toggle-bg-dark);
+  }
+
+  .arsm-btn-secondary:disabled,
+  .arsm-btn-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .arsm-btn-danger {
+    border-color: var(--color-arsm-error-border);
+    background-color: transparent;
+    color: var(--color-arsm-error-accent);
+  }
+
+  .arsm-btn-danger:hover {
+    transform: translateY(-1px);
+    background-color: var(--color-arsm-error-bg);
+  }
+
+  .arsm-btn-danger:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-error-hover) 40%, transparent);
+    outline-offset: 2px;
+  }
+
+  .dark .arsm-btn-danger {
+    border-color: var(--color-arsm-error-dark);
+    color: var(--color-arsm-error-text-light);
+  }
+
+  .dark .arsm-btn-danger:hover {
+    background-color: var(--color-arsm-error-bg-dark);
+  }
+
+  .dark .arsm-btn-danger:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-error-dark) 40%, transparent);
+  }
+
+  .arsm-coming-soon-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid var(--color-arsm-border);
+    background-color: var(--color-arsm-input);
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  .dark .arsm-coming-soon-card {
+    border-color: var(--color-arsm-border-dark);
+    background-color: var(--color-arsm-card-dark);
+  }
+
+  .arsm-coming-soon-sheen {
+    pointer-events: none;
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 6rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .dark .arsm-coming-soon-sheen {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .arsm-coming-soon-icon-badge {
+    margin-inline: auto;
+    margin-bottom: 1.25rem;
+    display: flex;
+    height: 5rem;
+    width: 5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-arsm-accent) 25%, transparent);
+    background-color: var(--color-arsm-accent-wash);
+  }
+
+  .dark .arsm-coming-soon-icon-badge {
+    border-color: color-mix(in srgb, var(--color-arsm-accent-dark) 30%, transparent);
+    background-color: var(--color-arsm-hover-dark);
+  }
+
+  .arsm-coming-soon-divider {
+    margin-inline: auto;
+    margin-top: 1.5rem;
+    height: 0.25rem;
+    width: 4rem;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--color-arsm-accent) 30%, transparent);
+  }
+
+  .dark .arsm-coming-soon-divider {
+    background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 30%, transparent);
+  }
+}
+
+@media (max-width: 350px) {
+  .arsm-action-cluster > * {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 320px) {
+  .arsm-page-shell,
+  .arsm-page-shell-compact {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .arsm-card-surface {
+    padding: 1rem;
+  }
+
+  .arsm-btn-primary,
+  .arsm-btn-secondary,
+  .arsm-btn-danger {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .arsm-coming-soon-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .arsm-page-shell,
+  .arsm-page-shell-compact {
+    padding: 2rem 1.5rem;
+  }
+
+  .arsm-card-surface {
+    padding: 1.5rem;
+  }
+}

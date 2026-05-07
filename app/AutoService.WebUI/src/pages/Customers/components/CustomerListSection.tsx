@@ -18,11 +18,14 @@ import {
 } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
+import {
+  compactActionButtonDangerClass,
+  compactActionButtonNeutralClass,
+} from '../../../utils/formStyles';
+import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
 import { RepairHistoryList } from './RepairHistoryList';
 import { VehicleItem } from './VehicleItem';
-
-type SortDirection = 'asc' | 'desc';
 
 interface CustomerListSectionProps {
   t: TFunction;
@@ -93,7 +96,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
         return (
           <mark
             key={`${part}-${index}`}
-            className="rounded bg-arsm-accent-subtle px-0.5 text-inherit dark:bg-arsm-hover-dark"
+            className="rounded border border-arsm-accent/55 bg-arsm-accent px-0.5 font-semibold text-arsm-primary dark:border-arsm-accent-dark/65 dark:bg-arsm-accent-dark dark:text-arsm-primary"
           >
             {part}
           </mark>
@@ -169,7 +172,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenEditCustomerModal(customer)}
-                  className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border px-2.5 py-1.5 text-xs font-medium text-arsm-label transition hover:bg-arsm-toggle-bg max-[350px]:w-full dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+                  className={compactActionButtonNeutralClass}
                 >
                   <Pencil className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.editCustomer')}</span>
@@ -178,7 +181,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenDeleteCustomerModal(customer)}
-                  className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-error-border px-2.5 py-1.5 text-xs font-medium text-arsm-error-accent transition hover:bg-arsm-error-bg max-[350px]:w-full dark:border-arsm-error-border-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark"
+                  className={compactActionButtonDangerClass}
                 >
                   <Trash2 className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.deleteCustomer')}</span>
@@ -198,7 +201,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onOpenCreateVehicleModal(customer.id)}
-                      className="inline-flex min-w-0 max-w-full items-center justify-center gap-1 rounded-lg border border-arsm-border px-2.5 py-1.5 text-xs font-medium text-arsm-label transition hover:bg-arsm-toggle-bg max-[350px]:w-full dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+                      className={compactActionButtonNeutralClass}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{t('customers.createVehicle')}</span>
@@ -253,7 +256,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className="inline-flex max-w-full min-w-0 w-full items-center justify-center gap-1 rounded-lg border border-arsm-border px-2 py-1 text-xs font-medium text-arsm-label transition hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark sm:w-auto"
+                      className={`${compactActionButtonNeutralClass} w-full px-2 py-1 sm:w-auto`}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
