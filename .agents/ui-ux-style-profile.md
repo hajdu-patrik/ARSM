@@ -1,97 +1,52 @@
-# ARSM UI/UX Style Profile (Shared Baseline)
+---
+name: ui-ux-style-profile
+description: Central ARSM WebUI design, responsiveness, toast, confirmation, and agent enforcement profile.
+---
 
-Scope: AutoService.WebUI
-Precedence: This file is the shared token/component baseline. Active platform harnesses live at `.claude/agents/ui-ux-style-profile.md` and `.github/agents/ui-ux-style-profile.agent.md`. If conflicts occur, platform-specific harnesses win, and this file remains the shared fallback contract.
+# ARSM UI/UX Style Profile
 
-## 1) Tailwind Token Contract (`arsm-*`)
+Scope: `app/AutoService.WebUI/**`
+Authority: This file is the shared UI/UX source of truth for Claude Code and GitHub Copilot. Platform-specific agent files may wrap it, but must not redefine conflicting policy.
 
-Defined in [app/AutoService.WebUI/src/index.css](app/AutoService.WebUI/src/index.css) via `@theme`.
+## Design Token Contract
 
-### Shell / Surface
+- Use semantic `arsm-*` tokens from `app/AutoService.WebUI/src/index.css`.
+- Do not introduce default Tailwind color palettes such as `bg-blue-*`, `text-red-*`, or `border-slate-*` when an `arsm-*` token exists.
+- Keep light and dark variants paired for every visible surface.
+- Keep the WebUI clean-design rule: no `shadow-*`, no `dark:shadow-*`, no CSS `box-shadow`, and no `transition-shadow`.
 
-- `surface`: `arsm-surface`, `arsm-surface-dark`
-- `card`: `arsm-card`, `arsm-card-dark`
-- `deep`: `arsm-deep`, `arsm-deepest`
+## 320px Responsiveness
 
-### Typography / Text
+- Treat 320px viewport width as a required supported width.
+- Dynamic text inside flex/grid rows must use the containment trio: parent `min-w-0`, text `truncate` or line clamp, fixed actions/icons `shrink-0`.
+- Selects and dropdown filters must be inside `min-w-0 overflow-hidden` containers and use `w-full max-w-full min-w-0 truncate`.
+- Dense rows with independent controls should use `flex-wrap`, `basis-full sm:basis-auto`, or a `max-[350px]:flex-col` fallback before allowing horizontal overflow.
+- Calendar/status indicator rows must use bounded containers such as `max-w-full overflow-hidden h-4`; render only the meaningful maximum plus an overflow counter.
 
-- `text-primary`: `arsm-primary`, `arsm-primary-dark`
-- `text-muted`: `arsm-muted`, `arsm-muted-dark`
-- `text-label`: `arsm-label`, `arsm-label-dark`
+## Surface Flattening
 
-### Borders / Inputs
+- Do not put cards inside cards. Use one owning surface, then separate inner content with `border-t`, `border-b`, `divide-y`, spacing, or simple rows.
+- Repeated history/list rows should be flat full-width rows or buttons, not nested rounded cards unless the row is the primary standalone object.
+- Preserve scanability with `gap-3`/`gap-4`, clear section headings, and stable row heights where content can change.
 
-- `border`: `arsm-border`, `arsm-border-dark`
-- `input`: `arsm-input`, `arsm-input-dark`
-- `placeholder`: `arsm-placeholder`, `arsm-placeholder-dark`
+## Toast Feedback Loop
 
-### Accent / Interaction
+- Mutations must report success/failure through the global top-center toast viewport.
+- Success feedback uses `arsm-success-*`; failure, auth, and validation feedback use `arsm-error-*`.
+- User-visible toast content must resolve through i18n keys. Do not surface raw backend English text in Hungarian mode.
+- Toasts keep their explicit dismiss action.
+- Do not render dynamic page-level/server error text inline; field validation may mark fields, but mutation outcomes belong in toast feedback.
 
-- `accent`: `arsm-accent`, `arsm-accent-hover`, `arsm-accent-dark`, `arsm-accent-dark-hover`
-- `accent-utility`: `arsm-accent-subtle`, `arsm-accent-border`, `arsm-accent-deep`, `arsm-accent-vivid`, `arsm-accent-wash`, `arsm-accent-tint`
-- `on-accent`: `arsm-on-accent`, `arsm-on-accent-dark`
-- `interactive`: `arsm-focus-ring`, `arsm-hover`, `arsm-hover-dark`, `arsm-ring-dark`, `arsm-toggle-bg`, `arsm-toggle-bg-dark`
+## Confirmation Modal Policy
 
-### Semantic Status
+- Destructive or high-stakes actions must follow click -> confirmation modal -> confirmed mutation.
+- Confirmation copy and buttons must be i18n-backed and use semantic tokens.
+- Modal-based confirmations must not rely on an X close icon; closing remains available through overlay, Escape, and explicit cancel actions.
+- Exception: scheduler quick self-unassign from list cards may remain direct to preserve rapid triage, but it still requires backend invariants and toast feedback.
 
-- `error`: `arsm-error-bg`, `arsm-error-bg-dark`, `arsm-error-border`, `arsm-error-border-light`, `arsm-error-text`, `arsm-error-text-light`, `arsm-error-hover`, `arsm-error-active`, `arsm-error-dark`, `arsm-error-accent`, `arsm-error-muted`, `arsm-error-soft`, `arsm-error-softest`
-- `success`: `arsm-success-bg`, `arsm-success-bg-dark`, `arsm-success-border`, `arsm-success-border-dark`, `arsm-success-text`, `arsm-success-text-dark`, `arsm-success-accent`, `arsm-success-soft`
-- `warning`: `arsm-warning-bg`, `arsm-warning-bg-dark`, `arsm-warning-border`, `arsm-warning-border-dark`, `arsm-warning-text`, `arsm-warning-text-dark`, `arsm-warning-accent`
+## Frontend Agent Mandate
 
-## 2) Unified Component Architecture
-
-### Buttons
-
-- Primary CTA: rounded-xl, medium emphasis, accent fill, visible focus ring (`arsm-focus-ring`).
-- Secondary/ghost: never invent ad-hoc palette; derive from existing `accent-*`, `hover*`, and `border` tokens.
-- Disabled state: keep semantic contrast and use existing disabled fills (`arsm-accent-border` / `arsm-ring-dark`).
-
-### Cards / Panels
-
-- Base shell: `rounded-2xl` to `rounded-3xl`, bordered with `arsm-border|dark`, elevated shadow, subtle inset highlight.
-- Avoid ad-hoc RGB unless already established visual language requires it.
-
-### Inputs
-
-- Input primitives must reuse shared form architecture (`formStyles.ts`) for consistency.
-- Required behaviors: focus ring, border transition, placeholder parity in light/dark.
-
-### Modals (Tier System)
-
-- Tier 1 Modal (confirmation/short forms): max width 28rem-36rem, compact spacing (`p-4` to `p-6`).
-- Tier 2 Modal (complex forms/detail): max width 42rem-56rem, expanded spacing (`p-6` to `p-8`).
-- Modal padding on ultra-small devices: always apply `max-[320px]` fallbacks.
-
-### 320px Responsive Safe Area
-
-- Must include `max-[320px]` fallbacks for padding and dense typography on critical surfaces.
-- No horizontal overflow at 320px viewport width.
-
-## 3) Global Toast Notification Standard
-
-Current implementation: [app/AutoService.WebUI/src/components/common/ToastViewport.tsx](app/AutoService.WebUI/src/components/common/ToastViewport.tsx)
-
-- Placement: fixed top-center viewport.
-- Success toast: Green semantic family (`arsm-success-*`).
-- Error toast: Red semantic family (`arsm-error-*`).
-- Dismiss: explicit close action + auto-dismiss timeout.
-- i18n: message keys, not hardcoded display strings.
-
-## 4) Error Display Mandate (Strict)
-
-- Never use inline/embedded error text.
-- Always use Toast notifications.
-- Field-level validation still maps to i18n keys, but user-facing error surfacing must be toast-based by default.
-
-## 5) Agent Enforcement Rules
-
-- Do not introduce new color tokens when equivalent `arsm-*` token exists.
-- Keep light/dark parity for all new UI surfaces.
-- Reuse existing shared style utilities before creating new class recipes.
-- If a component deviates intentionally, include a short rationale in code comments.
-
-## 6) Platform Split
-
-- Claude-specific harness: `.claude/agents/ui-ux-style-profile.md`
-- Copilot-specific harness: `.github/agents/ui-ux-style-profile.agent.md`
-- Shared policy in this file must stay semantically aligned across both platform harnesses.
+- Frontend agents must read this profile before UI-facing edits.
+- UI changes must preserve component responsibility boundaries and avoid one-off local style systems.
+- Any new UI primitive must document why an existing shared primitive was insufficient, unless it is a straightforward page-local composition.
+- Docs Sync must keep `.github/**`, `.claude/**`, and this central profile policy-equivalent.

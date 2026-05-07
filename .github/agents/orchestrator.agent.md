@@ -19,8 +19,12 @@ tools:
 
 ## Mandatory Phase Skeleton (for code changes)
 1. Analyze and plan.
-2. Implementation agents in parallel where possible (`Backend Specialist`, `Frontend Specialist`, optional `EF Migration`).
-3. `Build Validator`.
+2. Conditional implementation routing from orchestrator:
+  - backend changes required -> run `Backend Specialist`
+  - frontend changes required -> run `Frontend Specialist`
+  - any frontend change -> run `ui-ux-style-profile`
+  - schema/EF delta only -> optional `EF Migration`
+3. `Build Validator` (must run after implementation).
 4. `Docs Sync` (always, auto-remediate).
 5. `Coding Principles` (always for source changes, auto-remediate).
 6. Security remediation stage (always for code changes):
@@ -45,9 +49,9 @@ tools:
 - If projected method/function exceeds 60 lines, split into focused helpers.
 
 ## Heavy Test Gate
-Include `HTTP Endpoint Test`, `SQL Database Test`, `E2E Playwright Test` only when:
+Include `http-endpoint-test`, `sql-database-test`, `e2e-playwright-test` only when:
 - user explicitly asks, or
-- change is significant (new feature, API contract delta, schema/persistence delta, UI/DTO-visible structural flow delta).
+- change is significant on backend or frontend (new feature, API contract delta, schema/persistence delta, UI/DTO-visible structural flow delta).
 
 If triggered by a new feature:
 - require auto-generation of missing coverage before test execution/update.

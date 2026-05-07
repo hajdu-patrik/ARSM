@@ -17,8 +17,12 @@ model: sonnet
 
 ## Mandatory Phase Skeleton (for code changes)
 1. Analyze and plan.
-2. Implementation agents in parallel where possible (`backend`, `frontend`, optional `migration`).
-3. `validate`.
+2. Conditional implementation routing from orchestrator:
+  - backend changes required -> run `backend`
+  - frontend changes required -> run `frontend`
+  - any frontend change -> run `ui-ux-style-profile`
+  - schema/EF delta only -> optional `migration`
+3. `validate` (must run after implementation).
 4. `docs-sync` (always, auto-remediate).
 5. `coding-principles` (always for source changes, auto-remediate).
 6. Security remediation stage (always for code changes):
@@ -45,7 +49,7 @@ model: sonnet
 ## Heavy Test Gate
 Include `http-endpoint-test`, `sql-database-test`, `e2e-playwright-test` only when:
 - user explicitly asks, or
-- change is significant (new feature, API contract delta, schema/persistence delta, UI/DTO-visible structural flow delta).
+- change is significant on backend or frontend (new feature, API contract delta, schema/persistence delta, UI/DTO-visible structural flow delta).
 
 If triggered by a new feature:
 - require auto-generation of missing coverage before test execution/update.

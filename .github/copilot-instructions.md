@@ -29,19 +29,23 @@
 
 ## Mandatory Workflow
 1. Orchestrator first (`Task Orchestrator`).
-2. Specialists (`Backend Specialist`, `Frontend Specialist`, optional `EF Migration`).
-3. `Build Validator` after code changes.
+2. Conditional implementation routing from orchestrator:
+  - backend changes required -> run `Backend Specialist`
+  - frontend changes required -> run `Frontend Specialist`
+  - any frontend change -> run `ui-ux-style-profile`
+  - EF/schema delta only -> run optional `EF Migration`
+3. `Build Validator` must always run after implementation.
 4. `Docs Sync` always; auto-remediate docs drift.
-5. `Coding Principles` always; auto-remediate code-quality drift.
+5. `Coding Principles` must always run for source changes; auto-remediate code-quality drift.
 6. Security remediation on every code-change workflow:
    - WebUI touched: `npm audit fix`.
    - ApiService touched: `dotnet list package --vulnerable --include-transitive`, apply patch/minor updates, recheck.
 7. Heavy test agents are conditional (gate below).
 
 ## Heavy Test Gate
-Run `HTTP Endpoint Test`, `SQL Database Test`, `E2E Playwright Test` only when:
+Run heavy test agents (`http-endpoint-test`, `sql-database-test`, `e2e-playwright-test`) only when:
 - explicitly requested by user, or
-- significant feature/structural behavior change occurs.
+- significant feature/structural behavior change occurs on backend or frontend.
 
 When triggered by a new feature:
 - auto-generate missing test coverage,
@@ -80,13 +84,15 @@ No schema delta -> migration agent must skip.
 - Key vars: `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `AutoService_ApiService_HostAddress`, optional `ARSM_E2E_*` aliases.
 - Agent rules:
   - HTTP/SQL tests: env vars only (`{{$processEnv ...}}`), never literal credentials.
-  - E2E tests: credentials only from `tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`).
+  - E2E tests: credentials only from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`) when the WebUI E2E suite is present.
   - EF migrations/seed scripts: no embedded connection strings; use `appsettings.Local.json` (gitignored) or env injection.
   - Playwright command instructions must include `.secrets` preamble.
   - Missing variable: report exact name and point to `tests/.env.example` or `.secrets`; never guess.
 
 ## Core Rules
 - Config-first endpoints/ports; no runtime localhost fallback in code.
+- WebUI UI/UX policy source of truth: `.agents/ui-ux-style-profile.md`; `.github/**` and `.claude/**` wrappers must remain policy-equivalent.
+- WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
 - Preserve backend invariants: People abstract TPH, Identity link via `People.IdentityUserId`, DTO-only API boundaries.
 - AI SQL safety: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
 - Keep `.github` and `.claude` agent+skill logic aligned.

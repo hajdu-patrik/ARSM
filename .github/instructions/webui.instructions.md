@@ -13,8 +13,16 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - React/TS/Tailwind only.
 - i18n for all user text (`en.ts`, `hu.ts`).
 - Dark/light parity + responsive behavior.
+- Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, `box-shadow`, `transition-shadow`) on WebUI elements.
+- Central UI/UX source of truth: `.agents/ui-ux-style-profile.md`.
 - Keep service calls in `src/services`; no hardcoded `VITE_API_URL` fallback.
 - Preserve auth/session, route guards, scheduler core behavior.
+
+## UI/UX Guardrails
+- Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
+- Preserve 320px containment for dense flex/grid rows, dropdowns, action clusters, and calendar/status indicators.
+- Flatten nested card surfaces unless a nested card is the primary repeated object.
+- Route mutation outcomes through localized top-center toasts; use confirmation modals for destructive or high-stakes actions.
 
 ## Engineering Standards
 - Apply SOLID and OOP to component/hook/service boundaries.
@@ -43,4 +51,5 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 ## Source-of-Truth Files
 - Routes: `src/App.tsx`
 - Shared styles: `src/utils/formStyles.ts`, `src/index.css`
+- UI/UX policy: `.agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

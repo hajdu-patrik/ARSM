@@ -12,7 +12,16 @@
 - No hardcoded runtime API fallback URL; use `VITE_API_URL`.
 - All user strings in i18n (`en.ts`, `hu.ts`).
 - Keep dark/light parity and responsive behavior.
+- Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) on WebUI elements.
+- Central UI/UX source of truth: `.agents/ui-ux-style-profile.md`.
 - Keep API logic in `src/services`, UI logic in pages/components/hooks.
+
+## UI/UX Guardrails
+
+- Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
+- Preserve 320px containment for dense flex/grid rows, dropdowns, action clusters, and calendar/status indicators.
+- Flatten nested card surfaces unless a nested card is the primary repeated object.
+- Route mutation outcomes through localized top-center toasts; use confirmation modals for destructive or high-stakes actions.
 
 ## Engineering Standards
 
@@ -52,4 +61,5 @@
 
 - Routes: `src/App.tsx`
 - Shared styles: `src/utils/formStyles.ts`, `src/index.css`
+- UI/UX policy: `.agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

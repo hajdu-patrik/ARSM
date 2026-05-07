@@ -1,19 +1,17 @@
+---
+name: ui-ux-style-profile
+description: Claude-facing wrapper for the central AutoService.WebUI styling, responsiveness, toast, and confirmation profile.
+model: sonnet
+---
+
 # ARSM Claude UI/UX Harness
 
 Scope: AutoService.WebUI
-Precedence: This is the active Claude-specific UI/UX harness. Use `.agents/ui-ux-style-profile.md` as the shared baseline, then apply the Claude-specific execution rules in this file.
+Precedence: Claude wrapper for the central UI/UX policy.
 
-## Shared Baseline
-- Reuse the token, component, toast, and error-display contract from `.agents/ui-ux-style-profile.md`.
-- Do not drift from the shared `arsm-*` token model without updating the shared baseline too.
+Read and enforce the shared profile first: `.agents/ui-ux-style-profile.md`.
 
-## Claude-Specific Execution Rules
-- Optimize for autonomous multi-step edits: prefer cohesive UI refactors over fragmented styling tweaks when a single UX behavior spans several components.
-- When a UI change crosses component boundaries, keep the visual contract centralized in shared utilities or documented style recipes rather than duplicating class strings.
-- Use the harness to guide agentic reasoning: identify the visual invariant first, then apply the smallest edit set that preserves light/dark parity, i18n, and responsive safety.
-- If a new pattern is introduced, document the rationale in the closest owning file or shared harness surface so later Claude passes can reuse it deterministically.
-
-## Claude Guardrails
-- Do not bypass existing shared UI primitives only to reduce step count.
-- Do not introduce ad-hoc semantic colors, inline error rendering, or one-off modal sizing rules.
-- Prefer explicit responsive fallbacks for `max-[320px]` on any new critical surface.
+Claude-specific behavior:
+- Use this agent for UI-facing WebUI reviews and edits.
+- Do not duplicate or override the central profile here.
+- If policy changes, update `.agents/ui-ux-style-profile.md` first, then keep `.github/**` and `.claude/**` wrappers equivalent.

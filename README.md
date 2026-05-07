@@ -47,7 +47,7 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 | **Coding Principles** | Code style & quality | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
 | **HTTP Endpoint Test** | .http test files | Updates HTTP endpoint test suites when behavior/new feature changes API contract, or when explicitly requested |
 | **SQL Database Test** | .sql validation files | Updates SQL validation suites when behavior/new feature changes schema/persistence behavior, or when explicitly requested |
-| **E2E Playwright Test** | Playwright E2E tests | Maintains Playwright test suites when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested |
+| `e2e-playwright-test` | Playwright E2E tests | Maintains Playwright test suites when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested |
 | **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
 
 **Standard workflow:**
@@ -59,7 +59,7 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 5. Coding Principles agent enforces code style and quality
 6. HTTP Endpoint Test agent syncs .http test suites only for behavior/new feature API contract changes (or explicit prompt request)
 7. SQL Database Test agent syncs .sql validation suites only for behavior/new feature schema/persistence changes (or explicit prompt request)
-8. E2E Playwright Test agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
+8. `e2e-playwright-test` agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
 
 Default development policy: for non-behavioral changes (refactor, naming, comments, formatting, docs-only), skip HTTP/SQL/Playwright test agents and run Docs Sync only. If a prompt explicitly asks to run/create/update tests, the requested test agents must run.
 
@@ -79,7 +79,8 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
 | `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
 | `autoservice-ef-migration` | `migration` | EF Core migration workflow and troubleshooting |
-| `autoservice-e2e-playwright` | `e2e-playwright-test` | Update Playwright E2E tests after UI/DTO changes |
+| `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Update Playwright E2E tests after UI/DTO changes |
+| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | Enforce the central `.agents/ui-ux-style-profile.md` policy across WebUI styling and docs |
 
 Skill sources: `.github/skills/*/SKILL.md`
 

@@ -47,7 +47,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | **Coding Principles** | Kódminőség & stílus | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
 | **HTTP Endpoint Test** | .http tesztfájlok | HTTP endpoint tesztcsomagok frissítése, ha viselkedés/új feature API-szerződést érint, vagy ha explicit kérés érkezik |
 | **SQL Database Test** | .sql validációs fájlok | SQL validációs lekérdezések frissítése, ha viselkedés/új feature séma-perzisztencia viselkedést érint, vagy ha explicit kérés érkezik |
-| **E2E Playwright Test** | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, ha viselkedés/új feature UI/DTO-látható flowt érint, vagy ha explicit kérés érkezik |
+| `e2e-playwright-test` | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, ha viselkedés/új feature UI/DTO-látható flowt érint, vagy ha explicit kérés érkezik |
 | **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
 
 **Standard workflow:**
@@ -59,7 +59,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 5. Coding Principles ágens ellenőrzi a kódminőséget és stílust
 6. HTTP Endpoint Test ágens a .http teszteket csak viselkedés/új feature API-szerződés változásnál szinkronizálja (vagy explicit prompt-kérésre)
 7. SQL Database Test ágens a .sql validációkat csak viselkedés/új feature séma/perzisztencia változásnál szinkronizálja (vagy explicit prompt-kérésre)
-8. E2E Playwright Test ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
+8. `e2e-playwright-test` ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
 
 Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnevezés, komment, formázás, csak dokumentáció) a HTTP/SQL/Playwright tesztágensek kimaradnak, és csak Docs Sync fut. Ha a prompt explicit tesztfuttatást vagy tesztkészítést/frissítést kér, a kért tesztágensek kötelezően futnak.
 
@@ -79,7 +79,8 @@ Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnev
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
 | `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
 | `autoservice-ef-migration` | `migration` | EF Core migrációs workflow és hibaelhárítás |
-| `autoservice-e2e-playwright` | `e2e-playwright-test` | Playwright E2E tesztek frissítése UI/DTO változások után |
+| `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Playwright E2E tesztek frissítése UI/DTO változások után |
+| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | A központi `.agents/ui-ux-style-profile.md` policy érvényesítése a WebUI stílusokon és dokumentáción |
 
 Skill források: `.github/skills/*/SKILL.md`
 
