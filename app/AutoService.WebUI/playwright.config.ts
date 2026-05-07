@@ -8,7 +8,10 @@ const nodeEnv = ((globalThis as unknown as { process?: { env?: Record<string, st
 const isCi = typeof nodeEnv.CI === 'string' && nodeEnv.CI.length > 0;
 const baseURL = nodeEnv.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173';
 const reuseExistingServerOverride = nodeEnv.PLAYWRIGHT_REUSE_EXISTING_SERVER;
+const workersOverride = nodeEnv.PLAYWRIGHT_WORKERS;
 const forceReuseExistingServer = reuseExistingServerOverride === '1' || reuseExistingServerOverride === 'true';
+const parsedWorkers = workersOverride ? Number.parseInt(workersOverride, 10) : Number.NaN;
+const localWorkers = Number.isFinite(parsedWorkers) && parsedWorkers > 0 ? parsedWorkers : 1;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -23,7 +26,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: isCi ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: isCi ? 1 : undefined,
+  workers: isCi ? 1 : localWorkers,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['list'], ['html', { open: 'never' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

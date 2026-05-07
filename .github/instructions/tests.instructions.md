@@ -42,12 +42,12 @@ Template: `tests/.env.example` (committed — values are placeholders only).
 - `ARSM_TEST_PASSWORD` / `ARSM_TEST_WRONG_PASSWORD` — shared positive/negative passwords
 - `ARSM_TEST_MECHANIC_NEW_PASSWORD` — used in password-change scenarios
 - `AutoService_ApiService_HostAddress` — API base URL for `.http` files
-- `ARSM_E2E_*` aliases — optional overrides accepted by `e2e-env.ts`
+- `ARSM_E2E_*` aliases — optional overrides for helper-based E2E suites when present
 
 ### Rules
 - **HTTP tests**: use `{{$processEnv VAR_NAME}}`; never write literal email/password strings.
 - **SQL tests**: read-only `SELECT`, no credentials embedded — connection via `ai_agent_test_user`.
-- **E2E tests**: use `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `e2e-env.ts`; never inline credentials.
+- **E2E tests**: if a helper such as `e2e-env.ts` exists, use it for credential loading; otherwise use env vars directly and never inline credentials.
 - **Running E2E**: always prepend `set -a && source .secrets && set +a` before Playwright commands.
 - If a required variable is absent: surface the name and point to `tests/.env.example` or `.secrets`.
 

@@ -1,10 +1,14 @@
 ---
 name: e2e-playwright-test
-description: "Maintains Playwright E2E tests with strict trigger-gating and feature-coverage generation."
-model: sonnet
+description: Maintains Playwright E2E tests with strict trigger-gating and feature-coverage generation.
+tools:
+  - read
+  - edit
+  - execute
+  - search
 ---
 
-# E2E Playwright Test Agent
+# e2e-playwright-test Agent
 
 ## Persona
 - Primary owner: Zsombor

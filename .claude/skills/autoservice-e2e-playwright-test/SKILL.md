@@ -1,6 +1,7 @@
 ---
-name: autoservice-e2e-playwright
+name: autoservice-e2e-playwright-test
 description: Maintain Playwright E2E suites with strict trigger-gating and automatic feature-coverage generation.
+disable-model-invocation: true
 ---
 
 Use this skill to sync `app/AutoService.WebUI/tests/e2e/**` only.
@@ -36,11 +37,11 @@ If triggered by a new feature:
 - Keep page-object methods aligned with changed selectors and interactions.
 
 ## Credentials Policy (Mandatory)
-- Read credentials via `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `tests/e2e/support/e2e-env.ts`.
+- Read credentials via `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` when the WebUI E2E suite is present.
 - Variables consumed from `.secrets` (gitignored): `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`.
 - Never inline credentials; never hardcode email/password strings in spec or page-object files.
 - To run: `set -a && source .secrets && set +a && npx playwright test`.
-- If a variable is absent: surface the name, point to `.secrets` — do not guess.
+- If a variable is absent: surface the name, point to `.secrets` -- do not guess.
 
 ## Test Design Guardrails
 - Prefer E2E spec files <= 180 lines where practical.
