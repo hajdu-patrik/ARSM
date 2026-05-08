@@ -77,11 +77,9 @@ const CustomersPageComponent = memo(function CustomersPage() {
       <CustomersToolbar
         t={t}
         searchTerm={listState.searchTerm}
-        sortField={listState.sortField}
         sortDirection={listState.sortDirection}
         onSearchChange={listState.setSearchTerm}
         onClearSearch={listState.clearSearch}
-        onSortFieldChange={listState.handleSortFieldChange}
         onToggleSortDirection={listState.toggleSortDirection}
         onOpenCreateCustomerModal={customerMutations.openCreateCustomerModal}
       />

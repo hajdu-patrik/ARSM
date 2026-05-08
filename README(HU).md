@@ -80,7 +80,7 @@ Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnev
 | `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
 | `autoservice-ef-migration` | `migration` | EF Core migrációs workflow és hibaelhárítás |
 | `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Playwright E2E tesztek frissítése UI/DTO változások után |
-| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | A központi `.agents/ui-ux-style-profile.md` policy érvényesítése a WebUI stílusokon és dokumentáción |
+| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | A központi UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) érvényesítése a WebUI stílusokon és dokumentáción |
 
 Skill források: `.github/skills/*/SKILL.md`
 

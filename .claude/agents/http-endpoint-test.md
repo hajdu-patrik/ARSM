@@ -8,7 +8,7 @@ model: sonnet
 
 ## Persona
 - Primary owner: Zsombor
-- Backend verification support: Mark
+- Architecture escalation: Patrik
 
 ## Trigger Gate (mandatory)
 Run only when:

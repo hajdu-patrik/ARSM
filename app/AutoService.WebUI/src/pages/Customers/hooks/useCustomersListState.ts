@@ -3,7 +3,7 @@ import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
 import { buildCustomerDisplayName, normalizeSearchValue } from '../helpers';
-import type { CustomerSortField, SortDirection } from '../page.types';
+import type { SortDirection } from '../page.types';
 
 interface CustomerMutationPayload {
   firstName: string;
@@ -39,7 +39,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<CustomerSortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedCustomerIds, setExpandedCustomerIds] = useState<Set<number>>(new Set());
 
@@ -152,9 +151,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
 
   const clearSearch = useCallback(() => setSearchTerm(''), []);
   const toggleSortDirection = useCallback(() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc')), []);
-  const handleSortFieldChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortField(event.target.value as CustomerSortField);
-  }, []);
 
   const toggleCustomerExpanded = useCallback((customerId: number) => {
     const isExpanded = expandedCustomerIds.has(customerId);
@@ -309,7 +305,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     isLoadingCustomers,
     searchTerm,
     setSearchTerm,
-    sortField,
     sortDirection,
     expandedCustomerIds,
     setExpandedCustomerIds,
@@ -333,7 +328,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     filteredCustomers,
     clearSearch,
     toggleSortDirection,
-    handleSortFieldChange,
     toggleCustomerExpanded,
     toggleCustomerHistorySort,
     toggleVehicleHistory,

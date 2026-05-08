@@ -55,7 +55,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 				{t('settings.profilePicture')}
 			</h2>
 
-			<div className="flex items-center gap-5">
+			<div className="flex min-w-0 flex-wrap items-center gap-5 sm:flex-nowrap">
 				{hasProfilePicture ? (
 					<img
 						key={pictureKey}
@@ -69,21 +69,23 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 					</div>
 				)}
 
-				<div className={actionClusterClass}>
-					<button type="button" onClick={handleUploadClick} disabled={isUploading} className={buttonClass}>
-						{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}
-					</button>
-
-					{hasProfilePicture && (
-						<button
-							type="button"
-							onClick={onRemove}
-							disabled={isUploading}
-							className={dangerButtonClass}
-						>
-							{t('settings.removePicture')}
+				<div className="flex min-h-20 min-w-0 flex-1 items-center">
+					<div className={actionClusterClass}>
+						<button type="button" onClick={handleUploadClick} disabled={isUploading} className={`${buttonClass} min-h-11`}>
+							{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}
 						</button>
-					)}
+
+						{hasProfilePicture && (
+							<button
+								type="button"
+								onClick={onRemove}
+								disabled={isUploading}
+								className={`${dangerButtonClass} min-h-11`}
+							>
+								{t('settings.removePicture')}
+							</button>
+						)}
+					</div>
 				</div>
 
 				<input

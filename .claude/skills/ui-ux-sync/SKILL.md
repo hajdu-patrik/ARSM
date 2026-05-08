@@ -8,8 +8,8 @@ Use this skill after UI-facing frontend changes or agent/documentation changes t
 
 ## Source Of Truth
 
-- Read `.agents/ui-ux-style-profile.md` first.
-- Treat `.github/agents/ui-ux-style-profile.agent.md` and `.claude/agents/ui-ux-style-profile.md` as wrappers only.
+- Read `.claude/agents/ui-ux-style-profile.md` (authoritative Claude policy) first.
+- Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`.
 - Keep `.github/**` and `.claude/**` semantically equivalent.
 
 ## Scan Targets

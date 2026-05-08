@@ -26,7 +26,7 @@
 ## Mandatory Agent Workflow
 
 1. Orchestrator first (`orchestrator`).
-2. Conditional implementation routing from orchestrator: backend changes required -> run `backend`; frontend changes required -> run `frontend`; any frontend change -> run `ui-ux-style-profile`; EF/schema delta only -> optional `migration`.
+2. Conditional implementation routing from orchestrator: backend changes required -> run `backend`; frontend changes required -> run `frontend` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other); `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `frontend` iteration — iteration is blocked until sign-off; EF/schema delta only -> optional `migration`.
 3. Validate (`validate`) must always run after implementation.
 4. Docs sync always (`docs-sync`) with automatic documentation remediation.
 5. Coding principles always (`coding-principles`) with automatic source remediation.
@@ -82,7 +82,7 @@ Otherwise: skip migration agent.
 ## Non-Negotiables
 
 - Configuration-first addressing: no hardcoded runtime fallback URLs/ports.
-- WebUI UI/UX policy source of truth: `.agents/ui-ux-style-profile.md`; `.github/**` and `.claude/**` wrappers must remain policy-equivalent.
+- WebUI UI/UX policy source of truth: `.claude/agents/ui-ux-style-profile.md` (Claude) / `.github/agents/ui-ux-style-profile.agent.md` (Copilot); both files must remain policy-equivalent.
 - WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
 - Backend invariants: `People` remains abstract TPH; Identity linkage via `People.IdentityUserId`; expertise and relationship invariants preserved.
 - API boundaries use DTOs only; no direct EF entity exposure.

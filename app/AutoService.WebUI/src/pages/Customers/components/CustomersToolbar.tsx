@@ -3,16 +3,14 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
 import { actionClusterClass, buttonClass, cardClass, secondaryButtonClass } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
-import type { CustomerSortField, SortDirection } from '../page.types';
+import type { SortDirection } from '../page.types';
 
 interface CustomersToolbarProps {
 	t: TFunction;
 	searchTerm: string;
-	sortField: CustomerSortField;
 	sortDirection: SortDirection;
 	onSearchChange: (value: string) => void;
 	onClearSearch: () => void;
-	onSortFieldChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 	onToggleSortDirection: () => void;
 	onOpenCreateCustomerModal: () => void;
 }
@@ -20,11 +18,9 @@ interface CustomersToolbarProps {
 const CustomersToolbarComponent = memo(function CustomersToolbar({
 	t,
 	searchTerm,
-	sortField,
 	sortDirection,
 	onSearchChange,
 	onClearSearch,
-	onSortFieldChange,
 	onToggleSortDirection,
 	onOpenCreateCustomerModal,
 }: CustomersToolbarProps) {
@@ -55,22 +51,6 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 				</div>
 
 				<div className={`${actionClusterClass} w-full sm:w-auto sm:flex-nowrap`}>
-					<label htmlFor="customers-sort-field" className="sr-only">
-						{t('customers.sortBy')}
-					</label>
-					<div className="min-w-0 flex-1 overflow-hidden max-[350px]:basis-full sm:flex-none">
-						<select
-							id="customers-sort-field"
-							data-testid="customers-sort-field-select"
-							value={sortField}
-							onChange={onSortFieldChange}
-							aria-label={t('customers.sortBy')}
-							className="w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-3 py-2 text-sm font-medium text-arsm-label focus:border-arsm-accent dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark"
-						>
-							<option value="name">{t('customers.sortFieldName')}</option>
-						</select>
-					</div>
-
 					<button
 						data-testid="customers-sort-toggle"
 						type="button"

@@ -2,8 +2,8 @@
 
 ## Persona
 
-- Testing/security authority: Zsombor
-- Architecture oversight: Patrik
+- Primary owner: Zsombor
+- Architecture escalation: Patrik
 
 ## Scope
 

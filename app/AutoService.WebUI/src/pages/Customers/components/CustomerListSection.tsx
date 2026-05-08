@@ -109,7 +109,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
   return (
     <section className="space-y-3">
       {isLoadingCustomers && (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex min-w-0 items-center justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
         </div>
       )}
@@ -143,7 +143,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                   data-testid={`customer-expand-${customer.id}`}
                   type="button"
                   onClick={() => onToggleCustomerExpanded(customer.id)}
-                  className="inline-flex min-w-0 max-w-full items-center gap-2 text-left"
+                  className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 text-left"
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-5 w-5 shrink-0 text-arsm-muted dark:text-arsm-muted-dark" />
@@ -172,7 +172,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenEditCustomerModal(customer)}
-                  className={compactActionButtonNeutralClass}
+                  className={`${compactActionButtonNeutralClass} min-h-11 shrink-0`}
                 >
                   <Pencil className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.editCustomer')}</span>
@@ -181,7 +181,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenDeleteCustomerModal(customer)}
-                  className={compactActionButtonDangerClass}
+                  className={`${compactActionButtonDangerClass} min-h-11 shrink-0`}
                 >
                   <Trash2 className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.deleteCustomer')}</span>
@@ -190,9 +190,9 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
             </div>
 
             {isExpanded && (
-              <div className="grid grid-cols-1 gap-4 border-t border-arsm-border bg-arsm-input/40 px-4 py-4 dark:border-arsm-border-dark dark:bg-arsm-input-dark/30 sm:px-5 lg:grid-cols-2">
+              <div className="grid min-w-0 grid-cols-1 gap-4 border-t border-arsm-border bg-arsm-input/40 px-4 py-4 dark:border-arsm-border-dark dark:bg-arsm-input-dark/30 sm:px-5 lg:grid-cols-2">
                 <section className="min-w-0 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                     <h3 className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                       <CarFront className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t('customers.vehiclesTitle')}</span>
@@ -201,7 +201,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onOpenCreateVehicleModal(customer.id)}
-                      className={compactActionButtonNeutralClass}
+                      className={`${compactActionButtonNeutralClass} min-h-11 shrink-0`}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{t('customers.createVehicle')}</span>
@@ -247,7 +247,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 </section>
 
                 <section className="min-w-0 space-y-3 border-t border-arsm-border/60 pt-4 dark:border-arsm-border-dark/60 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                     <h3 className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                       <Wrench className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t('customers.customerHistoryTitle')}</span>
@@ -256,7 +256,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className={`${compactActionButtonNeutralClass} w-full px-2 py-1 sm:w-auto`}
+                      className={`${compactActionButtonNeutralClass} min-h-11 shrink-0 w-full px-2 py-1 sm:w-auto`}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -281,6 +281,14 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
           </article>
         );
       })}
+
+      {!isLoadingCustomers && filteredCustomers.length > 0 && (
+        <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-arsm-muted dark:text-arsm-muted-dark">
+          <div className="h-px flex-1 bg-arsm-border dark:bg-arsm-border-dark" />
+          <span className="min-w-0 basis-full break-words text-center sm:basis-auto">{t('customers.endOfList')}</span>
+          <div className="h-px flex-1 bg-arsm-border dark:bg-arsm-border-dark" />
+        </div>
+      )}
     </section>
   );
 });

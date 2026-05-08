@@ -11,6 +11,7 @@ tools:
 
 ## Persona
 - Primary owner: Zsombor
+- Architecture escalation: Patrik
 - Backend/schema verification support: Mark
 
 ## Trigger Gate (mandatory)

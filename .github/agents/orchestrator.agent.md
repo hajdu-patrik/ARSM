@@ -21,8 +21,8 @@ tools:
 1. Analyze and plan.
 2. Conditional implementation routing from orchestrator:
   - backend changes required -> run `Backend Specialist`
-  - frontend changes required -> run `Frontend Specialist`
-  - any frontend change -> run `ui-ux-style-profile`
+  - frontend changes required -> run `Frontend Specialist` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
+  - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `Frontend Specialist` iteration; iteration is blocked until sign-off is given
   - schema/EF delta only -> optional `EF Migration`
 3. `Build Validator` (must run after implementation).
 4. `Docs Sync` (always, auto-remediate).

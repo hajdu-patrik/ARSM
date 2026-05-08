@@ -31,8 +31,8 @@
 1. Orchestrator first (`Task Orchestrator`).
 2. Conditional implementation routing from orchestrator:
   - backend changes required -> run `Backend Specialist`
-  - frontend changes required -> run `Frontend Specialist`
-  - any frontend change -> run `ui-ux-style-profile`
+  - frontend changes required -> run `Frontend Specialist` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
+  - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `Frontend Specialist` iteration; iteration is blocked until sign-off
   - EF/schema delta only -> run optional `EF Migration`
 3. `Build Validator` must always run after implementation.
 4. `Docs Sync` always; auto-remediate docs drift.
@@ -91,7 +91,7 @@ No schema delta -> migration agent must skip.
 
 ## Core Rules
 - Config-first endpoints/ports; no runtime localhost fallback in code.
-- WebUI UI/UX policy source of truth: `.agents/ui-ux-style-profile.md`; `.github/**` and `.claude/**` wrappers must remain policy-equivalent.
+- WebUI UI/UX policy source of truth: `.github/agents/ui-ux-style-profile.agent.md` (Copilot) / `.claude/agents/ui-ux-style-profile.md` (Claude); both files must remain policy-equivalent.
 - WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
 - Preserve backend invariants: People abstract TPH, Identity link via `People.IdentityUserId`, DTO-only API boundaries.
 - AI SQL safety: `ai_agent_test_user`, `SELECT` only, no DML/DDL.

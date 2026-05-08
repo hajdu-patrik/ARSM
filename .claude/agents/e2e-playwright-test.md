@@ -8,6 +8,7 @@ model: sonnet
 
 ## Persona
 - Primary owner: Zsombor
+- Architecture escalation: Patrik
 - Frontend verification support: Gergely
 
 ## Trigger Gate (mandatory)

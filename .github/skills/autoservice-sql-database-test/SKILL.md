@@ -5,6 +5,10 @@ description: Maintain SQL validation suites with strict trigger-gating, read-onl
 
 Use this skill to sync `tests/Database/**/*.sql` only.
 
+## Persona
+- Primary owner: Zsombor
+- Architecture escalation: Patrik
+
 ## Why This Skill Exists
 
 - SQL verification catches persistence and integrity regressions that are not obvious from endpoint behavior alone.

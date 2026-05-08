@@ -13,12 +13,12 @@
 - All user strings in i18n (`en.ts`, `hu.ts`).
 - Keep dark/light parity and responsive behavior.
 - Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) on WebUI elements.
-- Central UI/UX source of truth: `.agents/ui-ux-style-profile.md`.
+- Central UI/UX source of truth: `.claude/agents/ui-ux-style-profile.md`.
 - Keep API logic in `src/services`, UI logic in pages/components/hooks.
 
 ## UI/UX Guardrails
 
-- Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
+- Read `.claude/agents/ui-ux-style-profile.md` before UI-facing edits.
 - Treat the central profile as authoritative for tokens, interaction clarity and choice control, 320px mobile-first containment, feedback latency, error recovery, accessibility ergonomics, surface flattening, content-alignment contract, toast feedback, and confirmation-modal policy.
 - Do not duplicate or override central profile details here; update the central profile first, then sync wrappers/instructions for parity.
 
@@ -60,5 +60,5 @@
 
 - Routes: `src/App.tsx`
 - Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
-- UI/UX policy: `.agents/ui-ux-style-profile.md`
+- UI/UX policy: `.claude/agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

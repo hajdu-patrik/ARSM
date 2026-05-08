@@ -80,7 +80,7 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 | `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
 | `autoservice-ef-migration` | `migration` | EF Core migration workflow and troubleshooting |
 | `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Update Playwright E2E tests after UI/DTO changes |
-| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | Enforce the central `.agents/ui-ux-style-profile.md` policy across WebUI styling and docs |
+| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | Enforce the central UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) across WebUI styling and docs |
 
 Skill sources: `.github/skills/*/SKILL.md`
 

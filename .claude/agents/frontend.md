@@ -35,9 +35,15 @@ model: opus
 
 ## Execution Rules
 - Read `app/AutoService.WebUI/CLAUDE.md` before editing.
-- Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
+- Read `.claude/agents/ui-ux-style-profile.md` before UI-facing edits.
 - Keep API logic in `src/services`, UI logic in components/hooks/pages.
 - Run `npx tsc --noEmit` (and build when needed) after changes.
+
+## Mandatory UI/UX Co-Execution (Non-Negotiable)
+- After every UI-facing implementation iteration, co-execute `ui-ux-style-profile` agent. This is not optional and is not satisfied by reading the profile file alone.
+- `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report for every changed UI file.
+- Do not mark any UI change complete without an explicit written 320px validation report from `ui-ux-style-profile`.
+- `frontend` and `ui-ux-style-profile` are a mandatory execution pair: the orchestrator must schedule both for any frontend change.
 
 ## Always-On Security Remediation (for frontend code changes)
 1. Run `npm audit fix`.

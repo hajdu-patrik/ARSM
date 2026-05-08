@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 Use this skill to sync `tests/API/**/*.http` only.
 
+## Persona
+- Primary owner: Zsombor
+- Architecture escalation: Patrik
+
 ## Why This Skill Exists
 
 - HTTP suites verify the real API contract at the boundary where status codes, auth rules, payload validation, and error keys matter.

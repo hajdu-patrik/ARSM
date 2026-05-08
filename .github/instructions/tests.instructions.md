@@ -5,8 +5,8 @@ description: Use when editing API (.http) and Database (.sql) test suites under 
 # Tests Instructions
 
 ## Persona
-- Testing/security: Zsombor
-- Architecture oversight: Patrik
+- Primary owner: Zsombor
+- Architecture escalation: Patrik
 
 ## Enforce
 - Keep chunked suite layout (`tests/API/**`, `tests/Database/**`).

@@ -19,8 +19,8 @@ model: sonnet
 1. Analyze and plan.
 2. Conditional implementation routing from orchestrator:
   - backend changes required -> run `backend`
-  - frontend changes required -> run `frontend`
-  - any frontend change -> run `ui-ux-style-profile`
+  - frontend changes required -> run `frontend` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
+  - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `frontend` iteration; iteration is blocked until sign-off is given
   - schema/EF delta only -> optional `migration`
 3. `validate` (must run after implementation).
 4. `docs-sync` (always, auto-remediate).

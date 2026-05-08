@@ -70,7 +70,7 @@ export function useSchedulerActions({
     try {
       const updated = await appointmentService.unclaim(id);
       upsertAppointment(updated);
-      setSelectedAppointment(updated);
+      setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
       showSuccessToast('scheduler.detail.unassignSuccess');
     } catch (err) {
       if (isAxiosError<{ code?: string }>(err) && err.response?.data?.code === 'appointment_cancelled') {

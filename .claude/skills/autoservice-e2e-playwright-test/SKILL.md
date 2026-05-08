@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 Use this skill to sync `app/AutoService.WebUI/tests/e2e/**` only.
 
+## Persona
+- Primary owner: Zsombor
+- Architecture escalation: Patrik
+
 ## Why This Skill Exists
 
 - E2E coverage is the last guard against regressions that pass unit, type, and build checks but still break real user journeys.

@@ -14,11 +14,11 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - i18n for all user text (`en.ts`, `hu.ts`).
 - Dark/light parity + responsive behavior.
 - Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, `box-shadow`, `transition-shadow`) on WebUI elements.
-- Central UI/UX source of truth: `.agents/ui-ux-style-profile.md`.
+- Central UI/UX source of truth: `.github/agents/ui-ux-style-profile.agent.md`.
 - Keep API logic in `src/services`; keep UI logic in pages/components/hooks; no hardcoded `VITE_API_URL` fallback.
 
 ## UI/UX Guardrails
-- Read `.agents/ui-ux-style-profile.md` before UI-facing edits.
+- Read `.github/agents/ui-ux-style-profile.agent.md` before UI-facing edits.
 - Treat the central profile as authoritative for tokens, interaction clarity and choice control, 320px mobile-first containment, feedback latency, error recovery, accessibility ergonomics, surface flattening, content-alignment contract, toast feedback, and confirmation-modal policy.
 - Do not duplicate or override central profile details here; update the central profile first, then sync wrappers/instructions for parity.
 
@@ -51,8 +51,14 @@ description: "Use when editing React frontend, API integration, routing, and UI 
   - `npm audit fix`
   - re-run build/type checks.
 
+## Mandatory UI/UX Co-Execution (Non-Negotiable)
+- After every UI-facing edit iteration, `ui-ux-style-profile` agent must be **co-executed** — not just consulted — alongside or immediately after the `Frontend Specialist`/`frontend` agent.
+- `ui-ux-style-profile` must run the **320px Mandatory Validation Checklist** (defined in `.github/agents/ui-ux-style-profile.agent.md`) and produce a written per-component pass/fail report for every changed UI file.
+- Any 320px failure blocks the iteration: remediate first, re-verify, then sign off.
+- Never mark a UI change as complete without an explicit written 320px validation report.
+
 ## Source-of-Truth Files
 - Routes: `src/App.tsx`
 - Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
-- UI/UX policy: `.agents/ui-ux-style-profile.md`
+- UI/UX policy: `.github/agents/ui-ux-style-profile.agent.md`
 - Services/stores: `src/services/**`, `src/store/**`

@@ -25,7 +25,7 @@ const STATUS_DOT_COLORS: Record<AppointmentStatus, string> = {
   Cancelled: 'bg-arsm-error-accent',
 };
 
-const NAV_BUTTON_BASE_CLASS = 'rounded-lg border p-1.5 text-arsm-label transition-colors max-[320px]:p-1 dark:text-arsm-label-dark';
+const NAV_BUTTON_BASE_CLASS = 'inline-flex h-8 w-8 items-center justify-center rounded-lg border text-arsm-label transition-colors dark:text-arsm-label-dark';
 const NAV_BUTTON_ENABLED_CLASS = 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark';
 const NAV_BUTTON_DISABLED_CLASS = 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60';
 
@@ -167,21 +167,22 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:p-2.5 sm:p-4`}>
+    <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:px-0 max-[320px]:py-2.5 sm:p-4`}>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,var(--color-arsm-card)_0%,transparent_100%)] opacity-40 dark:bg-[linear-gradient(180deg,var(--color-arsm-card-dark)_0%,transparent_100%)] dark:opacity-20"
       />
 
-      <div className="mb-3 flex items-center justify-between max-[320px]:mb-2.5">
+      <div className="mb-3 flex min-w-0 items-center justify-between max-[320px]:mb-2.5">
         <button
           type="button"
           onClick={handlePrev}
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
-          className={getNavButtonClass(canGoPrev)}
+          aria-label={t('scheduler.calendar.prevMonth')}
+          className={`${getNavButtonClass(canGoPrev)} mx-1`}
         >
-          <ChevronLeft className="h-5 w-5 max-[320px]:h-4 max-[320px]:w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
 
         <h3 className="min-w-0 truncate px-1 text-center text-lg font-semibold capitalize tracking-tight text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
@@ -193,9 +194,10 @@ const CalendarViewComponent = memo(function CalendarView({
           onClick={handleNext}
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
-          className={getNavButtonClass(canGoNext)}
+          aria-label={t('scheduler.calendar.nextMonth')}
+          className={`${getNavButtonClass(canGoNext)} mx-1`}
         >
-          <ChevronRight className="h-5 w-5 max-[320px]:h-4 max-[320px]:w-4" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -203,7 +205,7 @@ const CalendarViewComponent = memo(function CalendarView({
         <div className="py-8 text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.calendar.loading')}</div>
       ) : (
         <>
-          <div className="mb-1 grid grid-cols-7 gap-px max-[320px]:mb-0.5">
+          <div className="mb-1 grid grid-cols-7 gap-px max-[320px]:mb-0.5 max-[320px]:gap-0">
             {dayHeaders.map((dayLabel) => (
               <div
                 key={dayLabel}
@@ -220,7 +222,7 @@ const CalendarViewComponent = memo(function CalendarView({
               const weekKey = `week-${week[0] ? formatLocalDateKey(week[0].date) : 'unknown'}`;
 
               return (
-                <div key={weekKey} className="grid grid-cols-7 gap-px">
+                <div key={weekKey} className="grid grid-cols-7 gap-px max-[320px]:gap-0">
                   {week.map((day) => {
                     const earliestAppointment = getEarliestAppointmentForDay(day.appointments);
                     const dayNum = day.date.getDate();
@@ -228,7 +230,7 @@ const CalendarViewComponent = memo(function CalendarView({
                     const overflowTone = day.isCurrentMonth ? '' : 'opacity-50 saturate-75';
                     const rowHeight = hasAppointmentsInWeek
                       ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-[2.5rem]'
-                      : 'min-h-[2.5rem] max-[320px]:min-h-[2.25rem]';
+                      : 'min-h-[2.5rem] max-[320px]:min-h-11';
 
                     const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start ${
                       day.isCurrentMonth
@@ -250,15 +252,18 @@ const CalendarViewComponent = memo(function CalendarView({
                           )}
                         </div>
 
-                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center gap-1 leading-none">
+                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center leading-none">
                           {earliestAppointment ? (
-                            <div className={`inline-flex items-center gap-1 ${overflowTone}`}>
+                            <div className={`relative inline-flex h-4 w-4 items-center justify-center ${overflowTone}`}>
                               <span
-                                className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[earliestAppointment.status] ?? 'bg-arsm-status-dot-fallback'}`}
+                                className={`h-3.5 w-3.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[earliestAppointment.status] ?? 'bg-arsm-status-dot-fallback'}`}
                                 title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
                               />
                               {day.appointments.length > 1 && (
-                                <span className="inline-flex min-h-[0.95rem] min-w-[0.95rem] items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-1 text-[7px] font-semibold leading-none text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark">
+                                <span
+                                  className="pointer-events-none absolute -right-1.5 -top-1.5 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark"
+                                  aria-hidden="true"
+                                >
                                   +{day.appointments.length - 1}
                                 </span>
                               )}
@@ -274,12 +279,13 @@ const CalendarViewComponent = memo(function CalendarView({
 
                     if (day.isCurrentMonth && onDayClick) {
                       const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                      const dayAriaLabel = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full' }).format(day.date);
                       return (
                         <button
                           type="button"
                           key={dayKey}
                           data-testid={dayTestId}
-                          aria-label={dayTestId}
+                          aria-label={dayAriaLabel}
                           onClick={() => onDayClick(dayNum)}
                           className={`${dayClassName} cursor-pointer text-left`}
                         >
