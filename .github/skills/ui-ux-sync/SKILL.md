@@ -29,7 +29,7 @@ Use this skill after UI-facing frontend changes or agent/documentation changes t
 5. Dropdown safety: selects and filter controls need `min-w-0 overflow-hidden` parents plus `w-full max-w-full min-w-0 truncate` on the control.
 6. Surface flattening: remove card-inside-card structures unless a nested card is the primary repeated object.
 7. Toast feedback: mutations should emit top-center success/error toast feedback through existing toast infrastructure.
-8. Confirmation flow: destructive/high-stakes mutations must use confirmation modal flow with i18n copy and semantic tokens. Exception: scheduler quick self-unassign from list cards may remain direct with backend invariants and toast feedback.
+8. Confirmation flow: destructive/high-stakes mutations must use confirmation modal flow with i18n copy and semantic tokens. Scheduler self-unassign is high-stakes in all surfaces (including list cards) and must never bypass confirmation.
 9. Modal close policy: Modal-based confirmations must not require an X close icon; explicit cancel, overlay, and Escape remain valid exits. Toast dismiss X remains valid.
 10. Feedback latency: for operations over 400ms show explicit pending feedback near trigger and prevent duplicate submissions; keep action layout stable while pending.
 11. Error recovery: failed submit should focus first invalid field, keep localized actionable guidance, and preserve entered data unless sensitive-field clearing is required.

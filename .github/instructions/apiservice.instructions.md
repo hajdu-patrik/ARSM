@@ -15,6 +15,11 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - DTO-only API boundaries.
 - Program pipeline/order and hardened security defaults must remain correct.
 - Config-first addressing; no secret/url hardcoding.
+- Keep `appsettings.Local.json` local-only: it is gitignored and must stay excluded from build/publish output via the project file.
+
+## Source-of-Truth Files
+- Endpoint mapping: `Auth/`, `Appointments/`, `Customers/`, `Vehicles/`, `Profile/`, `Admin/` endpoint mappers.
+- Pipeline/config: `Program.cs`, `appsettings*.json`, `AutoService.ApiService.csproj`, `Configuration/ConnectionStringResolver.cs`, `Configuration/TemplateMarkerDetector.cs`.
 
 ## Engineering Standards
 - Apply SOLID and OOP for all non-trivial code changes.

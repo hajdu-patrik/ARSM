@@ -11,6 +11,8 @@ description: "Use when editing Aspire orchestration and resource wiring in AutoS
 
 ## Enforce
 - Keep deterministic Aspire resource wiring.
-- Use `WithReference` + `WaitFor` correctly.
+- Use `WithReference` + `WaitFor` correctly where the downstream resource must wait for infrastructure readiness.
 - Keep config-first ports/endpoints/secrets.
 - Keep WebUI API endpoint injected via env; no hardcoded URL.
+- Use `Aspire.Hosting.JavaScript` and `AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")` for the Vite client.
+- Add the API project by path with resource name `apiservice`; do not reintroduce an AppHost compile-time `ProjectReference` just for orchestration.

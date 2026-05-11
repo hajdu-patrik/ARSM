@@ -59,6 +59,8 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 
 ## Source-of-Truth Files
 - Routes: `src/App.tsx`
-- Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
+- Shared styles/primitives: `src/index.css`, `src/styles/tokens.css`, `src/styles/base.css`, `src/styles/components.css`, `src/styles/design-system.css`, `src/utils/formStyles.ts`
+- SEO shell/assets: `index.html`, `src/components/seo/SeoManager.tsx`, `public/robots.txt`, `public/sitemap.xml`, `public/site.webmanifest`
+- Authenticated shell/sidebar: `src/components/layout/SidebarLayout.tsx`, `src/components/layout/SidebarContent.tsx`
 - UI/UX policy: `.github/agents/ui-ux-style-profile.agent.md`
 - Services/stores: `src/services/**`, `src/store/**`

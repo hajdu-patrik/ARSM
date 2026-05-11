@@ -2,19 +2,18 @@
 
 ## Persona
 
-- Primary: Gergely (frontend authority)
-- Final architecture sign-off: Patrik
-- QA/security escalation: Zsombor
+- Frontend: Gergely
+- Architecture sign-off: Patrik
+- QA/security: Zsombor
 
-## Hard Rules
+## Enforce
 
-- React + TypeScript + Tailwind only.
-- No hardcoded runtime API fallback URL; use `VITE_API_URL`.
-- All user strings in i18n (`en.ts`, `hu.ts`).
-- Keep dark/light parity and responsive behavior.
+- React/TS/Tailwind only.
+- i18n for all user text (`en.ts`, `hu.ts`).
+- Dark/light parity + responsive behavior.
 - Global clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) on WebUI elements.
 - Central UI/UX source of truth: `.claude/agents/ui-ux-style-profile.md`.
-- Keep API logic in `src/services`, UI logic in pages/components/hooks.
+- Keep API logic in `src/services`; keep UI logic in pages/components/hooks; no hardcoded `VITE_API_URL` fallback.
 
 ## UI/UX Guardrails
 
@@ -48,17 +47,26 @@
 - Heavy test agents (HTTP/SQL/E2E): only explicit request or significant feature/structural behavior change.
 - If heavy tests are triggered by new UI/DTO feature: generate missing coverage first.
 
-## Mandatory Always-On
+## Always-On
 
-- `docs-sync`: always after changes, auto-remediate docs drift.
-- `coding-principles`: always after class/method changes, auto-remediate quality drift.
-- Security remediation on frontend code workflows:
+- `docs-sync` always, auto-remediate docs drift.
+- `coding-principles` always for class/method changes, auto-remediate quality drift.
+- Frontend security remediation in workflow:
   - `npm audit fix`
   - re-run build/type checks.
+
+## Mandatory UI/UX Co-Execution (Non-Negotiable)
+
+- After every UI-facing edit iteration, `ui-ux-style-profile` agent must be **co-executed** — not just consulted — alongside or immediately after the `frontend` agent.
+- `ui-ux-style-profile` must run the **320px Mandatory Validation Checklist** (defined in `.claude/agents/ui-ux-style-profile.md`) and produce a written per-component pass/fail report for every changed UI file.
+- Any 320px failure blocks the iteration: remediate first, re-verify, then sign off.
+- Never mark a UI change as complete without an explicit written 320px validation report.
 
 ## Source-of-Truth Files
 
 - Routes: `src/App.tsx`
-- Shared styles/primitives: `src/styles/design-system.css`, `src/utils/formStyles.ts`, `src/index.css`
+- Shared styles/primitives: `src/index.css`, `src/styles/tokens.css`, `src/styles/base.css`, `src/styles/components.css`, `src/styles/design-system.css`, `src/utils/formStyles.ts`
+- SEO shell/assets: `index.html`, `src/components/seo/SeoManager.tsx`, `public/robots.txt`, `public/sitemap.xml`, `public/site.webmanifest`
+- Authenticated shell/sidebar: `src/components/layout/SidebarLayout.tsx`, `src/components/layout/SidebarContent.tsx`
 - UI/UX policy: `.claude/agents/ui-ux-style-profile.md`
 - Services/stores: `src/services/**`, `src/store/**`

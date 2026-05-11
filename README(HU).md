@@ -1,3 +1,5 @@
+# ARSM - Appointment and Resource Scheduling Management
+
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![C#](https://img.shields.io/badge/Language-C%23_15-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
@@ -6,8 +8,6 @@
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
-
-# ARSM - Appointment and Resource Scheduling Management
 
 Az **ARSM** egy szerelőknek készült műhelykezelő eszköz autószerviz vállalkozások számára. Segíti a szerelőket a napi javítási ütemtervek áttekintésében, időpontok igénylésében és a munkák állapotának valós idejű követésében egy letisztult, reszponzív felületen.
 
@@ -53,7 +53,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 **Standard workflow:**
 
 1. Orkesztrátor fázisokra bontja a feladatot
-2. Backend + Frontend specialisták párhuzamosan dolgoznak
+2. Az irányított specialisták dolgoznak; frontend munka esetén a Frontend mindig együtt fut a `ui-ux-style-profile` ágenssel, a független specialisták pedig párhuzamosan is futhatnak
 3. Validáló ágens ellenőrzi a buildet
 4. Docs Sync ágens szinkronizálja a dokumentációt
 5. Coding Principles ágens ellenőrzi a kódminőséget és stílust
@@ -74,7 +74,7 @@ Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnev
 
 | Skill | Ágens | Cél |
 | ----- | ----- | --- |
-| `autoservice-docs-sync` | `docs-sync` | Összes CLAUDE.md, .github/instructions és ARSM-TL-DR.md szinkronizálása a kóddal |
+| `autoservice-docs-sync` | `docs-sync` | Összes CLAUDE.md, .github/instructions és docs/Private-Docs/ARSM-TL-DR.md szinkronizálása a kóddal |
 | `autoservice-coding-principles` | `coding-principles` | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
 | `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
@@ -120,4 +120,4 @@ cd app
 dotnet run --project AutoService.AppHost
 ```
 
-Ez elindítja a teljes helyi környezetet (API + infrastruktúra + kapcsolódó szolgáltatások).
+Ez elindítja a helyi orkesztrált környezetet: PostgreSQL, ApiService és WebUI fejlesztői szerver. Az AppHost konfigurált portokat olvas, és az API endpointból injektálja a `VITE_API_URL` értéket a WebUI számára.

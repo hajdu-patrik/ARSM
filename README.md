@@ -1,3 +1,5 @@
+# ARSM - Appointment and Resource Scheduling Management
+
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![C#](https://img.shields.io/badge/Language-C%23_15-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
@@ -6,8 +8,6 @@
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
-
-# ARSM - Appointment and Resource Scheduling Management
 
 **ARSM** is a mechanic-facing workshop management tool built for auto service businesses. It helps mechanics organize their daily repair schedules, claim appointments, and track job progress through a clean, responsive dashboard.
 
@@ -53,7 +53,7 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 **Standard workflow:**
 
 1. Orchestrator decomposes the task into phases
-2. Backend + Frontend specialists execute in parallel
+2. Routed specialists execute; frontend work always pairs Frontend with `ui-ux-style-profile`, and independent specialists may run in parallel
 3. Validate agent checks the build
 4. Docs Sync agent updates project documentation
 5. Coding Principles agent enforces code style and quality
@@ -74,7 +74,7 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 
 | Skill | Used by agent | Purpose |
 | ----- | ------------- | ------- |
-| `autoservice-docs-sync` | `docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and ARSM-TL-DR.md with code |
+| `autoservice-docs-sync` | `docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and docs/Private-Docs/ARSM-TL-DR.md with code |
 | `autoservice-coding-principles` | `coding-principles` | Enforce JSDoc comments, naming conventions, and structural quality |
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
 | `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
@@ -120,4 +120,4 @@ cd app
 dotnet run --project AutoService.AppHost
 ```
 
-This starts the orchestrated local environment (API + infrastructure + related services).
+This starts the orchestrated local environment: PostgreSQL, ApiService, and the WebUI dev server. AppHost reads configured ports and injects `VITE_API_URL` into the WebUI from the API endpoint.

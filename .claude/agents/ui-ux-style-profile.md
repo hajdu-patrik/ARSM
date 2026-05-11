@@ -11,7 +11,7 @@ Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equiv
 
 ## Design Token Contract
 
-- Use semantic `arsm-*` tokens from `app/AutoService.WebUI/src/index.css`.
+- Use semantic `arsm-*` tokens from `app/AutoService.WebUI/src/styles/tokens.css`; `app/AutoService.WebUI/src/index.css` imports the style module chain.
 - Do not introduce default Tailwind color palettes such as `bg-blue-*`, `text-red-*`, or `border-slate-*` when an `arsm-*` token exists.
 - Keep light and dark variants paired for every visible surface.
 - Keep the WebUI clean-design rule: no `shadow-*`, no `dark:shadow-*`, no CSS `box-shadow`, and no `transition-shadow`.
@@ -20,7 +20,7 @@ Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equiv
 ## Reusable Primitive Contract
 
 - Shared page shell, heading, section-title, and action-button styles must be defined in shared primitives before introducing page-local class strings.
-- Shared primitive ownership lives in `src/styles/design-system.css` (CSS primitives) and `src/utils/formStyles.ts` (JSX-facing class exports).
+- Shared primitive ownership lives in `src/styles/design-system.css` and `src/styles/components.css` (CSS primitives) and `src/utils/formStyles.ts` (JSX-facing class exports).
 - If an identical or near-identical class cluster appears in 3 or more files, extract it into shared primitives in the same refactor pass.
 - Use hybrid ownership intentionally: CSS primitives for pseudo-elements/browser-native parts/global selectors, TypeScript class exports for JSX-consumed layout and interaction bundles.
 - Primitive-first order is mandatory: reuse existing primitive -> extend existing primitive -> create new primitive as last resort.
@@ -104,7 +104,7 @@ Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equiv
 - Confirmation copy and buttons must be i18n-backed and use semantic tokens.
 - Confirmation modals must set `showCloseButton={false}` on the shared modal shell; closing remains available through overlay, Escape, and explicit cancel actions.
 - Destructive confirmation modals should default focus to the safe action (`Cancel`) rather than the destructive confirm.
-- Exception: scheduler quick self-unassign from list cards may remain direct to preserve rapid triage, but it still requires backend invariants and toast feedback.
+- Scheduler self-unassign is high-stakes in all surfaces (including list cards) and must use confirmation modal flow; direct self-unassign is not allowed.
 
 ## UI Refactor Safety Gates
 

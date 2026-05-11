@@ -26,6 +26,7 @@
 - Identity + JWT + cookie session; keep refresh rotation and denylist enforcement.
 - Preserve middleware order and hardened defaults.
 - Keep secrets out of repo; fail-fast on placeholder secret markers.
+- Keep `appsettings.Local.json` local-only: it is gitignored and must stay excluded from build/publish output via the project file.
 
 ## Routing + Testing Policy
 
@@ -42,4 +43,4 @@
 ## Source-of-Truth Files
 
 - Endpoint mapping: `Auth/`, `Appointments/`, `Customers/`, `Vehicles/`, `Profile/`, `Admin/` endpoint mappers.
-- Pipeline/config: `Program.cs`, `appsettings*.json`.
+- Pipeline/config: `Program.cs`, `appsettings*.json`, `AutoService.ApiService.csproj`, `Configuration/ConnectionStringResolver.cs`, `Configuration/TemplateMarkerDetector.cs`.
