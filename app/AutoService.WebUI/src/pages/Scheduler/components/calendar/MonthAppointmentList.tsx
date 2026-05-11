@@ -9,10 +9,15 @@ import {
 } from '../../../../utils/formStyles';
 import { AppointmentCard } from '../shared/AppointmentCard';
 
+const schedulerFilterButtonClass = `${schedulerMiniNeutralActionButtonClass} min-h-11 w-full px-2.5 py-1.5 text-[11px] sm:w-[9rem]`;
+const schedulerStatusChipClass = 'inline-flex min-h-11 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full border px-2.5 py-1 text-ellipsis text-[11px] font-medium transition-colors hover:opacity-90 sm:w-[9rem]';
+const schedulerMechanicFilterSelectClass = `${compactSelectClass} min-h-11 w-full min-w-0 max-w-full truncate rounded-lg bg-arsm-card px-2.5 py-1.5 text-[11px] hover:bg-arsm-hover dark:bg-arsm-input-dark dark:hover:bg-arsm-hover-dark`;
+
 interface MonthAppointmentListProps {
   readonly appointments: AppointmentDto[];
   readonly isLoading: boolean;
   readonly currentMechanicId: number | undefined;
+  readonly isAdmin: boolean;
   readonly selectedDay: number | null;
   readonly onClaim: (id: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
@@ -57,6 +62,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   appointments,
   isLoading,
   currentMechanicId,
+  isAdmin,
   selectedDay,
   onClaim,
   onUnclaim,
@@ -133,7 +139,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   let listContent: ReactNode;
   if (isLoading) {
     listContent = (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
         {Array.from({ length: 3 }, (_, index) => (
           <div
             key={`month-skeleton-${index}`}
@@ -150,12 +156,13 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     );
   } else {
     listContent = (
-      <div className={`grid grid-cols-1 gap-3 md:grid-cols-2 ${shouldSpanSingleCard ? 'md:grid-cols-1' : ''}`}>
+      <div className={`grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 ${shouldSpanSingleCard ? 'md:grid-cols-1' : ''}`}>
         {sortedAppointments.map((appointment) => (
           <AppointmentCard
             key={appointment.id}
             appointment={appointment}
             currentMechanicId={currentMechanicId}
+            isAdmin={isAdmin}
             onClaim={onClaim}
             onUnclaim={onUnclaim}
             onClick={() => onCardClick(appointment)}
@@ -167,7 +174,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
 
   return (
     <section className={`${insetSurfaceClass} p-3 sm:p-4`}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <h3 className="truncate text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-lg">
             {t('scheduler.monthList.title')}
@@ -181,7 +188,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           <button
             type="button"
             onClick={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
-            className={`${schedulerMiniNeutralActionButtonClass} hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/80`}
+            className={`${schedulerFilterButtonClass} hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/80`}
             title={t('scheduler.monthList.sortByDate')}
           >
             <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
@@ -192,7 +199,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
             <button
               type="button"
               onClick={onClearFilter}
-              className={`${schedulerMiniNeutralActionButtonClass} hover:border-arsm-accent/55 hover:bg-arsm-accent-wash dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80`}
+              className={`${schedulerFilterButtonClass} hover:border-arsm-accent/55 hover:bg-arsm-accent-wash dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80`}
             >
               <X className="h-3 w-3 shrink-0" />
               <span className="truncate">{t('scheduler.monthList.clearFilter')}</span>
@@ -201,7 +208,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((status) => {
           const isActive = selectedStatuses.has(status);
           const colors = STATUS_CHIP_COLORS[status];
@@ -214,18 +221,18 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
               type="button"
               key={status}
               onClick={() => toggleStatus(status)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:opacity-90 ${chipStateClass}`}
+              className={`${schedulerStatusChipClass} ${chipStateClass}`}
             >
               {t(`scheduler.status.${status.toLowerCase()}`)}
             </button>
           );
         })}
 
-        <div className="min-w-0 basis-full overflow-hidden sm:basis-auto">
+        <div className="min-w-0 basis-full overflow-hidden sm:basis-auto sm:w-[9rem]">
           <select
             value={selectedMechanicId ?? ''}
             onChange={(event) => setSelectedMechanicId(parseMechanicFilterValue(event.target.value))}
-            className={`${compactSelectClass} w-full min-w-0 max-w-full truncate rounded-lg bg-arsm-card px-2.5 py-1.5 text-xs hover:bg-arsm-hover dark:bg-arsm-input-dark dark:hover:bg-arsm-hover-dark`}
+            className={schedulerMechanicFilterSelectClass}
           >
             <option value="">{t('scheduler.monthList.mechanicAll')}</option>
             {uniqueMechanics.map(([id, name]) => (

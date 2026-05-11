@@ -29,12 +29,12 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 }: SchedulerQuickIntakeSectionProps) {
 	return (
 		<section className={`${insetSurfaceClass} relative overflow-hidden p-4`}>
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h3 className="text-base font-semibold tracking-tight text-arsm-primary dark:text-arsm-primary-dark">
+			<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="min-w-0">
+					<h3 className="text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
 						{t('scheduler.intake.quickTitle')}
 					</h3>
-					<p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">
+					<p className="truncate text-sm text-arsm-muted dark:text-arsm-muted-dark">
 						{selectedDateLabel
 							? t('scheduler.intake.quickSelectedDay', { date: selectedDateLabel })
 							: t('scheduler.intake.quickSelectDayHint')}
@@ -46,7 +46,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={buttonClass}
+					className={`${buttonClass} w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs sm:w-[14rem] sm:shrink-0 sm:text-xs`}
 				>
 					{t('scheduler.intake.open')}
 				</button>

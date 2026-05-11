@@ -185,7 +185,7 @@ const CalendarViewComponent = memo(function CalendarView({
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <h3 className="min-w-0 truncate px-1 text-center text-lg font-semibold capitalize tracking-tight text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
+        <h3 className="min-w-0 truncate px-1 text-center text-lg font-semibold capitalize text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
           {monthLabel}
         </h3>
 

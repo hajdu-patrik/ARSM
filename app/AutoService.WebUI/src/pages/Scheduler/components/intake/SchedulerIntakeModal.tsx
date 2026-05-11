@@ -28,7 +28,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
   onClose,
   onSubmit,
 }: SchedulerIntakeModalProps) {
-  const { t, i18n } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
   const { state, derived, actions } = useSchedulerIntakeForm({
     isOpen,
@@ -53,7 +53,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('scheduler.intake.title')}
+      title={translate('scheduler.intake.title')}
       widthClassName="max-w-2xl"
       footer={state.lookupState === 'idle'
         ? null
@@ -64,7 +64,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
               onClick={onClose}
               className={`${secondaryButtonClass} w-full sm:w-auto`}
             >
-              {t('scheduler.intake.cancel')}
+              {translate('scheduler.intake.cancel')}
             </button>
             <button
               type="button"
@@ -75,7 +75,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
               disabled={state.isSubmitting}
               className={`${buttonClass} w-full sm:w-auto`}
             >
-              {state.isSubmitting ? t('scheduler.intake.creating') : t('scheduler.intake.create')}
+              {state.isSubmitting ? translate('scheduler.intake.creating') : translate('scheduler.intake.create')}
             </button>
           </div>
         )}
@@ -84,7 +84,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
         <SchedulerIntakeHeader
           selectedDayLabel={selectedDayLabel}
           dueDateTime={state.dueDateTime}
-          t={t}
+          translate={translate}
           onDueDateTimeChange={actions.setDueDateTime}
         />
 
@@ -93,7 +93,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
           customerLookup={state.customerLookup}
           email={state.email}
           isSearching={state.isSearching}
-          t={t}
+          translate={translate}
           onEmailChange={actions.handleEmailChange}
           onLookup={() => {
             actions.handleLookup();
@@ -106,7 +106,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             customerMiddleName={state.customerMiddleName}
             customerLastName={state.customerLastName}
             customerPhone={state.customerPhone}
-            t={t}
+            translate={translate}
             onCustomerFirstNameChange={actions.setCustomerFirstName}
             onCustomerMiddleNameChange={actions.setCustomerMiddleName}
             onCustomerLastNameChange={actions.setCustomerLastName}
@@ -120,7 +120,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             customerHasVehicles={derived.customerHasVehicles}
             vehicleMode={state.vehicleMode}
             existingVehicleId={state.existingVehicleId}
-            t={t}
+            translate={translate}
             onVehicleModeChange={actions.setVehicleMode}
             onExistingVehicleIdChange={actions.setExistingVehicleId}
           />
@@ -129,7 +129,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
         {derived.shouldShowVehicleCreate && (
           <SchedulerIntakeVehicleForm
             vehicle={state.vehicle}
-            t={t}
+            translate={translate}
             onVehicleFieldChange={actions.handleVehicleField}
           />
         )}
@@ -137,7 +137,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
         {state.lookupState !== 'idle' && (
           <SchedulerIntakeTaskSection
             taskDescription={state.taskDescription}
-            t={t}
+            translate={translate}
             onTaskDescriptionChange={actions.setTaskDescription}
           />
         )}

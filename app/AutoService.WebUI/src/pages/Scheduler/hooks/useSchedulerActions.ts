@@ -73,8 +73,28 @@ export function useSchedulerActions({
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
       showSuccessToast('scheduler.detail.unassignSuccess');
     } catch (err) {
-      if (isAxiosError<{ code?: string }>(err) && err.response?.data?.code === 'appointment_cancelled') {
-        showErrorToast('scheduler.detail.unassignCancelledError');
+      if (isAxiosError<{ code?: string }>(err)) {
+        const code = err.response?.data?.code;
+        const status = err.response?.status;
+
+        if (code === 'appointment_cancelled') {
+          showErrorToast('scheduler.detail.unassignCancelledError');
+          return;
+        }
+
+        if (
+          code === 'appointment_completed'
+          || code === 'last_assigned_mechanic'
+          || code === 'not_assigned'
+          || status === 400
+          || status === 409
+          || status === 422
+        ) {
+          showErrorToast('scheduler.detail.unassignRaceError');
+          return;
+        }
+
+        showErrorToast('scheduler.detail.unassignError');
         return;
       }
 

@@ -17,8 +17,11 @@ interface ToastItemProps {
   readonly toast: ToastMessage;
 }
 
+/**
+ * Renders a single toast row and owns its auto-dismiss lifecycle timer.
+ */
 const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
-  const { t } = useTranslation();
+  const { t: translate } = useTranslation();
   const removeToast = useToastStore((state) => state.removeToast);
 
   const isSystemErrorToast = toast.variant === 'error'
@@ -45,7 +48,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   return (
     <output
       aria-live="polite"
-      className={`toast-enter pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 text-sm font-medium backdrop-blur-md ${toastVariantClass}`}
+      className={`toast-enter pointer-events-auto relative flex min-w-0 w-[min(92vw,33rem)] items-center gap-2 overflow-hidden rounded-2xl border px-4 py-3 text-sm font-medium backdrop-blur-md ${toastVariantClass}`}
     >
       {isSystemErrorToast ? (
         <span
@@ -54,14 +57,14 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
         />
       ) : null}
 
-      <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center">
+      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
         {toast.variant === 'success' ? <Check className="h-5 w-5" /> : <CircleAlert className="h-5 w-5" />}
       </span>
 
-      <p className="flex-1 leading-5">{t(toast.messageKey, toast.messageValues)}</p>
+      <p className="min-w-0 flex-1 truncate whitespace-nowrap leading-5">{translate(toast.messageKey, toast.messageValues)}</p>
 
       {isSystemErrorToast ? (
-        <span className="rounded-md border border-arsm-error-hover/45 bg-white/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-white/10 dark:text-arsm-error-softest">
+        <span className="shrink-0 rounded-md border border-arsm-error-hover/45 bg-arsm-card/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-card-dark/55 dark:text-arsm-error-softest">
           500
         </span>
       ) : null}
@@ -69,8 +72,8 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       <button
         type="button"
         onClick={() => removeToast(toast.id)}
-        className="rounded-md p-1 opacity-80 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/12"
-        aria-label={t('toast.dismiss')}
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition hover:bg-arsm-deepest/10 hover:opacity-100 dark:hover:bg-arsm-primary-dark/12"
+        aria-label={translate('toast.dismiss')}
       >
         <X className="h-4 w-4" />
       </button>
@@ -80,6 +83,9 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
 ToastItem.displayName = 'ToastItem';
 
+/**
+ * Hosts the global top-center toast stack with pointer-safe overlay behavior.
+ */
 const ToastViewportComponent = memo(function ToastViewport() {
   const toasts = useToastStore((state) => state.toasts);
 
@@ -88,8 +94,8 @@ const ToastViewportComponent = memo(function ToastViewport() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-5 z-[120] flex justify-center px-3 sm:px-4">
-      <div className="flex w-full max-w-md flex-col gap-2">
+    <div className="pointer-events-none fixed inset-x-0 top-5 z-[120] flex min-w-0 justify-center px-3 sm:px-4">
+      <div className="flex min-w-0 max-w-[calc(100vw-1.5rem)] flex-col items-center gap-2 sm:max-w-[calc(100vw-2rem)]">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} />
         ))}

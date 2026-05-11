@@ -13,7 +13,6 @@ import { formatDueExactDateTime, formatLongDateTime } from '../../utils/schedule
 import { useAdminMechanics } from '../../hooks/useAdminMechanics';
 import { AppointmentDetailBody } from './AppointmentDetailModal.sections';
 import { AppointmentDetailFooter } from './AppointmentDetailModal.footer';
-import { AppointmentDetailRemoveMechanicModal } from './AppointmentDetailRemoveMechanicModal';
 import { AppointmentDetailConfirmModals } from './AppointmentDetailConfirmModals';
 import {
   type EditFormState,
@@ -33,7 +32,6 @@ interface AppointmentDetailModalProps {
   readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
-  readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onUpdate: (
     id: number,
     request: UpdateAppointmentRequest,
@@ -51,7 +49,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   onStatusChange,
   onUnclaim,
   onAdminAssign,
-  onAdminUnassign,
   onUpdate,
 }: AppointmentDetailModalProps) {
   const { t, i18n } = useTranslation();
@@ -67,8 +64,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
 
-  const [removingMechanicId, setRemovingMechanicId] = useState<number | null>(null);
-  const [pendingRemoveMechanic, setPendingRemoveMechanic] = useState<{ id: number; fullName: string } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<AppointmentStatus | null>(null);
   const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
 
@@ -80,7 +75,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       initializedAppointmentIdRef.current = null;
       setEditForm(null);
       setIsEditing(false);
-      setPendingRemoveMechanic(null);
       setPendingStatusChange(null);
       setIsUnclaimConfirmOpen(false);
       return;
@@ -93,7 +87,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     initializedAppointmentIdRef.current = appointment.id;
     setEditForm(buildEditForm(appointment));
     setIsEditing(false);
-    setPendingRemoveMechanic(null);
     setPendingStatusChange(null);
     setIsUnclaimConfirmOpen(false);
   }, [appointment, isOpen]);
@@ -153,19 +146,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     }
   }, [appointment, onAdminAssign, selectedNewMechanicId]);
 
-  const handleAdminRemove = useCallback(async (mechanicId: number) => {
-    if (!appointment) {
-      return;
-    }
-
-    setRemovingMechanicId(mechanicId);
-    try {
-      await onAdminUnassign(appointment.id, mechanicId);
-    } finally {
-      setRemovingMechanicId(null);
-    }
-  }, [appointment, onAdminUnassign]);
-
   const handleEditField = useCallback((field: keyof EditFormState, value: string) => {
     setEditForm((previous) => {
       if (!previous) {
@@ -208,10 +188,13 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
-  const isCancelled = appointment.status === 'Cancelled';
-  const isClosedForMechanicMutations = appointment.status === 'Cancelled' || appointment.status === 'Completed';
-  const canEdit = isAdmin || isAssigned;
-  const canChangeStatus = isAssigned;
+  const isInProgress = appointment.status === 'InProgress';
+  const isClosedForMechanicMutations = !isInProgress;
+
+  const showEdit = isAdmin || isAssigned;
+  const canClaim = !isAdmin && !isAssigned && isInProgress;
+  const canUnclaim = !isAdmin && isAssigned && isInProgress && appointment.mechanics.length > 1;
+  const canChangeStatus = isAdmin || isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
   const availableMechanics = allMechanics.filter((mechanic) => !assignedMechanicIds.has(mechanic.personId));
@@ -220,19 +203,15 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const dueDateLabel = formatDueExactDateTime(appointment.dueDateTime, i18n.language);
 
   const dueState = getDueState(appointment.dueDateTime);
-  const shouldShowClaimButton = !isAssigned && appointment.status === 'InProgress' && !dueState.isOverdue;
 
   const footer = (
     <AppointmentDetailFooter
       appointment={appointment}
-      canEdit={canEdit}
+      showEdit={showEdit}
       isEditing={isEditing}
       isSaving={isSaving}
-      isAssigned={isAssigned}
       canChangeStatus={canChangeStatus}
       isUpdating={isUpdating}
-      shouldShowClaimButton={shouldShowClaimButton}
-      isClaiming={isClaiming}
       t={t}
       onStartEdit={() => {
         setEditForm(buildEditForm(appointment));
@@ -248,9 +227,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       onStatusChange={(status) => {
         setPendingStatusChange(status);
       }}
-      onClaim={() => {
-        void handleClaim();
-      }}
     />
   );
 
@@ -265,7 +241,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       >
         <AppointmentDetailBody
           appointment={appointment}
-          currentMechanicId={currentMechanicId}
           isAdmin={isAdmin}
           isEditing={isEditing}
           editForm={editForm}
@@ -274,30 +249,30 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           dueState={dueState}
           availableMechanics={availableMechanics}
           selectedNewMechanicId={selectedNewMechanicId}
+          canClaim={canClaim}
+          canUnclaim={canUnclaim}
+          isClaiming={isClaiming}
           isAssigning={isAssigning}
           isClosedForMechanicMutations={isClosedForMechanicMutations}
           isUnclaiming={isUnclaiming}
-          removingMechanicId={removingMechanicId}
           t={t}
           onEditField={handleEditField}
-          onUnclaim={() => {
-            setIsUnclaimConfirmOpen(true);
+          onClaim={() => {
+            if (canClaim) {
+              void handleClaim();
+            }
           }}
-          onQueueRemoveMechanic={setPendingRemoveMechanic}
+          onUnclaim={() => {
+            if (canUnclaim) {
+              setIsUnclaimConfirmOpen(true);
+            }
+          }}
           onSelectNewMechanic={setSelectedNewMechanicId}
           onAdminAssign={() => {
             void handleAdminAssign();
           }}
         />
       </Modal>
-
-      <AppointmentDetailRemoveMechanicModal
-        pendingRemoveMechanic={pendingRemoveMechanic}
-        removingMechanicId={removingMechanicId}
-        isCancelled={isCancelled}
-        onClose={() => setPendingRemoveMechanic(null)}
-        onConfirmRemove={handleAdminRemove}
-      />
 
       <AppointmentDetailConfirmModals
         pendingStatusChange={pendingStatusChange}

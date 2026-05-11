@@ -1,10 +1,9 @@
 /**
  * Footer component for appointment detail modal.
- * Handles edit, status change, assignment badge, and claim actions.
+ * Handles global edit and status controls.
  * @module AppointmentDetailModal.footer
  */
 import { memo } from 'react';
-import { Check } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
@@ -18,45 +17,40 @@ function isAppointmentStatus(value: string): value is AppointmentStatus {
 
 interface AppointmentDetailFooterProps {
   readonly appointment: AppointmentDto;
-  readonly canEdit: boolean;
+  readonly showEdit: boolean;
   readonly isEditing: boolean;
   readonly isSaving: boolean;
-  readonly isAssigned: boolean;
   readonly canChangeStatus: boolean;
   readonly isUpdating: boolean;
-  readonly shouldShowClaimButton: boolean;
-  readonly isClaiming: boolean;
   readonly t: TFunction;
   readonly onStartEdit: () => void;
   readonly onCancelEdit: () => void;
   readonly onSave: () => void;
   readonly onStatusChange: (status: AppointmentStatus) => void;
-  readonly onClaim: () => void;
 }
 
 export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   appointment,
-  canEdit,
+  showEdit,
   isEditing,
   isSaving,
-  isAssigned,
   canChangeStatus,
   isUpdating,
-  shouldShowClaimButton,
-  isClaiming,
   t,
   onStartEdit,
   onCancelEdit,
   onSave,
   onStatusChange,
-  onClaim,
 }: AppointmentDetailFooterProps) {
-  const isClosedForMechanicMutations = appointment.status === 'Cancelled' || appointment.status === 'Completed';
-  const shouldRenderClaimButton = !isClosedForMechanicMutations && shouldShowClaimButton;
+  const shouldRenderGlobalControls = isEditing || showEdit || canChangeStatus;
+
+  if (!shouldRenderGlobalControls) {
+    return null;
+  }
 
   return (
-    <div className="flex w-full flex-wrap items-center gap-2">
-      {canEdit && !isEditing && (
+    <div className="flex min-w-0 w-full flex-wrap items-center gap-2">
+      {showEdit && !isEditing && (
         <button
           type="button"
           data-testid="appointment-detail-edit"
@@ -90,43 +84,25 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       )}
 
       {canChangeStatus && !isEditing && (
-        <select
-          value={appointment.status}
-          onChange={(event) => {
-            const nextStatus = event.target.value;
-            if (isAppointmentStatus(nextStatus)) {
-              onStatusChange(nextStatus);
-            }
-          }}
-          disabled={isUpdating}
-          aria-label={t('scheduler.changeStatus')}
-          className="min-h-10 min-w-[11rem] flex-1 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22"
-        >
-          {STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {t(`scheduler.status.${status.toLowerCase()}`)}
-            </option>
-          ))}
-        </select>
-      )}
-
-      {isAssigned && !isEditing && (
-        <div className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-arsm-success-border/60 bg-arsm-success-bg px-3 py-1 text-sm font-semibold text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
-          <Check className="h-4 w-4" />
-          {t('scheduler.assigned')}
-        </div>
-      )}
-
-      {!isEditing && shouldRenderClaimButton && (
-        <div className="flex w-full justify-end">
-          <button
-            type="button"
-            onClick={onClaim}
-            disabled={isClaiming}
-            className={`${buttonClass} min-h-0 rounded-lg px-3 py-1.5 text-xs`}
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <select
+            value={appointment.status}
+            onChange={(event) => {
+              const nextStatus = event.target.value;
+              if (isAppointmentStatus(nextStatus)) {
+                onStatusChange(nextStatus);
+              }
+            }}
+            disabled={isUpdating}
+            aria-label={t('scheduler.changeStatus')}
+            className="min-h-11 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22"
           >
-            {isClaiming ? '...' : t('scheduler.claim')}
-          </button>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {t(`scheduler.status.${status.toLowerCase()}`)}
+              </option>
+            ))}
+          </select>
         </div>
       )}
     </div>
