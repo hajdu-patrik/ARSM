@@ -18,6 +18,9 @@ type SeoConfig = {
   robots?: string;
 };
 
+type SeoMetaName = 'description' | 'robots' | 'og:title' | 'og:description' | 'og:type' | 'og:locale' | 'og:site_name' | 'og:image' | 'og:url' | 'twitter:card' | 'twitter:title' | 'twitter:description' | 'twitter:image';
+type SeoMetaAttribute = 'name' | 'property';
+
 /** Application name appended to every page title. */
 const APP_NAME = 'ARSM';
 
@@ -25,7 +28,7 @@ const APP_NAME = 'ARSM';
  * Retrieves an existing `<meta>` tag or creates one if it does not exist.
  * Appends the new element to `<head>` when created.
  */
-function getOrCreateMeta(name: 'description' | 'robots' | 'og:title' | 'og:description' | 'og:type' | 'og:locale' | 'og:image' | 'og:url' | 'twitter:card' | 'twitter:title' | 'twitter:description' | 'twitter:image', attribute: 'name' | 'property' = 'name') {
+function getOrCreateMeta(name: SeoMetaName, attribute: SeoMetaAttribute = 'name') {
   const selector = `meta[${attribute}="${name}"]`;
   const existing = document.head.querySelector<HTMLMetaElement>(selector);
 
@@ -76,54 +79,54 @@ function getOrCreateCanonical() {
 /** Renderless component that manages all SEO-related `<head>` tags based on the current route and language. */
 export function SeoManager() {
   const location = useLocation();
-  const { t, i18n } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
 
   const config = useMemo<SeoConfig>(() => {
     const path = location.pathname;
 
     if (path === '/login') {
       return {
-        pageTitle: t('login.submit'),
-        description: t('login.subtitle'),
+        pageTitle: translate('login.submit'),
+        description: translate('login.subtitle'),
         robots: 'noindex, nofollow',
       };
     }
 
     if (path === '/' || path === '/scheduler' || path === '/dashboard') {
       return {
-        pageTitle: t('nav.scheduler'),
-        description: t('scheduler.plannerSpace'),
+        pageTitle: translate('nav.scheduler'),
+        description: translate('scheduler.plannerSpace'),
       };
     }
 
     if (path === '/customers') {
       return {
-        pageTitle: t('customers.pageTitle'),
-        description: t('customers.pageDescription'),
+        pageTitle: translate('customers.pageTitle'),
+        description: translate('customers.pageDescription'),
       };
     }
 
     if (path === '/settings') {
       return {
-        pageTitle: t('settings.title'),
-        description: t('settings.personalInfo'),
+        pageTitle: translate('settings.title'),
+        description: translate('settings.personalInfo'),
       };
     }
 
     if (path === '/admin/register') {
       return {
-        pageTitle: t('admin.pageTitle'),
-        description: t('admin.registerMechanic'),
+        pageTitle: translate('admin.pageTitle'),
+        description: translate('admin.registerMechanic'),
         robots: 'noindex, nofollow',
       };
     }
 
     return {
-      pageTitle: t('notFound.pageNotFound'),
-      description: t('notFound.subtitle'),
+      pageTitle: translate('notFound.pageNotFound'),
+      description: translate('notFound.subtitle'),
       robots: 'noindex, nofollow',
     };
-  }, [location.pathname, t]);
+  }, [location.pathname, translate]);
 
   useEffect(() => {
     const fullTitle = `${config.pageTitle} | ${APP_NAME}`;
@@ -143,10 +146,11 @@ export function SeoManager() {
     getOrCreateMeta('og:description', 'property').content = config.description;
     getOrCreateMeta('og:type', 'property').content = 'website';
     getOrCreateMeta('og:locale', 'property').content = locale;
+    getOrCreateMeta('og:site_name', 'property').content = APP_NAME;
     getOrCreateMeta('og:image', 'property').content = socialImageUrl;
     getOrCreateMeta('og:url', 'property').content = canonicalUrl;
 
-    getOrCreateMeta('twitter:card').content = 'summary';
+    getOrCreateMeta('twitter:card').content = 'summary_large_image';
     getOrCreateMeta('twitter:title').content = fullTitle;
     getOrCreateMeta('twitter:description').content = config.description;
     getOrCreateMeta('twitter:image').content = socialImageUrl;

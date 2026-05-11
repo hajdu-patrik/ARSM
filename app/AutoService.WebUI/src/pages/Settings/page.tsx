@@ -106,7 +106,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     }
 
     showErrorToast('toast.profileUpdateFailed');
-  }, [getFirstFieldErrorMessage, restoreRequiredProfileFields, showErrorToast]);
+  }, [restoreRequiredProfileFields, showErrorToast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,7 +176,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     }
 
     showErrorToast('toast.passwordChangeFailed');
-  }, [getFirstFieldErrorMessage, showErrorToast]);
+  }, [showErrorToast]);
 
   const handlePasswordChangeConfirmed = useCallback(async () => {
     setIsPasswordChangeConfirmOpen(false);

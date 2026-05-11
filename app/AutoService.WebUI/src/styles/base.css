@@ -18,19 +18,19 @@
     height: 100%;
     font-family: 'Inter', 'Inter fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
     scrollbar-width: thin;
-    scrollbar-color: #8d7fb9 #ebe5f7;
+    scrollbar-color: var(--color-arsm-accent-vivid) var(--color-arsm-accent-wash);
   }
 
   body {
     min-height: 100%;
     margin: 0;
     overflow: hidden;
-    background-color: #f2f0f8;
+    background-color: var(--color-arsm-surface);
     background-image:
-      radial-gradient(circle at 14% 9%, rgba(182, 157, 255, 0.18) 0%, rgba(182, 157, 255, 0) 38%),
-      radial-gradient(circle at 87% 16%, rgba(229, 214, 255, 0.26) 0%, rgba(229, 214, 255, 0) 42%),
-      linear-gradient(180deg, #f8f6ff 0%, #f2f0f8 100%);
-    color: #2d2440;
+      radial-gradient(circle at 14% 9%, color-mix(in srgb, var(--color-arsm-accent) 18%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 87% 16%, color-mix(in srgb, var(--color-arsm-accent-tint) 26%, transparent) 0%, transparent 42%),
+      linear-gradient(180deg, var(--color-arsm-surface-soft) 0%, var(--color-arsm-surface) 100%);
+    color: var(--color-arsm-primary);
     font-family: inherit;
     line-height: 1.5;
   }
@@ -40,16 +40,16 @@
   }
 
   .dark body {
-    background-color: #080a14;
+    background-color: var(--color-arsm-surface-dark);
     background-image:
-      radial-gradient(circle at 13% 11%, rgba(142, 121, 216, 0.24) 0%, rgba(142, 121, 216, 0) 42%),
-      radial-gradient(circle at 84% 16%, rgba(51, 43, 87, 0.4) 0%, rgba(51, 43, 87, 0) 46%),
-      linear-gradient(180deg, #0c1020 0%, #080a14 100%);
-    color: #f2edff;
+      radial-gradient(circle at 13% 11%, color-mix(in srgb, var(--color-arsm-accent-dark) 24%, transparent) 0%, transparent 42%),
+      radial-gradient(circle at 84% 16%, color-mix(in srgb, var(--color-arsm-hover-dark) 40%, transparent) 0%, transparent 46%),
+      linear-gradient(180deg, var(--color-arsm-deepest) 0%, var(--color-arsm-surface-dark) 100%);
+    color: var(--color-arsm-primary-dark);
   }
 
   .dark {
-    scrollbar-color: #ddd5f2 #1f2742;
+    scrollbar-color: var(--color-arsm-accent-tint) var(--color-arsm-input-dark);
   }
 
   input,
@@ -66,54 +66,54 @@
   }
 
   select option {
-    background-color: #f8f5ff;
-    color: #2d2440;
+    background-color: var(--color-arsm-input);
+    color: var(--color-arsm-primary);
   }
 
   select option:hover,
   select option:focus,
   select option:checked {
-    color: #2d2440;
-    background: #eee6ff linear-gradient(0deg, #eee6ff, #eee6ff);
+    color: var(--color-arsm-primary);
+    background: var(--color-arsm-accent-subtle) linear-gradient(0deg, var(--color-arsm-accent-subtle), var(--color-arsm-accent-subtle));
   }
 
   .dark select option {
-    background-color: #202841;
-    color: #f6f3ff;
+    background-color: var(--color-arsm-input-dark);
+    color: var(--color-arsm-primary-dark);
   }
 
   .dark select option:hover,
   .dark select option:focus,
   .dark select option:checked {
-    color: #f6f3ff;
-    background: #2d3658 linear-gradient(0deg, #2d3658, #2d3658);
+    color: var(--color-arsm-primary-dark);
+    background: var(--color-arsm-toggle-bg-dark) linear-gradient(0deg, var(--color-arsm-toggle-bg-dark), var(--color-arsm-toggle-bg-dark));
   }
 
   select:focus {
     outline: none;
-    border-color: #bca5ff;
+    border-color: var(--color-arsm-focus-ring);
   }
 
   .dark select:focus {
-    border-color: #bca5ff;
+    border-color: var(--color-arsm-focus-ring);
   }
 
   a {
-    color: #7653ba;
+    color: var(--color-arsm-accent-vivid);
     font-weight: 500;
     transition: color 0.2s;
   }
 
   a:hover {
-    color: #5f4698;
+    color: var(--color-arsm-accent-deep);
   }
 
   .dark a {
-    color: #cdb8ff;
+    color: var(--color-arsm-accent);
   }
 
   .dark a:hover {
-    color: #e6dbff;
+    color: var(--color-arsm-accent-tint);
   }
 
   button {
@@ -121,13 +121,13 @@
   }
 
   ::selection {
-    background: #b998ff;
-    color: #1b1231;
+    background: var(--color-arsm-accent);
+    color: var(--color-arsm-primary);
   }
 
   .dark ::selection {
-    background: #b8a5ff;
-    color: #090d19;
+    background: var(--color-arsm-accent-dark);
+    color: var(--color-arsm-deepest);
   }
 
 }

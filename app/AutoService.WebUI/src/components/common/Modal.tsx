@@ -27,7 +27,7 @@ const ModalComponent = memo(function Modal({
   widthClassName = 'max-w-md',
   showCloseButton = true,
 }: ModalProps) {
-  const { t } = useTranslation();
+  const { t: translate } = useTranslation();
   const NativeDialog = 'dialog';
 
   useEffect(() => {
@@ -55,8 +55,8 @@ const ModalComponent = memo(function Modal({
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 max-[320px]:p-3 sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
-        aria-label={t('modal.closeOverlay')}
+        className="absolute inset-0 bg-arsm-deepest/50 backdrop-blur-sm transition-opacity duration-200"
+        aria-label={translate('modal.closeOverlay')}
         onClick={onClose}
       />
 
@@ -69,11 +69,11 @@ const ModalComponent = memo(function Modal({
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_100%)]"
+          className="arsm-modal-sheen pointer-events-none absolute inset-x-0 top-0 h-16"
         />
 
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
+          <h2 className="min-w-0 truncate text-lg font-semibold">{title}</h2>
           {showCloseButton && (
             <div className="shrink-0">
               <ModalCloseButton onClick={onClose} />

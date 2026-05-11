@@ -17,12 +17,12 @@
     appearance: none;
     height: 6px;
     border-radius: 9999px;
-    background: #ddd0fa;
+    background: var(--color-arsm-accent-border);
     outline: none;
   }
 
   .dark .crop-zoom-slider {
-    background: #56608a;
+    background: var(--color-arsm-border-dark);
   }
 
   .crop-zoom-slider::-webkit-slider-thumb {
@@ -31,38 +31,38 @@
     width: 16px;
     height: 16px;
     border-radius: 9999px;
-    border: 2px solid #f8f5ff;
-    background: #8a76d6;
+    border: 2px solid var(--color-arsm-input);
+    background: var(--color-arsm-accent-dark);
     cursor: pointer;
   }
 
   .dark .crop-zoom-slider::-webkit-slider-thumb {
-    border-color: #1a2033;
-    background: #cdb8ff;
+    border-color: var(--color-arsm-card-dark);
+    background: var(--color-arsm-accent);
   }
 
   .crop-zoom-slider::-moz-range-track {
     height: 6px;
     border-radius: 9999px;
-    background: #ddd0fa;
+    background: var(--color-arsm-accent-border);
   }
 
   .dark .crop-zoom-slider::-moz-range-track {
-    background: #56608a;
+    background: var(--color-arsm-border-dark);
   }
 
   .crop-zoom-slider::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border-radius: 9999px;
-    border: 2px solid #f8f5ff;
-    background: #8a76d6;
+    border: 2px solid var(--color-arsm-input);
+    background: var(--color-arsm-accent-dark);
     cursor: pointer;
   }
 
   .dark .crop-zoom-slider::-moz-range-thumb {
-    border-color: #1a2033;
-    background: #cdb8ff;
+    border-color: var(--color-arsm-card-dark);
+    background: var(--color-arsm-accent);
   }
 
   /* Trigger class applied by ToastViewport on enter */
@@ -74,9 +74,9 @@
   .shimmer-skeleton {
     background: linear-gradient(
       90deg,
-      rgba(188, 165, 255, 0.06) 25%,
-      rgba(188, 165, 255, 0.14) 50%,
-      rgba(188, 165, 255, 0.06) 75%
+      color-mix(in srgb, var(--color-arsm-focus-ring) 6%, transparent) 25%,
+      color-mix(in srgb, var(--color-arsm-focus-ring) 14%, transparent) 50%,
+      color-mix(in srgb, var(--color-arsm-focus-ring) 6%, transparent) 75%
     );
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
@@ -85,9 +85,9 @@
   .dark .shimmer-skeleton {
     background: linear-gradient(
       90deg,
-      rgba(188, 165, 255, 0.04) 25%,
-      rgba(188, 165, 255, 0.1) 50%,
-      rgba(188, 165, 255, 0.04) 75%
+      color-mix(in srgb, var(--color-arsm-focus-ring) 4%, transparent) 25%,
+      color-mix(in srgb, var(--color-arsm-focus-ring) 10%, transparent) 50%,
+      color-mix(in srgb, var(--color-arsm-focus-ring) 4%, transparent) 75%
     );
     background-size: 200% 100%;
   }
@@ -95,5 +95,171 @@
   /* Entrance animation for banners, error blocks, etc. */
   .fade-in-up {
     animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .error-page-ambient {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent) 58%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent) 26%, transparent) 32%,
+      color-mix(in srgb, var(--color-arsm-accent) 10%, transparent) 48%,
+      transparent 72%
+    );
+  }
+
+  .dark .error-page-ambient {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 70%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 34%, transparent) 34%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 14%, transparent) 50%,
+      transparent 72%
+    );
+  }
+
+  .error-page-illustration-glow {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent) 58%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent) 16%, transparent) 48%,
+      transparent 72%
+    );
+  }
+
+  .dark .error-page-illustration-glow {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 52%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 16%, transparent) 48%,
+      transparent 72%
+    );
+  }
+
+  .arsm-auth-ambient {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent) 58%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent) 26%, transparent) 32%,
+      color-mix(in srgb, var(--color-arsm-accent) 10%, transparent) 48%,
+      transparent 72%
+    );
+  }
+
+  .dark .arsm-auth-ambient {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 70%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 34%, transparent) 34%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 14%, transparent) 50%,
+      transparent 72%
+    );
+  }
+
+  .arsm-auth-sheen {
+    background: linear-gradient(120deg, color-mix(in srgb, var(--color-arsm-card) 14%, transparent) 0%, transparent 45%);
+  }
+
+  .dark .arsm-auth-sheen {
+    background: linear-gradient(120deg, color-mix(in srgb, var(--color-arsm-primary-dark) 6%, transparent) 0%, transparent 45%);
+  }
+
+  .arsm-card-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 42%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-card-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 10%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-modal-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 35%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-modal-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 8%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-sidebar-top-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 60%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-sidebar-top-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 6%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-sidebar-bottom-sheen {
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-arsm-card) 42%, transparent) 100%);
+  }
+
+  .dark .arsm-sidebar-bottom-sheen {
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-arsm-primary-dark) 3%, transparent) 100%);
+  }
+
+  .arsm-shell-ambient {
+    background:
+      radial-gradient(circle at 10% 8%, color-mix(in srgb, var(--color-arsm-accent-hover) 18%, transparent) 0%, transparent 34%),
+      radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--color-arsm-accent-tint) 22%, transparent) 0%, transparent 38%);
+  }
+
+  .dark .arsm-shell-ambient {
+    background:
+      radial-gradient(circle at 10% 8%, color-mix(in srgb, var(--color-arsm-accent-dark) 24%, transparent) 0%, transparent 36%),
+      radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--color-arsm-hover-dark) 34%, transparent) 0%, transparent 42%);
+  }
+
+  .arsm-mobile-overlay {
+    background: radial-gradient(
+      circle at 30% 20%,
+      color-mix(in srgb, var(--color-arsm-deepest) 36%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-deepest) 62%, transparent) 52%,
+      color-mix(in srgb, var(--color-arsm-surface-dark) 76%, transparent) 100%
+    );
+  }
+
+  .arsm-error-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-error-accent) 6%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-error-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-error-accent) 8%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-intake-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent) 20%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-intake-sheen {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent-dark) 20%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-intake-sheen-soft {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent) 18%, transparent) 0%, transparent 100%);
+  }
+
+  .dark .arsm-intake-sheen-soft {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent-dark) 18%, transparent) 0%, transparent 100%);
+  }
+
+  .arsm-loading-mobile-orb {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent) 36%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent) 12%, transparent) 56%,
+      transparent 100%
+    );
+  }
+
+  .dark .arsm-loading-mobile-orb {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 32%, transparent) 0%,
+      color-mix(in srgb, var(--color-arsm-accent-dark) 10%, transparent) 56%,
+      transparent 100%
+    );
+  }
+
+  .arsm-loading-logo-halo {
+    border: 1px solid color-mix(in srgb, var(--color-arsm-accent) 15%, transparent);
+    background-color: color-mix(in srgb, var(--color-arsm-accent) 10%, transparent);
   }
 }

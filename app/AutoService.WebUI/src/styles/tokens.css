@@ -22,6 +22,7 @@
 
   /* ── App shell — page background & card surfaces ─────────────────────────── */
   --color-arsm-surface:      #f2f0f8;  /* page background (light) */
+  --color-arsm-surface-soft: #f8f6ff;  /* page background top wash (light) */
   --color-arsm-surface-dark: #060914;  /* page background (dark)  */
   --color-arsm-card:         #ffffff;  /* card / panel (light)    */
   --color-arsm-card-dark:    #1a2033;  /* card / panel (dark)     */

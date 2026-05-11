@@ -1,0 +1,22 @@
+{
+  "name": "ARSM - Appointment and Resource Scheduling Management",
+  "short_name": "ARSM",
+  "description": "ARSM helps auto service teams schedule appointments, manage workload, and keep workshop operations organized.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/icon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/AppLogoFrameBlack.webp",
+      "sizes": "789x662",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}

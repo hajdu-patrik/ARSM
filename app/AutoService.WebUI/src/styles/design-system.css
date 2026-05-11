@@ -37,7 +37,7 @@
     font-size: 1.5rem;
     line-height: 2rem;
     font-weight: 700;
-    letter-spacing: -0.025em;
+    letter-spacing: 0;
     color: var(--color-arsm-primary);
   }
 
@@ -244,11 +244,11 @@
     inset-inline: 0;
     top: 0;
     height: 6rem;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 40%, transparent) 0%, transparent 100%);
   }
 
   .dark .arsm-coming-soon-sheen {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 8%, transparent) 0%, transparent 100%);
   }
 
   .arsm-coming-soon-icon-badge {
@@ -303,7 +303,7 @@
   .arsm-btn-primary,
   .arsm-btn-secondary,
   .arsm-btn-danger {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     padding: 0.5rem 0.875rem;
   }
 

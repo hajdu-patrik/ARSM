@@ -4,13 +4,13 @@
  */
 
 /** Standard full-width input field with light/dark focus states. */
-export const inputClass = 'w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2.5 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
+export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2.5 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
 
 /** Compact input variant with smaller padding, used in detail modal edit fields. */
 export const inputClassCompact = 'w-full rounded-lg border border-arsm-border bg-arsm-input px-2 py-1 text-sm text-arsm-primary outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Intake-oriented input variant used by scheduler intake controls. */
-export const intakeInputClass = 'w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
+export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Scheduler intake textarea variant. */
 export const intakeTextareaClass = `${intakeInputClass} resize-y`;
@@ -22,7 +22,7 @@ export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClas
 export const compactSelectClass = 'rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22';
 
 /** Wrapper used around intake field labels and controls. */
-export const intakeFieldWrapperClass = 'flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark';
+export const intakeFieldWrapperClass = 'flex min-w-0 flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark';
 
 /** Bold label text inside intake field wrappers. */
 export const intakeFieldLabelClass = 'font-medium';
@@ -60,7 +60,7 @@ export const schedulerMiniDangerActionButtonClass = 'group pointer-events-auto i
 /** Strong small danger action button variant used by scheduler card actions. */
 export const schedulerMiniDangerStrongActionButtonClass = 'group pointer-events-auto inline-flex max-w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-arsm-error-border/65 bg-arsm-error-bg px-3 py-1.5 text-xs font-semibold text-arsm-error-text transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg-dark/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-error-dark/65 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80';
 
-const togglePillBaseClass = 'rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50';
+const togglePillBaseClass = 'min-h-11 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50';
 const togglePillActiveClass = 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover';
 const togglePillInactiveClass = 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark';
 

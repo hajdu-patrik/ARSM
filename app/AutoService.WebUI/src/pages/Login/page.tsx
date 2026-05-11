@@ -18,7 +18,7 @@ type InvalidIdentifierReason = 'wrong_method_email' | 'wrong_method_phone' | 'fo
 
 const LoginComponent = memo(function Login() {
 	const navigate = useNavigate();
-	const { t } = useTranslation();
+	const { t: translate } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
 	const showErrorToast = useToastStore((state) => state.showError);
 
@@ -95,13 +95,13 @@ const LoginComponent = memo(function Login() {
 	}, []);
 
 	const identifierLabel = useMemo(
-		() => (loginMethod === 'email' ? t('login.email') : t('login.phone')),
-		[loginMethod, t],
+		() => (loginMethod === 'email' ? translate('login.email') : translate('login.phone')),
+		[loginMethod, translate],
 	);
 
 	const identifierPlaceholder = useMemo(
-		() => (loginMethod === 'email' ? t('login.emailPlaceholder') : t('login.phonePlaceholder')),
-		[loginMethod, t],
+		() => (loginMethod === 'email' ? translate('login.emailPlaceholder') : translate('login.phonePlaceholder')),
+		[loginMethod, translate],
 	);
 
 	const identifierInputType = loginMethod === 'email' ? 'email' : 'tel';
@@ -114,11 +114,11 @@ const LoginComponent = memo(function Login() {
 		<main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,_rgba(201,179,255,0.58)_0%,_rgba(201,179,255,0.26)_32%,_rgba(201,179,255,0.1)_48%,_rgba(201,179,255,0)_72%)] dark:bg-[radial-gradient(circle,_rgba(122,102,199,0.7)_0%,_rgba(122,102,199,0.34)_34%,_rgba(122,102,199,0.14)_50%,_rgba(122,102,199,0)_72%)]"
+				className="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"
 			/>
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0)_45%)] dark:bg-[linear-gradient(120deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_45%)]"
+				className="arsm-auth-sheen pointer-events-none absolute inset-0 z-0"
 			/>
 
 			<ThemeLanguageControls />
@@ -127,7 +127,7 @@ const LoginComponent = memo(function Login() {
 				<div className="relative overflow-hidden rounded-3xl border border-arsm-border bg-arsm-card/95 p-5 backdrop-blur-md dark:border-arsm-border-dark dark:bg-arsm-card-dark/95 max-[320px]:p-4 sm:p-8">
 					<div
 						aria-hidden="true"
-						className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0)_100%)]"
+						className="arsm-card-sheen pointer-events-none absolute inset-x-0 top-0 h-20"
 					/>
 
 					<div className="relative mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
@@ -143,10 +143,10 @@ const LoginComponent = memo(function Login() {
 								className="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24"
 							/>
 						</div>
-						<h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-arsm-primary dark:text-arsm-primary-dark sm:text-2xl">
-							{t('login.title')}
+						<h1 className="mt-2 text-balance text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-2xl">
+							{translate('login.title')}
 						</h1>
-						<p className="mt-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('login.subtitle')}</p>
+						<p className="mt-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">{translate('login.subtitle')}</p>
 					</div>
 
 					<form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5" noValidate>
@@ -173,7 +173,7 @@ const LoginComponent = memo(function Login() {
 
 						<div>
 							<label htmlFor="password" className={labelClass}>
-								{t('login.passwordPlaceholder')}
+								{translate('login.passwordPlaceholder')}
 							</label>
 							<div className="relative">
 								<input
@@ -184,7 +184,7 @@ const LoginComponent = memo(function Login() {
 									onChange={(event) => {
 										setPassword(event.target.value);
 									}}
-									placeholder={t('login.loginPassword')}
+									placeholder={translate('login.loginPassword')}
 									className={`${inputClass} pr-12`}
 									required
 									disabled={isLoading}
@@ -192,8 +192,8 @@ const LoginComponent = memo(function Login() {
 								<button
 									type="button"
 									onClick={() => setShowPassword((previousValue) => !previousValue)}
-									className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-arsm-accent-deep transition hover:bg-arsm-accent-subtle hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-accent dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark"
-									aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+									className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-arsm-accent-deep transition hover:bg-arsm-accent-subtle hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-accent dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark"
+									aria-label={showPassword ? translate('login.hidePassword') : translate('login.showPassword')}
 									disabled={isLoading}
 								>
 									{showPassword ? (
@@ -211,18 +211,18 @@ const LoginComponent = memo(function Login() {
 							className={`${buttonClass} mt-1.5 w-full sm:text-base`}
 							aria-busy={isLoading}
 						>
-							{isLoading ? t('login.loading') : t('login.submit')}
+							{isLoading ? translate('login.loading') : translate('login.submit')}
 						</button>
 
-						<fieldset className="pt-1.5" aria-label={t('login.loginMethodLabel')}>
+						<fieldset className="pt-1.5" aria-label={translate('login.loginMethodLabel')}>
 							<legend className="mb-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-								{t('login.loginMethodLabel')}
+								{translate('login.loginMethodLabel')}
 							</legend>
 							<div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-arsm-toggle-bg p-1.5 dark:bg-arsm-toggle-bg-dark">
 								<button
 									type="button"
 									onClick={() => handleLoginMethodChange('email')}
-									className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
+									className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
 										loginMethod === 'email'
 											? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
 											: 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
@@ -230,12 +230,12 @@ const LoginComponent = memo(function Login() {
 									aria-pressed={loginMethod === 'email'}
 									disabled={isLoading}
 								>
-									{t('login.loginWithEmail')}
+									{translate('login.loginWithEmail')}
 								</button>
 								<button
 									type="button"
 									onClick={() => handleLoginMethodChange('phone')}
-									className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
+									className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
 										loginMethod === 'phone'
 											? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
 											: 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
@@ -243,14 +243,14 @@ const LoginComponent = memo(function Login() {
 									aria-pressed={loginMethod === 'phone'}
 									disabled={isLoading}
 								>
-									{t('login.loginWithPhone')}
+									{translate('login.loginWithPhone')}
 								</button>
 							</div>
 						</fieldset>
 					</form>
 
 					<p className="mt-4 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:mt-5 sm:text-sm">
-						{t('login.helpText')}
+						{translate('login.helpText')}
 					</p>
 				</div>
 			</div>
