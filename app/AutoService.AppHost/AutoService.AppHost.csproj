@@ -1,11 +1,7 @@
 <Project Sdk="Aspire.AppHost.Sdk/13.2.4">
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoService.ApiService\AutoService.ApiService.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.4" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.4" />
   </ItemGroup>
 
@@ -17,7 +13,7 @@
     <UserSecretsId>251e678a-5d1f-4579-8d82-85175558b81a</UserSecretsId>
   </PropertyGroup>
 
-  <!-- Target to kill the running API service before building to avoid conflicts with the new build -->
+  <!-- Stop a stale AppHost process before build so output files are not locked. -->
   <Target Name="KillRunningAppHost" BeforeTargets="PreBuildEvent" Condition="'$(OS)' == 'Windows_NT'">
     <Exec Command="taskkill /F /IM AutoService.AppHost.exe 2&gt;nul" IgnoreExitCode="true" />
   </Target>
