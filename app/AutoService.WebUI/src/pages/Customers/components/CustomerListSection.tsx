@@ -21,6 +21,7 @@ import type { CustomerListItem, VehicleDetailDto } from '../../../types/customer
 import {
   compactActionButtonDangerClass,
   compactActionButtonNeutralClass,
+  controlRowClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -192,7 +193,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
             {isExpanded && (
               <div className="grid min-w-0 grid-cols-1 gap-4 border-t border-arsm-border bg-arsm-input/40 px-4 py-4 dark:border-arsm-border-dark dark:bg-arsm-input-dark/30 sm:px-5 lg:grid-cols-2">
                 <section className="min-w-0 space-y-3">
-                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                  <div className={`${controlRowClass} justify-between`}>
                     <h3 className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                       <CarFront className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t('customers.vehiclesTitle')}</span>
@@ -247,7 +248,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 </section>
 
                 <section className="min-w-0 space-y-3 border-t border-arsm-border/60 pt-4 dark:border-arsm-border-dark/60 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                  <div className={`${controlRowClass} justify-between`}>
                     <h3 className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
                       <Wrench className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t('customers.customerHistoryTitle')}</span>
@@ -256,7 +257,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className={`${compactActionButtonNeutralClass} min-h-11 shrink-0 w-full px-2 py-1 sm:w-auto`}
+                      className={`${compactActionButtonNeutralClass} w-full sm:w-auto`}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>

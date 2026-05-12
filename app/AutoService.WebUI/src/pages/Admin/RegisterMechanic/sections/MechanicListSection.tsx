@@ -8,7 +8,7 @@ import { useToastStore } from '../../../../store/toast.store';
 import { Modal } from '../../../../components/common/Modal';
 import type { MechanicListItem } from '../../../../services/admin/admin.service';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
-import { dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import { dangerButtonClass, iconDangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
 
 interface MechanicListSectionProps {
 	readonly refreshKey: number;
@@ -117,10 +117,10 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 				<p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
 			) : (
 				<div className="space-y-3">
-					{mechanics.map((mechanic) => {
+					{Array.from(new Map(mechanics.map((mechanic) => [mechanic.personId, mechanic])).values()).map((mechanic) => {
 						const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
 						const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
-						const displayName = [mechanic.lastName, mechanic.firstName, mechanic.middleName]
+						const displayName = [mechanic.firstName, mechanic.middleName, mechanic.lastName]
 							.filter(Boolean)
 							.join(' ');
 
@@ -133,20 +133,13 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 									mechanicId={mechanic.personId}
 									fullName={displayName}
 									hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-									sizeClassName="h-10 w-10 text-sm"
+									sizeClassName="h-9 w-9 text-xs"
 								/>
 
 								<div className="min-w-0 flex-1">
-									<div className="flex flex-wrap items-center gap-2">
-										<p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
-											{displayName}
-										</p>
-										{mechanic.isAdmin && (
-											<span className="inline-flex items-center gap-1 rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent">
-												Admin
-											</span>
-										)}
-									</div>
+									<p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+										{displayName}
+									</p>
 									<p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
 								</div>
 
@@ -155,9 +148,10 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 										type="button"
 										onClick={() => openDeleteModal(mechanic)}
 										title={t('admin.deleteMechanic')}
-										className="ml-auto flex-shrink-0 rounded-lg p-2 text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/35 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/35"
+										aria-label={t('admin.deleteMechanic')}
+										className={`ml-auto ${iconDangerButtonClass}`}
 									>
-										<Trash2 className="h-4 w-4" />
+										<Trash2 className="h-4 w-4" aria-hidden="true" />
 									</button>
 								)}
 							</div>

@@ -9,7 +9,7 @@
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { buttonClass, cardClass, inputClass, labelClass, sectionTitleClass } from '../constants';
+import { buttonClass, cardClass, inputClass, inputGroupContainerClass, labelClass, passwordToggleButtonClass, sectionTitleClass } from '../constants';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
@@ -66,7 +66,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           <label htmlFor="settings-currentPassword" className={labelClass}>
             {t('settings.currentPassword')}
           </label>
-          <div className="relative">
+          <div className={inputGroupContainerClass}>
             <input
               id="settings-currentPassword"
               type={showCurrent ? 'text' : 'password'}
@@ -84,7 +84,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
             <button
               type="button"
               onClick={toggleShowCurrent}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
+              className={passwordToggleButtonClass}
               aria-label={showCurrent ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showCurrent ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -96,7 +96,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           <label htmlFor="settings-newPassword" className={labelClass}>
             {t('settings.newPassword')}
           </label>
-          <div className="relative">
+          <div className={inputGroupContainerClass}>
             <input
               id="settings-newPassword"
               type={showNew ? 'text' : 'password'}
@@ -114,7 +114,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
             <button
               type="button"
               onClick={toggleShowNew}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
+              className={passwordToggleButtonClass}
               aria-label={showNew ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -127,7 +127,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           <label htmlFor="settings-confirmPassword" className={labelClass}>
             {t('settings.confirmNewPassword')}
           </label>
-          <div className="relative">
+          <div className={inputGroupContainerClass}>
             <input
               id="settings-confirmPassword"
               type={showConfirm ? 'text' : 'password'}
@@ -145,7 +145,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
             <button
               type="button"
               onClick={toggleShowConfirm}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-arsm-placeholder hover:text-arsm-label dark:text-arsm-placeholder-dark dark:hover:text-arsm-label-dark"
+              className={passwordToggleButtonClass}
               aria-label={showConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
             >
               {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

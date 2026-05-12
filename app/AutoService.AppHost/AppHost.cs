@@ -27,10 +27,10 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("PGGSSENCMODE", "disable");
 
 builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
-       .WithReference(apiService)
-       .WithEnvironment("VITE_API_URL", apiService.GetEndpoint("https"))
-       .WithHttpsEndpoint(port: webUiPort, env: "PORT")
-       .WithExternalHttpEndpoints();
+    .WithReference(apiService)
+    .WithEnvironment("VITE_API_URL", apiService.GetEndpoint("https"))
+    .WithHttpsEndpoint(targetPort: webUiPort, port: webUiPort, env: "PORT", isProxied: false)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
 

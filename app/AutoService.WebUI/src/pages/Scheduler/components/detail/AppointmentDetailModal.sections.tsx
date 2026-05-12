@@ -6,12 +6,14 @@ import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import {
   buttonClass,
-  compactSelectClass,
+  compactSelectFullClass,
   dangerButtonClass,
+  equalWidthControlGroupClass,
   inputClassCompact,
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
+  selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
@@ -44,11 +46,13 @@ interface AppointmentDetailBodyProps {
   readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly t: TFunction;
+  readonly currentMechanicId: number | undefined;
   readonly onEditField: (field: keyof EditFormState, value: string) => void;
   readonly onClaim: () => void;
   readonly onUnclaim: () => void;
   readonly onSelectNewMechanic: (value: string) => void;
   readonly onAdminAssign: () => void;
+  readonly onAdminUnassign: (mechanicId: number) => void;
 }
 
 /**
@@ -72,11 +76,13 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   isClosedForMechanicMutations,
   isUnclaiming,
   t,
+  currentMechanicId,
   onEditField,
   onClaim,
   onUnclaim,
   onSelectNewMechanic,
   onAdminAssign,
+  onAdminUnassign,
 }: AppointmentDetailBodyProps) {
   return (
     <div className="flex min-w-0 max-h-[62vh] flex-col gap-4 overflow-x-hidden overflow-y-auto pb-0.5 pr-1">
@@ -107,6 +113,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
           isUnclaiming={isUnclaiming}
           availableMechanics={availableMechanics}
           selectedNewMechanicId={selectedNewMechanicId}
+          currentMechanicId={currentMechanicId}
           canClaim={canClaim}
           canUnclaim={canUnclaim}
           t={t}
@@ -114,6 +121,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
           onUnclaim={onUnclaim}
           onSelectNewMechanic={onSelectNewMechanic}
           onAdminAssign={onAdminAssign}
+          onAdminUnassign={onAdminUnassign}
         />
       )}
     </div>
@@ -313,11 +321,13 @@ interface MechanicsSectionProps {
   readonly isUnclaiming: boolean;
   readonly availableMechanics: MechanicOption[];
   readonly selectedNewMechanicId: string;
+  readonly currentMechanicId: number | undefined;
   readonly t: TFunction;
   readonly onClaim: () => void;
   readonly onUnclaim: () => void;
   readonly onSelectNewMechanic: (value: string) => void;
   readonly onAdminAssign: () => void;
+  readonly onAdminUnassign: (mechanicId: number) => void;
 }
 
 /**
@@ -335,52 +345,48 @@ const MechanicsSection = memo(function MechanicsSection({
   isUnclaiming,
   availableMechanics,
   selectedNewMechanicId,
+  currentMechanicId,
   t,
   onClaim,
   onUnclaim,
   onSelectNewMechanic,
   onAdminAssign,
+  onAdminUnassign,
 }: MechanicsSectionProps) {
   const isMechanicMutationBusy = isClaiming || isAssigning || isUnclaiming;
-  const showMechanicAction = canClaim || canUnclaim;
-  let mechanicActionLabel = t('scheduler.detail.unassignMe');
-
-  if (canClaim) {
-    mechanicActionLabel = isClaiming ? '...' : t('scheduler.claim');
-  } else if (isUnclaiming) {
-    mechanicActionLabel = '...';
-  }
+  const uniqueMechanics = Array.from(new Map(appointment.mechanics.map((mechanic) => [mechanic.id, mechanic])).values());
+  const isCurrentUserAssigned = currentMechanicId !== undefined && uniqueMechanics.some((mechanic) => mechanic.id === currentMechanicId);
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
-          {t('scheduler.detail.mechanics')}
-        </h4>
-        {showMechanicAction && (
-          <button
-            type="button"
-            onClick={canClaim ? onClaim : onUnclaim}
-            disabled={isMechanicMutationBusy}
-            className={`${canClaim ? buttonClass : dangerButtonClass} w-full overflow-hidden whitespace-nowrap px-3 py-2 text-ellipsis text-xs sm:w-[9rem] sm:shrink-0`}
-          >
-            {mechanicActionLabel}
-          </button>
-        )}
-      </div>
+      <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
+        {t('scheduler.detail.mechanics')}
+      </h4>
 
-      {appointment.mechanics.length === 0 ? (
+      {uniqueMechanics.length === 0 ? (
         <p className="text-center text-sm italic text-arsm-muted dark:text-arsm-muted-dark">
           {t('scheduler.detail.noMechanics')}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {appointment.mechanics.map((mechanic) => (
-            <MechanicCard
-              key={mechanic.id}
-              mechanic={mechanic}
-            />
-          ))}
+          {uniqueMechanics.map((mechanic) => {
+            const isOwnRow = currentMechanicId !== undefined && mechanic.id === currentMechanicId;
+            const canRemove = isAdmin || (isOwnRow && canUnclaim);
+            const handleRemove = isAdmin
+              ? () => onAdminUnassign(mechanic.id)
+              : onUnclaim;
+            return (
+              <MechanicCard
+                key={mechanic.id}
+                mechanic={mechanic}
+                showAdminRemove={canRemove && !isClosedForMechanicMutations}
+                isCurrentUser={isOwnRow}
+                onRemove={handleRemove}
+                t={t}
+                isDisabled={isMechanicMutationBusy || uniqueMechanics.length <= 1}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -390,32 +396,34 @@ const MechanicsSection = memo(function MechanicsSection({
             <UserPlus className="h-3.5 w-3.5 shrink-0" />
             {t('scheduler.detail.addMechanic')}
           </h5>
-          <div className="flex min-w-0 flex-col gap-2 overflow-hidden sm:flex-row sm:items-center">
-            <select
-              value={selectedNewMechanicId}
-              onChange={(event) => onSelectNewMechanic(event.target.value)}
-              disabled={isMechanicMutationBusy}
-              aria-label={t('scheduler.detail.selectMechanic')}
-              className={`${compactSelectClass} min-h-11 w-full min-w-0 max-w-full truncate sm:flex-1`}
-            >
-              <option value="" disabled hidden>
-                {t('scheduler.detail.selectMechanic')}
-              </option>
-              {availableMechanics.map((mechanic) => {
-                return (
-                  <option key={mechanic.personId} value={mechanic.personId}>
-                    {getMechanicOptionDisplayName(mechanic)}
-                  </option>
-                );
-              })}
-            </select>
+          <div className={equalWidthControlGroupClass}>
+            <div className={selectWrapperClass}>
+              <select
+                value={selectedNewMechanicId}
+                onChange={(event) => onSelectNewMechanic(event.target.value)}
+                disabled={isMechanicMutationBusy}
+                aria-label={t('scheduler.detail.selectMechanic')}
+                className={`${compactSelectFullClass} h-10 min-h-0 px-3 py-2 text-sm`}
+              >
+                <option value="" disabled hidden>
+                  {t('scheduler.detail.selectMechanic')}
+                </option>
+                {availableMechanics.map((mechanic) => {
+                  return (
+                    <option key={mechanic.personId} value={mechanic.personId}>
+                      {getMechanicOptionDisplayName(mechanic)}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
             <button
               type="button"
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className={`${buttonClass} w-full shrink-0 overflow-hidden whitespace-nowrap px-3 py-2 text-ellipsis text-xs sm:w-[8rem]`}
+              className={`${buttonClass} h-10 min-h-0 px-3 py-2 text-sm`}
             >
-              {isAssigning ? '...' : t('scheduler.detail.addMechanic')}
+              <span className="truncate">{isAssigning ? '...' : t('scheduler.detail.addMechanic')}</span>
             </button>
           </div>
         </div>
@@ -426,10 +434,20 @@ const MechanicsSection = memo(function MechanicsSection({
 
 interface MechanicCardProps {
   readonly mechanic: AppointmentDto['mechanics'][number];
+  readonly showAdminRemove: boolean;
+  readonly isCurrentUser: boolean;
+  readonly isDisabled: boolean;
+  readonly onRemove: () => void;
+  readonly t: TFunction;
 }
 
 const MechanicCard = memo(function MechanicCard({
   mechanic,
+  showAdminRemove,
+  isCurrentUser,
+  isDisabled,
+  onRemove,
+  t,
 }: MechanicCardProps) {
   return (
     <div className={`${schedulerDetailRowClass} min-w-0 overflow-hidden`}>
@@ -451,6 +469,17 @@ const MechanicCard = memo(function MechanicCard({
             </span>
           </div>
         </div>
+
+        {showAdminRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={isDisabled}
+            className={`${dangerButtonClass} h-9 min-h-0 w-auto shrink-0 rounded-lg px-2.5 py-1 text-xs`}
+          >
+            {t(isCurrentUser ? 'scheduler.detail.unassignMe' : 'scheduler.detail.unassignOther')}
+          </button>
+        )}
       </div>
     </div>
   );

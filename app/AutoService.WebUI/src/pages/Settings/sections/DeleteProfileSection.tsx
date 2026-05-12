@@ -4,6 +4,7 @@
  */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dangerButtonClass } from '../constants';
 
 interface DeleteProfileSectionProps {
 	readonly onDeleteRequest: () => void;
@@ -29,7 +30,7 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 			<button
 				type="button"
 				onClick={onDeleteRequest}
-				className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-arsm-error-border bg-transparent px-5 py-2.5 text-sm font-semibold text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark"
+				className={`mt-4 ${dangerButtonClass}`}
 			>
 				{translate('settings.deleteProfileButton')}
 			</button>

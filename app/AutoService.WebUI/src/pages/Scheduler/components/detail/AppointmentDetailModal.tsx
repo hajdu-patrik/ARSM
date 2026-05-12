@@ -32,6 +32,7 @@ interface AppointmentDetailModalProps {
   readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
+  readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onUpdate: (
     id: number,
     request: UpdateAppointmentRequest,
@@ -49,6 +50,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   onStatusChange,
   onUnclaim,
   onAdminAssign,
+  onAdminUnassign,
   onUpdate,
 }: AppointmentDetailModalProps) {
   const { t, i18n } = useTranslation();
@@ -146,6 +148,19 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     }
   }, [appointment, onAdminAssign, selectedNewMechanicId]);
 
+  const handleAdminUnassign = useCallback(async (mechanicId: number) => {
+    if (!appointment) {
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      await onAdminUnassign(appointment.id, mechanicId);
+    } finally {
+      setIsAssigning(false);
+    }
+  }, [appointment, onAdminUnassign]);
+
   const handleEditField = useCallback((field: keyof EditFormState, value: string) => {
     setEditForm((previous) => {
       if (!previous) {
@@ -193,7 +208,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   const showEdit = isAdmin || isAssigned;
   const canClaim = !isAdmin && !isAssigned && isInProgress;
-  const canUnclaim = !isAdmin && isAssigned && isInProgress && appointment.mechanics.length > 1;
+  const canUnclaim = isAssigned && isInProgress && appointment.mechanics.length > 1;
   const canChangeStatus = isAdmin || isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
@@ -271,6 +286,10 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           onAdminAssign={() => {
             void handleAdminAssign();
           }}
+          onAdminUnassign={(mechanicId) => {
+            void handleAdminUnassign(mechanicId);
+          }}
+          currentMechanicId={currentMechanicId}
         />
       </Modal>
 

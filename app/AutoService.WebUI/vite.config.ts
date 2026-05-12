@@ -38,6 +38,8 @@ export default defineConfig(({ mode, command }) => {
   return {
     ...config,
     server: {
+      https: {},
+      host: true,
       port: parsedPort,
       strictPort: true,
     },

@@ -107,6 +107,54 @@
     gap: 0.5rem;
   }
 
+  .arsm-control-row,
+  .arsm-button-group,
+  .arsm-modal-footer {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arsm-control-row {
+    justify-content: flex-start;
+  }
+
+  .arsm-button-group,
+  .arsm-modal-footer {
+    justify-content: flex-end;
+  }
+
+  .arsm-control-panel {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .arsm-equal-control-group {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arsm-equal-control-group > * {
+    min-width: min(100%, 9rem);
+    max-width: 100%;
+    flex: 1 1 9rem;
+  }
+
+  .arsm-modal-footer > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .arsm-btn-primary,
   .arsm-btn-secondary,
   .arsm-btn-danger {
@@ -121,13 +169,36 @@
     transition: all 200ms ease;
     border: 1px solid transparent;
     min-height: 2.75rem;
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1.5rem;
   }
 
   .arsm-btn-primary:focus-visible,
   .arsm-btn-secondary:focus-visible,
   .arsm-btn-danger:focus-visible {
     outline: none;
+  }
+
+  select:focus,
+  select:focus-visible {
+    border-color: var(--color-arsm-border) !important;
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-border) 70%, transparent);
+    outline-offset: 1px;
+  }
+
+  .dark select:focus,
+  .dark select:focus-visible {
+    border-color: var(--color-arsm-border-dark) !important;
+    outline: 2px solid color-mix(in srgb, var(--color-arsm-border-dark) 70%, transparent);
+  }
+
+  select option:checked {
+    background-color: var(--color-arsm-toggle-bg);
+    color: var(--color-arsm-primary);
+  }
+
+  .dark select option:checked {
+    background-color: var(--color-arsm-toggle-bg-dark);
+    color: var(--color-arsm-primary-dark);
   }
 
   .arsm-btn-primary {
@@ -284,7 +355,11 @@
 }
 
 @media (max-width: 350px) {
-  .arsm-action-cluster > * {
+  .arsm-action-cluster > *,
+  .arsm-control-row > *,
+  .arsm-button-group > *,
+  .arsm-modal-footer > *,
+  .arsm-equal-control-group > * {
     width: 100%;
     flex-basis: 100%;
   }
@@ -304,7 +379,7 @@
   .arsm-btn-secondary,
   .arsm-btn-danger {
     min-height: 2.75rem;
-    padding: 0.5rem 0.875rem;
+    padding: 0.625rem 1rem;
   }
 
   .arsm-coming-soon-card {
@@ -320,5 +395,14 @@
 
   .arsm-card-surface {
     padding: 1.5rem;
+  }
+
+  .arsm-btn-primary,
+  .arsm-btn-secondary,
+  .arsm-btn-danger {
+    min-height: 2.75rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 }

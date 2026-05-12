@@ -99,7 +99,7 @@ export const huFeature = {
   admin: {
     pageTitle: 'Szerelők kezelése',
     registerMechanic: 'Szerelő regisztrálása',
-    mechanicList: 'Regisztrált szerelők',
+    mechanicList: 'Kijelölt szerelők',
     noMechanics: 'Még nincs regisztrált szerelő.',
     deleteMechanic: 'Szerelő törlése',
     deleteMechanicModalTitle: 'Szerelő törlésének megerősítése',

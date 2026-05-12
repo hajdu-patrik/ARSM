@@ -6,7 +6,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { inputClass, labelClass } from '../constants';
+import { inputClass, inputGroupContainerClass, labelClass, passwordToggleButtonClass } from '../constants';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {
@@ -42,14 +42,14 @@ const SecuritySectionComponent = memo(function SecuritySection({
         <label htmlFor="reg-password" className={labelClass}>
           {t('admin.password')} *
         </label>
-        <div className="relative">
+        <div className={inputGroupContainerClass}>
           <input
             id="reg-password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
             placeholder={t('admin.passwordPlaceholder')}
-            className={inputClass}
+            className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
             minLength={8}
@@ -59,7 +59,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
           <button
             type="button"
             onClick={onToggleShowPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-arsm-accent-vivid transition hover:bg-arsm-accent-wash hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:bg-arsm-deep dark:hover:text-arsm-accent-tint"
+            className={passwordToggleButtonClass}
             aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
           >
             {showPassword ? (
@@ -76,14 +76,14 @@ const SecuritySectionComponent = memo(function SecuritySection({
         <label htmlFor="reg-confirm-password" className={labelClass}>
           {t('admin.confirmPassword')} *
         </label>
-        <div className="relative">
+        <div className={inputGroupContainerClass}>
           <input
             id="reg-confirm-password"
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(event) => onConfirmPasswordChange(event.target.value)}
             placeholder={t('admin.confirmPasswordPlaceholder')}
-            className={inputClass}
+            className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
             minLength={8}
@@ -93,7 +93,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
           <button
             type="button"
             onClick={onToggleShowConfirmPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-arsm-accent-vivid transition hover:bg-arsm-accent-wash hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:bg-arsm-deep dark:hover:text-arsm-accent-tint"
+            className={passwordToggleButtonClass}
             aria-label={showConfirmPassword ? t('login.hidePassword') : t('login.showPassword')}
           >
             {showConfirmPassword ? (

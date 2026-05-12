@@ -12,6 +12,7 @@ import {
 	compactActionButtonAccentClass,
 	compactActionButtonDangerClass,
 	compactActionButtonNeutralClass,
+	controlRowClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { RepairHistoryList } from './RepairHistoryList';
@@ -87,7 +88,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onToggleVehicleHistory(customerId, vehicle.id)}
-					className={`${compactActionButtonAccentClass} mt-1 w-full sm:w-auto`}
+					className={`${compactActionButtonAccentClass} w-full sm:w-auto`}
 				>
 					<Wrench className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{isVehicleHistoryOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory')}</span>
@@ -102,7 +103,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							<button
 								type="button"
 								onClick={() => onToggleVehicleHistorySort(vehicle.id)}
-								className={`${compactActionButtonNeutralClass} w-full px-2 py-1 sm:w-auto`}
+								className={`${compactActionButtonNeutralClass} w-full sm:w-auto`}
 							>
 								<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
 								<span className="truncate">{vehicleHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -125,7 +126,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				)}
 			</div>
 
-			<div className="flex min-w-0 flex-wrap items-center gap-2 pt-1">
+			<div className={`${controlRowClass} pt-1`}>
 				<button
 					type="button"
 					onClick={() => onOpenEditVehicleModal(customerId, vehicle)}
@@ -138,7 +139,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onOpenDeleteVehicleModal(customerId, vehicle)}
-					className={`${compactActionButtonDangerClass} w-full px-2 py-1 sm:w-auto`}
+					className={`${compactActionButtonDangerClass} w-full sm:w-auto`}
 				>
 					<Trash2 className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{t('customers.deleteVehicle')}</span>

@@ -99,7 +99,7 @@ export const enFeature = {
   admin: {
     pageTitle: 'Mechanic Management',
     registerMechanic: 'Register Mechanic',
-    mechanicList: 'Registered Mechanics',
+    mechanicList: 'Selected Mechanics',
     noMechanics: 'No mechanics registered yet.',
     deleteMechanic: 'Delete mechanic',
     deleteMechanicModalTitle: 'Confirm mechanic deletion',

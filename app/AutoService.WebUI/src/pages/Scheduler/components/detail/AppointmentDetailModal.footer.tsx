@@ -6,7 +6,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import { buttonClass, compactSelectFullClass, equalWidthControlGroupClass, secondaryButtonClass, selectWrapperClass } from '../../../../utils/formStyles';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
@@ -49,13 +49,13 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   }
 
   return (
-    <div className="flex min-w-0 w-full flex-wrap items-center gap-2">
+    <div className={`${equalWidthControlGroupClass} w-full`}>
       {showEdit && !isEditing && (
         <button
           type="button"
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className={`${buttonClass} w-full px-4 py-2.5 sm:w-auto sm:min-w-[10rem]`}
+          className={`${buttonClass} h-10 min-h-0 px-3 py-2 text-sm`}
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -68,7 +68,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             data-testid="appointment-detail-save"
             onClick={onSave}
             disabled={isSaving}
-            className={`${buttonClass} px-3.5 py-2`}
+            className={buttonClass}
           >
             {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
           </button>
@@ -76,7 +76,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             type="button"
             onClick={onCancelEdit}
             disabled={isSaving}
-            className={`${secondaryButtonClass} px-3.5 py-2`}
+            className={secondaryButtonClass}
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -84,7 +84,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
       )}
 
       {canChangeStatus && !isEditing && (
-        <div className="min-w-0 flex-1 overflow-hidden">
+        <div className={selectWrapperClass}>
           <select
             value={appointment.status}
             onChange={(event) => {
@@ -95,7 +95,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             }}
             disabled={isUpdating}
             aria-label={t('scheduler.changeStatus')}
-            className="min-h-11 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/22"
+            className={`${compactSelectFullClass} h-10 min-h-0 px-3 py-2 text-sm`}
           >
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>

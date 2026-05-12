@@ -6,6 +6,7 @@
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { controlPanelFooterClass } from '../../utils/formStyles';
 import { ModalCloseButton } from './ModalCloseButton';
 
 interface ModalProps {
@@ -82,7 +83,7 @@ const ModalComponent = memo(function Modal({
         </div>
 
         <div>{children}</div>
-        {footer && <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div>}
+        {footer && <div className={`mt-5 ${controlPanelFooterClass}`}>{footer}</div>}
       </NativeDialog>
     </div>,
     document.body,

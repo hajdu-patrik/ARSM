@@ -29,6 +29,20 @@ Authority: This file is the **authoritative Copilot UI/UX policy**. Claude equiv
 - Primitive-first order is mandatory: reuse existing primitive -> extend existing primitive -> create new primitive as last resort.
 - New primitives must stay semantic-token-only and provide light/dark parity.
 
+## Control Consistency Contract
+
+- Button-like actions (primary, secondary, danger, utility, modal footer actions) must use one shared corner-radius scale and one shared size scale across Scheduler, Admin, Customer, Settings, and popup surfaces.
+- Do not ship page-local button radius or spacing variants when an equivalent shared primitive exists in `src/styles/design-system.css` or `src/utils/formStyles.ts`.
+- Controls in the same logical row, toolbar, modal footer, or section must use shared grouping wrappers from `src/utils/formStyles.ts`; do not hand-roll local flex, width, radius, and padding bundles for repeated patterns.
+- Contextual equality is required: controls in the same group share height, radius, focus treatment, and a local width strategy based on the longest visible label in that group.
+- Standalone actions stay content-fit with comfortable padding, `max-width`, and truncation fallback; do not stretch standalone buttons unless the narrow-width fallback requires it.
+- Search, password visibility, and clear overlay controls must use shared input-group/icon-button primitives so text padding and 44px targets stay aligned.
+- Checkbox/tile selections, segmented controls, compact icon buttons, and modal footer actions must be added through shared primitives before feature components consume them.
+- Dropdown/select controls must not show browser-default blue rectangle highlight effects; use tokenized neutral focus treatment while keeping a visible keyboard focus indicator.
+- Dropdown/select controls must be wrapped in bounded select wrappers and use `w-full max-w-full min-w-0 truncate`; local fixed widths are allowed only when documenting a local longest-label group.
+- Input and placeholder treatment must remain consistent across Scheduler, Admin, Customer, Settings, Login, and popup forms; do not introduce one-off placeholder color, padding, or focus styles.
+- Any new action variant must be introduced by extending shared primitives first, then consumed by feature components.
+
 ## Interaction Clarity and Choice Control
 
 - Prefer recognition over recall: keep critical actions and state summaries visible; do not hide essential actions behind unlabeled icons.
@@ -41,6 +55,7 @@ Authority: This file is the **authoritative Copilot UI/UX policy**. Claude equiv
 ## Responsive Layout Contract (320px+)
 
 - Treat 320px viewport width as a required supported width.
+- For visual refactors, also spot-check 302px as a stricter implementation tolerance while preserving 320px as the official support floor.
 - Build mobile-first: base styles target narrow widths first, then enhance with `sm`/`md`/`lg` breakpoints.
 - Dynamic text inside flex/grid rows must use the containment trio: parent `min-w-0`, text `truncate` or line clamp, fixed actions/icons `shrink-0`.
 - Selects and dropdown filters must be inside `min-w-0 overflow-hidden` containers and use `w-full max-w-full min-w-0 truncate`.
@@ -140,6 +155,7 @@ After every UI-facing change by the `Frontend Specialist`:
 - [ ] Forms collapse to single-column layout at narrow widths; side-by-side controls only appear when they remain readable and tappable at 320px.
 - [ ] Calendar, status-indicator, and tag rows use bounded containers (`max-w-full overflow-hidden`).
 - [ ] All new interactive targets are at minimum 44×44px.
+- [ ] Visual refactor changes have a 302px spot-check note for grouped controls, modal footers, selects, and input overlay actions.
 
 Reporting format: for each changed component, state which rules were verified and pass/fail. Any failure blocks the iteration and must be remediated before this agent signs off.
 

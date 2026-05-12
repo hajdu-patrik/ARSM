@@ -46,9 +46,9 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${buttonClass} w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs sm:w-[14rem] sm:shrink-0 sm:text-xs`}
+					className={`${buttonClass} h-8 min-h-0 w-auto min-w-0 max-w-full self-start rounded-lg px-2 py-1 text-[11px] max-[350px]:w-full sm:shrink-0`}
 				>
-					{t('scheduler.intake.open')}
+					<span className="truncate">{t('scheduler.intake.open')}</span>
 				</button>
 			</div>
 		</section>

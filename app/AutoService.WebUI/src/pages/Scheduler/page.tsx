@@ -74,6 +74,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     handleStatusChange,
     handleUnclaim,
     handleAdminAssign,
+    handleAdminUnassign,
     handleCreateIntake,
     handleUpdateAppointment,
   } = useSchedulerActions({
@@ -193,6 +194,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         onStatusChange={handleStatusChange}
         onUnclaim={handleUnclaim}
         onAdminAssign={handleAdminAssign}
+        onAdminUnassign={handleAdminUnassign}
         onUpdate={handleUpdateAppointment}
       />
 

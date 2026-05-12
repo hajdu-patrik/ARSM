@@ -11,7 +11,15 @@ import { authService } from '../../services/auth/auth.service';
 import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
-import { buttonClass, inputClass, labelClass } from '../../utils/formStyles';
+import {
+	buttonClass,
+	getSegmentedControlOptionClass,
+	inputClass,
+	inputGroupContainerClass,
+	labelClass,
+	passwordToggleButtonClass,
+	segmentedControlClass,
+} from '../../utils/formStyles';
 import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
 
 type InvalidIdentifierReason = 'wrong_method_email' | 'wrong_method_phone' | 'format';
@@ -175,7 +183,7 @@ const LoginComponent = memo(function Login() {
 							<label htmlFor="password" className={labelClass}>
 								{translate('login.passwordPlaceholder')}
 							</label>
-							<div className="relative">
+							<div className={inputGroupContainerClass}>
 								<input
 									id="password"
 									type={showPassword ? 'text' : 'password'}
@@ -192,7 +200,7 @@ const LoginComponent = memo(function Login() {
 								<button
 									type="button"
 									onClick={() => setShowPassword((previousValue) => !previousValue)}
-									className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-arsm-accent-deep transition hover:bg-arsm-accent-subtle hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-accent dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark"
+									className={passwordToggleButtonClass}
 									aria-label={showPassword ? translate('login.hidePassword') : translate('login.showPassword')}
 									disabled={isLoading}
 								>
@@ -218,15 +226,11 @@ const LoginComponent = memo(function Login() {
 							<legend className="mb-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
 								{translate('login.loginMethodLabel')}
 							</legend>
-							<div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-arsm-toggle-bg p-1.5 dark:bg-arsm-toggle-bg-dark">
+							<div className={segmentedControlClass}>
 								<button
 									type="button"
 									onClick={() => handleLoginMethodChange('email')}
-									className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
-										loginMethod === 'email'
-											? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
-											: 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
-									}`}
+									className={getSegmentedControlOptionClass(loginMethod === 'email')}
 									aria-pressed={loginMethod === 'email'}
 									disabled={isLoading}
 								>
@@ -235,11 +239,7 @@ const LoginComponent = memo(function Login() {
 								<button
 									type="button"
 									onClick={() => handleLoginMethodChange('phone')}
-									className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 ${
-										loginMethod === 'phone'
-											? 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover'
-											: 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark'
-									}`}
+									className={getSegmentedControlOptionClass(loginMethod === 'phone')}
 									aria-pressed={loginMethod === 'phone'}
 									disabled={isLoading}
 								>

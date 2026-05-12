@@ -4,6 +4,8 @@ import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
 	buttonClass,
+	controlRowClass,
+	formFieldGridClass,
 	getTogglePillClass,
 	insetSurfaceClass,
 	intakeDateTimeInputClass,
@@ -11,6 +13,7 @@ import {
 	intakeFieldWrapperClass,
 	intakeInputClass,
 	intakeTextareaClass,
+	selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
@@ -39,7 +42,7 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 				<span className="relative ml-1">{selectedDayLabel}</span>
 			</div>
 
-			<div className="grid grid-cols-1 gap-3">
+			<div className="grid min-w-0 grid-cols-1 gap-3">
 				<label className={intakeFieldWrapperClass}>
 					<span className={intakeFieldLabelClass}>{translate('scheduler.intake.dueDateTime')}</span>
 					<input
@@ -109,10 +112,10 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 					data-testid="scheduler-intake-search"
 					onClick={onLookup}
 					disabled={isSearching}
-					className={buttonClass}
+					className={`${buttonClass} max-[350px]:w-full sm:shrink-0`}
 				>
 					<Search className="h-4 w-4 shrink-0" />
-					{isSearching ? translate('scheduler.intake.searching') : translate('scheduler.intake.search')}
+					<span className="truncate">{isSearching ? translate('scheduler.intake.searching') : translate('scheduler.intake.search')}</span>
 				</button>
 			</div>
 
@@ -166,8 +169,8 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
 	onCustomerPhoneChange,
 }: SchedulerIntakeCustomerFormProps) {
 	return (
-		<div className={`${insetSurfaceClass} grid grid-cols-1 gap-3 p-3.5 lg:grid-cols-2`}>
-			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">
+		<div className={`${insetSurfaceClass} ${formFieldGridClass} p-3.5`}>
+			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark sm:col-span-2">
 				{translate('scheduler.intake.personalInformation')}
 			</p>
 
@@ -241,7 +244,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
 				</p>
 			)}
 
-			<div className="flex flex-wrap gap-2">
+			<div className={controlRowClass}>
 				<button
 					type="button"
 					onClick={() => onVehicleModeChange('existing')}
@@ -260,23 +263,25 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
 			</div>
 
 			{vehicleMode === 'existing' && (
-				<label className={`${intakeFieldWrapperClass} overflow-hidden`}>
+				<label className={intakeFieldWrapperClass}>
 					<span className={intakeFieldLabelClass}>{translate('scheduler.intake.selectVehicle')}</span>
-					<select
-						data-testid="scheduler-intake-existing-vehicle"
-						value={existingVehicleId}
-						onChange={(event) => onExistingVehicleIdChange(event.target.value)}
-						className={`${intakeInputClass} truncate`}
-					>
-						<option value="" disabled hidden>
-							{translate('scheduler.intake.selectVehiclePlaceholder')}
-						</option>
-						{customerLookup?.vehicles.map((vehicleItem) => (
-							<option key={vehicleItem.id} value={vehicleItem.id}>
-								{vehicleItem.licensePlate} - {vehicleItem.brand} {vehicleItem.model} ({vehicleItem.year})
+					<div className={selectWrapperClass}>
+						<select
+							data-testid="scheduler-intake-existing-vehicle"
+							value={existingVehicleId}
+							onChange={(event) => onExistingVehicleIdChange(event.target.value)}
+							className={`${intakeInputClass} truncate`}
+						>
+							<option value="" disabled hidden>
+								{translate('scheduler.intake.selectVehiclePlaceholder')}
 							</option>
-						))}
-					</select>
+							{customerLookup?.vehicles.map((vehicleItem) => (
+								<option key={vehicleItem.id} value={vehicleItem.id}>
+									{vehicleItem.licensePlate} - {vehicleItem.brand} {vehicleItem.model} ({vehicleItem.year})
+								</option>
+							))}
+						</select>
+					</div>
 				</label>
 			)}
 		</div>
@@ -295,8 +300,8 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 	onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
 	return (
-		<div className={`${insetSurfaceClass} grid grid-cols-1 gap-3 p-3.5 lg:grid-cols-2`}>
-			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark lg:col-span-2">
+		<div className={`${insetSurfaceClass} ${formFieldGridClass} p-3.5`}>
+			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark sm:col-span-2">
 				{translate('scheduler.intake.vehicleDetails')}
 			</p>
 

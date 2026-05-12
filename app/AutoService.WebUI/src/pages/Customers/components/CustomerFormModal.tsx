@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Modal } from '../../../components/common/Modal';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
-import { buttonClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { buttonClass, formFieldGridClass, formFieldGroupClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
 
 type CustomerModalMode = 'create' | 'edit';
 
@@ -63,8 +63,8 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
       )}
     >
       <form id="customers-customer-form" onSubmit={onSubmit} className="space-y-3" noValidate>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
+        <div className={`${formFieldGridClass} lg:grid-cols-3`}>
+          <div className={formFieldGroupClass}>
             <label htmlFor="customer-first-name" className={labelClass}>{t('customers.firstName')}</label>
             <input
               id="customer-first-name"
@@ -77,7 +77,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="customer-middle-name" className={labelClass}>{t('customers.middleName')}</label>
             <input
               id="customer-middle-name"
@@ -90,7 +90,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="customer-last-name" className={labelClass}>{t('customers.lastName')}</label>
             <input
               id="customer-last-name"
@@ -104,7 +104,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
           </div>
         </div>
 
-        <div>
+        <div className={formFieldGroupClass}>
           <label htmlFor="customer-email" className={labelClass}>{t('customers.email')}</label>
           <input
             id="customer-email"
@@ -117,7 +117,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
           />
         </div>
 
-        <div>
+        <div className={formFieldGroupClass}>
           <label htmlFor="customer-phone" className={labelClass}>{t('customers.phoneNumber')}</label>
           <input
             id="customer-phone"

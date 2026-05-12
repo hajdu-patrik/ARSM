@@ -9,6 +9,7 @@ export {
 	cardClass,
 	dangerButtonClass,
 	inputClass,
+	inputGroupContainerClass,
 	labelClass,
 	pageHeaderClass,
 	pageShellClass,
@@ -17,6 +18,7 @@ export {
 	pageTitleClass,
 	readonlyInputClass,
 	secondaryButtonClass,
+	passwordToggleButtonClass,
 	sectionStackClass,
 	sectionTitleClass,
 } from '../../utils/formStyles';

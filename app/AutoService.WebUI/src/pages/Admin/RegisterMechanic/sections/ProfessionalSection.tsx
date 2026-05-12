@@ -8,7 +8,20 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
-import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS, inputClass, labelClass } from '../constants';
+import {
+  EXPERTISE_OPTIONS,
+  SPECIALIZATION_OPTIONS,
+  compactSelectFullClass,
+  hiddenCheckboxClass,
+  labelClass,
+  optionTileActiveClass,
+  optionTileBaseClass,
+  optionTileCheckboxActiveClass,
+  optionTileCheckboxClass,
+  optionTileCheckboxInactiveClass,
+  optionTileInactiveClass,
+  selectWrapperClass,
+} from '../constants';
 
 /** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {
@@ -34,62 +47,60 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
         <label htmlFor="specialization" className={labelClass}>
           {t('admin.specialization')} *
         </label>
-        <select
-          id="specialization"
-          value={specialization}
-          onChange={(e) => onSpecializationChange(e.target.value)}
-          className={inputClass}
-          disabled={isSubmitting}
-          required
-        >
-          <option value="" disabled>
-            {t('admin.selectSpecialization')}
-          </option>
-          {SPECIALIZATION_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {t(opt.labelKey)}
+        <div className={selectWrapperClass}>
+          <select
+            id="specialization"
+            value={specialization}
+            onChange={(event) => onSpecializationChange(event.target.value)}
+            className={`${compactSelectFullClass} h-10 min-h-0 px-3 py-2 text-sm`}
+            disabled={isSubmitting}
+            required
+          >
+            <option value="" disabled>
+              {t('admin.selectSpecialization')}
             </option>
-          ))}
-        </select>
+            {SPECIALIZATION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {t(opt.labelKey)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>
         <p className={labelClass}>
           {t('admin.expertiseLabel')} * <span className="text-xs font-normal">({t('admin.expertiseHint')})</span>
         </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {EXPERTISE_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`relative flex cursor-pointer items-start gap-2 overflow-hidden rounded-lg border px-3 py-2 text-sm transition ${
-                expertise.includes(opt.value)
-                  ? 'border-arsm-accent bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover'
-                  : 'border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-label-dark dark:hover:bg-arsm-input-dark'
-              } ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
-            >
-              <input
-                type="checkbox"
-                checked={expertise.includes(opt.value)}
-                onChange={() => onToggleExpertise(opt.value)}
-                disabled={isSubmitting}
-                className="absolute opacity-0 pointer-events-none"
-              />
-              <span
-                className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
-                  expertise.includes(opt.value)
-                    ? 'border-arsm-accent bg-arsm-accent dark:border-arsm-accent-dark dark:bg-arsm-accent-dark'
-                    : 'border-arsm-border dark:border-arsm-border-dark'
-                }`}
+        <div className="flex min-w-0 flex-wrap gap-2">
+          {EXPERTISE_OPTIONS.map((opt) => {
+            const isSelected = expertise.includes(opt.value);
+
+            return (
+              <label
+                key={opt.value}
+                className={`${optionTileBaseClass} ${isSelected ? optionTileActiveClass : optionTileInactiveClass} ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
               >
-                {expertise.includes(opt.value) && (
-                  <Check className="h-3 w-3 text-arsm-primary dark:text-arsm-hover" strokeWidth={3} />
-                )}
-              </span>
-              <span className="min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">
-                {t(opt.labelKey)}
-              </span>
-            </label>
-          ))}
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleExpertise(opt.value)}
+                  disabled={isSubmitting}
+                  className={hiddenCheckboxClass}
+                />
+                <span
+                  className={`${optionTileCheckboxClass} ${isSelected ? optionTileCheckboxActiveClass : optionTileCheckboxInactiveClass}`}
+                >
+                  {isSelected && (
+                    <Check className="h-3 w-3 text-arsm-primary dark:text-arsm-hover" strokeWidth={3} />
+                  )}
+                </span>
+                <span className="min-w-0 whitespace-nowrap leading-tight">
+                  {t(opt.labelKey)}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
     </>

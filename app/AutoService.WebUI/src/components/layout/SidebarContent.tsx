@@ -60,7 +60,7 @@ const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', 
 const TEXT_TRANSITION = 'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
 const NAV_LINK_BASE_CLASS = 'group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium transition-all duration-200';
 const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover';
-const NAV_LINK_IDLE_CLASS = 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark';
+const NAV_LINK_IDLE_CLASS = 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px active:translate-y-0 dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark';
 
 /** Keeps scheduler aliases highlighted with the scheduler nav item. */
 function isSidebarNavItemActive(item: NavItem, pathname: string, isActiveRoute: boolean): boolean {
@@ -163,7 +163,7 @@ const SidebarContentComponent = memo(function SidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="arsm-sidebar-top-sheen flex h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
+      <div className="arsm-sidebar-top-sheen flex min-w-0 h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
         <span className={sidebarIconSlotClass}>
           <img src={logoSrc} alt="AutoService" className="h-8 w-8 select-none object-contain pointer-events-none" />
         </span>
@@ -178,7 +178,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           onClick={onToggleCollapse}
           title={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
           aria-label={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
-          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label transition-colors duration-200 hover:border-arsm-border hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
+          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label transition-all duration-200 hover:-translate-y-px hover:border-arsm-border hover:bg-arsm-accent-subtle active:translate-y-0 dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
         >
           <span className={sidebarIconSlotClass}>
             <ChevronsLeft className={`h-5 w-5 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
@@ -198,7 +198,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           onClick={onLogout}
           title={translate('layout.logout')}
           aria-label={translate('layout.logout')}
-          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active transition-colors duration-200 hover:border-arsm-error-border-light hover:bg-arsm-error-bg dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
+          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active transition-all duration-200 hover:-translate-y-px hover:border-arsm-error-border-light hover:bg-arsm-error-bg active:translate-y-0 dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
         >
           <span className={sidebarIconSlotClass}>
             <LogOut className="h-5 w-5 shrink-0" />

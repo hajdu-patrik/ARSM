@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Modal } from '../../../components/common/Modal';
-import { buttonClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { buttonClass, formFieldGridClass, formFieldGroupClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
 import type { VehicleFormState } from '../helpers';
 
 type VehicleModalMode = 'create' | 'edit';
@@ -55,8 +55,8 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
       )}
     >
       <form id="customers-vehicle-form" onSubmit={onSubmit} className="space-y-3" noValidate>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
+        <div className={`${formFieldGridClass} lg:grid-cols-3`}>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-license-plate" className={labelClass}>{t('customers.licensePlate')}</label>
             <input
               id="vehicle-license-plate"
@@ -69,7 +69,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-brand" className={labelClass}>{t('customers.brand')}</label>
             <input
               id="vehicle-brand"
@@ -82,7 +82,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-model" className={labelClass}>{t('customers.model')}</label>
             <input
               id="vehicle-model"
@@ -96,8 +96,8 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
+        <div className={formFieldGridClass}>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-year" className={labelClass}>{t('customers.year')}</label>
             <input
               id="vehicle-year"
@@ -110,7 +110,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-mileage" className={labelClass}>{t('customers.mileageKm')}</label>
             <input
               id="vehicle-mileage"
@@ -123,7 +123,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-power" className={labelClass}>{t('customers.enginePowerHp')}</label>
             <input
               id="vehicle-power"
@@ -136,7 +136,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             />
           </div>
 
-          <div>
+          <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-torque" className={labelClass}>{t('customers.engineTorqueNm')}</label>
             <input
               id="vehicle-torque"

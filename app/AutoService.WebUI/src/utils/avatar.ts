@@ -7,18 +7,18 @@
  * @module utils/avatar
  */
 
-/** Fixed palette of ARSM token class pairs for avatar backgrounds. */
+/** Fixed palette of theme-invariant ARSM token class pairs for fallback avatar surfaces. */
 const AVATAR_COLOR_CLASSES = [
-  'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover',
-  'bg-arsm-accent-subtle text-arsm-accent-vivid dark:bg-arsm-hover-dark dark:text-arsm-accent',
-  'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
-  'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
-  'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
-  'bg-arsm-toggle-bg text-arsm-label dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark',
-  'bg-arsm-input text-arsm-primary dark:bg-arsm-input-dark dark:text-arsm-primary-dark',
-  'bg-arsm-accent-wash text-arsm-accent-deep dark:bg-arsm-hover-dark dark:text-arsm-accent',
-  'bg-arsm-success-soft text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
-  'bg-arsm-error-softest text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
+  'bg-arsm-accent text-arsm-primary',
+  'bg-arsm-accent-subtle text-arsm-accent-vivid',
+  'bg-arsm-warning-bg text-arsm-warning-text',
+  'bg-arsm-success-bg text-arsm-success-text',
+  'bg-arsm-error-bg text-arsm-error-text',
+  'bg-arsm-toggle-bg text-arsm-label',
+  'bg-arsm-input text-arsm-primary',
+  'bg-arsm-accent-wash text-arsm-accent-deep',
+  'bg-arsm-success-soft text-arsm-success-text',
+  'bg-arsm-error-softest text-arsm-error-text',
 ] as const;
 
 /**
