@@ -170,7 +170,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                     void handleClaim();
                   }}
                   disabled={isClaiming}
-                  className={`${schedulerMiniPrimaryActionButtonClass} min-h-11 w-[9rem] px-2 py-1 text-xs`}
+                  className={`${schedulerMiniPrimaryActionButtonClass} w-auto max-w-[8.5rem] shrink-0 sm:max-w-[7rem]`}
                 >
                   {isClaiming ? '...' : (
                     <>
@@ -186,7 +186,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   type="button"
                   onClick={handleOpenUnclaimConfirm}
                   disabled={isUnclaiming}
-                  className={`${schedulerMiniDangerStrongActionButtonClass} min-h-11 w-[9rem] px-2 py-1 text-xs`}
+                  className={`${schedulerMiniDangerStrongActionButtonClass} w-auto max-w-[8.5rem] shrink-0 sm:max-w-[7rem]`}
                 >
                   {isUnclaiming ? '...' : (
                     <>

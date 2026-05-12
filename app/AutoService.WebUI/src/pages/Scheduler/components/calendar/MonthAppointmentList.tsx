@@ -1,17 +1,23 @@
+/**
+ * Filterable monthly appointment list for the Scheduler calendar section.
+ * @module pages/Scheduler/components/calendar/MonthAppointmentList
+ */
 import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import {
-  compactSelectClass,
+  compactSelectFullClass,
+  controlRowClass,
   insetSurfaceClass,
   schedulerMiniNeutralActionButtonClass,
+  selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { AppointmentCard } from '../shared/AppointmentCard';
 
-const schedulerFilterButtonClass = `${schedulerMiniNeutralActionButtonClass} min-h-11 w-full px-2.5 py-1.5 text-[11px] sm:w-[9rem]`;
-const schedulerStatusChipClass = 'inline-flex min-h-11 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full border px-2.5 py-1 text-ellipsis text-[11px] font-medium transition-colors hover:opacity-90 sm:w-[9rem]';
-const schedulerMechanicFilterSelectClass = `${compactSelectClass} min-h-11 w-full min-w-0 max-w-full truncate rounded-lg bg-arsm-card px-2.5 py-1.5 text-[11px] hover:bg-arsm-hover dark:bg-arsm-input-dark dark:hover:bg-arsm-hover-dark`;
+const schedulerFilterButtonClass = `${schedulerMiniNeutralActionButtonClass} w-auto shrink-0 overflow-hidden whitespace-nowrap hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/80`;
+const schedulerStatusChipClass = `${schedulerMiniNeutralActionButtonClass} w-auto shrink-0 justify-center overflow-hidden whitespace-nowrap border hover:opacity-90`;
+const schedulerMechanicFilterSelectClass = `${compactSelectFullClass} h-11 min-h-11 rounded-full bg-arsm-card px-3.5 py-1.5 text-xs font-semibold [&>option]:text-xs hover:bg-arsm-hover dark:bg-arsm-input-dark dark:hover:bg-arsm-hover-dark`;
 
 interface MonthAppointmentListProps {
   readonly appointments: AppointmentDto[];
@@ -26,24 +32,29 @@ interface MonthAppointmentListProps {
 }
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
+const MONTH_LIST_SKELETON_COUNT = 4;
 
-const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string }> = {
+const STATUS_CHIP_COLORS: Record<AppointmentStatus, { active: string; inactive: string; dot: string }> = {
   InProgress: {
-    active: 'bg-arsm-warning-accent text-arsm-on-accent dark:bg-arsm-warning-accent dark:text-arsm-on-accent-dark',
-    inactive: 'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
+    active: 'border-arsm-warning-border/90 bg-arsm-warning-bg text-arsm-warning-text ring-2 ring-arsm-warning-border/20 dark:border-arsm-warning-border-dark/90 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark dark:ring-arsm-warning-border-dark/20',
+    inactive: 'border-arsm-warning-border/70 bg-arsm-warning-bg text-arsm-warning-text dark:border-arsm-warning-border-dark/70 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark',
+    dot: 'bg-arsm-warning-accent',
   },
   Completed: {
-    active: 'bg-arsm-success-accent text-arsm-on-accent dark:bg-arsm-success-accent dark:text-arsm-on-accent-dark',
-    inactive: 'bg-arsm-success-bg text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
+    active: 'border-arsm-success-border/90 bg-arsm-success-soft text-arsm-success-text ring-2 ring-arsm-success-border/20 dark:border-arsm-success-border-dark/90 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:ring-arsm-success-border-dark/20',
+    inactive: 'border-arsm-success-border/70 bg-arsm-success-soft text-arsm-success-text dark:border-arsm-success-border-dark/70 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark',
+    dot: 'bg-arsm-success-accent',
   },
   Cancelled: {
-    active: 'bg-arsm-error-accent text-arsm-on-accent dark:bg-arsm-error-accent dark:text-arsm-on-accent-dark',
-    inactive: 'bg-arsm-error-bg text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-dark',
+    active: 'border-arsm-error-border/90 bg-arsm-error-soft text-arsm-error-text ring-2 ring-arsm-error-border/20 dark:border-arsm-error-dark/90 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/20',
+    inactive: 'border-arsm-error-border/70 bg-arsm-error-soft text-arsm-error-text dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light',
+    dot: 'bg-arsm-error-accent',
   },
 };
 
 const PLACEHOLDER_MECHANIC_NAME_PATTERN = /^(?:unknown|ismeretlen|n\/a|none|-+)$/i;
 
+/** Returns whether a mechanic name is placeholder text that should be hidden from filters. */
 function isPlaceholderMechanicName(fullName: string): boolean {
   return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName.trim());
 }
@@ -58,6 +69,7 @@ function parseMechanicFilterValue(value: string): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
+/** Displays the current month's appointments with status, mechanic, day, and date-sort controls. */
 const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   appointments,
   isLoading,
@@ -140,7 +152,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   if (isLoading) {
     listContent = (
       <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
-        {Array.from({ length: 3 }, (_, index) => (
+        {Array.from({ length: MONTH_LIST_SKELETON_COUNT }, (_, index) => (
           <div
             key={`month-skeleton-${index}`}
             className="min-h-40 animate-pulse rounded-2xl border border-arsm-border bg-arsm-card dark:border-arsm-border-dark dark:bg-arsm-input-dark"
@@ -184,11 +196,11 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           </p>
         </div>
 
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+        <div className={`${controlRowClass} justify-end`}>
           <button
             type="button"
             onClick={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
-            className={`${schedulerFilterButtonClass} hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/80`}
+            className={schedulerFilterButtonClass}
             title={t('scheduler.monthList.sortByDate')}
           >
             <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
@@ -199,7 +211,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
             <button
               type="button"
               onClick={onClearFilter}
-              className={`${schedulerFilterButtonClass} hover:border-arsm-accent/55 hover:bg-arsm-accent-wash dark:hover:border-arsm-accent-dark/55 dark:hover:bg-arsm-hover-dark/80`}
+              className={`${schedulerFilterButtonClass} hover:border-arsm-accent/55 dark:hover:border-arsm-accent-dark/55`}
             >
               <X className="h-3 w-3 shrink-0" />
               <span className="truncate">{t('scheduler.monthList.clearFilter')}</span>
@@ -208,7 +220,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
         </div>
       </div>
 
-      <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+      <div className={`mb-4 ${controlRowClass}`}>
         {STATUS_FILTERS.map((status) => {
           const isActive = selectedStatuses.has(status);
           const colors = STATUS_CHIP_COLORS[status];
@@ -221,14 +233,16 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
               type="button"
               key={status}
               onClick={() => toggleStatus(status)}
+              aria-pressed={isActive}
               className={`${schedulerStatusChipClass} ${chipStateClass}`}
             >
-              {t(`scheduler.status.${status.toLowerCase()}`)}
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors.dot}`} aria-hidden="true" />
+              <span className="truncate">{t(`scheduler.status.${status.toLowerCase()}`)}</span>
             </button>
           );
         })}
 
-        <div className="min-w-0 basis-full overflow-hidden sm:basis-auto sm:w-[9rem]">
+        <div className={`${selectWrapperClass} basis-full sm:basis-auto sm:min-w-[8.75rem] sm:max-w-[11rem]`}> 
           <select
             value={selectedMechanicId ?? ''}
             onChange={(event) => setSelectedMechanicId(parseMechanicFilterValue(event.target.value))}
