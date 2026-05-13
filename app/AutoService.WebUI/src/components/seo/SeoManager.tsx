@@ -110,6 +110,7 @@ export function SeoManager() {
       return {
         pageTitle: translate('settings.title'),
         description: translate('settings.personalInfo'),
+        robots: 'noindex, nofollow',
       };
     }
 

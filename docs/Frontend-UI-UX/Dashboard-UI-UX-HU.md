@@ -12,7 +12,7 @@ Ez a dokumentum röviden összefoglalja, hogyan készült el az AutoService dash
 ## Nyelv
 
 - Magyar: ez a fájl
-- Angol: [Dashboard-UI-UX-EN.md](https://github.com/hajdu-patrik/Onallo-laboratorium/blob/main/Frontend-UI-UX/Dashboard-UI-UX-EN.md)
+- Angol: [Dashboard-UI-UX-EN.md](https://github.com/hajdu-patrik/ARSM/blob/main/docs/Frontend-UI-UX/Dashboard-UI-UX-EN.md)
 
 ---
 
