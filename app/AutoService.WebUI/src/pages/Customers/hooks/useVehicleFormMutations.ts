@@ -37,6 +37,19 @@ const EMPTY_VEHICLE_FORM: VehicleFormState = {
   engineTorqueNm: '',
 };
 
+function hasVehicleUpdateChanges(
+  snapshot: VehicleDetailDto,
+  payload: CreateVehicleRequest | UpdateVehicleRequest,
+): boolean {
+  return snapshot.licensePlate.trim().toUpperCase() !== payload.licensePlate.trim().toUpperCase()
+    || snapshot.brand !== payload.brand
+    || snapshot.model !== payload.model
+    || snapshot.year !== payload.year
+    || snapshot.mileageKm !== payload.mileageKm
+    || snapshot.enginePowerHp !== payload.enginePowerHp
+    || snapshot.engineTorqueNm !== payload.engineTorqueNm;
+}
+
 /** Dependencies required by vehicle create/edit mutation handlers. */
 interface UseVehicleFormMutationsParams {
   showSuccessToast: (message: string) => void;
@@ -234,6 +247,15 @@ export function useVehicleFormMutations({
       return;
     }
 
+    if (
+      vehicleModalMode === 'edit'
+      && editingVehicleSnapshot
+      && !hasVehicleUpdateChanges(editingVehicleSnapshot, payload)
+    ) {
+      showErrorToast('toast.noChanges');
+      return;
+    }
+
     setIsSavingVehicle(true);
 
     try {
@@ -247,9 +269,11 @@ export function useVehicleFormMutations({
   }, [
     getFirstFieldErrorMessage,
     handleSubmitVehicleError,
+    editingVehicleSnapshot,
     persistVehicleMutation,
     showErrorToast,
     vehicleForm,
+    vehicleModalMode,
     vehicleModalCustomerId,
   ]);
 

@@ -8,10 +8,11 @@ import { ArrowRight, Clock3, LogOut } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import {
+  buttonClass,
   dangerButtonClass,
+  schedulerInlineClaimButtonClass,
+  schedulerInlineUnassignButtonClass,
   secondaryButtonClass,
-  schedulerMiniDangerStrongActionButtonClass,
-  schedulerMiniPrimaryActionButtonClass,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
@@ -38,6 +39,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const { t, i18n } = useTranslation();
   const [isClaiming, setIsClaiming] = useState(false);
   const [isUnclaiming, setIsUnclaiming] = useState(false);
+  const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
   const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
 
   const isAssigned = currentMechanicId !== undefined
@@ -48,10 +50,8 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const canUnclaimAppointment = !isAdmin && isAssigned && appointment.status === 'InProgress' && appointment.mechanics.length > 1;
   const showMechanicAction = canClaimAppointment || canUnclaimAppointment;
   const vehicleTitle = `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
-  const mobileVisibleMechanics = appointment.mechanics.slice(0, 1);
-  const desktopVisibleMechanics = appointment.mechanics.slice(0, 2);
-  const mobileOverflowCount = Math.max(appointment.mechanics.length - mobileVisibleMechanics.length, 0);
-  const desktopOverflowCount = Math.max(appointment.mechanics.length - desktopVisibleMechanics.length, 0);
+  const visibleMechanics = appointment.mechanics.slice(0, 2);
+  const overflowCount = Math.max(appointment.mechanics.length - visibleMechanics.length, 0);
 
   const scheduleDateValue = new Date(appointment.scheduledDate);
   const hasValidScheduleDate = !Number.isNaN(scheduleDateValue.getTime());
@@ -72,6 +72,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     setIsClaiming(true);
     try {
       await onClaim(appointment.id);
+      setIsClaimConfirmOpen(false);
     } catch (error) {
       // Parent handlers surface mutation errors via global toast feedback.
       console.error('Failed to claim appointment card action', error);
@@ -79,6 +80,12 @@ const AppointmentCardComponent = memo(function AppointmentCard({
       setIsClaiming(false);
     }
   }, [appointment.id, onClaim]);
+
+  const handleOpenClaimConfirm = useCallback(() => {
+    if (canClaimAppointment && !isClaiming) {
+      setIsClaimConfirmOpen(true);
+    }
+  }, [canClaimAppointment, isClaiming]);
 
   const handleUnclaim = useCallback(async () => {
     setIsUnclaiming(true);
@@ -127,10 +134,9 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           )}
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-between gap-2 overflow-hidden pt-0.5 max-[350px]:items-start">
-          <div className="flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden">
-          <div className="flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-2 sm:hidden">
-              {mobileVisibleMechanics.map((mechanic, index) => (
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-visible pt-0.5 sm:flex-nowrap">
+          <div className="flex h-7 min-w-[4.75rem] max-w-[4.75rem] shrink-0 items-center gap-1.5 overflow-visible pr-1">
+              {visibleMechanics.map((mechanic, index) => (
                 <div key={mechanic.id} className="relative inline-flex shrink-0">
                   <MechanicAvatar
                     mechanicId={mechanic.id}
@@ -138,39 +144,24 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                     hasProfilePicture={mechanic.hasProfilePicture}
                     sizeClassName="h-7 w-7 text-[10px]"
                   />
-                  {index === mobileVisibleMechanics.length - 1 && mobileOverflowCount > 0 && (
-                    <CompactOverflowBadge count={mobileOverflowCount} />
+                  {index === visibleMechanics.length - 1 && overflowCount > 0 && (
+                    <CompactOverflowBadge count={overflowCount} />
                   )}
                 </div>
               ))}
-            </div>
-            <div className="hidden min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-2 sm:flex">
-              {desktopVisibleMechanics.map((mechanic, index) => (
-                <div key={mechanic.id} className="relative inline-flex shrink-0">
-                  <MechanicAvatar
-                    mechanicId={mechanic.id}
-                    fullName={mechanic.fullName}
-                    hasProfilePicture={mechanic.hasProfilePicture}
-                    sizeClassName="h-7 w-7 text-[10px]"
-                  />
-                  {index === desktopVisibleMechanics.length - 1 && desktopOverflowCount > 0 && (
-                    <CompactOverflowBadge count={desktopOverflowCount} />
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
 
           {showMechanicAction && (
-            <div className="flex min-w-0 shrink-0 items-center self-center">
+            <div className="pointer-events-auto relative z-20 ml-auto flex min-w-0 shrink-0 items-center self-center max-[350px]:ml-0 max-[350px]:w-full max-[350px]:justify-end">
               {canClaimAppointment && (
                 <button
                   type="button"
-                  onClick={() => {
-                    void handleClaim();
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleOpenClaimConfirm();
                   }}
                   disabled={isClaiming}
-                  className={`${schedulerMiniPrimaryActionButtonClass} w-auto max-w-[8.5rem] shrink-0 sm:max-w-[7rem]`}
+                  className={schedulerInlineClaimButtonClass}
                 >
                   {isClaiming ? '...' : (
                     <>
@@ -184,9 +175,12 @@ const AppointmentCardComponent = memo(function AppointmentCard({
               {canUnclaimAppointment && (
                 <button
                   type="button"
-                  onClick={handleOpenUnclaimConfirm}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleOpenUnclaimConfirm();
+                  }}
                   disabled={isUnclaiming}
-                  className={`${schedulerMiniDangerStrongActionButtonClass} w-auto max-w-[8.5rem] shrink-0 sm:max-w-[7rem]`}
+                  className={schedulerInlineUnassignButtonClass}
                 >
                   {isUnclaiming ? '...' : (
                     <>
@@ -221,6 +215,42 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     <>
       {cardElement}
       <Modal
+        isOpen={isClaimConfirmOpen}
+        onClose={() => {
+          if (!isClaiming) {
+            setIsClaimConfirmOpen(false);
+          }
+        }}
+        title={t('scheduler.detail.claimConfirmTitle')}
+        variant="confirm"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => setIsClaimConfirmOpen(false)}
+              disabled={isClaiming}
+              className={secondaryButtonClass}
+            >
+              {t('scheduler.intake.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleClaim();
+              }}
+              disabled={isClaiming}
+              className={buttonClass}
+            >
+              {isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+          {t('scheduler.detail.claimConfirmMessage')}
+        </p>
+      </Modal>
+      <Modal
         isOpen={isUnclaimConfirmOpen}
         onClose={() => {
           if (!isUnclaiming) {
@@ -228,7 +258,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           }
         }}
         title={t('scheduler.detail.unassignConfirmTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -247,7 +277,8 @@ const AppointmentCardComponent = memo(function AppointmentCard({
               disabled={isUnclaiming}
               className={dangerButtonClass}
             >
-              {isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
             </button>
           </>
         )}

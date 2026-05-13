@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -23,9 +24,13 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
   return (
     <Modal
       isOpen={target !== null}
-      onClose={onClose}
+      onClose={() => {
+        if (!isDeleting) {
+          onClose();
+        }
+      }}
       title={t('customers.deleteCustomerTitle')}
-      showCloseButton={false}
+      variant="confirm"
       footer={(
         <>
           <button
@@ -42,7 +47,8 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
             disabled={isDeleting}
             className={dangerButtonClass}
           >
-            {isDeleting ? t('customers.deleting') : t('customers.deleteCustomer')}
+            <Trash2 className="h-4 w-4 shrink-0" />
+            <span>{isDeleting ? t('customers.deleting') : t('customers.deleteCustomer')}</span>
           </button>
         </>
       )}

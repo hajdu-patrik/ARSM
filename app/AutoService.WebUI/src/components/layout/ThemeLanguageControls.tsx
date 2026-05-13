@@ -11,7 +11,7 @@ interface ThemeLanguageControlsProps {
 	readonly className?: string;
 }
 
-const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex min-w-0 -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-arsm-border/70 bg-arsm-card/85 px-2.5 py-2 backdrop-blur-xl max-[320px]:top-3.5 max-[320px]:gap-1 max-[320px]:px-2 max-[320px]:py-1.5 sm:left-auto sm:right-7 sm:top-6 sm:translate-x-0 sm:gap-2 dark:border-arsm-border-dark/70 dark:bg-arsm-card-dark/82';
+const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex min-w-0 -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-arsm-border/45 bg-arsm-card/72 px-2.5 py-1.5 backdrop-blur-md max-[320px]:top-3.5 max-[320px]:gap-1 max-[320px]:px-2 max-[320px]:py-1 sm:left-auto sm:right-7 sm:top-6 sm:translate-x-0 sm:gap-2 dark:border-arsm-border-dark/45 dark:bg-arsm-card-dark/70';
 
 const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
 	className = DEFAULT_WRAPPER_CLASS,

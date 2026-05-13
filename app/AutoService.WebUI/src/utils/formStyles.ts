@@ -4,13 +4,13 @@
  */
 
 /** Standard full-width input field with light/dark focus states. */
-export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
+export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
 
 /** Compact input variant with smaller padding, used in detail modal edit fields. */
 export const inputClassCompact = 'w-full rounded-xl border border-arsm-border bg-arsm-input px-2 py-1 text-sm text-arsm-primary outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Intake-oriented input variant used by scheduler intake controls. */
-export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
+export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Scheduler intake textarea variant. */
 export const intakeTextareaClass = `${intakeInputClass} resize-y`;
@@ -72,14 +72,23 @@ export const passwordToggleButtonClass = inputGroupOverlayButtonClass;
 /** Search clear action button with shared overlay treatment. */
 export const searchClearButtonClass = inputGroupOverlayButtonClass;
 
+/** Unified micro-hover interaction for buttons: subtle lift, soft color transitions, tiny icon drift. */
+const buttonMicroInteractionClass = 'transition-[background-color,border-color,color,transform] duration-150 ease-out hover:-translate-y-px motion-reduce:transform-none motion-reduce:transition-colors [&_svg]:transition-transform [&_svg]:duration-150 [&_svg]:ease-out hover:[&_svg]:translate-x-[1px] motion-reduce:[&_svg]:transform-none';
+
 /** Compact utility toggle used by global theme/language controls. */
-export const compactUtilityButtonClass = 'inline-flex min-h-11 min-w-[3.5rem] shrink-0 items-center justify-center rounded-xl border border-arsm-accent/45 bg-arsm-accent px-4 text-sm font-semibold leading-none text-arsm-primary transition hover:-translate-y-px hover:bg-arsm-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 max-[320px]:min-w-[3rem] max-[320px]:px-3 max-[320px]:text-xs dark:border-arsm-accent-dark/45 dark:bg-arsm-accent-dark dark:text-arsm-hover dark:hover:bg-arsm-accent-dark-hover dark:focus-visible:ring-arsm-focus-ring/35';
+export const compactUtilityButtonClass = `inline-flex h-10 min-h-10 min-w-[4.9rem] shrink-0 items-center justify-center rounded-2xl border border-arsm-accent/30 bg-arsm-accent-subtle/85 px-5 text-[12px] font-medium leading-tight text-arsm-primary hover:bg-arsm-accent-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-[320px]:min-w-[3.9rem] max-[320px]:px-3.5 max-[320px]:text-[11px] dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark/80 dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark dark:focus-visible:ring-arsm-focus-ring/30 ${buttonMicroInteractionClass}`;
 
 /** Neutral 44px icon-only button. */
-export const iconButtonClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-border bg-arsm-input text-arsm-label transition hover:-translate-y-px hover:bg-arsm-toggle-bg hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:text-arsm-primary-dark';
+export const iconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-border bg-arsm-input text-arsm-label hover:bg-arsm-toggle-bg hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:text-arsm-primary-dark ${buttonMicroInteractionClass}`;
+
+/** Compact icon-only control shared by scheduler month navigation and modal close actions. */
+export const schedulerNavIconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-border bg-arsm-input text-arsm-label hover:bg-arsm-toggle-bg hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:border-arsm-border/60 disabled:opacity-50 disabled:hover:bg-arsm-input disabled:hover:text-arsm-label dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:text-arsm-primary-dark dark:disabled:border-arsm-border-dark/60 dark:disabled:hover:bg-arsm-input-dark dark:disabled:hover:text-arsm-label-dark ${buttonMicroInteractionClass}`;
+
+/** Unified modal close control with subtle rounded-square hover treatment. */
+export const modalConfirmCloseButtonClass = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-arsm-muted transition-colors hover:bg-arsm-toggle-bg/65 hover:text-arsm-primary active:bg-arsm-toggle-bg/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:text-arsm-muted-dark dark:hover:bg-arsm-toggle-bg-dark/70 dark:hover:text-arsm-primary-dark dark:active:bg-arsm-toggle-bg-dark/80';
 
 /** Destructive 44px icon-only button. */
-export const iconDangerButtonClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-error-border bg-transparent text-arsm-error-accent transition hover:-translate-y-px hover:bg-arsm-error-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark dark:focus-visible:ring-arsm-error-dark/40';
+export const iconDangerButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-error-border bg-arsm-error-bg text-arsm-error-text hover:bg-arsm-error-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 dark:focus-visible:ring-arsm-error-dark/40 ${buttonMicroInteractionClass}`;
 
 /** Base checkbox option tile for reusable multi-select pickers. */
 export const optionTileBaseClass = 'relative inline-flex h-9 min-h-0 w-auto max-w-full shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border px-2.5 py-1.5 text-xs transition disabled:cursor-not-allowed';
@@ -106,7 +115,7 @@ export const hiddenCheckboxClass = 'pointer-events-none absolute opacity-0';
 export const segmentedControlClass = 'grid min-w-0 grid-cols-2 gap-1.5 rounded-xl bg-arsm-toggle-bg p-1.5 dark:bg-arsm-toggle-bg-dark';
 
 const segmentedControlOptionBaseClass = 'inline-flex min-h-11 min-w-0 items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60';
-const segmentedControlOptionActiveClass = 'bg-arsm-accent text-arsm-primary dark:bg-arsm-accent-dark dark:text-arsm-hover';
+const segmentedControlOptionActiveClass = 'border border-arsm-accent/80 bg-arsm-accent text-arsm-primary ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-primary dark:ring-arsm-accent-dark/35';
 const segmentedControlOptionInactiveClass = 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark';
 
 /** Returns class names for segmented control option buttons. */
@@ -129,31 +138,51 @@ export const schedulerDetailRowClass = 'rounded-xl border border-arsm-border bg-
 export const schedulerAccentTagClass = 'max-w-full truncate rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent';
 
 /** Small primary action button used in dense scheduler action clusters. */
-export const schedulerMiniPrimaryActionButtonClass = 'group pointer-events-auto inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border border-arsm-accent/45 bg-arsm-accent-wash px-3 py-1.5 text-xs font-semibold text-arsm-primary transition-all duration-200 hover:-translate-y-px hover:border-arsm-accent hover:bg-arsm-accent-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:border-arsm-accent-dark dark:hover:bg-arsm-toggle-bg-dark';
+export const schedulerMiniPrimaryActionButtonClass = `group pointer-events-auto inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border border-arsm-accent/45 bg-arsm-accent-wash px-3 py-1.5 text-xs font-semibold text-arsm-primary hover:border-arsm-accent hover:bg-arsm-accent-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:border-arsm-accent-dark dark:hover:bg-arsm-toggle-bg-dark ${buttonMicroInteractionClass}`;
 
 /** Small neutral action button used in scheduler filter/tool clusters. */
-export const schedulerMiniNeutralActionButtonClass = 'inline-flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1.5 rounded-full border border-arsm-border bg-arsm-card px-3 py-1.5 text-xs font-semibold text-arsm-label transition-colors max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark';
+export const schedulerMiniNeutralActionButtonClass = `inline-flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1.5 rounded-full border border-arsm-border bg-arsm-card px-3 py-1.5 text-xs font-semibold text-arsm-label hover:bg-arsm-toggle-bg max-[350px]:basis-full dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark ${buttonMicroInteractionClass}`;
+
+/** Compact inline claim-like chip used by scheduler/customer action rows. */
+export const schedulerInlineClaimButtonClass = `group inline-flex h-7 min-h-7 w-auto min-w-0 max-w-full shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-arsm-accent/55 bg-arsm-accent-wash px-2 py-0.5 text-[11px] font-semibold leading-none text-arsm-primary hover:bg-arsm-accent-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-accent-dark/55 dark:bg-arsm-accent-dark/20 dark:text-arsm-primary-dark dark:hover:bg-arsm-accent-dark/30 ${buttonMicroInteractionClass}`;
+
+/** Compact inline unassign/delete-like chip used by scheduler/customer action rows. */
+export const schedulerInlineUnassignButtonClass = `group inline-flex h-7 min-h-7 w-auto min-w-0 max-w-full shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-arsm-error-border/70 bg-arsm-error-bg px-2 py-0.5 text-[11px] font-semibold leading-none text-arsm-error-text hover:bg-arsm-error-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark/60 dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 ${buttonMicroInteractionClass}`;
 
 /** Shared compact action button base for dense table/list controls. */
-export const compactActionButtonBaseClass = 'inline-flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium transition max-[350px]:w-full';
+export const compactActionButtonBaseClass = `inline-flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium max-[350px]:w-full ${buttonMicroInteractionClass}`;
 
 /** Neutral compact action button variant. */
 export const compactActionButtonNeutralClass = `${compactActionButtonBaseClass} border border-arsm-border text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark`;
 
+/** Compact pill-like sort toggle button matching Scheduler date-sort control style. */
+export const compactSortToggleButtonClass = `inline-flex h-11 min-h-11 w-auto min-w-0 shrink-0 items-center justify-center gap-1 rounded-full border border-arsm-border bg-arsm-card px-3 py-2 text-[11px] font-semibold leading-none text-arsm-label whitespace-nowrap hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80 ${buttonMicroInteractionClass}`;
+
+const customersToolbarActionBaseClass = `inline-flex h-10 min-h-10 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass}`;
+
+/** Neutral toolbar-like action button used for list sorting/edit actions. */
+export const customersToolbarNeutralButtonClass = `${customersToolbarActionBaseClass} border border-arsm-border bg-arsm-toggle-bg font-medium text-arsm-label hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark`;
+
+/** Primary toolbar-like action button used for create actions in customer views. */
+export const customersToolbarPrimaryButtonClass = `${customersToolbarActionBaseClass} bg-arsm-accent font-semibold text-arsm-on-accent hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover`;
+
+/** Destructive toolbar-like action button used for delete actions in customer views. */
+export const customersToolbarDangerButtonClass = `${customersToolbarActionBaseClass} border border-arsm-error-border bg-arsm-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
+
 /** Accent compact action button variant. */
-export const compactActionButtonAccentClass = `${compactActionButtonBaseClass} border border-arsm-accent/45 bg-arsm-accent-subtle font-semibold text-arsm-primary hover:-translate-y-px hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-toggle-bg-dark`;
+export const compactActionButtonAccentClass = `${compactActionButtonBaseClass} border border-arsm-accent/45 bg-arsm-accent-subtle font-semibold text-arsm-primary hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-toggle-bg-dark`;
 
 /** Danger compact action button variant. */
-export const compactActionButtonDangerClass = `${compactActionButtonBaseClass} border border-arsm-error-border text-arsm-error-accent hover:bg-arsm-error-bg dark:border-arsm-error-border-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark`;
+export const compactActionButtonDangerClass = `${compactActionButtonBaseClass} border border-arsm-error-border bg-arsm-error-bg text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 
 /** Small danger action button used in dense scheduler action clusters. */
-export const schedulerMiniDangerActionButtonClass = 'group pointer-events-auto inline-flex min-h-11 w-auto shrink-0 items-center gap-1 rounded-xl border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1.5 text-xs font-medium text-arsm-error-accent transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full max-[350px]:justify-center dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80';
+export const schedulerMiniDangerActionButtonClass = `group pointer-events-auto inline-flex min-h-11 w-auto shrink-0 items-center gap-1 rounded-xl border border-arsm-error-border/70 bg-arsm-error-bg px-2.5 py-1.5 text-xs font-semibold text-arsm-error-text hover:bg-arsm-error-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full max-[350px]:justify-center dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 ${buttonMicroInteractionClass}`;
 
 /** Strong small danger action button variant used by scheduler card actions. */
-export const schedulerMiniDangerStrongActionButtonClass = 'group pointer-events-auto inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border border-arsm-error-border/70 bg-arsm-error-bg px-3 py-1.5 text-xs font-semibold text-arsm-error-text transition-all duration-200 hover:-translate-y-px hover:bg-arsm-error-softest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80';
+export const schedulerMiniDangerStrongActionButtonClass = `group pointer-events-auto inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border border-arsm-error-border/70 bg-arsm-error-bg px-3 py-1.5 text-xs font-semibold text-arsm-error-text hover:bg-arsm-error-softest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 ${buttonMicroInteractionClass}`;
 
-const togglePillBaseClass = 'inline-flex h-10 min-h-0 min-w-0 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full';
-const togglePillActiveClass = 'border-arsm-accent/60 bg-arsm-accent text-arsm-primary dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark dark:text-arsm-hover';
+const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass}`;
+const togglePillActiveClass = 'border-arsm-accent/80 bg-arsm-accent text-arsm-primary ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-primary dark:ring-arsm-accent-dark/35';
 const togglePillInactiveClass = 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark';
 
 /** Returns class names for segmented toggle/pill buttons. */

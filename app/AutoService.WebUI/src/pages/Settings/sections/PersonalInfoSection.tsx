@@ -136,7 +136,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`w-full sm:w-auto ${buttonClass}`}
+          className={`w-full ${buttonClass}`}
           aria-busy={isSubmitting}
         >
           {isSubmitting ? t('settings.saving') : t('settings.saveChanges')}

@@ -7,11 +7,12 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { iconButtonClass } from '../../utils/formStyles';
+import { modalConfirmCloseButtonClass } from '../../utils/formStyles';
 
 interface ModalCloseButtonProps {
   readonly onClick: () => void;
   readonly disabled?: boolean;
+  readonly variant?: 'default' | 'confirm';
 }
 
 const ModalCloseButtonComponent = memo(function ModalCloseButton({
@@ -27,7 +28,7 @@ const ModalCloseButtonComponent = memo(function ModalCloseButton({
       disabled={disabled}
       aria-label={translate('modal.close')}
       title={translate('modal.close')}
-      className={iconButtonClass}
+      className={modalConfirmCloseButtonClass}
     >
       <X className="h-4 w-4" />
     </button>

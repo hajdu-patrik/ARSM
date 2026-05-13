@@ -6,7 +6,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { buttonClass, insetSurfaceClass } from '../../../../utils/formStyles';
+import { customersToolbarPrimaryButtonClass, insetSurfaceClass } from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerQuickIntakeSection} component. */
 interface SchedulerQuickIntakeSectionProps {
@@ -46,7 +46,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${buttonClass} h-8 min-h-0 w-auto min-w-0 max-w-full self-start rounded-lg px-2 py-1 text-[11px] max-[350px]:w-full sm:shrink-0`}
+					className={`${customersToolbarPrimaryButtonClass} w-auto min-w-0 max-w-full self-start sm:shrink-0`}
 				>
 					<span className="truncate">{t('scheduler.intake.open')}</span>
 				</button>

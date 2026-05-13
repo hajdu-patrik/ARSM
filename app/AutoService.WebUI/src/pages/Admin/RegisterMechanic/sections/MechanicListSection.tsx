@@ -164,7 +164,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 				isOpen={deleteTarget !== null}
 				onClose={closeDeleteModal}
 				title={t('admin.deleteMechanicModalTitle')}
-				showCloseButton={false}
+				variant="confirm"
 				footer={(
 					<>
 						<button
@@ -180,7 +180,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 							onClick={() => {
 								void handleDelete();
 							}}
-							disabled={isDeleting}
+							disabled={isDeleting || !deleteTarget}
 							className={dangerButtonClass}
 						>
 							{isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}

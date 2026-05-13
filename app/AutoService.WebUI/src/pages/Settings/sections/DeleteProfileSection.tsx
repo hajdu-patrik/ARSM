@@ -30,7 +30,7 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 			<button
 				type="button"
 				onClick={onDeleteRequest}
-				className={`mt-4 ${dangerButtonClass}`}
+				className={`mt-4 w-full ${dangerButtonClass}`}
 			>
 				{translate('settings.deleteProfileButton')}
 			</button>

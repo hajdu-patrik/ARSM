@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { Save } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import { buttonClass, formFieldGridClass, formFieldGroupClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
 import type { VehicleFormState } from '../helpers';
@@ -49,7 +50,8 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             disabled={isSaving}
             className={buttonClass}
           >
-            {isSaving ? t('customers.saving') : t('customers.save')}
+            <Save className="h-4 w-4 shrink-0" />
+            <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>
           </button>
         </>
       )}

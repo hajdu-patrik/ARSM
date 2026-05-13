@@ -3,7 +3,7 @@
  * @module pages/Settings/SettingsActionModals
  */
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../../components/common/Modal';
 import { buttonClass, dangerButtonClass, inputClass, labelClass, secondaryButtonClass } from './constants';
@@ -50,14 +50,47 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
   onConfirmDeleteProfile,
 }: SettingsActionModalsProps) {
   const { t } = useTranslation();
+  const [isDeletePasswordFieldLocked, setIsDeletePasswordFieldLocked] = useState(true);
+
+  useEffect(() => {
+    if (!isDeleteModalOpen || deletePassword.length === 0) {
+      setIsDeletePasswordFieldLocked(true);
+    }
+  }, [deletePassword, isDeleteModalOpen]);
+
+  useEffect(() => {
+    if (!isDeleteModalOpen) {
+      return;
+    }
+
+    const frameId = globalThis.requestAnimationFrame(() => {
+      const input = document.getElementById('delete-profile-password');
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (input.value.length > 0) {
+        input.value = '';
+        onDeletePasswordChange('');
+      }
+    });
+
+    return () => {
+      globalThis.cancelAnimationFrame(frameId);
+    };
+  }, [isDeleteModalOpen, onDeletePasswordChange]);
 
   return (
     <>
       <Modal
         isOpen={isPictureRemoveConfirmOpen}
-        onClose={onClosePictureRemoveConfirm}
+        onClose={() => {
+          if (!isUploadingPicture) {
+            onClosePictureRemoveConfirm();
+          }
+        }}
         title={t('settings.confirmPictureRemoveTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -84,9 +117,13 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
       <Modal
         isOpen={isProfileSaveConfirmOpen}
-        onClose={onCloseProfileSaveConfirm}
+        onClose={() => {
+          if (!isUpdatingProfile) {
+            onCloseProfileSaveConfirm();
+          }
+        }}
         title={t('settings.confirmSaveTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -113,9 +150,13 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
       <Modal
         isOpen={isPasswordChangeConfirmOpen}
-        onClose={onClosePasswordChangeConfirm}
+        onClose={() => {
+          if (!isChangingPassword) {
+            onClosePasswordChangeConfirm();
+          }
+        }}
         title={t('settings.confirmPasswordChangeTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -142,9 +183,13 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
       <Modal
         isOpen={isDeleteModalOpen}
-        onClose={onCloseDeleteModal}
+        onClose={() => {
+          if (!isDeletingProfile) {
+            onCloseDeleteModal();
+          }
+        }}
         title={t('settings.deleteProfileModalTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -168,6 +213,26 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
       >
         <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('settings.deleteProfileWarning')}</p>
 
+        <input
+          type="text"
+          name="delete-profile-username-decoy"
+          autoComplete="username"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          defaultValue=""
+        />
+
+        <input
+          type="password"
+          name="delete-profile-password-decoy"
+          autoComplete="new-password"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          defaultValue=""
+        />
+
         <div className="mt-4">
           <label htmlFor="delete-profile-password" className={labelClass}>
             {t('settings.currentPassword')}
@@ -177,8 +242,18 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
             type="password"
             value={deletePassword}
             onChange={(event) => onDeletePasswordChange(event.target.value)}
+            onFocus={() => {
+              if (isDeletePasswordFieldLocked) {
+                setIsDeletePasswordFieldLocked(false);
+              }
+            }}
             placeholder={t('settings.currentPasswordPlaceholder')}
-            autoComplete="current-password"
+            autoComplete="off"
+            readOnly={isDeletePasswordFieldLocked}
+            name="settings-delete-security-field"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
             disabled={isDeletingProfile}
             className={inputClass}
           />

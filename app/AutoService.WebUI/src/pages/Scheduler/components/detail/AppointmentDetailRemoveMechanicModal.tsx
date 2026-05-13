@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../../components/common/Modal';
 import { dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
 
@@ -55,7 +56,7 @@ const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentD
         }
       }}
       title={t('scheduler.detail.removeConfirmTitle')}
-      showCloseButton={false}
+      variant="confirm"
       footer={(
         <>
           <button
@@ -74,7 +75,8 @@ const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentD
             disabled={isConfirmDisabled}
             className={dangerButtonClass}
           >
-            {t('scheduler.detail.removeMechanic')}
+            <Trash2 className="h-4 w-4 shrink-0" />
+            <span>{t('scheduler.detail.removeMechanic')}</span>
           </button>
         </>
       )}

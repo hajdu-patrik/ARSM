@@ -6,7 +6,7 @@
  * @module pages/Settings/sections/ChangePasswordSection
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { buttonClass, cardClass, inputClass, inputGroupContainerClass, labelClass, passwordToggleButtonClass, sectionTitleClass } from '../constants';
@@ -40,10 +40,55 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isCurrentFieldLocked, setIsCurrentFieldLocked] = useState(true);
+  const [isNewFieldLocked, setIsNewFieldLocked] = useState(true);
+  const [isConfirmFieldLocked, setIsConfirmFieldLocked] = useState(true);
 
   const toggleShowCurrent = useCallback(() => setShowCurrent((isVisible) => !isVisible), []);
   const toggleShowNew = useCallback(() => setShowNew((isVisible) => !isVisible), []);
   const toggleShowConfirm = useCallback(() => setShowConfirm((isVisible) => !isVisible), []);
+
+  useEffect(() => {
+    if (currentPassword.length === 0) {
+      setIsCurrentFieldLocked(true);
+    }
+  }, [currentPassword]);
+
+  useEffect(() => {
+    if (newPassword.length === 0) {
+      setIsNewFieldLocked(true);
+    }
+  }, [newPassword]);
+
+  useEffect(() => {
+    if (confirmNewPassword.length === 0) {
+      setIsConfirmFieldLocked(true);
+    }
+  }, [confirmNewPassword]);
+
+  useEffect(() => {
+    const clearAutofilledPasswordField = (inputId: string, onChange: (value: string) => void) => {
+      const input = document.getElementById(inputId);
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (input.value.length > 0) {
+        input.value = '';
+        onChange('');
+      }
+    };
+
+    const frameId = globalThis.requestAnimationFrame(() => {
+      clearAutofilledPasswordField('settings-currentPassword', onCurrentPasswordChange);
+      clearAutofilledPasswordField('settings-newPassword', onNewPasswordChange);
+      clearAutofilledPasswordField('settings-confirmPassword', onConfirmNewPasswordChange);
+    });
+
+    return () => {
+      globalThis.cancelAnimationFrame(frameId);
+    };
+  }, [onConfirmNewPasswordChange, onCurrentPasswordChange, onNewPasswordChange]);
 
   return (
     <div className={cardClass}>
@@ -51,11 +96,21 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
         {t('settings.changePassword')}
       </h2>
 
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <form onSubmit={onSubmit} className="space-y-4" noValidate autoComplete="off">
         <input
           type="text"
-          name="username"
+          name="settings-decoy-username"
           autoComplete="username"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          defaultValue=""
+        />
+
+        <input
+          type="password"
+          name="settings-decoy-password"
+          autoComplete="new-password"
           className="sr-only"
           tabIndex={-1}
           aria-hidden="true"
@@ -72,14 +127,21 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
               type={showCurrent ? 'text' : 'password'}
               value={currentPassword}
               onChange={(e) => onCurrentPasswordChange(e.target.value)}
+              onFocus={() => {
+                if (isCurrentFieldLocked) {
+                  setIsCurrentFieldLocked(false);
+                }
+              }}
               placeholder={t('settings.currentPasswordPlaceholder')}
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
-              autoComplete="current-password"
-              name="settings-current-password-no-autofill"
+              autoComplete="off"
+              readOnly={isCurrentFieldLocked}
+              name="settings-security-current"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bwignore="true"
+              spellCheck={false}
             />
             <button
               type="button"
@@ -102,14 +164,21 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
               type={showNew ? 'text' : 'password'}
               value={newPassword}
               onChange={(e) => onNewPasswordChange(e.target.value)}
+              onFocus={() => {
+                if (isNewFieldLocked) {
+                  setIsNewFieldLocked(false);
+                }
+              }}
               placeholder={t('settings.newPasswordPlaceholder')}
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
-              autoComplete="new-password"
-              name="settings-new-password"
+              autoComplete="off"
+              readOnly={isNewFieldLocked}
+              name="settings-security-new"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bwignore="true"
+              spellCheck={false}
             />
             <button
               type="button"
@@ -133,14 +202,21 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
               type={showConfirm ? 'text' : 'password'}
               value={confirmNewPassword}
               onChange={(e) => onConfirmNewPasswordChange(e.target.value)}
+              onFocus={() => {
+                if (isConfirmFieldLocked) {
+                  setIsConfirmFieldLocked(false);
+                }
+              }}
               placeholder={t('settings.confirmPasswordPlaceholder')}
               className={`${inputClass} pr-12`}
               disabled={isSubmitting}
-              autoComplete="new-password"
-              name="settings-confirm-password"
+              autoComplete="off"
+              readOnly={isConfirmFieldLocked}
+              name="settings-security-confirm"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bwignore="true"
+              spellCheck={false}
             />
             <button
               type="button"
@@ -156,7 +232,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
         <button
           type="submit"
           disabled={isSubmitting || !currentPassword || !newPassword || !confirmNewPassword}
-          className={`w-full sm:w-auto ${buttonClass}`}
+          className={`w-full ${buttonClass}`}
           aria-busy={isSubmitting}
         >
           {isSubmitting ? t('settings.changingCredentials') : t('settings.changePasswordButton')}

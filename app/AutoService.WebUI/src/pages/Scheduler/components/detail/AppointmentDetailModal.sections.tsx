@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Clock3, UserPlus } from 'lucide-react';
+import { Clock3, LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
@@ -7,12 +7,13 @@ import type { DueState } from '../../utils/due-date';
 import {
   buttonClass,
   compactSelectFullClass,
-  dangerButtonClass,
   equalWidthControlGroupClass,
   inputClassCompact,
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
+  schedulerInlineClaimButtonClass,
   schedulerDetailRowClass,
+  schedulerInlineUnassignButtonClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from '../shared/StatusBadge';
@@ -355,7 +356,6 @@ const MechanicsSection = memo(function MechanicsSection({
 }: MechanicsSectionProps) {
   const isMechanicMutationBusy = isClaiming || isAssigning || isUnclaiming;
   const uniqueMechanics = Array.from(new Map(appointment.mechanics.map((mechanic) => [mechanic.id, mechanic])).values());
-  const isCurrentUserAssigned = currentMechanicId !== undefined && uniqueMechanics.some((mechanic) => mechanic.id === currentMechanicId);
 
   return (
     <div className={schedulerDetailPanelClass}>
@@ -388,6 +388,18 @@ const MechanicsSection = memo(function MechanicsSection({
             );
           })}
         </div>
+      )}
+
+      {canClaim && (
+        <button
+          type="button"
+          onClick={onClaim}
+          disabled={isMechanicMutationBusy}
+          className={`${schedulerInlineClaimButtonClass} mt-3 w-full sm:w-auto`}
+        >
+          <UserPlus className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{isClaiming ? t('scheduler.detail.saving') : t('scheduler.claim')}</span>
+        </button>
       )}
 
       {isAdmin && !isClosedForMechanicMutations && (
@@ -449,6 +461,11 @@ const MechanicCard = memo(function MechanicCard({
   onRemove,
   t,
 }: MechanicCardProps) {
+  let removeLabelKey: 'scheduler.detail.unassignMe' | 'scheduler.detail.unassignOther' = 'scheduler.detail.unassignOther';
+  if (isCurrentUser) {
+    removeLabelKey = 'scheduler.detail.unassignMe';
+  }
+
   return (
     <div className={`${schedulerDetailRowClass} min-w-0 overflow-hidden`}>
       <div className="flex min-w-0 items-center gap-3 max-[350px]:flex-col max-[350px]:items-stretch">
@@ -475,9 +492,10 @@ const MechanicCard = memo(function MechanicCard({
             type="button"
             onClick={onRemove}
             disabled={isDisabled}
-            className={`${dangerButtonClass} h-9 min-h-0 w-auto shrink-0 rounded-lg px-2.5 py-1 text-xs`}
+            className={`${schedulerInlineUnassignButtonClass} max-[350px]:justify-center`}
           >
-            {t(isCurrentUser ? 'scheduler.detail.unassignMe' : 'scheduler.detail.unassignOther')}
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{t(removeLabelKey)}</span>
           </button>
         )}
       </div>

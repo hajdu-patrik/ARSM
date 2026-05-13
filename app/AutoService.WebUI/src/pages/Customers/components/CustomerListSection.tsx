@@ -19,9 +19,11 @@ import {
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
-  compactActionButtonDangerClass,
-  compactActionButtonNeutralClass,
+  compactSortToggleButtonClass,
   controlRowClass,
+  customersToolbarDangerButtonClass,
+  customersToolbarNeutralButtonClass,
+  customersToolbarPrimaryButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -173,7 +175,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenEditCustomerModal(customer)}
-                  className={`${compactActionButtonNeutralClass} min-h-11 shrink-0`}
+                  className={`${customersToolbarNeutralButtonClass} shrink-0`}
                 >
                   <Pencil className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.editCustomer')}</span>
@@ -182,7 +184,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                 <button
                   type="button"
                   onClick={() => onOpenDeleteCustomerModal(customer)}
-                  className={`${compactActionButtonDangerClass} min-h-11 shrink-0`}
+                  className={`${customersToolbarDangerButtonClass} shrink-0`}
                 >
                   <Trash2 className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.deleteCustomer')}</span>
@@ -202,7 +204,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onOpenCreateVehicleModal(customer.id)}
-                      className={`${compactActionButtonNeutralClass} min-h-11 shrink-0`}
+                      className={`${customersToolbarPrimaryButtonClass} shrink-0`}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{t('customers.createVehicle')}</span>
@@ -257,7 +259,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className={`${compactActionButtonNeutralClass} w-full sm:w-auto`}
+                      className={compactSortToggleButtonClass}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>

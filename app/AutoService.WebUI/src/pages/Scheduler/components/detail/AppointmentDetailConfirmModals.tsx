@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LogOut, Save } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import { buttonClass, dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
@@ -9,10 +10,18 @@ interface AppointmentDetailConfirmModalsProps {
   readonly isUpdating: boolean;
   readonly onCloseStatusConfirm: () => void;
   readonly onConfirmStatusChange: () => void;
+  readonly isClaimConfirmOpen: boolean;
+  readonly isClaiming: boolean;
+  readonly onCloseClaimConfirm: () => void;
+  readonly onConfirmClaim: () => void;
   readonly isUnclaimConfirmOpen: boolean;
   readonly isUnclaiming: boolean;
   readonly onCloseUnclaimConfirm: () => void;
   readonly onConfirmUnclaim: () => void;
+  readonly isSaveConfirmOpen: boolean;
+  readonly isSaving: boolean;
+  readonly onCloseSaveConfirm: () => void;
+  readonly onConfirmSave: () => void;
 }
 
 const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailConfirmModals({
@@ -20,10 +29,18 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
   isUpdating,
   onCloseStatusConfirm,
   onConfirmStatusChange,
+  isClaimConfirmOpen,
+  isClaiming,
+  onCloseClaimConfirm,
+  onConfirmClaim,
   isUnclaimConfirmOpen,
   isUnclaiming,
   onCloseUnclaimConfirm,
   onConfirmUnclaim,
+  isSaveConfirmOpen,
+  isSaving,
+  onCloseSaveConfirm,
+  onConfirmSave,
 }: AppointmentDetailConfirmModalsProps) {
   const { t } = useTranslation();
 
@@ -33,7 +50,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={pendingStatusChange !== null}
         onClose={onCloseStatusConfirm}
         title={t('scheduler.detail.statusChangeConfirmTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -63,10 +80,39 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
       </Modal>
 
       <Modal
+        isOpen={isClaimConfirmOpen}
+        onClose={onCloseClaimConfirm}
+        title={t('scheduler.detail.claimConfirmTitle')}
+        variant="confirm"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={onCloseClaimConfirm}
+              disabled={isClaiming}
+              className={secondaryButtonClass}
+            >
+              {t('scheduler.intake.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmClaim}
+              disabled={isClaiming}
+              className={buttonClass}
+            >
+              {isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.claimConfirmMessage')}</p>
+      </Modal>
+
+      <Modal
         isOpen={isUnclaimConfirmOpen}
         onClose={onCloseUnclaimConfirm}
         title={t('scheduler.detail.unassignConfirmTitle')}
-        showCloseButton={false}
+        variant="confirm"
         footer={(
           <>
             <button
@@ -83,12 +129,43 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isUnclaiming}
               className={dangerButtonClass}
             >
-              {isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
             </button>
           </>
         )}
       >
         <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.unassignConfirmMessage')}</p>
+      </Modal>
+
+      <Modal
+        isOpen={isSaveConfirmOpen}
+        onClose={onCloseSaveConfirm}
+        title={t('scheduler.detail.saveConfirmTitle')}
+        variant="confirm"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={onCloseSaveConfirm}
+              disabled={isSaving}
+              className={secondaryButtonClass}
+            >
+              {t('scheduler.intake.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmSave}
+              disabled={isSaving}
+              className={buttonClass}
+            >
+              <Save className="h-4 w-4 shrink-0" />
+              <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.confirmSave')}</span>
+            </button>
+          </>
+        )}
+      >
+        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.saveConfirmMessage')}</p>
       </Modal>
     </>
   );

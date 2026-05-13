@@ -28,6 +28,17 @@ const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   phoneNumber: '',
 };
 
+function hasCustomerUpdateChanges(
+  snapshot: CustomerListItem,
+  payload: UpdateCustomerRequest,
+): boolean {
+  return snapshot.firstName !== payload.firstName
+    || (snapshot.middleName ?? null) !== payload.middleName
+    || snapshot.lastName !== payload.lastName
+    || snapshot.email !== payload.email
+    || (snapshot.phoneNumber ?? null) !== payload.phoneNumber;
+}
+
 /** External dependencies required by customer mutation handlers. */
 interface UseCustomerMutationsParams {
   showSuccessToast: (message: string) => void;
@@ -141,7 +152,6 @@ export function useCustomerMutations({
 
   const handleSubmitCustomer = useCallback(async (event: React.SyntheticEvent) => {
     event.preventDefault();
-    setIsSavingCustomer(true);
 
     const payload: CreateCustomerRequest | UpdateCustomerRequest = {
       firstName: customerForm.firstName.trim(),
@@ -150,6 +160,18 @@ export function useCustomerMutations({
       email: customerForm.email.trim(),
       phoneNumber: customerForm.phoneNumber.trim() || null,
     };
+
+    if (
+      customerModalMode === 'edit'
+      && editingCustomerId !== null
+      && editingCustomerSnapshot
+      && !hasCustomerUpdateChanges(editingCustomerSnapshot, payload)
+    ) {
+      showErrorToast('toast.noChanges');
+      return;
+    }
+
+    setIsSavingCustomer(true);
 
     try {
       if (customerModalMode === 'create') {
@@ -172,9 +194,11 @@ export function useCustomerMutations({
     customerForm,
     customerModalMode,
     editingCustomerId,
+    editingCustomerSnapshot,
     applyCustomerCreated,
     applyCustomerUpdated,
     handleSubmitCustomerError,
+    showErrorToast,
     showSuccessToast,
   ]);
 

@@ -17,6 +17,7 @@ interface ModalProps {
   readonly footer?: ReactNode;
   readonly widthClassName?: string;
   readonly showCloseButton?: boolean;
+  readonly variant?: 'default' | 'confirm';
 }
 
 const ModalComponent = memo(function Modal({
@@ -25,11 +26,14 @@ const ModalComponent = memo(function Modal({
   title,
   children,
   footer,
-  widthClassName = 'max-w-md',
+  widthClassName,
   showCloseButton = true,
+  variant = 'default',
 }: ModalProps) {
   const { t: translate } = useTranslation();
   const NativeDialog = 'dialog';
+  const isConfirmVariant = variant === 'confirm';
+  const resolvedWidthClassName = widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md');
 
   useEffect(() => {
     if (!isOpen) {
@@ -65,7 +69,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-[95%] sm:w-full ${widthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
+        className={`relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-5 text-arsm-primary transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
         style={{ animation: 'modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)' }}
       >
         <div
@@ -73,17 +77,21 @@ const ModalComponent = memo(function Modal({
           className="arsm-modal-sheen pointer-events-none absolute inset-x-0 top-0 h-16"
         />
 
-        <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
-          <h2 className="min-w-0 truncate text-lg font-semibold">{title}</h2>
+        <div className={`mb-4 min-w-0 ${isConfirmVariant ? 'relative flex min-h-11 items-center justify-center' : 'flex items-center justify-between gap-3'}`}>
+          <h2 className={`min-w-0 ${isConfirmVariant ? 'px-12 text-center text-xl font-semibold sm:text-2xl' : 'truncate text-lg font-semibold'}`}>{title}</h2>
           {showCloseButton && (
-            <div className="shrink-0">
-              <ModalCloseButton onClick={onClose} />
+            <div className={isConfirmVariant ? 'absolute right-0 top-0 shrink-0' : 'shrink-0'}>
+              <ModalCloseButton onClick={onClose} variant={variant} />
             </div>
           )}
         </div>
 
-        <div>{children}</div>
-        {footer && <div className={`mt-5 ${controlPanelFooterClass}`}>{footer}</div>}
+        <div className={isConfirmVariant ? 'mx-auto max-w-[32rem] text-center' : ''}>{children}</div>
+        {footer && (
+          <div className={`mt-5 ${controlPanelFooterClass}${isConfirmVariant ? ' arsm-modal-footer-confirm' : ''}`}>
+            {footer}
+          </div>
+        )}
       </NativeDialog>
     </div>,
     document.body,

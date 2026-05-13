@@ -7,7 +7,7 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus, CalendarDay } from '../../../../types/scheduler/scheduler.types';
-import { insetSurfaceClass } from '../../../../utils/formStyles';
+import { insetSurfaceClass, schedulerNavIconButtonClass } from '../../../../utils/formStyles';
 
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
@@ -24,14 +24,6 @@ const STATUS_DOT_COLORS: Record<AppointmentStatus, string> = {
   Completed: 'bg-arsm-success-accent',
   Cancelled: 'bg-arsm-error-accent',
 };
-
-const NAV_BUTTON_BASE_CLASS = 'inline-flex h-8 w-8 items-center justify-center rounded-lg border text-arsm-label transition-colors dark:text-arsm-label-dark';
-const NAV_BUTTON_ENABLED_CLASS = 'border-arsm-border hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:border-arsm-border-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark';
-const NAV_BUTTON_DISABLED_CLASS = 'cursor-not-allowed border-arsm-border/60 opacity-50 dark:border-arsm-border-dark/60';
-
-function getNavButtonClass(isEnabled: boolean): string {
-  return `${NAV_BUTTON_BASE_CLASS} ${isEnabled ? NAV_BUTTON_ENABLED_CLASS : NAV_BUTTON_DISABLED_CLASS}`;
-}
 
 /**
  * Formats a Date into local YYYY-MM-DD for scheduler day bucketing.
@@ -180,7 +172,7 @@ const CalendarViewComponent = memo(function CalendarView({
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
           aria-label={t('scheduler.calendar.prevMonth')}
-          className={`${getNavButtonClass(canGoPrev)} mx-1`}
+          className={`${schedulerNavIconButtonClass} mx-1`}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -195,7 +187,7 @@ const CalendarViewComponent = memo(function CalendarView({
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
           aria-label={t('scheduler.calendar.nextMonth')}
-          className={`${getNavButtonClass(canGoNext)} mx-1`}
+          className={`${schedulerNavIconButtonClass} mx-1`}
         >
           <ChevronRight className="h-4 w-4" />
         </button>

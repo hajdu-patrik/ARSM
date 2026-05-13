@@ -9,10 +9,10 @@ import { ArrowUpDown, Pencil, Trash2, Wrench } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
-	compactActionButtonAccentClass,
-	compactActionButtonDangerClass,
-	compactActionButtonNeutralClass,
+	compactSortToggleButtonClass,
 	controlRowClass,
+	schedulerInlineClaimButtonClass,
+	schedulerInlineUnassignButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { RepairHistoryList } from './RepairHistoryList';
@@ -88,7 +88,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onToggleVehicleHistory(customerId, vehicle.id)}
-					className={`${compactActionButtonAccentClass} w-full sm:w-auto`}
+					className={`${schedulerInlineClaimButtonClass} w-full sm:w-auto`}
 				>
 					<Wrench className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{isVehicleHistoryOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory')}</span>
@@ -103,7 +103,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							<button
 								type="button"
 								onClick={() => onToggleVehicleHistorySort(vehicle.id)}
-								className={`${compactActionButtonNeutralClass} w-full sm:w-auto`}
+								className={compactSortToggleButtonClass}
 							>
 								<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
 								<span className="truncate">{vehicleHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -130,7 +130,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onOpenEditVehicleModal(customerId, vehicle)}
-					className={`${compactActionButtonAccentClass} w-full sm:w-auto`}
+					className={`${schedulerInlineClaimButtonClass} w-full sm:w-auto`}
 				>
 					<Pencil className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{t('customers.editVehicle')}</span>
@@ -139,7 +139,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 				<button
 					type="button"
 					onClick={() => onOpenDeleteVehicleModal(customerId, vehicle)}
-					className={`${compactActionButtonDangerClass} w-full sm:w-auto`}
+					className={`${schedulerInlineUnassignButtonClass} w-full sm:w-auto`}
 				>
 					<Trash2 className="h-3.5 w-3.5 shrink-0" />
 					<span className="truncate">{t('customers.deleteVehicle')}</span>

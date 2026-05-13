@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import { dangerButtonClass, secondaryButtonClass } from '../../../utils/formStyles';
@@ -27,9 +28,13 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
   return (
     <Modal
       isOpen={target !== null}
-      onClose={onClose}
+      onClose={() => {
+        if (!isDeleting) {
+          onClose();
+        }
+      }}
       title={t('customers.deleteVehicleTitle')}
-      showCloseButton={false}
+      variant="confirm"
       footer={(
         <>
           <button
@@ -46,7 +51,8 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
             disabled={isDeleting}
             className={dangerButtonClass}
           >
-            {isDeleting ? t('customers.deleting') : t('customers.deleteVehicle')}
+            <Trash2 className="h-4 w-4 shrink-0" />
+            <span>{isDeleting ? t('customers.deleting') : t('customers.deleteVehicle')}</span>
           </button>
         </>
       )}

@@ -40,6 +40,24 @@ interface AppointmentDetailModalProps {
   ) => Promise<void>;
 }
 
+function hasAppointmentEditChanges(
+  appointment: AppointmentDto,
+  request: UpdateAppointmentRequest,
+): boolean {
+  if (appointment.taskDescription.trim() !== request.taskDescription.trim()) {
+    return true;
+  }
+
+  const currentDueMs = Date.parse(appointment.dueDateTime);
+  const nextDueMs = Date.parse(request.dueDateTime);
+
+  if (Number.isNaN(currentDueMs) || Number.isNaN(nextDueMs)) {
+    return appointment.dueDateTime !== request.dueDateTime;
+  }
+
+  return currentDueMs !== nextDueMs;
+}
+
 const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   appointment,
   isOpen,
@@ -67,7 +85,9 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
 
   const [pendingStatusChange, setPendingStatusChange] = useState<AppointmentStatus | null>(null);
+  const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
   const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
+  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
 
   const initializedAppointmentIdRef = useRef<number | null>(null);
   const { allMechanics } = useAdminMechanics(isAdmin, isOpen);
@@ -78,7 +98,9 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       setEditForm(null);
       setIsEditing(false);
       setPendingStatusChange(null);
+      setIsClaimConfirmOpen(false);
       setIsUnclaimConfirmOpen(false);
+      setIsSaveConfirmOpen(false);
       return;
     }
 
@@ -90,7 +112,9 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setEditForm(buildEditForm(appointment));
     setIsEditing(false);
     setPendingStatusChange(null);
+    setIsClaimConfirmOpen(false);
     setIsUnclaimConfirmOpen(false);
+    setIsSaveConfirmOpen(false);
   }, [appointment, isOpen]);
 
   const handleClaim = useCallback(async () => {
@@ -101,6 +125,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setIsClaiming(true);
     try {
       await onClaim(appointment.id);
+      setIsClaimConfirmOpen(false);
     } finally {
       setIsClaiming(false);
     }
@@ -174,7 +199,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     });
   }, []);
 
-  const handleSave = useCallback(async () => {
+  const handleSaveConfirmed = useCallback(async () => {
     if (!appointment || !editForm) {
       return;
     }
@@ -185,9 +210,18 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       return;
     }
 
+    if (!hasAppointmentEditChanges(appointment, validationResult.request.appointment)) {
+      setEditForm(buildEditForm(appointment));
+      setIsEditing(false);
+      setIsSaveConfirmOpen(false);
+      showErrorToast('toast.noChanges');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await onUpdate(appointment.id, validationResult.request.appointment);
+      setIsSaveConfirmOpen(false);
       setIsEditing(false);
       setEditForm(buildEditForm(buildUpdatedAppointmentSnapshot(appointment, validationResult.request)));
     } catch {
@@ -196,6 +230,25 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       setIsSaving(false);
     }
   }, [appointment, editForm, onUpdate, showErrorToast]);
+
+  const handleExitEditMode = useCallback(() => {
+    if (!appointment) {
+      return;
+    }
+
+    setEditForm(buildEditForm(appointment));
+    setIsEditing(false);
+  }, [appointment]);
+
+  const handleCloseDetailModal = useCallback(() => {
+    if (isEditing) {
+      handleExitEditMode();
+      setIsSaveConfirmOpen(false);
+      return;
+    }
+
+    onClose();
+  }, [handleExitEditMode, isEditing, onClose]);
 
   if (!appointment) {
     return null;
@@ -232,12 +285,10 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         setEditForm(buildEditForm(appointment));
         setIsEditing(true);
       }}
-      onCancelEdit={() => {
-        setEditForm(buildEditForm(appointment));
-        setIsEditing(false);
-      }}
       onSave={() => {
-        void handleSave();
+        if (!isSaving) {
+          setIsSaveConfirmOpen(true);
+        }
       }}
       onStatusChange={(status) => {
         setPendingStatusChange(status);
@@ -249,7 +300,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     <>
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleCloseDetailModal}
         title={t('scheduler.detail.title')}
         widthClassName="max-w-2xl"
         footer={footer}
@@ -274,7 +325,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           onEditField={handleEditField}
           onClaim={() => {
             if (canClaim) {
-              void handleClaim();
+              setIsClaimConfirmOpen(true);
             }
           }}
           onUnclaim={() => {
@@ -304,6 +355,16 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         onConfirmStatusChange={() => {
           void handleStatusChangeConfirmed();
         }}
+        isClaimConfirmOpen={isClaimConfirmOpen}
+        isClaiming={isClaiming}
+        onCloseClaimConfirm={() => {
+          if (!isClaiming) {
+            setIsClaimConfirmOpen(false);
+          }
+        }}
+        onConfirmClaim={() => {
+          void handleClaim();
+        }}
         isUnclaimConfirmOpen={isUnclaimConfirmOpen}
         isUnclaiming={isUnclaiming}
         onCloseUnclaimConfirm={() => {
@@ -313,6 +374,19 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         }}
         onConfirmUnclaim={() => {
           void handleUnclaimConfirmed();
+        }}
+        isSaveConfirmOpen={isSaveConfirmOpen}
+        isSaving={isSaving}
+        onCloseSaveConfirm={() => {
+          if (!isSaving) {
+            setIsSaveConfirmOpen(false);
+            if (isEditing) {
+              handleExitEditMode();
+            }
+          }
+        }}
+        onConfirmSave={() => {
+          void handleSaveConfirmed();
         }}
       />
     </>
