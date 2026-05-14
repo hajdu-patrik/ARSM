@@ -26,8 +26,6 @@ Desktop.ini
 *.swp
 *.swo
 .aspire
-/aspire.config.json
-/dotnet-tools.json
 *~
 
 # =========================

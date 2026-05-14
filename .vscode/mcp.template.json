@@ -21,11 +21,11 @@
             "args": [
                 "-y",
                 "@modelcontextprotocol/server-postgres",
-                "postgres://postgres:YOUR_PASSWORD_HERE@localhost:5432/AutoServiceDb"
+                "${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}"
             ],
             "type": "stdio"
         },
-		"docker": {
+        "docker": {
             "command": "npx",
             "args": [
                 "-y",
