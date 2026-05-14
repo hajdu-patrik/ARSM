@@ -1,2 +1,5 @@
 User-agent: *
 Allow: /
+
+# ARSM is an authenticated SPA. Route-level crawl/index directives are enforced via SEO meta tags.
+Sitemap: /sitemap.xml

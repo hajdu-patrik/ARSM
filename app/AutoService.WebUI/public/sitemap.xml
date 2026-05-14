@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Intentionally empty: ARSM routes are authenticated app views with runtime canonical handling. -->
+  <!-- Intentionally empty: ARSM routes are authenticated app views with runtime canonical/noindex handling. -->
+  <!-- Populate only when public, indexable marketing routes are introduced. -->
 </urlset>

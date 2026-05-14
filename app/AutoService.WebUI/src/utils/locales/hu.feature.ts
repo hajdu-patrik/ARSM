@@ -1,4 +1,38 @@
 export const huFeature = {
+  seo: {
+    organizationName: 'ARSM Autoszerviz',
+    socialImageAlt: 'ARSM muhely utemezo felulet elonezet',
+    pages: {
+      login: {
+        title: 'Biztonsagos bejelentkezes',
+        description: 'Jelentkezzen be az ARSM rendszerbe a biztonsagos muhely utemezeshez es szervizfolyamatokhoz.',
+      },
+      scheduler: {
+        title: 'Muhely utemezo',
+        description: 'ARSM idopontkezeles muhely terheleshez, hataridokhoz es szerelo hozzarendeleshez.',
+      },
+      customers: {
+        title: 'Ugyfel- es jarmukezeles',
+        description: 'Ugyfeladatok, jarmuadatok es javitasi elozmenyek kezelese az ARSM rendszerben.',
+      },
+      settings: {
+        title: 'Profil es biztonsagi beallitasok',
+        description: 'Kezelje ARSM profiljat, jelszavat es szemelyes biztonsagi beallitasait.',
+      },
+      adminRegister: {
+        title: 'Szerelo regisztracio',
+        description: 'Uj szerelo fiokok regisztralasa es szakmai adataik beallitasa az ARSM-ben.',
+      },
+      serverError: {
+        title: 'Szerverhiba',
+        description: 'Az ARSM ideiglenes szerverhibat eszlelt az oldal betoltese kozben.',
+      },
+      notFound: {
+        title: 'Oldal nem talalhato',
+        description: 'A keresett ARSM oldal nem erheto el.',
+      },
+    },
+  },
   customers: {
     pageTitle: 'Ügyfelek',
     pageDescription: 'Ügyfelek, járművek és javítási előzmények kezelése egy helyen.',

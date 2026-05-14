@@ -1,4 +1,38 @@
 export const enFeature = {
+  seo: {
+    organizationName: 'ARSM Auto Service',
+    socialImageAlt: 'ARSM workshop scheduling interface preview',
+    pages: {
+      login: {
+        title: 'Secure Login',
+        description: 'Sign in to ARSM to access secure workshop scheduling and service operations.',
+      },
+      scheduler: {
+        title: 'Workshop Scheduler',
+        description: 'ARSM appointment scheduler for managing workshop workload, due dates, and mechanic assignments.',
+      },
+      customers: {
+        title: 'Customer and Vehicle Management',
+        description: 'Track customer records, vehicles, and repair histories in ARSM.',
+      },
+      settings: {
+        title: 'Profile and Security Settings',
+        description: 'Manage your ARSM account profile, password, and personal security preferences.',
+      },
+      adminRegister: {
+        title: 'Mechanic Registration',
+        description: 'Register new mechanic accounts and assign specialization data in ARSM.',
+      },
+      serverError: {
+        title: 'Server Error',
+        description: 'ARSM encountered a temporary server issue while loading this page.',
+      },
+      notFound: {
+        title: 'Page Not Found',
+        description: 'The requested ARSM page could not be found.',
+      },
+    },
+  },
   customers: {
     pageTitle: 'Customers',
     pageDescription: 'Manage customers, vehicles, and repair histories in one place.',
