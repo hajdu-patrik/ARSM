@@ -45,7 +45,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] firstName with space rejected (422 expected)
+### [Negative][Register][Admin] firstName with space rejected (400 expected)
 # "First name may only contain letters and hyphens."
 ### [Case][Auth] POST /api/auth/register
 
@@ -64,7 +64,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] firstName with digit rejected (422 expected)
+### [Negative][Register][Admin] firstName with digit rejected (400 expected)
 # "First name may only contain letters and hyphens."
 ### [Case][Auth] POST /api/auth/register
 
@@ -83,7 +83,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] firstName with apostrophe rejected (422 expected)
+### [Negative][Register][Admin] firstName with apostrophe rejected (400 expected)
 # "First name may only contain letters and hyphens."
 ### [Case][Auth] POST /api/auth/register
 
@@ -102,7 +102,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] lastName with special character rejected (422 expected)
+### [Negative][Register][Admin] lastName with special character rejected (400 expected)
 # "Last name may only contain letters and hyphens."
 ### [Case][Auth] POST /api/auth/register
 
@@ -121,7 +121,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] middleName with space rejected (422 expected)
+### [Negative][Register][Admin] middleName with space rejected (400 expected)
 # "Middle name may only contain letters and hyphens."
 ### [Case][Auth] POST /api/auth/register
 

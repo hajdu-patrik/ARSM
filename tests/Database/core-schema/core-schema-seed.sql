@@ -1,11 +1,10 @@
 -- ============================================================
 -- AutoService DB — Validation Queries
 -- Run these inside psql after seeding demo data.
--- Usage: docker exec -it <CONTAINER_NAME> sh
---        export PGPASSWORD=$POSTGRES_PASSWORD
---        psql -U postgres -d AutoServiceDb
+-- Usage: connect with the dedicated read-only ai_agent_test_user account,
+--        then run this file against AutoServiceDb.
 --------------------------OR-----------------------------------
--- Download "SQLTools" extension for VS Code, add a new PostgreSQL connection with the same credentials,
+-- Download "SQLTools" extension for VS Code, add a PostgreSQL connection for ai_agent_test_user,
 -- and run this file directly in the editor.
 -- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
 -- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.

@@ -16,6 +16,17 @@
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
 ### [Case][Auth] POST /api/auth/register
 
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
@@ -34,7 +45,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (422 expected)
+### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (400 expected)
 # Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Content-Type: application/json

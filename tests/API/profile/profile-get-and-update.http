@@ -100,7 +100,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with duplicate email conflict (409 expected)
+### [Negative][Profile] Update with duplicate email validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
@@ -110,7 +110,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with duplicate phone conflict (422 expected)
+### [Negative][Profile] Update with duplicate phone validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
@@ -120,7 +120,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with invalid email format (422 expected)
+### [Negative][Profile] Update with invalid email format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
@@ -130,7 +130,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with invalid European phone format (422 expected)
+### [Negative][Profile] Update with invalid European phone format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
@@ -140,7 +140,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with empty firstName (422 expected)
+### [Negative][Profile] Update with empty firstName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
@@ -150,7 +150,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with empty lastName (422 expected)
+### [Negative][Profile] Update with empty lastName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 

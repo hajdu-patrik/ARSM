@@ -88,7 +88,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Profile] Non-admin self-delete (204 expected)
+### [Positive][Profile] Non-admin self-delete (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Content-Type: application/json
 
