@@ -1,6 +1,5 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
-using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +15,7 @@ namespace AutoService.ApiService.DataInitialization;
  * - DemoData:MechanicPassword is always required.
  * - Outside Development: also requires explicit DemoData:EnableSeeding=true.
  */
-public static class DemoDataInitializer
+public static partial class DemoDataInitializer
 {
     private static readonly string[] DemoMechanicEmails =
     [
@@ -29,16 +28,17 @@ public static class DemoDataInitializer
      * Applies pending migrations and inserts demo data when the database is empty.
      *
      * @param app The web application used to resolve scoped services.
+    * @param cancellationToken Token used to cancel migration and EF seeding I/O.
      * @return A task that completes when migration and conditional seeding are finished.
      */
-    public static async Task EnsureSeededAsync(this WebApplication app)
+    public static async Task EnsureSeededAsync(this WebApplication app, CancellationToken cancellationToken = default)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AutoServiceDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-        await db.Database.MigrateAsync();
+        await db.Database.MigrateAsync(cancellationToken);
 
         // Avoid creating known demo credentials outside development unless explicitly enabled.
         var enableDemoSeedOutsideDevelopment = app.Configuration.GetValue<bool>("DemoData:EnableSeeding");
@@ -58,23 +58,23 @@ public static class DemoDataInitializer
                 "Demo seeding password 'DemoData:MechanicPassword' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a unique local password before startup.");
         }
 
-        var hasMechanics = await db.Mechanics.AnyAsync();
-        var hasCustomers = await db.Customers.AnyAsync();
-        var hasVehicles = await db.Vehicles.AnyAsync();
-        var hasAppointments = await db.Appointments.AnyAsync();
-        var hasIdentityUsers = await db.Users.AnyAsync();
+        var hasMechanics = await db.Mechanics.AnyAsync(cancellationToken);
+        var hasCustomers = await db.Customers.AnyAsync(cancellationToken);
+        var hasVehicles = await db.Vehicles.AnyAsync(cancellationToken);
+        var hasAppointments = await db.Appointments.AnyAsync(cancellationToken);
+        var hasIdentityUsers = await db.Users.AnyAsync(cancellationToken);
 
         // Older migration backfill can leave a customer-only dataset with no mechanics/identity users.
         // Reset that inconsistent state so deterministic demo seeding can create full auth-capable data.
         if (!hasMechanics && !hasIdentityUsers && (hasCustomers || hasVehicles || hasAppointments))
         {
-            await ResetLegacyBackfillDatasetAsync(db);
+            await ResetLegacyBackfillDatasetAsync(db, cancellationToken);
             hasCustomers = false;
             hasVehicles = false;
             hasAppointments = false;
         }
 
-        await NormalizePersistedDataAsync(db);
+        await NormalizePersistedDataAsync(db, cancellationToken);
 
         if (hasMechanics || hasCustomers || hasVehicles || hasAppointments || hasIdentityUsers)
         {
@@ -85,20 +85,7 @@ public static class DemoDataInitializer
         }
 
         // Create mechanics with linked Identity accounts.
-        var mechanicSeeds = new[]
-        {
-            (Name: new FullName("Gabor", null, "Kovacs"),    Email: "gabor.kovacs@example.com", Phone: "+36301112233",
-             Spec: SpecializationType.GasolineAndDiesel,
-             Skills: new List<ExpertiseType> { ExpertiseType.Engine, ExpertiseType.Transmission, ExpertiseType.Brakes, ExpertiseType.FuelSystem }),
-
-            (Name: new FullName("Peter", null, "Nagy"),      Email: "peter.nagy@example.com",   Phone: "+36302223344",
-             Spec: SpecializationType.HybridAndElectric,
-             Skills: new List<ExpertiseType> { ExpertiseType.ElectricalSystem, ExpertiseType.CoolingSystem, ExpertiseType.Suspension, ExpertiseType.Brakes, ExpertiseType.AirConditioning }),
-
-            (Name: new FullName("Mate", null, "Szabo"),      Email: "mate.szabo@example.com",   Phone: "+36303334455",
-             Spec: SpecializationType.All,
-             Skills: new List<ExpertiseType> { ExpertiseType.Engine, ExpertiseType.Transmission, ExpertiseType.Brakes, ExpertiseType.Suspension, ExpertiseType.ExhaustSystem, ExpertiseType.Bodywork })
-        };
+        var mechanicSeeds = DemoDataSeedFactory.CreateMechanicSeeds();
 
         var mechanics = new List<Mechanic>();
         foreach (var seed in mechanicSeeds)
@@ -113,215 +100,22 @@ public static class DemoDataInitializer
         db.Mechanics.AddRange(mechanics);
 
         // Customers are passive data records — no login account, no IdentityUserId.
-        var customers = new List<Customer>
-        {
-            new(new FullName("Anna",   "Maria", "Toth"),   "anna.toth@example.com",     "+36304445566"),
-            new(new FullName("Bence",  null,    "Farkas"),  "bence.farkas@example.com",  "+36305556677"),
-            new(new FullName("Csilla", "Kata",  "Varga"),   "csilla.varga@example.com",  null),
-            new(new FullName("David",  null,    "Kiss"),    "david.kiss@example.com",    "+36306667788"),
-            new(new FullName("Emese",  null,    "Lakatos"), "emese.lakatos@example.com", null)
-        };
+        var customers = DemoDataSeedFactory.CreateCustomers();
         db.Customers.AddRange(customers);
-        
-        await db.SaveChangesAsync();
 
+        await db.SaveChangesAsync(cancellationToken);
 
         // Create vehicles.
-        var vehicles = new List<Vehicle>
-        {
-            new()
-            {
-                LicensePlate = "ABC-101",
-                Brand = "Volkswagen",
-                Model = "Golf",
-                Year = 2018,
-                MileageKm = 124_500,
-                EnginePowerHp = 110,
-                EngineTorqueNm = 250,
-                CustomerId = customers[0].Id
-            },
-            new()
-            {
-                LicensePlate = "BCD-202",
-                Brand = "Toyota",
-                Model = "Corolla Hybrid",
-                Year = 2021,
-                MileageKm = 63_200,
-                EnginePowerHp = 122,
-                EngineTorqueNm = 190,
-                CustomerId = customers[1].Id
-            },
-            new()
-            {
-                LicensePlate = "CDE-303",
-                Brand = "Tesla",
-                Model = "Model 3",
-                Year = 2022,
-                MileageKm = 48_000,
-                EnginePowerHp = 283,
-                EngineTorqueNm = 420,
-                CustomerId = customers[2].Id
-            },
-            new()
-            {
-                LicensePlate = "DEF-404",
-                Brand = "Ford",
-                Model = "Focus",
-                Year = 2016,
-                MileageKm = 167_800,
-                EnginePowerHp = 125,
-                EngineTorqueNm = 200,
-                CustomerId = customers[3].Id
-            },
-            new()
-            {
-                LicensePlate = "EFG-505",
-                Brand = "BMW",
-                Model = "320d",
-                Year = 2019,
-                MileageKm = 91_300,
-                EnginePowerHp = 190,
-                EngineTorqueNm = 400,
-                CustomerId = customers[4].Id
-            }
-        };
+        var vehicles = DemoDataSeedFactory.CreateVehicles(customers);
 
         db.Vehicles.AddRange(vehicles);
-        await db.SaveChangesAsync();
-
+        await db.SaveChangesAsync(cancellationToken);
 
         // Create appointments.
-        var appointments = new List<Appointment>
-        {
-            new()
-            {
-                ScheduledDate = DateTime.UtcNow.AddDays(2),
-                IntakeCreatedAt = DateTime.UtcNow,
-                DueDateTime = DateTime.UtcNow.AddDays(5),
-                TaskDescription = "Periodic oil change and general inspection",
-                Status = ProgressStatus.InProgress,
-                VehicleId = vehicles[0].Id,
-                Mechanics = new List<Mechanic> { mechanics[0] }
-            },
-            new()
-            {
-                ScheduledDate = DateTime.UtcNow.AddDays(4),
-                IntakeCreatedAt = DateTime.UtcNow,
-                DueDateTime = DateTime.UtcNow.AddDays(7),
-                TaskDescription = "Brake system inspection and pad replacement",
-                Status = ProgressStatus.InProgress,
-                VehicleId = vehicles[1].Id,
-                Mechanics = new List<Mechanic> { mechanics[1] }
-            },
-            new()
-            {
-                ScheduledDate = DateTime.UtcNow.AddDays(-1),
-                IntakeCreatedAt = DateTime.UtcNow,
-                DueDateTime = DateTime.UtcNow.AddDays(2),
-                TaskDescription = "Engine diagnostics and exhaust repair",
-                Status = ProgressStatus.InProgress,
-                VehicleId = vehicles[2].Id,
-                Mechanics = new List<Mechanic> { mechanics[2] }
-            },
-            new()
-            {
-                ScheduledDate = DateTime.UtcNow.AddDays(-7),
-                IntakeCreatedAt = DateTime.UtcNow,
-                DueDateTime = DateTime.UtcNow.AddDays(-4),
-                TaskDescription = "Suspension adjustment and wheel alignment",
-                Status = ProgressStatus.Completed,
-                CompletedAt = DateTime.UtcNow.AddDays(-4),
-                VehicleId = vehicles[3].Id,
-                Mechanics = new List<Mechanic> { mechanics[0], mechanics[2] }
-            },
-            new()
-            {
-                ScheduledDate = DateTime.UtcNow.AddDays(-3),
-                IntakeCreatedAt = DateTime.UtcNow,
-                DueDateTime = DateTime.UtcNow,
-                TaskDescription = "Battery replacement and electrical fault diagnosis",
-                Status = ProgressStatus.Cancelled,
-                CanceledAt = DateTime.UtcNow.AddDays(-3).AddHours(1),
-                VehicleId = vehicles[4].Id,
-                Mechanics = new List<Mechanic> { mechanics[1] }
-            }
-        };
-
-        var nowUtc = DateTime.UtcNow;
-        var monthStartUtc = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var daysInCurrentMonth = DateTime.DaysInMonth(nowUtc.Year, nowUtc.Month);
-        var generatedTaskTemplates = new[]
-        {
-            "Oil change and filter inspection",
-            "Brake system diagnostics",
-            "Suspension and tire condition assessment",
-            "Battery and charging system check",
-            "Engine fault code reading and test",
-            "Air conditioning system maintenance",
-            "Exhaust system inspection",
-            "Fuel system cleaning"
-        };
-
-        for (var i = 0; i < 30; i++)
-        {
-            var dayOfMonth = i < 6
-                ? nowUtc.Day
-                : ((i * 2) % daysInCurrentMonth) + 1;
-
-            var scheduledDateUtc = new DateTime(
-                nowUtc.Year,
-                nowUtc.Month,
-                dayOfMonth,
-                8 + (i % 9),
-                i % 2 == 0 ? 0 : 30,
-                0,
-                DateTimeKind.Utc);
-
-            var assignedMechanics = new List<Mechanic>
-            {
-                mechanics[i % mechanics.Count]
-            };
-
-            if (i % 4 == 0)
-            {
-                var secondMechanic = mechanics[(i + 1) % mechanics.Count];
-                if (assignedMechanics.All(m => m.Id != secondMechanic.Id))
-                {
-                    assignedMechanics.Add(secondMechanic);
-                }
-            }
-
-            var status = ProgressStatus.InProgress;
-            DateTime? completedAt = null;
-            DateTime? canceledAt = null;
-
-            if (scheduledDateUtc < nowUtc.Date && i % 7 == 0)
-            {
-                status = ProgressStatus.Cancelled;
-                canceledAt = scheduledDateUtc.AddHours(1);
-            }
-            else if (scheduledDateUtc < nowUtc.Date && i % 5 == 0)
-            {
-                status = ProgressStatus.Completed;
-                completedAt = scheduledDateUtc.AddHours(2);
-            }
-
-            appointments.Add(new Appointment
-            {
-                ScheduledDate = scheduledDateUtc,
-                IntakeCreatedAt = scheduledDateUtc.AddHours(-2),
-                DueDateTime = scheduledDateUtc.AddDays(3),
-                TaskDescription = $"{generatedTaskTemplates[i % generatedTaskTemplates.Length]} #{i + 1}",
-                Status = status,
-                CompletedAt = completedAt,
-                CanceledAt = canceledAt,
-                VehicleId = vehicles[i % vehicles.Count].Id,
-                Mechanics = assignedMechanics
-            });
-        }
+        var appointments = DemoDataSeedFactory.CreateAppointments(vehicles, mechanics, DateTime.UtcNow);
 
         db.Appointments.AddRange(appointments);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
 
         await EnsureDemoMechanicPasswordsAsync(userManager, mechanicPassword);
 
@@ -421,109 +215,5 @@ public static class DemoDataInitializer
                 throw new InvalidOperationException($"Demo seeding failed: could not synchronize password for '{email}': {resetErrors}");
             }
         }
-    }
-
-    private static async Task NormalizePersistedDataAsync(AutoServiceDbContext db)
-    {
-        await NormalizeAppointmentStatusTimestampsAsync(db);
-        await NormalizeDuplicatePhoneNumbersAsync(db);
-    }
-
-    private static async Task NormalizeAppointmentStatusTimestampsAsync(AutoServiceDbContext db)
-    {
-        var appointments = await db.Appointments
-            .Where(a =>
-                (a.Status == ProgressStatus.Completed && (a.CompletedAt == null || a.CanceledAt != null)) ||
-                (a.Status == ProgressStatus.Cancelled && (a.CanceledAt == null || a.CompletedAt != null)) ||
-                (a.Status == ProgressStatus.InProgress && (a.CompletedAt != null || a.CanceledAt != null)))
-            .ToListAsync();
-
-        if (appointments.Count == 0)
-        {
-            return;
-        }
-
-        foreach (var appointment in appointments)
-        {
-            switch (appointment.Status)
-            {
-                case ProgressStatus.Completed:
-                    appointment.CompletedAt ??= appointment.DueDateTime >= appointment.ScheduledDate
-                        ? appointment.DueDateTime
-                        : appointment.ScheduledDate;
-                    appointment.CanceledAt = null;
-                    break;
-                case ProgressStatus.Cancelled:
-                    appointment.CanceledAt ??= appointment.ScheduledDate;
-                    appointment.CompletedAt = null;
-                    break;
-                case ProgressStatus.InProgress:
-                    appointment.CompletedAt = null;
-                    appointment.CanceledAt = null;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        await db.SaveChangesAsync();
-    }
-
-    private static async Task NormalizeDuplicatePhoneNumbersAsync(AutoServiceDbContext db)
-    {
-        var peopleWithPhone = await db.People
-            .Where(p => p.PhoneNumber != null)
-            .ToListAsync();
-
-        if (peopleWithPhone.Count == 0)
-        {
-            return;
-        }
-
-        var seenPhones = new HashSet<string>(StringComparer.Ordinal);
-        var hasChanges = false;
-
-        foreach (var person in peopleWithPhone
-                     .OrderBy(p => p is Mechanic ? 0 : 1)
-                     .ThenBy(p => p.Id))
-        {
-            var phone = person.PhoneNumber;
-            if (phone is null)
-            {
-                continue;
-            }
-
-            if (!seenPhones.Add(phone))
-            {
-                person.PhoneNumber = null;
-                hasChanges = true;
-            }
-        }
-
-        if (!hasChanges)
-        {
-            return;
-        }
-
-        await db.SaveChangesAsync();
-    }
-
-    private static async Task ResetLegacyBackfillDatasetAsync(AutoServiceDbContext db)
-    {
-        // Use explicit set-based deletes to avoid raw TRUNCATE execution.
-        await db.UserTokens.ExecuteDeleteAsync();
-        await db.UserRoles.ExecuteDeleteAsync();
-        await db.UserLogins.ExecuteDeleteAsync();
-        await db.UserClaims.ExecuteDeleteAsync();
-        await db.RoleClaims.ExecuteDeleteAsync();
-
-        await db.RefreshTokens.ExecuteDeleteAsync();
-        await db.RevokedJwtTokens.ExecuteDeleteAsync();
-        await db.Appointments.ExecuteDeleteAsync();
-        await db.Vehicles.ExecuteDeleteAsync();
-        await db.People.ExecuteDeleteAsync();
-
-        await db.Users.ExecuteDeleteAsync();
-        await db.Roles.ExecuteDeleteAsync();
     }
 }
