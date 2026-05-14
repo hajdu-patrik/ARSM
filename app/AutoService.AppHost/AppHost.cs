@@ -7,6 +7,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgresPort = GetRequiredPort(builder.Configuration, "Ports:Postgres");
 var webUiPort = GetRequiredPort(builder.Configuration, "Ports:WebUi");
+var configuredWebUiSiteUrl = builder.Configuration["WebUi:SiteUrl"];
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
@@ -26,11 +27,16 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("JwtSettings__Secret", jwtSecret)
                         .WithEnvironment("PGGSSENCMODE", "disable");
 
-builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
-    .WithReference(apiService)
-    .WithEnvironment("VITE_API_URL", apiService.GetEndpoint("https"))
-    .WithHttpsEndpoint(targetPort: webUiPort, port: webUiPort, env: "PORT", isProxied: false)
-    .WithExternalHttpEndpoints();
+var webUi = builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
+                   .WithReference(apiService)
+                   .WithEnvironment("VITE_API_URL", apiService.GetEndpoint("https"))
+                   .WithHttpsEndpoint(targetPort: webUiPort, port: webUiPort, env: "PORT", isProxied: false)
+                   .WithExternalHttpEndpoints();
+
+if (!string.IsNullOrWhiteSpace(configuredWebUiSiteUrl))
+{
+    webUi.WithEnvironment("VITE_SITE_URL", configuredWebUiSiteUrl);
+}
 
 builder.Build().Run();
 
