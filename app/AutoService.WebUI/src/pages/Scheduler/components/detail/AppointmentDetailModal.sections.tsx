@@ -1,34 +1,16 @@
 import { memo } from 'react';
-import { Clock3, LogOut, UserPlus } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import {
-  buttonClass,
-  compactSelectFullClass,
-  equalWidthControlGroupClass,
   inputClassCompact,
-  schedulerAccentTagClass,
   schedulerDetailPanelClass,
-  schedulerInlineClaimButtonClass,
   schedulerDetailRowClass,
-  schedulerInlineUnassignButtonClass,
-  selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from '../shared/StatusBadge';
-import { MechanicAvatar } from '../shared/MechanicAvatar';
-
-interface MechanicOption {
-  readonly personId: number;
-  readonly firstName: string;
-  readonly middleName: string | null;
-  readonly lastName: string;
-}
-
-function getMechanicOptionDisplayName(mechanic: MechanicOption): string {
-  return [mechanic.firstName, mechanic.middleName, mechanic.lastName].filter(Boolean).join(' ');
-}
+import { MechanicsSection, type MechanicOption } from './AppointmentDetailModal.mechanics';
 
 interface AppointmentDetailBodyProps {
   readonly appointment: AppointmentDto;
@@ -214,7 +196,7 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className="mb-2 text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+      <h4 className="mb-2 min-w-0 break-words text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
         {title}
       </h4>
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
@@ -269,10 +251,12 @@ const VehicleValueRow = memo(function VehicleValueRow({
   displayValue,
   displayClassName,
 }: VehicleValueRowProps) {
+  const valueClassName = ['min-w-0', displayClassName].join(' ');
+
   return (
     <div className={`${schedulerDetailRowClass} flex min-w-0 items-center justify-between gap-3`}>
-      <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
-      <span className={displayClassName}>{displayValue}</span>
+      <span className="shrink-0 text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
+      <span className={valueClassName}>{displayValue}</span>
     </div>
   );
 });
@@ -311,194 +295,3 @@ const TaskSection = memo(function TaskSection({
   );
 });
 
-interface MechanicsSectionProps {
-  readonly appointment: AppointmentDto;
-  readonly isAdmin: boolean;
-  readonly isClaiming: boolean;
-  readonly canClaim: boolean;
-  readonly canUnclaim: boolean;
-  readonly isAssigning: boolean;
-  readonly isClosedForMechanicMutations: boolean;
-  readonly isUnclaiming: boolean;
-  readonly availableMechanics: MechanicOption[];
-  readonly selectedNewMechanicId: string;
-  readonly currentMechanicId: number | undefined;
-  readonly t: TFunction;
-  readonly onClaim: () => void;
-  readonly onUnclaim: () => void;
-  readonly onSelectNewMechanic: (value: string) => void;
-  readonly onAdminAssign: () => void;
-  readonly onAdminUnassign: (mechanicId: number) => void;
-}
-
-/**
- * Renders mechanic assignment controls and keeps all mechanic mutations mutually exclusive.
- * This prevents overlapping requests from creating stale or conflicting modal state.
- */
-const MechanicsSection = memo(function MechanicsSection({
-  appointment,
-  isAdmin,
-  isClaiming,
-  canClaim,
-  canUnclaim,
-  isAssigning,
-  isClosedForMechanicMutations,
-  isUnclaiming,
-  availableMechanics,
-  selectedNewMechanicId,
-  currentMechanicId,
-  t,
-  onClaim,
-  onUnclaim,
-  onSelectNewMechanic,
-  onAdminAssign,
-  onAdminUnassign,
-}: MechanicsSectionProps) {
-  const isMechanicMutationBusy = isClaiming || isAssigning || isUnclaiming;
-  const uniqueMechanics = Array.from(new Map(appointment.mechanics.map((mechanic) => [mechanic.id, mechanic])).values());
-
-  return (
-    <div className={schedulerDetailPanelClass}>
-      <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
-        {t('scheduler.detail.mechanics')}
-      </h4>
-
-      {uniqueMechanics.length === 0 ? (
-        <p className="text-center text-sm italic text-arsm-muted dark:text-arsm-muted-dark">
-          {t('scheduler.detail.noMechanics')}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {uniqueMechanics.map((mechanic) => {
-            const isOwnRow = currentMechanicId !== undefined && mechanic.id === currentMechanicId;
-            const canRemove = isAdmin || (isOwnRow && canUnclaim);
-            const handleRemove = isAdmin
-              ? () => onAdminUnassign(mechanic.id)
-              : onUnclaim;
-            return (
-              <MechanicCard
-                key={mechanic.id}
-                mechanic={mechanic}
-                showAdminRemove={canRemove && !isClosedForMechanicMutations}
-                isCurrentUser={isOwnRow}
-                onRemove={handleRemove}
-                t={t}
-                isDisabled={isMechanicMutationBusy || uniqueMechanics.length <= 1}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {canClaim && (
-        <button
-          type="button"
-          onClick={onClaim}
-          disabled={isMechanicMutationBusy}
-          className={`${schedulerInlineClaimButtonClass} mt-3 w-full sm:w-auto`}
-        >
-          <UserPlus className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{isClaiming ? t('scheduler.detail.saving') : t('scheduler.claim')}</span>
-        </button>
-      )}
-
-      {isAdmin && !isClosedForMechanicMutations && (
-        <div className="mt-3">
-          <h5 className="mb-1.5 flex min-w-0 items-center gap-1 text-xs font-medium text-arsm-muted dark:text-arsm-muted-dark">
-            <UserPlus className="h-3.5 w-3.5 shrink-0" />
-            {t('scheduler.detail.addMechanic')}
-          </h5>
-          <div className={equalWidthControlGroupClass}>
-            <div className={selectWrapperClass}>
-              <select
-                value={selectedNewMechanicId}
-                onChange={(event) => onSelectNewMechanic(event.target.value)}
-                disabled={isMechanicMutationBusy}
-                aria-label={t('scheduler.detail.selectMechanic')}
-                className={`${compactSelectFullClass} h-10 min-h-0 px-3 py-2 text-sm`}
-              >
-                <option value="" disabled hidden>
-                  {t('scheduler.detail.selectMechanic')}
-                </option>
-                {availableMechanics.map((mechanic) => {
-                  return (
-                    <option key={mechanic.personId} value={mechanic.personId}>
-                      {getMechanicOptionDisplayName(mechanic)}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={onAdminAssign}
-              disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className={`${buttonClass} h-10 min-h-0 px-3 py-2 text-sm`}
-            >
-              <span className="truncate">{isAssigning ? '...' : t('scheduler.detail.addMechanic')}</span>
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
-
-interface MechanicCardProps {
-  readonly mechanic: AppointmentDto['mechanics'][number];
-  readonly showAdminRemove: boolean;
-  readonly isCurrentUser: boolean;
-  readonly isDisabled: boolean;
-  readonly onRemove: () => void;
-  readonly t: TFunction;
-}
-
-const MechanicCard = memo(function MechanicCard({
-  mechanic,
-  showAdminRemove,
-  isCurrentUser,
-  isDisabled,
-  onRemove,
-  t,
-}: MechanicCardProps) {
-  let removeLabelKey: 'scheduler.detail.unassignMe' | 'scheduler.detail.unassignOther' = 'scheduler.detail.unassignOther';
-  if (isCurrentUser) {
-    removeLabelKey = 'scheduler.detail.unassignMe';
-  }
-
-  return (
-    <div className={`${schedulerDetailRowClass} min-w-0 overflow-hidden`}>
-      <div className="flex min-w-0 items-center gap-3 max-[350px]:flex-col max-[350px]:items-stretch">
-        <MechanicAvatar
-          mechanicId={mechanic.id}
-          fullName={mechanic.fullName}
-          hasProfilePicture={mechanic.hasProfilePicture}
-          sizeClassName="h-8 w-8 shrink-0 text-xs"
-        />
-
-        <div className="min-w-0 flex-1 max-[350px]:w-full">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className="min-w-0 truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
-              {mechanic.fullName}
-            </span>
-            <span className={schedulerAccentTagClass}>
-              {mechanic.specialization}
-            </span>
-          </div>
-        </div>
-
-        {showAdminRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            disabled={isDisabled}
-            className={`${schedulerInlineUnassignButtonClass} max-[350px]:justify-center`}
-          >
-            <LogOut className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{t(removeLabelKey)}</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-});

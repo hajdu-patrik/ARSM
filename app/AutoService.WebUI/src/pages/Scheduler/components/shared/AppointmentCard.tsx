@@ -4,7 +4,7 @@
  */
 import { memo, useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Clock3, LogOut } from 'lucide-react';
+import { Clock3, LogOut, UserPlus } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import {
@@ -166,7 +166,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   {isClaiming ? '...' : (
                     <>
                       <span className="truncate">{t('scheduler.claim')}</span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+                      <UserPlus className="h-3.5 w-3.5 shrink-0" />
                     </>
                   )}
                 </button>
