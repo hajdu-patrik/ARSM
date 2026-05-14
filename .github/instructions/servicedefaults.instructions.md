@@ -25,6 +25,7 @@ description: "Use when editing shared service defaults, health checks, resilienc
 - Preserve telemetry/resilience/health defaults unless explicitly required to change.
 - Keep behavior config-first (environment/config keys over hardcoded runtime behavior).
 - Keep startup integration compatible with existing `AddServiceDefaults` and endpoint mapping usage.
+- Orchestrator routes ServiceDefaults source changes through the backend/platform specialist path.
 
 ## Decomposition Guardrails
 - No god files/classes/methods.

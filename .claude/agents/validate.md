@@ -2,6 +2,7 @@
 name: validate
 description: "Build/type/security validation gate with required vulnerability remediation on code-change workflows."
 model: haiku
+tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 ---
 
 # Build Validator Agent

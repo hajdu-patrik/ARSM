@@ -1,6 +1,6 @@
 ---
 name: autoservice-e2e-playwright-test
-description: Maintain Playwright E2E suites with strict trigger-gating and automatic feature-coverage generation.
+description: 'Maintain ARSM Playwright E2E suites. Use when WebUI user flows, auth/role journeys, DTO-visible UI behavior, selectors/page objects, app/AutoService.WebUI/tests/e2e files, or explicit Playwright requests change.'
 disable-model-invocation: true
 ---
 

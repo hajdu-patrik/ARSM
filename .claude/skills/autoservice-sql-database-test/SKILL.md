@@ -1,6 +1,6 @@
 ---
 name: autoservice-sql-database-test
-description: Maintain SQL validation suites with strict trigger-gating, read-only policy, and automatic feature-coverage generation.
+description: 'Maintain ARSM SQL validation suites. Use when EF schema, DbContext, migrations, persistence invariants, tests/Database SQL files, read-only `SELECT` checks, or explicit SQL test requests require coverage updates.'
 disable-model-invocation: true
 ---
 

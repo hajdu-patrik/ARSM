@@ -2,6 +2,7 @@
 name: sql-database-test
 description: "Maintains SQL validation suites with strict trigger-gating, read-only policy, and feature-coverage generation."
 model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob
 ---
 
 # SQL Database Test Agent

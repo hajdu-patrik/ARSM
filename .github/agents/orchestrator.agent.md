@@ -20,7 +20,7 @@ tools:
 ## Mandatory Phase Skeleton (for code changes)
 1. Analyze and plan.
 2. Conditional implementation routing from orchestrator:
-  - backend changes required -> run `Backend Specialist`
+  - backend/platform changes required (`AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults`, or source-level backend changes) -> run `Backend Specialist`
   - frontend changes required -> run `Frontend Specialist` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
   - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `Frontend Specialist` iteration; iteration is blocked until sign-off is given
   - schema/EF delta only -> optional `EF Migration`
@@ -49,9 +49,10 @@ tools:
 - If projected method/function exceeds 60 lines, split into focused helpers.
 
 ## Heavy Test Gate
-Include `http-endpoint-test`, `sql-database-test`, `e2e-playwright-test` only when:
-- user explicitly asks, or
-- change is significant on backend or frontend (new feature, API contract delta, schema/persistence delta, UI/DTO-visible structural flow delta).
+Include heavy test agents only when the user explicitly asks for tests, or when the agent-specific trigger applies:
+- `http-endpoint-test`: significant API endpoint, contract, auth/role, status, or validation behavior change.
+- `sql-database-test`: significant schema, migration, persistence, seed-data, or integrity invariant change.
+- `e2e-playwright-test`: significant frontend structural/UI flow or user-visible journey change; backend-only changes do not trigger Playwright unless explicitly requested.
 
 If triggered by a new feature:
 - require auto-generation of missing coverage before test execution/update.

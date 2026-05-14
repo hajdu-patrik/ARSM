@@ -2,6 +2,7 @@
 name: migration
 description: "EF Core migration specialist with strict schema-delta gating and safe migration workflow."
 model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 ---
 
 # EF Migration Agent

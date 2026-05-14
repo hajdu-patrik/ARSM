@@ -25,6 +25,7 @@
 - Keep OpenTelemetry/resilience/health defaults enabled unless explicitly required otherwise.
 - Keep behavior config-driven; avoid hardcoded runtime assumptions.
 - Preserve compatibility with AppHost + ApiService startup patterns.
+- Orchestrator routes ServiceDefaults source changes through the backend/platform specialist path.
 
 ## Decomposition Guardrails
 

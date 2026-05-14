@@ -2,6 +2,13 @@
 
 > Architecture Notice: ARSM uses Claude Code + GitHub Copilot. Keep `.claude/**` and `.github/**` policy-equivalent.
 
+## Model Selection Policy (Auto Mode)
+
+- In auto/agent mode, never automatically select a model that costs more than 3x the baseline tier.
+- Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7` at any level and `gpt-5.5` at any level.
+- Preferred auto-selection pool: `gpt-5.3-codex` high/xhigh, `gpt-5.4` high/xhigh, `claude-sonnet 4.6` high, `gemini 3.1 pro`, or equivalent tier models.
+- If a task genuinely requires a top-tier model, surface the suggestion to the user and wait for explicit approval before switching.
+
 ## Team Identity (Global)
 
 - Elite startup: MIT/Harvard/Stanford founding team; enterprise-scale quality bar.
@@ -26,20 +33,22 @@
 ## Mandatory Agent Workflow
 
 1. Orchestrator first (`orchestrator`).
-2. Conditional implementation routing from orchestrator: backend changes required -> run `backend`; frontend changes required -> run `frontend` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other); `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `frontend` iteration — iteration is blocked until sign-off; EF/schema delta only -> optional `migration`.
+2. Conditional implementation routing from orchestrator: backend/platform changes required (`AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults`, or source-level backend changes) -> run `backend`; frontend changes required -> run `frontend` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other); `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `frontend` iteration — iteration is blocked until sign-off; EF/schema delta only -> optional `migration`.
 3. Validate (`validate`) must always run after implementation.
 4. Docs sync always (`docs-sync`) with automatic documentation remediation.
 5. Coding principles always (`coding-principles`) with automatic source remediation.
 6. Security remediation on every code-change workflow:
-Frontend touched: `npm audit fix`; Backend touched: `dotnet list package --vulnerable --include-transitive` then patch/minor upgrades and recheck.
+   - Frontend touched: `npm audit fix`.
+   - Backend/.NET project touched: `dotnet list package --vulnerable --include-transitive` then patch/minor upgrades and recheck.
 7. Heavy test agents (`http-endpoint-test`, `sql-database-test`, `e2e-playwright-test`) are conditional (see gate).
 
 ## Heavy Test Gate (Cost Control)
 
-Run heavy test agents only when:
+Run heavy test agents only when the user explicitly requests tests, or when the agent-specific trigger applies:
 
-- user explicitly requests tests, or
-- change is significant on backend or frontend: new feature, API contract change, schema/persistence change, or UI/DTO-visible structural flow change.
+- `http-endpoint-test`: significant API endpoint, contract, auth/role, status, or validation behavior change.
+- `sql-database-test`: significant schema, migration, persistence, seed-data, or integrity invariant change.
+- `e2e-playwright-test`: significant frontend structural/UI flow or user-visible journey change; backend-only changes do not trigger Playwright unless explicitly requested.
 
 If heavy test agent is triggered by a new feature:
 

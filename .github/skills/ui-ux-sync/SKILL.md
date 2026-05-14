@@ -1,6 +1,6 @@
 ---
 name: ui-ux-sync
-description: Enforce the central ARSM UI/UX style profile across WebUI source, agent wrappers, toast behavior, responsive overflow rules, and docs.
+description: 'Enforce the ARSM WebUI style profile. Use when WebUI UI code, Tailwind tokens, responsive 320px layout, toast/confirmation policy, ui-ux-style-profile agents, or UI/UX docs change.'
 ---
 
 Use this skill after UI-facing frontend changes or agent/documentation changes that affect WebUI styling policy.

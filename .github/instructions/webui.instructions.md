@@ -41,8 +41,10 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Preserve scheduler behavior and status-driven rules.
 
 ## Testing/Execution Policy
-- Heavy test agents (HTTP/SQL/E2E): only explicit request or significant feature/structural behavior change.
-- If heavy tests are triggered by new UI/DTO feature: generate missing coverage first.
+- `http-endpoint-test`: explicit request or significant API endpoint/contract behavior change.
+- `sql-database-test`: explicit request or significant schema/persistence behavior change.
+- `e2e-playwright-test`: explicit request or significant frontend structural/UI flow change.
+- If a heavy test agent is triggered by a new feature: generate missing coverage first.
 
 ## Always-On
 - `docs-sync` always, auto-remediate docs drift.

@@ -2,6 +2,7 @@
 name: e2e-playwright-test
 description: "Maintains Playwright E2E tests with strict trigger-gating and feature-coverage generation."
 model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 ---
 
 # e2e-playwright-test Agent

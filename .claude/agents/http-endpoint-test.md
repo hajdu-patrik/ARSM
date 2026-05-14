@@ -2,6 +2,7 @@
 name: http-endpoint-test
 description: "Maintains HTTP endpoint test suites with strict trigger-gating and feature-coverage generation."
 model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob
 ---
 
 # HTTP Endpoint Test Agent

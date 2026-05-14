@@ -40,7 +40,7 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 | Agent | Scope | Purpose |
 | ----- | ----- | ------- |
 | **Orchestrator** | Task decomposition | Analyzes every task first, decides which specialists work in which phases |
-| **Backend** | `AutoService.ApiService` | Endpoints, domain model, DTOs, auth, middleware, EF queries |
+| **Backend** | `AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults` | API/domain/auth/EF work plus Aspire AppHost and service-default wiring |
 | **Frontend** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
 | **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
 | **Docs Sync** | Documentation | Syncs all instruction files with current code after every change |
@@ -56,10 +56,11 @@ Every implementation task is delegated to specialist agents via an orchestrator.
 2. Routed specialists execute; frontend work always pairs Frontend with `ui-ux-style-profile`, and independent specialists may run in parallel
 3. Validate agent checks the build
 4. Docs Sync agent updates project documentation
-5. Coding Principles agent enforces code style and quality
-6. HTTP Endpoint Test agent syncs .http test suites only for behavior/new feature API contract changes (or explicit prompt request)
-7. SQL Database Test agent syncs .sql validation suites only for behavior/new feature schema/persistence changes (or explicit prompt request)
-8. `e2e-playwright-test` agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
+5. Coding Principles agent enforces code style and quality for source changes
+6. Security remediation runs for code changes (`npm audit fix` for WebUI; `dotnet list package --vulnerable --include-transitive` plus safe patch/minor remediation for backend/platform projects)
+7. HTTP Endpoint Test agent syncs .http test suites only for behavior/new feature API contract changes (or explicit prompt request)
+8. SQL Database Test agent syncs .sql validation suites only for behavior/new feature schema/persistence changes (or explicit prompt request)
+9. `e2e-playwright-test` agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
 
 Default development policy: for non-behavioral changes (refactor, naming, comments, formatting, docs-only), skip HTTP/SQL/Playwright test agents and run Docs Sync only. If a prompt explicitly asks to run/create/update tests, the requested test agents must run.
 
@@ -74,7 +75,7 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 
 | Skill | Used by agent | Purpose |
 | ----- | ------------- | ------- |
-| `autoservice-docs-sync` | `docs-sync` | Synchronize all CLAUDE.md, .github/instructions, and docs/Private-Docs/ARSM-TL-DR.md with code |
+| `autoservice-docs-sync` | `docs-sync` | Synchronize paired Claude/Copilot instructions, agents, skills, MCP templates, README docs, and workflow policy with code |
 | `autoservice-coding-principles` | `coding-principles` | Enforce JSDoc comments, naming conventions, and structural quality |
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
 | `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
@@ -83,6 +84,16 @@ Reusable runbooks consumed by specialist agents. Agents are the primary interfac
 | `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | Enforce the central UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) across WebUI styling and docs |
 
 Skill sources: `.github/skills/*/SKILL.md`
+
+### Local AI/MCP Tooling
+
+For Aspire MCP tooling, keep `dotnet-tools.json` and `aspire.config.json` versioned. Restore the local Aspire CLI from the repository root:
+
+```Bash
+dotnet tool restore --tool-manifest dotnet-tools.json
+```
+
+Runtime MCP connection files such as `.vscode/mcp.json` and `.claude/.mcp.json` stay local and must be created from the committed templates.
 
 ### SQL Read-Only Policy (AI)
 

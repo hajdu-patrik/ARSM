@@ -30,7 +30,7 @@
 ## Mandatory Workflow
 1. Orchestrator first (`Task Orchestrator`).
 2. Conditional implementation routing from orchestrator:
-  - backend changes required -> run `Backend Specialist`
+  - backend/platform changes required (`AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults`, or source-level backend changes) -> run `Backend Specialist`
   - frontend changes required -> run `Frontend Specialist` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
   - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `Frontend Specialist` iteration; iteration is blocked until sign-off
   - EF/schema delta only -> run optional `EF Migration`
@@ -38,14 +38,15 @@
 4. `Docs Sync` always; auto-remediate docs drift.
 5. `Coding Principles` must always run for source changes; auto-remediate code-quality drift.
 6. Security remediation on every code-change workflow:
-   - WebUI touched: `npm audit fix`.
-   - ApiService touched: `dotnet list package --vulnerable --include-transitive`, apply patch/minor updates, recheck.
+  - WebUI touched: `npm audit fix`.
+  - Backend/.NET project touched: `dotnet list package --vulnerable --include-transitive`, apply patch/minor updates, recheck.
 7. Heavy test agents are conditional (gate below).
 
 ## Heavy Test Gate
-Run heavy test agents (`http-endpoint-test`, `sql-database-test`, `e2e-playwright-test`) only when:
-- explicitly requested by user, or
-- significant feature/structural behavior change occurs on backend or frontend.
+Run heavy test agents only when explicitly requested by the user, or when the agent-specific trigger applies:
+- `http-endpoint-test`: significant API endpoint, contract, auth/role, status, or validation behavior change.
+- `sql-database-test`: significant schema, migration, persistence, seed-data, or integrity invariant change.
+- `e2e-playwright-test`: significant frontend structural/UI flow or user-visible journey change; backend-only changes do not trigger Playwright unless explicitly requested.
 
 When triggered by a new feature:
 - auto-generate missing test coverage,

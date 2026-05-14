@@ -12,9 +12,10 @@
 
 ## Trigger Policy
 
-- Heavy test work (HTTP/SQL/E2E) runs only on:
-  - explicit user request, or
-  - significant feature/structural behavior change.
+- Heavy test work runs only on explicit user request, or when the agent-specific trigger applies:
+  - HTTP: significant API endpoint/contract/auth/status/validation behavior change.
+  - SQL: significant schema/migration/persistence/seed-data/integrity change.
+  - E2E/Playwright: significant frontend structural/UI flow or user-visible journey change.
 - Non-behavioral change: skip heavy test agents; run docs-sync only for test-layer docs.
 - New feature + triggered test agent: auto-generate missing coverage before run/update.
 
@@ -73,8 +74,8 @@ Template: `tests/.env.example` (committed — values are placeholders only).
 
 ## Trigger Gates
 
-- `http-endpoint-test` / `sql-database-test` / `e2e-playwright-test` run only on:
-  - explicit user request, or
-  - significant feature/structural behavior change.
+- `http-endpoint-test` runs only on explicit request or significant API endpoint/contract behavior change.
+- `sql-database-test` runs only on explicit request or significant schema/persistence behavior change.
+- `e2e-playwright-test` runs only on explicit request or significant frontend structural/UI flow change.
 - If a new feature triggers these agents, generate missing coverage first.
 - Non-behavioral changes default: docs-sync only for test-layer docs.

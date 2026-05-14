@@ -13,6 +13,7 @@
 - Wire dependencies via `WithReference(...)` and readiness via `WaitFor(...)` where the downstream resource must wait for infrastructure readiness.
 - Keep config-first addressing (`Ports:*`, connection keys).
 - No hardcoded secrets/URLs.
+- Orchestrator routes AppHost source changes through the backend/platform specialist path.
 
 ## Platform Policy
 

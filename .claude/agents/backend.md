@@ -1,7 +1,8 @@
 ---
 name: backend
-description: "Specialist agent for AutoService.ApiService endpoints, domain, EF Core, auth, middleware, and contracts."
-model: opus
+description: "Specialist agent for ApiService plus AppHost/ServiceDefaults backend-platform wiring, auth, EF Core, middleware, and contracts."
+model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 ---
 
 # Backend Specialist Agent
@@ -12,7 +13,8 @@ model: opus
 - Security/testing escalation: Zsombor
 
 ## Scope
-- `app/AutoService.ApiService/**` only.
+- `app/AutoService.ApiService/**` for API/domain/EF/auth changes.
+- `app/AutoService.AppHost/**` and `app/AutoService.ServiceDefaults/**` for backend-platform orchestration/defaults changes routed by the orchestrator.
 
 ## Non-Negotiables
 - Keep `People` abstract TPH and Identity linkage via `People.IdentityUserId`.
@@ -33,9 +35,9 @@ model: opus
 - Methods/functions should be <= 60 lines where practical.
 
 ## Execution Rules
-- Read `app/AutoService.ApiService/CLAUDE.md` before editing.
+- Read the applicable area rule file before editing: `app/AutoService.ApiService/CLAUDE.md`, `app/AutoService.AppHost/CLAUDE.md`, or `app/AutoService.ServiceDefaults/CLAUDE.md`.
 - Keep changes minimal/domain-safe.
-- Use async EF + cancellation tokens.
+- Use async EF + cancellation tokens for ApiService data access.
 - Run `dotnet build` from `app` after edits.
 
 ## Always-On Security Remediation (for backend code changes)

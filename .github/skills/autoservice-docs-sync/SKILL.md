@@ -1,6 +1,6 @@
 ---
 name: autoservice-docs-sync
-description: Synchronize CLAUDE/.github instruction layers and related docs with current code, with automatic remediation.
+description: 'Synchronize ARSM CLAUDE/.github instruction pairs, agents, skills, MCP templates, README docs, and workflow policy. Use when repository behavior, setup, governance, routing gates, or documentation/customization files change.'
 ---
 
 Use this skill after any repository change that can affect documented behavior.

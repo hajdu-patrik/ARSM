@@ -1,6 +1,6 @@
 ---
 name: autoservice-ef-migration
-description: EF Core migration runbook with strict schema-delta gating and safe execution defaults.
+description: 'Run the ARSM EF Core migration workflow. Use when ApiService entities, DbContext mappings, relationships, indexes, constraints, nullability, or migration files indicate a schema delta.'
 ---
 
 Use this skill for EF migration workflows in `app/AutoService.ApiService`.

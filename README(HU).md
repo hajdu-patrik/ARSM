@@ -40,7 +40,7 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 | Ágens | Hatókör | Cél |
 | ----- | ------- | --- |
 | **Orkesztrátor** | Feladat-dekompozíció | Minden feladatot először elemez, eldönti, melyik specialista melyik fázisban dolgozik |
-| **Backend** | `AutoService.ApiService` | Endpointok, domain modell, DTO-k, auth, middleware, EF lekérdezések |
+| **Backend** | `AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults` | API/domain/auth/EF munka, valamint Aspire AppHost és service-default bekötések |
 | **Frontend** | `AutoService.WebUI` | Komponensek, oldalak, store-ok, szolgáltatások, i18n, routing, stílusok |
 | **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
 | **Docs Sync** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
@@ -56,10 +56,11 @@ Minden implementációs feladatot az orkesztrátor delegál specialista ágensek
 2. Az irányított specialisták dolgoznak; frontend munka esetén a Frontend mindig együtt fut a `ui-ux-style-profile` ágenssel, a független specialisták pedig párhuzamosan is futhatnak
 3. Validáló ágens ellenőrzi a buildet
 4. Docs Sync ágens szinkronizálja a dokumentációt
-5. Coding Principles ágens ellenőrzi a kódminőséget és stílust
-6. HTTP Endpoint Test ágens a .http teszteket csak viselkedés/új feature API-szerződés változásnál szinkronizálja (vagy explicit prompt-kérésre)
-7. SQL Database Test ágens a .sql validációkat csak viselkedés/új feature séma/perzisztencia változásnál szinkronizálja (vagy explicit prompt-kérésre)
-8. `e2e-playwright-test` ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
+5. Coding Principles ágens forrásváltozásoknál ellenőrzi a kódminőséget és stílust
+6. Security remediation fut kódváltozásoknál (`npm audit fix` WebUI esetén; `dotnet list package --vulnerable --include-transitive` és biztonságos patch/minor javítás backend/platform projektek esetén)
+7. HTTP Endpoint Test ágens a .http teszteket csak viselkedés/új feature API-szerződés változásnál szinkronizálja (vagy explicit prompt-kérésre)
+8. SQL Database Test ágens a .sql validációkat csak viselkedés/új feature séma/perzisztencia változásnál szinkronizálja (vagy explicit prompt-kérésre)
+9. `e2e-playwright-test` ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
 
 Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnevezés, komment, formázás, csak dokumentáció) a HTTP/SQL/Playwright tesztágensek kimaradnak, és csak Docs Sync fut. Ha a prompt explicit tesztfuttatást vagy tesztkészítést/frissítést kér, a kért tesztágensek kötelezően futnak.
 
@@ -74,7 +75,7 @@ Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnev
 
 | Skill | Ágens | Cél |
 | ----- | ----- | --- |
-| `autoservice-docs-sync` | `docs-sync` | Összes CLAUDE.md, .github/instructions és docs/Private-Docs/ARSM-TL-DR.md szinkronizálása a kóddal |
+| `autoservice-docs-sync` | `docs-sync` | Párosított Claude/Copilot utasítások, ágensek, skillek, MCP template-ek, README-k és workflow policy szinkronizálása a kóddal |
 | `autoservice-coding-principles` | `coding-principles` | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
 | `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
 | `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
@@ -83,6 +84,16 @@ Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnev
 | `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | A központi UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) érvényesítése a WebUI stílusokon és dokumentáción |
 
 Skill források: `.github/skills/*/SKILL.md`
+
+### Helyi MI/MCP eszközök
+
+Aspire MCP eszközökhöz a `dotnet-tools.json` és az `aspire.config.json` verziózott fájl marad. A helyi Aspire CLI visszaállítása a repository gyökeréből:
+
+```Bash
+dotnet tool restore --tool-manifest dotnet-tools.json
+```
+
+A runtime MCP kapcsolati fájlok, például a `.vscode/mcp.json` és a `.claude/.mcp.json`, lokálisak maradnak, és a commitolt template-ekből készülnek.
 
 ### SQL csak olvasható policy (MI)
 

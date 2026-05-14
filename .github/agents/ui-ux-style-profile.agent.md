@@ -129,7 +129,7 @@ Authority: This file is the **authoritative Copilot UI/UX policy**. Claude equiv
 - UI/UX refactors must not change API contracts, route guards, auth/session flow, scheduler invariants, or mutation timing semantics.
 - Keep service/network logic in `src/services/**`; avoid coupling UI primitives to request orchestration.
 - Do not add hardcoded runtime API fallback URLs; continue using config-driven `VITE_API_URL`.
-- For UI-only refactor workflows, perform frontend-only security/build validation (`npm audit fix`, then frontend build/type-check). Heavy HTTP/SQL/E2E suites stay gated to explicit request or significant behavior changes.
+- For UI-only refactor workflows, perform frontend-only security/build validation (`npm audit fix`, then frontend build/type-check). HTTP/SQL heavy suites stay gated to explicit request or significant API/schema behavior changes; Playwright stays gated to explicit request or significant frontend structural/UI flow changes.
 
 ## Mandatory Co-Execution Role
 

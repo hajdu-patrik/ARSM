@@ -1,6 +1,6 @@
 ---
 name: autoservice-coding-principles
-description: Enforce naming, structure, and JSDoc-style standards on changed source files with automatic remediation.
+description: 'Enforce ARSM source-quality rules for changed `.cs`, `.ts`, and `.tsx` files. Use when source changes require SOLID/OOP/GoF review, JSDoc-style comments, naming cleanup, anti-god-file splits, or coding-principles remediation.'
 disable-model-invocation: true
 ---
 

@@ -1,7 +1,8 @@
 ---
 name: frontend
 description: "Specialist agent for AutoService.WebUI components, pages, stores, services, i18n, and routing."
-model: opus
+model: sonnet
+tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 ---
 
 # Frontend Specialist Agent

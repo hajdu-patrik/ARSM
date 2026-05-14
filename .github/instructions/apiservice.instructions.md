@@ -36,7 +36,9 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 
 ## Routing Gates
 - `migration`: only when schema/EF delta exists.
-- `http-endpoint-test`/`sql-database-test`/`e2e-playwright-test`: only explicit request or significant behavior/structural change.
+- `http-endpoint-test`: only explicit request or significant API endpoint/contract behavior change.
+- `sql-database-test`: only explicit request or significant schema/persistence behavior change.
+- `e2e-playwright-test`: only explicit request or significant frontend structural/UI flow change.
 - Heavy test triggered by new feature -> generate missing coverage first.
 
 ## Always-On

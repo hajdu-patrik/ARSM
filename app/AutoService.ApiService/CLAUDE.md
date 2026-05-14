@@ -30,7 +30,9 @@
 
 ## Routing + Testing Policy
 
-- HTTP/SQL/E2E heavy tests: on explicit request or significant behavior change only.
+- HTTP heavy tests: explicit request or significant API endpoint/contract behavior change only.
+- SQL heavy tests: explicit request or significant schema/persistence behavior change only.
+- Playwright E2E: explicit request or significant frontend structural/UI flow change only.
 - New feature when heavy tests run: generate missing coverage first.
 - Migration agent only when schema/EF delta exists.
 

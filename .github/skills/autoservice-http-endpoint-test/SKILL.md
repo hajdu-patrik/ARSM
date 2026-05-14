@@ -1,6 +1,6 @@
 ---
 name: autoservice-http-endpoint-test
-description: Maintain HTTP API test suites with strict trigger-gating and automatic feature-coverage generation.
+description: 'Maintain ARSM HTTP `.http` endpoint suites. Use when API endpoints, DTO validation, auth/role behavior, status/error contracts, tests/API files, or explicit HTTP test requests require coverage updates.'
 ---
 
 Use this skill to sync `tests/API/**/*.http` only.
