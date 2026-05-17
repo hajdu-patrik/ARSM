@@ -9,6 +9,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
+import { Save } from 'lucide-react';
 import { adminService } from '../../../services/admin/admin.service';
 import { useToastStore } from '../../../store/toast.store';
 import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues } from './helpers';
@@ -249,7 +250,8 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
                 className={`mt-2 w-full ${buttonClass} sm:text-base`}
                 aria-busy={isSubmitting}
               >
-                {isSubmitting ? t('admin.submitting') : t('admin.submit')}
+                <Save className="h-4 w-4 shrink-0" />
+                <span>{isSubmitting ? t('admin.submitting') : t('admin.submit')}</span>
               </button>
             </form>
           </section>
@@ -260,6 +262,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         isOpen={isRegisterConfirmOpen}
         onClose={() => { if (!isSubmitting) setIsRegisterConfirmOpen(false); }}
         title={t('admin.confirmRegisterTitle')}
+        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -277,7 +280,8 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               disabled={isSubmitting}
               className={buttonClass}
             >
-              {isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}
+              <Save className="h-4 w-4 shrink-0" />
+              <span>{isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}</span>
             </button>
           </>
         )}

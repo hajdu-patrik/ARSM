@@ -5,12 +5,13 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { Save } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { buttonClass, compactSelectFullClass, equalWidthControlGroupClass, selectWrapperClass } from '../../../../utils/formStyles';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
-const footerTopControlClass = 'h-10 min-h-10 rounded-xl px-3 py-2 text-sm';
+const footerTopControlClass = 'h-11 min-h-11 rounded-xl px-3 py-2 text-sm';
 
 function isAppointmentStatus(value: string): value is AppointmentStatus {
   return STATUS_OPTIONS_SET.has(value);
@@ -21,6 +22,7 @@ interface AppointmentDetailFooterProps {
   readonly showEdit: boolean;
   readonly isEditing: boolean;
   readonly isSaving: boolean;
+  readonly isSaveEnabled: boolean;
   readonly canChangeStatus: boolean;
   readonly isUpdating: boolean;
   readonly t: TFunction;
@@ -34,6 +36,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   showEdit,
   isEditing,
   isSaving,
+  isSaveEnabled,
   canChangeStatus,
   isUpdating,
   t,
@@ -88,10 +91,11 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           type="button"
           data-testid="appointment-detail-save"
           onClick={onSave}
-          disabled={isSaving}
+          disabled={isSaving || !isSaveEnabled}
           className={`${buttonClass} w-full`}
         >
-          {isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}
+          <Save className="h-4 w-4 shrink-0" />
+          <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}</span>
         </button>
       )}
     </div>

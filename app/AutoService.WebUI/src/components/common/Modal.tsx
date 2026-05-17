@@ -15,6 +15,7 @@ interface ModalProps {
   readonly title: string;
   readonly children: ReactNode;
   readonly footer?: ReactNode;
+  readonly footerClassName?: string;
   readonly widthClassName?: string;
   readonly showCloseButton?: boolean;
   readonly variant?: 'default' | 'confirm';
@@ -26,6 +27,7 @@ const ModalComponent = memo(function Modal({
   title,
   children,
   footer,
+  footerClassName,
   widthClassName,
   showCloseButton = true,
   variant = 'default',
@@ -34,6 +36,9 @@ const ModalComponent = memo(function Modal({
   const NativeDialog = 'dialog';
   const isConfirmVariant = variant === 'confirm';
   const resolvedWidthClassName = widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md');
+  const footerClasses = ['mt-5', controlPanelFooterClass, isConfirmVariant ? 'arsm-modal-footer-confirm' : '', footerClassName ?? '']
+    .filter(Boolean)
+    .join(' ');
 
   useEffect(() => {
     if (!isOpen) {
@@ -78,7 +83,7 @@ const ModalComponent = memo(function Modal({
         />
 
         <div className={`mb-4 min-w-0 ${isConfirmVariant ? 'relative flex min-h-11 items-center justify-center' : 'flex items-center justify-between gap-3'}`}>
-          <h2 className={`min-w-0 ${isConfirmVariant ? 'px-12 text-center text-xl font-semibold sm:text-2xl' : 'truncate text-lg font-semibold'}`}>{title}</h2>
+          <h2 className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-xl font-semibold [overflow-wrap:anywhere] sm:text-2xl' : 'truncate text-lg font-semibold'}`}>{title}</h2>
           {showCloseButton && (
             <div className={isConfirmVariant ? 'absolute right-0 top-0 shrink-0' : 'shrink-0'}>
               <ModalCloseButton onClick={onClose} variant={variant} />
@@ -88,7 +93,7 @@ const ModalComponent = memo(function Modal({
 
         <div className={isConfirmVariant ? 'mx-auto max-w-[32rem] text-center' : ''}>{children}</div>
         {footer && (
-          <div className={`mt-5 ${controlPanelFooterClass}${isConfirmVariant ? ' arsm-modal-footer-confirm' : ''}`}>
+          <div className={footerClasses}>
             {footer}
           </div>
         )}

@@ -11,6 +11,7 @@ interface VehicleFormModalProps {
   isOpen: boolean;
   mode: VehicleModalMode;
   isSaving: boolean;
+  isSaveEnabled: boolean;
   form: VehicleFormState;
   t: TFunction;
   onClose: () => void;
@@ -22,6 +23,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
   isOpen,
   mode,
   isSaving,
+  isSaveEnabled,
   form,
   t,
   onClose,
@@ -34,6 +36,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
       onClose={onClose}
       title={mode === 'create' ? t('customers.createVehicle') : t('customers.editVehicle')}
       widthClassName="max-w-2xl"
+      footerClassName="arsm-modal-footer-confirm"
       footer={(
         <>
           <button
@@ -47,7 +50,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           <button
             type="submit"
             form="customers-vehicle-form"
-            disabled={isSaving}
+            disabled={isSaving || !isSaveEnabled}
             className={buttonClass}
           >
             <Save className="h-4 w-4 shrink-0" />

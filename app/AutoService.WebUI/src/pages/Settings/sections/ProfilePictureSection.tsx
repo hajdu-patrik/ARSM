@@ -5,6 +5,7 @@
  */
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Trash2, Upload } from 'lucide-react';
 import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, sectionTitleClass } from '../constants';
 
 interface ProfilePictureSectionProps {
@@ -72,7 +73,8 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 				<div className="flex min-h-20 min-w-0 flex-1 items-center">
 					<div className={actionClusterClass}>
 						<button type="button" onClick={handleUploadClick} disabled={isUploading} className={`${buttonClass} min-h-11`}>
-							{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}
+							<Upload className="h-4 w-4 shrink-0" />
+							<span>{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}</span>
 						</button>
 
 						{hasProfilePicture && (
@@ -82,7 +84,8 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 								disabled={isUploading}
 								className={`${dangerButtonClass} min-h-11`}
 							>
-								{t('settings.removePicture')}
+								<Trash2 className="h-4 w-4 shrink-0" />
+								<span>{t('settings.removePicture')}</span>
 							</button>
 						)}
 					</div>

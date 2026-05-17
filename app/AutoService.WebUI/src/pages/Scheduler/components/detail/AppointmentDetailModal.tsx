@@ -214,7 +214,6 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       setEditForm(buildEditForm(appointment));
       setIsEditing(false);
       setIsSaveConfirmOpen(false);
-      showErrorToast('toast.noChanges');
       return;
     }
 
@@ -271,6 +270,18 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const dueDateLabel = formatDueExactDateTime(appointment.dueDateTime, i18n.language);
 
   const dueState = getDueState(appointment.dueDateTime);
+  const isSaveEnabled = (() => {
+    if (!isEditing || !editForm) {
+      return false;
+    }
+
+    const validationResult = buildUpdateRequestFromEditForm(appointment, editForm);
+    if ('errorKey' in validationResult) {
+      return false;
+    }
+
+    return hasAppointmentEditChanges(appointment, validationResult.request.appointment);
+  })();
 
   const footer = (
     <AppointmentDetailFooter
@@ -278,6 +289,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       showEdit={showEdit}
       isEditing={isEditing}
       isSaving={isSaving}
+      isSaveEnabled={isSaveEnabled}
       canChangeStatus={canChangeStatus}
       isUpdating={isUpdating}
       t={t}
@@ -286,7 +298,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         setIsEditing(true);
       }}
       onSave={() => {
-        if (!isSaving) {
+        if (!isSaving && isSaveEnabled) {
           setIsSaveConfirmOpen(true);
         }
       }}

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Save } from 'lucide-react';
+import { LogOut, Save, UserPlus } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import { buttonClass, dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
@@ -50,6 +50,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={pendingStatusChange !== null}
         onClose={onCloseStatusConfirm}
         title={t('scheduler.detail.statusChangeConfirmTitle')}
+        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -67,7 +68,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isUpdating || pendingStatusChange === null}
               className={buttonClass}
             >
-              {isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}
+              <Save className="h-4 w-4 shrink-0" />
+              <span>{isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}</span>
             </button>
           </>
         )}
@@ -83,6 +85,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isClaimConfirmOpen}
         onClose={onCloseClaimConfirm}
         title={t('scheduler.detail.claimConfirmTitle')}
+        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -100,7 +103,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isClaiming}
               className={buttonClass}
             >
-              {isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}
+              <UserPlus className="h-4 w-4 shrink-0" />
+              <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
             </button>
           </>
         )}
@@ -112,6 +116,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isUnclaimConfirmOpen}
         onClose={onCloseUnclaimConfirm}
         title={t('scheduler.detail.unassignConfirmTitle')}
+        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -142,6 +147,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isSaveConfirmOpen}
         onClose={onCloseSaveConfirm}
         title={t('scheduler.detail.saveConfirmTitle')}
+        showCloseButton={false}
         variant="confirm"
         footer={(
           <>

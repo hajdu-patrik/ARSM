@@ -19,6 +19,7 @@ interface CustomerFormModalProps {
   isOpen: boolean;
   mode: CustomerModalMode;
   isSaving: boolean;
+  isSaveEnabled: boolean;
   form: CustomerFormState;
   t: TFunction;
   onClose: () => void;
@@ -30,6 +31,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
   isOpen,
   mode,
   isSaving,
+  isSaveEnabled,
   form,
   t,
   onClose,
@@ -42,6 +44,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
       onClose={onClose}
       title={mode === 'create' ? t('customers.createCustomer') : t('customers.editCustomer')}
       widthClassName="max-w-2xl"
+      footerClassName="arsm-modal-footer-confirm"
       footer={(
         <>
           <button
@@ -55,7 +58,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
           <button
             type="submit"
             form="customers-customer-form"
-            disabled={isSaving}
+            disabled={isSaving || !isSaveEnabled}
             className={buttonClass}
           >
             <Save className="h-4 w-4 shrink-0" />
