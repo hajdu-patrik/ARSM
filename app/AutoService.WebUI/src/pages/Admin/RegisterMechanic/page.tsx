@@ -262,7 +262,6 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         isOpen={isRegisterConfirmOpen}
         onClose={() => { if (!isSubmitting) setIsRegisterConfirmOpen(false); }}
         title={t('admin.confirmRegisterTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>

@@ -10,6 +10,60 @@ tools: Read, Edit, MultiEdit, Grep, Glob
 Scope: `app/AutoService.WebUI/**`
 Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`. Both files must remain policy-equivalent; differences are limited to platform syntax only.
 
+## UI/UX Evidence Map (Mi Hol Talalhato)
+
+- Design tokens and semantic color system: `app/AutoService.WebUI/src/styles/tokens.css`
+- Global style wiring and import chain root: `app/AutoService.WebUI/src/index.css`
+- Shared design primitives and responsive media rules (`@media (max-width: 350px)` / `@media (max-width: 320px)`): `app/AutoService.WebUI/src/styles/design-system.css`
+- CSS-only component effects (toast enter, modal sheen, skeleton, ambient layers): `app/AutoService.WebUI/src/styles/components.css`
+- Global base typography/background/focus baseline: `app/AutoService.WebUI/src/styles/base.css`
+- JSX-facing shared class primitives (buttons, groups, controls, modal close, scheduler chips): `app/AutoService.WebUI/src/utils/formStyles.ts`
+- Shared modal shell and close semantics: `app/AutoService.WebUI/src/components/common/Modal.tsx`, `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`
+- Global toast system: `app/AutoService.WebUI/src/store/toast.store.ts`, `app/AutoService.WebUI/src/components/common/ToastViewport.tsx`, root mount in `app/AutoService.WebUI/src/App.tsx`
+- Localization bootstrap and language fallback: `app/AutoService.WebUI/src/utils/i18n.ts`
+- Localization dictionaries (core + feature): `app/AutoService.WebUI/src/utils/locales/en.core.ts`, `app/AutoService.WebUI/src/utils/locales/hu.core.ts`, `app/AutoService.WebUI/src/utils/locales/en.feature.ts`, `app/AutoService.WebUI/src/utils/locales/hu.feature.ts`
+- Customers detail controls under active UX iteration: `app/AutoService.WebUI/src/pages/Customers/components/VehicleItem.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/HistoryAppointmentModal.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/CustomerListSection.tsx`
+- PWA manifest surface (app metadata only): `app/AutoService.WebUI/public/site.webmanifest`
+- Push-notification integration checkpoints (must be present if push is required): service-worker registration in `app/AutoService.WebUI/src/main.tsx` and browser push APIs in `app/AutoService.WebUI/src/**/*.{ts,tsx}`
+
+## Detailed Audit Dimensions
+
+Every comprehensive frontend audit must explicitly cover these dimensions:
+
+1. Frontend design surfaces and token compliance
+2. Button configuration and control-group consistency
+3. Animations and motion-reduced behavior
+4. User text, localization completeness, and language-switch correctness
+5. 320px (plus 302px spot-check) responsive behavior
+6. Shared UI/UX component policy adherence
+7. Toast and popup interaction loops
+8. Push-notification implementation status and readiness
+
+## Mandatory Audit Procedure
+
+1. Collect changed UI-facing files first, then map each file to one or more audit dimensions.
+2. Run structural scans for token usage, shadow ban, responsive classes, modal usage, toast usage, and localization keys.
+3. Inspect shared primitives before approving page-local class additions.
+4. Validate modal and toast behavior through their shared infrastructure before reviewing page wrappers.
+5. Verify locale-key existence in both English and Hungarian files for every new or changed visible string.
+6. Evaluate push-notification status as one of three explicit outcomes:
+	- `implemented`: browser push APIs, permission flow, and fallback UX all present
+	- `not-implemented`: no push stack detected and no active feature requirement
+	- `required-missing`: feature requires push but implementation stack is absent/incomplete
+7. Produce a written report using the required output schema in this file.
+8. Block sign-off on any failed mandatory rule.
+
+## Required Audit Output Schema
+
+Use this report structure for every UI/UX validation pass:
+
+1. `Scope`: changed files and touched surfaces.
+2. `Dimension Results`: PASS/FAIL/WARN per each of the eight audit dimensions.
+3. `320px Checklist`: per-component pass/fail summary with blocking items.
+4. `Evidence`: file paths and line references for each failure or risk.
+5. `Push Status`: one of `implemented`, `not-implemented`, `required-missing` with proof.
+6. `Remediation`: concrete required fixes, ordered by severity.
+
 ## Design Token Contract
 
 - Use semantic `arsm-*` tokens from `app/AutoService.WebUI/src/styles/tokens.css`; `app/AutoService.WebUI/src/index.css` imports the style module chain.
@@ -77,6 +131,7 @@ Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equiv
 - Toasts, inline helper text, and modal copy must never leak raw backend English text in Hungarian mode.
 - Rendering should stay key-driven so locale changes update visible UI copy without remounting business flows.
 - Backend error payloads shown to users must map to localized guidance; raw passthrough is forbidden in `hu` mode.
+- Localization source-of-truth files must stay synchronized for every new key: `src/utils/locales/en.core.ts` + `src/utils/locales/hu.core.ts` and `src/utils/locales/en.feature.ts` + `src/utils/locales/hu.feature.ts`.
 
 ## Surface Flattening
 
@@ -172,5 +227,6 @@ Reporting format: for each changed component, state which rules were verified an
 - Verify localization completeness for any new visible strings.
 - Verify toast feedback policy for any new mutations.
 - Verify confirmation modal policy for any new destructive/high-stakes actions.
+- Verify and explicitly report push-notification status (`implemented`, `not-implemented`, or `required-missing`) for comprehensive frontend audits.
 
 Policy update rule: if policy changes are required, update both `.github/agents/ui-ux-style-profile.agent.md` and `.claude/agents/ui-ux-style-profile.md` together to keep them policy-equivalent.

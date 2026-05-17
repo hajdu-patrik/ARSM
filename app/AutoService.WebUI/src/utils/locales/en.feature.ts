@@ -63,6 +63,8 @@ export const enFeature = {
     loadingHistory: 'Loading repair history...',
     emptyHistory: 'No repair history found.',
     historyModalTitle: 'Appointment history details',
+    checkAppointment: 'Check appointment',
+    openInScheduler: 'Open appointment in scheduler',
     scheduledOn: 'Scheduled on',
     intakeCreatedAt: 'Intake created at',
     dueDateTime: 'Due date',

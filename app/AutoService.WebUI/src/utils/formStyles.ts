@@ -115,7 +115,7 @@ export const hiddenCheckboxClass = 'pointer-events-none absolute opacity-0';
 export const segmentedControlClass = 'grid min-w-0 grid-cols-2 gap-1.5 rounded-xl bg-arsm-toggle-bg p-1.5 dark:bg-arsm-toggle-bg-dark';
 
 const segmentedControlOptionBaseClass = 'inline-flex min-h-11 min-w-0 items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60';
-const segmentedControlOptionActiveClass = 'border border-arsm-accent/80 bg-arsm-accent text-arsm-primary ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-primary dark:ring-arsm-accent-dark/35';
+const segmentedControlOptionActiveClass = 'border border-arsm-accent/80 bg-arsm-accent text-arsm-on-accent ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:ring-arsm-accent-dark/35';
 const segmentedControlOptionInactiveClass = 'bg-transparent text-arsm-label hover:bg-arsm-accent-subtle dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark';
 
 /** Returns class names for segmented control option buttons. */
@@ -158,7 +158,10 @@ export const compactActionButtonNeutralClass = `${compactActionButtonBaseClass} 
 /** Compact pill-like sort toggle button matching Scheduler date-sort control style. */
 export const compactSortToggleButtonClass = `inline-flex h-11 min-h-11 w-auto min-w-0 shrink-0 items-center justify-center gap-1 rounded-full border border-arsm-border bg-arsm-card px-3 py-2 text-[11px] font-semibold leading-none text-arsm-label whitespace-nowrap hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80 ${buttonMicroInteractionClass}`;
 
-const customersToolbarActionBaseClass = `inline-flex h-10 min-h-10 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass}`;
+/** Compact scheduler filter button used by Date ascending / Show all controls. */
+export const schedulerFilterChipButtonClass = `inline-flex h-8 min-h-8 w-auto min-w-0 shrink-0 items-center justify-center gap-1 rounded-full border border-arsm-border bg-arsm-card px-2.5 py-1 text-[11px] font-semibold leading-none text-arsm-label whitespace-nowrap hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80 ${buttonMicroInteractionClass}`;
+
+const customersToolbarActionBaseClass = `inline-flex h-9 min-h-9 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-3.5 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass}`;
 
 /** Neutral toolbar-like action button used for list sorting/edit actions. */
 export const customersToolbarNeutralButtonClass = `${customersToolbarActionBaseClass} border border-arsm-border bg-arsm-toggle-bg font-medium text-arsm-label hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark`;
@@ -182,7 +185,7 @@ export const schedulerMiniDangerActionButtonClass = `group pointer-events-auto i
 export const schedulerMiniDangerStrongActionButtonClass = `group pointer-events-auto inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border border-arsm-error-border/70 bg-arsm-error-bg px-3 py-1.5 text-xs font-semibold text-arsm-error-text hover:bg-arsm-error-softest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/45 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-arsm-error-dark/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 ${buttonMicroInteractionClass}`;
 
 const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass}`;
-const togglePillActiveClass = 'border-arsm-accent/80 bg-arsm-accent text-arsm-primary ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-primary dark:ring-arsm-accent-dark/35';
+const togglePillActiveClass = 'border-arsm-accent/80 bg-arsm-accent text-arsm-on-accent ring-1 ring-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:ring-arsm-accent-dark/35';
 const togglePillInactiveClass = 'border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/50 hover:bg-arsm-accent-subtle dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/50 dark:hover:bg-arsm-hover-dark';
 
 /** Returns class names for segmented toggle/pill buttons. */

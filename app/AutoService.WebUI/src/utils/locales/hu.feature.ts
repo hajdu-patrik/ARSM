@@ -63,6 +63,8 @@ export const huFeature = {
     loadingHistory: 'Javítási előzmények betöltése...',
     emptyHistory: 'Nincs javítási előzmény.',
     historyModalTitle: 'Korábbi időpont részletei',
+    checkAppointment: 'Időpont megnyitása',
+    openInScheduler: 'Időpont megnyitása az ütemezőben',
     scheduledOn: 'Ütemezett időpont',
     intakeCreatedAt: 'Felvétel ideje',
     dueDateTime: 'Határidő',

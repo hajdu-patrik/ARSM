@@ -3,10 +3,13 @@
  * Renders appointment status, task description, timestamps, and vehicle info.
  * @module HistoryAppointmentModal
  */
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CalendarDays } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+import { schedulerFilterChipButtonClass } from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
@@ -24,6 +27,17 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
   onClose,
 }: HistoryAppointmentModalProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleOpenInScheduler = useCallback(() => {
+    onClose();
+    navigate('/', {
+      state: {
+        focusAppointmentId: appointment?.id,
+        focusScheduledDate: appointment?.scheduledDate,
+      },
+    });
+  }, [appointment?.id, appointment?.scheduledDate, navigate, onClose]);
 
   if (!appointment) {
     return null;
@@ -37,7 +51,19 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
       widthClassName="max-w-xl"
     >
       <div className="min-w-0 space-y-4">
-        <StatusBadge status={appointment.status} className="min-h-0 w-fit px-2.5 py-1 text-xs" />
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <StatusBadge status={appointment.status} className="min-h-0 w-fit px-2.5 py-1 text-xs" />
+          <button
+            type="button"
+            onClick={handleOpenInScheduler}
+            className={schedulerFilterChipButtonClass}
+            title={t('customers.openInScheduler')}
+            aria-label={t('customers.openInScheduler')}
+          >
+            <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{t('customers.checkAppointment')}</span>
+          </button>
+        </div>
 
         <div className="min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark">
           <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.repairTask')}</p>

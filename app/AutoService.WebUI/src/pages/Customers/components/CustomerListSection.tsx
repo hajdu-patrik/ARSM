@@ -23,7 +23,7 @@ import {
   customersToolbarDangerButtonClass,
   customersToolbarNeutralButtonClass,
   customersToolbarPrimaryButtonClass,
-  schedulerInlineClaimButtonClass,
+  schedulerFilterChipButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -259,7 +259,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className={`${schedulerInlineClaimButtonClass} w-full sm:w-auto`}
+                      className={`${schedulerFilterChipButtonClass} w-full sm:w-auto`}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>

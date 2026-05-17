@@ -239,7 +239,7 @@
     cursor: not-allowed;
     background-color: color-mix(in srgb, var(--color-arsm-accent) 35%, var(--color-arsm-card) 65%);
     border-color: color-mix(in srgb, var(--color-arsm-accent-border) 70%, transparent);
-    color: color-mix(in srgb, var(--color-arsm-label) 75%, var(--color-arsm-primary) 25%);
+    color: var(--color-arsm-accent-deep);
     opacity: 0.62;
     transform: none;
   }
@@ -260,7 +260,7 @@
   .dark .arsm-btn-primary:disabled {
     background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 25%, var(--color-arsm-card-dark) 75%);
     border-color: color-mix(in srgb, var(--color-arsm-accent-dark) 40%, transparent);
-    color: color-mix(in srgb, var(--color-arsm-label-dark) 78%, var(--color-arsm-primary-dark) 22%);
+    color: var(--color-arsm-hover);
     opacity: 0.62;
   }
 

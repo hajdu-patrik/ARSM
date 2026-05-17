@@ -114,7 +114,6 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
           }
         }}
         title={t('settings.confirmPictureRemoveTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -149,7 +148,6 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
           }
         }}
         title={t('settings.confirmSaveTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -184,7 +182,6 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
           }
         }}
         title={t('settings.confirmPasswordChangeTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -219,7 +216,6 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
           }
         }}
         title={t('settings.deleteProfileModalTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>

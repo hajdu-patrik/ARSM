@@ -9,8 +9,9 @@
  *
  * @module SchedulerPage
  */
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import { useSchedulerStore } from '../../store/scheduler.store';
 import { useToastStore } from '../../store/toast.store';
@@ -28,12 +29,42 @@ import { useSchedulerDataSync } from './hooks/useSchedulerDataSync';
 import { useSchedulerActions } from './hooks/useSchedulerActions';
 import { pageShellClass } from '../../utils/formStyles';
 
+interface SchedulerFocusState {
+  readonly focusAppointmentId: number;
+  readonly focusScheduledDate: string;
+}
+
+function parseSchedulerFocusState(value: unknown): SchedulerFocusState | null {
+  if (value === null || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as {
+    readonly focusAppointmentId?: unknown;
+    readonly focusScheduledDate?: unknown;
+  };
+
+  if (typeof candidate.focusAppointmentId !== 'number' || !Number.isFinite(candidate.focusAppointmentId)) {
+    return null;
+  }
+
+  if (typeof candidate.focusScheduledDate !== 'string') {
+    return null;
+  }
+
+  return {
+    focusAppointmentId: candidate.focusAppointmentId,
+    focusScheduledDate: candidate.focusScheduledDate,
+  };
+}
+
 /**
  * Composes and coordinates the scheduler page sections and modal flows.
  * Keeps selected appointment content synchronized with store updates.
  */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
@@ -49,6 +80,9 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const upsertAppointment = useSchedulerStore((state) => state.upsertAppointment);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDto | null>(null);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
+  const [isRouteFocusApplied, setIsRouteFocusApplied] = useState(false);
+  const [isRouteFocusOpened, setIsRouteFocusOpened] = useState(false);
+  const routeFocus = useMemo(() => parseSchedulerFocusState(location.state), [location.state]);
   const {
     selectedDate,
     selectedDateLabel,
@@ -103,6 +137,43 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   }, [selectedDate, showErrorToast]);
 
   const selectedAppointmentId = selectedAppointment?.id;
+
+  useEffect(() => {
+    if (routeFocus === null || isRouteFocusApplied) {
+      return;
+    }
+
+    const scheduledDate = new Date(routeFocus.focusScheduledDate);
+    if (!Number.isNaN(scheduledDate.getTime())) {
+      setCalendarMonth(scheduledDate.getFullYear(), scheduledDate.getMonth() + 1);
+      setSelectedDay(scheduledDate.getDate());
+    }
+
+    setIsRouteFocusApplied(true);
+  }, [isRouteFocusApplied, routeFocus, setCalendarMonth, setSelectedDay]);
+
+  useEffect(() => {
+    if (routeFocus === null || isRouteFocusOpened) {
+      return;
+    }
+
+    const focusedAppointment =
+      monthAppointments.find((item) => item.id === routeFocus.focusAppointmentId)
+      ?? todayAppointments.find((item) => item.id === routeFocus.focusAppointmentId);
+
+    if (!focusedAppointment) {
+      return;
+    }
+
+    const frameId = globalThis.requestAnimationFrame(() => {
+      setSelectedAppointment(focusedAppointment);
+      setIsRouteFocusOpened(true);
+    });
+
+    return () => {
+      globalThis.cancelAnimationFrame(frameId);
+    };
+  }, [isRouteFocusOpened, monthAppointments, routeFocus, todayAppointments]);
 
   // Keep modal content in sync with the latest store snapshot.
   useEffect(() => {

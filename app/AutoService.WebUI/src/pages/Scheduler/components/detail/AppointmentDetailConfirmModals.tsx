@@ -50,7 +50,6 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={pendingStatusChange !== null}
         onClose={onCloseStatusConfirm}
         title={t('scheduler.detail.statusChangeConfirmTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -85,7 +84,6 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isClaimConfirmOpen}
         onClose={onCloseClaimConfirm}
         title={t('scheduler.detail.claimConfirmTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -116,7 +114,6 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isUnclaimConfirmOpen}
         onClose={onCloseUnclaimConfirm}
         title={t('scheduler.detail.unassignConfirmTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
@@ -147,7 +144,6 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         isOpen={isSaveConfirmOpen}
         onClose={onCloseSaveConfirm}
         title={t('scheduler.detail.saveConfirmTitle')}
-        showCloseButton={false}
         variant="confirm"
         footer={(
           <>
