@@ -4,6 +4,7 @@
  */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Trash2 } from 'lucide-react';
 import { dangerButtonClass } from '../constants';
 
 interface DeleteProfileSectionProps {
@@ -32,7 +33,8 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 				onClick={onDeleteRequest}
 				className={`mt-4 w-full ${dangerButtonClass}`}
 			>
-				{translate('settings.deleteProfileButton')}
+				<Trash2 className="h-4 w-4 shrink-0" />
+				<span>{translate('settings.deleteProfileButton')}</span>
 			</button>
 		</div>
 	);

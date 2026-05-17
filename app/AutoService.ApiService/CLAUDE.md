@@ -13,6 +13,21 @@
 - Preserve expertise and relationship invariants.
 - DTO boundaries only; do not expose EF entities directly.
 
+## Engineering Standards
+
+- Apply SOLID and OOP for non-trivial backend changes.
+- Prefer explicit abstractions and low coupling over monolithic handlers.
+- Use GoF patterns when they reduce branching/duplication and improve extension.
+- Document engineering rationale for non-trivial design changes.
+
+## Decomposition Guardrails
+
+- No god files/classes/methods.
+- Source files > 500 lines must be split.
+- Test files > 250 lines must be split.
+- Classes/services > 300 lines must be split by responsibility.
+- Methods/functions should be <= 60 lines where practical.
+
 ## Data + EF
 
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL`.
@@ -33,7 +48,7 @@
 - HTTP heavy tests: explicit request or significant API endpoint/contract behavior change only.
 - SQL heavy tests: explicit request or significant schema/persistence behavior change only.
 - Playwright E2E: explicit request or significant frontend structural/UI flow change only.
-- New feature when heavy tests run: generate missing coverage first.
+- If a new feature triggers a heavy test agent, auto-generate missing coverage first.
 - Migration agent only when schema/EF delta exists.
 
 ## Mandatory Always-On

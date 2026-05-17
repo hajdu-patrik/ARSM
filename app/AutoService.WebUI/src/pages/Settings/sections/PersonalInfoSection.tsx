@@ -8,6 +8,7 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Save } from 'lucide-react';
 import { buttonClass, cardClass, inputClass, labelClass, sectionTitleClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
@@ -18,6 +19,8 @@ interface PersonalInfoSectionProps {
   readonly lastName: string;
   readonly email: string;
   readonly phoneNumber: string;
+  readonly isSaveEnabled: boolean;
+  readonly saveDisabledReasonKey: string | null;
   readonly isSubmitting: boolean;
   readonly onFirstNameChange: (value: string) => void;
   readonly onMiddleNameChange: (value: string) => void;
@@ -33,6 +36,8 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   lastName,
   email,
   phoneNumber,
+  isSaveEnabled,
+  saveDisabledReasonKey,
   isSubmitting,
   onFirstNameChange,
   onMiddleNameChange,
@@ -42,6 +47,11 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   onSubmit,
 }: PersonalInfoSectionProps) {
   const { t } = useTranslation();
+  const saveDisabledHintId = 'settings-profile-save-disabled-hint';
+  const isSaveDisabled = isSubmitting || !isSaveEnabled;
+  const saveDisabledHintText = saveDisabledReasonKey ? t(saveDisabledReasonKey) : '';
+  const shouldShowSaveDisabledHint = isSaveDisabled && Boolean(saveDisabledReasonKey);
+  const saveDisabledTitle = shouldShowSaveDisabledHint ? saveDisabledHintText : undefined;
 
   return (
     <div className={cardClass}>
@@ -50,7 +60,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="settings-firstName" className={labelClass}>
               {t('settings.firstName')}
@@ -133,14 +143,23 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`w-full ${buttonClass}`}
-          aria-busy={isSubmitting}
-        >
-          {isSubmitting ? t('settings.saving') : t('settings.saveChanges')}
-        </button>
+        <div className="w-full" title={saveDisabledTitle}>
+          <button
+            type="submit"
+            disabled={isSaveDisabled}
+            className={`w-full ${buttonClass}`}
+            aria-busy={isSubmitting}
+            aria-describedby={shouldShowSaveDisabledHint ? saveDisabledHintId : undefined}
+          >
+            <Save className="h-4 w-4 shrink-0" />
+            <span>{isSubmitting ? t('settings.saving') : t('settings.saveChanges')}</span>
+          </button>
+        </div>
+        {shouldShowSaveDisabledHint ? (
+          <p id={saveDisabledHintId} className="text-xs text-arsm-muted dark:text-arsm-muted-dark">
+            {saveDisabledHintText}
+          </p>
+        ) : null}
       </form>
     </div>
   );

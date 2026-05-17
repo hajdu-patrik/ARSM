@@ -37,6 +37,26 @@ const EMPTY_VEHICLE_FORM: VehicleFormState = {
   engineTorqueNm: '',
 };
 
+function hasRequiredVehicleFields(form: VehicleFormState): boolean {
+  return form.licensePlate.trim().length > 0
+    && form.brand.trim().length > 0
+    && form.model.trim().length > 0
+    && form.year.trim().length > 0
+    && form.mileageKm.trim().length > 0
+    && form.enginePowerHp.trim().length > 0
+    && form.engineTorqueNm.trim().length > 0;
+}
+
+function hasAnyVehicleFieldValue(form: VehicleFormState): boolean {
+  return form.licensePlate.trim().length > 0
+    || form.brand.trim().length > 0
+    || form.model.trim().length > 0
+    || form.year.trim().length > 0
+    || form.mileageKm.trim().length > 0
+    || form.enginePowerHp.trim().length > 0
+    || form.engineTorqueNm.trim().length > 0;
+}
+
 function hasVehicleUpdateChanges(
   snapshot: VehicleDetailDto,
   payload: CreateVehicleRequest | UpdateVehicleRequest,
@@ -90,6 +110,19 @@ export function useVehicleFormMutations({
   const [editingVehicleSnapshot, setEditingVehicleSnapshot] = useState<VehicleDetailDto | null>(null);
   const [vehicleForm, setVehicleForm] = useState<VehicleFormState>(EMPTY_VEHICLE_FORM);
   const [isSavingVehicle, setIsSavingVehicle] = useState(false);
+
+  const hasVehicleFormRequiredValues = hasRequiredVehicleFields(vehicleForm);
+  const vehiclePayloadResult = hasVehicleFormRequiredValues
+    ? buildVehiclePayload(vehicleForm)
+    : { payload: null as never, fieldError: 'customers.errors.fieldRequired' };
+  const hasValidVehiclePayload = hasVehicleFormRequiredValues && vehiclePayloadResult.fieldError === null;
+  const isVehicleSaveEnabled = hasValidVehiclePayload
+    && (
+      vehicleModalMode === 'create'
+        ? hasAnyVehicleFieldValue(vehicleForm)
+        : Boolean(editingVehicleSnapshot && hasVehicleUpdateChanges(editingVehicleSnapshot, vehiclePayloadResult.payload))
+    )
+    && !isSavingVehicle;
 
   const openCreateVehicleModal = useCallback((customerId: number) => {
     setVehicleModalMode('create');
@@ -283,6 +316,7 @@ export function useVehicleFormMutations({
     vehicleForm,
     setVehicleForm,
     isSavingVehicle,
+    isVehicleSaveEnabled,
     openCreateVehicleModal,
     openEditVehicleModal,
     closeVehicleModal,

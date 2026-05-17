@@ -138,3 +138,19 @@ LEFT JOIN vehicles v ON v."CustomerId" = c."Id"
 WHERE m."PersonType" = 'Mechanic'
 GROUP BY m."Id", m."Email", c."Id", c."Email"
 ORDER BY m."Id";
+
+
+-- ------------------------------------------------------------
+-- 24. APPOINTMENT ASSIGNMENT INTEGRITY (ORPHAN GUARD)
+--     No appointment may exist without at least one assigned mechanic.
+--     Expected: 0 rows.
+-- ------------------------------------------------------------
+SELECT a."Id" AS orphaned_appointment_id,
+       a."ScheduledDate",
+       a."Status",
+       a."TaskDescription"
+FROM appointments a
+LEFT JOIN appointmentmechanics am ON am."AppointmentId" = a."Id"
+GROUP BY a."Id", a."ScheduledDate", a."Status", a."TaskDescription"
+HAVING COUNT(am."MechanicId") = 0
+ORDER BY a."Id";

@@ -19,11 +19,11 @@ import {
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
-  compactSortToggleButtonClass,
   controlRowClass,
   customersToolbarDangerButtonClass,
   customersToolbarNeutralButtonClass,
   customersToolbarPrimaryButtonClass,
+  schedulerInlineClaimButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -212,11 +212,11 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                   </div>
 
                   {isLoadingVehicles && (
-                    <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingVehicles')}</p>
+                    <p className="text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingVehicles')}</p>
                   )}
 
                   {!isLoadingVehicles && vehicles.length === 0 && (
-                    <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.emptyVehicles')}</p>
+                    <p className="text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.emptyVehicles')}</p>
                   )}
 
                   {!isLoadingVehicles && vehicles.length > 0 && (
@@ -259,7 +259,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onToggleCustomerHistorySort(customer.id)}
-                      className={compactSortToggleButtonClass}
+                      className={`${schedulerInlineClaimButtonClass} w-full sm:w-auto`}
                     >
                       <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{customerHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -267,7 +267,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                   </div>
 
                   {isLoadingCustomerHistory && (
-                    <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingHistory')}</p>
+                    <p className="text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingHistory')}</p>
                   )}
 
                   {!isLoadingCustomerHistory && (

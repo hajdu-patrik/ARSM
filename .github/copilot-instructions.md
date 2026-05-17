@@ -27,6 +27,11 @@
 - `app/AutoService.AppHost` Aspire orchestration.
 - `app/AutoService.ServiceDefaults` shared service defaults.
 
+## Stack
+- Backend: .NET 10, ASP.NET Core API, EF Core, PostgreSQL.
+- Frontend: React 19, TypeScript, Vite, Tailwind.
+- Orchestration: .NET Aspire.
+
 ## Mandatory Workflow
 1. Orchestrator first (`Task Orchestrator`).
 2. Conditional implementation routing from orchestrator:

@@ -7,6 +7,23 @@ namespace AutoService.ApiService.DataInitialization;
 
 public static partial class DemoDataInitializer
 {
+    private static async Task EnsureNoAppointmentsWithoutMechanicsAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var orphanedAppointmentIds = await db.Appointments
+            .Where(appointment => !appointment.Mechanics.Any())
+            .OrderBy(appointment => appointment.Id)
+            .Select(appointment => appointment.Id)
+            .ToListAsync(cancellationToken);
+
+        if (orphanedAppointmentIds.Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Data integrity violation: appointments without assigned mechanics detected. AppointmentIds: {string.Join(", ", orphanedAppointmentIds)}");
+    }
+
     private static async Task NormalizePersistedDataAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         await NormalizeAppointmentStatusTimestampsAsync(db, cancellationToken);

@@ -43,6 +43,14 @@ Authority: This file is the **authoritative Copilot UI/UX policy**. Claude equiv
 - Input and placeholder treatment must remain consistent across Scheduler, Admin, Customer, Settings, Login, and popup forms; do not introduce one-off placeholder color, padding, or focus styles.
 - Any new action variant must be introduced by extending shared primitives first, then consumed by feature components.
 
+## Save and Update Action Contract
+
+- Save/update/confirm-save actions must use shared primary action primitives (`buttonClass` / `.arsm-btn-primary`) and remain visually consistent across all WebUI pages.
+- Save/update/confirm-save actions must include a leading icon (for example `Save`), and icon + text color must remain the on-accent white token pair (`text-arsm-on-accent`, `dark:text-arsm-on-accent-dark`) on active buttons.
+- Edit forms must keep save buttons disabled until both conditions are true: required fields are valid and normalized form payload differs from the original snapshot.
+- Create forms must keep save buttons disabled until required fields are valid; partial/empty forms must not allow submit.
+- No-change submit attempts in edit mode must short-circuit with localized feedback (`toast.noChanges`) and must not call mutation endpoints.
+
 ## Interaction Clarity and Choice Control
 
 - Prefer recognition over recall: keep critical actions and state summaries visible; do not hide essential actions behind unlabeled icons.

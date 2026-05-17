@@ -1,3 +1,4 @@
+using System.Data;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
@@ -118,6 +119,9 @@ public static partial class AppointmentEndpoints
             return Results.Unauthorized();
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
+
         var appointment = await db.Appointments
             .Include(a => a.Mechanics)
             .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
@@ -153,6 +157,7 @@ public static partial class AppointmentEndpoints
 
         appointment.Mechanics.Remove(mechanic);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation("Unclaim succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", mechanicId, id);
 
@@ -250,6 +255,9 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.AdminUnassign");
 
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
+
         var appointment = await db.Appointments
             .Include(a => a.Mechanics)
             .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
@@ -285,6 +293,7 @@ public static partial class AppointmentEndpoints
 
         appointment.Mechanics.Remove(mechanic);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation("AdminUnassign succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", mechanicId, id);
 

@@ -222,7 +222,7 @@
 
   .arsm-btn-primary {
     background-color: var(--color-arsm-accent);
-    color: var(--color-arsm-primary);
+    color: var(--color-arsm-on-accent);
   }
 
   .arsm-btn-primary:hover {
@@ -237,13 +237,16 @@
 
   .arsm-btn-primary:disabled {
     cursor: not-allowed;
-    background-color: var(--color-arsm-accent-border);
+    background-color: color-mix(in srgb, var(--color-arsm-accent) 35%, var(--color-arsm-card) 65%);
+    border-color: color-mix(in srgb, var(--color-arsm-accent-border) 70%, transparent);
+    color: color-mix(in srgb, var(--color-arsm-label) 75%, var(--color-arsm-primary) 25%);
+    opacity: 0.62;
     transform: none;
   }
 
   .dark .arsm-btn-primary {
     background-color: var(--color-arsm-accent-dark);
-    color: var(--color-arsm-primary);
+    color: var(--color-arsm-on-accent-dark);
   }
 
   .dark .arsm-btn-primary:hover {
@@ -255,7 +258,10 @@
   }
 
   .dark .arsm-btn-primary:disabled {
-    background-color: var(--color-arsm-ring-dark);
+    background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 25%, var(--color-arsm-card-dark) 75%);
+    border-color: color-mix(in srgb, var(--color-arsm-accent-dark) 40%, transparent);
+    color: color-mix(in srgb, var(--color-arsm-label-dark) 78%, var(--color-arsm-primary-dark) 22%);
+    opacity: 0.62;
   }
 
   .arsm-btn-secondary {
@@ -279,10 +285,19 @@
     background-color: var(--color-arsm-toggle-bg-dark);
   }
 
-  .arsm-btn-secondary:disabled,
-  .arsm-btn-danger:disabled {
+  .arsm-btn-secondary:disabled {
     cursor: not-allowed;
-    opacity: 0.7;
+    border-color: color-mix(in srgb, var(--color-arsm-border) 70%, transparent);
+    background-color: color-mix(in srgb, var(--color-arsm-toggle-bg) 65%, var(--color-arsm-card) 35%);
+    color: color-mix(in srgb, var(--color-arsm-muted) 80%, var(--color-arsm-label) 20%);
+    opacity: 0.62;
+  }
+
+  .dark .arsm-btn-secondary:disabled {
+    border-color: color-mix(in srgb, var(--color-arsm-border-dark) 70%, transparent);
+    background-color: color-mix(in srgb, var(--color-arsm-toggle-bg-dark) 65%, var(--color-arsm-card-dark) 35%);
+    color: color-mix(in srgb, var(--color-arsm-muted-dark) 82%, var(--color-arsm-label-dark) 18%);
+    opacity: 0.62;
   }
 
   .arsm-btn-danger {
@@ -311,6 +326,21 @@
     border-color: var(--color-arsm-error-dark);
     background-color: var(--color-arsm-error-bg-dark);
     color: var(--color-arsm-error-text-light);
+  }
+
+  .arsm-btn-danger:disabled {
+    cursor: not-allowed;
+    border-color: color-mix(in srgb, var(--color-arsm-error-border) 55%, transparent);
+    background-color: color-mix(in srgb, var(--color-arsm-error-bg) 50%, var(--color-arsm-card) 50%);
+    color: color-mix(in srgb, var(--color-arsm-error-text) 70%, var(--color-arsm-muted) 30%);
+    opacity: 0.62;
+  }
+
+  .dark .arsm-btn-danger:disabled {
+    border-color: color-mix(in srgb, var(--color-arsm-error-dark) 50%, transparent);
+    background-color: color-mix(in srgb, var(--color-arsm-error-bg-dark) 60%, var(--color-arsm-card-dark) 40%);
+    color: color-mix(in srgb, var(--color-arsm-error-text-light) 65%, var(--color-arsm-muted-dark) 35%);
+    opacity: 0.62;
   }
 
   .dark .arsm-btn-danger:hover {

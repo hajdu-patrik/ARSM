@@ -8,6 +8,10 @@ description: Use when editing API (.http) and Database (.sql) test suites under 
 - Primary owner: Zsombor
 - Architecture escalation: Patrik
 
+## Scope
+- API suites: `tests/API/**/*.http`
+- DB suites: `tests/Database/**/*.sql`
+
 ## Enforce
 - Keep chunked suite layout (`tests/API/**`, `tests/Database/**`).
 - Credentials via env vars only; generated data must be runtime-unique.
@@ -18,6 +22,7 @@ description: Use when editing API (.http) and Database (.sql) test suites under 
 - Keep tests readable and focused; one responsibility per scenario block.
 - Avoid giant test files and high-coupling setup.
 - Use explicit intent in scenario naming and assertions.
+- Keep setup explicit, deterministic, and easy to audit.
 
 ## Size Guardrails
 - Preferred test file size <= 180 lines.
@@ -57,3 +62,7 @@ Template: `tests/.env.example` (committed — values are placeholders only).
 - `e2e-playwright-test` runs only on explicit request or significant frontend structural/UI flow change.
 - If a new feature triggers these agents, generate missing coverage first.
 - Non-behavioral changes default: docs-sync only for test-layer docs.
+
+## Hygiene
+- Keep suites chunked and focused by domain responsibility.
+- Keep credentials and runtime values environment-driven.

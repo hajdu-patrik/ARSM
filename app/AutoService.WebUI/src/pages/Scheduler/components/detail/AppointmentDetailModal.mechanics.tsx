@@ -79,7 +79,7 @@ export const MechanicsSection = memo(function MechanicsSection({
       </h4>
 
       {uniqueMechanics.length === 0 ? (
-        <p className="text-center text-sm italic text-arsm-muted dark:text-arsm-muted-dark">
+        <p className="text-left text-sm italic text-arsm-muted dark:text-arsm-muted-dark">
           {t('scheduler.detail.noMechanics')}
         </p>
       ) : (

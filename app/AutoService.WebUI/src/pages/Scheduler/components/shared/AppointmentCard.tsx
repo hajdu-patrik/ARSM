@@ -241,7 +241,8 @@ const AppointmentCardComponent = memo(function AppointmentCard({
               disabled={isClaiming}
               className={buttonClass}
             >
-              {isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}
+              <UserPlus className="h-4 w-4 shrink-0" />
+              <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
             </button>
           </>
         )}

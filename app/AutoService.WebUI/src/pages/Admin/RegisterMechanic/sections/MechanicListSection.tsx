@@ -183,7 +183,8 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 							disabled={isDeleting || !deleteTarget}
 							className={dangerButtonClass}
 						>
-							{isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}
+							<Trash2 className="h-4 w-4 shrink-0" />
+							<span>{isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}</span>
 						</button>
 					</>
 				)}

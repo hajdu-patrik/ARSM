@@ -39,6 +39,7 @@ public static partial class DemoDataInitializer
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync(cancellationToken);
+        await EnsureNoAppointmentsWithoutMechanicsAsync(db, cancellationToken);
 
         // Avoid creating known demo credentials outside development unless explicitly enabled.
         var enableDemoSeedOutsideDevelopment = app.Configuration.GetValue<bool>("DemoData:EnableSeeding");

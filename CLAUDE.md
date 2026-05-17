@@ -30,6 +30,13 @@
 - Frontend: React 19, TypeScript, Vite, Tailwind.
 - Orchestration: .NET Aspire.
 
+## Repository Map
+
+- `app/AutoService.ApiService`: API/domain/EF.
+- `app/AutoService.WebUI`: React client.
+- `app/AutoService.AppHost`: Aspire orchestration.
+- `app/AutoService.ServiceDefaults`: shared service defaults.
+
 ## Mandatory Agent Workflow
 
 1. Orchestrator first (`orchestrator`).

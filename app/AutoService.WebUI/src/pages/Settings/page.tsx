@@ -56,6 +56,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
+  const [deletePasswordConfirm, setDeletePasswordConfirm] = useState('');
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
 
   const [isProfileSaveConfirmOpen, setIsProfileSaveConfirmOpen] = useState(false);
@@ -143,6 +144,30 @@ const SettingsPageComponent = memo(function SettingsPage() {
     return getDeterministicAvatarColor(profile.personId ?? profile.email);
   }, [profile]);
 
+  const hasProfileChanges = useMemo(() => {
+    if (!profile) {
+      return false;
+    }
+
+    return firstName !== profile.firstName
+      || middleName !== (profile.middleName ?? '')
+      || lastName !== profile.lastName
+      || email !== profile.email
+      || phoneNumber !== (profile.phoneNumber ?? '');
+  }, [email, firstName, lastName, middleName, phoneNumber, profile]);
+
+  const profileSaveDisabledReasonKey = useMemo(() => {
+    if (isUpdatingProfile) {
+      return 'settings.saving';
+    }
+
+    if (!hasProfileChanges) {
+      return 'settings.saveRequiresChanges';
+    }
+
+    return null;
+  }, [hasProfileChanges, isUpdatingProfile]);
+
   const handleProfileSaveConfirmed = useCallback(async () => {
     setIsProfileSaveConfirmOpen(false);
     setIsUpdatingProfile(true);
@@ -165,8 +190,13 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   const handleProfileSaveRequest = useCallback((event: React.SyntheticEvent) => {
     event.preventDefault();
+
+    if (isUpdatingProfile || !hasProfileChanges) {
+      return;
+    }
+
     setIsProfileSaveConfirmOpen(true);
-  }, []);
+  }, [hasProfileChanges, isUpdatingProfile]);
 
   const handlePasswordChangeFailure = useCallback((err: unknown) => {
     const normalizedFieldErrors = extractPasswordChangeErrors(err);
@@ -227,6 +257,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
+    setDeletePasswordConfirm('');
     setIsDeleteModalOpen(true);
   }, []);
 
@@ -237,11 +268,17 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
     setIsDeleteModalOpen(false);
     setDeletePassword('');
+    setDeletePasswordConfirm('');
   }, [isDeletingProfile]);
 
   const handleDeleteProfile = useCallback(async () => {
-    if (!deletePassword.trim()) {
+    if (!deletePassword.trim() || !deletePasswordConfirm.trim()) {
       showErrorToast('settings.currentPasswordRequired');
+      return;
+    }
+
+    if (deletePassword !== deletePasswordConfirm) {
+      showErrorToast('settings.deletePasswordsDoNotMatch');
       return;
     }
 
@@ -259,7 +296,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
     } finally {
       setIsDeletingProfile(false);
     }
-  }, [clearAuth, closeDeleteModal, deletePassword, handleDeleteProfileFailure, navigate, showErrorToast, showSuccessToast]);
+  }, [clearAuth, closeDeleteModal, deletePassword, deletePasswordConfirm, handleDeleteProfileFailure, navigate, showErrorToast, showSuccessToast]);
 
   if (isLoadingProfile) {
     return (
@@ -303,6 +340,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
               lastName={lastName}
               email={email}
               phoneNumber={phoneNumber}
+              isSaveEnabled={hasProfileChanges}
+              saveDisabledReasonKey={profileSaveDisabledReasonKey}
               isSubmitting={isUpdatingProfile}
               onFirstNameChange={setFirstName}
               onMiddleNameChange={setMiddleName}
@@ -358,7 +397,9 @@ const SettingsPageComponent = memo(function SettingsPage() {
         isDeleteModalOpen={isDeleteModalOpen}
         isDeletingProfile={isDeletingProfile}
         deletePassword={deletePassword}
+        deletePasswordConfirm={deletePasswordConfirm}
         onDeletePasswordChange={setDeletePassword}
+        onDeletePasswordConfirmChange={setDeletePasswordConfirm}
         onCloseDeleteModal={closeDeleteModal}
         onConfirmDeleteProfile={() => { void handleDeleteProfile(); }}
       />

@@ -28,6 +28,30 @@ const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   phoneNumber: '',
 };
 
+function buildNormalizedCustomerPayload(form: CustomerFormState): UpdateCustomerRequest {
+  return {
+    firstName: form.firstName.trim(),
+    middleName: form.middleName.trim() || null,
+    lastName: form.lastName.trim(),
+    email: form.email.trim(),
+    phoneNumber: form.phoneNumber.trim() || null,
+  };
+}
+
+function hasRequiredCustomerFields(payload: UpdateCustomerRequest): boolean {
+  return payload.firstName.length > 0
+    && payload.lastName.length > 0
+    && payload.email.length > 0;
+}
+
+function hasAnyCustomerFieldValue(payload: UpdateCustomerRequest): boolean {
+  return payload.firstName.length > 0
+    || (payload.middleName?.length ?? 0) > 0
+    || payload.lastName.length > 0
+    || payload.email.length > 0
+    || (payload.phoneNumber?.length ?? 0) > 0;
+}
+
 function hasCustomerUpdateChanges(
   snapshot: CustomerListItem,
   payload: UpdateCustomerRequest,
@@ -68,6 +92,15 @@ export function useCustomerMutations({
   const [editingCustomerSnapshot, setEditingCustomerSnapshot] = useState<CustomerListItem | null>(null);
   const [customerForm, setCustomerForm] = useState<CustomerFormState>(EMPTY_CUSTOMER_FORM);
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+
+  const normalizedCustomerPayload = buildNormalizedCustomerPayload(customerForm);
+  const isCustomerSaveEnabled = hasRequiredCustomerFields(normalizedCustomerPayload)
+    && (
+      customerModalMode === 'create'
+        ? hasAnyCustomerFieldValue(normalizedCustomerPayload)
+        : Boolean(editingCustomerSnapshot && hasCustomerUpdateChanges(editingCustomerSnapshot, normalizedCustomerPayload))
+    )
+    && !isSavingCustomer;
 
   const [deleteCustomerTarget, setDeleteCustomerTarget] = useState<CustomerListItem | null>(null);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
@@ -153,13 +186,7 @@ export function useCustomerMutations({
   const handleSubmitCustomer = useCallback(async (event: React.SyntheticEvent) => {
     event.preventDefault();
 
-    const payload: CreateCustomerRequest | UpdateCustomerRequest = {
-      firstName: customerForm.firstName.trim(),
-      middleName: customerForm.middleName.trim() || null,
-      lastName: customerForm.lastName.trim(),
-      email: customerForm.email.trim(),
-      phoneNumber: customerForm.phoneNumber.trim() || null,
-    };
+    const payload: CreateCustomerRequest | UpdateCustomerRequest = buildNormalizedCustomerPayload(customerForm);
 
     if (
       customerModalMode === 'edit'
@@ -245,6 +272,7 @@ export function useCustomerMutations({
     customerForm,
     setCustomerForm,
     isSavingCustomer,
+    isCustomerSaveEnabled,
     deleteCustomerTarget,
     isDeletingCustomer,
     openCreateCustomerModal,

@@ -213,7 +213,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
 
   return (
     <section className={`${insetSurfaceClass} p-3 sm:p-4`}>
-      <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col">
           <h3 className="truncate text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-lg">
             {t('scheduler.monthList.title')}
@@ -223,7 +223,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           </p>
         </div>
 
-        <div className={`${schedulerControlRowClass} justify-end`}>
+        <div className={`${schedulerControlRowClass} w-full justify-start sm:w-auto sm:justify-end`}>
           <button
             type="button"
             onClick={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
@@ -231,7 +231,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
             title={t('scheduler.monthList.sortByDate')}
           >
             <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
-            <span>{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
+            <span className="min-w-0 truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
           </button>
 
           {selectedDay !== null && (
@@ -241,7 +241,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
               className={`${schedulerFilterButtonClass} hover:border-arsm-accent/55 dark:hover:border-arsm-accent-dark/55`}
             >
               <X className="h-3 w-3 shrink-0" />
-              <span>{t('scheduler.monthList.clearFilter')}</span>
+              <span className="min-w-0 truncate">{t('scheduler.monthList.clearFilter')}</span>
             </button>
           )}
         </div>

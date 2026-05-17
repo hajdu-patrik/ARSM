@@ -17,6 +17,17 @@ description: "Use when editing backend API, auth, EF Core model, migrations, and
 - Config-first addressing; no secret/url hardcoding.
 - Keep `appsettings.Local.json` local-only: it is gitignored and must stay excluded from build/publish output via the project file.
 
+## Data + EF
+- Provider: `Npgsql.EntityFrameworkCore.PostgreSQL`.
+- Central model configuration lives in `Data/AutoServiceDbContext.cs`.
+- EF migrations live under `Data/Migrations`.
+- Use async EF I/O with cancellation tokens.
+
+## Auth/Security
+- Mechanics-only login/register policy remains enforced.
+- Preserve Identity + JWT + cookie session behavior, including refresh rotation and denylist enforcement.
+- Keep secrets out of repo and fail fast on placeholder secret markers.
+
 ## Source-of-Truth Files
 - Endpoint mapping: `Auth/`, `Appointments/`, `Customers/`, `Vehicles/`, `Profile/`, `Admin/` endpoint mappers.
 - Pipeline/config: `Program.cs`, `appsettings*.json`, `AutoService.ApiService.csproj`, `Configuration/ConnectionStringResolver.cs`, `Configuration/TemplateMarkerDetector.cs`.
