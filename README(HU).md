@@ -9,126 +9,124 @@
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
 
-Az **ARSM** egy szerelőknek készült műhelykezelő eszköz autószerviz vállalkozások számára. Segíti a szerelőket a napi javítási ütemtervek áttekintésében, időpontok igénylésében és a munkák állapotának valós idejű követésében egy letisztult, reszponzív felületen.
-
-**Használd az ARSM-et, ha:**
-
-- Egy pillantással szeretnéd áttekinteni és kezelni a javítási időpontokat
-- Szabad időpontokat szeretnél igényelni és valós időben frissíteni az állapotukat
-- Havi naptárnézetben szeretnéd böngészni az összes ütemezett munkát
-- Szerelői munkaterheléseket szeretnél koordinálni a műhelyen belül
-
-Full-stack alkalmazásként épült ASP.NET Core Web API (backend), React + TypeScript (frontend) és PostgreSQL (adatbázis) technológiákkal, .NET Aspire orkesztrációval az egyszerű helyi fejlesztésért.
-
----
+Az ARSM egy autószervizeknek készült műhelyütemező és napi működést támogató alkalmazás. Segít a szerelőknek és adminoknak az időpontok kezelésében, a munkák felvételében, és a javítási folyamat követésében egy reszponzív felületen.
 
 ## Nyelv
 
 - Magyar: ez a fájl
-- Angol: [README.md](https://github.com/hajdu-patrik/ARSM/blob/main/README.md)
+- Angol: [README.md](README.md)
 
----
+## Fő funkciók
 
-## MI-alapú fejlesztés
+- Időpontfelvétel és műhelyszintű ütemezés
+- Szabad munkák felvétele és leadása szerelői oldalon
+- Állapotfrissítés aktív munkákhoz
+- Havi naptárnézet és kijelölt napi összegzés
+- Szerepkör-alapú működés (szerelő és admin)
 
-A projekt két ágensi MI-eszközt használ párhuzamosan: **Claude Code** (CLI/desktop) és **GitHub Copilot** (VS Code). Mindkettő azonos utasításkészlettel és specialista ágensekkel dolgozik, így bármelyik eszköz képes a kódolás bármely részén dolgozni ugyanazokkal a szabályokkal.
+## Technológiai stack
 
-### Specialista ágensek
+| Réteg | Technológiák |
+| ----- | ------------ |
+| Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Adatbázis | PostgreSQL |
+| Orkesztráció | .NET Aspire (`AutoService.AppHost`) |
 
-Minden implementációs feladatot az orkesztrátor delegál specialista ágenseknek. Az orkesztrátor elemzi a kérést, fázisokra bontott tervet készít, és a megfelelő specialistákhoz irányítja a munkát, amelyek párhuzamosan is futhatnak, ha függetlenek.
+## Repozitórium felépítése
 
-| Ágens | Hatókör | Cél |
-| ----- | ------- | --- |
-| **Orkesztrátor** | Feladat-dekompozíció | Minden feladatot először elemez, eldönti, melyik specialista melyik fázisban dolgozik |
-| **Backend** | `AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults` | API/domain/auth/EF munka, valamint Aspire AppHost és service-default bekötések |
-| **Frontend** | `AutoService.WebUI` | Komponensek, oldalak, store-ok, szolgáltatások, i18n, routing, stílusok |
-| **Migráció** | EF Core | Adatbázis-migrációk létrehozása, validálása és hibaelhárítása |
-| **Docs Sync** | Dokumentáció | Minden utasításfájl szinkronizálása a kóddal minden változás után |
-| **Coding Principles** | Kódminőség & stílus | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
-| **HTTP Endpoint Test** | .http tesztfájlok | HTTP endpoint tesztcsomagok frissítése, ha viselkedés/új feature API-szerződést érint, vagy ha explicit kérés érkezik |
-| **SQL Database Test** | .sql validációs fájlok | SQL validációs lekérdezések frissítése, ha viselkedés/új feature séma-perzisztencia viselkedést érint, vagy ha explicit kérés érkezik |
-| `e2e-playwright-test` | Playwright E2E tesztek | Playwright tesztcsomagok karbantartása, ha viselkedés/új feature UI/DTO-látható flowt érint, vagy ha explicit kérés érkezik |
-| **Validáló** | Build ellenőrzés | `dotnet build` + `npx tsc --noEmit` futtatása és eredmény jelentése |
+- `app/AutoService.ApiService`: API endpointok, domain modell, EF Core, hitelesítés
+- `app/AutoService.WebUI`: React frontend
+- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + ApiService + WebUI)
+- `app/AutoService.ServiceDefaults`: közös service defaultok és resilience beállítások
+- `tests/API`: HTTP endpoint tesztek (`.http`)
+- `tests/Database`: SQL validációs lekérdezések (`.sql`, csak olvasási policy)
+- `docs`: kiegészítő technikai és UI/UX dokumentáció
 
-**Standard workflow:**
+## Gyors indítás (ajánlott)
 
-1. Orkesztrátor fázisokra bontja a feladatot
-2. Az irányított specialisták dolgoznak; frontend munka esetén a Frontend mindig együtt fut a `ui-ux-style-profile` ágenssel, a független specialisták pedig párhuzamosan is futhatnak
-3. Validáló ágens ellenőrzi a buildet
-4. Docs Sync ágens szinkronizálja a dokumentációt
-5. Coding Principles ágens forrásváltozásoknál ellenőrzi a kódminőséget és stílust
-6. Security remediation fut kódváltozásoknál (`npm audit fix` WebUI esetén; `dotnet list package --vulnerable --include-transitive` és biztonságos patch/minor javítás backend/platform projektek esetén)
-7. HTTP Endpoint Test ágens a .http teszteket csak viselkedés/új feature API-szerződés változásnál szinkronizálja (vagy explicit prompt-kérésre)
-8. SQL Database Test ágens a .sql validációkat csak viselkedés/új feature séma/perzisztencia változásnál szinkronizálja (vagy explicit prompt-kérésre)
-9. `e2e-playwright-test` ágens a Playwright teszteket csak viselkedés/új feature UI/DTO-látható változásnál frissíti (vagy explicit prompt-kérésre)
+### Előfeltételek
 
-Alap fejlesztési policy: nem viselkedésbeli változásoknál (refaktor, átnevezés, komment, formázás, csak dokumentáció) a HTTP/SQL/Playwright tesztágensek kimaradnak, és csak Docs Sync fut. Ha a prompt explicit tesztfuttatást vagy tesztkészítést/frissítést kér, a kért tesztágensek kötelezően futnak.
+- .NET 10 SDK
+- Node.js 20+ és npm
+- Futó Docker Desktop (az AppHost PostgreSQL konténert indít)
 
-Ágensdefiníciók:
+### 1) Lokális API beállítás létrehozása
 
-- Claude Code: `.claude/agents/*.md`
-- GitHub Copilot: `.github/agents/*.agent.md`
+A commitolt sablonból hozd létre a lokális, gitignored API konfigurációt:
 
-### Skillek (agens runbookok)
-
-Újrahasználható runbookok, specialista ágensek használják. Az ágensek az elsődleges interfész — ágenseket hívj, ne közvetlenül skilleket.
-
-| Skill | Ágens | Cél |
-| ----- | ----- | --- |
-| `autoservice-docs-sync` | `docs-sync` | Párosított Claude/Copilot utasítások, ágensek, skillek, MCP template-ek, README-k és workflow policy szinkronizálása a kóddal |
-| `autoservice-coding-principles` | `coding-principles` | JSDoc kommentek, elnevezési konvenciók és kódminőség kikényszerítése |
-| `autoservice-http-endpoint-test` | `http-endpoint-test` | .http tesztcsomagok frissítése endpoint változások után |
-| `autoservice-sql-database-test` | `sql-database-test` | .sql validációs lekérdezések frissítése séma változások után |
-| `autoservice-ef-migration` | `migration` | EF Core migrációs workflow és hibaelhárítás |
-| `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Playwright E2E tesztek frissítése UI/DTO változások után |
-| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | A központi UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) érvényesítése a WebUI stílusokon és dokumentáción |
-
-Skill források: `.github/skills/*/SKILL.md`
-
-### Helyi MI/MCP eszközök
-
-Aspire MCP eszközökhöz a `dotnet-tools.json` és az `aspire.config.json` verziózott fájl marad. A helyi Aspire CLI visszaállítása a repository gyökeréből:
-
-```Bash
-dotnet tool restore --tool-manifest dotnet-tools.json
+```powershell
+Copy-Item app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
 ```
 
-A runtime MCP kapcsolati fájlok, például a `.vscode/mcp.json` és a `.claude/.mcp.json`, lokálisak maradnak, és a commitolt template-ekből készülnek.
+vagy
 
-### SQL csak olvasható policy (MI)
+```bash
+cp app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
+```
 
-- MI-alapú SQL validációhoz a dedikált PostgreSQL felhasználót használd: `ai_agent_test_user`.
-- Ez a felhasználó csak olvasási jogosultsággal rendelkezik, kizárólag `SELECT` lekérdezésekhez.
-- MI eszközből tilos `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, vagy `GRANT/REVOKE` futtatása.
-- Emelt jogosultságú adatbázis-felhasználót csak szándékos, manuális karbantartási feladatokhoz használj.
+Ezután töltsd ki a helyőrző értékeket az `appsettings.Local.json` fájlban, különösen:
 
-### Utasításfájlok
+- `JwtSettings.Secret`
+- `ConnectionStrings.AutoServiceDb`
+- `DemoData.MechanicPassword`
 
-A domain szabályok párhuzamosan karbantartottak mindkét eszközhöz:
+### 2) Eszközök visszaállítása és frontend függőségek telepítése
 
-| Claude Code | GitHub Copilot |
-| ----------- | -------------- |
-| `CLAUDE.md` (gyökérben) | `.github/copilot-instructions.md` |
-| `app/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
+```bash
+dotnet tool restore --tool-manifest dotnet-tools.json
+cd app/AutoService.WebUI
+npm install
+cd ../..
+```
 
----
+### 3) Teljes lokális stack indítása
 
-## Hitelesítés (magas szintű)
-
-- A rendszer ASP.NET Core Identity + JWT alapon működik, backend által kezelt HttpOnly cookie sessionnel.
-- Az access és refresh tokenek biztonságos HttpOnly cookie-kban vannak, refresh token rotációval és szerveroldali (hash-elt) tárolással.
-- Auth endpointok: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
-- Időpont endpointok: `GET /api/appointments`, `GET /api/appointments/today`, `POST /api/appointments/intake`, `PUT /api/appointments/{id}`, `PUT /api/appointments/{id}/claim`, `DELETE /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`, `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `POST /api/customers/{customerId}/appointments` (AdminOnly), `GET /api/customers/{customerId}/appointments` (opcionális `?descending=true`), `GET /api/vehicles/{vehicleId}/appointments` (opcionális `?descending=true`).
-- A dashboard-hozzáférés szerelői fiókokra van tervezve. Bejelentkezés után a szerelők egy Ütemező oldalra kerülnek, ahol a felső összegző sáv a kijelölt napot (vagy kijelölés nélkül az aktuális napot) mutatja, a havi naptárnézet, gyors intake szekció és havi időpontlista mellett.
-- Részletes biztonsági és üzemeltetési információk szándékosan nem publikusak ebben a README-ben.
-
----
-
-## Indítás Aspire-rel
-
-```Bash
+```bash
 cd app
 dotnet run --project AutoService.AppHost
 ```
 
-Ez elindítja a helyi orkesztrált környezetet: PostgreSQL, ApiService és WebUI fejlesztői szerver. Az AppHost konfigurált portokat olvas, és az API endpointból injektálja a `VITE_API_URL` értéket a WebUI számára.
+Az AppHost elindítja és összeköti:
+
+- PostgreSQL
+- `AutoService.ApiService`
+- `AutoService.WebUI` fejlesztői szerver (`VITE_API_URL` automatikus injektálással)
+
+## Hasznos parancsok
+
+| Feladat | Parancs |
+| ------- | ------- |
+| AppHost build | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
+| Frontend build | `cd app/AutoService.WebUI && npm run build` |
+| Frontend lint | `cd app/AutoService.WebUI && npm run lint` |
+| Frontend E2E futtatás | `cd app/AutoService.WebUI && npm run e2e` |
+
+## Konfiguráció és titokkezelés
+
+- Titkokat, jelszavakat, lokális connection stringeket ne commitolj.
+- Backend lokális titkok: `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
+- API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
+- Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored).
+
+## Fejlesztői megjegyzések (AI workflow)
+
+- Implementációnál kötelező az orchestrator-first megközelítés, majd specialista routing.
+- Frontend implementáció csak a `ui-ux-style-profile` párossal érvényes.
+- Implementáció után kötelező a build validáció és dokumentáció-szinkron.
+- Kódváltozásnál kötelező security remediation (`npm audit fix` WebUI-n, sérülékeny csomagellenőrzés .NET oldalon).
+- Részletes policy fájlok:
+  - Gyökér: `CLAUDE.md`, `.github/copilot-instructions.md`
+  - Területi szabályok: `app/*/CLAUDE.md`, `.github/instructions/*.instructions.md`
+
+## SQL csak olvasható policy MI validációhoz
+
+- Dedikált AI SQL felhasználó: `ai_agent_test_user`
+- Engedélyezett SQL: `SELECT`
+- Tiltott AI toolingból: `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`
+
+## Licenc
+
+Ez a repository nem MIT licencű.
+
+Részletek: [LICENSE.md](LICENSE.md) (Custom Copyright Notice and Academic Use Policy).

@@ -10,6 +10,14 @@ tools: Read, Edit, MultiEdit, Grep, Glob
 Scope: `app/AutoService.WebUI/**`
 Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`. Both files must remain policy-equivalent; differences are limited to platform syntax only.
 
+## Single Source Of Truth Baseline (Current Fixed State)
+
+- Shared modal behavior is centralized in `app/AutoService.WebUI/src/components/common/Modal.tsx` and `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`.
+- Modal variants (including confirm, delete, and edit flows) must keep the top-right X close button visible by default (`showCloseButton` defaults to `true`).
+- `showCloseButton={false}` is allowed only for explicitly approved blocking flows.
+- Valid modal close paths are top-right X, overlay click, Escape key, and explicit cancel action.
+- Toast dismiss X remains enabled and is not part of the modal close restriction rules.
+
 ## UI/UX Evidence Map (Mi Hol Talalhato)
 
 - Design tokens and semantic color system: `app/AutoService.WebUI/src/styles/tokens.css`
@@ -181,7 +189,8 @@ Use this report structure for every UI/UX validation pass:
 
 - Destructive or high-stakes actions must follow click -> confirmation modal -> confirmed mutation.
 - Confirmation copy and buttons must be i18n-backed and use semantic tokens.
-- Confirmation modals must set `showCloseButton={false}` on the shared modal shell; closing remains available through overlay, Escape, and explicit cancel actions.
+- Confirmation modals must keep the top-right X close button visible on the shared modal shell (`showCloseButton` defaults to `true`); disable it only for explicitly approved blocking flows.
+- Closing must remain available through top-right X, overlay, Escape, and explicit cancel actions.
 - Destructive confirmation modals should default focus to the safe action (`Cancel`) rather than the destructive confirm.
 - Scheduler self-unassign is high-stakes in all surfaces (including list cards) and must use confirmation modal flow; direct self-unassign is not allowed.
 

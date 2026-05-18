@@ -47,3 +47,14 @@ Keep documentation as a reliable operational contract for implementation agents 
 - SOLID/OOP/GoF and anti-god-file guardrails remain present where expected.
 - Security remediation commands and trigger conditions remain accurate.
 - No speculative claims are introduced.
+
+## Operational Snapshot Consolidation Rule
+- Prefer distributed documentation across instruction/agent/skill layers over monolithic project-state dump files.
+- If a large snapshot document is mostly redundant with active governance files, migrate the remaining high-value operational deltas into managed layers, then remove the redundant snapshot.
+- Maintain these operational anchors explicitly during docs-sync:
+	- Local runtime endpoints/ports (Aspire, API, WebUI, PostgreSQL)
+	- Cookie names and auth timing/rate-limit contract (`autoservice_at`, `autoservice_rt`, TTLs, lockout)
+	- Middleware/denylist/auth flow checkpoints in API startup and auth modules
+	- Appointment claim/assign/status contract checkpoints
+	- Profile picture upload/cache/ETag/SSE checkpoints
+	- AppHost wiring + seed/bootstrap behavior checkpoints

@@ -116,3 +116,24 @@ Otherwise: skip migration agent.
 - AppHost: `app/AutoService.AppHost/CLAUDE.md`
 - ServiceDefaults: `app/AutoService.ServiceDefaults/CLAUDE.md`
 - Tests: `tests/CLAUDE.md`
+
+## Operational Anchors (Consolidated)
+
+- Keep operational knowledge distributed across instruction/agent/skill layers; do not rely on a single long-form TL-DR document as primary runtime truth.
+- Canonical local runtime surface:
+   - Aspire dashboard: `https://localhost:17094`
+   - API: `https://localhost:5200`
+   - WebUI: `https://localhost:5173`
+   - PostgreSQL: `localhost:50000`
+- Session/auth contract anchors:
+   - Access cookie: `autoservice_at` (10 minutes)
+   - Refresh cookie: `autoservice_rt` (7 days)
+   - Login rate limit: `10/min per IP`; refresh rate limit: `20/min per IP`
+   - Lockout: 5 failed password attempts -> 15 minutes
+- Runtime behavior anchors that must stay docs-synced when changed:
+   - Middleware order and denylist enforcement in `app/AutoService.ApiService/Program.cs`
+   - Auth/session endpoint behavior under `app/AutoService.ApiService/Auth/**`
+   - Appointment status/claim/assign contracts under `app/AutoService.ApiService/Appointments/**`
+   - Profile-picture upload/ETag/cache/SSE behavior under `app/AutoService.ApiService/Profile/**`
+   - Aspire resource wiring and ports in `app/AutoService.AppHost/AppHost.cs`
+   - Demo seed and role bootstrap behavior in `app/AutoService.ApiService/Data/**`

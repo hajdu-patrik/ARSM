@@ -9,126 +9,126 @@
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
 
-**ARSM** is a mechanic-facing workshop management tool built for auto service businesses. It helps mechanics organize their daily repair schedules, claim appointments, and track job progress through a clean, responsive dashboard.
-
-**Use ARSM when you need to:**
-
-- View and manage repair's appointments at a glance
-- Claim unassigned appointments and update their status in real time
-- Browse a monthly calendar overview of all scheduled work
-- Coordinate mechanic workloads across your workshop
-
-Built as a full-stack application with ASP.NET Core Web API (backend), React + TypeScript (frontend), and PostgreSQL (database), orchestrated via .NET Aspire for streamlined local development.
-
----
+ARSM is a workshop scheduling and operations app for auto service teams. It helps mechanics and admins organize appointments, claim work, and track repair progress in one responsive dashboard.
 
 ## Language
 
 - English: this file
-- Hungarian: [README(HU).md](https://github.com/hajdu-patrik/ARSM/blob/main/README(HU).md)
+- Hungarian: [README(HU).md](README(HU).md)
+
+## Key Features
+
+- Appointment intake and workshop scheduling
+- Claim and unclaim flows for mechanics
+- Real-time status updates across active jobs
+- Monthly calendar view plus selected-day summary
+- Role-aware behavior for mechanic and admin users
+
+## Technology Stack
+
+| Layer | Technologies |
+| ----- | ------------ |
+| Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Database | PostgreSQL |
+| Orchestration | .NET Aspire (`AutoService.AppHost`) |
+
+## Repository Layout
+
+- `app/AutoService.ApiService`: API endpoints, domain model, EF Core, authentication
+- `app/AutoService.WebUI`: React frontend
+- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + ApiService + WebUI)
+- `app/AutoService.ServiceDefaults`: shared service defaults and resilience setup
+- `tests/API`: HTTP endpoint test suites (`.http`)
+- `tests/Database`: SQL validation suites (`.sql`, read-only policy)
+- `docs`: additional technical and UI/UX documentation
 
 ---
 
-## AI-Assisted Development
+## Quick Start (Recommended)
 
-This project uses two agentic AI tools side by side: **Claude Code** (CLI/desktop) and **GitHub Copilot** (VS Code). Both share aligned instruction sets and specialist agents so that either tool can work on any part of the codebase with identical constraints.
+### Prerequisites
 
-### Specialist Agents
+- .NET 10 SDK
+- Node.js 20+ with npm
+- Docker Desktop running locally (required for PostgreSQL container via AppHost)
 
-Every implementation task is delegated to specialist agents via an orchestrator. The orchestrator analyzes the request, creates a phased plan, and dispatches work to the appropriate specialists — which can run in parallel when independent.
+### 1) Create local API settings
 
-| Agent | Scope | Purpose |
-| ----- | ----- | ------- |
-| **Orchestrator** | Task decomposition | Analyzes every task first, decides which specialists work in which phases |
-| **Backend** | `AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults` | API/domain/auth/EF work plus Aspire AppHost and service-default wiring |
-| **Frontend** | `AutoService.WebUI` | Components, pages, stores, services, i18n, routing, styling |
-| **Migration** | EF Core | Creates, validates, and troubleshoots database migrations |
-| **Docs Sync** | Documentation | Syncs all instruction files with current code after every change |
-| **Coding Principles** | Code style & quality | Enforces JSDoc comments, naming conventions, and structural quality across changed files |
-| **HTTP Endpoint Test** | .http test files | Updates HTTP endpoint test suites when behavior/new feature changes API contract, or when explicitly requested |
-| **SQL Database Test** | .sql validation files | Updates SQL validation suites when behavior/new feature changes schema/persistence behavior, or when explicitly requested |
-| `e2e-playwright-test` | Playwright E2E tests | Maintains Playwright test suites when behavior/new feature changes UI/DTO-visible flows, or when explicitly requested |
-| **Validate** | Build check | Runs `dotnet build` + `npx tsc --noEmit` and reports pass/fail |
+Use the committed template to create your local, gitignored API config:
 
-**Standard workflow:**
-
-1. Orchestrator decomposes the task into phases
-2. Routed specialists execute; frontend work always pairs Frontend with `ui-ux-style-profile`, and independent specialists may run in parallel
-3. Validate agent checks the build
-4. Docs Sync agent updates project documentation
-5. Coding Principles agent enforces code style and quality for source changes
-6. Security remediation runs for code changes (`npm audit fix` for WebUI; `dotnet list package --vulnerable --include-transitive` plus safe patch/minor remediation for backend/platform projects)
-7. HTTP Endpoint Test agent syncs .http test suites only for behavior/new feature API contract changes (or explicit prompt request)
-8. SQL Database Test agent syncs .sql validation suites only for behavior/new feature schema/persistence changes (or explicit prompt request)
-9. `e2e-playwright-test` agent updates Playwright tests only for behavior/new feature UI/DTO-visible changes (or explicit prompt request)
-
-Default development policy: for non-behavioral changes (refactor, naming, comments, formatting, docs-only), skip HTTP/SQL/Playwright test agents and run Docs Sync only. If a prompt explicitly asks to run/create/update tests, the requested test agents must run.
-
-Agent definitions:
-
-- Claude Code: `.claude/agents/*.md`
-- GitHub Copilot: `.github/agents/*.agent.md`
-
-### Skills (Agent Runbooks)
-
-Reusable runbooks consumed by specialist agents. Agents are the primary interface — invoke agents, not skills directly.
-
-| Skill | Used by agent | Purpose |
-| ----- | ------------- | ------- |
-| `autoservice-docs-sync` | `docs-sync` | Synchronize paired Claude/Copilot instructions, agents, skills, MCP templates, README docs, and workflow policy with code |
-| `autoservice-coding-principles` | `coding-principles` | Enforce JSDoc comments, naming conventions, and structural quality |
-| `autoservice-http-endpoint-test` | `http-endpoint-test` | Update .http test suites after endpoint changes |
-| `autoservice-sql-database-test` | `sql-database-test` | Update .sql validation suites after schema changes |
-| `autoservice-ef-migration` | `migration` | EF Core migration workflow and troubleshooting |
-| `autoservice-e2e-playwright-test` | `e2e-playwright-test` | Update Playwright E2E tests after UI/DTO changes |
-| `ui-ux-sync` | `frontend` / `ui-ux-style-profile` | Enforce the central UI/UX policy (`.github/agents/ui-ux-style-profile.agent.md`) across WebUI styling and docs |
-
-Skill sources: `.github/skills/*/SKILL.md`
-
-### Local AI/MCP Tooling
-
-For Aspire MCP tooling, keep `dotnet-tools.json` and `aspire.config.json` versioned. Restore the local Aspire CLI from the repository root:
-
-```Bash
-dotnet tool restore --tool-manifest dotnet-tools.json
+```powershell
+Copy-Item app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
 ```
 
-Runtime MCP connection files such as `.vscode/mcp.json` and `.claude/.mcp.json` stay local and must be created from the committed templates.
+or
 
-### SQL Read-Only Policy (AI)
+```bash
+cp app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
+```
 
-- For AI-assisted SQL validation, use the dedicated PostgreSQL account `ai_agent_test_user`.
-- This account is read-only by design and may only run `SELECT` queries.
-- Never run `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, or `GRANT/REVOKE` through AI-assisted SQL tooling.
-- Use privileged/admin DB credentials only for intentional manual maintenance operations.
+Then update placeholder values in `appsettings.Local.json`, especially:
 
-### Instruction Files
+- `JwtSettings.Secret`
+- `ConnectionStrings.AutoServiceDb`
+- `DemoData.MechanicPassword`
 
-Domain rules are maintained in parallel for both tools:
+### 2) Restore tools and install frontend dependencies
 
-| Claude Code | GitHub Copilot |
-| ----------- | -------------- |
-| `CLAUDE.md` (root) | `.github/copilot-instructions.md` |
-| `app/*/CLAUDE.md` | `.github/instructions/*.instructions.md` |
+```bash
+dotnet tool restore --tool-manifest dotnet-tools.json
+cd app/AutoService.WebUI
+npm install
+cd ../..
+```
 
----
+### 3) Run the full local stack
 
-## Authentication (High Level)
-
-- Authentication is based on ASP.NET Core Identity + JWT, with backend-managed HttpOnly cookie sessions.
-- Access and refresh tokens are stored in secure HttpOnly cookies, with refresh token rotation and server-side persistence (hashed).
-- Auth endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/validate`.
-- Appointment endpoints: `GET /api/appointments`, `GET /api/appointments/today`, `POST /api/appointments/intake`, `PUT /api/appointments/{id}`, `PUT /api/appointments/{id}/claim`, `DELETE /api/appointments/{id}/claim`, `PUT /api/appointments/{id}/status`, `PUT /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `DELETE /api/appointments/{id}/assign/{mechanicId}` (AdminOnly), `POST /api/customers/{customerId}/appointments` (AdminOnly), `GET /api/customers/{customerId}/appointments` (optional `?descending=true`), `GET /api/vehicles/{vehicleId}/appointments` (optional `?descending=true`).
-- Dashboard access is for mechanics only. After login, mechanics land on a Scheduler page where the top summary strip reflects the selected day (or today when no day is selected), alongside the monthly calendar view, intake quick section, and monthly appointment list.
-- Sensitive operational/security details are intentionally not published in this README.
-
----
-
-## Run with Aspire
-
-```Bash
+```bash
 cd app
 dotnet run --project AutoService.AppHost
 ```
 
-This starts the orchestrated local environment: PostgreSQL, ApiService, and the WebUI dev server. AppHost reads configured ports and injects `VITE_API_URL` into the WebUI from the API endpoint.
+AppHost starts and wires:
+
+- PostgreSQL
+- `AutoService.ApiService`
+- `AutoService.WebUI` development server with `VITE_API_URL` injected from the API endpoint
+
+## Useful Commands
+
+| Task | Command |
+| ---- | ------- |
+| Build AppHost | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
+| Build frontend | `cd app/AutoService.WebUI && npm run build` |
+| Lint frontend | `cd app/AutoService.WebUI && npm run lint` |
+| Run frontend E2E | `cd app/AutoService.WebUI && npm run e2e` |
+
+## Configuration and Secrets
+
+- Never commit secrets, passwords, or local connection strings.
+- Backend local secrets belong in `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
+- API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
+- Playwright runtime secrets belong in `.secrets` at repository root (gitignored).
+
+## Contributor Notes (AI Workflow)
+
+- Implementation is orchestrator-first, then routed to backend/frontend/migration specialists.
+- Frontend implementation must run with `ui-ux-style-profile` as a mandatory pair.
+- Build validation and docs sync are required after implementation.
+- Security remediation is mandatory for code changes (`npm audit fix` for WebUI, vulnerable package checks for .NET).
+- Detailed policy files:
+  - Root: `CLAUDE.md`, `.github/copilot-instructions.md`
+  - Area-specific rules: `app/*/CLAUDE.md`, `.github/instructions/*.instructions.md`
+
+## SQL Read-Only Policy for AI Validation
+
+- Dedicated AI SQL account: `ai_agent_test_user`
+- Allowed statements: `SELECT` only
+- Disallowed through AI tooling: `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`
+
+## License
+
+This repository is not MIT-licensed.
+
+See [LICENSE.md](LICENSE.md) for the Custom Copyright Notice and Academic Use Policy.
