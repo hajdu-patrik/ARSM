@@ -130,7 +130,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							<button
 								type="button"
 								onClick={() => onToggleVehicleHistorySort(vehicle.id)}
-								className={`${schedulerFilterChipButtonClass} h-11 min-h-11 w-full px-3 sm:w-auto`}
+								className={`${schedulerFilterChipButtonClass} w-full sm:w-auto`}
 							>
 								<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
 								<span className="truncate">{vehicleHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>

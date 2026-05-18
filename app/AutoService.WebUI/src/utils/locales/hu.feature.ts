@@ -202,6 +202,12 @@ export const huFeature = {
       invalidPhone: 'A telefonszámnak érvényes európai számnak kell lennie!',
       invalidName: 'A név csak betűket és kötőjeleket tartalmazhat.',
       fieldRequired: 'Ez a mező kötelező.',
+      passwordTooWeak: 'A jelszó túl gyenge. Kérjük, feleljen meg a jelszókövetelményeknek.',
+      passwordTooShort: 'A jelszónak legalább 8 karakter hosszúnak kell lennie.',
+      passwordMissingUpper: 'A jelszónak tartalmaznia kell legalább egy nagybetűt.',
+      passwordMissingLower: 'A jelszónak tartalmaznia kell legalább egy kisbetűt.',
+      passwordMissingDigit: 'A jelszónak tartalmaznia kell legalább egy számot.',
+      passwordMissingSpecial: 'A jelszónak tartalmaznia kell legalább egy speciális karaktert.',
     },
   },
   settings: {
@@ -282,6 +288,12 @@ export const huFeature = {
       invalidName: 'A név csak betűket és kötőjeleket tartalmazhat.',
       currentPasswordInvalid: 'A jelenlegi jelszó hibás.',
       fieldRequired: 'Ez a mező kötelező.',
+      passwordTooWeak: 'A jelszó túl gyenge. Kérjük, feleljen meg a jelszókövetelményeknek.',
+      passwordTooShort: 'A jelszónak legalább 8 karakter hosszúnak kell lennie.',
+      passwordMissingUpper: 'A jelszónak tartalmaznia kell legalább egy nagybetűt.',
+      passwordMissingLower: 'A jelszónak tartalmaznia kell legalább egy kisbetűt.',
+      passwordMissingDigit: 'A jelszónak tartalmaznia kell legalább egy számot.',
+      passwordMissingSpecial: 'A jelszónak tartalmaznia kell legalább egy speciális karaktert.',
     },
   },
   tools: {
@@ -301,6 +313,7 @@ export const huFeature = {
   },
   notFound: {
     pageNotFound: 'Oldal nem található',
+    imageAlt: 'AutoService 404 illusztráció',
     subtitle: 'Úgy tűnik, ez az útvonal rossz kanyart vett.',
     goToDashboard: 'Irányítópult',
     goToLogin: 'Bejelentkezés',
@@ -310,6 +323,7 @@ export const huFeature = {
   },
   serverError: {
     title: 'Szerverhiba',
+    imageAlt: 'AutoService 500 illusztráció',
     subtitle: 'Valami hiba történt a szerverünkön. Az oldal automatikusan újratöltődik.',
     reload: 'Oldal újratöltése',
     redirectIn: 'Újratöltés',

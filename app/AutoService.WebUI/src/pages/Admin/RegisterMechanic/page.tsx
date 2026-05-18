@@ -36,6 +36,11 @@ import {
 } from '../../../utils/serverValidation';
 import type { RegisterMechanicFormValues } from './types';
 
+function mapAdminMessageToToastKey(message: string): string {
+  const mappedMessage = mapAdminValidationMessageToKey(message);
+  return mappedMessage === message ? 'admin.genericError' : mappedMessage;
+}
+
 const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const { t } = useTranslation();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
@@ -126,21 +131,21 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
       return;
     }
 
-    if (err.response?.status === 422 || err.response?.status === 400) {
-      const data = err.response.data;
-      const normalizedFieldErrors = normalizeServerFieldErrors(data?.errors ?? {}, mapAdminValidationMessageToKey);
-
-      if (Object.keys(normalizedFieldErrors).length > 0) {
-        showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'admin.genericError');
-        return;
-      }
-
-      showErrorToast('admin.genericError');
+    if (err.response?.status === 403) {
+      showErrorToast('admin.forbidden');
       return;
     }
 
-    if (err.response?.status === 403) {
-      showErrorToast('admin.forbidden');
+    const data = err.response?.data;
+    const normalizedFieldErrors = normalizeServerFieldErrors(data?.errors ?? {}, mapAdminMessageToToastKey);
+
+    if (Object.keys(normalizedFieldErrors).length > 0) {
+      showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'admin.genericError');
+      return;
+    }
+
+    if (data?.detail) {
+      showErrorToast(mapAdminMessageToToastKey(data.detail));
       return;
     }
 

@@ -8,6 +8,7 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { ErrorPage } from '../components/common/ErrorPage';
@@ -16,6 +17,7 @@ const REDIRECT_DURATION_MS = 3000;
 const TIMER_TICK_MS = 50;
 
 const NotFoundComponent = memo(function NotFound() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isAuthLoading = useAuthStore((state) => state.isLoading);
@@ -59,7 +61,7 @@ const NotFoundComponent = memo(function NotFound() {
   return (
     <ErrorPage
       imageSrc="/Error-404.webp"
-      imageAlt="AutoService 404 illustration"
+      imageAlt={t('notFound.imageAlt')}
       backgroundCode="404"
       titleKey="notFound.pageNotFound"
       subtitleKey="notFound.subtitle"

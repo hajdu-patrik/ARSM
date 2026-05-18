@@ -5,9 +5,9 @@
 
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyRound, Save, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Save, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
-import { buttonClass, dangerButtonClass, inputClass, secondaryButtonClass } from './constants';
+import { buttonClass, dangerButtonClass, inputClass, inputGroupContainerClass, passwordToggleButtonClass, secondaryButtonClass } from './constants';
 
 interface SettingsActionModalsProps {
   readonly isPictureRemoveConfirmOpen: boolean;
@@ -55,6 +55,8 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
   onConfirmDeleteProfile,
 }: SettingsActionModalsProps) {
   const { t } = useTranslation();
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [showDeletePasswordConfirm, setShowDeletePasswordConfirm] = useState(false);
   const [isDeletePasswordFieldLocked, setIsDeletePasswordFieldLocked] = useState(true);
   const [isDeletePasswordConfirmFieldLocked, setIsDeletePasswordConfirmFieldLocked] = useState(true);
   const isDeleteConfirmationInvalid =
@@ -77,6 +79,8 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
     if (!isDeleteModalOpen || (deletePassword.length === 0 && deletePasswordConfirm.length === 0)) {
       setIsDeletePasswordFieldLocked(true);
       setIsDeletePasswordConfirmFieldLocked(true);
+      setShowDeletePassword(false);
+      setShowDeletePasswordConfirm(false);
     }
   }, [deletePassword, deletePasswordConfirm, isDeleteModalOpen]);
 
@@ -263,10 +267,10 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
           defaultValue=""
         />
 
-        <div className="mt-4">
+        <div className={`mt-4 ${inputGroupContainerClass}`}>
           <input
             id="delete-profile-password"
-            type="password"
+            type={showDeletePassword ? 'text' : 'password'}
             value={deletePassword}
             onChange={(event) => onDeletePasswordChange(event.target.value)}
             onFocus={() => {
@@ -283,14 +287,23 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
             data-bwignore="true"
             disabled={isDeletingProfile}
             aria-label={t('settings.currentPassword')}
-            className={inputClass}
+            className={`${inputClass} pr-12`}
           />
+          <button
+            type="button"
+            onClick={() => setShowDeletePassword((isVisible) => !isVisible)}
+            className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
+            aria-label={showDeletePassword ? t('settings.hidePassword') : t('settings.showPassword')}
+            disabled={isDeletingProfile}
+          >
+            {showDeletePassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
 
-        <div className="mt-4">
+        <div className={`mt-4 ${inputGroupContainerClass}`}>
           <input
             id="delete-profile-password-confirm"
-            type="password"
+            type={showDeletePasswordConfirm ? 'text' : 'password'}
             value={deletePasswordConfirm}
             onChange={(event) => onDeletePasswordConfirmChange(event.target.value)}
             onFocus={() => {
@@ -307,8 +320,17 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
             data-bwignore="true"
             disabled={isDeletingProfile}
             aria-label={t('settings.deleteConfirmPassword')}
-            className={inputClass}
+            className={`${inputClass} pr-12`}
           />
+          <button
+            type="button"
+            onClick={() => setShowDeletePasswordConfirm((isVisible) => !isVisible)}
+            className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
+            aria-label={showDeletePasswordConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
+            disabled={isDeletingProfile}
+          >
+            {showDeletePasswordConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
       </Modal>
     </>

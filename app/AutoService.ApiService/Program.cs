@@ -347,6 +347,7 @@ app.MapProfileEndpoints();
 app.MapAdminEndpoints();
 app.MapCustomerEndpoints();
 app.MapVehicleEndpoints();
+
 app.MapDefaultEndpoints();
 
 app.Run();

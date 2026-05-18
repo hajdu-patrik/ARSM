@@ -72,7 +72,12 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 
 				<div className="flex min-h-20 min-w-0 flex-1 items-center">
 					<div className={actionClusterClass}>
-						<button type="button" onClick={handleUploadClick} disabled={isUploading} className={`${buttonClass} min-h-11`}>
+						<button
+							type="button"
+							onClick={handleUploadClick}
+							disabled={isUploading}
+							className={`${buttonClass} min-h-11 bg-arsm-accent-hover hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark-hover dark:hover:bg-arsm-accent-dark-hover`}
+						>
 							<Upload className="h-4 w-4 shrink-0" />
 							<span>{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}</span>
 						</button>

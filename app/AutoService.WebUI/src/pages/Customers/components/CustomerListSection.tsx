@@ -22,7 +22,6 @@ import {
   controlRowClass,
   customersToolbarDangerButtonClass,
   customersToolbarNeutralButtonClass,
-  customersToolbarPrimaryButtonClass,
   schedulerFilterChipButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
@@ -204,7 +203,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
                     <button
                       type="button"
                       onClick={() => onOpenCreateVehicleModal(customer.id)}
-                      className={`${customersToolbarPrimaryButtonClass} shrink-0`}
+                      className={`${schedulerFilterChipButtonClass} w-full sm:w-auto`}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{t('customers.createVehicle')}</span>

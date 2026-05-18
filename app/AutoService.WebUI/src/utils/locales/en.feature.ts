@@ -202,6 +202,12 @@ export const enFeature = {
       invalidPhone: 'Phone number must be a valid European number.',
       invalidName: 'Name may only contain letters and hyphens.',
       fieldRequired: 'This field is required.',
+      passwordTooWeak: 'Password is too weak. Please follow the password requirements.',
+      passwordTooShort: 'Password must be at least 8 characters.',
+      passwordMissingUpper: 'Password must contain at least one uppercase letter.',
+      passwordMissingLower: 'Password must contain at least one lowercase letter.',
+      passwordMissingDigit: 'Password must contain at least one number.',
+      passwordMissingSpecial: 'Password must contain at least one special character.',
     },
   },
   settings: {
@@ -282,6 +288,12 @@ export const enFeature = {
       invalidName: 'Name may only contain letters and hyphens.',
       currentPasswordInvalid: 'Current password is invalid.',
       fieldRequired: 'This field is required.',
+      passwordTooWeak: 'Password is too weak. Please follow the password requirements.',
+      passwordTooShort: 'Password must be at least 8 characters.',
+      passwordMissingUpper: 'Password must contain at least one uppercase letter.',
+      passwordMissingLower: 'Password must contain at least one lowercase letter.',
+      passwordMissingDigit: 'Password must contain at least one number.',
+      passwordMissingSpecial: 'Password must contain at least one special character.',
     },
   },
   tools: {
@@ -301,6 +313,7 @@ export const enFeature = {
   },
   notFound: {
     pageNotFound: 'Page Not Found',
+    imageAlt: 'AutoService 404 illustration',
     subtitle: 'Looks like this route took a wrong turn.',
     goToDashboard: 'Go to Dashboard',
     goToLogin: 'Go to Login',
@@ -310,6 +323,7 @@ export const enFeature = {
   },
   serverError: {
     title: 'Server Error',
+    imageAlt: 'AutoService 500 illustration',
     subtitle: 'Something went wrong on our end. The page will reload automatically.',
     reload: 'Reload Page',
     redirectIn: 'Reload in',

@@ -5,9 +5,10 @@
  * background code, title, subtitle, CTA button, and optional countdown.
  * @module components/common/ErrorPage
  */
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { buttonClass } from '../../utils/formStyles';
+import { getCachedErrorIllustrationSource } from '../../utils/errorIllustrationCache';
 import { ThemeLanguageControls } from '../layout/ThemeLanguageControls';
 import { Image } from './Image';
 
@@ -74,6 +75,30 @@ const ErrorPageComponent = memo(function ErrorPage({
 	secondsLeft,
 }: ErrorPageProps) {
 	const { t: translate } = useTranslation();
+	const [resolvedImageSrc, setResolvedImageSrc] = useState(imageSrc);
+
+	useEffect(() => {
+		let isDisposed = false;
+		let cleanup: (() => void) | undefined;
+
+		setResolvedImageSrc(imageSrc);
+
+		void (async () => {
+			const cachedSource = await getCachedErrorIllustrationSource(imageSrc);
+			if (isDisposed) {
+				cachedSource.dispose?.();
+				return;
+			}
+
+			cleanup = cachedSource.dispose;
+			setResolvedImageSrc(cachedSource.src);
+		})();
+
+		return () => {
+			isDisposed = true;
+			cleanup?.();
+		};
+	}, [imageSrc]);
 
 	return (
 		<div className="relative min-h-screen overflow-hidden bg-arsm-surface text-arsm-primary dark:bg-arsm-surface-dark dark:text-arsm-primary-dark">
@@ -91,7 +116,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 						<div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-2xl border border-arsm-border bg-arsm-toggle-bg p-4 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]">
 							<div aria-hidden="true" className="error-page-illustration-glow pointer-events-none absolute inset-0" />
 							<Image
-								src={imageSrc}
+								src={resolvedImageSrc}
 								alt={imageAlt}
 								className="relative z-10 h-auto w-[min(78%,404px)] select-none max-[404px]:w-[76%]"
 								draggable={false}

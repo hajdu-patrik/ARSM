@@ -35,7 +35,7 @@ const ModalComponent = memo(function Modal({
   const { t: translate } = useTranslation();
   const NativeDialog = 'dialog';
   const isConfirmVariant = variant === 'confirm';
-  const shouldShowCloseButton = showCloseButton && !isConfirmVariant;
+  const shouldShowCloseButton = showCloseButton;
   const resolvedWidthClassName = widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md');
   const footerClasses = ['mt-5', controlPanelFooterClass, isConfirmVariant ? 'arsm-modal-footer-confirm' : '', footerClassName ?? '']
     .filter(Boolean)

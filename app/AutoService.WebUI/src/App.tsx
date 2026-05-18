@@ -17,6 +17,7 @@ import { ToastViewport } from './components/common/ToastViewport';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SeoManager } from './components/seo/SeoManager';
 import { ServerError } from './pages/ServerError';
+import { warmErrorIllustrationCache } from './utils/errorIllustrationCache';
 import './utils/i18n';
 
 const Login = lazy(() => import('./pages/Login/page').then((module) => ({ default: module.Login })));
@@ -65,6 +66,8 @@ function App() {
 
   useEffect(() => {
     let isUnmounted = false;
+
+    warmErrorIllustrationCache();
 
     const restoreAuthState = async () => {
       setIsLoading(true);

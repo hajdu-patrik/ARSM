@@ -8,10 +8,19 @@
 
 import { isAxiosError } from 'axios';
 import type { FieldErrors } from './types';
-import { mapSettingsValidationMessageToKey, normalizeServerFieldErrors } from '../../utils/serverValidation';
+import {
+  getFirstFieldErrorMessage,
+  mapSettingsValidationMessageToKey,
+  normalizeServerFieldErrors,
+} from '../../utils/serverValidation';
 import { extractFieldErrors } from './helpers';
 
 const SETTINGS_REQUIRED_FIELD_KEY = 'settings.errors.fieldRequired';
+
+function mapSettingsMessageToToastKey(message: string, fallbackKey: string): string {
+  const mappedMessage = mapSettingsValidationMessageToKey(message);
+  return mappedMessage === message ? fallbackKey : mappedMessage;
+}
 
 /**
  * Returns true when the field-error dictionary has at least one non-empty entry.
@@ -36,10 +45,21 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
 
   const normalizedFieldErrors = normalizeServerFieldErrors(
     extractFieldErrors(err.response?.data),
-    mapSettingsValidationMessageToKey,
+    (message) => mapSettingsMessageToToastKey(message, 'settings.updateError'),
   );
 
-  return hasFieldErrors(normalizedFieldErrors) ? normalizedFieldErrors : null;
+  if (hasFieldErrors(normalizedFieldErrors)) {
+    return normalizedFieldErrors;
+  }
+
+  const detail = err.response?.data?.detail;
+  if (detail) {
+    return {
+      Detail: [mapSettingsMessageToToastKey(detail, 'settings.updateError')],
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -53,7 +73,7 @@ export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
   const mapped: FieldErrors = {};
 
   Object.entries(errors).forEach(([key, value]) => {
-    const normalizedValues = value.map((message) => mapSettingsValidationMessageToKey(message));
+    const normalizedValues = value.map((message) => mapSettingsMessageToToastKey(message, 'settings.passwordChangeError'));
 
     if (key === 'CurrentPassword' || key === 'PasswordMismatch') {
       mapped.CurrentPassword = [...(mapped.CurrentPassword ?? []), ...normalizedValues];
@@ -87,6 +107,12 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
     return mappedFieldErrors;
   }
 
+  if (data?.detail) {
+    return {
+      Detail: [mapSettingsMessageToToastKey(data.detail, 'settings.passwordChangeError')],
+    };
+  }
+
   return null;
 }
 
@@ -97,13 +123,27 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
  * @returns Error message key for auth/permission failures, null otherwise.
  */
 export function extractDeleteProfileErrorKey(err: unknown): string | null {
-  if (!isAxiosError(err)) {
+  if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
     return null;
   }
 
   const status = err.response?.status;
   if (status === 403 || status === 401) {
     return 'settings.currentPasswordIncorrect';
+  }
+
+  const data = err.response?.data;
+  const mappedFieldErrors = normalizeServerFieldErrors(
+    extractFieldErrors(data),
+    (message) => mapSettingsMessageToToastKey(message, 'toast.profileDeleteFailed'),
+  );
+
+  if (hasFieldErrors(mappedFieldErrors)) {
+    return getFirstFieldErrorMessage(mappedFieldErrors) ?? 'toast.profileDeleteFailed';
+  }
+
+  if (data?.detail) {
+    return mapSettingsMessageToToastKey(data.detail, 'toast.profileDeleteFailed');
   }
 
   return null;

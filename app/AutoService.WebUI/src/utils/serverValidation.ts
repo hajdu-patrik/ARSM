@@ -52,6 +52,107 @@ export function extractServerFieldErrors(
   return data?.errors ?? {};
 }
 
+function containsAny(text: string, fragments: readonly string[]): boolean {
+  return fragments.some((fragment) => text.includes(fragment));
+}
+
+function containsAll(text: string, fragments: readonly string[]): boolean {
+  return fragments.every((fragment) => text.includes(fragment));
+}
+
+function mapCommonValidationMessageToKey(
+  normalizedMessage: string,
+  context: ValidationContext,
+): string | null {
+  const commonRules: Array<{ readonly suffix: string; readonly isMatch: (message: string) => boolean }> = [
+    {
+      suffix: 'emailExists',
+      isMatch: (message) => containsAll(message, ['email']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
+    },
+    {
+      suffix: 'phoneExists',
+      isMatch: (message) => containsAll(message, ['phone']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
+    },
+    {
+      suffix: 'invalidEmail',
+      isMatch: (message) => message.includes('email must be a valid email address'),
+    },
+    {
+      suffix: 'invalidPhone',
+      isMatch: (message) => message.includes('phone number must be a valid european number'),
+    },
+    {
+      suffix: 'invalidName',
+      isMatch: (message) => message.includes('may only contain letters and hyphens'),
+    },
+    {
+      suffix: 'fieldRequired',
+      isMatch: (message) => containsAny(message, ['cannot be empty', 'is required', 'must not be blank', 'field is required']),
+    },
+  ];
+
+  const matchedRule = commonRules.find((rule) => rule.isMatch(normalizedMessage));
+  return matchedRule ? `${context}.errors.${matchedRule.suffix}` : null;
+}
+
+function mapPasswordMismatchMessageToKey(
+  normalizedMessage: string,
+  context: ValidationContext,
+): string | null {
+  if (!normalizedMessage.includes('passwords do not match')) {
+    return null;
+  }
+
+  return context === 'settings' ? 'settings.passwordsDoNotMatch' : 'admin.passwordMismatch';
+}
+
+function mapPasswordValidationMessageToKey(
+  normalizedMessage: string,
+  context: ValidationContext,
+): string | null {
+  if (!normalizedMessage.includes('password')) {
+    return null;
+  }
+
+  const passwordRules: Array<{ readonly suffix: string; readonly isMatch: (message: string) => boolean }> = [
+    {
+      suffix: 'passwordTooShort',
+      isMatch: (message) => message.includes('at least') && (message.includes('character') || message.includes('length')),
+    },
+    {
+      suffix: 'passwordMissingUpper',
+      isMatch: (message) => containsAny(message, ['uppercase', 'upper case', 'capital letter']),
+    },
+    {
+      suffix: 'passwordMissingLower',
+      isMatch: (message) => containsAny(message, ['lowercase', 'lower case']),
+    },
+    {
+      suffix: 'passwordMissingDigit',
+      isMatch: (message) => containsAny(message, ['digit', 'number', 'numeric']),
+    },
+    {
+      suffix: 'passwordMissingSpecial',
+      isMatch: (message) => containsAny(message, ['non alphanumeric', 'special character', 'special']),
+    },
+    {
+      suffix: 'passwordTooWeak',
+      isMatch: (message) => containsAny(message, ['too weak', 'does not meet', 'does not satisfy']),
+    },
+  ];
+
+  const matchedRule = passwordRules.find((rule) => rule.isMatch(normalizedMessage));
+  return matchedRule ? `${context}.errors.${matchedRule.suffix}` : null;
+}
+
+function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): string | null {
+  if (containsAny(normalizedMessage, ['current password is invalid', 'password is incorrect'])) {
+    return 'settings.errors.currentPasswordInvalid';
+  }
+
+  return null;
+}
+
 /**
  * Maps a backend validation message string to its corresponding i18n key.
  * Handles email/phone uniqueness, format validation, name validation,
@@ -63,42 +164,25 @@ export function extractServerFieldErrors(
 export function mapValidationMessageToKey(message: string, context: ValidationContext): string {
   const normalized = message.trim().toLowerCase();
 
-  if (normalized.includes('already exists') && normalized.includes('email')) {
-    return `${context}.errors.emailExists`;
+  const commonMessageKey = mapCommonValidationMessageToKey(normalized, context);
+  if (commonMessageKey) {
+    return commonMessageKey;
   }
 
-  if (normalized.includes('already exists') && normalized.includes('phone')) {
-    return `${context}.errors.phoneExists`;
+  const passwordMismatchKey = mapPasswordMismatchMessageToKey(normalized, context);
+  if (passwordMismatchKey) {
+    return passwordMismatchKey;
   }
 
-  if (normalized.includes('email must be a valid email address')) {
-    return `${context}.errors.invalidEmail`;
-  }
-
-  if (normalized.includes('phone number must be a valid european number')) {
-    return `${context}.errors.invalidPhone`;
-  }
-
-  if (normalized.includes('may only contain letters and hyphens')) {
-    return `${context}.errors.invalidName`;
-  }
-
-  if (
-    normalized.includes('cannot be empty') ||
-    normalized.includes('is required') ||
-    normalized.includes('must not be blank') ||
-    normalized.includes('field is required')
-  ) {
-    return `${context}.errors.fieldRequired`;
+  const passwordMessageKey = mapPasswordValidationMessageToKey(normalized, context);
+  if (passwordMessageKey) {
+    return passwordMessageKey;
   }
 
   if (context === 'settings') {
-    if (normalized.includes('current password is invalid') || normalized.includes('password is incorrect')) {
-      return 'settings.errors.currentPasswordInvalid';
-    }
-
-    if (normalized.includes('passwords do not match')) {
-      return 'settings.passwordsDoNotMatch';
+    const settingsSpecificMessageKey = mapSettingsSpecificValidationMessageToKey(normalized);
+    if (settingsSpecificMessageKey) {
+      return settingsSpecificMessageKey;
     }
   }
 

@@ -94,10 +94,10 @@ export const iconDangerButtonClass = `inline-flex h-11 w-11 shrink-0 items-cente
 export const optionTileBaseClass = 'relative inline-flex h-9 min-h-0 w-auto max-w-full shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border px-2.5 py-1.5 text-xs transition disabled:cursor-not-allowed';
 
 /** Active checkbox option tile state. */
-export const optionTileActiveClass = 'border-arsm-accent bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover';
+export const optionTileActiveClass = 'border-arsm-accent bg-arsm-toggle-bg text-arsm-primary ring-1 ring-arsm-accent/25 dark:border-arsm-accent-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-primary-dark dark:ring-arsm-accent-dark/30';
 
 /** Inactive checkbox option tile state. */
-export const optionTileInactiveClass = 'border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-label-dark dark:hover:bg-arsm-input-dark';
+export const optionTileInactiveClass = 'border-arsm-border bg-arsm-input text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark';
 
 /** Checkbox indicator box used inside option tiles. */
 export const optionTileCheckboxClass = 'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-md border';

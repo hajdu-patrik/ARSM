@@ -20,6 +20,7 @@ const LOGIN_PATH = '/api/auth/login';
 const REFRESH_PATH = '/api/auth/refresh';
 const LOGOUT_PATH = '/api/auth/logout';
 const VALIDATE_PATH = '/api/auth/validate';
+const SERVER_ERROR_PATH = '/500';
 
 if (!API_URL) {
   throw new Error('VITE_API_URL is not configured. Set it via AppHost or .env.development.');
@@ -117,6 +118,13 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const requestUrl = originalRequest?.url ?? '';
     const responseStatus = error.response?.status;
+
+    if (responseStatus === 500 && globalThis.location.pathname !== SERVER_ERROR_PATH) {
+      const returnTo = `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`;
+      const target = `${SERVER_ERROR_PATH}?returnTo=${encodeURIComponent(returnTo)}`;
+      globalThis.location.assign(target);
+    }
+
     const hasRetried = originalRequest != null && retriedRequests.has(originalRequest);
     const isAuthExcludedPath =
       requestUrl.includes(LOGIN_PATH) ||
