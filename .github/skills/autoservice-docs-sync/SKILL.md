@@ -35,6 +35,7 @@ Use this skill after any repository change that can affect documented behavior.
 	- appointment contract checkpoints,
 	- profile-picture cache/ETag/SSE checkpoints,
 	- AppHost and seed/bootstrap checkpoints.
+	- canonical Python test runner and sanitized AI report checkpoints.
 
 ## Workflow
 1. Detect changed areas (backend/frontend/apphost/servicedefaults/tests/agents/skills/instructions).
@@ -42,7 +43,8 @@ Use this skill after any repository change that can affect documented behavior.
 3. Update paired docs in the same pass for every affected surface.
 4. If setup/operational behavior changed, update `README.md` and `README(HU).md` consistently.
 5. Ensure gate language remains aligned (heavy-test gate, migration gate, security remediation stage).
-6. Keep edits concise, factual, and implementation-actionable.
+6. Keep `scripts/run-local-test-suite.py` documented as the canonical full-suite runner when test workflow docs change.
+7. Keep edits concise, factual, and implementation-actionable.
 
 ## Validation Checklist
 - Facts reflect current code.

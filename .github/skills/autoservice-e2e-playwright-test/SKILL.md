@@ -43,8 +43,12 @@ If triggered by a new feature:
 - Read credentials via `getAppointmentFlowEnv()` / `getAdminFlowEnv()` from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` when the WebUI E2E suite is present.
 - Variables consumed from `.secrets` (gitignored): `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`.
 - Never inline credentials; never hardcode email/password strings in spec or page-object files.
-- To run: `set -a && source .secrets && set +a && npx playwright test`.
+- Run E2E validation with `python scripts/run-local-test-suite.py playwright` from the repository root.
 - If a variable is absent: surface the name, point to `.secrets` -- do not guess.
+
+## Execution Contract
+- Inspect `tests/.artifacts/test-suite-summary.json`; use the sanitized Playwright result to add, fix, or investigate E2E coverage.
+- Do not publish raw `.secrets`, cookies, tokens, absolute local paths, trace paths, or unsanitized Playwright output.
 
 ## Test Design Guardrails
 - Prefer E2E spec files <= 180 lines where practical.
@@ -52,10 +56,19 @@ If triggered by a new feature:
 - Keep Page Object Model boundaries clear.
 - Prefer stable selectors (`data-testid` first, then role-based fallbacks).
 
+## Playwright Best Practices (mandatory)
+- Prefer user-facing locators (`getByRole`, `getByLabel`, `getByTestId`) over brittle CSS selectors.
+- Avoid direct `#id`/`.class` selectors unless no robust accessible locator exists.
+- Keep selector strategy localization-safe (`data-testid` or language-aware regex fallback).
+- Move seed/mock identifiers to shared support constants; avoid magic IDs in specs.
+- Use `test.step` for multi-phase scenarios where readability benefits.
+- Never add fixed waits; rely on auto-wait and web-first assertions.
+
 ## Workflow
 1. Read UI and DTO-visible deltas from affected frontend/backend contracts.
 2. Update page objects for selector and interaction changes.
 3. Update specs for changed outcomes and flow assertions.
 4. Add missing feature-coverage scenarios when triggered.
-5. Validate parse/list first, then run targeted tests.
-6. Report coverage updates, failures, and residual risks.
+5. Refactor touched locators away from brittle patterns.
+6. Validate parse/list first, then run targeted tests through the Python runner when needed.
+7. Report coverage updates, failures, and residual risks.

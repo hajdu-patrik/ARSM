@@ -24,6 +24,12 @@ tools:
 - No hardcoded `VITE_API_URL` fallback.
 - Preserve auth/session guards and responsive behavior.
 
+## Current Runtime Anchors
+- i18n uses `i18next` with `LanguageDetector`, `preferred-language` localStorage, and `hu` fallback.
+- Theme state uses `useThemeStore` and persists user preference to localStorage.
+- `apiClient` reads `VITE_API_URL`, has no fallback, and uses single-flight 401 refresh handling.
+- `App.tsx` restores auth with `authService.restoreAuth()` and composes lazy routes with `PrivateRoute`, `AdminRoute`, `PublicOnlyRoute`, and `SidebarLayout`.
+
 ## Engineering Standards
 - Apply SOLID to component/hook/service boundaries.
 - Keep OOP-style responsibilities clear (single purpose per component/hook/service).
@@ -42,6 +48,7 @@ tools:
 - Read `.github/agents/ui-ux-style-profile.agent.md` before UI-facing edits.
 - Keep API logic in `src/services`, UI logic in components/hooks/pages.
 - Run `npx tsc --noEmit` (and build when needed) after changes.
+- For triggered E2E validation, use `python scripts/run-local-test-suite.py playwright` and inspect the sanitized report.
 
 ## Mandatory UI/UX Co-Execution (Non-Negotiable)
 - After every UI-facing implementation iteration, co-execute `ui-ux-style-profile` agent. This is not optional and is not satisfied by reading the profile file alone.

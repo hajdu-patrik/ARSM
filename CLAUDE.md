@@ -49,6 +49,20 @@
    - Backend/.NET project touched: `dotnet list package --vulnerable --include-transitive` then patch/minor upgrades and recheck.
 7. Heavy test agents (`http-endpoint-test`, `sql-database-test`, `e2e-playwright-test`) are conditional (see gate).
 
+## Execution Mode (Speed Policy)
+
+- Prefer local workspace execution (`run_in_terminal`, VS Code tasks, native CLI) as the default for build/test/validation workflows.
+- Avoid MCP server tooling when a local command/task provides equivalent or near-equivalent speed and outcome.
+- Use MCP tooling only when no practical local alternative exists, or when the needed capability is MCP-only.
+- Keep this rule aligned with `.github/copilot-instructions.md`.
+
+## Canonical Local Test Runner
+
+- Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]` from the repository root for local full-suite or selected-suite execution.
+- The runner loads `.secrets` and `tests/.env` locally, sets non-secret `PORT=5173` for Playwright when absent, and writes the sanitized AI-readable report to `tests/.artifacts/test-suite-summary.json`.
+- Full-test AI workflow: run the Python runner, inspect the sanitized report, then add missing tests, fix stale tests, or investigate product behavior from the reported suite layer.
+- Do not publish raw `.env`, `.secrets`, local MCP config, connection strings, cookies, tokens, absolute local paths, or unsanitized command output.
+
 ## Heavy Test Gate (Cost Control)
 
 Run heavy test agents only when the user explicitly requests tests, or when the agent-specific trigger applies:
@@ -90,10 +104,10 @@ Otherwise: skip migration agent.
 ## Credentials & Secrets Policy (Mandatory)
 
 - Never hardcode credentials, passwords, connection strings, hosts, or tokens in source/tests/scripts/agent output.
-- Secret sources (gitignored): `.secrets` (repo root) for E2E/Playwright runtime env (`set -a && source .secrets && set +a` before `npx playwright test`), and `tests/.env` for HTTP `.http` tests via `{{$processEnv VAR_NAME}}`.
+- Secret sources (gitignored): `.secrets` (repo root) for E2E/Playwright runtime env loaded by `python scripts/run-local-test-suite.py playwright`, and `tests/.env` for HTTP `.http` tests via `{{$processEnv VAR_NAME}}`.
 - Template: `tests/.env.example` (placeholder values only).
 - Key vars: `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `AutoService_ApiService_HostAddress`, optional `ARSM_E2E_*` aliases.
-- Agent rules: HTTP/SQL tests use env vars only (`{{$processEnv ...}}`), never literal credentials; E2E tests use credentials only from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`) when the WebUI E2E suite is present; EF migrations/seed scripts must not embed connection strings and must use `appsettings.Local.json` (gitignored) or env injection; Playwright command instructions must include `.secrets` preamble; if a variable is missing, report exact name and point to `tests/.env.example` or `.secrets`.
+- Agent rules: HTTP/SQL tests use env vars only (`{{$processEnv ...}}`), never literal credentials; E2E tests use credentials only from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`) when the WebUI E2E suite is present; EF migrations/seed scripts must not embed connection strings and must use `appsettings.Local.json` (gitignored) or env injection; prefer the canonical Python runner over shell-specific Playwright/HTTP/SQL commands when executing local suites; if a variable is missing, report exact name and point to `tests/.env.example` or `.secrets`.
 
 ## Non-Negotiables
 
@@ -120,20 +134,7 @@ Otherwise: skip migration agent.
 ## Operational Anchors (Consolidated)
 
 - Keep operational knowledge distributed across instruction/agent/skill layers; do not rely on a single long-form TL-DR document as primary runtime truth.
-- Canonical local runtime surface:
-   - Aspire dashboard: `https://localhost:17094`
-   - API: `https://localhost:5200`
-   - WebUI: `https://localhost:5173`
-   - PostgreSQL: `localhost:50000`
-- Session/auth contract anchors:
-   - Access cookie: `autoservice_at` (10 minutes)
-   - Refresh cookie: `autoservice_rt` (7 days)
-   - Login rate limit: `10/min per IP`; refresh rate limit: `20/min per IP`
-   - Lockout: 5 failed password attempts -> 15 minutes
-- Runtime behavior anchors that must stay docs-synced when changed:
-   - Middleware order and denylist enforcement in `app/AutoService.ApiService/Program.cs`
-   - Auth/session endpoint behavior under `app/AutoService.ApiService/Auth/**`
-   - Appointment status/claim/assign contracts under `app/AutoService.ApiService/Appointments/**`
-   - Profile-picture upload/ETag/cache/SSE behavior under `app/AutoService.ApiService/Profile/**`
-   - Aspire resource wiring and ports in `app/AutoService.AppHost/AppHost.cs`
-   - Demo seed and role bootstrap behavior in `app/AutoService.ApiService/Data/**`
+- Canonical local runtime surface: Aspire dashboard `https://localhost:17094`, API `https://localhost:5200`, WebUI `https://localhost:5173`, PostgreSQL `localhost:50000`.
+- Session/auth contract anchors: access cookie `autoservice_at` (10 minutes), refresh cookie `autoservice_rt` (7 days), login rate limit `10/min per IP`, refresh rate limit `20/min per IP`, lockout 5 failed password attempts -> 15 minutes.
+- Runtime behavior anchors that must stay docs-synced when changed: middleware/denylist in `app/AutoService.ApiService/Program.cs`, auth/session under `app/AutoService.ApiService/Auth/**`, appointment status/claim/assign under `app/AutoService.ApiService/Appointments/**`, vehicle/customer/scheduler contracts under `app/AutoService.ApiService/Vehicles/**`, `app/AutoService.ApiService/Customers/**`, and scheduler intake code, profile-picture behavior under `app/AutoService.ApiService/Profile/**`, AppHost wiring in `app/AutoService.AppHost/AppHost.cs`, and seed/bootstrap behavior under `app/AutoService.ApiService/Data/**`.
+- Test runner anchor: `scripts/run-local-test-suite.py` is the canonical local all-suite runner and sanitized AI test-report producer.

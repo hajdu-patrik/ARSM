@@ -51,6 +51,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 
 - .NET 10 SDK
 - Node.js 20+ with npm
+- Python 3.11+ for the local test runner
 - Docker Desktop running locally (required for PostgreSQL container via AppHost)
 
 ### 1) Create local API settings
@@ -102,14 +103,55 @@ AppHost starts and wires:
 | Build AppHost | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
 | Build frontend | `cd app/AutoService.WebUI && npm run build` |
 | Lint frontend | `cd app/AutoService.WebUI && npm run lint` |
-| Run frontend E2E | `cd app/AutoService.WebUI && npm run e2e` |
+| Run all local tests | `python scripts/run-local-test-suite.py` |
+| Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
+
+## Running Tests
+
+Use the Python runner from the repository root. It loads `.secrets` and `tests/.env` locally, runs the requested suites, and writes an AI-safe sanitized report to `tests/.artifacts/test-suite-summary.json`.
+
+```bash
+python scripts/run-local-test-suite.py
+```
+
+Run one or more suites by name:
+
+```bash
+python scripts/run-local-test-suite.py playwright
+python scripts/run-local-test-suite.py http sql
+```
+
+Targets:
+
+- `playwright`: runs the WebUI Playwright E2E suite with `PORT=5173` by default.
+- `http`: runs all `tests/API/**/*.http` suites through HTTPYAC.
+- `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
+
+Before running the full suite, start the Aspire stack in another terminal:
+
+```bash
+cd app
+dotnet run --project AutoService.AppHost
+```
+
+The runner intentionally avoids publishing raw local details. Generated reports under `tests/.artifacts/` are gitignored and may contain only sanitized summaries for local debugging and AI review.
+
+### AI Test Workflow
+
+For full-test investigation, AI agents should run:
+
+```bash
+python scripts/run-local-test-suite.py
+```
+
+Then inspect `tests/.artifacts/test-suite-summary.json`. Based on the sanitized result, the agent should add missing tests, fix stale tests, or investigate failing behavior in the matching layer. Agents must not publish raw `.env` values, `.secrets` contents, connection strings, cookies, tokens, absolute local paths, or full raw tool logs.
 
 ## Configuration and Secrets
 
 - Never commit secrets, passwords, or local connection strings.
 - Backend local secrets belong in `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
 - API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
-- Playwright runtime secrets belong in `.secrets` at repository root (gitignored).
+- Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 
 ## Contributor Notes (AI Workflow)
 

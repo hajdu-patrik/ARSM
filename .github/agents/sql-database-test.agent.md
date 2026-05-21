@@ -29,6 +29,11 @@ If triggered by a new feature:
 - SQL is read-only verification (`SELECT` only) via `ai_agent_test_user`.
 - No DML/DDL.
 
+## Execution Contract
+- When SQL execution is required, use `python scripts/run-local-test-suite.py sql` from the repository root.
+- Inspect `tests/.artifacts/test-suite-summary.json` and use the sanitized SQL result to add, fix, or investigate database validation checks.
+- Never report raw connection strings, local MCP config, container details, absolute local paths, or unsanitized `psql` output.
+
 ## Coverage Requirements
 - Verify changed schema elements (tables/columns/relations/index expectations) with targeted checks.
 - Verify identity/auth and feature-flow integrity where impacted.
@@ -40,13 +45,23 @@ If triggered by a new feature:
 - Keep suites chunked by concern: `core-schema`, `identity-auth`, `feature-flow`.
 - Keep queries deterministic and easy to audit.
 
+## SQL Best Practices (mandatory)
+- Never use `SELECT *`; always select explicit columns.
+- Use explicit table aliases and `AS` aliases for computed or semantic output columns.
+- For multi-column queries, keep one selected expression per line.
+- Use deterministic `ORDER BY` for all multi-row verification outputs.
+- Never use positional sorting/grouping (`ORDER BY 1`, `GROUP BY 1`).
+- Every scenario block must state expected outcome (`Expected: 0 rows`, `Expected: >=1 row`, or semantic expectation).
+
 ## Execution Workflow
 1. Read schema and persistence deltas from entities, DbContext, and migrations.
 2. Map deltas to the correct SQL suite area.
 3. Add/update `SELECT` verification queries for changed behavior.
 4. Remove or adjust stale queries.
 5. Validate that no DML/DDL statements were introduced.
-6. Report changed files, added checks, and uncovered risks.
+6. Modernize touched queries to SQL best practices (explicit columns/aliases/order).
+7. If execution is needed, run the Python runner SQL target and inspect the sanitized report.
+8. Report changed files, added checks, and uncovered risks.
 
 ## Reporting
 - Return `SKIPPED` only with explicit gating reason.

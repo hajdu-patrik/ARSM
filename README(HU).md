@@ -49,6 +49,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 
 - .NET 10 SDK
 - Node.js 20+ és npm
+- Python 3.11+ a lokális tesztfuttatóhoz
 - Futó Docker Desktop (az AppHost PostgreSQL konténert indít)
 
 ### 1) Lokális API beállítás létrehozása
@@ -100,14 +101,55 @@ Az AppHost elindítja és összeköti:
 | AppHost build | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
 | Frontend build | `cd app/AutoService.WebUI && npm run build` |
 | Frontend lint | `cd app/AutoService.WebUI && npm run lint` |
-| Frontend E2E futtatás | `cd app/AutoService.WebUI && npm run e2e` |
+| Összes lokális teszt futtatása | `python scripts/run-local-test-suite.py` |
+| Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
+
+## Tesztek futtatása
+
+A Python futtatót a repository gyökeréből indítsd. Lokálisan betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, majd AI számára is biztonságos, maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
+
+```bash
+python scripts/run-local-test-suite.py
+```
+
+Egy vagy több suite külön is futtatható:
+
+```bash
+python scripts/run-local-test-suite.py playwright
+python scripts/run-local-test-suite.py http sql
+```
+
+Célok:
+
+- `playwright`: futtatja a WebUI Playwright E2E suite-ot, alapértelmezett `PORT=5173` értékkel.
+- `http`: futtatja az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
+- `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
+
+Teljes suite előtt indítsd el az Aspire stacket egy másik terminálban:
+
+```bash
+cd app
+dotnet run --project AutoService.AppHost
+```
+
+A futtató szándékosan nem publikál nyers lokális részleteket. A `tests/.artifacts/` alatti generált riportok gitignore alatt vannak, és csak maszkolt összefoglalóként szolgálnak lokális hibakereséshez és AI review-hoz.
+
+### AI teszt workflow
+
+Teljes tesztvizsgálatnál az AI agent ezt futtassa:
+
+```bash
+python scripts/run-local-test-suite.py
+```
+
+Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja. A maszkolt eredmény alapján írjon hiányzó teszteket, javítsa az elavult teszteket, vagy vizsgálja ki a hibás viselkedést a megfelelő rétegben. Agent nem publikálhat nyers `.env` értékeket, `.secrets` tartalmat, connection stringet, cookie-t, tokent, abszolút lokális útvonalat vagy teljes nyers tool logot.
 
 ## Konfiguráció és titokkezelés
 
 - Titkokat, jelszavakat, lokális connection stringeket ne commitolj.
 - Backend lokális titkok: `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
 - API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
-- Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored).
+- Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 
 ## Fejlesztői megjegyzések (AI workflow)
 

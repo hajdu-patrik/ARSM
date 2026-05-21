@@ -51,11 +51,24 @@ If triggered by a new feature:
 - Use `appsettings.Local.json` (gitignored) or environment injection for connection config.
 - If a connection detail is absent: surface the missing config key -- do not guess or hardcode.
 
+## Execution Contract
+- Run SQL validation with `python scripts/run-local-test-suite.py sql` from the repository root.
+- Inspect `tests/.artifacts/test-suite-summary.json`; use the sanitized SQL result to add, fix, or investigate database validation checks.
+- Do not publish raw connection strings, local MCP config, container details, absolute local paths, or unsanitized `psql` output.
+
 ## Test Design Guardrails
 - Prefer SQL files <= 180 lines.
 - Hard split required when a SQL file exceeds 250 lines.
 - Keep chunking by concern: `core-schema`, `identity-auth`, `feature-flow`.
 - Keep query intent explicit and deterministic.
+
+## SQL Best Practices (mandatory)
+- Never use `SELECT *`; always enumerate explicit columns.
+- Use explicit table aliases and semantic `AS` aliases for computed columns.
+- Keep one selected expression per line for multi-column queries.
+- Keep deterministic ordering for multi-row output verification.
+- Do not use positional grouping/sorting (`GROUP BY 1`, `ORDER BY 1`).
+- Include explicit expected semantics in each query block comment.
 
 ## Workflow
 1. Read schema/model deltas from entities, DbContext, and migrations.
@@ -63,4 +76,6 @@ If triggered by a new feature:
 3. Add/update `SELECT` verification queries for changed behavior.
 4. Remove stale checks.
 5. Verify read-only policy is preserved (no DML/DDL).
-6. Report added/updated/removed queries and uncovered risks.
+6. Modernize touched queries to SQL best practices.
+7. If execution is needed, run the Python runner SQL target and inspect the sanitized report.
+8. Report added/updated/removed queries and uncovered risks.

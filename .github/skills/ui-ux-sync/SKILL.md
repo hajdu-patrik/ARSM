@@ -35,6 +35,8 @@ Use this skill after UI-facing frontend changes or agent/documentation changes t
 - Toast infrastructure: `app/AutoService.WebUI/src/store/toast.store.ts`, `app/AutoService.WebUI/src/components/common/ToastViewport.tsx`, mounted in `app/AutoService.WebUI/src/App.tsx`
 - Localization bootstrap: `app/AutoService.WebUI/src/utils/i18n.ts`
 - Localization dictionaries: `app/AutoService.WebUI/src/utils/locales/en.core.ts`, `app/AutoService.WebUI/src/utils/locales/hu.core.ts`, `app/AutoService.WebUI/src/utils/locales/en.feature.ts`, `app/AutoService.WebUI/src/utils/locales/hu.feature.ts`
+- API/session runtime checkpoints: `app/AutoService.WebUI/src/services/http/api.client.ts`, `app/AutoService.WebUI/src/services/auth/auth.service.ts`, `app/AutoService.WebUI/src/store/auth.store.ts`
+- Theme runtime checkpoint: `app/AutoService.WebUI/src/store/theme.store.ts`
 - Customers UX hotspots: `app/AutoService.WebUI/src/pages/Customers/components/VehicleItem.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/HistoryAppointmentModal.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/CustomerListSection.tsx`
 - PWA metadata surface: `app/AutoService.WebUI/public/site.webmanifest`
 - Push integration checkpoints: `app/AutoService.WebUI/src/main.tsx` and `app/AutoService.WebUI/src/**/*.{ts,tsx}`
@@ -100,5 +102,6 @@ Every run must return this structure:
 ## Validation
 
 - Run the frontend build or type-check after source edits.
+- For E2E validation, prefer `python scripts/run-local-test-suite.py playwright` and inspect `tests/.artifacts/test-suite-summary.json`.
 - For WebUI source changes, run `npm audit fix` before final validation.
 - Report any remaining policy exceptions with file paths and rationale.

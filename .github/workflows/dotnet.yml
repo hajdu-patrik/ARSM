@@ -8,6 +8,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ARSM_EXECUTION_POLICY: local-cli-first
 
 jobs:
   backend-build:
@@ -23,6 +24,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+
+    - name: Execution policy
+      run: |
+        echo 'Policy: local CLI-first execution; avoid MCP-equivalent tooling when native commands/tasks are available.'
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
@@ -58,6 +63,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+
+    - name: Execution policy
+      run: |
+        echo 'Policy: local CLI-first execution; avoid MCP-equivalent tooling when native commands/tasks are available.'
 
     - name: Setup Node.js
       uses: actions/setup-node@v5

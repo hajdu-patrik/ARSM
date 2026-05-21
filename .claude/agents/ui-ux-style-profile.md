@@ -103,6 +103,14 @@ Use this report structure for every UI/UX validation pass:
 - Input and placeholder treatment must remain consistent across Scheduler, Admin, Customer, Settings, Login, and popup forms; do not introduce one-off placeholder color, padding, or focus styles.
 - Any new action variant must be introduced by extending shared primitives first, then consumed by feature components.
 
+## Reference Chip Action Contract
+
+- Reference chip actions must be provided by shared primitives in `app/AutoService.WebUI/src/utils/formStyles.ts`: `referenceChipActionBaseClass`, `referenceChipNeutralButtonClass`, `referenceChipPrimaryButtonClass`, `referenceChipDangerButtonClass`.
+- Pill-shaped contextual actions (for example compact toolbar actions, open-detail actions, modal footer actions, scheduler detail side-panel actions) must reuse this family instead of local one-off button stacks.
+- Variant semantics are fixed: neutral for open/cancel/non-destructive navigation actions, primary for create/save/add/confirm-positive actions, danger for destructive confirm/delete actions.
+- Reference chip actions must keep the compact profile (`text-xs`) and touch-safe target height (`min-h-11`) while preserving truncation safety (`min-w-0` plus inner `truncate` where labels can grow).
+- Action labels that share one logical group (for example customer-history actions and appointment-detail popup actions) must keep equal radius, height, and spacing by consuming the same reference chip primitive.
+
 ## Save and Update Action Contract
 
 - Save/update/confirm-save actions must use shared primary action primitives (`buttonClass` / `.arsm-btn-primary`) and remain visually consistent across all WebUI pages.
@@ -119,6 +127,13 @@ Use this report structure for every UI/UX validation pass:
 - Use progressive disclosure for advanced controls; default surfaces should prioritize the common happy path.
 - Multi-step flows must display current step and completion progress.
 - If a selection list can exceed 10 options, provide search, filtering, or grouping.
+
+## Customers Vehicle Action Semantics
+
+- In customer vehicle rows, icon semantics are fixed and must stay visually distinct: selected vehicle history toggle (`EyeOff`) uses info/blue semantics, edit uses warning/yellow semantics, delete uses danger/red semantics.
+- The selected-vehicle history toggle is a stateful filter action, not a destructive action; active styling must reflect selected-state clarity instead of danger semantics.
+- Customers details behavior must default to customer-wide history on first open. Vehicle-eye toggle narrows to selected-vehicle-only history, and toggling the same vehicle again resets to customer-wide history.
+- Empty history states must remain explicit and context-aware (customer-wide empty vs selected-vehicle empty) while preserving consistent panel alignment and spacing.
 
 ## Responsive Layout Contract (320px+)
 

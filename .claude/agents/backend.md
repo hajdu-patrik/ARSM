@@ -22,6 +22,12 @@ tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 - Preserve middleware/security hardening order.
 - Use config-first addressing; never hardcode secrets/URLs.
 
+## Current Runtime Anchors
+- Auth cookies: `autoservice_at` access token (10 minutes) and `autoservice_rt` refresh token (7 days).
+- Rate limits: login `10/min per IP`, refresh `20/min per IP`; lockout is 5 failed password attempts for 15 minutes.
+- Middleware order is owned by `Program.cs`; preserve forwarded headers, HTTPS, security headers, login ban, rate limiter, CORS, audit-denied, auth, then authorization.
+- Profile pictures use ETag caching and SSE updates through `GET /api/profile/picture/updates`.
+
 ## Engineering Standards
 - Apply SOLID to handlers/services/repositories.
 - Keep OOP boundaries explicit: one responsibility per type.
@@ -39,6 +45,7 @@ tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 - Keep changes minimal/domain-safe.
 - Use async EF + cancellation tokens for ApiService data access.
 - Run `dotnet build` from `app` after edits.
+- For triggered HTTP/SQL validation, use `python scripts/run-local-test-suite.py http` or `python scripts/run-local-test-suite.py sql` and inspect the sanitized report.
 
 ## Always-On Security Remediation (for backend code changes)
 1. Run `dotnet list package --vulnerable --include-transitive`.
