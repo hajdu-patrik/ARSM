@@ -39,6 +39,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Local test runner artifacts (sanitized summaries and raw tool traces are local-only)
+tests/.artifacts/
+**/test-results/
+**/test-artifacts/
+**/playwright-report/
+**/blob-report/
+**/.playwright/
+
 # =========================
 # Node / Vite
 # =========================
@@ -102,3 +110,8 @@ docker-compose.override.yml
 # Temporary files
 tmp/
 temp/
+
+# Python cache files
+__pycache__/
+**/__pycache__/
+*.py[cod]
