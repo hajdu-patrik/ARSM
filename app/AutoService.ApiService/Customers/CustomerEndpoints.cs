@@ -28,6 +28,17 @@ public static partial class CustomerEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapGet("/by-license-plate", GetCustomerByLicensePlateAsync)
+            .Produces<SchedulerCustomerLookupDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapGet("/by-name", GetCustomersByNameAsync)
+            .Produces<List<SchedulerCustomerLookupDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
         group.MapGet("/{id:int}", GetCustomerAsync)
             .Produces<CustomerWithVehiclesDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)

@@ -12,7 +12,7 @@
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -23,7 +23,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Update appointment status to InProgress
+### [Positive][Appointments] Update appointment status to InProgress (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
 Content-Type: application/json
 
@@ -33,7 +33,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Update appointment status to Completed
+### [Positive][Appointments] Update appointment status to Completed (200 expected)
 # Response includes completedAt (DateTime) and canceledAt (null).
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
 
@@ -55,7 +55,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 
 ###
 
-### [Positive][Appointments] Update appointment status to Cancelled
+### [Positive][Appointments] Update appointment status to Cancelled (200 expected)
 # Response includes canceledAt (DateTime) and completedAt (null).
 ### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
 
@@ -68,7 +68,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Reopen cancelled appointment to InProgress (past-cancelled remains editable)
+### [Positive][Appointments] Reopen cancelled appointment to InProgress (past-cancelled remains editable, 200 expected)
 # Cancelled appointments can be moved back to active states even after cancellation.
 ### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
 
@@ -81,7 +81,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Move reopened appointment to Completed
+### [Positive][Appointments] Move reopened appointment to Completed (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
 Content-Type: application/json
 

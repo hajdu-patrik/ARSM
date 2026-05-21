@@ -1,4 +1,5 @@
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Vehicles;
@@ -21,27 +22,14 @@ public static partial class VehicleEndpoints
         }
 
         var vehicles = await db.Vehicles
+            .AsNoTracking()
             .Where(v => v.CustomerId == customerId)
             .Include(v => v.Customer)
             .OrderBy(v => v.Brand)
             .ThenBy(v => v.Model)
-            .Select(v => new VehicleDetailDto(
-                v.Id,
-                v.LicensePlate,
-                v.Brand,
-                v.Model,
-                v.Year,
-                v.MileageKm,
-                v.EnginePowerHp,
-                v.EngineTorqueNm,
-                new CustomerSummaryDto(
-                    v.Customer.Id,
-                    v.Customer.Name.FirstName,
-                    v.Customer.Name.MiddleName,
-                    v.Customer.Name.LastName)))
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(vehicles);
+        return Results.Ok(vehicles.Select(ToVehicleDetailDto).ToList());
     }
 
     private static async Task<IResult> GetVehicleAsync(
@@ -50,6 +38,7 @@ public static partial class VehicleEndpoints
         CancellationToken cancellationToken)
     {
         var vehicle = await db.Vehicles
+            .AsNoTracking()
             .Include(v => v.Customer)
             .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
 
@@ -60,21 +49,22 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var dto = new VehicleDetailDto(
+        return Results.Ok(ToVehicleDetailDto(vehicle));
+    }
+
+    private static VehicleDetailDto ToVehicleDetailDto(Vehicle vehicle) => new(
             vehicle.Id,
             vehicle.LicensePlate,
+            vehicle.Vin,
             vehicle.Brand,
             vehicle.Model,
             vehicle.Year,
             vehicle.MileageKm,
-            vehicle.EnginePowerHp,
-            vehicle.EngineTorqueNm,
+            vehicle.EnginePowerKw,
+            vehicle.DrivetrainType.ToString(),
             new CustomerSummaryDto(
                 vehicle.Customer.Id,
                 vehicle.Customer.Name.FirstName,
                 vehicle.Customer.Name.MiddleName,
                 vehicle.Customer.Name.LastName));
-
-        return Results.Ok(dto);
-    }
 }

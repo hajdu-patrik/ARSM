@@ -11,12 +11,13 @@ public static partial class AppointmentEndpoints
     internal sealed record VehicleDto(
         int Id,
         string LicensePlate,
+        string Vin,
         string Brand,
         string Model,
         int Year,
         int MileageKm,
-        int EnginePowerHp,
-        int EngineTorqueNm,
+        int EnginePowerKw,
+        string DrivetrainType,
         CustomerSummaryDto Customer);
 
     /** Mechanic summary DTO with specialization and profile picture availability. */
@@ -63,12 +64,13 @@ public static partial class AppointmentEndpoints
     /** New vehicle payload nested within scheduler intake request. */
     internal sealed record SchedulerNewVehicleRequest(
         string LicensePlate,
+        string Vin,
         string Brand,
         string Model,
         int Year,
         int MileageKm,
-        int EnginePowerHp,
-        int EngineTorqueNm);
+        int EnginePowerKw,
+        string DrivetrainType);
 
     /** Request payload for updating appointment scheduling and task details. */
     internal sealed record UpdateAppointmentRequest(
@@ -79,12 +81,13 @@ public static partial class AppointmentEndpoints
     /** Request payload for updating vehicle details linked to an appointment. */
     internal sealed record UpdateAppointmentVehicleRequest(
         string LicensePlate,
+        string Vin,
         string Brand,
         string Model,
         int Year,
         int MileageKm,
-        int EnginePowerHp,
-        int EngineTorqueNm);
+        int EnginePowerKw,
+        string DrivetrainType);
 
     /** Request payload for updating appointment lifecycle status. */
     internal sealed record UpdateStatusRequest(string Status);

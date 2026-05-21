@@ -6,8 +6,6 @@
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@ProfileNewPassword = {{$processEnv ARSM_TEST_MECHANIC_NEW_PASSWORD}}
 @DeleteRunSuffix = {{$timestamp}}
 @DeleteSelfEmail = profile.delete.self.{{DeleteRunSuffix}}@example.test
 @DeleteSelfPhoneSuffix = {{$randomInt 1000000 9999999}}

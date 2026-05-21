@@ -13,6 +13,8 @@
 @PrimaryMechanicId = 7
 @PastScheduledApptId = 4
 @ApptId = 1
+@PastVehicleVin = WF0PXXGCDPJL12345
+@SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
@@ -48,12 +50,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "DEF-404",
+  "vin": "{{PastVehicleVin}}",
   "brand": "Ford",
   "model": "Focus",
   "year": 2016,
   "mileageKm": 167800,
-  "enginePowerHp": 125,
-  "engineTorqueNm": 200
+  "enginePowerKw": 92,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -64,12 +67,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 1000001,
-  "enginePowerHp": 50001,
-  "engineTorqueNm": 50001
+  "enginePowerKw": 50001,
+  "drivetrainType": "Petrol"
 }
 
 ###

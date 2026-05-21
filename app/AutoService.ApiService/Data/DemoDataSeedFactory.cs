@@ -48,59 +48,67 @@ internal static class DemoDataSeedFactory
         new()
         {
             LicensePlate = "ABC-101",
+            Vin = "WVWZZZAUZJW123456",
             Brand = "Volkswagen",
             Model = "Golf",
             Year = 2018,
             MileageKm = 124_500,
-            EnginePowerHp = 110,
-            EngineTorqueNm = 250,
+            EnginePowerKw = ConvertMetricHorsepowerToKilowatts(110),
+            DrivetrainType = DrivetrainType.Petrol,
             CustomerId = customers[0].Id
         },
         new()
         {
             LicensePlate = "BCD-202",
+            Vin = "JTDBR32E720123456",
             Brand = "Toyota",
             Model = "Corolla Hybrid",
             Year = 2021,
             MileageKm = 63_200,
-            EnginePowerHp = 122,
-            EngineTorqueNm = 190,
+            EnginePowerKw = ConvertMetricHorsepowerToKilowatts(122),
+            DrivetrainType = DrivetrainType.Hybrid,
             CustomerId = customers[1].Id
         },
         new()
         {
             LicensePlate = "CDE-303",
+            Vin = "5YJ3E1EA7NF123456",
             Brand = "Tesla",
             Model = "Model 3",
             Year = 2022,
             MileageKm = 48_000,
-            EnginePowerHp = 283,
-            EngineTorqueNm = 420,
+            EnginePowerKw = ConvertMetricHorsepowerToKilowatts(283),
+            DrivetrainType = DrivetrainType.Electric,
             CustomerId = customers[2].Id
         },
         new()
         {
             LicensePlate = "DEF-404",
+            Vin = "WF0PXXGCDPJL12345",
             Brand = "Ford",
             Model = "Focus",
             Year = 2016,
             MileageKm = 167_800,
-            EnginePowerHp = 125,
-            EngineTorqueNm = 200,
+            EnginePowerKw = ConvertMetricHorsepowerToKilowatts(125),
+            DrivetrainType = DrivetrainType.Petrol,
             CustomerId = customers[3].Id
         },
         new()
         {
             LicensePlate = "EFG-505",
+            Vin = "WBA8E1C57JA123456",
             Brand = "BMW",
             Model = "320d",
             Year = 2019,
             MileageKm = 91_300,
-            EnginePowerHp = 190,
-            EngineTorqueNm = 400,
+            EnginePowerKw = ConvertMetricHorsepowerToKilowatts(190),
+            DrivetrainType = DrivetrainType.Diesel,
             CustomerId = customers[4].Id
         }
     ];
+
+    private static int ConvertMetricHorsepowerToKilowatts(int horsepower)
+        => (int)Math.Round(horsepower * 0.735499);
 
     internal static List<Appointment> CreateAppointments(
         IReadOnlyList<Vehicle> vehicles,

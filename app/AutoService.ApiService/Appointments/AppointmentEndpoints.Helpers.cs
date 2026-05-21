@@ -21,12 +21,13 @@ public static partial class AppointmentEndpoints
         new VehicleDto(
             appointment.Vehicle.Id,
             appointment.Vehicle.LicensePlate,
+            appointment.Vehicle.Vin,
             appointment.Vehicle.Brand,
             appointment.Vehicle.Model,
             appointment.Vehicle.Year,
             appointment.Vehicle.MileageKm,
-            appointment.Vehicle.EnginePowerHp,
-            appointment.Vehicle.EngineTorqueNm,
+            appointment.Vehicle.EnginePowerKw,
+            appointment.Vehicle.DrivetrainType.ToString(),
             new CustomerSummaryDto(
                 appointment.Vehicle.Customer.Id,
                 appointment.Vehicle.Customer.Name.ToString())),

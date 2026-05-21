@@ -4,6 +4,13 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @SeedCustomerId = 1
+@RunId = {{$timestamp}}
+@ValidVehicleVin = TST{{RunId}}0101
+@InvalidYearVehicleVin = TST{{RunId}}0102
+@InvalidPlateVehicleVin = TST{{RunId}}0103
+@InvalidMileageVehicleVin = TST{{RunId}}0104
+@DuplicatePlateVehicleVin = TST{{RunId}}0105
+@SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
@@ -14,12 +21,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "",
+  "vin": "{{ValidVehicleVin}}",
   "brand": "Skoda",
   "model": "Octavia",
   "year": 2020,
   "mileageKm": 45000,
-  "enginePowerHp": 150,
-  "engineTorqueNm": 320
+  "enginePowerKw": 110,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -30,12 +38,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "BAD-YR1",
+  "vin": "{{InvalidYearVehicleVin}}",
   "brand": "Skoda",
   "model": "Octavia",
   "year": 1800,
   "mileageKm": 0,
-  "enginePowerHp": 100,
-  "engineTorqueNm": 200
+  "enginePowerKw": 74,
+  "drivetrainType": "Diesel"
 }
 
 ###
@@ -46,12 +55,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "\u0627\u0628-123",
+  "vin": "{{InvalidPlateVehicleVin}}",
   "brand": "Skoda",
   "model": "Octavia",
   "year": 2020,
   "mileageKm": 0,
-  "enginePowerHp": 100,
-  "engineTorqueNm": 200
+  "enginePowerKw": 74,
+  "drivetrainType": "Hybrid"
 }
 
 ###
@@ -62,12 +72,47 @@ Content-Type: application/json
 
 {
   "licensePlate": "BAD-MI1",
+  "vin": "{{InvalidMileageVehicleVin}}",
   "brand": "Skoda",
   "model": "Octavia",
   "year": 2020,
   "mileageKm": -1,
-  "enginePowerHp": 150,
-  "engineTorqueNm": 320
+  "enginePowerKw": 110,
+  "drivetrainType": "PHEV"
+}
+
+###
+
+### [Negative][Vehicles] Create vehicle with invalid VIN format (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "BAD-VIN",
+  "vin": "SHORTVIN",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
+  "mileageKm": 45000,
+  "enginePowerKw": 110,
+  "drivetrainType": "Petrol"
+}
+
+###
+
+### [Negative][Vehicles] Create vehicle with unsupported drivetrain type (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "BAD-DRV",
+  "vin": "TST{{RunId}}0106",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
+  "mileageKm": 45000,
+  "enginePowerKw": 110,
+  "drivetrainType": "Hydrogen"
 }
 
 ###
@@ -78,10 +123,28 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{DuplicatePlateVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 124500,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+###
+
+### [Negative][Vehicles] Create vehicle with duplicate VIN conflict (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Content-Type: application/json
+
+{
+  "licensePlate": "VIN-{{RunId}}",
+  "vin": "{{SeedVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
 }

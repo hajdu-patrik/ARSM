@@ -2,7 +2,7 @@
 -- FEATURE FLOW - UNIQUENESS GUARDS
 -- ------------------------------------------------------------
 -- Verifies that the operational dataset does not contain duplicate values
--- for customer contact fields and vehicle license plates.
+-- for customer contact fields, vehicle license plates, and vehicle VINs.
 -- Expected result: 0 rows.
 -- ------------------------------------------------------------
 SELECT duplicate_type,
@@ -29,6 +29,14 @@ FROM (
     FROM vehicles v
     WHERE v."LicensePlate" IS NOT NULL
     GROUP BY UPPER(v."LicensePlate")
+    HAVING COUNT(*) > 1
+
+    UNION ALL
+
+    SELECT 'vehicle_vin', UPPER(v."Vin"), COUNT(*)::int
+    FROM vehicles v
+    WHERE v."Vin" IS NOT NULL
+    GROUP BY UPPER(v."Vin")
     HAVING COUNT(*) > 1
 ) duplicates
 ORDER BY duplicate_type, duplicate_key;

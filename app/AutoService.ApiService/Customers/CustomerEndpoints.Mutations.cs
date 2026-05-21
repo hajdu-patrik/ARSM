@@ -101,7 +101,8 @@ public static partial class CustomerEndpoints
             customer.Name.LastName,
             customer.Email,
             customer.PhoneNumber,
-            0);
+            0,
+            []);
 
         return Results.Created($"/api/customers/{customer.Id}", dto);
     }

@@ -3,16 +3,8 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
-@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@MatrixRunSuffix = {{$timestamp}}
-@CurrentAdminMechanicId = 6
-@MechanicIdWithSoleAssignments = 7
-@MechanicIdCandidateForDeletion = 8
-@UnknownMechanicId = 99999
-@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 
 
 # ─────────────────────────────────────────────────────────────

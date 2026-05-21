@@ -19,11 +19,13 @@ public static partial class VehicleEndpoints
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
+            string.IsNullOrWhiteSpace(request.Vin) ||
             string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model))
+            string.IsNullOrWhiteSpace(request.Model) ||
+            string.IsNullOrWhiteSpace(request.DrivetrainType))
         {
             return Results.Problem(
-                detail: "LicensePlate, Brand, and Model are required.",
+                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
@@ -41,10 +43,24 @@ public static partial class VehicleEndpoints
             return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerHp, request.EngineTorqueNm);
+        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
         if (numericError is not null)
         {
             return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        {
+            return Results.Problem(
+                detail: vinValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        {
+            return Results.Problem(
+                detail: drivetrainValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         var customerExists = await db.Customers
@@ -74,14 +90,25 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        var vinExists = await db.Vehicles
+            .AnyAsync(v => v.Vin == normalizedVin, cancellationToken);
+
+        if (vinExists)
+        {
+            return Results.Problem(
+                detail: "A vehicle with this VIN already exists.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         var vehicle = new Vehicle(
             plateNormalized,
+            normalizedVin,
             request.Brand.Trim(),
             request.Model.Trim(),
             request.Year,
             request.MileageKm,
-            request.EnginePowerHp,
-            request.EngineTorqueNm);
+            request.EnginePowerKw,
+            drivetrainType);
         vehicle.CustomerId = customerId;
 
         db.Vehicles.Add(vehicle);
@@ -90,20 +117,7 @@ public static partial class VehicleEndpoints
         // Load customer for response DTO.
         await db.Entry(vehicle).Reference(v => v.Customer).LoadAsync(cancellationToken);
 
-        var dto = new VehicleDetailDto(
-            vehicle.Id,
-            vehicle.LicensePlate,
-            vehicle.Brand,
-            vehicle.Model,
-            vehicle.Year,
-            vehicle.MileageKm,
-            vehicle.EnginePowerHp,
-            vehicle.EngineTorqueNm,
-            new CustomerSummaryDto(
-                vehicle.Customer.Id,
-                vehicle.Customer.Name.FirstName,
-                vehicle.Customer.Name.MiddleName,
-                vehicle.Customer.Name.LastName));
+        var dto = ToVehicleDetailDto(vehicle);
 
         return Results.Created($"/api/vehicles/{vehicle.Id}", dto);
     }
@@ -115,11 +129,13 @@ public static partial class VehicleEndpoints
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
+            string.IsNullOrWhiteSpace(request.Vin) ||
             string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model))
+            string.IsNullOrWhiteSpace(request.Model) ||
+            string.IsNullOrWhiteSpace(request.DrivetrainType))
         {
             return Results.Problem(
-                detail: "LicensePlate, Brand, and Model are required.",
+                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
@@ -137,10 +153,24 @@ public static partial class VehicleEndpoints
             return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerHp, request.EngineTorqueNm);
+        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
         if (numericError is not null)
         {
             return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        {
+            return Results.Problem(
+                detail: vinValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        {
+            return Results.Problem(
+                detail: drivetrainValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         var vehicle = await db.Vehicles
@@ -170,13 +200,24 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        var vinConflict = await db.Vehicles
+            .AnyAsync(v => v.Vin == normalizedVin && v.Id != id, cancellationToken);
+
+        if (vinConflict)
+        {
+            return Results.Problem(
+                detail: "A vehicle with this VIN already exists.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         vehicle.LicensePlate = plateNormalized;
+        vehicle.Vin = normalizedVin;
         vehicle.Brand = request.Brand.Trim();
         vehicle.Model = request.Model.Trim();
         vehicle.Year = request.Year;
         vehicle.MileageKm = request.MileageKm;
-        vehicle.EnginePowerHp = request.EnginePowerHp;
-        vehicle.EngineTorqueNm = request.EngineTorqueNm;
+        vehicle.EnginePowerKw = request.EnginePowerKw;
+        vehicle.DrivetrainType = drivetrainType;
 
         await db.SaveChangesAsync(cancellationToken);
 

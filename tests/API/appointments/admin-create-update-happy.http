@@ -10,6 +10,7 @@
 @PrimaryMechanicId = 7
 @SecondaryMechanicId = 8
 @ApptId = 1
+@SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
@@ -58,12 +59,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 124500,
-  "enginePowerHp": 112,
-  "engineTorqueNm": 252
+  "enginePowerKw": 82,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -110,10 +112,11 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 124500,
-  "enginePowerHp": 112,
-  "engineTorqueNm": 252
+  "enginePowerKw": 82,
+  "drivetrainType": "Petrol"
 }

@@ -8,6 +8,7 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @ApptId = 1
+@SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
@@ -58,10 +59,44 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Admin vehicle update missing required fields (422 expected)
-# LicensePlate, Brand, and Model are required for /vehicle update payloads.
+# LicensePlate, Vin, Brand, Model, and DrivetrainType are required for /vehicle update payloads.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Content-Type: application/json
 
 {
   "brand": "Volkswagen"
+}
+
+###
+
+### [Negative][Appointments] Admin vehicle update rejects invalid VIN format (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "vin": "SHORTVIN",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+###
+
+### [Negative][Appointments] Admin vehicle update rejects unsupported drivetrain type (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 81,
+  "drivetrainType": "Hydrogen"
 }

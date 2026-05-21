@@ -243,11 +243,13 @@ public static partial class AppointmentEndpoints
             var newVehicle = request.Vehicle!;
 
             if (string.IsNullOrWhiteSpace(newVehicle.LicensePlate) ||
+                string.IsNullOrWhiteSpace(newVehicle.Vin) ||
                 string.IsNullOrWhiteSpace(newVehicle.Brand) ||
-                string.IsNullOrWhiteSpace(newVehicle.Model))
+                string.IsNullOrWhiteSpace(newVehicle.Model) ||
+                string.IsNullOrWhiteSpace(newVehicle.DrivetrainType))
             {
                 return Results.Problem(
-                    detail: "Vehicle.LicensePlate, Vehicle.Brand, and Vehicle.Model are required.",
+                    detail: "Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.",
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
@@ -273,8 +275,7 @@ public static partial class AppointmentEndpoints
 
             var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
                 newVehicle.MileageKm,
-                newVehicle.EnginePowerHp,
-                newVehicle.EngineTorqueNm,
+                newVehicle.EnginePowerKw,
                 fieldPrefix: "Vehicle.");
 
             if (vehicleNumericValidationError is not null)
@@ -291,6 +292,20 @@ public static partial class AppointmentEndpoints
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
 
+            if (!VinNormalization.TryNormalizeVin(newVehicle.Vin, out var normalizedVin, out var vinValidationError))
+            {
+                return Results.Problem(
+                    detail: vinValidationError,
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
+            if (!VehicleDrivetrainValidation.TryParse(newVehicle.DrivetrainType, out var drivetrainType, out var drivetrainValidationError, "Vehicle.DrivetrainType"))
+            {
+                return Results.Problem(
+                    detail: drivetrainValidationError,
+                    statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
             var plateExists = await db.Vehicles
                 .AnyAsync(v => v.LicensePlate == normalizedPlate, cancellationToken);
 
@@ -301,14 +316,25 @@ public static partial class AppointmentEndpoints
                     statusCode: StatusCodes.Status409Conflict);
             }
 
+            var vinExists = await db.Vehicles
+                .AnyAsync(v => v.Vin == normalizedVin, cancellationToken);
+
+            if (vinExists)
+            {
+                return Results.Problem(
+                    detail: "A vehicle with this VIN already exists.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
             vehicle = new Vehicle(
                 normalizedPlate,
+                normalizedVin,
                 newVehicle.Brand.Trim(),
                 newVehicle.Model.Trim(),
                 newVehicle.Year,
                 newVehicle.MileageKm,
-                newVehicle.EnginePowerHp,
-                newVehicle.EngineTorqueNm)
+                newVehicle.EnginePowerKw,
+                drivetrainType)
             {
                 Customer = customer!
             };

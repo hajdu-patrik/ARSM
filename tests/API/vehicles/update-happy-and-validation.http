@@ -10,6 +10,9 @@
 @NonExistentVehicleId = 99999
 @RunId = {{$timestamp}}
 @ConflictPlate = DUP-{{RunId}}
+@SeedVehicleVin = WVWZZZAUZJW123456
+@ConflictVehicleVin = TST{{RunId}}0301
+@GhostVehicleVin = TST{{RunId}}0302
 
 
 # ─────────────────────────────────────────────────────────────
@@ -31,12 +34,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
   "year": 2018,
   "mileageKm": 130000,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -47,12 +51,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "{{ConflictPlate}}",
+  "vin": "{{ConflictVehicleVin}}",
   "brand": "Skoda",
   "model": "Fabia",
   "year": 2019,
   "mileageKm": 91500,
-  "enginePowerHp": 95,
-  "engineTorqueNm": 175
+  "enginePowerKw": 70,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -63,12 +68,30 @@ Content-Type: application/json
 
 {
   "licensePlate": "{{ConflictPlate}}",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
   "year": 2018,
   "mileageKm": 130000,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+###
+
+### [Negative][Vehicles] Update vehicle with duplicate VIN conflict (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "vin": "{{ConflictVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf 7",
+  "year": 2018,
+  "mileageKm": 130000,
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -79,12 +102,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "GHO-ST1",
+  "vin": "{{GhostVehicleVin}}",
   "brand": "Ghost",
   "model": "Rider",
   "year": 2020,
   "mileageKm": 0,
-  "enginePowerHp": 100,
-  "engineTorqueNm": 200
+  "enginePowerKw": 74,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -95,10 +119,28 @@ Content-Type: application/json
 
 {
   "licensePlate": "",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 0,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+###
+
+### [Negative][Vehicles] Update vehicle with unsupported drivetrain type (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 0,
+  "enginePowerKw": 81,
+  "drivetrainType": "Hydrogen"
 }

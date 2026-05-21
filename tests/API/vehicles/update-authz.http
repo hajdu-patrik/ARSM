@@ -6,7 +6,7 @@
 @SeedVehicleId = 1
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
@@ -18,12 +18,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2200,
   "mileageKm": 0,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
 }
 
 ###
@@ -50,10 +51,11 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
+  "vin": "{{SeedVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
   "mileageKm": 124500,
-  "enginePowerHp": 110,
-  "engineTorqueNm": 250
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
 }

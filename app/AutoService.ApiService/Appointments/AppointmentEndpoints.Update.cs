@@ -141,11 +141,13 @@ public static partial class AppointmentEndpoints
         }
 
         if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
+            string.IsNullOrWhiteSpace(request.Vin) ||
             string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model))
+            string.IsNullOrWhiteSpace(request.Model) ||
+            string.IsNullOrWhiteSpace(request.DrivetrainType))
         {
             return Results.Problem(
-                detail: "LicensePlate, Brand, and Model are required.",
+                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
@@ -171,8 +173,7 @@ public static partial class AppointmentEndpoints
 
         var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
             request.MileageKm,
-            request.EnginePowerHp,
-            request.EngineTorqueNm);
+            request.EnginePowerKw);
 
         if (vehicleNumericValidationError is not null)
         {
@@ -188,6 +189,20 @@ public static partial class AppointmentEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
+        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        {
+            return Results.Problem(
+                detail: vinValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        {
+            return Results.Problem(
+                detail: drivetrainValidationError,
+                statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
         var plateConflict = await db.Vehicles
             .AnyAsync(v => v.LicensePlate == plateNormalized && v.Id != appointment.VehicleId, cancellationToken);
 
@@ -199,13 +214,25 @@ public static partial class AppointmentEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        var vinConflict = await db.Vehicles
+            .AnyAsync(v => v.Vin == normalizedVin && v.Id != appointment.VehicleId, cancellationToken);
+
+        if (vinConflict)
+        {
+            logger.LogInformation("Appointment vehicle update failed due to VIN conflict on appointment {AppointmentId}.", id);
+            return Results.Problem(
+                detail: "A vehicle with this VIN already exists.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         appointment.Vehicle.LicensePlate = plateNormalized;
+        appointment.Vehicle.Vin = normalizedVin;
         appointment.Vehicle.Brand = request.Brand.Trim();
         appointment.Vehicle.Model = request.Model.Trim();
         appointment.Vehicle.Year = request.Year;
         appointment.Vehicle.MileageKm = request.MileageKm;
-        appointment.Vehicle.EnginePowerHp = request.EnginePowerHp;
-        appointment.Vehicle.EngineTorqueNm = request.EngineTorqueNm;
+        appointment.Vehicle.EnginePowerKw = request.EnginePowerKw;
+        appointment.Vehicle.DrivetrainType = drivetrainType;
 
         await db.SaveChangesAsync(cancellationToken);
 

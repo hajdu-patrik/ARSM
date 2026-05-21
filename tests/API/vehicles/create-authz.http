@@ -6,9 +6,10 @@
 @NonExistentCustomerId = 99999
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @SeedCustomerId = 1
 @RunId = {{$timestamp}}
+@GhostVehicleVin = TST{{RunId}}0201
+@NonAdminVehicleVin = TST{{RunId}}0202
 
 
 # ─────────────────────────────────────────────────────────────
@@ -20,12 +21,13 @@ Content-Type: application/json
 
 {
   "licensePlate": "GHO-ST1",
+  "vin": "{{GhostVehicleVin}}",
   "brand": "Ghost",
   "model": "Rider",
   "year": 2023,
   "mileageKm": 0,
-  "enginePowerHp": 200,
-  "engineTorqueNm": 400
+  "enginePowerKw": 147,
+  "drivetrainType": "Electric"
 }
 
 ###
@@ -52,10 +54,11 @@ Content-Type: application/json
 
 {
   "licensePlate": "NON-{{RunId}}",
+  "vin": "{{NonAdminVehicleVin}}",
   "brand": "Blocked",
   "model": "ByPolicy",
   "year": 2020,
   "mileageKm": 0,
-  "enginePowerHp": 100,
-  "engineTorqueNm": 200
+  "enginePowerKw": 74,
+  "drivetrainType": "Petrol"
 }

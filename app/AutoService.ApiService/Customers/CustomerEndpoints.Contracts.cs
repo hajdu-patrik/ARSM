@@ -9,7 +9,8 @@ public static partial class CustomerEndpoints
         string LastName,
         string Email,
         string? PhoneNumber,
-        int VehicleCount);
+        int VehicleCount,
+        IReadOnlyList<string> VehicleLicensePlates);
 
     internal sealed record CreateCustomerRequest(
         string FirstName,

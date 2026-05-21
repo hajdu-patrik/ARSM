@@ -4,10 +4,8 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
-@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -16,14 +14,8 @@
 @MatrixRunSuffix = {{$timestamp}}
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
-@MatrixPhoneCanonical = +36307770991
 @MatrixBudapestEmail = matrix.budapest.user.{{MatrixRunSuffix}}@example.test
-@MatrixBudapestPhoneCanonical = +3612345678
-@MatrixWhitespaceEmail = matrix.whitespace.user.{{MatrixRunSuffix}}@example.test
-@MatrixWhitespacePhoneCanonical = +36308880991
 @MatrixEuEmail = matrix.eu.phone.{{MatrixRunSuffix}}@example.test
-@MatrixEuPhoneCanonical = +4915112345678
-@DemoMechanicPhoneCanonical = +36301112233
 
 # NOTE:
 # If a positive register/login test starts failing with 401 because the account
@@ -45,7 +37,7 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Admin Session] Login as admin before register matrix
+### [Setup][Admin Session] Login as admin before register matrix (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -56,7 +48,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Admin Session] Validate authenticated admin session (expects IsAdmin=true)
+### [Positive][Admin Session] Validate authenticated admin session (200 expected, IsAdmin=true)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ###

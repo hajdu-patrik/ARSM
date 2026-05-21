@@ -3,15 +3,12 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
-@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
-@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
-@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
-@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
 @CustomerVehicleId = 1
+@BothVehiclePathsVin = TST{{RunId}}0501
+@MaxVehicleVin = TST{{RunId}}0502
+@MissingNameVehicleVin = TST{{RunId}}0503
 
 
 # ─────────────────────────────────────────────────────────────
@@ -40,12 +37,13 @@ Content-Type: application/json
   "vehicleId": {{CustomerVehicleId}},
   "vehicle": {
     "licensePlate": "BAD-000",
+    "vin": "{{BothVehiclePathsVin}}",
     "brand": "Ford",
     "model": "Focus",
     "year": 2018,
     "mileageKm": 120000,
-    "enginePowerHp": 125,
-    "engineTorqueNm": 200
+    "enginePowerKw": 92,
+    "drivetrainType": "Petrol"
   },
   "scheduledDate": "2026-04-23T10:00:00",
   "dueDateTime": "2026-04-24T10:00:00",
@@ -80,16 +78,44 @@ Content-Type: application/json
   "customerPhoneNumber": "+36305556666",
   "vehicle": {
     "licensePlate": "MAX-{{RunId}}",
+    "vin": "{{MaxVehicleVin}}",
     "brand": "Audi",
     "model": "A3",
     "year": 2021,
     "mileageKm": 1000001,
-    "enginePowerHp": 50001,
-    "engineTorqueNm": 50001
+    "enginePowerKw": 50001,
+    "drivetrainType": "Diesel"
   },
   "scheduledDate": "2026-04-24T10:00:00",
   "dueDateTime": "2026-04-25T10:00:00",
   "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
+}
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.vehicle.drivetrain.{{RunId}}@example.test",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "Drivetrain",
+  "customerPhoneNumber": "+36305557777",
+  "vehicle": {
+    "licensePlate": "DRV-{{RunId}}",
+    "vin": "TST{{RunId}}0504",
+    "brand": "Audi",
+    "model": "A3",
+    "year": 2021,
+    "mileageKm": 10000,
+    "enginePowerKw": 110,
+    "drivetrainType": "Hydrogen"
+  },
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-25T10:00:00",
+  "taskDescription": "Scheduler intake vehicle drivetrain should be rejected"
 }
 
 ###
@@ -132,12 +158,13 @@ Content-Type: application/json
   "customerEmail": "completely.unknown.{{RunId}}@example.test",
   "vehicle": {
     "licensePlate": "UNK-{{RunId}}",
+    "vin": "{{MissingNameVehicleVin}}",
     "brand": "Ford",
     "model": "Focus",
     "year": 2018,
     "mileageKm": 60000,
-    "enginePowerHp": 110,
-    "engineTorqueNm": 200
+    "enginePowerKw": 81,
+    "drivetrainType": "Petrol"
   },
   "scheduledDate": "2026-04-30T10:00:00",
   "dueDateTime": "2026-05-01T10:00:00",

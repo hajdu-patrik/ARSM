@@ -25,12 +25,13 @@ ORDER BY c."Id";
 -- ------------------------------------------------------------
 SELECT v."Id" AS vehicle_id,
        v."LicensePlate",
+       v."Vin",
        v."Brand",
        v."Model",
        v."Year",
        v."MileageKm",
-       v."EnginePowerHp",
-       v."EngineTorqueNm",
+       v."EnginePowerKw",
+       v."DrivetrainType",
        c."Id" AS customer_id,
        c."Email" AS customer_email
 FROM vehicles v
@@ -95,7 +96,7 @@ ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
 
 
 -- ------------------------------------------------------------
--- 16. INTAKE PAST-DATE ALLOWED CHECK
+-- 15. INTAKE PAST-DATE ALLOWED CHECK
 --     Confirms intake payload with past scheduledDate is now persisted.
 -- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
@@ -112,7 +113,7 @@ WHERE a."TaskDescription" = 'Scheduler intake with past date allowed';
 
 
 -- ------------------------------------------------------------
--- 15. APPOINTMENT UPDATE COVERAGE
+-- 16. APPOINTMENT UPDATE COVERAGE
 --     Use after PUT /api/appointments/{id} to verify appointment and vehicle edits.
 -- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
@@ -124,17 +125,19 @@ SELECT a."Id" AS appointment_id,
        v."Model",
        v."Year",
        v."MileageKm",
-       v."EnginePowerHp",
-       v."EngineTorqueNm",
+       v."Vin",
+       v."EnginePowerKw",
+       v."DrivetrainType",
        CASE
            WHEN a."DueDateTime" < a."ScheduledDate" THEN 'FAIL: DueDateTime before ScheduledDate'
            WHEN v."LicensePlate" <> 'ABC-101' THEN 'FAIL: LicensePlate did not persist'
+           WHEN v."Vin" <> 'WVWZZZAUZJW123456' THEN 'FAIL: Vin did not persist'
            WHEN v."Brand" <> 'Volkswagen' THEN 'FAIL: Brand did not persist'
            WHEN v."Model" <> 'Golf' THEN 'FAIL: Model did not persist'
            WHEN v."Year" <> 2018 THEN 'FAIL: Year did not persist'
            WHEN v."MileageKm" <> 124500 THEN 'FAIL: MileageKm did not persist'
-           WHEN v."EnginePowerHp" <> 112 THEN 'FAIL: EnginePowerHp did not persist'
-           WHEN v."EngineTorqueNm" <> 252 THEN 'FAIL: EngineTorqueNm did not persist'
+           WHEN v."EnginePowerKw" <> 82 THEN 'FAIL: EnginePowerKw did not persist'
+           WHEN v."DrivetrainType" <> 'Petrol' THEN 'FAIL: DrivetrainType did not persist'
            ELSE 'OK'
        END AS update_integrity
 FROM appointments a
@@ -164,16 +167,14 @@ LIMIT 30;
 --     Quick CRUD smoke query for API-created synthetic vehicles.
 -- ------------------------------------------------------------
 SELECT v."Id" AS vehicle_id,
-             v."LicensePlate",
-             v."Brand",
-             v."Model",
-             v."Year",
-             c."Email" AS owner_email
+       v."LicensePlate",
+       v."Brand",
+       v."Model",
+       v."Year",
+       c."Email" AS owner_email
 FROM vehicles v
 JOIN people c ON c."Id" = v."CustomerId"
 WHERE LOWER(c."Email") LIKE '%.example.test'
-     OR v."LicensePlate" LIKE 'NEW-%'
-     OR v."LicensePlate" LIKE 'SCH-%'
-     OR v."LicensePlate" LIKE 'MEC-%'
+   OR v."LicensePlate" LIKE ANY (ARRAY['NEW-%', 'SCH-%', 'MEC-%'])
 ORDER BY v."Id" DESC
 LIMIT 30;

@@ -37,7 +37,19 @@ SELECT 'refreshtokens', COUNT(*) FROM refreshtokens;
 -- ------------------------------------------------------------
 -- 2. PEOPLE — all rows, raw
 -- ------------------------------------------------------------
-SELECT * FROM people ORDER BY "Id";
+SELECT
+  "Id",
+  "FirstName",
+  "MiddleName",
+  "LastName",
+  "Email",
+  "PhoneNumber",
+  "PersonType",
+  "IdentityUserId",
+  "Specialization",
+  "Expertise"
+FROM people
+ORDER BY "Id";
 
 
 -- ------------------------------------------------------------
@@ -90,12 +102,13 @@ WHERE "PersonType" = 'Customer'
 -- ------------------------------------------------------------
 SELECT v."Id",
        v."LicensePlate",
+  v."Vin",
        v."Brand",
        v."Model",
        v."Year",
        v."MileageKm",
-       v."EnginePowerHp",
-       v."EngineTorqueNm",
+  v."EnginePowerKw",
+  v."DrivetrainType",
        p."FirstName" || ' ' || p."LastName" AS owner
 FROM vehicles v
 JOIN people p ON p."Id" = v."CustomerId"
@@ -208,14 +221,14 @@ ORDER BY "Id";
 --     Confirms persistence contracts from AutoServiceDbContext and migrations.
 -- ------------------------------------------------------------
 SELECT contract_type,
-  contract_name,
-  source_table,
-  details
+       contract_name,
+       source_table,
+       details
 FROM (
     SELECT 'check_constraint'::text AS contract_type,
-      c.conname AS contract_name,
-      t.relname AS source_table,
-      pg_get_constraintdef(c.oid) AS details
+           c.conname AS contract_name,
+           t.relname AS source_table,
+           pg_get_constraintdef(c.oid) AS details
     FROM pg_constraint c
     JOIN pg_class t ON t.oid = c.conrelid
     WHERE c.contype = 'c'
@@ -224,15 +237,16 @@ FROM (
     UNION ALL
 
     SELECT 'index'::text AS contract_type,
-      i.indexname AS contract_name,
-      i.tablename AS source_table,
-      i.indexdef AS details
+           i.indexname AS contract_name,
+           i.tablename AS source_table,
+           i.indexdef AS details
     FROM pg_indexes i
     WHERE i.tablename IN ('people', 'vehicles', 'appointments', 'refreshtokens', 'revokedjwttokens')
       AND i.indexname IN (
      'IX_people_Email',
      'IX_people_IdentityUserId',
      'IX_vehicles_LicensePlate',
+     'IX_vehicles_Vin',
      'IX_appointments_ScheduledDate',
      'IX_appointments_DueDateTime',
      'IX_refreshtokens_TokenHash',

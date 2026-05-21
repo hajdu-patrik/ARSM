@@ -11,6 +11,9 @@
 @RunId = {{$timestamp}}
 @SeedCustomerId = 1
 @NonExistentCustomerId = 99999
+@KnownCustomerPlate = ABC-101
+@UnknownCustomerPlate = ZZZ-{{RunId}}
+@KnownCustomerName = Anna
 
 
 # ─────────────────────────────────────────────────────────────
@@ -30,7 +33,7 @@ Content-Type: application/json
 #  LIST CUSTOMERS
 # ─────────────────────────────────────────────────────────────
 
-### [Positive][Customers] List all customers (200 expected)
+### [Positive][Customers] List all customers (200 expected, includes vehicleLicensePlates)
 GET {{AutoService_ApiService_HostAddress}}/api/customers
 
 ###
@@ -51,7 +54,7 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Customers] Non-admin can list customers (200 expected — read is authorized, not admin-only)
+### [Positive][Customers] Non-admin can list customers (200 expected, includes vehicleLicensePlates)
 GET {{AutoService_ApiService_HostAddress}}/api/customers
 
 ###
@@ -89,6 +92,50 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=not-an-e
 
 ### [Negative][Customers] Lookup customer by unknown email (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=unknown.scheduler.lookup.{{RunId}}@example.test
+
+###
+
+### [Positive][Customers] Lookup customer by vehicle license plate for scheduler flow (200 expected)
+# Expected success semantics:
+# - 200 OK with scheduler lookup payload fields and matchedVehicleId.
+# - vehicles should include vin, enginePowerKw, and drivetrainType for the matched customer.
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate={{KnownCustomerPlate}}
+
+###
+
+### [Negative][Customers] Lookup customer by invalid license plate format (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=%D8%A7%D8%A8-123
+
+###
+
+### [Negative][Customers] Lookup customer by unknown license plate (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate={{UnknownCustomerPlate}}
+
+###
+
+### [Positive][Customers] Lookup customers by name for scheduler flow (200 expected)
+# Expected success semantics: response is a list of scheduler lookup payloads with vehicles.
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{KnownCustomerName}}&limit=5
+
+###
+
+### [Negative][Customers] Lookup customers by blank name (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=
+
+###
+
+### [Setup][Customers] Logout before lookup auth checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+###
+
+### [Negative][Customers] Unauthenticated license-plate lookup (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate={{KnownCustomerPlate}}
+
+###
+
+### [Negative][Customers] Unauthenticated name lookup (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{KnownCustomerName}}
 
 ###
 
