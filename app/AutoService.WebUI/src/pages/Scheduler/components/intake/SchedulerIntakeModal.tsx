@@ -9,11 +9,11 @@ import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles'
 import {
   SchedulerIntakeCustomerForm,
   SchedulerIntakeHeader,
-  SchedulerIntakeLookupSection,
   SchedulerIntakeTaskSection,
   SchedulerIntakeVehicleForm,
   SchedulerIntakeVehicleModeSection,
 } from './SchedulerIntakeSections';
+import { SchedulerIntakeLookupSection } from './SchedulerIntakeLookupSection';
 
 interface SchedulerIntakeModalProps {
   readonly isOpen: boolean;
@@ -55,9 +55,8 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
       onClose={onClose}
       title={translate('scheduler.intake.title')}
       widthClassName="max-w-2xl"
-      footer={state.lookupState === 'idle'
-        ? null
-        : (
+      footer={derived.canCreateIntake
+        ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
@@ -78,7 +77,8 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
               {state.isSubmitting ? translate('scheduler.intake.creating') : translate('scheduler.intake.create')}
             </button>
           </div>
-        )}
+        )
+        : null}
     >
       <div className="max-h-[64vh] space-y-3 overflow-y-auto pr-1 pb-0.5">
         <SchedulerIntakeHeader
@@ -89,24 +89,28 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
         />
 
         <SchedulerIntakeLookupSection
+          lookupMode={state.lookupMode}
           lookupState={state.lookupState}
           customerLookup={state.customerLookup}
-          email={state.email}
+          nameLookupResults={state.nameLookupResults}
+          licensePlateLookup={state.licensePlateLookup}
+          nameLookup={state.nameLookup}
           isSearching={state.isSearching}
           translate={translate}
-          onEmailChange={actions.handleEmailChange}
-          onLookup={() => {
-            actions.handleLookup();
-          }}
+          onLicensePlateLookupChange={actions.handleLicensePlateLookupChange}
+          onNameLookupChange={actions.handleNameLookupChange}
+          onSelectNameLookupResult={actions.handleSelectNameLookupResult}
         />
 
         {derived.shouldShowCustomerCreate && (
           <SchedulerIntakeCustomerForm
+            customerEmail={state.email}
             customerFirstName={state.customerFirstName}
             customerMiddleName={state.customerMiddleName}
             customerLastName={state.customerLastName}
             customerPhone={state.customerPhone}
             translate={translate}
+            onCustomerEmailChange={actions.handleEmailChange}
             onCustomerFirstNameChange={actions.setCustomerFirstName}
             onCustomerMiddleNameChange={actions.setCustomerMiddleName}
             onCustomerLastNameChange={actions.setCustomerLastName}
@@ -134,7 +138,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
           />
         )}
 
-        {state.lookupState !== 'idle' && (
+        {derived.canCreateIntake && (
           <SchedulerIntakeTaskSection
             taskDescription={state.taskDescription}
             translate={translate}

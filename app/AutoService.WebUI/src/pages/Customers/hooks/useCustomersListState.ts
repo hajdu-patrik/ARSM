@@ -4,24 +4,8 @@ import type { CustomerListItem, VehicleDetailDto } from '../../../types/customer
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
 import { buildCustomerDisplayName, normalizeSearchValue } from '../helpers';
 import type { SortDirection } from '../page.types';
-
-interface CustomerMutationPayload {
-  firstName: string;
-  middleName?: string | null;
-  lastName: string;
-  email: string;
-  phoneNumber?: string | null;
-}
-
-interface VehicleMutationPayload {
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year: number;
-  mileageKm: number;
-  enginePowerHp: number;
-  engineTorqueNm: number;
-}
+import { applyLoadedVehicleSummary } from './useCustomersListState.helpers';
+import { useCustomersListMutations } from './useCustomersListMutations';
 
 /** External dependencies for the customers list-state hook. */
 interface UseCustomersListStateParams {
@@ -52,7 +36,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
   const [vehicleHistoryByVehicleId, setVehicleHistoryByVehicleId] = useState<Record<number, AppointmentDto[]>>({});
   const [isLoadingVehicleHistoryByVehicleId, setIsLoadingVehicleHistoryByVehicleId] = useState<Record<number, boolean>>({});
   const [vehicleHistorySortByVehicleId, setVehicleHistorySortByVehicleId] = useState<Record<number, SortDirection>>({});
-  const [activeVehicleHistoryByCustomerId, setActiveVehicleHistoryByCustomerId] = useState<Record<number, number | null>>({});
 
   const collator = useMemo(() => new Intl.Collator(language, { sensitivity: 'base' }), [language]);
 
@@ -79,9 +62,7 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     try {
       const data = await customerRegistryService.listVehicles(customerId);
       setVehiclesByCustomerId((prev) => ({ ...prev, [customerId]: data }));
-      setCustomers((prev) => prev.map((item) => (
-        item.id === customerId ? { ...item, vehicleCount: data.length } : item
-      )));
+      setCustomers((prev) => prev.map((item) => applyLoadedVehicleSummary(item, customerId, data)));
     } catch {
       showErrorToast('customers.errors.vehiclesLoadFailed');
     } finally {
@@ -131,7 +112,14 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
 
   const filteredCustomers = useMemo(() => {
     const filtered = normalizedSearchTerm.length > 0
-      ? customers.filter((customer) => normalizeSearchValue(buildCustomerDisplayName(customer)).includes(normalizedSearchTerm))
+      ? customers.filter((customer) => {
+        const nameMatches = normalizeSearchValue(buildCustomerDisplayName(customer)).includes(normalizedSearchTerm);
+        const plateMatches = customer.vehicleLicensePlates.some((plate) => (
+          normalizeSearchValue(plate).includes(normalizedSearchTerm)
+        ));
+
+        return nameMatches || plateMatches;
+      })
       : customers;
 
     return [...filtered].sort((left, right) => {
@@ -181,17 +169,6 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     }));
   }, []);
 
-  const toggleVehicleHistory = useCallback((customerId: number, vehicleId: number) => {
-    const current = activeVehicleHistoryByCustomerId[customerId] ?? null;
-    const next = current === vehicleId ? null : vehicleId;
-
-    setActiveVehicleHistoryByCustomerId((prev) => ({ ...prev, [customerId]: next }));
-
-    if (next !== null) {
-      void loadVehicleHistory(next);
-    }
-  }, [activeVehicleHistoryByCustomerId, loadVehicleHistory]);
-
   const toggleVehicleHistorySort = useCallback((vehicleId: number) => {
     setVehicleHistorySortByVehicleId((prev) => ({
       ...prev,
@@ -199,128 +176,30 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     }));
   }, []);
 
-  const applyCustomerCreated = useCallback((createdCustomer: CustomerListItem) => {
-    setCustomers((prev) => [...prev, createdCustomer]);
-  }, []);
-
-  const applyCustomerUpdated = useCallback((customerId: number, payload: CustomerMutationPayload) => {
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? {
-          ...item,
-          firstName: payload.firstName,
-          middleName: payload.middleName ?? null,
-          lastName: payload.lastName,
-          email: payload.email,
-          phoneNumber: payload.phoneNumber ?? null,
-        }
-        : item
-    )));
-  }, []);
-
-  const applyCustomerDeleted = useCallback((customerId: number) => {
-    setCustomers((prev) => prev.filter((item) => item.id !== customerId));
-    setVehiclesByCustomerId((prev) => {
-      const next = { ...prev };
-      delete next[customerId];
-      return next;
-    });
-    setCustomerHistoryByCustomerId((prev) => {
-      const next = { ...prev };
-      delete next[customerId];
-      return next;
-    });
-    setActiveVehicleHistoryByCustomerId((prev) => {
-      const next = { ...prev };
-      delete next[customerId];
-      return next;
-    });
-    setExpandedCustomerIds((prev) => {
-      const next = new Set(prev);
-      next.delete(customerId);
-      return next;
-    });
-  }, []);
-
-  const applyVehicleCreated = useCallback((customerId: number, createdVehicle: VehicleDetailDto) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: [...(prev[customerId] ?? []), createdVehicle],
-    }));
-
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? { ...item, vehicleCount: item.vehicleCount + 1 }
-        : item
-    )));
-  }, []);
-
-  const applyVehicleUpdated = useCallback((customerId: number, vehicleId: number, payload: VehicleMutationPayload) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: (prev[customerId] ?? []).map((vehicle) => (
-        vehicle.id === vehicleId
-          ? {
-            ...vehicle,
-            licensePlate: payload.licensePlate,
-            brand: payload.brand,
-            model: payload.model,
-            year: payload.year,
-            mileageKm: payload.mileageKm,
-            enginePowerHp: payload.enginePowerHp,
-            engineTorqueNm: payload.engineTorqueNm,
-          }
-          : vehicle
-      )),
-    }));
-  }, []);
-
-  const applyVehicleDeleted = useCallback((customerId: number, vehicleId: number) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: (prev[customerId] ?? []).filter((vehicle) => vehicle.id !== vehicleId),
-    }));
-
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? { ...item, vehicleCount: Math.max(0, item.vehicleCount - 1) }
-        : item
-    )));
-
-    setVehicleHistoryByVehicleId((prev) => {
-      const next = { ...prev };
-      delete next[vehicleId];
-      return next;
-    });
-
-    setActiveVehicleHistoryByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: prev[customerId] === vehicleId ? null : prev[customerId],
-    }));
-  }, []);
+  const mutationActions = useCustomersListMutations({
+    setCustomers,
+    setVehiclesByCustomerId,
+    setCustomerHistoryByCustomerId,
+    setVehicleHistoryByVehicleId,
+    setExpandedCustomerIds,
+    vehiclesByCustomerId,
+  });
 
   return {
     customers,
-    setCustomers,
     isLoadingCustomers,
     searchTerm,
     setSearchTerm,
     sortDirection,
     expandedCustomerIds,
-    setExpandedCustomerIds,
     vehiclesByCustomerId,
-    setVehiclesByCustomerId,
     isLoadingVehiclesByCustomerId,
     customerHistoryByCustomerId,
-    setCustomerHistoryByCustomerId,
     isLoadingCustomerHistoryByCustomerId,
     customerHistorySortByCustomerId,
     vehicleHistoryByVehicleId,
-    setVehicleHistoryByVehicleId,
     isLoadingVehicleHistoryByVehicleId,
     vehicleHistorySortByVehicleId,
-    activeVehicleHistoryByCustomerId,
-    setActiveVehicleHistoryByCustomerId,
     loadCustomers,
     loadVehicles,
     loadCustomerHistory,
@@ -330,13 +209,7 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
     toggleSortDirection,
     toggleCustomerExpanded,
     toggleCustomerHistorySort,
-    toggleVehicleHistory,
     toggleVehicleHistorySort,
-    applyCustomerCreated,
-    applyCustomerUpdated,
-    applyCustomerDeleted,
-    applyVehicleCreated,
-    applyVehicleUpdated,
-    applyVehicleDeleted,
+    ...mutationActions,
   };
 }

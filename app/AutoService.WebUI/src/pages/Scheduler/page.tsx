@@ -9,7 +9,7 @@
  *
  * @module SchedulerPage
  */
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
@@ -80,8 +80,8 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const upsertAppointment = useSchedulerStore((state) => state.upsertAppointment);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDto | null>(null);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const [isRouteFocusApplied, setIsRouteFocusApplied] = useState(false);
-  const [isRouteFocusOpened, setIsRouteFocusOpened] = useState(false);
+  const isRouteFocusAppliedRef = useRef(false);
+  const isRouteFocusOpenedRef = useRef(false);
   const routeFocus = useMemo(() => parseSchedulerFocusState(location.state), [location.state]);
   const {
     selectedDate,
@@ -139,7 +139,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const selectedAppointmentId = selectedAppointment?.id;
 
   useEffect(() => {
-    if (routeFocus === null || isRouteFocusApplied) {
+    if (routeFocus === null || isRouteFocusAppliedRef.current) {
       return;
     }
 
@@ -149,11 +149,11 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
       setSelectedDay(scheduledDate.getDate());
     }
 
-    setIsRouteFocusApplied(true);
-  }, [isRouteFocusApplied, routeFocus, setCalendarMonth, setSelectedDay]);
+    isRouteFocusAppliedRef.current = true;
+  }, [routeFocus, setCalendarMonth, setSelectedDay]);
 
   useEffect(() => {
-    if (routeFocus === null || isRouteFocusOpened) {
+    if (routeFocus === null || isRouteFocusOpenedRef.current) {
       return;
     }
 
@@ -167,13 +167,13 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
 
     const frameId = globalThis.requestAnimationFrame(() => {
       setSelectedAppointment(focusedAppointment);
-      setIsRouteFocusOpened(true);
+      isRouteFocusOpenedRef.current = true;
     });
 
     return () => {
       globalThis.cancelAnimationFrame(frameId);
     };
-  }, [isRouteFocusOpened, monthAppointments, routeFocus, todayAppointments]);
+  }, [monthAppointments, routeFocus, todayAppointments]);
 
   // Keep modal content in sync with the latest store snapshot.
   useEffect(() => {

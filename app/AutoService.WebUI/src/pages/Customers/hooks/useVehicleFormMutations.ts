@@ -29,32 +29,35 @@ import { buildVehiclePayload } from './vehicleMutation.helpers';
 
 const EMPTY_VEHICLE_FORM: VehicleFormState = {
   licensePlate: '',
+  vin: '',
   brand: '',
   model: '',
   year: '',
   mileageKm: '',
-  enginePowerHp: '',
-  engineTorqueNm: '',
+  enginePowerKw: '',
+  drivetrainType: '',
 };
 
 function hasRequiredVehicleFields(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
+    && form.vin.trim().length > 0
     && form.brand.trim().length > 0
     && form.model.trim().length > 0
     && form.year.trim().length > 0
     && form.mileageKm.trim().length > 0
-    && form.enginePowerHp.trim().length > 0
-    && form.engineTorqueNm.trim().length > 0;
+    && form.enginePowerKw.trim().length > 0
+    && form.drivetrainType.trim().length > 0;
 }
 
 function hasAnyVehicleFieldValue(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
+    || form.vin.trim().length > 0
     || form.brand.trim().length > 0
     || form.model.trim().length > 0
     || form.year.trim().length > 0
     || form.mileageKm.trim().length > 0
-    || form.enginePowerHp.trim().length > 0
-    || form.engineTorqueNm.trim().length > 0;
+    || form.enginePowerKw.trim().length > 0
+    || form.drivetrainType.trim().length > 0;
 }
 
 function hasVehicleUpdateChanges(
@@ -62,12 +65,13 @@ function hasVehicleUpdateChanges(
   payload: CreateVehicleRequest | UpdateVehicleRequest,
 ): boolean {
   return snapshot.licensePlate.trim().toUpperCase() !== payload.licensePlate.trim().toUpperCase()
+    || snapshot.vin.trim().toUpperCase() !== payload.vin.trim().toUpperCase()
     || snapshot.brand !== payload.brand
     || snapshot.model !== payload.model
     || snapshot.year !== payload.year
     || snapshot.mileageKm !== payload.mileageKm
-    || snapshot.enginePowerHp !== payload.enginePowerHp
-    || snapshot.engineTorqueNm !== payload.engineTorqueNm;
+    || snapshot.enginePowerKw !== payload.enginePowerKw
+    || snapshot.drivetrainType !== payload.drivetrainType;
 }
 
 /** Dependencies required by vehicle create/edit mutation handlers. */
@@ -140,12 +144,13 @@ export function useVehicleFormMutations({
     setEditingVehicleSnapshot(vehicle);
     setVehicleForm({
       licensePlate: vehicle.licensePlate,
+      vin: vehicle.vin,
       brand: vehicle.brand,
       model: vehicle.model,
       year: String(vehicle.year),
       mileageKm: String(vehicle.mileageKm),
-      enginePowerHp: String(vehicle.enginePowerHp),
-      engineTorqueNm: String(vehicle.engineTorqueNm),
+      enginePowerKw: String(vehicle.enginePowerKw),
+      drivetrainType: vehicle.drivetrainType,
     });
     setVehicleModalOpen(true);
   }, []);
@@ -165,12 +170,18 @@ export function useVehicleFormMutations({
       licensePlate: !prev.licensePlate.trim() && hasRequiredFieldError(errors, 'licensePlate')
         ? editingVehicleSnapshot.licensePlate
         : prev.licensePlate,
+      vin: !prev.vin.trim() && hasRequiredFieldError(errors, 'vin')
+        ? editingVehicleSnapshot.vin
+        : prev.vin,
       brand: !prev.brand.trim() && hasRequiredFieldError(errors, 'brand')
         ? editingVehicleSnapshot.brand
         : prev.brand,
       model: !prev.model.trim() && hasRequiredFieldError(errors, 'model')
         ? editingVehicleSnapshot.model
         : prev.model,
+      drivetrainType: !prev.drivetrainType.trim() && hasRequiredFieldError(errors, 'drivetrainType')
+        ? editingVehicleSnapshot.drivetrainType
+        : prev.drivetrainType,
     }));
   }, [editingVehicleSnapshot, hasRequiredFieldError, vehicleModalMode]);
 

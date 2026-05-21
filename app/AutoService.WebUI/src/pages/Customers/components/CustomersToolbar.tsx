@@ -3,8 +3,8 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
 import {
 	cardClass,
-	customersToolbarNeutralButtonClass,
-	customersToolbarPrimaryButtonClass,
+	referenceChipNeutralButtonClass,
+	referenceChipPrimaryButtonClass,
 } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
 import type { SortDirection } from '../page.types';
@@ -59,7 +59,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						data-testid="customers-sort-toggle"
 						type="button"
 						onClick={onToggleSortDirection}
-						className={`${customersToolbarNeutralButtonClass} flex-1 sm:flex-none`}
+						className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
 					>
 						<ArrowUpDown className="h-4 w-4 shrink-0" />
 						<span className="truncate">{sortDirection === 'asc' ? t('customers.sortDirectionAsc') : t('customers.sortDirectionDesc')}</span>
@@ -69,7 +69,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						data-testid="customers-create-button"
 						type="button"
 						onClick={onOpenCreateCustomerModal}
-						className={`${customersToolbarPrimaryButtonClass} flex-1 sm:flex-none`}
+						className={`${referenceChipPrimaryButtonClass} flex-1 sm:flex-none`}
 					>
 						<Plus className="h-4 w-4 shrink-0" />
 						<span className="truncate">{t('customers.createCustomer')}</span>

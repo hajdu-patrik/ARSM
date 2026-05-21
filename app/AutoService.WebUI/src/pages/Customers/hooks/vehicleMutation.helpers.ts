@@ -8,6 +8,7 @@ import {
   hasServerFieldErrors,
   mapVehicleValidationMessageToKey,
   parseVehicleNumericValues,
+  isDrivetrainType,
   type VehicleFormState,
 } from '../helpers';
 import type { CreateVehicleRequest, UpdateVehicleRequest } from '../../../types/customers/customers.types';
@@ -64,23 +65,24 @@ export function buildVehiclePayload(form: VehicleFormState): {
     return { payload: null as never, fieldError: 'customers.errors.vehicleNumberInvalid' };
   }
 
-  if (Number.isNaN(numericValues.enginePowerHp)) {
+  if (Number.isNaN(numericValues.enginePowerKw)) {
     return { payload: null as never, fieldError: 'customers.errors.vehicleNumberInvalid' };
   }
 
-  if (Number.isNaN(numericValues.engineTorqueNm)) {
-    return { payload: null as never, fieldError: 'customers.errors.vehicleNumberInvalid' };
+  if (!isDrivetrainType(form.drivetrainType)) {
+    return { payload: null as never, fieldError: 'customers.errors.vehicleDrivetrainInvalid' };
   }
 
   return {
     payload: {
       licensePlate: form.licensePlate.trim(),
+      vin: form.vin.trim(),
       brand: form.brand.trim(),
       model: form.model.trim(),
       year: numericValues.year,
       mileageKm: numericValues.mileageKm,
-      enginePowerHp: numericValues.enginePowerHp,
-      engineTorqueNm: numericValues.engineTorqueNm,
+      enginePowerKw: numericValues.enginePowerKw,
+      drivetrainType: form.drivetrainType,
     },
     fieldError: null,
   };

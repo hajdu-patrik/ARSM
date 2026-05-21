@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios';
+import { DRIVETRAIN_TYPES } from '../../../../types/customers/customers.types';
 import type {
   SchedulerCreateIntakeRequest,
   SchedulerNewVehicleRequest,
@@ -22,6 +23,36 @@ function isIntakeApiError(value: unknown): value is IntakeApiError {
   }
 
   return value.detail == null || typeof value.detail === 'string';
+}
+
+const INTAKE_ERROR_TERM_MAP: ReadonlyArray<{ readonly term: string; readonly key: string }> = [
+  { term: 'invalid email', key: 'scheduler.intake.errors.invalidEmail' },
+  { term: 'taskdescription is required', key: 'scheduler.intake.errors.taskRequired' },
+  { term: 'duedatetime must be greater than or equal to scheduleddate', key: 'scheduler.intake.errors.dueBeforeScheduled' },
+  { term: 'customerfirstname and customerlastname are required', key: 'scheduler.intake.errors.customerNameRequired' },
+  { term: 'phone number must be a valid european number', key: 'scheduler.intake.errors.invalidPhone' },
+  { term: 'vehicle with this license plate already exists', key: 'scheduler.intake.errors.licensePlateExists' },
+  { term: 'vehicle with this vin already exists', key: 'scheduler.intake.errors.vehicleVinInvalid' },
+  { term: 'vin', key: 'scheduler.intake.errors.vehicleVinInvalid' },
+  { term: 'drivetrain', key: 'scheduler.intake.errors.vehicleDrivetrainInvalid' },
+  { term: 'license plate', key: 'scheduler.intake.errors.licensePlateInvalid' },
+  { term: 'vehicle.year must be between 1886 and 2100', key: 'scheduler.intake.errors.vehicleYearInvalid' },
+  { term: 'must be non-negative', key: 'scheduler.intake.errors.vehicleNumberInvalid' },
+  { term: 'scheduleddate cannot be in the past', key: 'scheduler.intake.errors.scheduledInPast' },
+  { term: 'already exists', key: 'scheduler.intake.errors.conflictData' },
+  { term: 'unable to create intake', key: 'scheduler.intake.errors.conflictData' },
+];
+
+function getIntakeErrorDetail(error: unknown): string {
+  if (!isAxiosError(error) || !isIntakeApiError(error.response?.data)) {
+    return '';
+  }
+
+  return error.response.data.detail?.toLowerCase() ?? '';
+}
+
+function matchesAnyDetailTerm(detail: string, terms: readonly string[]): boolean {
+  return terms.some((term) => detail.includes(term));
 }
 
 export function getDefaultScheduledDate(selectedDate: Date): string {
@@ -63,29 +94,21 @@ export function getDefaultDueDate(selectedDate: Date): string {
  *   falling back to `'scheduler.intake.errors.createFailed'` for unknown errors.
  */
 export function mapIntakeErrorToKey(error: unknown): string {
-  const detail =
-    isAxiosError(error) && isIntakeApiError(error.response?.data)
-      ? error.response.data.detail?.toLowerCase() ?? ''
-      : '';
+  const detail = getIntakeErrorDetail(error);
 
-  if (detail.includes('invalid email')) return 'scheduler.intake.errors.invalidEmail';
-  if (detail.includes('taskdescription is required')) return 'scheduler.intake.errors.taskRequired';
-  if (detail.includes('duedatetime must be greater than or equal to scheduleddate')) return 'scheduler.intake.errors.dueBeforeScheduled';
-  if (detail.includes('customerfirstname and customerlastname are required')) return 'scheduler.intake.errors.customerNameRequired';
-  if (detail.includes('invalid first name') || detail.includes('invalid last name') || detail.includes('invalid middle name')) {
+  for (const { term, key } of INTAKE_ERROR_TERM_MAP) {
+    if (detail.includes(term)) {
+      return key;
+    }
+  }
+
+  if (matchesAnyDetailTerm(detail, ['invalid first name', 'invalid last name', 'invalid middle name'])) {
     return 'scheduler.intake.errors.invalidName';
   }
-  if (detail.includes('phone number must be a valid european number')) return 'scheduler.intake.errors.invalidPhone';
-  if (detail.includes('vehicle.licenseplate, vehicle.brand, and vehicle.model are required')) {
+
+  if (detail.includes('vehicle.') && detail.includes('required')) {
     return 'scheduler.intake.errors.vehicleRequiredFields';
   }
-  if (detail.includes('vehicle with this license plate already exists')) return 'scheduler.intake.errors.licensePlateExists';
-  if (detail.includes('license plate')) return 'scheduler.intake.errors.licensePlateInvalid';
-  if (detail.includes('vehicle.year must be between 1886 and 2100')) return 'scheduler.intake.errors.vehicleYearInvalid';
-  if (detail.includes('must be non-negative')) return 'scheduler.intake.errors.vehicleNumberInvalid';
-  if (detail.includes('scheduleddate cannot be in the past')) return 'scheduler.intake.errors.scheduledInPast';
-  if (detail.includes('already exists')) return 'scheduler.intake.errors.conflictData';
-  if (detail.includes('unable to create intake')) return 'scheduler.intake.errors.conflictData';
 
   return 'scheduler.intake.errors.createFailed';
 }
@@ -97,12 +120,13 @@ export function toIso(value: string): string {
 export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehicleRequest {
   return {
     licensePlate: vehicle.licensePlate.trim(),
+    vin: vehicle.vin.trim(),
     brand: vehicle.brand.trim(),
     model: vehicle.model.trim(),
     year: Number(vehicle.year),
     mileageKm: Number(vehicle.mileageKm),
-    enginePowerHp: Number(vehicle.enginePowerHp),
-    engineTorqueNm: Number(vehicle.engineTorqueNm),
+    enginePowerKw: Number(vehicle.enginePowerKw),
+    drivetrainType: vehicle.drivetrainType || 'Petrol',
   };
 }
 
@@ -122,14 +146,20 @@ export function normalizeRangedNumberInput(rawValue: string, min: number, max: n
 
 export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean {
   const mileageKm = Number(vehicle.mileageKm);
-  const enginePowerHp = Number(vehicle.enginePowerHp);
-  const engineTorqueNm = Number(vehicle.engineTorqueNm);
+  const enginePowerKw = Number(vehicle.enginePowerKw);
 
   return !(
     Number.isNaN(mileageKm) || mileageKm < VEHICLE_NUMERIC_LIMITS.mileageKm.min || mileageKm > VEHICLE_NUMERIC_LIMITS.mileageKm.max ||
-    Number.isNaN(enginePowerHp) || enginePowerHp < VEHICLE_NUMERIC_LIMITS.enginePowerHp.min || enginePowerHp > VEHICLE_NUMERIC_LIMITS.enginePowerHp.max ||
-    Number.isNaN(engineTorqueNm) || engineTorqueNm < VEHICLE_NUMERIC_LIMITS.engineTorqueNm.min || engineTorqueNm > VEHICLE_NUMERIC_LIMITS.engineTorqueNm.max
+    Number.isNaN(enginePowerKw) || enginePowerKw < VEHICLE_NUMERIC_LIMITS.enginePowerKw.min || enginePowerKw > VEHICLE_NUMERIC_LIMITS.enginePowerKw.max
   );
+}
+
+export function hasRequiredVehicleTextValues(vehicle: VehicleFormState): boolean {
+  return vehicle.licensePlate.trim().length > 0
+    && vehicle.vin.trim().length > 0
+    && vehicle.brand.trim().length > 0
+    && vehicle.model.trim().length > 0
+    && (DRIVETRAIN_TYPES as readonly string[]).includes(vehicle.drivetrainType);
 }
 
 /**
@@ -163,6 +193,10 @@ export function getCreateValidationError(params: {
 
   if (!params.taskDescription.trim()) {
     return 'scheduler.intake.errors.taskRequired';
+  }
+
+  if (params.shouldShowVehicleCreate && !hasRequiredVehicleTextValues(params.vehicle)) {
+    return 'scheduler.intake.errors.vehicleRequiredFields';
   }
 
   if (params.shouldShowVehicleCreate && !hasValidVehicleNumericValues(params.vehicle)) {

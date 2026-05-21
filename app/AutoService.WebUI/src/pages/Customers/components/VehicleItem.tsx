@@ -5,30 +5,19 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
-import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import {
-	modalConfirmCloseButtonClass,
-	schedulerFilterChipButtonClass,
-} from '../../../utils/formStyles';
-import type { SortDirection } from '../page.types';
-import { RepairHistoryList } from './RepairHistoryList';
+import { modalConfirmCloseButtonClass } from '../../../utils/formStyles';
 
 interface VehicleItemProps {
 	t: TFunction;
 	locale: string;
 	customerId: number;
 	vehicle: VehicleDetailDto;
-	isVehicleHistoryOpen: boolean;
-	vehicleHistory: AppointmentDto[];
-	isLoadingVehicleHistory: boolean;
-	vehicleHistorySort: SortDirection;
 	onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
 	onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
-	onToggleVehicleHistory: (customerId: number, vehicleId: number) => void;
-	onToggleVehicleHistorySort: (vehicleId: number) => void;
-	onOpenHistoryAppointment: (appointment: AppointmentDto) => void;
+	onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
+	isDetailsOpen: boolean;
 }
 
 const VehicleItemComponent = memo(function VehicleItem({
@@ -36,19 +25,17 @@ const VehicleItemComponent = memo(function VehicleItem({
 	locale,
 	customerId,
 	vehicle,
-	isVehicleHistoryOpen,
-	vehicleHistory,
-	isLoadingVehicleHistory,
-	vehicleHistorySort,
 	onOpenEditVehicleModal,
 	onOpenDeleteVehicleModal,
-	onToggleVehicleHistory,
-	onToggleVehicleHistorySort,
-	onOpenHistoryAppointment,
+	onOpenVehicleDetails,
+	isDetailsOpen,
 }: VehicleItemProps) {
-	const displayedVehicleHistory = vehicleHistorySort === 'asc' ? vehicleHistory : [...vehicleHistory].reverse();
-	const vehicleInlineEditActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11`;
-	const vehicleInlineDeleteActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-error-text hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
+	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
+	const vehicleDetailsActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 ${isDetailsOpen
+		? 'bg-arsm-info-bg text-arsm-info-text ring-1 ring-arsm-info-ring/45 dark:bg-arsm-info-bg-dark dark:text-arsm-info-text-dark dark:ring-arsm-info-ring/55'
+		: 'text-arsm-info-text hover:bg-arsm-info-bg/70 hover:text-arsm-info-text dark:text-arsm-info-text-dark dark:hover:bg-arsm-info-bg-dark/55 dark:hover:text-arsm-info-text-dark'}`;
+	const vehicleInlineEditActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-warning-accent hover:bg-arsm-warning-bg hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:bg-arsm-warning-bg-dark/65 dark:hover:text-arsm-warning-text-dark`;
+	const vehicleInlineDeleteActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-error-text hover:bg-arsm-error-bg hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 dark:hover:text-arsm-error-text-light`;
 
 	return (
 		<div className="min-w-0 space-y-3">
@@ -64,12 +51,12 @@ const VehicleItemComponent = memo(function VehicleItem({
 					<div className="flex shrink-0 items-center gap-1">
 						<button
 							type="button"
-							onClick={() => onToggleVehicleHistory(customerId, vehicle.id)}
-							className={vehicleInlineEditActionClass}
-							title={isVehicleHistoryOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory')}
-							aria-label={isVehicleHistoryOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory')}
+							onClick={() => onOpenVehicleDetails(customerId, vehicle.id)}
+							className={vehicleDetailsActionClass}
+							title={detailsActionLabel}
+							aria-label={detailsActionLabel}
 						>
-							{isVehicleHistoryOpen
+							{isDetailsOpen
 								? <EyeOff className="h-3.5 w-3.5 shrink-0" />
 								: <Eye className="h-3.5 w-3.5 shrink-0" />}
 						</button>
@@ -96,61 +83,20 @@ const VehicleItemComponent = memo(function VehicleItem({
 					</div>
 				</div>
 
-				<div className="grid min-w-0 grid-cols-1 gap-2 text-xs sm:grid-cols-3">
-					<div className="min-w-0 border-l border-arsm-border/50 pl-2 dark:border-arsm-border-dark/50">
-						<p className="truncate text-[10px] font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-							{t('customers.mileageKm')}
-						</p>
-						<p className="truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-							{vehicle.mileageKm.toLocaleString()} km
-						</p>
-					</div>
-
-					<div className="min-w-0 border-l border-arsm-border/50 pl-2 dark:border-arsm-border-dark/50">
-						<p className="truncate text-[10px] font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-							{t('customers.enginePowerHp')}
-						</p>
-						<p className="truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{vehicle.enginePowerHp} HP</p>
-					</div>
-
-					<div className="min-w-0 border-l border-arsm-border/50 pl-2 dark:border-arsm-border-dark/50">
-						<p className="truncate text-[10px] font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-							{t('customers.engineTorqueNm')}
-						</p>
-						<p className="truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{vehicle.engineTorqueNm} Nm</p>
-					</div>
+				<div className="grid min-w-0 grid-cols-1 gap-1 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:grid-cols-2">
+					<p className="min-w-0 truncate">
+						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.vin')}:</span> {vehicle.vin}
+					</p>
+					<p className="min-w-0 truncate">
+						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.mileageKm')}:</span> {vehicle.mileageKm.toLocaleString(locale)} km
+					</p>
+					<p className="min-w-0 truncate">
+						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.enginePowerKw')}:</span> {vehicle.enginePowerKw} kW
+					</p>
+					<p className="min-w-0 truncate">
+						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.drivetrainType')}:</span> {t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
+					</p>
 				</div>
-
-				{isVehicleHistoryOpen && (
-					<div className="space-y-3 border-t border-arsm-border/50 pt-3 dark:border-arsm-border-dark/50">
-						<div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-							<p className="min-w-0 truncate text-xs font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-								{t('customers.vehicleHistoryTitle')}
-							</p>
-							<button
-								type="button"
-								onClick={() => onToggleVehicleHistorySort(vehicle.id)}
-								className={`${schedulerFilterChipButtonClass} w-full sm:w-auto`}
-							>
-								<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
-								<span className="truncate">{vehicleHistorySort === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
-							</button>
-						</div>
-
-						{isLoadingVehicleHistory && (
-							<p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingHistory')}</p>
-						)}
-
-						{!isLoadingVehicleHistory && (
-							<RepairHistoryList
-								appointments={displayedVehicleHistory}
-								locale={locale}
-								emptyMessage={t('customers.emptyHistory')}
-								onOpenAppointment={onOpenHistoryAppointment}
-							/>
-						)}
-					</div>
-				)}
 			</div>
 		</div>
 	);

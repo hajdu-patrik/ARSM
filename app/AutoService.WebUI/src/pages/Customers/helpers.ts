@@ -6,26 +6,26 @@
  * @module pages/Customers/helpers
  */
 
-import type { CustomerListItem } from '../../types/customers/customers.types';
+import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
 
 /** Structured numeric values extracted from vehicle form inputs. */
 export interface VehicleNumericValues {
   readonly year: number;
   readonly mileageKm: number;
-  readonly enginePowerHp: number;
-  readonly engineTorqueNm: number;
+  readonly enginePowerKw: number;
 }
 
 /** Vehicle form state shape for create/edit modals. */
 export interface VehicleFormState {
   licensePlate: string;
+  vin: string;
   brand: string;
   model: string;
   year: string;
   mileageKm: string;
-  enginePowerHp: string;
-  engineTorqueNm: string;
+  enginePowerKw: string;
+  drivetrainType: DrivetrainType | '';
 }
 
 /**
@@ -129,6 +129,14 @@ export function mapVehicleValidationMessageToKey(message: string): string {
     return 'customers.errors.vehicleLicensePlateExists';
   }
 
+  if (normalized.includes('vin')) {
+    return 'customers.errors.vehicleVinInvalid';
+  }
+
+  if (normalized.includes('drivetrain')) {
+    return 'customers.errors.vehicleDrivetrainInvalid';
+  }
+
   if (normalized.includes('year must be between')) {
     return 'customers.errors.vehicleYearInvalid';
   }
@@ -170,9 +178,12 @@ export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumeri
   return {
     year: Number(form.year),
     mileageKm: Number(form.mileageKm),
-    enginePowerHp: Number(form.enginePowerHp),
-    engineTorqueNm: Number(form.engineTorqueNm),
+    enginePowerKw: Number(form.enginePowerKw),
   };
+}
+
+export function isDrivetrainType(value: string): value is DrivetrainType {
+  return (DRIVETRAIN_TYPES as readonly string[]).includes(value);
 }
 
 /**
@@ -184,8 +195,7 @@ export function buildVehicleNumericFieldErrors(values: VehicleNumericValues): Se
   const numericFields = [
     ['Year', values.year],
     ['MileageKm', values.mileageKm],
-    ['EnginePowerHp', values.enginePowerHp],
-    ['EngineTorqueNm', values.engineTorqueNm],
+    ['EnginePowerKw', values.enginePowerKw],
   ] as const;
 
   const errors: ServerFieldErrors = {};

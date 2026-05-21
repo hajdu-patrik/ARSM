@@ -3,7 +3,14 @@ import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
-import { buttonClass, formFieldGridClass, formFieldGroupClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
+import {
+  formFieldGridClass,
+  formFieldGroupClass,
+  inputClass,
+  labelClass,
+  referenceChipNeutralButtonClass,
+  referenceChipPrimaryButtonClass,
+} from '../../../utils/formStyles';
 
 type CustomerModalMode = 'create' | 'edit';
 
@@ -51,7 +58,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className={secondaryButtonClass}
+            className={referenceChipNeutralButtonClass}
           >
             {t('settings.cancel')}
           </button>
@@ -59,7 +66,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             type="submit"
             form="customers-customer-form"
             disabled={isSaving || !isSaveEnabled}
-            className={buttonClass}
+            className={referenceChipPrimaryButtonClass}
           >
             <Save className="h-4 w-4 shrink-0" />
             <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>

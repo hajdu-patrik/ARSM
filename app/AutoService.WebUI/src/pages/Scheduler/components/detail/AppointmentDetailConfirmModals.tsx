@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { LogOut, Save, UserPlus } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
-import { buttonClass, dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import {
+  referenceChipDangerButtonClass,
+  referenceChipNeutralButtonClass,
+  referenceChipPrimaryButtonClass,
+} from '../../../../utils/formStyles';
 
 interface AppointmentDetailConfirmModalsProps {
   readonly pendingStatusChange: AppointmentStatus | null;
@@ -57,7 +61,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseStatusConfirm}
               disabled={isUpdating}
-              className={secondaryButtonClass}
+              className={referenceChipNeutralButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -65,7 +69,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmStatusChange}
               disabled={isUpdating || pendingStatusChange === null}
-              className={buttonClass}
+              className={referenceChipPrimaryButtonClass}
             >
               <Save className="h-4 w-4 shrink-0" />
               <span>{isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}</span>
@@ -91,7 +95,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseClaimConfirm}
               disabled={isClaiming}
-              className={secondaryButtonClass}
+              className={referenceChipNeutralButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -99,7 +103,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmClaim}
               disabled={isClaiming}
-              className={buttonClass}
+              className={referenceChipPrimaryButtonClass}
             >
               <UserPlus className="h-4 w-4 shrink-0" />
               <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
@@ -121,7 +125,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseUnclaimConfirm}
               disabled={isUnclaiming}
-              className={secondaryButtonClass}
+              className={referenceChipNeutralButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -129,7 +133,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmUnclaim}
               disabled={isUnclaiming}
-              className={dangerButtonClass}
+              className={referenceChipDangerButtonClass}
             >
               <LogOut className="h-4 w-4 shrink-0" />
               <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
@@ -151,7 +155,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseSaveConfirm}
               disabled={isSaving}
-              className={secondaryButtonClass}
+              className={referenceChipNeutralButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -159,7 +163,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmSave}
               disabled={isSaving}
-              className={buttonClass}
+              className={referenceChipPrimaryButtonClass}
             >
               <Save className="h-4 w-4 shrink-0" />
               <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.confirmSave')}</span>

@@ -36,6 +36,41 @@ export const appointmentService = {
   },
 
   /**
+   * Looks up a customer by exact vehicle license plate.
+   * @param licensePlate - License plate to match exactly on the backend.
+   * @returns The matched customer and vehicle context, or {@code null} if not found.
+   */
+  async findCustomerByLicensePlate(licensePlate: string): Promise<SchedulerCustomerLookupDto | null> {
+    try {
+      const response = await apiClient.get<SchedulerCustomerLookupDto>('/api/customers/by-license-plate', {
+        params: { licensePlate },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  },
+
+  /**
+   * Searches customers with backend filtering by name and partial license-plate terms.
+   * @param name - Search fragment forwarded to the lookup endpoint.
+   * @param limit - Maximum number of results to request.
+   * @returns Matching customers with vehicle summaries.
+   */
+  async findCustomersByName(name: string, limit = 10): Promise<SchedulerCustomerLookupDto[]> {
+    const response = await apiClient.get<SchedulerCustomerLookupDto[]>('/api/customers/by-name', {
+      params: { name, limit },
+    });
+
+    return response.data;
+  },
+
+  /**
    * Creates a new appointment intake via {@code POST /api/appointments/intake}.
    * @param request - Intake details including customer, vehicle, and scheduling info.
    * @returns The newly created appointment.

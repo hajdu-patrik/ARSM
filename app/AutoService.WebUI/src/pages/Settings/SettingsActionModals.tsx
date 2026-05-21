@@ -77,11 +77,19 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
   useEffect(() => {
     if (!isDeleteModalOpen || (deletePassword.length === 0 && deletePasswordConfirm.length === 0)) {
-      setIsDeletePasswordFieldLocked(true);
-      setIsDeletePasswordConfirmFieldLocked(true);
-      setShowDeletePassword(false);
-      setShowDeletePasswordConfirm(false);
+      const frameId = globalThis.requestAnimationFrame(() => {
+        setIsDeletePasswordFieldLocked(true);
+        setIsDeletePasswordConfirmFieldLocked(true);
+        setShowDeletePassword(false);
+        setShowDeletePasswordConfirm(false);
+      });
+
+      return () => {
+        globalThis.cancelAnimationFrame(frameId);
+      };
     }
+
+    return undefined;
   }, [deletePassword, deletePasswordConfirm, isDeleteModalOpen]);
 
   useEffect(() => {

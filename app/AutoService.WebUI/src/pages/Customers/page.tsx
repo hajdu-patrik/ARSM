@@ -6,7 +6,7 @@
  * @module pages/Customers/page
  */
 
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
@@ -14,7 +14,9 @@ import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
 import { useCustomerMutations } from './hooks/useCustomerMutations';
 import { useVehicleMutations } from './hooks/useVehicleMutations';
+import { useCustomerDetailsPanel } from './hooks/useCustomerDetailsPanel';
 import { CustomerFormModal } from './components/CustomerFormModal';
+import type { ResolvedCustomerDetailsPanelTarget } from './components/CustomerDetailsPanel';
 import { CustomerListSection } from './components/CustomerListSection';
 import { CustomersToolbar } from './components/CustomersToolbar';
 import { DeleteCustomerModal } from './components/DeleteCustomerModal';
@@ -65,6 +67,32 @@ const CustomersPageComponent = memo(function CustomersPage() {
     loadVehicleHistory: listState.loadVehicleHistory,
   });
 
+  const detailsPanel = useCustomerDetailsPanel({
+    loadCustomerHistory: listState.loadCustomerHistory,
+    loadVehicleHistory: listState.loadVehicleHistory,
+  });
+
+  const resolvedDetailsTarget = useMemo<ResolvedCustomerDetailsPanelTarget | null>(() => {
+    const target = detailsPanel.target;
+    if (!target) {
+      return null;
+    }
+
+    const customer = listState.customers.find((item) => item.id === target.customerId);
+    if (!customer) {
+      return null;
+    }
+
+    if (target.kind === 'customer') {
+      return { kind: 'customer', customer };
+    }
+
+    const vehicle = (listState.vehiclesByCustomerId[customer.id] ?? [])
+      .find((item) => item.id === target.vehicleId);
+
+    return vehicle ? { kind: 'vehicle', customer, vehicle } : null;
+  }, [detailsPanel.target, listState.customers, listState.vehiclesByCustomerId]);
+
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
@@ -86,28 +114,29 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
       <CustomerListSection
         t={t}
-        locale={i18n.language}
         searchTerm={listState.searchTerm}
         filteredCustomers={listState.filteredCustomers}
         isLoadingCustomers={listState.isLoadingCustomers}
         expandedCustomerIds={listState.expandedCustomerIds}
         vehiclesByCustomerId={listState.vehiclesByCustomerId}
         isLoadingVehiclesByCustomerId={listState.isLoadingVehiclesByCustomerId}
+        onToggleCustomerExpanded={listState.toggleCustomerExpanded}
+        onOpenCustomerDetails={detailsPanel.openCustomerPanel}
+        onOpenEditCustomerModal={customerMutations.openEditCustomerModal}
+        onOpenDeleteCustomerModal={customerMutations.openDeleteCustomerModal}
+        onOpenCreateVehicleModal={vehicleMutations.openCreateVehicleModal}
+        onOpenEditVehicleModal={vehicleMutations.openEditVehicleModal}
+        onOpenDeleteVehicleModal={vehicleMutations.openDeleteVehicleModal}
+        onOpenVehicleDetails={detailsPanel.openVehiclePanel}
+        resolvedDetailsTarget={resolvedDetailsTarget}
+        locale={i18n.language}
         customerHistoryByCustomerId={listState.customerHistoryByCustomerId}
         isLoadingCustomerHistoryByCustomerId={listState.isLoadingCustomerHistoryByCustomerId}
         customerHistorySortByCustomerId={listState.customerHistorySortByCustomerId}
         vehicleHistoryByVehicleId={listState.vehicleHistoryByVehicleId}
         isLoadingVehicleHistoryByVehicleId={listState.isLoadingVehicleHistoryByVehicleId}
         vehicleHistorySortByVehicleId={listState.vehicleHistorySortByVehicleId}
-        activeVehicleHistoryByCustomerId={listState.activeVehicleHistoryByCustomerId}
-        onToggleCustomerExpanded={listState.toggleCustomerExpanded}
-        onOpenEditCustomerModal={customerMutations.openEditCustomerModal}
-        onOpenDeleteCustomerModal={customerMutations.openDeleteCustomerModal}
-        onOpenCreateVehicleModal={vehicleMutations.openCreateVehicleModal}
-        onOpenEditVehicleModal={vehicleMutations.openEditVehicleModal}
-        onOpenDeleteVehicleModal={vehicleMutations.openDeleteVehicleModal}
         onToggleCustomerHistorySort={listState.toggleCustomerHistorySort}
-        onToggleVehicleHistory={listState.toggleVehicleHistory}
         onToggleVehicleHistorySort={listState.toggleVehicleHistorySort}
         onOpenHistoryAppointment={setHistoryAppointment}
       />

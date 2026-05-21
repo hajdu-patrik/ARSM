@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../../components/common/Modal';
-import { dangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import { referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../../utils/formStyles';
 
 interface AppointmentDetailRemoveMechanicModalProps {
   readonly pendingRemoveMechanic: { id: number; fullName: string } | null;
@@ -63,7 +63,7 @@ const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentD
             type="button"
             onClick={onClose}
             disabled={isMutationInFlight}
-            className={secondaryButtonClass}
+            className={referenceChipNeutralButtonClass}
           >
             {t('scheduler.intake.cancel')}
           </button>
@@ -73,7 +73,7 @@ const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentD
               void handleConfirmRemove();
             }}
             disabled={isConfirmDisabled}
-            className={dangerButtonClass}
+            className={referenceChipDangerButtonClass}
           >
             <Trash2 className="h-4 w-4 shrink-0" />
             <span>{t('scheduler.detail.removeMechanic')}</span>

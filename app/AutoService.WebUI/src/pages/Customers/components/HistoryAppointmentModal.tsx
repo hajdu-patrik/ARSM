@@ -9,7 +9,7 @@ import { CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import { schedulerFilterChipButtonClass } from '../../../utils/formStyles';
+import { referenceChipNeutralButtonClass } from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
@@ -56,7 +56,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           <button
             type="button"
             onClick={handleOpenInScheduler}
-            className={schedulerFilterChipButtonClass}
+            className={referenceChipNeutralButtonClass}
             title={t('customers.openInScheduler')}
             aria-label={t('customers.openInScheduler')}
           >

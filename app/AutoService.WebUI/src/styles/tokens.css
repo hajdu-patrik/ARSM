@@ -109,4 +109,13 @@
   --color-arsm-warning-text:        #a16207;  /* warning text (light)            */
   --color-arsm-warning-text-dark:   #ffd978;  /* warning text (dark)             */
   --color-arsm-warning-accent:      #f59e0b;  /* warning dot / active badge fill */
+
+  /* ── Semantic — info (blue) ──────────────────────────────────────────────── */
+  --color-arsm-info-bg:          #eef6ff;  /* info chip/active bg (light)      */
+  --color-arsm-info-bg-dark:     #1b2f4b;  /* info chip/active bg (dark)       */
+  --color-arsm-info-border:      #9cc3f7;  /* info border (light)              */
+  --color-arsm-info-border-dark: #4d6f9e;  /* info border (dark)               */
+  --color-arsm-info-text:        #1f4f8f;  /* info text/icon (light)           */
+  --color-arsm-info-text-dark:   #b9d5ff;  /* info text/icon (dark)            */
+  --color-arsm-info-ring:        #6ea5ef;  /* info ring/emphasis               */
 }

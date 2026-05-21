@@ -1,8 +1,8 @@
 /**
- * Hook that manages the intake modal form state, customer email lookup,
+ * Hook that manages the intake modal form state, live customer lookup,
  * vehicle mode switching, and intake creation submission.
  *
- * Resets all fields when the modal opens, performs customer-by-email
+ * Resets all fields when the modal opens, performs live name/license-plate
  * lookup, derives vehicle create/existing mode, validates the form
  * before submission, and maps backend errors to i18n keys.
  *
@@ -10,7 +10,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SchedulerCreateIntakeRequest, SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
-import { appointmentService } from '../../../services/scheduler/appointment.service';
 import {
   enrichPayloadByLookupState,
   getCreateValidationError,
@@ -22,11 +21,11 @@ import {
 } from '../components/intake/SchedulerIntakeModal.helpers';
 import {
   EMPTY_VEHICLE,
-  type LookupState,
   type VehicleFormState,
   type VehicleMode,
   VEHICLE_NUMERIC_LIMITS,
 } from '../components/intake/SchedulerIntakeModal.types';
+import { useSchedulerIntakeLookup } from './useSchedulerIntakeLookup';
 
 /** Configuration for {@link useSchedulerIntakeForm}. */
 interface UseSchedulerIntakeFormArgs {
@@ -54,9 +53,6 @@ export function useSchedulerIntakeForm({
   onClose,
   onSubmit,
 }: UseSchedulerIntakeFormArgs) {
-  const [lookupState, setLookupState] = useState<LookupState>('idle');
-  const [customerLookup, setCustomerLookup] = useState<SchedulerCustomerLookupDto | null>(null);
-  const [email, setEmail] = useState('');
   const [customerFirstName, setCustomerFirstName] = useState('');
   const [customerMiddleName, setCustomerMiddleName] = useState('');
   const [customerLastName, setCustomerLastName] = useState('');
@@ -66,18 +62,41 @@ export function useSchedulerIntakeForm({
   const [vehicleMode, setVehicleMode] = useState<VehicleMode>('existing');
   const [existingVehicleId, setExistingVehicleId] = useState('');
   const [vehicle, setVehicle] = useState<VehicleFormState>(EMPTY_VEHICLE);
-  const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  const resetVehicleSelectionState = useCallback(() => {
+    setVehicleMode('existing');
+    setExistingVehicleId('');
+    setTaskDescription('');
+  }, []);
+
+  const applyFoundLookupToVehicleState = useCallback((lookup: SchedulerCustomerLookupDto) => {
+    const matchedVehicleId = lookup.matchedVehicleId ?? lookup.vehicles[0]?.id ?? null;
+
+    setVehicleMode(lookup.vehicles.length > 0 ? 'existing' : 'new');
+    setExistingVehicleId(matchedVehicleId ? String(matchedVehicleId) : '');
+  }, []);
+
+  const lookup = useSchedulerIntakeLookup({
+    onLookupReset: resetVehicleSelectionState,
+    onLookupFound: applyFoundLookupToVehicleState,
+    setErrorKey,
+  });
+  const {
+    handleEmailChange,
+    handleLicensePlateLookupChange,
+    handleNameLookupChange,
+    handleSelectNameLookupResult,
+    resetLookupForm,
+  } = lookup.actions;
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    setLookupState('idle');
-    setCustomerLookup(null);
-    setEmail('');
+    resetLookupForm();
     setCustomerFirstName('');
     setCustomerMiddleName('');
     setCustomerLastName('');
@@ -88,58 +107,12 @@ export function useSchedulerIntakeForm({
     setVehicle(EMPTY_VEHICLE);
     setErrorKey(null);
     setDueDateTime(getDefaultDueDate(selectedDate));
-  }, [isOpen, selectedDate]);
+  }, [isOpen, resetLookupForm, selectedDate]);
 
-  const shouldShowCustomerCreate = lookupState === 'not-found';
-  const shouldShowVehicleCreate = lookupState === 'not-found' || vehicleMode === 'new';
-  const customerHasVehicles = (customerLookup?.vehicles.length ?? 0) > 0;
-
-  const resetLookupDependentState = useCallback(() => {
-    setLookupState('idle');
-    setCustomerLookup(null);
-    setVehicleMode('existing');
-    setExistingVehicleId('');
-    setTaskDescription('');
-  }, []);
-
-  const handleEmailChange = useCallback((value: string) => {
-    setEmail(value);
-
-    // Editing the lookup key invalidates previous lookup-derived sections.
-    resetLookupDependentState();
-    setErrorKey(null);
-  }, [resetLookupDependentState]);
-
-  const handleLookup = useCallback(async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setErrorKey('scheduler.intake.errors.emailRequired');
-      return;
-    }
-
-    setIsSearching(true);
-    setErrorKey(null);
-
-    try {
-      const lookup = await appointmentService.findCustomerByEmail(normalizedEmail);
-      if (lookup) {
-        setLookupState('found');
-        setCustomerLookup(lookup);
-        setVehicleMode(lookup.vehicles.length > 0 ? 'existing' : 'new');
-        setExistingVehicleId(lookup.vehicles[0]?.id ? String(lookup.vehicles[0].id) : '');
-      } else {
-        setLookupState('not-found');
-        setCustomerLookup(null);
-        setVehicleMode('new');
-        setExistingVehicleId('');
-      }
-    } catch {
-      resetLookupDependentState();
-      setErrorKey('scheduler.intake.errors.searchFailed');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [email, resetLookupDependentState]);
+  const shouldShowCustomerCreate = lookup.state.lookupState === 'not-found';
+  const shouldShowVehicleCreate = shouldShowCustomerCreate || (lookup.state.lookupState === 'found' && vehicleMode === 'new');
+  const customerHasVehicles = (lookup.state.customerLookup?.vehicles.length ?? 0) > 0;
+  const canCreateIntake = lookup.state.lookupState === 'found' || lookup.state.lookupState === 'not-found';
 
   const handleVehicleField = useCallback((field: keyof VehicleFormState, value: string) => {
     if (field in VEHICLE_NUMERIC_LIMITS) {
@@ -160,11 +133,15 @@ export function useSchedulerIntakeForm({
   const handleCreate = useCallback(async () => {
     setErrorKey(null);
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = (
+      lookup.state.lookupState === 'found'
+        ? lookup.state.customerLookup?.email ?? lookup.state.email
+        : lookup.state.email
+    ).trim().toLowerCase();
     const autoScheduledDate = getDefaultScheduledDate(selectedDate);
 
     const validationError = getCreateValidationError({
-      lookupState,
+      lookupState: lookup.state.lookupState,
       normalizedEmail,
       dueDateTime,
       selectedDate,
@@ -187,7 +164,7 @@ export function useSchedulerIntakeForm({
 
     const payloadError = enrichPayloadByLookupState({
       basePayload,
-      lookupState,
+      lookupState: lookup.state.lookupState,
       vehicleMode,
       existingVehicleId,
       vehicle,
@@ -218,9 +195,9 @@ export function useSchedulerIntakeForm({
     customerMiddleName,
     customerPhone,
     dueDateTime,
-    email,
+    lookup.state.email,
+    lookup.state.lookupState,
     existingVehicleId,
-    lookupState,
     onClose,
     onSubmit,
     selectedDate,
@@ -232,6 +209,8 @@ export function useSchedulerIntakeForm({
 
   const actions = useMemo(() => ({
     handleEmailChange,
+    handleLicensePlateLookupChange,
+    handleNameLookupChange,
     setCustomerFirstName,
     setCustomerMiddleName,
     setCustomerLastName,
@@ -240,16 +219,27 @@ export function useSchedulerIntakeForm({
     setDueDateTime,
     setVehicleMode,
     setExistingVehicleId,
-    handleLookup,
+    handleSelectNameLookupResult,
     handleVehicleField,
     handleCreate,
-  }), [handleCreate, handleEmailChange, handleLookup, handleVehicleField]);
+  }), [
+    handleCreate,
+    handleEmailChange,
+    handleVehicleField,
+    handleLicensePlateLookupChange,
+    handleNameLookupChange,
+    handleSelectNameLookupResult,
+  ]);
 
   return {
     state: {
-      lookupState,
-      customerLookup,
-      email,
+      lookupMode: lookup.state.lookupMode,
+      lookupState: lookup.state.lookupState,
+      customerLookup: lookup.state.customerLookup,
+      nameLookupResults: lookup.state.nameLookupResults,
+      email: lookup.state.email,
+      licensePlateLookup: lookup.state.licensePlateLookup,
+      nameLookup: lookup.state.nameLookup,
       customerFirstName,
       customerMiddleName,
       customerLastName,
@@ -259,7 +249,7 @@ export function useSchedulerIntakeForm({
       vehicleMode,
       existingVehicleId,
       vehicle,
-      isSearching,
+      isSearching: lookup.state.isSearching,
       isSubmitting,
       errorKey,
     },
@@ -267,6 +257,7 @@ export function useSchedulerIntakeForm({
       shouldShowCustomerCreate,
       shouldShowVehicleCreate,
       customerHasVehicles,
+      canCreateIntake,
     },
     actions,
   };

@@ -4,11 +4,27 @@
    utility classes alone (pseudo-elements, browser-native parts, animations).
    ───────────────────────────────────────────────────────────────────────────── */
 @layer components {
-  /* Invert the browser date/time picker icon for dark-on-light inputs */
+  /* Keep scrolling enabled while hiding the visual scrollbar chrome. */
+  .arsm-scroll-no-bar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .arsm-scroll-no-bar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  /* Keep native date/time picker icon readable on both light and dark surfaces. */
   .intake-datetime-input::-webkit-calendar-picker-indicator {
-    filter: brightness(0) saturate(100%) invert(100%);
+    filter: brightness(0) saturate(100%);
     opacity: 1;
     cursor: pointer;
+  }
+
+  .dark .intake-datetime-input::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(100%);
   }
 
   /* Profile picture crop — zoom range slider */

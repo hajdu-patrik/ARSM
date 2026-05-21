@@ -2,7 +2,16 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
-import { buttonClass, formFieldGridClass, formFieldGroupClass, inputClass, labelClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { DRIVETRAIN_TYPES } from '../../../types/customers/customers.types';
+import {
+  formFieldGridClass,
+  formFieldGroupClass,
+  inputClass,
+  labelClass,
+  referenceChipNeutralButtonClass,
+  referenceChipPrimaryButtonClass,
+  selectWrapperClass,
+} from '../../../utils/formStyles';
 import type { VehicleFormState } from '../helpers';
 
 type VehicleModalMode = 'create' | 'edit';
@@ -43,7 +52,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className={secondaryButtonClass}
+            className={referenceChipNeutralButtonClass}
           >
             {t('settings.cancel')}
           </button>
@@ -51,7 +60,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             type="submit"
             form="customers-vehicle-form"
             disabled={isSaving || !isSaveEnabled}
-            className={buttonClass}
+            className={referenceChipPrimaryButtonClass}
           >
             <Save className="h-4 w-4 shrink-0" />
             <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>
@@ -70,6 +79,20 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               onChange={(event) => setForm((prev) => ({ ...prev, licensePlate: event.target.value }))}
               className={inputClass}
               placeholder={t('customers.licensePlatePlaceholder')}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div className={formFieldGroupClass}>
+            <label htmlFor="vehicle-vin" className={labelClass}>{t('customers.vin')}</label>
+            <input
+              id="vehicle-vin"
+              type="text"
+              value={form.vin}
+              onChange={(event) => setForm((prev) => ({ ...prev, vin: event.target.value.toUpperCase() }))}
+              className={`${inputClass} uppercase`}
+              placeholder={t('customers.vinPlaceholder')}
+              maxLength={17}
               disabled={isSaving}
             />
           </div>
@@ -129,12 +152,12 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-power" className={labelClass}>{t('customers.enginePowerHp')}</label>
+            <label htmlFor="vehicle-power" className={labelClass}>{t('customers.enginePowerKw')}</label>
             <input
               id="vehicle-power"
               type="number"
-              value={form.enginePowerHp}
-              onChange={(event) => setForm((prev) => ({ ...prev, enginePowerHp: event.target.value }))}
+              value={form.enginePowerKw}
+              onChange={(event) => setForm((prev) => ({ ...prev, enginePowerKw: event.target.value }))}
               className={inputClass}
               placeholder={t('customers.enginePowerPlaceholder')}
               disabled={isSaving}
@@ -142,16 +165,25 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-torque" className={labelClass}>{t('customers.engineTorqueNm')}</label>
-            <input
-              id="vehicle-torque"
-              type="number"
-              value={form.engineTorqueNm}
-              onChange={(event) => setForm((prev) => ({ ...prev, engineTorqueNm: event.target.value }))}
-              className={inputClass}
-              placeholder={t('customers.engineTorquePlaceholder')}
-              disabled={isSaving}
-            />
+            <label htmlFor="vehicle-drivetrain" className={labelClass}>{t('customers.drivetrainType')}</label>
+            <div className={selectWrapperClass}>
+              <select
+                id="vehicle-drivetrain"
+                value={form.drivetrainType}
+                onChange={(event) => setForm((prev) => ({ ...prev, drivetrainType: event.target.value as VehicleFormState['drivetrainType'] }))}
+                className={`${inputClass} min-w-0 truncate`}
+                disabled={isSaving}
+              >
+                <option value="" disabled hidden>
+                  {t('customers.drivetrainPlaceholder')}
+                </option>
+                {DRIVETRAIN_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {t(`vehicle.drivetrain.${type}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </form>

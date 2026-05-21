@@ -3,9 +3,9 @@ import { LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
-  buttonClass,
   compactSelectFullClass,
   equalWidthControlGroupClass,
+  referenceChipPrimaryButtonClass,
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
@@ -148,7 +148,7 @@ export const MechanicsSection = memo(function MechanicsSection({
               type="button"
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className={`${buttonClass} min-h-11 px-3 py-2 text-sm`}
+              className={`${referenceChipPrimaryButtonClass} min-h-11 px-3 py-2 text-xs`}
             >
               <span className="min-w-0 truncate">{isAssigning ? t('scheduler.detail.saving') : t('scheduler.detail.addMechanic')}</span>
             </button>

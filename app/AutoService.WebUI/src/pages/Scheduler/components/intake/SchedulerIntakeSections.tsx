@@ -1,9 +1,8 @@
 import { memo } from 'react';
-import { Search, UserCheck, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
+import { DRIVETRAIN_TYPES } from '../../../../types/customers/customers.types';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
-	buttonClass,
 	controlRowClass,
 	formFieldGridClass,
 	getTogglePillClass,
@@ -16,7 +15,7 @@ import {
 	selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
-import type { LookupState, VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
+import type { VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
 
 interface SchedulerIntakeHeaderProps {
 	readonly selectedDayLabel: string;
@@ -65,92 +64,14 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 	);
 });
 
-interface SchedulerIntakeLookupProps {
-	readonly lookupState: LookupState;
-	readonly customerLookup: SchedulerCustomerLookupDto | null;
-	readonly email: string;
-	readonly isSearching: boolean;
-	readonly translate: TFunction;
-	readonly onEmailChange: (value: string) => void;
-	readonly onLookup: () => void;
-}
-
-export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupSection({
-	lookupState,
-	customerLookup,
-	email,
-	isSearching,
-	translate,
-	onEmailChange,
-	onLookup,
-}: SchedulerIntakeLookupProps) {
-	return (
-		<div className={`${insetSurfaceClass} relative space-y-3 overflow-hidden p-3.5`}>
-			<div
-				aria-hidden="true"
-				className="arsm-intake-sheen-soft pointer-events-none absolute inset-x-0 top-0 h-10"
-			/>
-			<h3 className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
-				{translate('scheduler.intake.customerLookup')}
-			</h3>
-
-			<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
-				<label className={`min-w-0 flex-1 ${intakeFieldWrapperClass}`}>
-					<span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerEmail')}</span>
-					<input
-						type="email"
-						data-testid="scheduler-intake-customer-email"
-						value={email}
-						onChange={(event) => onEmailChange(event.target.value)}
-						placeholder={translate('scheduler.intake.customerEmailPlaceholder')}
-						className={`${intakeInputClass} truncate`}
-					/>
-				</label>
-
-				<button
-					type="button"
-					data-testid="scheduler-intake-search"
-					onClick={onLookup}
-					disabled={isSearching}
-					className={`${buttonClass} max-[350px]:w-full sm:shrink-0`}
-				>
-					<Search className="h-4 w-4 shrink-0" />
-					<span className="truncate">{isSearching ? translate('scheduler.intake.searching') : translate('scheduler.intake.search')}</span>
-				</button>
-			</div>
-
-			{lookupState === 'found' && customerLookup && (
-				<div className="fade-in-up rounded-xl border border-arsm-success-border/60 bg-arsm-success-bg px-3.5 py-2.5 text-sm text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
-					<div className="flex min-w-0 items-center gap-2 font-semibold">
-						<UserCheck className="h-4 w-4 shrink-0" />
-						<span className="min-w-0 truncate">{translate('scheduler.intake.customerFound')}</span>
-					</div>
-					<p className="mt-1 truncate">
-						{customerLookup.firstName} {customerLookup.middleName ?? ''} {customerLookup.lastName}
-					</p>
-					<p className="truncate text-xs opacity-80">{customerLookup.email}</p>
-				</div>
-			)}
-
-			{lookupState === 'not-found' && (
-				<div className="fade-in-up rounded-xl border border-arsm-warning-border/60 bg-arsm-warning-bg px-3.5 py-2.5 text-sm text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark">
-					<div className="flex min-w-0 items-center gap-2 font-semibold">
-						<UserPlus className="h-4 w-4 shrink-0" />
-						<span className="min-w-0 truncate">{translate('scheduler.intake.customerNotFound')}</span>
-					</div>
-					<p className="mt-1 text-xs">{translate('scheduler.intake.customerCreateHint')}</p>
-				</div>
-			)}
-		</div>
-	);
-});
-
 interface SchedulerIntakeCustomerFormProps {
+	readonly customerEmail: string;
 	readonly customerFirstName: string;
 	readonly customerMiddleName: string;
 	readonly customerLastName: string;
 	readonly customerPhone: string;
 	readonly translate: TFunction;
+	readonly onCustomerEmailChange: (value: string) => void;
 	readonly onCustomerFirstNameChange: (value: string) => void;
 	readonly onCustomerMiddleNameChange: (value: string) => void;
 	readonly onCustomerLastNameChange: (value: string) => void;
@@ -158,11 +79,13 @@ interface SchedulerIntakeCustomerFormProps {
 }
 
 export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomerForm({
+	customerEmail,
 	customerFirstName,
 	customerMiddleName,
 	customerLastName,
 	customerPhone,
 	translate,
+	onCustomerEmailChange,
 	onCustomerFirstNameChange,
 	onCustomerMiddleNameChange,
 	onCustomerLastNameChange,
@@ -173,6 +96,18 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
 			<p className="text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark sm:col-span-2">
 				{translate('scheduler.intake.personalInformation')}
 			</p>
+
+			<label className={`${intakeFieldWrapperClass} sm:col-span-2`}>
+				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerEmail')}</span>
+				<input
+					type="email"
+					data-testid="scheduler-intake-customer-email"
+					value={customerEmail}
+					onChange={(event) => onCustomerEmailChange(event.target.value)}
+					placeholder={translate('scheduler.intake.customerEmailPlaceholder')}
+					className={`${intakeInputClass} truncate`}
+				/>
+			</label>
 
 			<label className={intakeFieldWrapperClass}>
 				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerFirstName')}</span>
@@ -316,6 +251,17 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 			</label>
 
 			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleVin')}</span>
+				<input
+					value={vehicle.vin}
+					onChange={(event) => onVehicleFieldChange('vin', event.target.value.toUpperCase())}
+					placeholder={translate('scheduler.intake.vehicleVinPlaceholder')}
+					className={`${intakeInputClass} uppercase`}
+					maxLength={17}
+				/>
+			</label>
+
+			<label className={intakeFieldWrapperClass}>
 				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleBrand')}</span>
 				<input
 					value={vehicle.brand}
@@ -362,29 +308,36 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 			</label>
 
 			<label className={intakeFieldWrapperClass}>
-				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleEnginePowerHp')}</span>
+				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleEnginePowerKw')}</span>
 				<input
 					type="number"
 					min={0}
 					max={50000}
-					value={vehicle.enginePowerHp}
-					onChange={(event) => onVehicleFieldChange('enginePowerHp', event.target.value)}
-					placeholder={translate('scheduler.intake.vehicleEnginePowerHpPlaceholder')}
+					value={vehicle.enginePowerKw}
+					onChange={(event) => onVehicleFieldChange('enginePowerKw', event.target.value)}
+					placeholder={translate('scheduler.intake.vehicleEnginePowerKwPlaceholder')}
 					className={intakeInputClass}
 				/>
 			</label>
 
 			<label className={intakeFieldWrapperClass}>
-				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleEngineTorqueNm')}</span>
-				<input
-					type="number"
-					min={0}
-					max={50000}
-					value={vehicle.engineTorqueNm}
-					onChange={(event) => onVehicleFieldChange('engineTorqueNm', event.target.value)}
-					placeholder={translate('scheduler.intake.vehicleEngineTorqueNmPlaceholder')}
-					className={intakeInputClass}
-				/>
+				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.vehicleDrivetrainType')}</span>
+				<div className={selectWrapperClass}>
+					<select
+						value={vehicle.drivetrainType}
+						onChange={(event) => onVehicleFieldChange('drivetrainType', event.target.value)}
+						className={`${intakeInputClass} truncate`}
+					>
+						<option value="" disabled hidden>
+							{translate('scheduler.intake.vehicleDrivetrainPlaceholder')}
+						</option>
+						{DRIVETRAIN_TYPES.map((type) => (
+							<option key={type} value={type}>
+								{translate(`vehicle.drivetrain.${type}`)}
+							</option>
+						))}
+					</select>
+				</div>
 			</label>
 		</div>
 	);

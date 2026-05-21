@@ -7,10 +7,10 @@
 export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
 
 /** Compact input variant with smaller padding, used in detail modal edit fields. */
-export const inputClassCompact = 'w-full rounded-xl border border-arsm-border bg-arsm-input px-2 py-1 text-sm text-arsm-primary outline-none transition focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:ring-arsm-focus-ring/24';
+export const inputClassCompact = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Intake-oriented input variant used by scheduler intake controls. */
-export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input/90 px-3.5 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark/95 dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:ring-arsm-focus-ring/24';
+export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
 
 /** Scheduler intake textarea variant. */
 export const intakeTextareaClass = `${intakeInputClass} resize-y`;
@@ -19,7 +19,7 @@ export const intakeTextareaClass = `${intakeInputClass} resize-y`;
 export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClass}`;
 
 /** Compact select/input field variant for dense scheduler controls. */
-export const compactSelectClass = 'h-10 min-h-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition focus-visible:border-arsm-border focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-arsm-border focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:outline-arsm-border-dark';
+export const compactSelectClass = 'h-11 min-h-11 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/24';
 
 /** Full-width compact select with truncation for bounded wrappers. */
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
@@ -161,6 +161,17 @@ export const compactSortToggleButtonClass = `inline-flex h-11 min-h-11 w-auto mi
 /** Compact scheduler filter button used by Date ascending / Show all controls. */
 export const schedulerFilterChipButtonClass = `inline-flex h-8 min-h-8 w-auto min-w-0 shrink-0 items-center justify-center gap-1 rounded-full border border-arsm-border bg-arsm-card px-2.5 py-1 text-[11px] font-semibold leading-none text-arsm-label whitespace-nowrap hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark/80 ${buttonMicroInteractionClass}`;
 
+const referenceChipActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold leading-none whitespace-nowrap ring-1 ring-transparent disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass}`;
+
+/** Reference chip-like neutral action button used by customer detail/history controls. */
+export const referenceChipNeutralButtonClass = `${referenceChipActionBaseClass} border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/45 hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/45 dark:hover:bg-arsm-hover-dark/90`;
+
+/** Reference chip-like primary action button used by customer list/detail controls. */
+export const referenceChipPrimaryButtonClass = `${referenceChipActionBaseClass} border-arsm-accent/60 bg-arsm-accent-subtle text-arsm-primary hover:border-arsm-accent hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark/25 dark:text-arsm-primary-dark dark:hover:border-arsm-accent-dark dark:hover:bg-arsm-accent-dark/35`;
+
+/** Reference chip-like danger action button used by destructive confirmation actions. */
+export const referenceChipDangerButtonClass = `${referenceChipActionBaseClass} border-arsm-error-border/75 bg-arsm-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-soft dark:border-arsm-error-dark/75 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85`;
+
 const customersToolbarActionBaseClass = `inline-flex h-9 min-h-9 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-3.5 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass}`;
 
 /** Neutral toolbar-like action button used for list sorting/edit actions. */
@@ -204,14 +215,14 @@ export const cardClass = 'arsm-card-surface';
 /** Inset panel surface for summary strips, intake blocks, and helper sections. */
 export const insetSurfaceClass = 'arsm-surface-inset';
 
-/** Primary action button with accent color and disabled states. */
-export const buttonClass = 'arsm-btn-primary';
+/** Primary action button aligned to the quick-intake toolbar style. */
+export const buttonClass = customersToolbarPrimaryButtonClass;
 
-/** Secondary action button with neutral border treatment. */
-export const secondaryButtonClass = 'arsm-btn-secondary';
+/** Secondary action button aligned to the quick-intake toolbar style. */
+export const secondaryButtonClass = customersToolbarNeutralButtonClass;
 
-/** Destructive action button with semantic error treatment. */
-export const dangerButtonClass = 'arsm-btn-danger';
+/** Destructive action button aligned to the quick-intake toolbar style. */
+export const dangerButtonClass = customersToolbarDangerButtonClass;
 
 /** Standard responsive page container used by most top-level pages. */
 export const pageShellClass = 'arsm-page-shell';

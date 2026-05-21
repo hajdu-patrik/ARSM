@@ -75,13 +75,12 @@ const ErrorPageComponent = memo(function ErrorPage({
 	secondsLeft,
 }: ErrorPageProps) {
 	const { t: translate } = useTranslation();
-	const [resolvedImageSrc, setResolvedImageSrc] = useState(imageSrc);
+	const [resolvedImage, setResolvedImage] = useState({ imageSrc, src: imageSrc });
+	const resolvedImageSrc = resolvedImage.imageSrc === imageSrc ? resolvedImage.src : imageSrc;
 
 	useEffect(() => {
 		let isDisposed = false;
 		let cleanup: (() => void) | undefined;
-
-		setResolvedImageSrc(imageSrc);
 
 		void (async () => {
 			const cachedSource = await getCachedErrorIllustrationSource(imageSrc);
@@ -91,7 +90,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 			}
 
 			cleanup = cachedSource.dispose;
-			setResolvedImageSrc(cachedSource.src);
+			setResolvedImage({ imageSrc, src: cachedSource.src });
 		})();
 
 		return () => {

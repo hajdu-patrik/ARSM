@@ -206,6 +206,11 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
           displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
         />
         <VehicleValueRow
+          label={t('scheduler.intake.vehicleVin')}
+          displayValue={vehicle.vin}
+          displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
+        />
+        <VehicleValueRow
           label={t('scheduler.intake.vehicleBrand')}
           displayValue={vehicle.brand}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
@@ -226,13 +231,13 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleEnginePowerHp')}
-          displayValue={`${vehicle.enginePowerHp} HP`}
+          label={t('scheduler.intake.vehicleEnginePowerKw')}
+          displayValue={`${vehicle.enginePowerKw} kW`}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleEngineTorqueNm')}
-          displayValue={`${vehicle.engineTorqueNm} Nm`}
+          label={t('scheduler.intake.vehicleDrivetrainType')}
+          displayValue={t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
           displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
         />
       </div>

@@ -1,5 +1,7 @@
 /** Scheduler request/response type contracts. */
 
+import type { DrivetrainType } from '../customers/customers.types';
+
 /**
  * Summary representation of a customer associated with a vehicle.
  */
@@ -17,6 +19,8 @@ export interface VehicleDto {
   id: number;
   /** License plate number (e.g. {@code "ABC-123"}). */
   licensePlate: string;
+  /** Vehicle identification number. */
+  vin: string;
   /** Vehicle manufacturer brand. */
   brand: string;
   /** Vehicle model name. */
@@ -25,10 +29,10 @@ export interface VehicleDto {
   year: number;
   /** Current odometer reading in kilometers. */
   mileageKm: number;
-  /** Engine power in horsepower. */
-  enginePowerHp: number;
-  /** Engine torque in Newton-meters. */
-  engineTorqueNm: number;
+  /** Engine power in kilowatts. */
+  enginePowerKw: number;
+  /** Drivetrain category. */
+  drivetrainType: DrivetrainType;
   /** Owner of this vehicle. */
   customer: CustomerSummaryDto;
 }
@@ -114,6 +118,8 @@ export interface SchedulerVehicleLookupDto {
   id: number;
   /** License plate number. */
   licensePlate: string;
+  /** Vehicle identification number. */
+  vin: string;
   /** Vehicle manufacturer brand. */
   brand: string;
   /** Vehicle model name. */
@@ -122,10 +128,10 @@ export interface SchedulerVehicleLookupDto {
   year: number;
   /** Current odometer reading in kilometers. */
   mileageKm: number;
-  /** Engine power in horsepower. */
-  enginePowerHp: number;
-  /** Engine torque in Newton-meters. */
-  engineTorqueNm: number;
+  /** Engine power in kilowatts. */
+  enginePowerKw: number;
+  /** Drivetrain category. */
+  drivetrainType: DrivetrainType;
 }
 
 /**
@@ -148,6 +154,8 @@ export interface SchedulerCustomerLookupDto {
   phoneNumber: string | null;
   /** Vehicles registered to this customer. */
   vehicles: SchedulerVehicleLookupDto[];
+  /** Vehicle matched by the lookup endpoint, when applicable. */
+  matchedVehicleId?: number | null;
 }
 
 /**
@@ -157,6 +165,8 @@ export interface SchedulerCustomerLookupDto {
 export interface SchedulerNewVehicleRequest {
   /** License plate number of the new vehicle. */
   licensePlate: string;
+  /** Vehicle identification number. */
+  vin: string;
   /** Vehicle manufacturer brand. */
   brand: string;
   /** Vehicle model name. */
@@ -165,10 +175,10 @@ export interface SchedulerNewVehicleRequest {
   year: number;
   /** Current odometer reading in kilometers. */
   mileageKm: number;
-  /** Engine power in horsepower. */
-  enginePowerHp: number;
-  /** Engine torque in Newton-meters. */
-  engineTorqueNm: number;
+  /** Engine power in kilowatts. */
+  enginePowerKw: number;
+  /** Drivetrain category. */
+  drivetrainType: DrivetrainType;
 }
 
 /**
@@ -219,6 +229,8 @@ export interface UpdateAppointmentRequest {
 export interface UpdateAppointmentVehicleRequest {
   /** Vehicle license plate number. */
   licensePlate: string;
+  /** Vehicle identification number. */
+  vin: string;
   /** Vehicle manufacturer brand. */
   brand: string;
   /** Vehicle model name. */
@@ -227,8 +239,8 @@ export interface UpdateAppointmentVehicleRequest {
   year: number;
   /** Vehicle odometer reading in kilometers. */
   mileageKm: number;
-  /** Vehicle engine power in horsepower. */
-  enginePowerHp: number;
-  /** Vehicle engine torque in Newton-meters. */
-  engineTorqueNm: number;
+  /** Vehicle engine power in kilowatts. */
+  enginePowerKw: number;
+  /** Vehicle drivetrain category. */
+  drivetrainType: DrivetrainType;
 }
