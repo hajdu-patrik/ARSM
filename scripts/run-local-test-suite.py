@@ -210,15 +210,34 @@ class LocalTestRunner:
         """Execute HTTP endpoint test suite via HTTPYAC."""
         npx = self._required_executable("npx")
         environment = {**self.environment, "NODE_TLS_REJECT_UNAUTHORIZED": "0"}
+        upload_result = self.command_runner.run(
+            "http-profile-picture-upload-check",
+            [sys.executable, "tests/API/profile/profile-picture-upload-check.py"],
+            self.root_dir,
+            environment,
+        )
+
         result = self.command_runner.run(
             "http",
             [npx, "--yes", "httpyac", "tests/API/**/*.http", "--all", "--json"],
             self.root_dir,
             environment,
         )
+
         details = self._http_summary(result.stdout)
-        status = "passed" if result.return_code == 0 and details.get("failedRequests", 0) == 0 and details.get("erroredRequests", 0) == 0 else "failed"
-        return SuiteResult("http", status, result.return_code, details, self._tail(result.stdout + result.stderr))
+        upload_details = self._extract_json_payload(upload_result.stdout) or {
+            "status": "failed",
+            "error": "Profile picture upload check did not return JSON output.",
+        }
+        details["profilePictureUploadCheck"] = upload_details
+
+        http_requests_are_clean = result.return_code == 0 and details.get("failedRequests", 0) == 0 and details.get("erroredRequests", 0) == 0
+        upload_status = str(upload_details.get("status", "failed"))
+        upload_checks_passed = upload_result.return_code == 0 and upload_status in {"passed", "skipped"}
+        status = "passed" if http_requests_are_clean and upload_checks_passed else "failed"
+
+        output = result.stdout + result.stderr + upload_result.stdout + upload_result.stderr
+        return SuiteResult("http", status, 0 if status == "passed" else 1, details, self._tail(output))
 
     def _run_sql(self) -> SuiteResult:
         """Execute SQL validation suite against PostgreSQL container."""
@@ -313,11 +332,16 @@ class LocalTestRunner:
 
     @staticmethod
     def _http_summary(output: str) -> dict[str, object]:
-        try:
-            payload = json.loads(output)
-            summary = payload.get("summary", {}) if isinstance(payload, dict) else {}
-        except json.JSONDecodeError:
+        payload = LocalTestRunner._extract_httpyac_payload(output)
+        if not isinstance(payload, dict):
+            regex_summary = LocalTestRunner._extract_http_summary_with_regex(output)
+            if regex_summary is not None:
+                return regex_summary
             return {"parseError": "HTTPYAC JSON output could not be parsed."}
+
+        summary = payload.get("summary", {})
+        if not isinstance(summary, dict):
+            return {"parseError": "HTTPYAC summary payload was not found in command output."}
 
         return {
             "totalRequests": int(summary.get("totalRequests", 0) or 0),
@@ -325,6 +349,83 @@ class LocalTestRunner:
             "failedRequests": int(summary.get("failedRequests", 0) or 0),
             "erroredRequests": int(summary.get("erroredRequests", 0) or 0),
         }
+
+    @staticmethod
+    def _extract_http_summary_with_regex(output: str) -> dict[str, int] | None:
+        summary_keys = ("totalRequests", "successRequests", "failedRequests", "erroredRequests")
+        summary: dict[str, int] = {}
+
+        for key in summary_keys:
+            matches = re.findall(rf'"{key}"\s*:\s*(\d+)', output)
+            if not matches:
+                return None
+            summary[key] = int(matches[-1])
+
+        return summary
+
+    @staticmethod
+    def _extract_httpyac_payload(output: str) -> dict[str, object] | None:
+        payload = LocalTestRunner._extract_json_payload(output)
+        if isinstance(payload, dict):
+            summary = payload.get("summary")
+            if isinstance(summary, dict) and any(
+                key in summary for key in ("totalRequests", "successRequests", "failedRequests", "erroredRequests")
+            ):
+                return payload
+
+        decoder = json.JSONDecoder()
+        best_payload: dict[str, object] | None = None
+        best_total_requests = -1
+
+        for index, char in enumerate(output):
+            if char != "{":
+                continue
+
+            try:
+                candidate, _ = decoder.raw_decode(output[index:])
+            except json.JSONDecodeError:
+                continue
+
+            if not isinstance(candidate, dict):
+                continue
+
+            summary = candidate.get("summary")
+            if not isinstance(summary, dict):
+                continue
+
+            if not any(key in summary for key in ("totalRequests", "successRequests", "failedRequests", "erroredRequests")):
+                continue
+
+            total_requests = int(summary.get("totalRequests", 0) or 0)
+            if total_requests >= best_total_requests:
+                best_total_requests = total_requests
+                best_payload = candidate
+
+        return best_payload
+
+    @staticmethod
+    def _extract_json_payload(output: str) -> dict[str, object] | None:
+        try:
+            payload = json.loads(output)
+            if isinstance(payload, dict):
+                return payload
+        except json.JSONDecodeError:
+            pass
+
+        decoder = json.JSONDecoder()
+        for index, char in enumerate(output):
+            if char != "{":
+                continue
+
+            try:
+                payload, _ = decoder.raw_decode(output[index:])
+            except json.JSONDecodeError:
+                continue
+
+            if isinstance(payload, dict):
+                return payload
+
+        return None
 
     @staticmethod
     def _tail(output: str, limit: int = 40) -> list[str]:

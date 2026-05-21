@@ -79,21 +79,16 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 
 ###
 
-### [Note][Profile] Multipart upload is not supported in .http reliably; use curl for PUT /api/profile/picture
-# curl example:
-# curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
-#   -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
-#   -F "file=@C:/path/to/profile-picture.png"
+### [Note][Profile] Multipart upload edge checks are automated by the local test runner
+# Canonical command:
+# python scripts/run-local-test-suite.py http
 #
-# Negative magic-byte checks:
-# 1) MIME/content mismatch should return 422.
-#    curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
-#      -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
-#      -F "file=@C:/path/to/image.png;type=image/jpeg"
-# 2) Non-image payload with image MIME should return 422.
-#    curl -k -X PUT "{{AutoService_ApiService_HostAddress}}/api/profile/picture" \
-#      -H "Cookie: autoservice_at=<ACCESS_COOKIE>; autoservice_rt=<REFRESH_COOKIE>" \
-#      -F "file=@C:/path/to/not-an-image.txt;type=image/png"
+# The runner executes tests/API/profile/profile-picture-upload-check.py after HTTPYAC,
+# covering:
+# - valid PNG upload (200/204)
+# - MIME/content mismatch (422)
+# - invalid magic bytes (422)
+# - cleanup delete and logout
 
 ###
 
