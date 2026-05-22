@@ -12,7 +12,7 @@ This document briefly summarizes how the AutoService dashboard UI/UX plan was pr
 ## Language
 
 - English: this file
-- Hungarian: [Dashboard-UI-UX-HU.md](https://github.com/hajdu-patrik/ARSM/blob/main/docs/Frontend-UI-UX/Dashboard-UI-UX-HU.md)
+- Hungarian: [Dashboard-UI-UX(HU).md](Dashboard-UI-UX(HU).md)
 
 ---
 
