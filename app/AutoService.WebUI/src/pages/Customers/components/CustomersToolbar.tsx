@@ -3,8 +3,12 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
 import {
 	cardClass,
+	inputGroupContainerClass,
+	inputGroupIconClass,
 	referenceChipNeutralButtonClass,
 	referenceChipPrimaryButtonClass,
+	searchClearButtonClass,
+	searchInputClass,
 } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
 import type { SortDirection } from '../page.types';
@@ -30,16 +34,16 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 }: CustomersToolbarProps) {
 	return (
 		<section className={cardClass}>
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div className="relative w-full sm:max-w-md">
-					<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-arsm-muted dark:text-arsm-muted-dark" />
+			<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
+					<Search className={inputGroupIconClass} />
 					<input
 						data-testid="customers-search-input"
 						type="text"
 						value={searchTerm}
 						onChange={(event) => onSearchChange(filterNameInput(event.target.value))}
 						placeholder={t('customers.searchPlaceholder')}
-						className="w-full rounded-xl border border-arsm-border bg-arsm-input py-2 pl-9 pr-10 text-sm text-arsm-primary focus:border-arsm-accent focus:outline-none dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark"
+						className={searchInputClass}
 					/>
 					{searchTerm.length > 0 && (
 						<button
@@ -47,14 +51,14 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 							type="button"
 							onClick={onClearSearch}
 							title={t('customers.clearSearch')}
-							className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-arsm-label transition hover:bg-arsm-toggle-bg dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark"
+							className={searchClearButtonClass}
 						>
 							<X className="h-4 w-4" aria-hidden="true" />
 						</button>
 					)}
 				</div>
 
-				<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+				<div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
 					<button
 						data-testid="customers-sort-toggle"
 						type="button"

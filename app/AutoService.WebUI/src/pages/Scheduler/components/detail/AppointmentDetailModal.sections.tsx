@@ -5,7 +5,12 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import {
+  baseSectionHeadingTextClass,
+  compactPrimaryValueTextClass,
+  compactTwoColumnGridClass,
   inputClassCompact,
+  mutedMetaTextClass,
+  mutedSecondaryTextClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
 } from '../../../../utils/formStyles';
@@ -124,7 +129,7 @@ const HeaderSection = memo(function HeaderSection({
     <div className={`${schedulerDetailRowClass} px-3.5 py-2.5`}>
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <StatusBadge status={appointmentStatus} />
-        <span className="truncate text-sm text-arsm-muted dark:text-arsm-muted-dark">{formattedDate}</span>
+        <span className={`truncate ${mutedSecondaryTextClass}`}>{formattedDate}</span>
       </div>
     </div>
   );
@@ -155,7 +160,7 @@ const DueSection = memo(function DueSection({
           : 'border-arsm-border bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark'
       }`}
     >
-      <div className="flex min-w-0 items-center gap-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">
+      <div className={`flex min-w-0 items-center gap-2 ${mutedSecondaryTextClass}`}>
         <Clock3 className="h-4 w-4 shrink-0" />
         {t('scheduler.due.label')}
       </div>
@@ -164,12 +169,12 @@ const DueSection = memo(function DueSection({
       >
         {t(dueState.labelKey, dueState.labelValues)}
       </p>
-      <p className="mt-0.5 text-xs text-arsm-muted dark:text-arsm-muted-dark">
+      <p className={`mt-0.5 ${mutedMetaTextClass}`}>
         {t('scheduler.due.exact', { date: dueDateLabel })}
       </p>
       {isEditing && (
-        <label className="mt-2 flex flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark">
-          <span className="text-xs text-arsm-muted dark:text-arsm-muted-dark">
+        <label className={`mt-2 flex flex-col gap-1 ${compactPrimaryValueTextClass}`}>
+          <span className={mutedMetaTextClass}>
             {t('scheduler.intake.dueDateTime')}
           </span>
           <input
@@ -196,49 +201,49 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className="mb-2 min-w-0 break-words text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+      <h4 className={`mb-2 min-w-0 break-words ${baseSectionHeadingTextClass}`}>
         {title}
       </h4>
-      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className={compactTwoColumnGridClass}>
         <VehicleValueRow
           label={t('scheduler.detail.licensePlate')}
           displayValue={vehicle.licensePlate}
-          displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleVin')}
           displayValue={vehicle.vin}
-          displayClassName="truncate text-sm font-mono text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleBrand')}
           displayValue={vehicle.brand}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleModel')}
           displayValue={vehicle.model}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleYear')}
           displayValue={String(vehicle.year)}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleMileageKm')}
           displayValue={`${vehicle.mileageKm.toLocaleString()} km`}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleEnginePowerKw')}
           displayValue={`${vehicle.enginePowerKw} kW`}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('scheduler.intake.vehicleDrivetrainType')}
           displayValue={t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
-          displayClassName="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark"
+          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
       </div>
     </div>
@@ -260,7 +265,7 @@ const VehicleValueRow = memo(function VehicleValueRow({
 
   return (
     <div className={`${schedulerDetailRowClass} flex min-w-0 items-center justify-between gap-3`}>
-      <span className="shrink-0 text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</span>
+      <span className={`shrink-0 ${mutedMetaTextClass}`}>{label}</span>
       <span className={valueClassName}>{displayValue}</span>
     </div>
   );
@@ -283,7 +288,7 @@ const TaskSection = memo(function TaskSection({
 }: TaskSectionProps) {
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
+      <h4 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
         {t('scheduler.detail.task')}
       </h4>
       {isEditing ? (
@@ -294,7 +299,7 @@ const TaskSection = memo(function TaskSection({
           className={`${inputClassCompact} min-h-[6.5rem] px-3 py-2 text-arsm-primary dark:text-arsm-primary-dark`}
         />
       ) : (
-        <p className="break-words text-sm text-arsm-primary dark:text-arsm-primary-dark">{displayTask}</p>
+        <p className={`break-words ${compactPrimaryValueTextClass}`}>{displayTask}</p>
       )}
     </div>
   );

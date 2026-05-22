@@ -1,6 +1,7 @@
 export const enCore = {
   login: {
-    title: 'Welcome ARSM',
+    title: 'Welcome to ARSM',
+    logoAlt: 'AutoService logo',
     subtitle: 'Sign in to continue!',
     emailPlaceholder: 'Enter your email address!',
     phonePlaceholder: 'Enter your phone number!',
@@ -256,9 +257,11 @@ export const enCore = {
       unassignConfirmTitle: 'Confirm unassign',
       unassignConfirmMessage: 'Are you sure you want to leave this appointment?',
       confirmUnassign: 'Unassign',
+      unassigning: 'Unassigning...',
       claimConfirmTitle: 'Confirm claim',
       claimConfirmMessage: 'Are you sure you want to claim this appointment?',
       confirmClaim: 'Claim',
+      claiming: 'Claiming...',
       statusChangeConfirmTitle: 'Confirm status change',
       statusChangeConfirmMessage: 'Change appointment status to {{status}}?',
       confirmStatusChange: 'Change status',

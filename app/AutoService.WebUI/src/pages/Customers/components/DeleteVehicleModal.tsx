@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import { mutedBodyTextClass, referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
 
 interface DeleteVehicleTarget {
   customerId: number;
@@ -57,7 +57,7 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
         </>
       )}
     >
-      <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+      <p className={mutedBodyTextClass}>
         {t('customers.deleteVehicleConfirm', {
           plate: target?.vehicle.licensePlate ?? '',
         })}

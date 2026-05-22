@@ -4,7 +4,12 @@ import { ArrowUpDown, CarFront, UserRound, Wrench, X } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
+  baseSectionHeadingTextClass,
+  inlineSectionTitleClass,
   modalConfirmCloseButtonClass,
+  compactHeaderRowClass,
+  mutedMetaTextClass,
+  mutedSecondaryTextClass,
   referenceChipNeutralButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
@@ -89,10 +94,10 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
               {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('customers.vehicleDetailsTitle')}
             </span>
           </p>
-          <h2 className="mt-1 truncate text-base font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+          <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
             {target.kind === 'customer' ? buildCustomerDisplayName(customer) : target.vehicle.licensePlate}
           </h2>
-          <p className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">
+          <p className={`truncate ${mutedMetaTextClass}`}>
             {target.kind === 'customer'
               ? customer.email
               : `${target.vehicle.brand} ${target.vehicle.model} (${target.vehicle.year})`}
@@ -118,8 +123,8 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
         )}
 
         <section className="min-w-0 space-y-3 pt-2">
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-            <h3 className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+          <div className={compactHeaderRowClass}>
+            <h3 className={inlineSectionTitleClass}>
               <Wrench className="h-4 w-4 shrink-0 text-arsm-warning-text dark:text-arsm-warning-text-dark" />
               <span className="truncate">{historySource.title}</span>
             </h3>
@@ -134,7 +139,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
           </div>
 
           {historySource.isLoading && (
-            <p className="py-6 text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('customers.loadingHistory')}</p>
+            <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingHistory')}</p>
           )}
 
           {!historySource.isLoading && (
@@ -173,7 +178,7 @@ const VehicleSpecs = memo(function VehicleSpecs({ vehicle, t, locale }: VehicleS
       <dl className="grid min-w-0 grid-cols-1 gap-x-3 gap-y-2 text-sm sm:grid-cols-2">
         {specs.map(([label, value]) => (
           <div key={label} className="min-w-0 py-0.5">
-            <dt className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">{label}</dt>
+            <dt className={`truncate ${mutedMetaTextClass}`}>{label}</dt>
             <dd className="truncate font-semibold text-arsm-primary dark:text-arsm-primary-dark">{value}</dd>
           </div>
         ))}

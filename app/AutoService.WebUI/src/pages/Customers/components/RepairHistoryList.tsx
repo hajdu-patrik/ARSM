@@ -7,6 +7,12 @@
  */
 import { memo } from 'react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+import {
+	compactHeaderRowClass,
+	compactItemTitleTextClass,
+	mutedBodyTextClass,
+	mutedSecondaryTextClass,
+} from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
@@ -30,7 +36,7 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 	onOpenAppointment,
 }: RepairHistoryListProps) {
 	if (appointments.length === 0) {
-		return <p className="text-sm text-arsm-muted dark:text-arsm-muted-dark">{emptyMessage}</p>;
+		return <p className={`text-center ${mutedSecondaryTextClass}`}>{emptyMessage}</p>;
 	}
 
 	return (
@@ -43,14 +49,14 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 					onClick={() => onOpenAppointment?.(appointment)}
 					disabled={!onOpenAppointment}
 				>
-					<div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-						<p className="min-w-0 truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+					<div className={compactHeaderRowClass}>
+						<p className={compactItemTitleTextClass}>
 							{formatDateTime(appointment.scheduledDate, locale)}
 						</p>
 						<StatusBadge status={appointment.status} className="min-h-0 shrink-0 px-2 py-0.5 text-[10px]" />
 					</div>
 
-					<p className="mt-1.5 min-h-[2.25rem] overflow-hidden text-sm leading-5 text-arsm-label [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] dark:text-arsm-label-dark">
+					<p className={`mt-1.5 min-h-[2.25rem] overflow-hidden leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${mutedBodyTextClass}`}>
 						{appointment.taskDescription}
 					</p>
 				</button>

@@ -5,7 +5,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
-import { dangerButtonClass } from '../constants';
+import { dangerButtonClass, relativeOverflowBorderLayoutClass } from '../constants';
 
 interface DeleteProfileSectionProps {
 	readonly onDeleteRequest: () => void;
@@ -17,7 +17,7 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 	const { t: translate } = useTranslation();
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-arsm-error-border-light bg-arsm-error-bg p-5 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark sm:p-6">
+		<div className={`${relativeOverflowBorderLayoutClass} border-arsm-error-border-light bg-arsm-error-bg p-5 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark sm:p-6`}>
 			<div
 				aria-hidden="true"
 				className="arsm-error-sheen pointer-events-none absolute inset-x-0 top-0 h-12"

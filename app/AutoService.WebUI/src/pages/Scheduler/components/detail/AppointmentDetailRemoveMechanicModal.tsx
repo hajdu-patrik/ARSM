@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../../components/common/Modal';
-import { referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../../utils/formStyles';
+import { mutedBodyTextClass, referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../../utils/formStyles';
 
 interface AppointmentDetailRemoveMechanicModalProps {
   readonly pendingRemoveMechanic: { id: number; fullName: string } | null;
@@ -81,7 +81,7 @@ const AppointmentDetailRemoveMechanicModalComponent = memo(function AppointmentD
         </>
       )}
     >
-      <p className="break-words rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-3 text-sm text-arsm-label [overflow-wrap:anywhere] dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 dark:text-arsm-label-dark">
+      <p className={`break-words rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-3 [overflow-wrap:anywhere] dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 ${mutedBodyTextClass}`}>
         {t('scheduler.detail.removeConfirmMessage', { name: pendingRemoveMechanic?.fullName ?? '' })}
       </p>
     </Modal>

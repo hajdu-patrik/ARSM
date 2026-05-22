@@ -8,7 +8,16 @@ import { useToastStore } from '../../../../store/toast.store';
 import { Modal } from '../../../../components/common/Modal';
 import type { MechanicListItem } from '../../../../services/admin/admin.service';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
-import { dangerButtonClass, iconDangerButtonClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import {
+	compactListPrimaryTextClass,
+	compactListSecondaryTextClass,
+	compactInputSurfaceClass,
+	dangerButtonClass,
+	iconDangerButtonClass,
+	loadingSpinnerClass,
+	mutedBodyTextClass,
+	secondaryButtonClass,
+} from '../../../../utils/formStyles';
 
 interface MechanicListSectionProps {
 	readonly refreshKey: number;
@@ -106,7 +115,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="h-8 w-8 animate-spin rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark" />
+				<div className={`h-8 w-8 ${loadingSpinnerClass}`} />
 			</div>
 		);
 	}
@@ -114,7 +123,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 	return (
 		<>
 			{mechanics.length === 0 ? (
-				<p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('admin.noMechanics')}</p>
+				<p className={mutedBodyTextClass}>{t('admin.noMechanics')}</p>
 			) : (
 				<div className="space-y-3">
 					{Array.from(new Map(mechanics.map((mechanic) => [mechanic.personId, mechanic])).values()).map((mechanic) => {
@@ -127,7 +136,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 						return (
 							<div
 								key={mechanic.personId}
-								className="relative flex min-w-0 items-start gap-3 rounded-xl border border-arsm-border bg-arsm-input px-4 py-3 transition-all duration-200 hover:-translate-y-px dark:border-arsm-border-dark dark:bg-arsm-input-dark sm:items-center"
+								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 transition-all duration-200 hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
 							>
 								<MechanicAvatar
 									mechanicId={mechanic.personId}
@@ -137,10 +146,10 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 								/>
 
 								<div className="min-w-0 flex-1">
-									<p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+									<p className={compactListPrimaryTextClass}>
 										{displayName}
 									</p>
-									<p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{mechanic.email}</p>
+									<p className={compactListSecondaryTextClass}>{mechanic.email}</p>
 								</div>
 
 								{canRemoveMechanic && (
@@ -189,7 +198,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 					</>
 				)}
 			>
-				<p className="break-words text-sm text-arsm-label dark:text-arsm-label-dark [overflow-wrap:anywhere]">
+				<p className={`break-words ${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
 					{t('admin.deleteMechanicWarning', {
 						name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
 						email: deleteTarget?.email ?? '',

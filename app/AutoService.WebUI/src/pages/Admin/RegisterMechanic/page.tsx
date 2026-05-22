@@ -16,6 +16,7 @@ import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormV
 import {
   buttonClass,
   cardClass,
+  mutedBodyTextClass,
   pageHeaderClass,
   pageShellClass,
   pageShellNarrowClass,
@@ -290,7 +291,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
           </>
         )}
       >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+        <p className={mutedBodyTextClass}>
           {t('admin.confirmRegisterMessage', { email: pendingRegisterEmail })}
         </p>
       </Modal>

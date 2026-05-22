@@ -75,8 +75,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-arsm-card p-5 text-arsm-primary transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
-        style={{ animation: 'modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-arsm-card p-5 text-arsm-primary transition-all duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
       >
         <div
           aria-hidden="true"
@@ -87,7 +86,7 @@ const ModalComponent = memo(function Modal({
           <h2 className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-xl font-semibold [overflow-wrap:anywhere] sm:text-2xl' : 'truncate text-lg font-semibold'}`}>{title}</h2>
           {shouldShowCloseButton && (
             <div className={isConfirmVariant ? 'absolute right-0 top-0 shrink-0' : 'shrink-0'}>
-              <ModalCloseButton onClick={onClose} variant={variant} />
+              <ModalCloseButton onClick={onClose} />
             </div>
           )}
         </div>

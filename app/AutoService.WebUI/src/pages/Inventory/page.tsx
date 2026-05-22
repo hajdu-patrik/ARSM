@@ -6,7 +6,17 @@
 import { memo } from 'react';
 import { Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { pageShellCompactClass, pageTitleClass } from '../../utils/formStyles';
+import {
+	comingSoonCardClass,
+	comingSoonDescriptionClass,
+	comingSoonDividerClass,
+	comingSoonIconClass,
+	comingSoonIconBadgeClass,
+	comingSoonSheenClass,
+	comingSoonTitleClass,
+	pageShellCompactClass,
+	pageTitleClass,
+} from '../../utils/formStyles';
 
 const InventoryPageComponent = memo(function InventoryPage() {
 	const { t } = useTranslation();
@@ -17,25 +27,25 @@ const InventoryPageComponent = memo(function InventoryPage() {
 				{t('inventory.pageTitle')}
 			</h1>
 
-			<div className="arsm-coming-soon-card fade-in-up">
-				<div aria-hidden="true" className="arsm-coming-soon-sheen" />
+			<div className={comingSoonCardClass}>
+				<div aria-hidden="true" className={comingSoonSheenClass} />
 
-				<div className="arsm-coming-soon-icon-badge">
+				<div className={comingSoonIconBadgeClass}>
 					<Package
-						className="h-9 w-9 text-arsm-accent-vivid dark:text-arsm-accent"
+						className={comingSoonIconClass}
 						strokeWidth={1.5}
 						aria-hidden="true"
 					/>
 				</div>
 
-				<h2 className="mb-2 text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+				<h2 className={comingSoonTitleClass}>
 					{t('inventory.comingSoonTitle')}
 				</h2>
-				<p className="mx-auto max-w-sm text-sm leading-relaxed text-arsm-muted dark:text-arsm-muted-dark">
+				<p className={comingSoonDescriptionClass}>
 					{t('inventory.comingSoonDescription')}
 				</p>
 
-				<div className="arsm-coming-soon-divider" aria-hidden="true" />
+				<div className={comingSoonDividerClass} aria-hidden="true" />
 			</div>
 		</div>
 	);

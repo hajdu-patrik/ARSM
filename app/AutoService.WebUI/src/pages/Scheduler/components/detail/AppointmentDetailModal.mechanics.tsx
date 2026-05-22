@@ -4,7 +4,10 @@ import type { TFunction } from 'i18next';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
   compactSelectFullClass,
+  compactListPrimaryTextClass,
   equalWidthControlGroupClass,
+  mutedMetaTextClass,
+  mutedSecondaryTextClass,
   referenceChipPrimaryButtonClass,
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
@@ -74,12 +77,12 @@ export const MechanicsSection = memo(function MechanicsSection({
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className="mb-2 text-sm font-medium text-arsm-muted dark:text-arsm-muted-dark">
+      <h4 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
         {t('scheduler.detail.mechanics')}
       </h4>
 
       {uniqueMechanics.length === 0 ? (
-        <p className="text-left text-sm italic text-arsm-muted dark:text-arsm-muted-dark">
+        <p className={`text-left italic ${mutedSecondaryTextClass}`}>
           {t('scheduler.detail.noMechanics')}
         </p>
       ) : (
@@ -119,7 +122,7 @@ export const MechanicsSection = memo(function MechanicsSection({
 
       {isAdmin && !isClosedForMechanicMutations && (
         <div className="mt-3">
-          <h5 className="mb-1.5 flex min-w-0 items-center gap-1 text-xs font-medium text-arsm-muted dark:text-arsm-muted-dark">
+          <h5 className={`mb-1.5 flex min-w-0 items-center gap-1 font-medium ${mutedMetaTextClass}`}>
             <UserPlus className="h-3.5 w-3.5 shrink-0" />
             {t('scheduler.detail.addMechanic')}
           </h5>
@@ -193,7 +196,7 @@ const MechanicCard = memo(function MechanicCard({
 
         <div className="min-w-0 flex-1 max-[350px]:w-full">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className="min-w-0 truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+            <span className={`min-w-0 ${compactListPrimaryTextClass}`}>
               {mechanic.fullName}
             </span>
             <span className={`${schedulerAccentTagClass} min-w-0`}>

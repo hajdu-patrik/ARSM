@@ -2,22 +2,24 @@
  * Appointment card component for scheduler grid/list views.
  * @module AppointmentCard
  */
-import { memo, useCallback, useState, type ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Clock3, LogOut, UserPlus } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
-import { Modal } from '../../../../components/common/Modal';
 import {
-  buttonClass,
-  dangerButtonClass,
+  compactItemTitleTextClass,
+  contentCardFrameClass,
+  mutedBodyTextClass,
+  mutedMetaTextClass,
   schedulerInlineClaimButtonClass,
   schedulerInlineUnassignButtonClass,
-  secondaryButtonClass,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
 import { CompactOverflowBadge } from './CompactOverflowBadge';
 import { getDueState } from '../../utils/due-date';
+import { AppointmentCardActionModals } from './AppointmentCardActionModals';
+import { useAppointmentCardActions } from './useAppointmentCardActions';
 
 interface AppointmentCardProps {
   readonly appointment: AppointmentDto;
@@ -37,11 +39,6 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   onClick,
 }: AppointmentCardProps) {
   const { t, i18n } = useTranslation();
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [isUnclaiming, setIsUnclaiming] = useState(false);
-  const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
-  const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
-
   const isAssigned = currentMechanicId !== undefined
     && appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
   const dueState = getDueState(appointment.dueDateTime);
@@ -68,64 +65,47 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     }).format(scheduleDateValue)
     : t('scheduler.due.unknown');
 
-  const handleClaim = useCallback(async () => {
-    setIsClaiming(true);
-    try {
-      await onClaim(appointment.id);
-      setIsClaimConfirmOpen(false);
-    } catch (error) {
-      // Parent handlers surface mutation errors via global toast feedback.
-      console.error('Failed to claim appointment card action', error);
-    } finally {
-      setIsClaiming(false);
-    }
-  }, [appointment.id, onClaim]);
+  const cardActions = useAppointmentCardActions({
+    appointmentId: appointment.id,
+    canClaimAppointment,
+    canUnclaimAppointment,
+    onClaim,
+    onUnclaim,
+  });
 
-  const handleOpenClaimConfirm = useCallback(() => {
-    if (canClaimAppointment && !isClaiming) {
-      setIsClaimConfirmOpen(true);
-    }
-  }, [canClaimAppointment, isClaiming]);
+  const {
+    isClaiming,
+    isUnclaiming,
+    isClaimConfirmOpen,
+    isUnclaimConfirmOpen,
+    handleClaim,
+    handleOpenClaimConfirm,
+    handleUnclaim,
+    handleOpenUnclaimConfirm,
+    closeClaimConfirm,
+    closeUnclaimConfirm,
+  } = cardActions;
 
-  const handleUnclaim = useCallback(async () => {
-    setIsUnclaiming(true);
-    try {
-      await onUnclaim(appointment.id);
-      setIsUnclaimConfirmOpen(false);
-    } catch (error) {
-      // Parent handlers surface mutation errors via global toast feedback.
-      console.error('Failed to unclaim appointment card action', error);
-    } finally {
-      setIsUnclaiming(false);
-    }
-  }, [appointment.id, onUnclaim]);
-
-  const handleOpenUnclaimConfirm = useCallback(() => {
-    if (canUnclaimAppointment && !isUnclaiming) {
-      setIsUnclaimConfirmOpen(true);
-    }
-  }, [canUnclaimAppointment, isUnclaiming]);
-
-  const cardClassName = `relative overflow-hidden rounded-2xl border border-arsm-border bg-arsm-card p-4 transition-all duration-200 hover:ring-2 hover:ring-arsm-focus-ring/45 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:hover:ring-arsm-focus-ring/30 flex flex-col gap-3.5${onClick ? ' cursor-pointer' : ''}`;
+  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-all duration-200 hover:ring-2 hover:ring-arsm-focus-ring/45 dark:hover:ring-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
   const cardContentClassName = onClick ? 'pointer-events-none relative z-10 flex flex-col gap-3.5' : 'flex flex-col gap-3.5';
 
   const cardContent: ReactNode = (
     <div className={cardContentClassName}>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 pb-1">
         <StatusBadge status={appointment.status} />
-        <span className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">{scheduleDateLabel}</span>
+        <span className={`truncate ${mutedMetaTextClass}`}>{scheduleDateLabel}</span>
       </div>
 
       <div className="min-w-0 space-y-3">
         <div className="min-w-0 space-y-1">
-          <h3 className="min-w-0 truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{vehicleTitle}</h3>
-          <p className="font-mono text-xs text-arsm-muted dark:text-arsm-muted-dark">{vehicle.licensePlate}</p>
+          <h3 className={compactItemTitleTextClass}>{vehicleTitle}</h3>
+          <p className={`font-mono ${mutedMetaTextClass}`}>{vehicle.licensePlate}</p>
         </div>
 
-        <p className="line-clamp-2 text-sm text-arsm-label dark:text-arsm-label-dark">{appointment.taskDescription}</p>
+        <p className={`line-clamp-2 ${mutedBodyTextClass}`}>{appointment.taskDescription}</p>
 
         <div className="flex min-w-0 items-center gap-2 rounded-lg border border-arsm-border/70 bg-arsm-input/70 px-2.5 py-2 dark:border-arsm-border-dark/70 dark:bg-arsm-input-dark/70">
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">
+          <span className={`inline-flex shrink-0 items-center gap-1 ${mutedMetaTextClass}`}>
             <Clock3 className="h-3.5 w-3.5 shrink-0" />
             <span>{t('scheduler.due.label')}</span>
           </span>
@@ -163,7 +143,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   disabled={isClaiming}
                   className={schedulerInlineClaimButtonClass}
                 >
-                  {isClaiming ? '...' : (
+                  {isClaiming ? <span className="truncate">{t('scheduler.detail.claiming')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.claim')}</span>
                       <UserPlus className="h-3.5 w-3.5 shrink-0" />
@@ -182,7 +162,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   disabled={isUnclaiming}
                   className={schedulerInlineUnassignButtonClass}
                 >
-                  {isUnclaiming ? '...' : (
+                  {isUnclaiming ? <span className="truncate">{t('scheduler.detail.unassigning')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.detail.unassignMe')}</span>
                       <LogOut className="h-3.5 w-3.5 shrink-0" />
@@ -214,80 +194,16 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   return (
     <>
       {cardElement}
-      <Modal
-        isOpen={isClaimConfirmOpen}
-        onClose={() => {
-          if (!isClaiming) {
-            setIsClaimConfirmOpen(false);
-          }
-        }}
-        title={t('scheduler.detail.claimConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={() => setIsClaimConfirmOpen(false)}
-              disabled={isClaiming}
-              className={secondaryButtonClass}
-            >
-              {t('scheduler.intake.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void handleClaim();
-              }}
-              disabled={isClaiming}
-              className={buttonClass}
-            >
-              <UserPlus className="h-4 w-4 shrink-0" />
-              <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
-          {t('scheduler.detail.claimConfirmMessage')}
-        </p>
-      </Modal>
-      <Modal
-        isOpen={isUnclaimConfirmOpen}
-        onClose={() => {
-          if (!isUnclaiming) {
-            setIsUnclaimConfirmOpen(false);
-          }
-        }}
-        title={t('scheduler.detail.unassignConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={() => setIsUnclaimConfirmOpen(false)}
-              disabled={isUnclaiming}
-              className={secondaryButtonClass}
-            >
-              {t('scheduler.intake.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void handleUnclaim();
-              }}
-              disabled={isUnclaiming}
-              className={dangerButtonClass}
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
-          {t('scheduler.detail.unassignConfirmMessage')}
-        </p>
-      </Modal>
+      <AppointmentCardActionModals
+        isClaimConfirmOpen={isClaimConfirmOpen}
+        isUnclaimConfirmOpen={isUnclaimConfirmOpen}
+        isClaiming={isClaiming}
+        isUnclaiming={isUnclaiming}
+        onCloseClaimConfirm={closeClaimConfirm}
+        onCloseUnclaimConfirm={closeUnclaimConfirm}
+        onConfirmClaim={() => { handleClaim().catch(() => undefined); }}
+        onConfirmUnclaim={() => { handleUnclaim().catch(() => undefined); }}
+      />
     </>
   );
 });

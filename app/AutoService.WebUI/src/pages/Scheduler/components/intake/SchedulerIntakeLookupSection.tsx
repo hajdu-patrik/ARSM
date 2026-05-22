@@ -2,7 +2,9 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
+	compactSectionHeadingTextClass,
 	insetSurfaceClass,
+	mutedMetaTextClass,
 } from '../../../../utils/formStyles';
 import type { LookupMode, LookupState } from './SchedulerIntakeModal.types';
 import {
@@ -46,12 +48,12 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 				aria-hidden="true"
 				className="arsm-intake-sheen-soft pointer-events-none absolute inset-x-0 top-0 h-10"
 			/>
-			<h3 className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">
+			<h3 className={compactSectionHeadingTextClass}>
 				{translate('scheduler.intake.customerLookup')}
 			</h3>
 
 			<div className="space-y-1">
-				<p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">
+				<p className={mutedMetaTextClass}>
 					{translate('scheduler.intake.lookupLiveHint')}
 				</p>
 				{isSearching && (

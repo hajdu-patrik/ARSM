@@ -9,7 +9,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
-import { buttonClass, cardClass, inputClass, labelClass, sectionTitleClass } from '../constants';
+import { buttonClass, cardClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 
 /** Props for the PersonalInfoSection component. */
@@ -156,7 +156,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
           </button>
         </div>
         {shouldShowSaveDisabledHint ? (
-          <p id={saveDisabledHintId} className="text-xs text-arsm-muted dark:text-arsm-muted-dark">
+          <p id={saveDisabledHintId} className={mutedMetaTextClass}>
             {saveDisabledHintText}
           </p>
         ) : null}

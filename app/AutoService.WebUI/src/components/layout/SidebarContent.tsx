@@ -6,7 +6,7 @@ import { memo, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
 import { CalendarDays, ChevronsLeft, LogOut, Settings, Shield, Users } from 'lucide-react';
-import { sidebarIconSlotClass } from '../../utils/formStyles';
+import { compactListPrimaryTextClass, compactListSecondaryTextClass, sidebarIconSlotClass } from '../../utils/formStyles';
 
 export interface NavItem {
   readonly key: string;
@@ -124,11 +124,11 @@ const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedTex
       </span>
       <div className={`${TEXT_TRANSITION} ${collapsedText} min-w-0`}>
         {profile.firstName && profile.lastName && (
-          <p className="truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark">
+          <p className={compactListPrimaryTextClass}>
             {profile.firstName} {profile.lastName}
           </p>
         )}
-        {profile.email && <p className="truncate text-xs text-arsm-label dark:text-arsm-label-dark">{profile.email}</p>}
+        {profile.email && <p className={compactListSecondaryTextClass}>{profile.email}</p>}
       </div>
     </div>
   );

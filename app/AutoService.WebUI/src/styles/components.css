@@ -31,19 +31,28 @@
   .crop-zoom-slider {
     -webkit-appearance: none;
     appearance: none;
+    min-height: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .crop-zoom-slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 9999px;
     background: var(--color-arsm-accent-border);
-    outline: none;
   }
 
-  .dark .crop-zoom-slider {
+  .dark .crop-zoom-slider::-webkit-slider-runnable-track {
     background: var(--color-arsm-border-dark);
   }
 
   .crop-zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
+    margin-top: -5px;
     width: 16px;
     height: 16px;
     border-radius: 9999px;
@@ -111,6 +120,19 @@
   /* Entrance animation for banners, error blocks, etc. */
   .fade-in-up {
     animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .arsm-modal-dialog {
+    animation: modal-enter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast-enter,
+    .fade-in-up,
+    .arsm-modal-dialog,
+    .shimmer-skeleton {
+      animation: none;
+    }
   }
 
   .error-page-ambient {

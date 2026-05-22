@@ -7,7 +7,12 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { modalConfirmCloseButtonClass } from '../../../utils/formStyles';
+import {
+	compactItemTitleTextClass,
+	inlinePrimaryLabelTextClass,
+	modalConfirmCloseButtonClass,
+	mutedMetaTextClass,
+} from '../../../utils/formStyles';
 
 interface VehicleItemProps {
 	t: TFunction;
@@ -42,8 +47,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 			<div className="space-y-3">
 				<div className="flex min-w-0 items-start justify-between gap-2">
 					<div className="min-w-0">
-						<p className="truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{vehicle.licensePlate}</p>
-						<p className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">
+						<p className={compactItemTitleTextClass}>{vehicle.licensePlate}</p>
+						<p className={`truncate ${mutedMetaTextClass}`}>
 							{vehicle.brand} {vehicle.model} ({vehicle.year})
 						</p>
 					</div>
@@ -83,18 +88,18 @@ const VehicleItemComponent = memo(function VehicleItem({
 					</div>
 				</div>
 
-				<div className="grid min-w-0 grid-cols-1 gap-1 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:grid-cols-2">
+				<div className={`grid min-w-0 grid-cols-1 gap-1 ${mutedMetaTextClass} sm:grid-cols-2`}>
 					<p className="min-w-0 truncate">
-						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.vin')}:</span> {vehicle.vin}
+						<span className={inlinePrimaryLabelTextClass}>{t('customers.vin')}:</span> {vehicle.vin}
 					</p>
 					<p className="min-w-0 truncate">
-						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.mileageKm')}:</span> {vehicle.mileageKm.toLocaleString(locale)} km
+						<span className={inlinePrimaryLabelTextClass}>{t('customers.mileageKm')}:</span> {vehicle.mileageKm.toLocaleString(locale)} km
 					</p>
 					<p className="min-w-0 truncate">
-						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.enginePowerKw')}:</span> {vehicle.enginePowerKw} kW
+						<span className={inlinePrimaryLabelTextClass}>{t('customers.enginePowerKw')}:</span> {vehicle.enginePowerKw} kW
 					</p>
 					<p className="min-w-0 truncate">
-						<span className="font-semibold text-arsm-primary dark:text-arsm-primary-dark">{t('customers.drivetrainType')}:</span> {t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
+						<span className={inlinePrimaryLabelTextClass}>{t('customers.drivetrainType')}:</span> {t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
 					</p>
 				</div>
 			</div>

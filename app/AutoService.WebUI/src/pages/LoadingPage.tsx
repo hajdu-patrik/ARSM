@@ -7,6 +7,7 @@
  */
 
 import { memo, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../store/theme.store';
 import { Image } from '../components/common/Image';
 
@@ -65,14 +66,20 @@ const LOADING_PAGE_ANIMATION_CSS = `
 }
 
 .shape-left {
+  transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg);
+  opacity: 1;
   animation-name: shape-left-in;
 }
 
 .shape-bottom-right {
+  transform: translate(calc(10vw), calc(15vh)) rotate(-8deg);
+  opacity: 1;
   animation-name: shape-bottom-right-in;
 }
 
 .shape-top-right {
+  transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg);
+  opacity: 1;
   animation-name: shape-top-right-in;
 }
 
@@ -81,6 +88,8 @@ const LOADING_PAGE_ANIMATION_CSS = `
   left: 50%;
   top: 52%;
   border-radius: 9999px;
+  transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0.2;
   animation: mobile-orb-float 2.2s ease-in-out infinite;
 }
 
@@ -92,6 +101,15 @@ const LOADING_PAGE_ANIMATION_CSS = `
 @media (max-width: 320px) {
   .logo-spin {
     animation: mobile-logo-pulse-spin 1.8s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-spin,
+  .mobile-logo,
+  .mobile-orb,
+  .shape-base {
+    animation: none;
   }
 }`;
 
@@ -106,10 +124,89 @@ function getLoadingRectangleColors(isDark: boolean): LoadingRectangleColors {
   ];
 }
 
+const DESKTOP_SHAPE_STYLES = [
+  { className: 'shape-base shape-bottom-right', width: 'min(72.92vw, 920px)', aspectRatio: '1400 / 430' },
+  { className: 'shape-base shape-left', width: 'min(51.04vw, 700px)', aspectRatio: '980 / 380' },
+  { className: 'shape-base shape-top-right', width: 'min(42.71vw, 620px)', aspectRatio: '820 / 360' },
+] as const;
+
+const MOBILE_ORB_STYLE = {
+  width: '84vw',
+  height: '84vw',
+  maxWidth: '250px',
+  maxHeight: '250px',
+} as const;
+
+const LOGO_HALO_STYLE = {
+  width: 'clamp(124px, 40vw, 250px)',
+  height: 'clamp(124px, 40vw, 250px)',
+} as const;
+
+const LOGO_IMAGE_STYLE = {
+  width: 'clamp(64px, 20vw, 136px)',
+  height: 'clamp(64px, 20vw, 136px)',
+  objectFit: 'contain',
+  willChange: 'transform',
+} as const;
+
+interface LoadingDesktopShapesProps {
+  readonly rectangleColors: LoadingRectangleColors;
+}
+
+function LoadingDesktopShapes({ rectangleColors }: LoadingDesktopShapesProps) {
+  return (
+    <div className="absolute inset-0 pointer-events-none max-[320px]:hidden" aria-hidden="true">
+      {DESKTOP_SHAPE_STYLES.map((shape, index) => (
+        <div
+          key={shape.className}
+          className={shape.className}
+          style={{
+            width: shape.width,
+            aspectRatio: shape.aspectRatio,
+            backgroundColor: rectangleColors[index],
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LoadingMobileOrb() {
+  return (
+    <div className="absolute inset-0 pointer-events-none hidden max-[320px]:block" aria-hidden="true">
+      <div className="arsm-loading-mobile-orb mobile-orb" style={MOBILE_ORB_STYLE} />
+    </div>
+  );
+}
+
+interface LoadingCenterLogoProps {
+  readonly logoAlt: string;
+  readonly logoSrc: string;
+}
+
+function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="arsm-loading-logo-halo relative z-10 flex items-center justify-center rounded-full" style={LOGO_HALO_STYLE}>
+        <Image
+          src={logoSrc}
+          alt={logoAlt}
+          draggable={false}
+          loading="eager"
+          decoding="async"
+          className="logo-spin opacity-70 select-none"
+          style={LOGO_IMAGE_STYLE}
+        />
+      </div>
+    </div>
+  );
+}
+
 const LoadingPageComponent = memo(function LoadingPage() {
   const [isVisible, setIsVisible] = useState(() => {
     return localStorage.getItem(LOADING_PAGE_SEEN_KEY) !== 'true';
   });
+  const { t: translate } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
 
   useEffect(() => {
@@ -132,73 +229,14 @@ const LoadingPageComponent = memo(function LoadingPage() {
   const isDark = theme === 'dark';
   const logoSrc = isDark ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
   const rectangleColors = getLoadingRectangleColors(isDark);
+  const logoAlt = translate('login.logoAlt');
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
       <style>{LOADING_PAGE_ANIMATION_CSS}</style>
-      <div className="absolute inset-0 pointer-events-none max-[320px]:hidden" aria-hidden="true">
-        <div
-          className="shape-base shape-bottom-right"
-          style={{
-            width: 'min(72.92vw, 920px)',
-            aspectRatio: '1400 / 430',
-            backgroundColor: rectangleColors[0]
-          }}
-        />
-        <div
-          className="shape-base shape-left"
-          style={{
-            width: 'min(51.04vw, 700px)',
-            aspectRatio: '980 / 380',
-            backgroundColor: rectangleColors[1]
-          }}
-        />
-        <div
-          className="shape-base shape-top-right"
-          style={{
-            width: 'min(42.71vw, 620px)',
-            aspectRatio: '820 / 360',
-            backgroundColor: rectangleColors[2]
-          }}
-        />
-      </div>
-
-      <div className="absolute inset-0 pointer-events-none hidden max-[320px]:block" aria-hidden="true">
-        <div
-          className="arsm-loading-mobile-orb mobile-orb"
-          style={{
-            width: '84vw',
-            height: '84vw',
-            maxWidth: '250px',
-            maxHeight: '250px',
-          }}
-        />
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className="arsm-loading-logo-halo relative z-10 flex items-center justify-center rounded-full"
-          style={{
-            width: 'clamp(124px, 40vw, 250px)',
-            height: 'clamp(124px, 40vw, 250px)',
-          }}
-        >
-          <Image
-            src={logoSrc}
-            alt="AutoService logo"
-            draggable={false}
-            loading="eager"
-            decoding="async"
-            className="logo-spin opacity-70 select-none"
-            style={{
-              width: 'clamp(64px, 20vw, 136px)',
-              height: 'clamp(64px, 20vw, 136px)',
-              objectFit: 'contain',
-              willChange: 'transform'
-            }}
-          />
-        </div>
-      </div>
+      <LoadingDesktopShapes rectangleColors={rectangleColors} />
+      <LoadingMobileOrb />
+      <LoadingCenterLogo logoSrc={logoSrc} logoAlt={logoAlt} />
     </div>
   );
 });

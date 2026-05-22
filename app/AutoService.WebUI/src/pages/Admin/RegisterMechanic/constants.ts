@@ -36,6 +36,8 @@ export {
   inputClass,
   inputGroupContainerClass,
   labelClass,
+  mutedBodyTextClass,
+  mutedMetaTextClass,
   optionTileActiveClass,
   optionTileBaseClass,
   optionTileCheckboxActiveClass,

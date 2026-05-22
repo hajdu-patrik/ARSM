@@ -9,7 +9,7 @@ import { CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import { referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import { compactDataSurfaceClass, compactPrimaryValueTextClass, mutedMetaTextClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
@@ -65,40 +65,40 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           </button>
         </div>
 
-        <div className="min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark">
-          <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.repairTask')}</p>
-          <p className="mt-0.5 break-words text-sm text-arsm-primary dark:text-arsm-primary-dark">{appointment.taskDescription}</p>
+        <div className={compactDataSurfaceClass}>
+          <p className={mutedMetaTextClass}>{t('scheduler.repairTask')}</p>
+          <p className={`mt-0.5 break-words ${compactPrimaryValueTextClass}`}>{appointment.taskDescription}</p>
         </div>
 
         <div className="divide-y divide-arsm-border/50 rounded-xl border border-arsm-border bg-arsm-card dark:divide-arsm-border-dark/50 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
           <div className="min-w-0 px-3 py-2">
-            <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('customers.intakeCreatedAt')}</p>
-            <p className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark">{formatDateTime(appointment.intakeCreatedAt, locale)}</p>
+            <p className={mutedMetaTextClass}>{t('customers.intakeCreatedAt')}</p>
+            <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.intakeCreatedAt, locale)}</p>
           </div>
           <div className="min-w-0 px-3 py-2">
-            <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('customers.dueDateTime')}</p>
-            <p className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark">{formatDateTime(appointment.dueDateTime, locale)}</p>
+            <p className={mutedMetaTextClass}>{t('customers.dueDateTime')}</p>
+            <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.dueDateTime, locale)}</p>
           </div>
           {appointment.completedAt && (
             <div className="min-w-0 px-3 py-2">
-              <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('customers.completedAt')}</p>
-              <p className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark">{formatDateTime(appointment.completedAt, locale)}</p>
+              <p className={mutedMetaTextClass}>{t('customers.completedAt')}</p>
+              <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.completedAt, locale)}</p>
             </div>
           )}
           {appointment.canceledAt && (
             <div className="min-w-0 px-3 py-2">
-              <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('customers.cancelledAt')}</p>
-              <p className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark">{formatDateTime(appointment.canceledAt, locale)}</p>
+              <p className={mutedMetaTextClass}>{t('customers.cancelledAt')}</p>
+              <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.canceledAt, locale)}</p>
             </div>
           )}
         </div>
 
-        <div className="min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark">
-          <p className="text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.detail.vehicle')}</p>
-          <p className="truncate text-sm text-arsm-primary dark:text-arsm-primary-dark">
+        <div className={compactDataSurfaceClass}>
+          <p className={mutedMetaTextClass}>{t('scheduler.detail.vehicle')}</p>
+          <p className={`truncate ${compactPrimaryValueTextClass}`}>
             {appointment.vehicle.brand} {appointment.vehicle.model} ({appointment.vehicle.year})
           </p>
-          <p className="mt-0.5 truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">{appointment.vehicle.licensePlate}</p>
+          <p className={`mt-0.5 truncate ${mutedMetaTextClass}`}>{appointment.vehicle.licensePlate}</p>
         </div>
       </div>
     </Modal>

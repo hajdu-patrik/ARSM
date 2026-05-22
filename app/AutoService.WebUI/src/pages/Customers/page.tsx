@@ -18,6 +18,7 @@ import { useCustomerDetailsPanel } from './hooks/useCustomerDetailsPanel';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import type { ResolvedCustomerDetailsPanelTarget } from './components/CustomerDetailsPanel';
 import { CustomerListSection } from './components/CustomerListSection';
+import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './components/customerListSection.types';
 import { CustomersToolbar } from './components/CustomersToolbar';
 import { DeleteCustomerModal } from './components/DeleteCustomerModal';
 import { DeleteVehicleModal } from './components/DeleteVehicleModal';
@@ -93,6 +94,67 @@ const CustomersPageComponent = memo(function CustomersPage() {
     return vehicle ? { kind: 'vehicle', customer, vehicle } : null;
   }, [detailsPanel.target, listState.customers, listState.vehiclesByCustomerId]);
 
+  const customerListData = useMemo<CustomerListData>(() => ({
+    searchTerm: listState.searchTerm,
+    filteredCustomers: listState.filteredCustomers,
+    isLoadingCustomers: listState.isLoadingCustomers,
+    expandedCustomerIds: listState.expandedCustomerIds,
+    vehiclesByCustomerId: listState.vehiclesByCustomerId,
+    isLoadingVehiclesByCustomerId: listState.isLoadingVehiclesByCustomerId,
+    resolvedDetailsTarget,
+    locale: i18n.language,
+  }), [
+    i18n.language,
+    listState.expandedCustomerIds,
+    listState.filteredCustomers,
+    listState.isLoadingCustomers,
+    listState.isLoadingVehiclesByCustomerId,
+    listState.searchTerm,
+    listState.vehiclesByCustomerId,
+    resolvedDetailsTarget,
+  ]);
+
+  const customerListActions = useMemo<CustomerListActions>(() => ({
+    onToggleCustomerExpanded: listState.toggleCustomerExpanded,
+    onOpenCustomerDetails: detailsPanel.openCustomerPanel,
+    onOpenEditCustomerModal: customerMutations.openEditCustomerModal,
+    onOpenDeleteCustomerModal: customerMutations.openDeleteCustomerModal,
+    onOpenCreateVehicleModal: vehicleMutations.openCreateVehicleModal,
+    onOpenEditVehicleModal: vehicleMutations.openEditVehicleModal,
+    onOpenDeleteVehicleModal: vehicleMutations.openDeleteVehicleModal,
+    onOpenVehicleDetails: detailsPanel.openVehiclePanel,
+  }), [
+    customerMutations.openDeleteCustomerModal,
+    customerMutations.openEditCustomerModal,
+    detailsPanel.openCustomerPanel,
+    detailsPanel.openVehiclePanel,
+    listState.toggleCustomerExpanded,
+    vehicleMutations.openCreateVehicleModal,
+    vehicleMutations.openDeleteVehicleModal,
+    vehicleMutations.openEditVehicleModal,
+  ]);
+
+  const customerHistoryState = useMemo<CustomerHistoryState>(() => ({
+    customerHistoryByCustomerId: listState.customerHistoryByCustomerId,
+    isLoadingCustomerHistoryByCustomerId: listState.isLoadingCustomerHistoryByCustomerId,
+    customerHistorySortByCustomerId: listState.customerHistorySortByCustomerId,
+    vehicleHistoryByVehicleId: listState.vehicleHistoryByVehicleId,
+    isLoadingVehicleHistoryByVehicleId: listState.isLoadingVehicleHistoryByVehicleId,
+    vehicleHistorySortByVehicleId: listState.vehicleHistorySortByVehicleId,
+    onToggleCustomerHistorySort: listState.toggleCustomerHistorySort,
+    onToggleVehicleHistorySort: listState.toggleVehicleHistorySort,
+    onOpenHistoryAppointment: setHistoryAppointment,
+  }), [
+    listState.customerHistoryByCustomerId,
+    listState.customerHistorySortByCustomerId,
+    listState.isLoadingCustomerHistoryByCustomerId,
+    listState.isLoadingVehicleHistoryByVehicleId,
+    listState.toggleCustomerHistorySort,
+    listState.toggleVehicleHistorySort,
+    listState.vehicleHistoryByVehicleId,
+    listState.vehicleHistorySortByVehicleId,
+  ]);
+
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
@@ -114,31 +176,9 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
       <CustomerListSection
         t={t}
-        searchTerm={listState.searchTerm}
-        filteredCustomers={listState.filteredCustomers}
-        isLoadingCustomers={listState.isLoadingCustomers}
-        expandedCustomerIds={listState.expandedCustomerIds}
-        vehiclesByCustomerId={listState.vehiclesByCustomerId}
-        isLoadingVehiclesByCustomerId={listState.isLoadingVehiclesByCustomerId}
-        onToggleCustomerExpanded={listState.toggleCustomerExpanded}
-        onOpenCustomerDetails={detailsPanel.openCustomerPanel}
-        onOpenEditCustomerModal={customerMutations.openEditCustomerModal}
-        onOpenDeleteCustomerModal={customerMutations.openDeleteCustomerModal}
-        onOpenCreateVehicleModal={vehicleMutations.openCreateVehicleModal}
-        onOpenEditVehicleModal={vehicleMutations.openEditVehicleModal}
-        onOpenDeleteVehicleModal={vehicleMutations.openDeleteVehicleModal}
-        onOpenVehicleDetails={detailsPanel.openVehiclePanel}
-        resolvedDetailsTarget={resolvedDetailsTarget}
-        locale={i18n.language}
-        customerHistoryByCustomerId={listState.customerHistoryByCustomerId}
-        isLoadingCustomerHistoryByCustomerId={listState.isLoadingCustomerHistoryByCustomerId}
-        customerHistorySortByCustomerId={listState.customerHistorySortByCustomerId}
-        vehicleHistoryByVehicleId={listState.vehicleHistoryByVehicleId}
-        isLoadingVehicleHistoryByVehicleId={listState.isLoadingVehicleHistoryByVehicleId}
-        vehicleHistorySortByVehicleId={listState.vehicleHistorySortByVehicleId}
-        onToggleCustomerHistorySort={listState.toggleCustomerHistorySort}
-        onToggleVehicleHistorySort={listState.toggleVehicleHistorySort}
-        onOpenHistoryAppointment={setHistoryAppointment}
+        data={customerListData}
+        actions={customerListActions}
+        history={customerHistoryState}
       />
 
       <CustomerFormModal

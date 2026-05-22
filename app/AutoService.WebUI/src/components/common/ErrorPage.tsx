@@ -7,7 +7,13 @@
  */
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { buttonClass } from '../../utils/formStyles';
+import {
+	buttonClass,
+	centeredAmbientOrbLayoutClass,
+	defaultBorderToneClass,
+	mutedSecondaryTextClass,
+	relativeOverflowBorderLayoutClass,
+} from '../../utils/formStyles';
 import { getCachedErrorIllustrationSource } from '../../utils/errorIllustrationCache';
 import { ThemeLanguageControls } from '../layout/ThemeLanguageControls';
 import { Image } from './Image';
@@ -101,7 +107,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 
 	return (
 		<div className="relative min-h-screen overflow-hidden bg-arsm-surface text-arsm-primary dark:bg-arsm-surface-dark dark:text-arsm-primary-dark">
-			<div aria-hidden="true" className="error-page-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+			<div aria-hidden="true" className={`error-page-ambient ${centeredAmbientOrbLayoutClass}`} />
 			<ThemeLanguageControls />
 			<main className="relative z-10 mx-auto flex min-h-screen min-w-0 w-full max-w-[1920px] items-center justify-center px-3 pt-24 sm:px-6 sm:pt-0">
 				<span
@@ -112,7 +118,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 				</span>
 				<section className="relative min-w-0 w-full max-w-[74rem]">
 					<div className="grid min-w-0 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
-						<div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-2xl border border-arsm-border bg-arsm-toggle-bg p-4 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]">
+						<div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} flex min-h-[260px] items-center justify-center bg-arsm-toggle-bg p-4 dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]`}>
 							<div aria-hidden="true" className="error-page-illustration-glow pointer-events-none absolute inset-0" />
 							<Image
 								src={resolvedImageSrc}
@@ -126,7 +132,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 							<h1 className="text-2xl font-semibold leading-tight text-arsm-primary dark:text-arsm-primary-dark sm:text-3xl lg:text-4xl">
 								{translate(titleKey)}
 							</h1>
-							<p className="mt-3 text-sm text-arsm-muted dark:text-arsm-muted-dark sm:text-base">
+							<p className={`mt-3 ${mutedSecondaryTextClass} sm:text-base`}>
 								{translate(subtitleKey)}
 							</p>
 							<button type="button" onClick={onCtaClick} className={errorPageCtaClass}>

@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { buildCustomerDisplayName } from '../helpers';
-import { referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import { mutedBodyTextClass, referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
 
 interface DeleteCustomerModalProps {
   target: CustomerListItem | null;
@@ -53,7 +53,7 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
         </>
       )}
     >
-      <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+      <p className={mutedBodyTextClass}>
         {t('customers.deleteCustomerConfirm', {
           name: target ? buildCustomerDisplayName(target) : '',
         })}

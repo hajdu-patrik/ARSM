@@ -3,10 +3,15 @@ import { UserCheck, UserPlus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
+	compactTwoColumnGridClass,
+	compactInputSurfaceClass,
 	customersToolbarPrimaryButtonClass,
+	inlineStatusTitleRowClass,
 	intakeFieldLabelClass,
 	intakeFieldWrapperClass,
 	intakeInputClass,
+	mutedMetaTextClass,
+	warningNoticeSurfaceClass,
 } from '../../../../utils/formStyles';
 import type { LookupMode } from './SchedulerIntakeModal.types';
 
@@ -27,7 +32,7 @@ export const LookupInput = memo(function LookupInput({
 	onNameLookupChange,
 }: LookupInputProps) {
 	return (
-		<div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+		<div className={compactTwoColumnGridClass}>
 			<label className={`min-w-0 ${intakeFieldWrapperClass}`}>
 				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.lookupName')}</span>
 				<input
@@ -67,7 +72,7 @@ export const FoundCustomerSummary = memo(function FoundCustomerSummary({
 }: FoundCustomerSummaryProps) {
 	return (
 		<div className="fade-in-up rounded-xl border border-arsm-success-border/60 bg-arsm-success-bg px-3.5 py-2.5 text-sm text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
-			<div className="flex min-w-0 items-center gap-2 font-semibold">
+			<div className={inlineStatusTitleRowClass}>
 				<UserCheck className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">{translate('scheduler.intake.customerFound')}</span>
 			</div>
@@ -90,8 +95,8 @@ export const NameLookupResults = memo(function NameLookupResults({
 	onSelect,
 }: NameLookupResultsProps) {
 	return (
-		<div className="fade-in-up space-y-2 rounded-xl border border-arsm-border bg-arsm-input px-3.5 py-2.5 text-sm text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark">
-			<div className="flex min-w-0 items-center gap-2 font-semibold">
+		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 text-sm text-arsm-primary dark:text-arsm-primary-dark ${compactInputSurfaceClass}`}>
+			<div className={inlineStatusTitleRowClass}>
 				<Users className="h-4 w-4 shrink-0 text-arsm-muted dark:text-arsm-muted-dark" />
 				<span className="min-w-0 truncate">{translate('scheduler.intake.nameResultsTitle', { count: results.length })}</span>
 			</div>
@@ -101,8 +106,8 @@ export const NameLookupResults = memo(function NameLookupResults({
 					<div key={result.id} className="flex min-w-0 flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
 						<div className="min-w-0">
 							<p className="truncate font-semibold">{getLookupCustomerName(result)}</p>
-							<p className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">{result.email}</p>
-							<p className="truncate text-xs text-arsm-muted dark:text-arsm-muted-dark">
+							<p className={`truncate ${mutedMetaTextClass}`}>{result.email}</p>
+							<p className={`truncate ${mutedMetaTextClass}`}>
 								{translate('scheduler.intake.resultVehicleCount', { count: result.vehicles.length })}
 							</p>
 						</div>
@@ -128,11 +133,11 @@ interface LookupNoMatchProps {
 /** Shows lookup miss copy and hints the inline new-customer fallback path. */
 export const LookupNoMatch = memo(function LookupNoMatch({ lookupMode, translate }: LookupNoMatchProps) {
 	const titleKey = getLookupNoMatchTitleKey(lookupMode);
-	const hintKey = getLookupNoMatchHintKey(lookupMode);
+	const hintKey = getLookupNoMatchHintKey();
 
 	return (
-		<div className="fade-in-up rounded-xl border border-arsm-warning-border/60 bg-arsm-warning-bg px-3.5 py-2.5 text-sm text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark">
-			<div className="flex min-w-0 items-center gap-2 font-semibold">
+		<div className={`fade-in-up ${warningNoticeSurfaceClass}`}>
+			<div className={inlineStatusTitleRowClass}>
 				<UserPlus className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">{translate(titleKey)}</span>
 			</div>
@@ -152,7 +157,7 @@ function getLookupNoMatchTitleKey(lookupMode: LookupMode): string {
 	}
 }
 
-function getLookupNoMatchHintKey(_lookupMode: LookupMode): string {
+function getLookupNoMatchHintKey(): string {
 	return 'scheduler.intake.lookupNoCreateHint';
 }
 

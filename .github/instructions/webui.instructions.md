@@ -79,7 +79,7 @@ description: "Use when editing React frontend, API integration, routing, and UI 
 - Theme/state: `src/store/theme.store.ts`, `src/store/auth.store.ts`
 - API client: `src/services/http/api.client.ts`
 - Auth/session: `src/services/auth/auth.service.ts`
-- Shared styles/primitives: `src/index.css`, `src/styles/tokens.css`, `src/styles/base.css`, `src/styles/components.css`, `src/styles/design-system.css`, `src/utils/formStyles.ts`
+- Shared styles/primitives: `src/index.css`, `src/styles/tokens.css`, `src/styles/base.css`, `src/styles/components.css`, `src/styles/design-system.css`, `src/utils/formStyles.ts` (barrel), `src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
 - SEO shell/assets: `index.html`, `src/components/seo/SeoManager.tsx`, `public/robots.txt`, `public/sitemap.xml`, `public/site.webmanifest`
 - Authenticated shell/sidebar: `src/components/layout/SidebarLayout.tsx`, `src/components/layout/SidebarContent.tsx`
 - UI/UX policy: `.github/agents/ui-ux-style-profile.agent.md`

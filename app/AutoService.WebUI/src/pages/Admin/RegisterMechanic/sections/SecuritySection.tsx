@@ -6,7 +6,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { inputClass, inputGroupContainerClass, labelClass, passwordToggleButtonClass } from '../constants';
+import { inputClass, inputGroupContainerClass, labelClass, mutedMetaTextClass, passwordToggleButtonClass } from '../constants';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {
@@ -69,7 +69,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
             )}
           </button>
         </div>
-        <p id={credentialHintId} className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{t('admin.passwordHint')}</p>
+        <p id={credentialHintId} className={`mt-1 ${mutedMetaTextClass}`}>{t('admin.passwordHint')}</p>
       </div>
 
       <div>

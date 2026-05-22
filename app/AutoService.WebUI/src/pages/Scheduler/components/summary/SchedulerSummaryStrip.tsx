@@ -6,7 +6,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { insetSurfaceClass } from '../../../../utils/formStyles';
+import { compactSectionHeadingTextClass, insetSurfaceClass } from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerSummaryStrip} component. */
 interface SchedulerSummaryStripProps {
@@ -26,9 +26,9 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 }: SchedulerSummaryStripProps) {
 	return (
 		<section className={`${insetSurfaceClass} relative overflow-hidden px-4 py-3.5`}>
-			<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-				<p className="text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark">{summaryDateText}</p>
-				<span className="inline-flex items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
+			<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+				<p className={`min-w-0 truncate ${compactSectionHeadingTextClass}`}>{summaryDateText}</p>
+				<span className="inline-flex shrink-0 items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
 					{t('scheduler.scheduledCount', { count: summaryCount })}
 				</span>
 			</div>

@@ -12,7 +12,6 @@ import { modalConfirmCloseButtonClass } from '../../utils/formStyles';
 interface ModalCloseButtonProps {
   readonly onClick: () => void;
   readonly disabled?: boolean;
-  readonly variant?: 'default' | 'confirm';
 }
 
 const ModalCloseButtonComponent = memo(function ModalCloseButton({

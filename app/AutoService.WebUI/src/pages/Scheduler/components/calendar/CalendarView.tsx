@@ -7,7 +7,12 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus, CalendarDay } from '../../../../types/scheduler/scheduler.types';
-import { insetSurfaceClass, schedulerNavIconButtonClass } from '../../../../utils/formStyles';
+import {
+  insetSurfaceClass,
+  mutedDarkCardToneClass,
+  mutedSecondaryTextClass,
+  schedulerNavIconButtonClass,
+} from '../../../../utils/formStyles';
 
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
@@ -194,7 +199,7 @@ const CalendarViewComponent = memo(function CalendarView({
       </div>
 
       {isLoading ? (
-        <div className="py-8 text-center text-sm text-arsm-muted dark:text-arsm-muted-dark">{t('scheduler.calendar.loading')}</div>
+        <div className={`py-8 text-center ${mutedSecondaryTextClass}`}>{t('scheduler.calendar.loading')}</div>
       ) : (
         <>
           <div className="mb-1 grid grid-cols-7 gap-px max-[320px]:mb-0.5 max-[320px]:gap-0">
@@ -244,16 +249,16 @@ const CalendarViewComponent = memo(function CalendarView({
                           )}
                         </div>
 
-                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center leading-none">
+                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center overflow-hidden leading-none">
                           {earliestAppointment ? (
-                            <div className={`relative inline-flex h-4 w-4 items-center justify-center ${overflowTone}`}>
+                            <div className={`relative inline-flex h-5 w-5 items-center justify-center ${overflowTone}`}>
                               <span
                                 className={`h-3.5 w-3.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[earliestAppointment.status] ?? 'bg-arsm-status-dot-fallback'}`}
                                 title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
                               />
                               {day.appointments.length > 1 && (
                                 <span
-                                  className="pointer-events-none absolute -right-1.5 -top-1.5 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark"
+                                  className={`pointer-events-none absolute right-0 top-0 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none ${mutedDarkCardToneClass}`}
                                   aria-hidden="true"
                                 >
                                   +{day.appointments.length - 1}

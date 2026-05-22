@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
 import { cropImageToBlob } from '../../utils/imageCrop';
 import { useToastStore } from '../../store/toast.store';
-import { buttonClass, secondaryButtonClass } from '../../utils/formStyles';
+import {
+  buttonClass,
+  defaultBorderToneClass,
+  relativeOverflowBorderLayoutClass,
+  secondaryButtonClass,
+} from '../../utils/formStyles';
 
 interface ProfilePictureCropModalProps {
   readonly isOpen: boolean;
@@ -85,7 +90,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
           {t('settings.cropModalHint')}
         </p>
 
-        <div className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-arsm-border bg-arsm-surface-dark dark:border-arsm-border-dark sm:h-[360px]">
+        <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} h-[320px] w-full bg-arsm-surface-dark sm:h-[360px]`}>
           {imageSrc && (
             <Cropper
               image={imageSrc}

@@ -4,6 +4,7 @@ import { LogOut, Save, UserPlus } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import {
+  mutedBodyTextClass,
   referenceChipDangerButtonClass,
   referenceChipNeutralButtonClass,
   referenceChipPrimaryButtonClass,
@@ -77,7 +78,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
           </>
         )}
       >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">
+        <p className={mutedBodyTextClass}>
           {t('scheduler.detail.statusChangeConfirmMessage', {
             status: pendingStatusChange ? t(`scheduler.status.${pendingStatusChange.toLowerCase()}`) : '',
           })}
@@ -111,7 +112,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
           </>
         )}
       >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.claimConfirmMessage')}</p>
+        <p className={mutedBodyTextClass}>{t('scheduler.detail.claimConfirmMessage')}</p>
       </Modal>
 
       <Modal
@@ -141,7 +142,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
           </>
         )}
       >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.unassignConfirmMessage')}</p>
+        <p className={mutedBodyTextClass}>{t('scheduler.detail.unassignConfirmMessage')}</p>
       </Modal>
 
       <Modal
@@ -171,7 +172,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
           </>
         )}
       >
-        <p className="text-sm text-arsm-label dark:text-arsm-label-dark">{t('scheduler.detail.saveConfirmMessage')}</p>
+        <p className={mutedBodyTextClass}>{t('scheduler.detail.saveConfirmMessage')}</p>
       </Modal>
     </>
   );

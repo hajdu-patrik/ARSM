@@ -6,10 +6,13 @@
  * @module pages/Settings/sections/ChangePasswordSection
  */
 
-import { memo, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, KeyRound } from 'lucide-react';
-import { buttonClass, cardClass, inputClass, inputGroupContainerClass, labelClass, passwordToggleButtonClass, sectionTitleClass } from '../constants';
+import { KeyRound } from 'lucide-react';
+import { buttonClass, cardClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
+import { getCredentialsDisabledReasonKey } from '../passwordFormPolicy';
+import { useClearAutofilledCredentials, useLockFieldWhenEmpty } from '../hooks/usePasswordFieldProtection';
+import { PasswordInputWithToggle } from './PasswordInputWithToggle';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
@@ -21,158 +24,6 @@ interface ChangePasswordSectionProps {
   readonly onNewPasswordChange: (value: string) => void;
   readonly onConfirmNewPasswordChange: (value: string) => void;
   readonly onSubmit: (event: React.SyntheticEvent) => void;
-}
-
-const CREDENTIALS_DISABLED_REASON_KEYS = {
-  submitting: 'settings.changingCredentials',
-  incomplete: 'settings.fillPasswordFieldsToContinue',
-  tooShort: 'settings.passwordTooShort',
-  mismatch: 'settings.passwordsDoNotMatch',
-} as const;
-
-interface CredentialsDisabledReasonInput {
-  readonly isSubmitting: boolean;
-  readonly isPasswordFormIncomplete: boolean;
-  readonly isPasswordTooShort: boolean;
-  readonly isPasswordMismatch: boolean;
-}
-
-interface AutofillResetCallbacks {
-  readonly onCurrentPasswordChange: (value: string) => void;
-  readonly onNewPasswordChange: (value: string) => void;
-  readonly onConfirmNewPasswordChange: (value: string) => void;
-}
-
-/** Resolves disabled-submit reason key for the password form. */
-function getCredentialsDisabledReasonKey({
-  isSubmitting,
-  isPasswordFormIncomplete,
-  isPasswordTooShort,
-  isPasswordMismatch,
-}: CredentialsDisabledReasonInput): string | null {
-  if (isSubmitting) {
-    return CREDENTIALS_DISABLED_REASON_KEYS.submitting;
-  }
-
-  if (isPasswordFormIncomplete) {
-    return CREDENTIALS_DISABLED_REASON_KEYS.incomplete;
-  }
-
-  if (isPasswordTooShort) {
-    return CREDENTIALS_DISABLED_REASON_KEYS.tooShort;
-  }
-
-  if (isPasswordMismatch) {
-    return CREDENTIALS_DISABLED_REASON_KEYS.mismatch;
-  }
-
-  return null;
-}
-
-function useLockFieldWhenEmpty(value: string, setLocked: Dispatch<SetStateAction<boolean>>): void {
-  useEffect(() => {
-    if (value.length === 0) {
-      setLocked(true);
-    }
-  }, [setLocked, value]);
-}
-
-function useClearAutofilledCredentials({
-  onCurrentPasswordChange,
-  onNewPasswordChange,
-  onConfirmNewPasswordChange,
-}: AutofillResetCallbacks): void {
-  useEffect(() => {
-    const clearAutofilledPasswordField = (inputId: string, onChange: (value: string) => void) => {
-      const input = document.getElementById(inputId);
-      if (!(input instanceof HTMLInputElement)) {
-        return;
-      }
-
-      if (input.value.length > 0) {
-        input.value = '';
-        onChange('');
-      }
-    };
-
-    const frameId = globalThis.requestAnimationFrame(() => {
-      clearAutofilledPasswordField('settings-currentPassword', onCurrentPasswordChange);
-      clearAutofilledPasswordField('settings-newPassword', onNewPasswordChange);
-      clearAutofilledPasswordField('settings-confirmPassword', onConfirmNewPasswordChange);
-    });
-
-    return () => {
-      globalThis.cancelAnimationFrame(frameId);
-    };
-  }, [onConfirmNewPasswordChange, onCurrentPasswordChange, onNewPasswordChange]);
-}
-
-interface PasswordInputWithToggleProps {
-  readonly id: string;
-  readonly label: string;
-  readonly value: string;
-  readonly placeholder: string;
-  readonly isVisible: boolean;
-  readonly isSubmitting: boolean;
-  readonly isLocked: boolean;
-  readonly onChange: (value: string) => void;
-  readonly onFocus: () => void;
-  readonly onToggleVisibility: () => void;
-  readonly inputName: string;
-  readonly toggleAriaLabel: string;
-  readonly hintText?: string;
-}
-
-function PasswordInputWithToggle({
-  id,
-  label,
-  value,
-  placeholder,
-  isVisible,
-  isSubmitting,
-  isLocked,
-  onChange,
-  onFocus,
-  onToggleVisibility,
-  inputName,
-  toggleAriaLabel,
-  hintText,
-}: PasswordInputWithToggleProps) {
-  return (
-    <div>
-      <label htmlFor={id} className={labelClass}>
-        {label}
-      </label>
-      <div className={inputGroupContainerClass}>
-        <input
-          id={id}
-          type={isVisible ? 'text' : 'password'}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={onFocus}
-          placeholder={placeholder}
-          className={`${inputClass} pr-12`}
-          disabled={isSubmitting}
-          autoComplete="off"
-          readOnly={isLocked}
-          name={inputName}
-          data-lpignore="true"
-          data-1p-ignore="true"
-          data-bwignore="true"
-          spellCheck={false}
-        />
-        <button
-          type="button"
-          onClick={onToggleVisibility}
-          className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
-          aria-label={toggleAriaLabel}
-        >
-          {isVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-        </button>
-      </div>
-      {hintText ? <p className="mt-1 text-xs text-arsm-muted dark:text-arsm-muted-dark">{hintText}</p> : null}
-    </div>
-  );
 }
 
 /**
@@ -313,7 +164,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           </button>
         </div>
         {shouldShowPasswordSubmitDisabledHint ? (
-          <p id={credentialsSubmitDisabledHintId} className="text-xs text-arsm-muted dark:text-arsm-muted-dark">
+          <p id={credentialsSubmitDisabledHintId} className={mutedMetaTextClass}>
             {passwordSubmitDisabledText}
           </p>
         ) : null}

@@ -195,6 +195,7 @@ export function useSchedulerIntakeForm({
     customerMiddleName,
     customerPhone,
     dueDateTime,
+    lookup.state.customerLookup?.email,
     lookup.state.email,
     lookup.state.lookupState,
     existingVehicleId,

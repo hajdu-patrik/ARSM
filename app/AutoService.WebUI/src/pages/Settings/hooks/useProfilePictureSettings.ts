@@ -10,8 +10,8 @@ const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
 interface UseProfilePictureSettingsParams {
   profile: ProfileData | null;
   setProfile: React.Dispatch<React.SetStateAction<ProfileData | null>>;
-  showSuccessToast: (message: string, options?: Record<string, unknown>) => void;
-  showErrorToast: (message: string, options?: Record<string, unknown>) => void;
+  showSuccessToast: (message: string, options?: Record<string, string | number>) => void;
+  showErrorToast: (message: string, options?: Record<string, string | number>) => void;
 }
 
 export function useProfilePictureSettings({

@@ -12,11 +12,14 @@ import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
 import {
+	centeredAmbientOrbLayoutClass,
 	buttonClass,
 	getSegmentedControlOptionClass,
 	inputClass,
 	inputGroupContainerClass,
 	labelClass,
+	mutedMetaTextClass,
+	mutedSecondaryTextClass,
 	passwordToggleButtonClass,
 	segmentedControlClass,
 } from '../../utils/formStyles';
@@ -122,7 +125,7 @@ const LoginComponent = memo(function Login() {
 		<main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
 			<div
 				aria-hidden="true"
-				className="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"
+				className={`arsm-auth-ambient ${centeredAmbientOrbLayoutClass}`}
 			/>
 			<div
 				aria-hidden="true"
@@ -142,19 +145,19 @@ const LoginComponent = memo(function Login() {
 						<div className="mt-1 flex items-center justify-center">
 							<Image
 								src="/AppLogoFrameBlack.webp"
-								alt="AutoService logo"
+								alt={translate('login.logoAlt')}
 								className="block h-20 w-auto select-none opacity-75 dark:hidden sm:h-24"
 							/>
 							<Image
 								src="/AppLogoFrameWhite.webp"
-								alt="AutoService logo"
+								alt={translate('login.logoAlt')}
 								className="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24"
 							/>
 						</div>
 						<h1 className="mt-2 text-balance text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-2xl">
 							{translate('login.title')}
 						</h1>
-						<p className="mt-2 text-sm text-arsm-muted dark:text-arsm-muted-dark">{translate('login.subtitle')}</p>
+						<p className={`mt-2 ${mutedSecondaryTextClass}`}>{translate('login.subtitle')}</p>
 					</div>
 
 					<form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5" noValidate>
@@ -223,7 +226,7 @@ const LoginComponent = memo(function Login() {
 						</button>
 
 						<fieldset className="pt-1.5" aria-label={translate('login.loginMethodLabel')}>
-							<legend className="mb-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
+							<legend className={`mb-2 font-medium uppercase tracking-wide ${mutedMetaTextClass}`}>
 								{translate('login.loginMethodLabel')}
 							</legend>
 							<div className={segmentedControlClass}>
@@ -249,7 +252,7 @@ const LoginComponent = memo(function Login() {
 						</fieldset>
 					</form>
 
-					<p className="mt-4 text-xs text-arsm-muted dark:text-arsm-muted-dark sm:mt-5 sm:text-sm">
+					<p className={`mt-4 ${mutedMetaTextClass} sm:mt-5 sm:text-sm`}>
 						{translate('login.helpText')}
 					</p>
 				</div>
