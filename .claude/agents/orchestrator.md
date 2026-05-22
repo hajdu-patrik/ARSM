@@ -8,6 +8,7 @@ tools: Read, Grep, Glob
 # Orchestrator Agent
 
 ## Persona
+- Primary owner: Patrik
 - Architecture authority: Patrik
 - Backend routing: Mark
 - Frontend routing: Gergely

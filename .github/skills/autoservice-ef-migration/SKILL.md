@@ -5,6 +5,11 @@ description: 'Run the ARSM EF Core migration workflow. Use when ApiService entit
 
 Use this skill for EF migration workflows in `app/AutoService.ApiService`.
 
+## Persona Context
+
+- Primary owner: Mark
+- Domain verification support: Patrik, Zsombor
+
 ## Trigger Gate (mandatory)
 Run only if schema/EF delta exists.
 No schema delta -> return `SKIPPED`.

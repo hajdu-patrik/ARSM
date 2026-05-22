@@ -7,10 +7,16 @@ tools: Read, Edit, MultiEdit, Grep, Glob
 
 # ARSM UI/UX Style Profile
 
+## Persona
+
+- Primary owner: Gergely
+- Architecture sign-off: Patrik
+- Security/testing escalation: Zsombor
+
 Scope: `app/AutoService.WebUI/**`
 Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`. Both files must remain policy-equivalent; differences are limited to platform syntax only.
 
-## Single Source Of Truth Baseline (Current Fixed State)
+## Single Source Of Truth Baseline
 
 - Shared modal behavior is centralized in `app/AutoService.WebUI/src/components/common/Modal.tsx` and `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`.
 - Modal variants (including confirm, delete, and edit flows) must keep the top-right X close button visible by default (`showCloseButton` defaults to `true`).
@@ -18,14 +24,14 @@ Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equiv
 - Valid modal close paths are top-right X, overlay click, Escape key, and explicit cancel action.
 - Toast dismiss X remains enabled and is not part of the modal close restriction rules.
 
-## UI/UX Evidence Map (Mi Hol Talalhato)
+## UI/UX Evidence Map
 
 - Design tokens and semantic color system: `app/AutoService.WebUI/src/styles/tokens.css`
 - Global style wiring and import chain root: `app/AutoService.WebUI/src/index.css`
 - Shared design primitives and responsive media rules (`@media (max-width: 350px)` / `@media (max-width: 320px)`): `app/AutoService.WebUI/src/styles/design-system.css`
 - CSS-only component effects (toast enter, modal sheen, skeleton, ambient layers): `app/AutoService.WebUI/src/styles/components.css`
 - Global base typography/background/focus baseline: `app/AutoService.WebUI/src/styles/base.css`
-- JSX-facing shared class primitives (buttons, groups, controls, modal close, scheduler chips): `app/AutoService.WebUI/src/utils/formStyles.ts`
+- JSX-facing shared class primitives (buttons, groups, controls, modal close, scheduler chips): `app/AutoService.WebUI/src/utils/formStyles.ts` barrel plus `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
 - Shared modal shell and close semantics: `app/AutoService.WebUI/src/components/common/Modal.tsx`, `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`
 - Global toast system: `app/AutoService.WebUI/src/store/toast.store.ts`, `app/AutoService.WebUI/src/components/common/ToastViewport.tsx`, root mount in `app/AutoService.WebUI/src/App.tsx`
 - Localization bootstrap and language fallback: `app/AutoService.WebUI/src/utils/i18n.ts`
@@ -83,7 +89,7 @@ Use this report structure for every UI/UX validation pass:
 ## Reusable Primitive Contract
 
 - Shared page shell, heading, section-title, and action-button styles must be defined in shared primitives before introducing page-local class strings.
-- Shared primitive ownership lives in `src/styles/design-system.css` and `src/styles/components.css` (CSS primitives) and `src/utils/formStyles.ts` (JSX-facing class exports).
+- Shared primitive ownership lives in `src/styles/design-system.css` and `src/styles/components.css` (CSS primitives) and `src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts` (JSX-facing class ownership), exported through `src/utils/formStyles.ts`.
 - If an identical or near-identical class cluster appears in 3 or more files, extract it into shared primitives in the same refactor pass.
 - Use hybrid ownership intentionally: CSS primitives for pseudo-elements/browser-native parts/global selectors, TypeScript class exports for JSX-consumed layout and interaction bundles.
 - Primitive-first order is mandatory: reuse existing primitive -> extend existing primitive -> create new primitive as last resort.
@@ -92,8 +98,8 @@ Use this report structure for every UI/UX validation pass:
 ## Control Consistency Contract
 
 - Button-like actions (primary, secondary, danger, utility, modal footer actions) must use one shared corner-radius scale and one shared size scale across Scheduler, Admin, Customer, Settings, and popup surfaces.
-- Do not ship page-local button radius or spacing variants when an equivalent shared primitive exists in `src/styles/design-system.css` or `src/utils/formStyles.ts`.
-- Controls in the same logical row, toolbar, modal footer, or section must use shared grouping wrappers from `src/utils/formStyles.ts`; do not hand-roll local flex, width, radius, and padding bundles for repeated patterns.
+- Do not ship page-local button radius or spacing variants when an equivalent shared primitive exists in `src/styles/design-system.css` or `src/utils/styles/*.ts` (via `src/utils/formStyles.ts`).
+- Controls in the same logical row, toolbar, modal footer, or section must use shared grouping wrappers from `src/utils/styles/*.ts` (exported through `src/utils/formStyles.ts`); do not hand-roll local flex, width, radius, and padding bundles for repeated patterns.
 - Contextual equality is required: controls in the same group share height, radius, focus treatment, and a local width strategy based on the longest visible label in that group.
 - Standalone actions stay content-fit with comfortable padding, `max-width`, and truncation fallback; do not stretch standalone buttons unless the narrow-width fallback requires it.
 - Search, password visibility, and clear overlay controls must use shared input-group/icon-button primitives so text padding and 44px targets stay aligned.
@@ -105,7 +111,7 @@ Use this report structure for every UI/UX validation pass:
 
 ## Reference Chip Action Contract
 
-- Reference chip actions must be provided by shared primitives in `app/AutoService.WebUI/src/utils/formStyles.ts`: `referenceChipActionBaseClass`, `referenceChipNeutralButtonClass`, `referenceChipPrimaryButtonClass`, `referenceChipDangerButtonClass`.
+- Reference chip actions must be provided by shared primitives in `app/AutoService.WebUI/src/utils/styles/buttonStyles.ts` and exported through `app/AutoService.WebUI/src/utils/formStyles.ts`: `referenceChipActionBaseClass`, `referenceChipNeutralButtonClass`, `referenceChipPrimaryButtonClass`, `referenceChipDangerButtonClass`.
 - Pill-shaped contextual actions (for example compact toolbar actions, open-detail actions, modal footer actions, scheduler detail side-panel actions) must reuse this family instead of local one-off button stacks.
 - Variant semantics are fixed: neutral for open/cancel/non-destructive navigation actions, primary for create/save/add/confirm-positive actions, danger for destructive confirm/delete actions.
 - Reference chip actions must keep the compact profile (`text-xs`) and touch-safe target height (`min-h-11`) while preserving truncation safety (`min-w-0` plus inner `truncate` where labels can grow).

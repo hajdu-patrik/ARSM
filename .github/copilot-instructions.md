@@ -1,14 +1,16 @@
-> Architecture Notice: ARSM uses GitHub Copilot + Claude Code. Keep `.github/**` and `.claude/**` policy-equivalent.
-
 # ARSM Copilot Instructions
 
+> Architecture Notice: ARSM uses GitHub Copilot + Claude Code. Keep `.github/**` and `.claude/**` policy-equivalent.
+
 ## Model Selection Policy (Auto Mode)
+
 - In auto/agent mode, **never** automatically select a model that costs more than 3× the baseline tier.
 - Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7 (any level)` and `gpt-5.5 (any level)`
 - Preferred auto-selection pool: `gpt-5.3-codex (high/xhigh)`, `gpt-5.4 (high/xhigh)`, `claude-sonnet 4.6 (high)`, `gemini 3.1 pro`, or equivalent tier models.
 - If a task genuinely requires a top-tier model, surface the suggestion to the user and wait for explicit approval before switching.
 
 ## Team Identity (Global)
+
 - Elite startup; enterprise-grade delivery standards.
 - Patrik (MIT, ex-Google): architecture + final quality authority.
 - Mark (MIT, ex-BlackRock/Morgan Stanley): backend/data/scale authority.
@@ -16,23 +18,27 @@
 - Zsombor (Stanford, ex-Amazon/Oracle): CI/CD, QA, security authority.
 
 ## Persona Routing
+
 - Architecture/final approval -> Patrik.
 - Backend/API/data -> Mark.
 - Frontend/UI/UX -> Gergely.
 - Testing/security/validation -> Zsombor.
 
 ## Repository Map
+
 - `app/AutoService.ApiService` API/domain/EF.
 - `app/AutoService.WebUI` React client.
 - `app/AutoService.AppHost` Aspire orchestration.
 - `app/AutoService.ServiceDefaults` shared service defaults.
 
 ## Stack
+
 - Backend: .NET 10, ASP.NET Core API, EF Core, PostgreSQL.
 - Frontend: React 19, TypeScript, Vite, Tailwind.
 - Orchestration: .NET Aspire.
 
 ## Mandatory Workflow
+
 1. Orchestrator first (`Task Orchestrator`).
 2. Conditional implementation routing from orchestrator:
   - backend/platform changes required (`AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults`, or source-level backend changes) -> run `Backend Specialist`
@@ -48,18 +54,21 @@
 7. Heavy test agents are conditional (gate below).
 
 ## Execution Mode (Speed Policy)
+
 - Prefer local workspace execution (`run_in_terminal`, VS Code tasks, native CLI) as first choice for build/test/validation workflows.
 - Avoid MCP server tooling when a local command/task provides equivalent or near-equivalent speed and outcome.
 - Use MCP tooling only when no practical local alternative exists, or when the capability is MCP-only.
 - Keep this rule aligned with `CLAUDE.md`.
 
 ## Canonical Local Test Runner
+
 - Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]` from the repository root for local full-suite or selected-suite execution.
 - The runner loads `.secrets` and `tests/.env` locally, sets non-secret `PORT=5173` for Playwright when absent, and writes the sanitized AI-readable report to `tests/.artifacts/test-suite-summary.json`.
 - Full-test AI workflow: run the Python runner, inspect the sanitized report, then add missing tests, fix stale tests, or investigate product behavior from the reported suite layer.
 - Do not publish raw `.env`, `.secrets`, local MCP config, connection strings, cookies, tokens, absolute local paths, or unsanitized command output.
 
 ## Heavy Test Gate
+
 Run heavy test agents only when explicitly requested by the user, or when the agent-specific trigger applies:
 - `http-endpoint-test`: significant API endpoint, contract, auth/role, status, or validation behavior change.
 - `sql-database-test`: significant schema, migration, persistence, seed-data, or integrity invariant change.
@@ -70,10 +79,12 @@ When triggered by a new feature:
 - then execute/update tests.
 
 ## Migration Isolation Gate
+
 Run `EF Migration` only for actual schema/EF migration deltas.
 No schema delta -> migration agent must skip.
 
 ## Engineering Principles (Mandatory)
+
 - Enforce SOLID (SRP, OCP, LSP, ISP, DIP) in architecture and implementation.
 - Apply OOP fundamentals: explicit responsibilities, low coupling, high cohesion.
 - Use GoF 23 patterns intentionally where they reduce complexity and improve extensibility.
@@ -81,6 +92,7 @@ No schema delta -> migration agent must skip.
 - Require engineering rationale for non-trivial decisions: why this design, why not alternatives, and impact on scalability/maintainability.
 
 ## Scalability & Maintainability Guardrails
+
 - No god files/classes/methods.
 - Source files:
   - preferred <= 350 lines,
@@ -94,6 +106,7 @@ No schema delta -> migration agent must skip.
 - Method/function target: <= 60 lines where practical.
 
 ## Credentials & Secrets Policy (Mandatory)
+
 - Never hardcode credentials, passwords, connection strings, hosts, or tokens in source/tests/scripts/agent output.
 - Secret sources (gitignored):
   - `.secrets` (repo root): E2E/Playwright runtime env loaded by `python scripts/run-local-test-suite.py playwright`.
@@ -109,6 +122,7 @@ No schema delta -> migration agent must skip.
   - Missing variable: report exact name and point to `tests/.env.example` or `.secrets`; never guess.
 
 ## Core Rules
+
 - Config-first endpoints/ports; no runtime localhost fallback in code.
 - WebUI UI/UX policy source of truth: `.github/agents/ui-ux-style-profile.agent.md` (Copilot) / `.claude/agents/ui-ux-style-profile.md` (Claude); both files must remain policy-equivalent.
 - WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
@@ -117,6 +131,7 @@ No schema delta -> migration agent must skip.
 - Keep `.github` and `.claude` agent+skill logic aligned.
 
 ## Scoped Instruction Files
+
 - `.github/instructions/apiservice.instructions.md`
 - `.github/instructions/webui.instructions.md`
 - `.github/instructions/apphost.instructions.md`
@@ -124,6 +139,7 @@ No schema delta -> migration agent must skip.
 - `.github/instructions/tests.instructions.md`
 
 ## Operational Anchors (Consolidated)
+
 - Keep operational knowledge distributed across instruction/agent/skill layers; do not rely on a single long-form TL-DR document as primary runtime truth.
 - Canonical local runtime surface: Aspire dashboard `https://localhost:17094`, API `https://localhost:5200`, WebUI `https://localhost:5173`, PostgreSQL `localhost:50000`.
 - Session/auth contract anchors: access cookie `autoservice_at` (10 minutes), refresh cookie `autoservice_rt` (7 days), login rate limit `10/min per IP`, refresh rate limit `20/min per IP`, lockout 5 failed password attempts -> 15 minutes.

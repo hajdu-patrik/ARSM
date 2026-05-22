@@ -5,6 +5,11 @@ description: 'Enforce ARSM WebUI UI/UX policy with evidence-backed audits. Use w
 
 Use this skill after UI-facing frontend changes or agent/documentation changes that affect WebUI styling policy.
 
+## Persona Context
+
+- Primary owner: Gergely
+- Domain verification support: Patrik, Zsombor
+
 ## When to Use This Skill
 
 - User asks for detailed frontend design analysis.
@@ -30,7 +35,7 @@ Use this skill after UI-facing frontend changes or agent/documentation changes t
 - Shared primitive system and responsive media rules: `app/AutoService.WebUI/src/styles/design-system.css`
 - Component-level CSS effects and animations: `app/AutoService.WebUI/src/styles/components.css`
 - Base typography/background/focus baseline: `app/AutoService.WebUI/src/styles/base.css`
-- Shared JSX class primitives: `app/AutoService.WebUI/src/utils/formStyles.ts`
+- Shared JSX class primitives: `app/AutoService.WebUI/src/utils/formStyles.ts` barrel plus `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
 - Modal shell/close behavior: `app/AutoService.WebUI/src/components/common/Modal.tsx`, `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`
 - Toast infrastructure: `app/AutoService.WebUI/src/store/toast.store.ts`, `app/AutoService.WebUI/src/components/common/ToastViewport.tsx`, mounted in `app/AutoService.WebUI/src/App.tsx`
 - Localization bootstrap: `app/AutoService.WebUI/src/utils/i18n.ts`

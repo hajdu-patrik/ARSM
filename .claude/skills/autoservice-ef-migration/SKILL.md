@@ -6,6 +6,11 @@ disable-model-invocation: true
 
 Use this skill for EF migration workflows in `app/AutoService.ApiService`.
 
+## Persona Context
+
+- Primary owner: Mark
+- Domain verification support: Patrik, Zsombor
+
 ## Trigger Gate (mandatory)
 Run only if schema/EF delta exists.
 No schema delta -> return `SKIPPED`.

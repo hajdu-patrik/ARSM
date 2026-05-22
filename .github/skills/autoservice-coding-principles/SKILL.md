@@ -5,6 +5,11 @@ description: 'Enforce ARSM source-quality rules for changed `.cs`, `.ts`, and `.
 
 Use this skill whenever source files (`.cs`, `.ts`, `.tsx`) change.
 
+## Persona Context
+
+- Primary owner: Patrik
+- Domain verification support: Mark, Gergely, Zsombor
+
 ## Purpose
 Maintain readable, scalable, and maintainable code by enforcing SOLID/OOP/GoF-aware structure and anti-monolith decomposition.
 

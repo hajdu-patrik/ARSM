@@ -5,9 +5,9 @@
 ## Model Selection Policy (Auto Mode)
 
 - In auto/agent mode, never automatically select a model that costs more than 3x the baseline tier.
-- Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7` at any level and `gpt-5.5` at any level.
-- Preferred auto-selection pool: `gpt-5.3-codex` high/xhigh, `gpt-5.4` high/xhigh, `claude-sonnet 4.6` high, `gemini 3.1 pro`, or equivalent tier models.
-- If a task genuinely requires a top-tier model, surface the suggestion to the user and wait for explicit approval before switching.
+- Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7` at any level.
+- Preferred auto-selection pool: `claude-sonnet 4.6` (high), `claude-haiku` (latest stable), or equivalent Claude-tier models.
+- If a task genuinely requires `claude-opus-4.7`, surface the suggestion to the user and wait for explicit approval before switching.
 
 ## Team Identity (Global)
 
@@ -24,18 +24,18 @@
 - Frontend/UI/UX: Gergely.
 - Testing/security/validation: Zsombor.
 
-## Stack
-
-- Backend: .NET 10, ASP.NET Core API, EF Core, PostgreSQL.
-- Frontend: React 19, TypeScript, Vite, Tailwind.
-- Orchestration: .NET Aspire.
-
 ## Repository Map
 
 - `app/AutoService.ApiService`: API/domain/EF.
 - `app/AutoService.WebUI`: React client.
 - `app/AutoService.AppHost`: Aspire orchestration.
 - `app/AutoService.ServiceDefaults`: shared service defaults.
+
+## Stack
+
+- Backend: .NET 10, ASP.NET Core API, EF Core, PostgreSQL.
+- Frontend: React 19, TypeScript, Vite, Tailwind.
+- Orchestration: .NET Aspire.
 
 ## Mandatory Agent Workflow
 
