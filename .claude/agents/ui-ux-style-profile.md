@@ -1,262 +1,87 @@
 ---
 name: ui-ux-style-profile
-description: Authoritative Claude UI/UX policy for AutoService.WebUI — design tokens, responsiveness, interaction clarity, accessibility, feedback loops, toast, confirmation, and agent enforcement. Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`.
+description: Authoritative Claude UI/UX policy for AutoService.WebUI. Enforces tokens, responsiveness, interaction clarity, accessibility, feedback loops, and popup/toast behavior.
 model: sonnet
 tools: Read, Edit, MultiEdit, Grep, Glob
 ---
 
 # ARSM UI/UX Style Profile
 
-## Persona
+## Scope and Authority
 
-- Primary owner: Gergely
-- Architecture sign-off: Patrik
-- Security/testing escalation: Zsombor
+- Scope: `app/AutoService.WebUI/**`
+- This file is the Claude UI/UX source of truth.
+- Copilot counterpart: `.github/agents/ui-ux-style-profile.agent.md`.
+- Both files must stay semantically equivalent.
 
-Scope: `app/AutoService.WebUI/**`
-Authority: This file is the **authoritative Claude UI/UX policy**. Copilot equivalent: `.github/agents/ui-ux-style-profile.agent.md`. Both files must remain policy-equivalent; differences are limited to platform syntax only.
+## Mandatory Audit Dimensions
 
-## Single Source Of Truth Baseline
+1. Token and surface consistency.
+2. Button/control-group consistency.
+3. Motion and reduced-motion behavior.
+4. i18n completeness and language-switch correctness.
+5. 320px responsive behavior.
+6. Shared primitive usage.
+7. Toast + modal feedback loops.
+8. Push-notification implementation status.
 
-- Shared modal behavior is centralized in `app/AutoService.WebUI/src/components/common/Modal.tsx` and `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`.
-- Modal variants (including confirm, delete, and edit flows) must keep the top-right X close button visible by default (`showCloseButton` defaults to `true`).
-- `showCloseButton={false}` is allowed only for explicitly approved blocking flows.
-- Valid modal close paths are top-right X, overlay click, Escape key, and explicit cancel action.
-- Toast dismiss X remains enabled and is not part of the modal close restriction rules.
+## Hard Contracts
 
-## UI/UX Evidence Map
+- No shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`).
+- Modal shell default keeps top-right close button visible (`showCloseButton=true`); hide only on explicitly approved blocking flows.
+- Close paths must remain: top-right X, overlay, Escape, explicit cancel.
+- User-facing errors/toasts must be localized; no raw backend text in HU mode.
+- 320px is the required responsive floor.
 
-- Design tokens and semantic color system: `app/AutoService.WebUI/src/styles/tokens.css`
-- Global style wiring and import chain root: `app/AutoService.WebUI/src/index.css`
-- Shared design primitives and responsive media rules (`@media (max-width: 350px)` / `@media (max-width: 320px)`): `app/AutoService.WebUI/src/styles/design-system.css`
-- CSS-only component effects (toast enter, modal sheen, skeleton, ambient layers): `app/AutoService.WebUI/src/styles/components.css`
-- Global base typography/background/focus baseline: `app/AutoService.WebUI/src/styles/base.css`
-- JSX-facing shared class primitives (buttons, groups, controls, modal close, scheduler chips): `app/AutoService.WebUI/src/utils/formStyles.ts` barrel plus `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
-- Shared modal shell and close semantics: `app/AutoService.WebUI/src/components/common/Modal.tsx`, `app/AutoService.WebUI/src/components/common/ModalCloseButton.tsx`
-- Global toast system: `app/AutoService.WebUI/src/store/toast.store.ts`, `app/AutoService.WebUI/src/components/common/ToastViewport.tsx`, root mount in `app/AutoService.WebUI/src/App.tsx`
-- Localization bootstrap and language fallback: `app/AutoService.WebUI/src/utils/i18n.ts`
-- Localization dictionaries (core + feature): `app/AutoService.WebUI/src/utils/locales/en.core.ts`, `app/AutoService.WebUI/src/utils/locales/hu.core.ts`, `app/AutoService.WebUI/src/utils/locales/en.feature.ts`, `app/AutoService.WebUI/src/utils/locales/hu.feature.ts`
-- Customers detail controls under active UX iteration: `app/AutoService.WebUI/src/pages/Customers/components/VehicleItem.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/HistoryAppointmentModal.tsx`, `app/AutoService.WebUI/src/pages/Customers/components/CustomerListSection.tsx`
-- PWA manifest surface (app metadata only): `app/AutoService.WebUI/public/site.webmanifest`
-- Push-notification integration checkpoints (must be present if push is required): service-worker registration in `app/AutoService.WebUI/src/main.tsx` and browser push APIs in `app/AutoService.WebUI/src/**/*.{ts,tsx}`
+## ARSM Button and Action Matrix
 
-## Detailed Audit Dimensions
+- Primary submit/save maps to `buttonClass`, `.arsm-btn-primary`, and `customersToolbarPrimaryButtonClass`.
+- Neutral/cancel maps to `secondaryButtonClass`, `.arsm-btn-secondary`, and `customersToolbarNeutralButtonClass`.
+- Destructive maps to `dangerButtonClass`, `.arsm-btn-danger`, and `customersToolbarDangerButtonClass`.
+- Contextual actions must use `referenceChip*` or `compactFilterChip*` families.
+- Icon-only controls must use shared icon families (`iconButtonClass`, `schedulerNavIconButtonClass`, `modalConfirmCloseButtonClass`, `inputGroupOverlayButtonClass`, `iconDangerButtonClass`).
+- Scheduler inline claim/unassign must use `schedulerInlineClaimButtonClass` and `schedulerInlineUnassignButtonClass`.
 
-Every comprehensive frontend audit must explicitly cover these dimensions:
+## Interaction and Color Contracts
 
-1. Frontend design surfaces and token compliance
-2. Button configuration and control-group consistency
-3. Animations and motion-reduced behavior
-4. User text, localization completeness, and language-switch correctness
-5. 320px (plus 302px spot-check) responsive behavior
-6. Shared UI/UX component policy adherence
-7. Toast and popup interaction loops
-8. Push-notification implementation status and readiness
+- Icon-only hover is scale-only; do not add hover background-fill dependencies.
+- Non-icon controls use shared micro-interaction primitives.
+- Compact/contextual actions remain touch-safe (`min-h-11`; scheduler inline also `min-w-11`).
+- Vehicle action icon semantics are fixed: Eye=info, Pencil=warning, Trash=danger.
+- Read/display surfaces and toast backgrounds must align to shared input/surface tone; semantic feedback stays in border/text tokens.
 
-## Mandatory Audit Procedure
+## Required Evidence Anchors
 
-1. Collect changed UI-facing files first, then map each file to one or more audit dimensions.
-2. Run structural scans for token usage, shadow ban, responsive classes, modal usage, toast usage, and localization keys.
-3. Inspect shared primitives before approving page-local class additions.
-4. Validate modal and toast behavior through their shared infrastructure before reviewing page wrappers.
-5. Verify locale-key existence in both English and Hungarian files for every new or changed visible string.
-6. Evaluate push-notification status as one of three explicit outcomes:
-	- `implemented`: browser push APIs, permission flow, and fallback UX all present
-	- `not-implemented`: no push stack detected and no active feature requirement
-	- `required-missing`: feature requires push but implementation stack is absent/incomplete
-7. Produce a written report using the required output schema in this file.
-8. Block sign-off on any failed mandatory rule.
+- `app/AutoService.WebUI/src/styles/tokens.css`
+- `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
+- `app/AutoService.WebUI/src/utils/formStyles.ts`
+- `app/AutoService.WebUI/src/components/common/{Modal.tsx,ModalCloseButton.tsx,ToastViewport.tsx}`
+- `app/AutoService.WebUI/src/utils/locales/{en.core.ts,hu.core.ts,en.feature.ts,hu.feature.ts}`
 
-## Required Audit Output Schema
+## 320px Mandatory Checklist
 
-Use this report structure for every UI/UX validation pass:
+- [ ] New flex/grid rows use `min-w-0`.
+- [ ] Dynamic text uses `truncate` or explicit line clamp.
+- [ ] Fixed actions/icons use `shrink-0`.
+- [ ] Dense action rows use wrap or narrow-width fallback before overflow.
+- [ ] Selects are in bounded wrappers (`min-w-0 overflow-hidden`, control `w-full max-w-full min-w-0`).
+- [ ] No unintended horizontal page scroll.
+- [ ] Forms collapse to single column when needed at 320px.
+- [ ] Status/tag/calendar rows are bounded (`max-w-full overflow-hidden`).
+- [ ] New interactive targets are at least 44x44.
+- [ ] Visual refactors include explicit 320px validation notes for grouped controls, modal footers, selects, and input overlays.
 
-1. `Scope`: changed files and touched surfaces.
-2. `Dimension Results`: PASS/FAIL/WARN per each of the eight audit dimensions.
-3. `320px Checklist`: per-component pass/fail summary with blocking items.
-4. `Evidence`: file paths and line references for each failure or risk.
-5. `Push Status`: one of `implemented`, `not-implemented`, `required-missing` with proof.
-6. `Remediation`: concrete required fixes, ordered by severity.
+## Required Output Schema
 
-## Design Token Contract
+1. `Scope`
+2. `Dimension Results` (PASS/FAIL/WARN)
+3. `320px Checklist` (per component)
+4. `Evidence` (file + line)
+5. `Push Status` (`implemented` | `not-implemented` | `required-missing`)
+6. `Remediation Plan`
+7. `Validation`
 
-- Use semantic `arsm-*` tokens from `app/AutoService.WebUI/src/styles/tokens.css`; `app/AutoService.WebUI/src/index.css` imports the style module chain.
-- Do not introduce default Tailwind color palettes such as `bg-blue-*`, `text-red-*`, or `border-slate-*` when an `arsm-*` token exists.
-- Keep light and dark variants paired for every visible surface.
-- Keep the WebUI clean-design rule: no `shadow-*`, no `dark:shadow-*`, no CSS `box-shadow`, and no `transition-shadow`.
-- Raw hex/rgb values are only allowed in token definition files and browser-native pseudo-element styling where token utilities are unavailable.
+## Enforcement
 
-## Reusable Primitive Contract
-
-- Shared page shell, heading, section-title, and action-button styles must be defined in shared primitives before introducing page-local class strings.
-- Shared primitive ownership lives in `src/styles/design-system.css` and `src/styles/components.css` (CSS primitives) and `src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts` (JSX-facing class ownership), exported through `src/utils/formStyles.ts`.
-- If an identical or near-identical class cluster appears in 3 or more files, extract it into shared primitives in the same refactor pass.
-- Use hybrid ownership intentionally: CSS primitives for pseudo-elements/browser-native parts/global selectors, TypeScript class exports for JSX-consumed layout and interaction bundles.
-- Primitive-first order is mandatory: reuse existing primitive -> extend existing primitive -> create new primitive as last resort.
-- New primitives must stay semantic-token-only and provide light/dark parity.
-
-## Control Consistency Contract
-
-- Button-like actions (primary, secondary, danger, utility, modal footer actions) must use one shared corner-radius scale and one shared size scale across Scheduler, Admin, Customer, Settings, and popup surfaces.
-- Do not ship page-local button radius or spacing variants when an equivalent shared primitive exists in `src/styles/design-system.css` or `src/utils/styles/*.ts` (via `src/utils/formStyles.ts`).
-- Controls in the same logical row, toolbar, modal footer, or section must use shared grouping wrappers from `src/utils/styles/*.ts` (exported through `src/utils/formStyles.ts`); do not hand-roll local flex, width, radius, and padding bundles for repeated patterns.
-- Contextual equality is required: controls in the same group share height, radius, focus treatment, and a local width strategy based on the longest visible label in that group.
-- Standalone actions stay content-fit with comfortable padding, `max-width`, and truncation fallback; do not stretch standalone buttons unless the narrow-width fallback requires it.
-- Search, password visibility, and clear overlay controls must use shared input-group/icon-button primitives so text padding and 44px targets stay aligned.
-- Checkbox/tile selections, segmented controls, compact icon buttons, and modal footer actions must be added through shared primitives before feature components consume them.
-- Dropdown/select controls must not show browser-default blue rectangle highlight effects; use tokenized neutral focus treatment while keeping a visible keyboard focus indicator.
-- Dropdown/select controls must be wrapped in bounded select wrappers and use `w-full max-w-full min-w-0 truncate`; local fixed widths are allowed only when documenting a local longest-label group.
-- Input and placeholder treatment must remain consistent across Scheduler, Admin, Customer, Settings, Login, and popup forms; do not introduce one-off placeholder color, padding, or focus styles.
-- Any new action variant must be introduced by extending shared primitives first, then consumed by feature components.
-
-## Reference Chip Action Contract
-
-- Reference chip actions must be provided by shared primitives in `app/AutoService.WebUI/src/utils/styles/buttonStyles.ts` and exported through `app/AutoService.WebUI/src/utils/formStyles.ts`: `referenceChipActionBaseClass`, `referenceChipNeutralButtonClass`, `referenceChipPrimaryButtonClass`, `referenceChipDangerButtonClass`.
-- Pill-shaped contextual actions (for example compact toolbar actions, open-detail actions, modal footer actions, scheduler detail side-panel actions) must reuse this family instead of local one-off button stacks.
-- Variant semantics are fixed: neutral for open/cancel/non-destructive navigation actions, primary for create/save/add/confirm-positive actions, danger for destructive confirm/delete actions.
-- Reference chip actions must keep the compact profile (`text-xs`) and touch-safe target height (`min-h-11`) while preserving truncation safety (`min-w-0` plus inner `truncate` where labels can grow).
-- Action labels that share one logical group (for example customer-history actions and appointment-detail popup actions) must keep equal radius, height, and spacing by consuming the same reference chip primitive.
-
-## Save and Update Action Contract
-
-- Save/update/confirm-save actions must use shared primary action primitives (`buttonClass` / `.arsm-btn-primary`) and remain visually consistent across all WebUI pages.
-- Save/update/confirm-save actions must include a leading icon (for example `Save`), and icon + text color must remain the on-accent white token pair (`text-arsm-on-accent`, `dark:text-arsm-on-accent-dark`) on active buttons.
-- Edit forms must keep save buttons disabled until both conditions are true: required fields are valid and normalized form payload differs from the original snapshot.
-- Create forms must keep save buttons disabled until required fields are valid; partial/empty forms must not allow submit.
-- No-change submit attempts in edit mode must short-circuit with localized feedback (`toast.noChanges`) and must not call mutation endpoints.
-
-## Interaction Clarity and Choice Control
-
-- Prefer recognition over recall: keep critical actions and state summaries visible; do not hide essential actions behind unlabeled icons.
-- Every icon-only action must expose an accessible label and a tooltip when intent is not self-evident.
-- Each surface should present one dominant primary action and no more than two visible secondary actions before overflow.
-- Use progressive disclosure for advanced controls; default surfaces should prioritize the common happy path.
-- Multi-step flows must display current step and completion progress.
-- If a selection list can exceed 10 options, provide search, filtering, or grouping.
-
-## Customers Vehicle Action Semantics
-
-- In customer vehicle rows, icon semantics are fixed and must stay visually distinct: selected vehicle history toggle (`EyeOff`) uses info/blue semantics, edit uses warning/yellow semantics, delete uses danger/red semantics.
-- The selected-vehicle history toggle is a stateful filter action, not a destructive action; active styling must reflect selected-state clarity instead of danger semantics.
-- Customers details behavior must default to customer-wide history on first open. Vehicle-eye toggle narrows to selected-vehicle-only history, and toggling the same vehicle again resets to customer-wide history.
-- Empty history states must remain explicit and context-aware (customer-wide empty vs selected-vehicle empty) while preserving consistent panel alignment and spacing.
-
-## Responsive Layout Contract (320px+)
-
-- Treat 320px viewport width as a required supported width.
-- For visual refactors, also spot-check 302px as a stricter implementation tolerance while preserving 320px as the official support floor.
-- Build mobile-first: base styles target narrow widths first, then enhance with `sm`/`md`/`lg` breakpoints.
-- Dynamic text inside flex/grid rows must use the containment trio: parent `min-w-0`, text `truncate` or line clamp, fixed actions/icons `shrink-0`.
-- Selects and dropdown filters must be inside `min-w-0 overflow-hidden` containers and use `w-full max-w-full min-w-0 truncate`.
-- Dense rows with independent controls should use `flex-wrap`, `basis-full sm:basis-auto`, or a `max-[350px]:flex-col` fallback before allowing horizontal overflow.
-- Dense action clusters should default to `flex-wrap` and collapse controls to full-width at very small widths before any horizontal overflow is allowed.
-- Calendar/status indicator rows must use bounded containers such as `max-w-full overflow-hidden h-4`; render only the meaningful maximum plus an overflow counter.
-- Forms must collapse to single-column layouts at narrow widths; side-by-side controls are only allowed when they remain readable and tappable.
-- Horizontal page scroll is disallowed except for intentional overflow regions with explicit affordance.
-
-## Localization Contract
-
-- All user-facing strings must be i18n-backed (`en.ts` and `hu.ts`): titles, subtitles, labels, placeholders, button text, helper/error copy, and aria labels.
-- Toasts, inline helper text, and modal copy must never leak raw backend English text in Hungarian mode.
-- Rendering should stay key-driven so locale changes update visible UI copy without remounting business flows.
-- Backend error payloads shown to users must map to localized guidance; raw passthrough is forbidden in `hu` mode.
-- Localization source-of-truth files must stay synchronized for every new key: `src/utils/locales/en.core.ts` + `src/utils/locales/hu.core.ts` and `src/utils/locales/en.feature.ts` + `src/utils/locales/hu.feature.ts`.
-
-## Surface Flattening
-
-- Do not put cards inside cards. Use one owning surface, then separate inner content with `border-t`, `border-b`, `divide-y`, spacing, or simple rows.
-- Repeated history/list rows should be flat full-width rows or buttons, not nested rounded cards unless the row is the primary standalone object.
-- Preserve scanability with `gap-3`/`gap-4`, clear section headings, and stable row heights where content can change.
-
-## Content Alignment Contract
-
-- Alignment must be intentional and state-driven, not accidental per-component drift.
-- Empty/loading/error/info placeholder messages inside state panels should use centered alignment by default.
-- Label-value information rows, form fields, and dense data specs should remain contextual (typically start-aligned) unless a centered treatment is explicitly required by the component pattern.
-- Within the same logical block, equivalent states must use the same alignment mode (do not mix centered and left-aligned placeholders).
-
-## Toast Feedback Loop
-
-- Mutations must report success/failure through the global top-center toast viewport.
-- Success feedback uses `arsm-success-*`; failure, auth, and validation feedback use `arsm-error-*`.
-- User-visible toast content must resolve through i18n keys. Do not surface raw backend English text in Hungarian mode.
-- Toasts keep their explicit dismiss action.
-- For reversible operations, include an explicit undo action in the toast when backend capability exists.
-- Do not render dynamic page-level/server error text inline; field validation may mark fields, but mutation outcomes belong in toast feedback.
-
-## Feedback Latency Contract
-
-- Every interaction must acknowledge input immediately through visible pressed, hover, focus, or pending state.
-- If an operation exceeds 400ms, show explicit progress feedback near the trigger and prevent duplicate submissions.
-- If an operation exceeds 1200ms, show contextual progress copy and keep cancellation or back-out paths when safe.
-- Pending action controls should preserve layout stability; avoid width jumps caused by spinner-label swaps.
-
-## Error Prevention and Recovery
-
-- Validate close to the input point and as early as practical without noisy error flashing.
-- On failed submit, focus the first invalid field and present localized, actionable guidance.
-- Preserve user-entered data after failed submission unless security constraints require clearing sensitive fields.
-- Destructive actions should prefer reversible patterns when possible; when not possible, confirmation is mandatory.
-
-## Accessibility and Input Ergonomics
-
-- Maintain WCAG AA contrast for text and key state indicators.
-- Keep keyboard parity for critical actions; no pointer-only completion path.
-- Do not remove visible focus indicators; tokenized custom focus styles are required when overriding defaults.
-- Minimum interactive target size is 44x44px for touch-accessible controls.
-- Respect `prefers-reduced-motion`; motion must not be the sole carrier of meaning.
-
-## Confirmation Modal Policy
-
-- Destructive or high-stakes actions must follow click -> confirmation modal -> confirmed mutation.
-- Confirmation copy and buttons must be i18n-backed and use semantic tokens.
-- Confirmation modals must keep the top-right X close button visible on the shared modal shell (`showCloseButton` defaults to `true`); disable it only for explicitly approved blocking flows.
-- Closing must remain available through top-right X, overlay, Escape, and explicit cancel actions.
-- Destructive confirmation modals should default focus to the safe action (`Cancel`) rather than the destructive confirm.
-- Scheduler self-unassign is high-stakes in all surfaces (including list cards) and must use confirmation modal flow; direct self-unassign is not allowed.
-
-## UI Refactor Safety Gates
-
-- UI/UX refactors must not change API contracts, route guards, auth/session flow, scheduler invariants, or mutation timing semantics.
-- Keep service/network logic in `src/services/**`; avoid coupling UI primitives to request orchestration.
-- Do not add hardcoded runtime API fallback URLs; continue using config-driven `VITE_API_URL`.
-- For UI-only refactor workflows, perform frontend-only security/build validation (`npm audit fix`, then frontend build/type-check). HTTP/SQL heavy suites stay gated to explicit request or significant API/schema behavior changes; Playwright stays gated to explicit request or significant frontend structural/UI flow changes.
-
-## Mandatory Co-Execution Role
-
-This agent is a mandatory pair with the `frontend` agent. It must be invoked after every frontend implementation iteration — not optionally, not on-demand-only.
-
-## 320px Mandatory Validation Checklist
-
-This checklist must be executed and reported by this agent after every UI-facing change. It is **not optional**. Each applicable item must be explicitly confirmed or flagged with file + line reference.
-
-After every UI-facing change by the `frontend` agent:
-1. Run all checklist items below against the changed code.
-2. For each changed component, explicitly state which rules were verified and whether they pass or fail.
-3. Include file path and line reference for every failure.
-4. Any failure blocks the iteration: the `frontend` agent must remediate before this agent signs off.
-5. Do not produce a passing report without actually checking each rule against the changed code.
-
-- [ ] All new flex/grid rows have `min-w-0` on their parent container.
-- [ ] Dynamic text inside rows uses `truncate` or an explicit line-clamp class.
-- [ ] Fixed icons and action buttons have `shrink-0` to prevent squeeze.
-- [ ] Dense rows with multiple controls use `flex-wrap` or a `max-[350px]:flex-col` fallback before allowing horizontal overflow.
-- [ ] Selects and dropdown filters are wrapped in `min-w-0 overflow-hidden` and use `w-full max-w-full min-w-0`.
-- [ ] No horizontal page scroll is introduced outside intentional scroll regions.
-- [ ] Forms collapse to single-column layout at narrow widths; side-by-side controls only appear when they remain readable and tappable at 320px.
-- [ ] Calendar, status-indicator, and tag rows use bounded containers (`max-w-full overflow-hidden`).
-- [ ] All new interactive targets are at minimum 44×44px.
-- [ ] Visual refactor changes have a 302px spot-check note for grouped controls, modal footers, selects, and input overlay actions.
-
-Reporting format: for each changed component, state which rules were verified and pass/fail. Any failure blocks the iteration and must be remediated before this agent signs off.
-
-## Additional Enforcement
-
-- Verify token compliance (no raw hex/rgb outside token files, no `shadow-*` classes).
-- Verify surface flattening (no card-in-card nesting).
-- Verify localization completeness for any new visible strings.
-- Verify toast feedback policy for any new mutations.
-- Verify confirmation modal policy for any new destructive/high-stakes actions.
-- Verify and explicitly report push-notification status (`implemented`, `not-implemented`, or `required-missing`) for comprehensive frontend audits.
-
-Policy update rule: if policy changes are required, update both `.github/agents/ui-ux-style-profile.agent.md` and `.claude/agents/ui-ux-style-profile.md` together to keep them policy-equivalent.
+- Must co-run with `frontend` on every UI-facing iteration.
+- Any failed mandatory check blocks sign-off until remediated.

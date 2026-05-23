@@ -14,7 +14,7 @@ import {
   roundedOverflowBorderLayoutClass,
 } from '../../../../utils/formStyles';
 import { AppointmentCard } from '../shared/AppointmentCard';
-import { MonthAppointmentFilters } from './MonthAppointmentFilters';
+import { MonthAppointmentFilters, MonthAppointmentSortControls } from './MonthAppointmentFilters';
 
 interface MonthAppointmentListProps {
   readonly appointments: AppointmentDto[];
@@ -154,26 +154,31 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
 
   return (
     <section className={`${insetSurfaceClass} p-3 sm:p-4`}>
-      <div className="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-col">
-          <h3 className={`truncate ${baseSectionHeadingTextClass} sm:text-lg`}>
-            {t('scheduler.monthList.title')}
-          </h3>
-          <p className={`${mutedMetaTextClass} sm:text-sm`}>
-            {t('scheduler.monthList.count', { count: sortedAppointments.length })}
-          </p>
+      <div className="mb-4 flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-col">
+            <h3 className={`truncate ${baseSectionHeadingTextClass} sm:text-lg`}>
+              {t('scheduler.monthList.title')}
+            </h3>
+            <p className={`${mutedMetaTextClass} sm:text-sm`}>
+              {t('scheduler.monthList.count', { count: sortedAppointments.length })}
+            </p>
+          </div>
+
+          <MonthAppointmentSortControls
+            selectedDay={selectedDay}
+            sortAsc={sortAsc}
+            onToggleSort={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
+            onClearFilter={onClearFilter}
+          />
         </div>
 
         <MonthAppointmentFilters
           selectedStatuses={selectedStatuses}
           uniqueMechanics={uniqueMechanics}
           selectedMechanicId={selectedMechanicId}
-          selectedDay={selectedDay}
-          sortAsc={sortAsc}
           onToggleStatus={toggleStatus}
           onMechanicChange={setSelectedMechanicId}
-          onToggleSort={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
-          onClearFilter={onClearFilter}
         />
       </div>
 

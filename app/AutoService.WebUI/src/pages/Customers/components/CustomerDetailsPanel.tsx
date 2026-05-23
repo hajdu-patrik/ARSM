@@ -1,16 +1,16 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, CarFront, UserRound, Wrench, X } from 'lucide-react';
+import { ArrowUpDown, CarFront, UserRound, X } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
+  compactFilterChipNeutralButtonClass,
   inlineSectionTitleClass,
   modalConfirmCloseButtonClass,
   compactHeaderRowClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
-  referenceChipNeutralButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
@@ -84,54 +84,49 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
         ? 'min-w-0'
         : 'fixed inset-x-0 bottom-0 z-[90] max-h-[82vh] min-w-0 overflow-hidden rounded-t-2xl border border-arsm-border bg-arsm-card dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:sticky lg:top-6 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-2xl'}
     >
-      <div className={isInline
-        ? 'flex min-w-0 items-start justify-between gap-3 pb-2'
-        : 'flex min-w-0 items-start justify-between gap-3 border-b border-arsm-border px-4 py-3 dark:border-arsm-border-dark'}>
-        <div className="min-w-0">
-          <p className="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-            {target.kind === 'customer' ? <UserRound className="h-4 w-4 shrink-0" /> : <CarFront className="h-4 w-4 shrink-0" />}
-            <span className="min-w-0 truncate">
-              {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('customers.vehicleDetailsTitle')}
-            </span>
-          </p>
-          <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
-            {target.kind === 'customer' ? buildCustomerDisplayName(customer) : target.vehicle.licensePlate}
-          </h2>
-          <p className={`truncate ${mutedMetaTextClass}`}>
-            {target.kind === 'customer'
-              ? customer.email
-              : `${target.vehicle.brand} ${target.vehicle.model} (${target.vehicle.year})`}
-          </p>
-        </div>
+      {!isInline && (
+        <div className="flex min-w-0 items-start justify-between gap-3 border-b border-arsm-border px-4 py-3 dark:border-arsm-border-dark">
+          <div className="min-w-0">
+            <p className="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
+              {target.kind === 'customer' ? <UserRound className="h-4 w-4 shrink-0" /> : <CarFront className="h-4 w-4 shrink-0" />}
+              <span className="min-w-0 truncate">
+                {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('customers.vehicleDetailsTitle')}
+              </span>
+            </p>
+            <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
+              {target.kind === 'customer' ? buildCustomerDisplayName(customer) : target.vehicle.licensePlate}
+            </h2>
+            <p className={`truncate ${mutedMetaTextClass}`}>
+              {target.kind === 'customer'
+                ? customer.email
+                : `${target.vehicle.brand} ${target.vehicle.model} (${target.vehicle.year})`}
+            </p>
+          </div>
 
-        {!isInline && onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className={modalConfirmCloseButtonClass}
-            aria-label={t('customers.closeDetailsPanel')}
-            title={t('customers.closeDetailsPanel')}
-          >
-            <X className="h-4 w-4 shrink-0" />
-          </button>
-        )}
-      </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className={modalConfirmCloseButtonClass}
+              aria-label={t('customers.closeDetailsPanel')}
+              title={t('customers.closeDetailsPanel')}
+            >
+              <X className="h-4 w-4 shrink-0" />
+            </button>
+          )}
+        </div>
+      )}
 
       <div className={isInline ? 'arsm-scroll-no-bar max-h-[30rem] min-w-0 overflow-y-auto py-1' : 'arsm-scroll-no-bar max-h-[calc(82vh-4.5rem)] min-w-0 overflow-y-auto px-4 py-3 lg:max-h-[calc(100vh-12rem)]'}>
-        {target.kind === 'vehicle' && (
-          <VehicleSpecs vehicle={target.vehicle} t={t} locale={locale} />
-        )}
-
         <section className="min-w-0 space-y-3 pt-2">
           <div className={compactHeaderRowClass}>
             <h3 className={inlineSectionTitleClass}>
-              <Wrench className="h-4 w-4 shrink-0 text-arsm-warning-text dark:text-arsm-warning-text-dark" />
               <span className="truncate">{historySource.title}</span>
             </h3>
             <button
               type="button"
               onClick={historySource.toggleSort}
-              className={`${referenceChipNeutralButtonClass} w-full sm:w-auto`}
+              className={`${compactFilterChipNeutralButtonClass} w-full sm:w-auto`}
             >
               <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -146,44 +141,15 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
             <RepairHistoryList
               appointments={displayedHistory}
               locale={locale}
-              emptyMessage={t('customers.emptyHistory')}
+              emptyMessage={target.kind === 'vehicle'
+                ? t('customers.emptyVehicleHistory')
+                : t('customers.emptyCustomerHistory')}
               onOpenAppointment={onOpenHistoryAppointment}
             />
           )}
         </section>
       </div>
     </aside>
-  );
-});
-
-interface VehicleSpecsProps {
-  readonly vehicle: VehicleDetailDto;
-  readonly t: TFunction;
-  readonly locale: string;
-}
-
-const VehicleSpecs = memo(function VehicleSpecs({ vehicle, t, locale }: VehicleSpecsProps) {
-  const specs = [
-    [t('customers.vin'), vehicle.vin],
-    [t('customers.brand'), vehicle.brand],
-    [t('customers.model'), vehicle.model],
-    [t('customers.year'), String(vehicle.year)],
-    [t('customers.mileageKm'), `${vehicle.mileageKm.toLocaleString(locale)} km`],
-    [t('customers.enginePowerKw'), `${vehicle.enginePowerKw.toLocaleString(locale)} kW`],
-    [t('customers.drivetrainType'), t(`vehicle.drivetrain.${vehicle.drivetrainType}`)],
-  ] as const;
-
-  return (
-    <section className="min-w-0 pb-3">
-      <dl className="grid min-w-0 grid-cols-1 gap-x-3 gap-y-2 text-sm sm:grid-cols-2">
-        {specs.map(([label, value]) => (
-          <div key={label} className="min-w-0 py-0.5">
-            <dt className={`truncate ${mutedMetaTextClass}`}>{label}</dt>
-            <dd className="truncate font-semibold text-arsm-primary dark:text-arsm-primary-dark">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
   );
 });
 
@@ -203,7 +169,9 @@ function getHistorySource(params: {
     const vehicleId = params.target.vehicle.id;
 
     return {
-      title: params.t('customers.vehicleHistoryTitle'),
+      title: params.t('customers.vehicleHistoryForPlateTitle', {
+        plate: params.target.vehicle.licensePlate,
+      }),
       appointments: params.vehicleHistoryByVehicleId[vehicleId] ?? [],
       isLoading: params.isLoadingVehicleHistoryByVehicleId[vehicleId] ?? false,
       sortDirection: params.vehicleHistorySortByVehicleId[vehicleId] ?? 'asc',

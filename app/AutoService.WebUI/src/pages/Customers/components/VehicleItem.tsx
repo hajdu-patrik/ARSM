@@ -38,9 +38,12 @@ const VehicleItemComponent = memo(function VehicleItem({
 	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
 	const vehicleDetailsActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 ${isDetailsOpen
 		? 'bg-arsm-info-bg text-arsm-info-text ring-1 ring-arsm-info-ring/45 dark:bg-arsm-info-bg-dark dark:text-arsm-info-text-dark dark:ring-arsm-info-ring/55'
-		: 'text-arsm-info-text hover:bg-arsm-info-bg/70 hover:text-arsm-info-text dark:text-arsm-info-text-dark dark:hover:bg-arsm-info-bg-dark/55 dark:hover:text-arsm-info-text-dark'}`;
-	const vehicleInlineEditActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-warning-accent hover:bg-arsm-warning-bg hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:bg-arsm-warning-bg-dark/65 dark:hover:text-arsm-warning-text-dark`;
-	const vehicleInlineDeleteActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-error-text hover:bg-arsm-error-bg hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80 dark:hover:text-arsm-error-text-light`;
+		: 'text-arsm-info-text hover:text-arsm-info-text dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark'}`;
+	const vehicleInlineEditActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-warning-accent hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:text-arsm-warning-text-dark`;
+	const vehicleInlineDeleteActionClass = `${modalConfirmCloseButtonClass} min-h-11 min-w-11 text-arsm-error-accent hover:text-arsm-error-accent dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
+	const vehicleInlineViewIconClass = 'h-3.5 w-3.5 shrink-0 text-arsm-info-text dark:text-arsm-info-text-dark';
+	const vehicleInlineEditIconClass = 'h-3.5 w-3.5 shrink-0 text-arsm-warning-accent dark:text-arsm-warning-text-dark';
+	const vehicleInlineDeleteIconClass = 'h-3.5 w-3.5 shrink-0 text-arsm-error-accent dark:text-arsm-error-text-light';
 
 	return (
 		<div className="min-w-0 space-y-3">
@@ -53,7 +56,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						</p>
 					</div>
 
-					<div className="flex shrink-0 items-center gap-1">
+						<div className="flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end">
 						<button
 							type="button"
 							onClick={() => onOpenVehicleDetails(customerId, vehicle.id)}
@@ -62,8 +65,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 							aria-label={detailsActionLabel}
 						>
 							{isDetailsOpen
-								? <EyeOff className="h-3.5 w-3.5 shrink-0" />
-								: <Eye className="h-3.5 w-3.5 shrink-0" />}
+								? <EyeOff className={vehicleInlineViewIconClass} />
+								: <Eye className={vehicleInlineViewIconClass} />}
 						</button>
 
 						<button
@@ -73,7 +76,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							title={t('customers.editVehicle')}
 							aria-label={t('customers.editVehicle')}
 						>
-							<Pencil className="h-3.5 w-3.5 shrink-0" />
+							<Pencil className={vehicleInlineEditIconClass} />
 						</button>
 
 						<button
@@ -83,7 +86,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 							title={t('customers.deleteVehicle')}
 							aria-label={t('customers.deleteVehicle')}
 						>
-							<Trash2 className="h-3.5 w-3.5 shrink-0" />
+							<Trash2 className={vehicleInlineDeleteIconClass} />
 						</button>
 					</div>
 				</div>

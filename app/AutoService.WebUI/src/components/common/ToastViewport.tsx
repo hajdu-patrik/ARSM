@@ -37,12 +37,12 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
+  let toastVariantClass = 'border-arsm-error-border bg-arsm-input text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-input-dark dark:text-arsm-error-text-light';
 
   if (toast.variant === 'success') {
-    toastVariantClass = 'border-arsm-success-border bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
+    toastVariantClass = 'border-arsm-success-border bg-arsm-input text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-input-dark dark:text-arsm-success-text-dark';
   } else if (isSystemErrorToast) {
-    toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
+    toastVariantClass = 'border-arsm-error-border bg-arsm-input text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-input-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
   }
 
   return (
@@ -72,7 +72,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       <button
         type="button"
         onClick={() => removeToast(toast.id)}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition hover:bg-arsm-deepest/10 hover:opacity-100 dark:hover:bg-arsm-primary-dark/12"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition-[opacity,transform] duration-150 ease-out hover:scale-105 hover:opacity-100 motion-reduce:transform-none"
         aria-label={translate('toast.dismiss')}
       >
         <X className="h-4 w-4" />

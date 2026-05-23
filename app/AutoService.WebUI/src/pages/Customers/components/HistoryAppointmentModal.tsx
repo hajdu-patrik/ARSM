@@ -9,7 +9,12 @@ import { CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import { compactDataSurfaceClass, compactPrimaryValueTextClass, mutedMetaTextClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import {
+  compactDataSurfaceClass,
+  compactFilterChipNeutralButtonClass,
+  compactPrimaryValueTextClass,
+  mutedMetaTextClass,
+} from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
@@ -56,7 +61,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           <button
             type="button"
             onClick={handleOpenInScheduler}
-            className={referenceChipNeutralButtonClass}
+            className={compactFilterChipNeutralButtonClass}
             title={t('customers.openInScheduler')}
             aria-label={t('customers.openInScheduler')}
           >
@@ -70,7 +75,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           <p className={`mt-0.5 break-words ${compactPrimaryValueTextClass}`}>{appointment.taskDescription}</p>
         </div>
 
-        <div className="divide-y divide-arsm-border/50 rounded-xl border border-arsm-border bg-arsm-card dark:divide-arsm-border-dark/50 dark:border-arsm-border-dark dark:bg-arsm-card-dark">
+        <div className="divide-y divide-arsm-border/50 rounded-xl border border-arsm-border bg-arsm-input dark:divide-arsm-border-dark/50 dark:border-arsm-border-dark dark:bg-arsm-input-dark">
           <div className="min-w-0 px-3 py-2">
             <p className={mutedMetaTextClass}>{t('customers.intakeCreatedAt')}</p>
             <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.intakeCreatedAt, locale)}</p>

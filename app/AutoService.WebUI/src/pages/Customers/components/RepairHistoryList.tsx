@@ -53,7 +53,7 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 						<p className={compactItemTitleTextClass}>
 							{formatDateTime(appointment.scheduledDate, locale)}
 						</p>
-						<StatusBadge status={appointment.status} className="min-h-0 shrink-0 px-2 py-0.5 text-[10px]" />
+						<StatusBadge status={appointment.status} className="shrink-0" />
 					</div>
 
 					<p className={`mt-1.5 min-h-[2.25rem] overflow-hidden leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${mutedBodyTextClass}`}>

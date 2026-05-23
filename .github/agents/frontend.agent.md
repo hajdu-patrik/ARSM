@@ -10,53 +10,30 @@ tools:
 
 # Frontend Specialist Agent
 
-## Persona
-- Primary owner: Gergely
-- Architecture sign-off: Patrik
-- QA/security escalation: Zsombor
-
 ## Scope
-- `app/AutoService.WebUI/**` only.
 
-## Non-Negotiables
-- React + TypeScript + Tailwind only.
-- i18n for all user-facing text in both `en.ts` and `hu.ts`.
+- `app/AutoService.WebUI/**`
+
+## Must Preserve
+
+- React + TypeScript + Tailwind stack.
+- i18n for all user text (EN + HU).
 - No hardcoded `VITE_API_URL` fallback.
-- Preserve auth/session guards and responsive behavior.
+- Auth guard/session behavior and routing shell.
 
-## Current Runtime Anchors
-- i18n uses `i18next` with `LanguageDetector`, `preferred-language` localStorage, and `hu` fallback.
-- Theme state uses `useThemeStore` and persists user preference to localStorage.
-- `apiClient` reads `VITE_API_URL`, has no fallback, and uses single-flight 401 refresh handling.
-- `App.tsx` restores auth with `authService.restoreAuth()` and composes lazy routes with `PrivateRoute`, `AdminRoute`, `PublicOnlyRoute`, and `SidebarLayout`.
+## Mandatory Pair Rule
 
-## Engineering Standards
-- Apply SOLID to component/hook/service boundaries.
-- Keep OOP-style responsibilities clear (single purpose per component/hook/service).
-- Use GoF patterns pragmatically (for example Strategy/Adapter/Factory) when they reduce duplication and improve extension.
-- Include engineering rationale for non-trivial UI architecture decisions.
+- Every UI-facing change must co-run `ui-ux-style-profile`.
+- 320px checklist report is required before sign-off.
 
-## Decomposition Guardrails
-- No god files/components/hooks.
-- Source files > 500 lines must be split.
-- Components/hooks/services > 300 lines must be split by responsibility.
-- Functions should be <= 60 lines where practical.
-- Test files > 250 lines must be split.
+## Engineering Rules
 
-## Execution Rules
-- Read `app/AutoService.WebUI/CLAUDE.md` before editing.
-- Read `.github/agents/ui-ux-style-profile.agent.md` before UI-facing edits.
-- Keep API logic in `src/services`, UI logic in components/hooks/pages.
-- Run `npx tsc --noEmit` (and build when needed) after changes.
-- For triggered E2E validation, use `python scripts/run-local-test-suite.py playwright` and inspect the sanitized report.
+- SOLID/OOP boundaries for components/hooks/services.
+- Use shared style primitives first.
+- Enforce size limits (500/250/300/60).
 
-## Mandatory UI/UX Co-Execution (Non-Negotiable)
-- After every UI-facing implementation iteration, co-execute `ui-ux-style-profile` agent. This is not optional and is not satisfied by reading the profile file alone.
-- `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report for every changed UI file.
-- Do not mark any UI change complete without an explicit written 320px validation report from `ui-ux-style-profile`.
-- `frontend` and `ui-ux-style-profile` are a mandatory execution pair: the orchestrator must schedule both for any frontend change.
+## Required Validation
 
-## Always-On Security Remediation (for frontend code changes)
-1. Run `npm audit fix`.
-2. Re-run type-check/build.
-3. Report unresolved vulnerabilities explicitly.
+- Frontend type/build checks.
+- Frontend security remediation: `npm audit fix`.
+- Playwright only when gate requires.

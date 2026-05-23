@@ -106,7 +106,7 @@ Az AppHost elindítja és összeköti:
 
 ## Tesztek futtatása
 
-A Python futtatót a repository gyökeréből indítsd. Lokálisan betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, majd AI számára is biztonságos, maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
+A Python futtatót a repository gyökeréből indítsd. Betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, és maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
 
 ```bash
 python scripts/run-local-test-suite.py
@@ -119,20 +119,20 @@ python scripts/run-local-test-suite.py playwright
 python scripts/run-local-test-suite.py http sql
 ```
 
-Célok:
+Suite célok:
 
-- `playwright`: futtatja a WebUI Playwright E2E suite-ot, alapértelmezett `PORT=5173` értékkel.
+- `playwright`: futtatja a WebUI Playwright E2E suite-ot (`PORT=5173` alapérték).
 - `http`: futtatja az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
 - `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
 
-Teljes suite előtt indítsd el az Aspire stacket egy másik terminálban:
+Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:
 
 ```bash
 cd app
 dotnet run --project AutoService.AppHost
 ```
 
-A futtató szándékosan nem publikál nyers lokális részleteket. A `tests/.artifacts/` alatti generált riportok gitignore alatt vannak, és csak maszkolt összefoglalóként szolgálnak lokális hibakereséshez és AI review-hoz.
+A `tests/.artifacts/` alatti generált riportok gitignore alatt vannak, és lokális hibakereséshez/AI review-hoz csak maszkolt összefoglalóként szolgálnak.
 
 ### AI teszt workflow
 
@@ -142,7 +142,7 @@ Teljes tesztvizsgálatnál az AI agent ezt futtassa:
 python scripts/run-local-test-suite.py
 ```
 
-Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja. A maszkolt eredmény alapján írjon hiányzó teszteket, javítsa az elavult teszteket, vagy vizsgálja ki a hibás viselkedést a megfelelő rétegben. Agent nem publikálhat nyers `.env` értékeket, `.secrets` tartalmat, connection stringet, cookie-t, tokent, abszolút lokális útvonalat vagy teljes nyers tool logot.
+Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a megfelelő rétegben lépjen tovább (hiányzó teszt, elavult teszt, hibás viselkedés vizsgálata). Agent nem publikálhat nyers `.env` értékeket, `.secrets` tartalmat, connection stringet, cookie-t, tokent, abszolút lokális útvonalat vagy nyers tool logot.
 
 ## Konfiguráció és titokkezelés
 

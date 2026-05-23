@@ -146,7 +146,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   {isClaiming ? <span className="truncate">{t('scheduler.detail.claiming')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.claim')}</span>
-                      <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                      <UserPlus className="h-3 w-3 shrink-0" />
                     </>
                   )}
                 </button>
@@ -165,7 +165,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   {isUnclaiming ? <span className="truncate">{t('scheduler.detail.unassigning')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.detail.unassignMe')}</span>
-                      <LogOut className="h-3.5 w-3.5 shrink-0" />
+                      <LogOut className="h-3 w-3 shrink-0" />
                     </>
                   )}
                 </button>

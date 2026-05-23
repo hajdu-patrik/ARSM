@@ -115,7 +115,7 @@ export const MechanicsSection = memo(function MechanicsSection({
           disabled={isMechanicMutationBusy}
           className={`${schedulerInlineClaimButtonClass} mt-3`}
         >
-          <UserPlus className="h-3.5 w-3.5 shrink-0" />
+          <UserPlus className="h-3 w-3 shrink-0" />
           <span className="min-w-0 truncate">{isClaiming ? t('scheduler.detail.saving') : t('scheduler.claim')}</span>
         </button>
       )}
@@ -212,7 +212,7 @@ const MechanicCard = memo(function MechanicCard({
             disabled={isDisabled}
             className={`${schedulerInlineUnassignButtonClass} max-[350px]:justify-center`}
           >
-            <LogOut className="h-3.5 w-3.5 shrink-0" />
+            <LogOut className="h-3 w-3 shrink-0" />
             <span className="min-w-0 truncate">{t(removeLabelKey)}</span>
           </button>
         )}

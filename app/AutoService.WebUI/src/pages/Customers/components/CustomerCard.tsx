@@ -9,6 +9,7 @@ import { CarFront, ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucid
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
+  compactFilterChipPrimaryButtonClass,
   compactHeaderRowClass,
   contentCardFrameClass,
   inlineSectionTitleClass,
@@ -18,7 +19,6 @@ import {
   mutedSectionIconClass,
   referenceChipDangerButtonClass,
   referenceChipNeutralButtonClass,
-  referenceChipPrimaryButtonClass,
 } from '../../../utils/formStyles';
 import { buildCustomerDisplayName } from '../helpers';
 import { CustomerDetailsPanel, type ResolvedCustomerDetailsPanelTarget } from './CustomerDetailsPanel';
@@ -119,7 +119,7 @@ const CustomerCardComponent = memo(function CustomerCard({
                 onOpenCustomerDetails(customer.id);
               }
             }}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-arsm-muted hover:bg-arsm-toggle-bg hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-muted-dark dark:hover:bg-arsm-toggle-bg-dark dark:hover:text-arsm-primary-dark"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-arsm-muted transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-arsm-primary motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-muted-dark dark:hover:text-arsm-primary-dark"
             aria-label={isExpanded ? t('customers.collapseCustomerVehicles') : t('customers.expandCustomerVehicles')}
             title={isExpanded ? t('customers.collapseCustomerVehicles') : t('customers.expandCustomerVehicles')}
           >
@@ -133,7 +133,7 @@ const CustomerCardComponent = memo(function CustomerCard({
               }
               onOpenCustomerDetails(customer.id);
             }}
-            className="inline-flex min-h-11 min-w-0 max-w-full items-center text-left hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:hover:text-arsm-accent"
+            className="inline-flex min-h-11 min-w-11 max-w-full items-center text-left hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:hover:text-arsm-accent"
           >
             <span className="min-w-0 truncate">{renderHighlightedCustomerName(buildCustomerDisplayName(customer), searchTerm)}</span>
           </button>
@@ -146,18 +146,18 @@ const CustomerCardComponent = memo(function CustomerCard({
             {t('customers.vehicleCount', { count: customer.vehicleCount })}
           </span>
           <button type="button" onClick={() => onOpenEditCustomerModal(customer)} className={`${referenceChipNeutralButtonClass} shrink-0`}>
-            <Pencil className="h-3.5 w-3.5 shrink-0" />
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-current" />
             <span className="truncate">{t('customers.editCustomer')}</span>
           </button>
           <button type="button" onClick={() => onOpenDeleteCustomerModal(customer)} className={`${referenceChipDangerButtonClass} shrink-0`}>
-            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+            <Trash2 className="h-3.5 w-3.5 shrink-0 text-arsm-error-accent dark:text-arsm-error-text-light" />
             <span className="truncate">{t('customers.deleteCustomer')}</span>
           </button>
         </div>
       </div>
 
       {isExpanded && (
-        <div className="min-w-0 px-4 pb-4 sm:px-5">
+        <div className="min-w-0 border-t border-arsm-border/85 px-4 pb-4 pt-4 dark:border-arsm-border-dark/85 sm:px-5">
           <div className="grid min-w-0 gap-5 xl:grid-cols-2">
             <section className="min-w-0 space-y-3">
               <div className={compactHeaderRowClass}>
@@ -165,7 +165,7 @@ const CustomerCardComponent = memo(function CustomerCard({
                   <CarFront className="h-4 w-4 shrink-0" />
                   <span className="truncate">{t('customers.vehiclesTitle')}</span>
                 </h3>
-                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${referenceChipPrimaryButtonClass} w-full sm:w-auto`}>
+                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${compactFilterChipPrimaryButtonClass} w-full sm:w-auto`}>
                   <Plus className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.createVehicle')}</span>
                 </button>
@@ -192,21 +192,23 @@ const CustomerCardComponent = memo(function CustomerCard({
               )}
             </section>
 
-            <CustomerDetailsPanel
-              target={detailsTarget}
-              variant="inline"
-              locale={locale}
-              customerHistoryByCustomerId={customerHistoryByCustomerId}
-              isLoadingCustomerHistoryByCustomerId={isLoadingCustomerHistoryByCustomerId}
-              customerHistorySortByCustomerId={customerHistorySortByCustomerId}
-              vehicleHistoryByVehicleId={vehicleHistoryByVehicleId}
-              isLoadingVehicleHistoryByVehicleId={isLoadingVehicleHistoryByVehicleId}
-              vehicleHistorySortByVehicleId={vehicleHistorySortByVehicleId}
-              t={t}
-              onToggleCustomerHistorySort={onToggleCustomerHistorySort}
-              onToggleVehicleHistorySort={onToggleVehicleHistorySort}
-              onOpenHistoryAppointment={onOpenHistoryAppointment}
-            />
+            <div className="min-w-0 border-t border-arsm-border/65 pt-4 dark:border-arsm-border-dark/65 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+              <CustomerDetailsPanel
+                target={detailsTarget}
+                variant="inline"
+                locale={locale}
+                customerHistoryByCustomerId={customerHistoryByCustomerId}
+                isLoadingCustomerHistoryByCustomerId={isLoadingCustomerHistoryByCustomerId}
+                customerHistorySortByCustomerId={customerHistorySortByCustomerId}
+                vehicleHistoryByVehicleId={vehicleHistoryByVehicleId}
+                isLoadingVehicleHistoryByVehicleId={isLoadingVehicleHistoryByVehicleId}
+                vehicleHistorySortByVehicleId={vehicleHistorySortByVehicleId}
+                t={t}
+                onToggleCustomerHistorySort={onToggleCustomerHistorySort}
+                onToggleVehicleHistorySort={onToggleVehicleHistorySort}
+                onOpenHistoryAppointment={onOpenHistoryAppointment}
+              />
+            </div>
           </div>
         </div>
       )}

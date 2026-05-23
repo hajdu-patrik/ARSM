@@ -1,136 +1,75 @@
 # ARSM Copilot Instructions
 
-> Architecture Notice: ARSM uses GitHub Copilot + Claude Code. Keep `.github/**` and `.claude/**` policy-equivalent.
+> Keep `.github/**` and `.claude/**` policy-equivalent.
 
-## Model Selection Policy (Auto Mode)
+## Scope
 
-- In auto/agent mode, **never** automatically select a model that costs more than 3× the baseline tier.
-- Forbidden for automatic selection (only allowed when the user explicitly starts the session with that model): `claude-opus-4.7 (any level)` and `gpt-5.5 (any level)`
-- Preferred auto-selection pool: `gpt-5.3-codex (high/xhigh)`, `gpt-5.4 (high/xhigh)`, `claude-sonnet 4.6 (high)`, `gemini 3.1 pro`, or equivalent tier models.
-- If a task genuinely requires a top-tier model, surface the suggestion to the user and wait for explicit approval before switching.
+- Backend: `app/AutoService.ApiService`
+- Frontend: `app/AutoService.WebUI`
+- AppHost: `app/AutoService.AppHost`
+- Shared defaults: `app/AutoService.ServiceDefaults`
+- Tests: `tests`
+- Automation scripts: `scripts`
 
-## Team Identity (Global)
+## Model Selection (Auto)
 
-- Elite startup; enterprise-grade delivery standards.
-- Patrik (MIT, ex-Google): architecture + final quality authority.
-- Mark (MIT, ex-BlackRock/Morgan Stanley): backend/data/scale authority.
-- Gergely (Harvard, ex-Netflix/Meta): frontend/UI/UX authority.
-- Zsombor (Stanford, ex-Amazon/Oracle): CI/CD, QA, security authority.
-
-## Persona Routing
-
-- Architecture/final approval -> Patrik.
-- Backend/API/data -> Mark.
-- Frontend/UI/UX -> Gergely.
-- Testing/security/validation -> Zsombor.
-
-## Repository Map
-
-- `app/AutoService.ApiService` API/domain/EF.
-- `app/AutoService.WebUI` React client.
-- `app/AutoService.AppHost` Aspire orchestration.
-- `app/AutoService.ServiceDefaults` shared service defaults.
-
-## Stack
-
-- Backend: .NET 10, ASP.NET Core API, EF Core, PostgreSQL.
-- Frontend: React 19, TypeScript, Vite, Tailwind.
-- Orchestration: .NET Aspire.
+- Do not auto-select models that cost more than 3x baseline.
+- Forbidden for automatic selection: `claude-opus-4.7` and `gpt-5.5`.
+- Preferred pool: `gpt-5.3-codex`, `gpt-5.4`, `claude-sonnet 4.6`, or equivalent tier.
+- If top-tier is genuinely needed, ask user approval first.
 
 ## Mandatory Workflow
 
-1. Orchestrator first (`Task Orchestrator`).
-2. Conditional implementation routing from orchestrator:
-  - backend/platform changes required (`AutoService.ApiService`, `AutoService.AppHost`, `AutoService.ServiceDefaults`, or source-level backend changes) -> run `Backend Specialist`
-  - frontend changes required -> run `Frontend Specialist` AND `ui-ux-style-profile` as a **mandatory pair** (never one without the other)
-  - `ui-ux-style-profile` must execute the 320px Mandatory Validation Checklist and produce a written per-component report after every `Frontend Specialist` iteration; iteration is blocked until sign-off
-  - EF/schema delta only -> run optional `EF Migration`
-3. `Build Validator` must always run after implementation.
-4. `Docs Sync` always; auto-remediate docs drift.
-5. `Coding Principles` must always run for source changes; auto-remediate code-quality drift.
-6. Security remediation on every code-change workflow:
-  - WebUI touched: `npm audit fix`.
-  - Backend/.NET project touched: `dotnet list package --vulnerable --include-transitive`, apply patch/minor updates, recheck.
-7. Heavy test agents are conditional (gate below).
+1. Start with `Task Orchestrator`.
+2. Route implementation:
+   - backend/platform changes -> `Backend Specialist`
+   - frontend changes -> `Frontend Specialist` + `ui-ux-style-profile` (mandatory pair)
+   - schema-only delta -> optional `EF Migration`
+3. Run `Build Validator`.
+4. Run `Docs Sync`.
+5. Run `Coding Principles` for source changes.
+6. Run security remediation for code changes.
+7. Run heavy test agents only when gate conditions match.
 
-## Execution Mode (Speed Policy)
+## Gates
 
-- Prefer local workspace execution (`run_in_terminal`, VS Code tasks, native CLI) as first choice for build/test/validation workflows.
-- Avoid MCP server tooling when a local command/task provides equivalent or near-equivalent speed and outcome.
-- Use MCP tooling only when no practical local alternative exists, or when the capability is MCP-only.
-- Keep this rule aligned with `CLAUDE.md`.
+- Heavy tests run only on explicit request or significant behavior changes:
+  - `http-endpoint-test`: API contract/auth/validation behavior
+  - `sql-database-test`: schema/persistence/integrity behavior
+  - `e2e-playwright-test`: frontend structural/user-flow behavior
+- `EF Migration` runs only for real schema/EF delta.
+
+## Security and Secrets
+
+- Never hardcode credentials, tokens, connection strings, or runtime hosts.
+- Frontend code-change workflows: run `npm audit fix`.
+- Backend code-change workflows: run `dotnet list package --vulnerable --include-transitive` and remediate safely.
+- AI SQL tooling must use `ai_agent_test_user` with `SELECT`-only policy.
+- Keep MCP SQL profile aligned in `.claude/.mcp.json` and `.vscode/mcp.json`.
 
 ## Canonical Local Test Runner
 
-- Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]` from the repository root for local full-suite or selected-suite execution.
-- The runner loads `.secrets` and `tests/.env` locally, sets non-secret `PORT=5173` for Playwright when absent, and writes the sanitized AI-readable report to `tests/.artifacts/test-suite-summary.json`.
-- Full-test AI workflow: run the Python runner, inspect the sanitized report, then add missing tests, fix stale tests, or investigate product behavior from the reported suite layer.
-- Do not publish raw `.env`, `.secrets`, local MCP config, connection strings, cookies, tokens, absolute local paths, or unsanitized command output.
+- Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]`.
+- Runner loads local secrets (`.secrets`, `tests/.env`) and writes sanitized summary to `tests/.artifacts/test-suite-summary.json`.
+- Never publish raw `.env`, `.secrets`, tokens, cookies, or unsanitized logs.
 
-## Heavy Test Gate
+## Engineering Guardrails
 
-Run heavy test agents only when explicitly requested by the user, or when the agent-specific trigger applies:
-- `http-endpoint-test`: significant API endpoint, contract, auth/role, status, or validation behavior change.
-- `sql-database-test`: significant schema, migration, persistence, seed-data, or integrity invariant change.
-- `e2e-playwright-test`: significant frontend structural/UI flow or user-visible journey change; backend-only changes do not trigger Playwright unless explicitly requested.
+- Enforce SOLID/OOP boundaries.
+- Use GoF patterns only where they reduce complexity and improve extensibility.
+- Provide rationale for non-trivial design decisions.
+- Size limits:
+  - source file > 500 lines: split
+  - test file > 250 lines: split
+  - class/service > 300 lines: split
+  - method/function target <= 60 lines where practical
 
-When triggered by a new feature:
-- auto-generate missing test coverage,
-- then execute/update tests.
+## Core Invariants
 
-## Migration Isolation Gate
-
-Run `EF Migration` only for actual schema/EF migration deltas.
-No schema delta -> migration agent must skip.
-
-## Engineering Principles (Mandatory)
-
-- Enforce SOLID (SRP, OCP, LSP, ISP, DIP) in architecture and implementation.
-- Apply OOP fundamentals: explicit responsibilities, low coupling, high cohesion.
-- Use GoF 23 patterns intentionally where they reduce complexity and improve extensibility.
-- Avoid pattern overuse without measurable benefit.
-- Require engineering rationale for non-trivial decisions: why this design, why not alternatives, and impact on scalability/maintainability.
-
-## Scalability & Maintainability Guardrails
-
-- No god files/classes/methods.
-- Source files:
-  - preferred <= 350 lines,
-  - hard limit: > 500 lines must be split.
-- Test files:
-  - preferred <= 180 lines,
-  - hard limit: > 250 lines must be split.
-- Class/service files:
-  - preferred <= 220 lines,
-  - hard limit: > 300 lines must be split by responsibility.
-- Method/function target: <= 60 lines where practical.
-
-## Credentials & Secrets Policy (Mandatory)
-
-- Never hardcode credentials, passwords, connection strings, hosts, or tokens in source/tests/scripts/agent output.
-- Secret sources (gitignored):
-  - `.secrets` (repo root): E2E/Playwright runtime env loaded by `python scripts/run-local-test-suite.py playwright`.
-  - `tests/.env`: HTTP `.http` tests via `{{$processEnv VAR_NAME}}`.
-- Template: `tests/.env.example` (placeholder values only).
-- Key vars: `ARSM_TEST_MECHANIC_EMAIL`, `ARSM_TEST_MECHANIC_PASSWORD`, `ARSM_TEST_ADMIN_EMAIL`, `ARSM_TEST_ADMIN_PASSWORD`, `ARSM_TEST_CUSTOMER_EMAIL`, `ARSM_TEST_PASSWORD`, `ARSM_TEST_WRONG_PASSWORD`, `ARSM_TEST_MECHANIC_NEW_PASSWORD`, `AutoService_ApiService_HostAddress`, optional `ARSM_E2E_*` aliases.
-- Agent rules:
-  - HTTP/SQL tests: env vars only (`{{$processEnv ...}}`), never literal credentials.
-  - E2E tests: credentials only from `app/AutoService.WebUI/tests/e2e/support/e2e-env.ts` (`getAppointmentFlowEnv`, `getAdminFlowEnv`) when the WebUI E2E suite is present.
-  - EF migrations/seed scripts: no embedded connection strings; use `appsettings.Local.json` (gitignored) or env injection.
-  - Playwright command instructions must include `.secrets` preamble plus local non-secret `PORT=5173` for WebUI serve mode.
-  - Prefer the canonical Python runner over shell-specific Playwright/HTTP/SQL commands when executing local suites.
-  - Missing variable: report exact name and point to `tests/.env.example` or `.secrets`; never guess.
-
-## Core Rules
-
-- Config-first endpoints/ports; no runtime localhost fallback in code.
-- WebUI UI/UX policy source of truth: `.github/agents/ui-ux-style-profile.agent.md` (Copilot) / `.claude/agents/ui-ux-style-profile.md` (Claude); both files must remain policy-equivalent.
-- WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
-- Preserve backend invariants: People abstract TPH, Identity link via `People.IdentityUserId`, DTO-only API boundaries.
-- AI SQL safety: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
-- MCP SQL profile is mandatory: use `ARSM_MCP_POSTGRES_CONNECTION_STRING` with `ai_agent_test_user` for AI/MCP SQL access.
-- Runtime MCP SQL configs (`.claude/.mcp.json`, `.vscode/mcp.json`) must point to the same `ai_agent_test_user` profile.
-- Keep `.github` and `.claude` agent+skill logic aligned.
+- WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`).
+- `People` remains abstract TPH; identity link via `People.IdentityUserId`.
+- DTO-only API boundaries.
+- Config-first runtime addressing; no localhost fallback hardcoding.
 
 ## Scoped Instruction Files
 
@@ -139,11 +78,4 @@ No schema delta -> migration agent must skip.
 - `.github/instructions/apphost.instructions.md`
 - `.github/instructions/servicedefaults.instructions.md`
 - `.github/instructions/tests.instructions.md`
-
-## Operational Anchors (Consolidated)
-
-- Keep operational knowledge distributed across instruction/agent/skill layers; do not rely on a single long-form TL-DR document as primary runtime truth.
-- Canonical local runtime surface: Aspire dashboard `https://localhost:17094`, API `https://localhost:5200`, WebUI `https://localhost:5173`, PostgreSQL `localhost:50000`.
-- Session/auth contract anchors: access cookie `autoservice_at` (10 minutes), refresh cookie `autoservice_rt` (7 days), login rate limit `10/min per IP`, refresh rate limit `20/min per IP`, lockout 5 failed password attempts -> 15 minutes.
-- Runtime behavior anchors that must stay docs-synced when changed: middleware/denylist in `app/AutoService.ApiService/Program.cs`, auth/session under `app/AutoService.ApiService/Auth/**`, appointment status/claim/assign under `app/AutoService.ApiService/Appointments/**`, vehicle/customer/scheduler contracts under `app/AutoService.ApiService/Vehicles/**`, `app/AutoService.ApiService/Customers/**`, and scheduler intake code, profile-picture behavior under `app/AutoService.ApiService/Profile/**`, AppHost wiring in `app/AutoService.AppHost/AppHost.cs`, and seed/bootstrap behavior under `app/AutoService.ApiService/Data/**`.
-- Test runner anchor: `scripts/run-local-test-suite.py` is the canonical local all-suite runner and sanitized AI test-report producer.
+- `.github/instructions/scripts.instructions.md`

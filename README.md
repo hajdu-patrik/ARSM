@@ -108,7 +108,7 @@ AppHost starts and wires:
 
 ## Running Tests
 
-Use the Python runner from the repository root. It loads `.secrets` and `tests/.env` locally, runs the requested suites, and writes an AI-safe sanitized report to `tests/.artifacts/test-suite-summary.json`.
+Use the Python runner from repository root. It loads `.secrets` and `tests/.env`, runs selected suites, and writes a sanitized summary to `tests/.artifacts/test-suite-summary.json`.
 
 ```bash
 python scripts/run-local-test-suite.py
@@ -121,20 +121,20 @@ python scripts/run-local-test-suite.py playwright
 python scripts/run-local-test-suite.py http sql
 ```
 
-Targets:
+Suite targets:
 
-- `playwright`: runs the WebUI Playwright E2E suite with `PORT=5173` by default.
+- `playwright`: runs the WebUI Playwright E2E suite (`PORT=5173` default).
 - `http`: runs all `tests/API/**/*.http` suites through HTTPYAC.
 - `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
 
-Before running the full suite, start the Aspire stack in another terminal:
+Before full-suite runs, start Aspire in another terminal:
 
 ```bash
 cd app
 dotnet run --project AutoService.AppHost
 ```
 
-The runner intentionally avoids publishing raw local details. Generated reports under `tests/.artifacts/` are gitignored and may contain only sanitized summaries for local debugging and AI review.
+Reports under `tests/.artifacts/` are gitignored and intended to remain sanitized for local debugging and AI review.
 
 ### AI Test Workflow
 
@@ -144,7 +144,7 @@ For full-test investigation, AI agents should run:
 python scripts/run-local-test-suite.py
 ```
 
-Then inspect `tests/.artifacts/test-suite-summary.json`. Based on the sanitized result, the agent should add missing tests, fix stale tests, or investigate failing behavior in the matching layer. Agents must not publish raw `.env` values, `.secrets` contents, connection strings, cookies, tokens, absolute local paths, or full raw tool logs.
+Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching layer (add missing coverage, fix stale tests, or investigate failures). Agents must not publish raw `.env` values, `.secrets` contents, connection strings, cookies, tokens, absolute local paths, or raw tool logs.
 
 ## Configuration and Secrets
 

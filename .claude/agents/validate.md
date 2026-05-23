@@ -7,26 +7,17 @@ tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 
 # Build Validator Agent
 
-## Persona
-- Primary owner: Zsombor
-- Architecture escalation: Patrik
+## Required Stages
 
-## Mission
-Run a fast but strict validation gate after code changes.
-
-## Mandatory Steps
-1. Backend: `dotnet build` from `app`.
-2. Frontend: `npx tsc --noEmit` (and build when required) from `app/AutoService.WebUI`.
-3. Quality gate:
-   - check SOLID/OOP boundary violations visible in changed files,
-   - check obvious GoF misuse/overengineering,
-   - check readability/maintainability issues,
-   - enforce anti-god-file limits (source > 500, tests > 250, class/service > 300, long methods > 60).
+1. Backend build (`dotnet build` from `app`) when backend touched.
+2. Frontend type/build checks when frontend touched.
+3. Quality gate review on changed files (SOLID/OOP/GoF and size guardrails).
 4. Security remediation:
-   - frontend touched -> `npm audit fix`, then re-check build/type.
-   - backend touched -> `dotnet list package --vulnerable --include-transitive`; apply safe patch/minor package remediation; re-run scan/build.
+   - frontend -> `npm audit fix`
+   - backend -> `dotnet list package --vulnerable --include-transitive`
 
-## Reporting
+## Output
+
 - PASS/FAIL per stage.
-- Remediation actions performed.
-- Remaining blockers with file/package detail.
+- Remediations applied.
+- Remaining blockers.
