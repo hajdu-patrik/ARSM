@@ -117,6 +117,8 @@ Otherwise: skip migration agent.
 - Backend invariants: `People` remains abstract TPH; Identity linkage via `People.IdentityUserId`; expertise and relationship invariants preserved.
 - API boundaries use DTOs only; no direct EF entity exposure.
 - SQL safety for AI tooling: `ai_agent_test_user`, read-only `SELECT`, no DML/DDL.
+- MCP SQL profile is mandatory: use `ARSM_MCP_POSTGRES_CONNECTION_STRING` with `ai_agent_test_user` for AI/MCP SQL access.
+- Runtime MCP SQL configs (`.claude/.mcp.json`, `.vscode/mcp.json`) must point to the same `ai_agent_test_user` profile.
 
 ## Platform Alignment Rule
 

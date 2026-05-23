@@ -93,7 +93,7 @@ function App() {
 
   return (
     <>
-      {/* Show loading page on first app load */}
+      {/* Show loading page on full browser reload for app routes */}
       <LoadingPage />
 
       {/* Main app */}

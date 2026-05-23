@@ -148,8 +148,11 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja. A maszko
 
 - Titkokat, jelszavakat, lokális connection stringeket ne commitolj.
 - Backend lokális titkok: `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
+- Frontend lokális env értékek: `app/AutoService.WebUI/.env.development` (sablon: `app/AutoService.WebUI/.env.development.template`).
 - API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
 - Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
+- MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
+- PostgreSQL MCP eléréshez az `ARSM_MCP_POSTGRES_CONNECTION_STRING` változót használd (ajánlott felhasználó: `ai_agent_test_user`, read-only policy).
 
 ## Fejlesztői megjegyzések (AI workflow)
 

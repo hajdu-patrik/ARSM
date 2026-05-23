@@ -128,6 +128,8 @@ No schema delta -> migration agent must skip.
 - WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`) across UI elements.
 - Preserve backend invariants: People abstract TPH, Identity link via `People.IdentityUserId`, DTO-only API boundaries.
 - AI SQL safety: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
+- MCP SQL profile is mandatory: use `ARSM_MCP_POSTGRES_CONNECTION_STRING` with `ai_agent_test_user` for AI/MCP SQL access.
+- Runtime MCP SQL configs (`.claude/.mcp.json`, `.vscode/mcp.json`) must point to the same `ai_agent_test_user` profile.
 - Keep `.github` and `.claude` agent+skill logic aligned.
 
 ## Scoped Instruction Files

@@ -83,6 +83,8 @@ packages/
 .env
 .env.*
 !.env.example
+!.env.template
+!.env.*.template
 .secrets
 *.local
 

@@ -150,8 +150,11 @@ Then inspect `tests/.artifacts/test-suite-summary.json`. Based on the sanitized 
 
 - Never commit secrets, passwords, or local connection strings.
 - Backend local secrets belong in `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
+- WebUI local env values belong in `app/AutoService.WebUI/.env.development` (template: `app/AutoService.WebUI/.env.development.template`).
 - API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
 - Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
+- MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
+- PostgreSQL MCP access uses `ARSM_MCP_POSTGRES_CONNECTION_STRING` (recommended user: `ai_agent_test_user`, read-only policy).
 
 ## Contributor Notes (AI Workflow)
 

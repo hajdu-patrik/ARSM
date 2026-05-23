@@ -1,8 +1,8 @@
 /**
- * One-time loading splash screen.
+ * Full-page-load loading splash screen.
  *
- * Displays an animated branded intro for roughly 3 seconds per browser
- * profile using a localStorage flag, then renders nothing.
+ * Displays an animated branded intro for roughly 3 seconds on browser reload
+ * (for example F5 / Ctrl+F5), then renders nothing.
  * @module pages/LoadingPage
  */
 
@@ -11,7 +11,29 @@ import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../store/theme.store';
 import { Image } from '../components/common/Image';
 
-const LOADING_PAGE_SEEN_KEY = 'loading-page-seen';
+const LOADING_PAGE_DURATION_MS = 3000;
+const SPLASH_ENABLED_PATHS = new Set([
+  '/',
+  '/login',
+  '/customers',
+  '/admin/register',
+  '/settings',
+  '/scheduler',
+  '/dashboard',
+]);
+
+function normalizePathname(pathname: string): string {
+  if (pathname.length <= 1) {
+    return '/';
+  }
+
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
+function shouldShowSplashForPathname(pathname: string): boolean {
+  const normalizedPathname = normalizePathname(pathname.toLowerCase());
+  return SPLASH_ENABLED_PATHS.has(normalizedPathname);
+}
 type LoadingRectangleColors = readonly [string, string, string];
 
 const LOADING_PAGE_ANIMATION_CSS = `
@@ -102,25 +124,24 @@ const LOADING_PAGE_ANIMATION_CSS = `
   .logo-spin {
     animation: mobile-logo-pulse-spin 1.8s linear infinite;
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .logo-spin,
-  .mobile-logo,
-  .mobile-orb,
-  .shape-base {
-    animation: none;
-  }
 }`;
 
 /** Resolves loading splash accent colors from semantic CSS tokens. */
 function getLoadingRectangleColors(isDark: boolean): LoadingRectangleColors {
   const accentToken = isDark ? 'var(--color-arsm-accent-dark)' : 'var(--color-arsm-accent)';
 
+  if (isDark) {
+    return [
+      `color-mix(in srgb, ${accentToken} 24%, transparent)`,
+      `color-mix(in srgb, ${accentToken} 20%, transparent)`,
+      `color-mix(in srgb, ${accentToken} 16%, transparent)`,
+    ];
+  }
+
   return [
-    `color-mix(in srgb, ${accentToken} 20%, transparent)`,
-    `color-mix(in srgb, ${accentToken} 15%, transparent)`,
-    `color-mix(in srgb, ${accentToken} 10%, transparent)`,
+    `color-mix(in srgb, ${accentToken} 24%, transparent)`,
+    `color-mix(in srgb, ${accentToken} 18%, transparent)`,
+    `color-mix(in srgb, ${accentToken} 12%, transparent)`,
   ];
 }
 
@@ -204,7 +225,7 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
 
 const LoadingPageComponent = memo(function LoadingPage() {
   const [isVisible, setIsVisible] = useState(() => {
-    return localStorage.getItem(LOADING_PAGE_SEEN_KEY) !== 'true';
+    return shouldShowSplashForPathname(globalThis.location.pathname);
   });
   const { t: translate } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
@@ -215,9 +236,8 @@ const LoadingPageComponent = memo(function LoadingPage() {
     }
 
     const timer = setTimeout(() => {
-      localStorage.setItem(LOADING_PAGE_SEEN_KEY, 'true');
       setIsVisible(false);
-    }, 3000);
+    }, LOADING_PAGE_DURATION_MS);
 
     return () => clearTimeout(timer);
   }, [isVisible]);
@@ -243,5 +263,5 @@ const LoadingPageComponent = memo(function LoadingPage() {
 
 LoadingPageComponent.displayName = 'LoadingPage';
 
-/** Animated loading splash shown once per browser profile. */
+/** Animated loading splash shown once per full browser reload on app routes. */
 export const LoadingPage = LoadingPageComponent;

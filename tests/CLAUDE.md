@@ -66,6 +66,7 @@ Template: `tests/.env.example` (committed — values are placeholders only).
 
 - **HTTP tests**: use `{{$processEnv VAR_NAME}}`; never write literal email/password strings.
 - **SQL tests**: read-only `SELECT`, no credentials embedded — connection via `ai_agent_test_user`.
+- **MCP SQL access**: always use `ARSM_MCP_POSTGRES_CONNECTION_STRING` targeting `ai_agent_test_user`; never switch AI/MCP SQL tooling to superuser credentials.
 - **E2E tests**: if a helper such as `e2e-env.ts` exists, use it for credential loading; otherwise use env vars directly and never inline credentials.
 - **Running tests**: prefer the Python runner from the repo root; it loads local env files, sets non-secret `PORT=5173` for Playwright when absent, and writes a sanitized summary.
 - If a required variable is absent: surface the name and point to `tests/.env.example` or `.secrets`.
