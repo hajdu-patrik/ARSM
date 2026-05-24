@@ -24,7 +24,9 @@ import {
   extractServerFieldErrors,
   normalizeServerFieldErrors,
 } from '../../../utils/serverValidation';
+import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
 import type { VehicleModalMode } from '../page.types';
+import type { CustomerMutationToastHandlersWithWarning } from './mutation-toast.types';
 import { buildVehiclePayload } from './vehicleMutation.helpers';
 
 const EMPTY_VEHICLE_FORM: VehicleFormState = {
@@ -75,9 +77,7 @@ function hasVehicleUpdateChanges(
 }
 
 /** Dependencies required by vehicle create/edit mutation handlers. */
-interface UseVehicleFormMutationsParams {
-  showSuccessToast: (message: string) => void;
-  showErrorToast: (message: string) => void;
+interface UseVehicleFormMutationsParams extends CustomerMutationToastHandlersWithWarning {
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
   vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
@@ -99,6 +99,7 @@ interface UseVehicleFormMutationsParams {
 export function useVehicleFormMutations({
   showSuccessToast,
   showErrorToast,
+  showWarningToast,
   getFirstFieldErrorMessage,
   customerHistoryByCustomerId,
   vehicleHistoryByVehicleId,
@@ -296,7 +297,7 @@ export function useVehicleFormMutations({
       && editingVehicleSnapshot
       && !hasVehicleUpdateChanges(editingVehicleSnapshot, payload)
     ) {
-      showErrorToast('toast.noChanges');
+      showWarningToast(TOAST_KEY_NO_CHANGES);
       return;
     }
 
@@ -316,6 +317,7 @@ export function useVehicleFormMutations({
     editingVehicleSnapshot,
     persistVehicleMutation,
     showErrorToast,
+    showWarningToast,
     vehicleForm,
     vehicleModalMode,
     vehicleModalCustomerId,

@@ -5,13 +5,12 @@ import type {
   UpdateVehicleRequest,
   VehicleDetailDto,
 } from '../../../types/customers/customers.types';
+import type { CustomerMutationToastHandlersWithWarning } from './mutation-toast.types';
 import { useVehicleDeleteMutations } from './useVehicleDeleteMutations';
 import { useVehicleFormMutations } from './useVehicleFormMutations';
 
 /** External dependencies required by vehicle mutation handlers. */
-interface UseVehicleMutationsParams {
-  showSuccessToast: (message: string) => void;
-  showErrorToast: (message: string) => void;
+interface UseVehicleMutationsParams extends CustomerMutationToastHandlersWithWarning {
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
   vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
@@ -34,6 +33,7 @@ interface UseVehicleMutationsParams {
 export function useVehicleMutations({
   showSuccessToast,
   showErrorToast,
+  showWarningToast,
   getFirstFieldErrorMessage,
   customerHistoryByCustomerId,
   vehicleHistoryByVehicleId,
@@ -46,6 +46,7 @@ export function useVehicleMutations({
   const formMutations = useVehicleFormMutations({
     showSuccessToast,
     showErrorToast,
+    showWarningToast,
     getFirstFieldErrorMessage,
     customerHistoryByCustomerId,
     vehicleHistoryByVehicleId,

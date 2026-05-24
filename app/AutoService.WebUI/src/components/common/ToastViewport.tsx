@@ -1,17 +1,13 @@
 /**
  * App-wide toast notification viewport.
- * Renders top-center auto-dismissing success/error toasts with i18n keys.
+ * Renders top-center auto-dismissing success/error/warning toasts with i18n keys.
  * @module ToastViewport
  */
 import { memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
+import { SYSTEM_ERROR_TOAST_KEYS, WARNING_TOAST_KEYS } from '../../store/toast.keys';
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
-
-const SYSTEM_ERROR_TOAST_KEYS = new Set([
-  'login.serverError500',
-  'login.databaseUnavailable',
-]);
 
 interface ToastItemProps {
   readonly toast: ToastMessage;
@@ -26,6 +22,8 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
   const isSystemErrorToast = toast.variant === 'error'
     && SYSTEM_ERROR_TOAST_KEYS.has(toast.messageKey);
+  const isWarningToast = toast.variant === 'warning'
+    || WARNING_TOAST_KEYS.has(toast.messageKey);
 
   useEffect(() => {
     const timeoutId = globalThis.setTimeout(() => {
@@ -37,12 +35,14 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = 'border-arsm-error-border bg-arsm-input text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-input-dark dark:text-arsm-error-text-light';
+  let toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
 
   if (toast.variant === 'success') {
-    toastVariantClass = 'border-arsm-success-border bg-arsm-input text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-input-dark dark:text-arsm-success-text-dark';
+    toastVariantClass = 'border-arsm-success-border bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
+  } else if (isWarningToast) {
+    toastVariantClass = 'border-arsm-warning-border bg-arsm-warning-bg text-arsm-warning-text dark:border-arsm-warning-border-dark dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
   } else if (isSystemErrorToast) {
-    toastVariantClass = 'border-arsm-error-border bg-arsm-input text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-input-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
+    toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
   }
 
   return (

@@ -8,11 +8,10 @@ import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
 import type { DeleteVehicleTarget } from '../page.types';
+import type { CustomerMutationToastHandlers } from './mutation-toast.types';
 
 /** Dependencies required by vehicle delete mutation handlers. */
-interface UseVehicleDeleteMutationsParams {
-  showSuccessToast: (message: string) => void;
-  showErrorToast: (message: string) => void;
+interface UseVehicleDeleteMutationsParams extends CustomerMutationToastHandlers {
   customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
   applyVehicleDeleted: (customerId: number, vehicleId: number) => void;
   loadCustomerHistory: (customerId: number, force?: boolean) => Promise<void>;

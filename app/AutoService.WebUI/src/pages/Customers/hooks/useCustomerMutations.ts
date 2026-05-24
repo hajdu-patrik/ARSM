@@ -10,6 +10,8 @@ import {
   hasServerFieldErrors,
   mapCustomerValidationMessageToKey,
 } from '../helpers';
+import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
+import type { CustomerMutationToastHandlersWithWarning } from './mutation-toast.types';
 import type {
   CustomerFormState,
   CustomerModalMode,
@@ -64,9 +66,7 @@ function hasCustomerUpdateChanges(
 }
 
 /** External dependencies required by customer mutation handlers. */
-interface UseCustomerMutationsParams {
-  showSuccessToast: (message: string) => void;
-  showErrorToast: (message: string) => void;
+interface UseCustomerMutationsParams extends CustomerMutationToastHandlersWithWarning {
   getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   applyCustomerCreated: (customer: CustomerListItem) => void;
   applyCustomerUpdated: (customerId: number, payload: UpdateCustomerRequest) => void;
@@ -81,6 +81,7 @@ interface UseCustomerMutationsParams {
 export function useCustomerMutations({
   showSuccessToast,
   showErrorToast,
+  showWarningToast,
   getFirstFieldErrorMessage,
   applyCustomerCreated,
   applyCustomerUpdated,
@@ -194,7 +195,7 @@ export function useCustomerMutations({
       && editingCustomerSnapshot
       && !hasCustomerUpdateChanges(editingCustomerSnapshot, payload)
     ) {
-      showErrorToast('toast.noChanges');
+      showWarningToast(TOAST_KEY_NO_CHANGES);
       return;
     }
 
@@ -225,8 +226,8 @@ export function useCustomerMutations({
     applyCustomerCreated,
     applyCustomerUpdated,
     handleSubmitCustomerError,
-    showErrorToast,
     showSuccessToast,
+    showWarningToast,
   ]);
 
   const openDeleteCustomerModal = useCallback((customer: CustomerListItem) => {

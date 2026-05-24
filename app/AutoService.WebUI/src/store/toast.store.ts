@@ -10,7 +10,7 @@
 import { create } from 'zustand';
 
 /** Visual style variant for a toast notification. */
-export type ToastVariant = 'success' | 'error';
+export type ToastVariant = 'success' | 'error' | 'warning';
 
 /**
  * A single toast notification entry in the queue.
@@ -18,7 +18,7 @@ export type ToastVariant = 'success' | 'error';
 export interface ToastMessage {
   /** Unique identifier for this toast instance. */
   id: string;
-  /** Visual variant (success or error). */
+  /** Visual variant (success, error, or warning). */
   variant: ToastVariant;
   /** i18n translation key for the message text. */
   messageKey: string;
@@ -40,6 +40,8 @@ interface ToastState {
   showSuccess: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
   /** Shorthand to show an error toast. Returns the toast ID. */
   showError: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
+  /** Shorthand to show a warning toast. Returns the toast ID. */
+  showWarning: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
   /** Removes a specific toast by ID. */
   removeToast: (id: string) => void;
   /** Clears all active toasts. */
@@ -50,7 +52,7 @@ interface ToastState {
 const DEFAULT_TOAST_DURATION_MS = 5000;
 
 /**
- * Generates a unique toast ID using {@code crypto.randomUUID} when available,
+ * Generates a unique toast ID using `crypto.randomUUID` when available,
  * falling back to a timestamp-based identifier.
  * @returns A unique string identifier.
  */
@@ -90,6 +92,8 @@ export const useToastStore = create<ToastState>((set, get) => ({
     get().showToast({ variant: 'success', messageKey, messageValues, durationMs }),
   showError: (messageKey, messageValues, durationMs) =>
     get().showToast({ variant: 'error', messageKey, messageValues, durationMs }),
+  showWarning: (messageKey, messageValues, durationMs) =>
+    get().showToast({ variant: 'warning', messageKey, messageValues, durationMs }),
   removeToast: (id) => {
     set((state) => ({
       toasts: state.toasts.filter((toast) => toast.id !== id),

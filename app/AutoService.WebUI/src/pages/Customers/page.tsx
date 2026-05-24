@@ -39,6 +39,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
+  const showWarningToast = useToastStore((state) => state.showWarning);
   const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
   const listState = useCustomersListState({
@@ -49,6 +50,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const customerMutations = useCustomerMutations({
     showSuccessToast,
     showErrorToast,
+    showWarningToast,
     getFirstFieldErrorMessage,
     applyCustomerCreated: listState.applyCustomerCreated,
     applyCustomerUpdated: listState.applyCustomerUpdated,
@@ -58,6 +60,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const vehicleMutations = useVehicleMutations({
     showSuccessToast,
     showErrorToast,
+    showWarningToast,
     getFirstFieldErrorMessage,
     customerHistoryByCustomerId: listState.customerHistoryByCustomerId,
     vehicleHistoryByVehicleId: listState.vehicleHistoryByVehicleId,
