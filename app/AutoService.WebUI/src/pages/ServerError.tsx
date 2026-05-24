@@ -12,6 +12,7 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorPage } from '../components/common/ErrorPage';
+import { markSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 
 const REDIRECT_DURATION_MS = 3000;
 const TIMER_TICK_MS = 50;
@@ -38,6 +39,8 @@ const ServerErrorComponent = memo(function ServerError() {
   const returnTarget = getReturnTarget();
 
   const handleRetry = useCallback(() => {
+    markSkipLoadingSplashOnNextBoot();
+
     if (returnTarget) {
       globalThis.location.assign(returnTarget);
       return;

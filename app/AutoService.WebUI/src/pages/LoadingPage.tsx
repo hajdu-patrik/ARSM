@@ -10,6 +10,7 @@ import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../store/theme.store';
 import { Image } from '../components/common/Image';
+import { consumeSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 
 const LOADING_PAGE_DURATION_MS = 3000;
 const SPLASH_ENABLED_PATHS = new Set([
@@ -225,6 +226,10 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
 
 const LoadingPageComponent = memo(function LoadingPage() {
   const [isVisible, setIsVisible] = useState(() => {
+    if (consumeSkipLoadingSplashOnNextBoot()) {
+      return false;
+    }
+
     return shouldShowSplashForPathname(globalThis.location.pathname);
   });
   const { t: translate } = useTranslation();
