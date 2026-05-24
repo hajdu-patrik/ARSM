@@ -9,7 +9,6 @@ import { CarFront, ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucid
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
-  compactFilterChipPrimaryButtonClass,
   compactHeaderRowClass,
   contentCardFrameClass,
   inlineSectionTitleClass,
@@ -19,6 +18,7 @@ import {
   mutedSectionIconClass,
   referenceChipDangerButtonClass,
   referenceChipNeutralButtonClass,
+  smallMetaPrimaryButtonClass,
 } from '../../../utils/formStyles';
 import { buildCustomerDisplayName } from '../helpers';
 import { CustomerDetailsPanel, type ResolvedCustomerDetailsPanelTarget } from './CustomerDetailsPanel';
@@ -165,7 +165,7 @@ const CustomerCardComponent = memo(function CustomerCard({
                   <CarFront className="h-4 w-4 shrink-0" />
                   <span className="truncate">{t('customers.vehiclesTitle')}</span>
                 </h3>
-                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${compactFilterChipPrimaryButtonClass} w-full sm:w-auto`}>
+                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${smallMetaPrimaryButtonClass} w-full sm:w-auto`}>
                   <Plus className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.createVehicle')}</span>
                 </button>
@@ -174,7 +174,7 @@ const CustomerCardComponent = memo(function CustomerCard({
               {isLoadingVehicles && <p className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingVehicles')}</p>}
               {!isLoadingVehicles && vehicles.length === 0 && <p className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.emptyVehicles')}</p>}
               {!isLoadingVehicles && vehicles.length > 0 && (
-                <div className="space-y-2">
+                <div className="min-w-0 divide-y divide-arsm-border/80 dark:divide-arsm-border-dark/80">
                   {vehicles.map((vehicle) => (
                     <VehicleItem
                       key={vehicle.id}

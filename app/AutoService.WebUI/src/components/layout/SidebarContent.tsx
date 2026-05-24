@@ -58,9 +58,15 @@ const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };
 const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: '/settings' };
 const TEXT_TRANSITION = 'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
-const NAV_LINK_BASE_CLASS = 'group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium transition-all duration-200';
+const SIDEBAR_ROW_MOTION_CLASS = 'transition-[background-color,border-color,color,transform] duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-colors';
+const SIDEBAR_ICON_MOTION_CLASS = 'transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none motion-reduce:transition-colors';
+const NAV_LINK_BASE_CLASS = `group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium ${SIDEBAR_ROW_MOTION_CLASS}`;
 const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover';
 const NAV_LINK_IDLE_CLASS = 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px active:translate-y-0 dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark';
+const SIDEBAR_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label hover:-translate-y-px hover:border-arsm-border hover:bg-arsm-accent-subtle active:translate-y-0 dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark ${SIDEBAR_ROW_MOTION_CLASS}`;
+const SIDEBAR_DANGER_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active hover:-translate-y-px hover:border-arsm-error-border-light hover:bg-arsm-error-bg active:translate-y-0 dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark ${SIDEBAR_ROW_MOTION_CLASS}`;
+const SIDEBAR_COLLAPSED_ACTION_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label hover:text-arsm-accent-deep dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark ${SIDEBAR_ICON_MOTION_CLASS}`;
+const SIDEBAR_COLLAPSED_DANGER_ACTION_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-soft dark:hover:text-arsm-error-text-light ${SIDEBAR_ICON_MOTION_CLASS}`;
 
 /** Keeps scheduler aliases highlighted with the scheduler nav item. */
 function isSidebarNavItemActive(item: NavItem, pathname: string, isActiveRoute: boolean): boolean {
@@ -178,7 +184,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           onClick={onToggleCollapse}
           title={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
           aria-label={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
-          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label transition-all duration-200 hover:-translate-y-px hover:border-arsm-border hover:bg-arsm-accent-subtle active:translate-y-0 dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark"
+          className={collapsed ? SIDEBAR_COLLAPSED_ACTION_CLASS : SIDEBAR_ACTION_ROW_CLASS}
         >
           <span className={sidebarIconSlotClass}>
             <ChevronsLeft className={`h-5 w-5 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
@@ -198,7 +204,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           onClick={onLogout}
           title={translate('layout.logout')}
           aria-label={translate('layout.logout')}
-          className="flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active transition-all duration-200 hover:-translate-y-px hover:border-arsm-error-border-light hover:bg-arsm-error-bg active:translate-y-0 dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark"
+          className={collapsed ? SIDEBAR_COLLAPSED_DANGER_ACTION_CLASS : SIDEBAR_DANGER_ACTION_ROW_CLASS}
         >
           <span className={sidebarIconSlotClass}>
             <LogOut className="h-5 w-5 shrink-0" />

@@ -5,16 +5,17 @@ import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
-  compactFilterChipNeutralButtonClass,
   inlineSectionTitleClass,
   modalConfirmCloseButtonClass,
   compactHeaderRowClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
+  smallMetaNeutralButtonClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
 import { RepairHistoryList } from './RepairHistoryList';
+import { VehicleSpecsGrid } from './VehicleSpecsGrid';
 
 export type ResolvedCustomerDetailsPanelTarget =
   | { readonly kind: 'customer'; readonly customer: CustomerListItem }
@@ -118,6 +119,32 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
       )}
 
       <div className={isInline ? 'arsm-scroll-no-bar max-h-[30rem] min-w-0 overflow-y-auto py-1' : 'arsm-scroll-no-bar max-h-[calc(82vh-4.5rem)] min-w-0 overflow-y-auto px-4 py-3 lg:max-h-[calc(100vh-12rem)]'}>
+        {isInline && target.kind === 'customer' && (
+          <div className="min-w-0 px-3 pb-3 pt-2">
+            <p className="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
+              <UserRound className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                {t('customers.customerDetailsTitle')}
+              </span>
+            </p>
+            <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
+              {buildCustomerDisplayName(customer)}
+            </h2>
+            <p className={`truncate ${mutedMetaTextClass}`}>
+              {customer.email}
+            </p>
+          </div>
+        )}
+
+        {target.kind === 'vehicle' && (
+          <VehicleSpecsGrid
+            t={t}
+            locale={locale}
+            vehicle={target.vehicle}
+            className={isInline ? 'px-3 pb-3 pt-2' : 'pb-3'}
+          />
+        )}
+
         <section className="min-w-0 space-y-3 pt-2">
           <div className={compactHeaderRowClass}>
             <h3 className={inlineSectionTitleClass}>
@@ -126,7 +153,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
             <button
               type="button"
               onClick={historySource.toggleSort}
-              className={`${compactFilterChipNeutralButtonClass} w-full sm:w-auto`}
+              className={`${smallMetaNeutralButtonClass} w-full sm:w-auto`}
             >
               <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
@@ -144,6 +171,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
               emptyMessage={target.kind === 'vehicle'
                 ? t('customers.emptyVehicleHistory')
                 : t('customers.emptyCustomerHistory')}
+              emptyMessageClassName={target.kind === 'vehicle' ? 'px-3 py-2 text-left' : undefined}
               onOpenAppointment={onOpenHistoryAppointment}
             />
           )}

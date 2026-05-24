@@ -6,9 +6,9 @@ import {
   compactSelectFullClass,
   compactListPrimaryTextClass,
   equalWidthControlGroupClass,
+  mediumContextPrimaryButtonClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
-  referenceChipPrimaryButtonClass,
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
@@ -133,7 +133,7 @@ export const MechanicsSection = memo(function MechanicsSection({
                 onChange={(event) => onSelectNewMechanic(event.target.value)}
                 disabled={isMechanicMutationBusy}
                 aria-label={t('scheduler.detail.selectMechanic')}
-                className={`${compactSelectFullClass} h-11 min-h-11 px-3 py-2 text-sm`}
+                className={compactSelectFullClass}
               >
                 <option value="" disabled hidden>
                   {t('scheduler.detail.selectMechanic')}
@@ -151,7 +151,7 @@ export const MechanicsSection = memo(function MechanicsSection({
               type="button"
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
-              className={`${referenceChipPrimaryButtonClass} min-h-11 px-3 py-2 text-xs`}
+              className={mediumContextPrimaryButtonClass}
             >
               <span className="min-w-0 truncate">{isAssigning ? t('scheduler.detail.saving') : t('scheduler.detail.addMechanic')}</span>
             </button>

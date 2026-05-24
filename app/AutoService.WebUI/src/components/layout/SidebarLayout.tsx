@@ -12,6 +12,7 @@ import {
 } from '../../services/profile/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
+import { sidebarShellIconButtonClass } from '../../utils/formStyles';
 import { SidebarContent, type NavItem } from './SidebarContent';
 
 interface SidebarLayoutProps {
@@ -191,25 +192,25 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform dark:border-arsm-border-dark dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform motion-reduce:transition-none dark:border-arsm-border-dark dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {sidebarContent}
       </aside>
 
       <aside
-        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] dark:border-arsm-border-dark dark:bg-arsm-card-dark md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-64'}`}
+        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] motion-reduce:transition-none dark:border-arsm-border-dark dark:bg-arsm-card-dark md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-64'}`}
       >
         {sidebarContent}
       </aside>
 
-      <div className={`flex min-h-0 min-w-0 flex-1 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'md:pl-[68px]' : 'md:pl-64'}`}>
+      <div className={`flex min-h-0 min-w-0 flex-1 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] motion-reduce:transition-none ${collapsed ? 'md:pl-[68px]' : 'md:pl-64'}`}>
         <header className="flex h-[73px] shrink-0 items-center justify-between border-b border-arsm-border bg-arsm-input/90 px-4 backdrop-blur-xl dark:border-arsm-border-dark dark:bg-arsm-card-dark/85">
           <button
             type="button"
             onClick={toggleMobile}
             title={translate('sidebar.openMenu')}
             aria-label={translate('sidebar.openMenu')}
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg p-2 text-arsm-label transition-colors hover:bg-arsm-accent-subtle hover:text-arsm-accent-deep dark:text-arsm-label-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark md:hidden"
+            className={`${sidebarShellIconButtonClass} md:hidden`}
           >
             <Menu className="h-5 w-5 shrink-0" />
           </button>

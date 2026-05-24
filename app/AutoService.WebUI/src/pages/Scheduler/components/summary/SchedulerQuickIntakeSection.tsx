@@ -7,8 +7,8 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
-	customersToolbarPrimaryButtonClass,
 	insetSurfaceClass,
+	mediumContextPrimaryButtonClass,
 	mutedSecondaryTextClass,
 	sectionHeadingToneClass,
 } from '../../../../utils/formStyles';
@@ -51,7 +51,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${customersToolbarPrimaryButtonClass} w-auto min-w-0 max-w-full self-start sm:shrink-0`}
+					className={`${mediumContextPrimaryButtonClass} w-auto min-w-0 max-w-full self-start sm:shrink-0`}
 				>
 					<span className="truncate">{t('scheduler.intake.open')}</span>
 				</button>

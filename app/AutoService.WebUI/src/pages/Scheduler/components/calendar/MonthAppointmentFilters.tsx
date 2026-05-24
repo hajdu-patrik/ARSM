@@ -7,12 +7,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
+import { compactSortToggleButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass } from '../../../../utils/formStyles';
 
-const schedulerChipBaseClass = 'inline-flex min-h-7 min-w-0 shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30';
+const schedulerChipBaseClass = 'inline-flex min-h-7 min-w-0 shrink-0 items-center gap-1 rounded-xl border px-2.5 py-0.5 text-[10px] font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-[350px]:min-h-11 max-[350px]:px-3 max-[350px]:py-2 max-[350px]:text-xs dark:focus-visible:ring-arsm-focus-ring/30';
 const schedulerStatusChipClass = schedulerChipBaseClass;
-const schedulerNeutralChipClass = `${schedulerChipBaseClass} border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark`;
-const schedulerMechanicFilterSelectClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-full border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-[10px] font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-arsm-border focus-visible:ring-0 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:outline-arsm-border-dark';
-const schedulerMechanicFilterWrapperClass = 'min-w-0 max-w-full overflow-hidden basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
@@ -91,13 +89,13 @@ const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSort
 
   return (
     <div className={`${schedulerControlRowClass} w-full justify-start sm:w-auto sm:flex-nowrap sm:justify-end`}>
-      <button type="button" onClick={onToggleSort} className={schedulerNeutralChipClass} title={t('scheduler.monthList.sortByDate')}>
+      <button type="button" onClick={onToggleSort} className={compactSortToggleButtonClass} title={t('scheduler.monthList.sortByDate')}>
         <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
       </button>
 
       {selectedDay !== null && (
-        <button type="button" onClick={onClearFilter} className={`${schedulerNeutralChipClass} hover:border-arsm-accent/55 dark:hover:border-arsm-accent-dark/55`}>
+        <button type="button" onClick={onClearFilter} className={`${compactSortToggleButtonClass} hover:border-arsm-accent/55 dark:hover:border-arsm-accent-dark/55`}>
           <X className="h-3 w-3 shrink-0" />
           <span className="min-w-0 truncate">{t('scheduler.monthList.clearFilter')}</span>
         </button>
@@ -136,13 +134,13 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
         );
       })}
 
-      <div className={schedulerMechanicFilterWrapperClass}>
+      <div className={filterSelectCompactWrapperClass}>
         <select
           value={selectedMechanicId ?? ''}
           title={selectedMechanicName}
           aria-label={t('scheduler.monthList.mechanicAll')}
           onChange={(event) => onMechanicChange(parseMechanicFilterValue(event.target.value))}
-          className={schedulerMechanicFilterSelectClass}
+          className={filterSelectCompactClass}
         >
           <option value="">{t('scheduler.monthList.mechanicAll')}</option>
           {uniqueMechanics.map(([id, name]) => (

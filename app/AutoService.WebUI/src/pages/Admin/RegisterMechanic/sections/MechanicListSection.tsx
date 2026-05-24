@@ -136,7 +136,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 						return (
 							<div
 								key={mechanic.personId}
-								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 transition-all duration-200 hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
+								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-px motion-reduce:transform-none motion-reduce:transition-colors sm:items-center ${compactInputSurfaceClass}`}
 							>
 								<MechanicAvatar
 									mechanicId={mechanic.personId}

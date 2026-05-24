@@ -29,7 +29,7 @@ export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid
 export const compactHeaderRowClass = 'flex min-w-0 flex-wrap items-center justify-between gap-2';
 export const compactDividerLineClass = 'h-px flex-1 bg-arsm-border dark:bg-arsm-border-dark';
 export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
-export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-full border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
+export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
 
 /** Shared marketing/placeholder surface classes used by "coming soon" cards. */
 export const comingSoonCardClass = 'arsm-coming-soon-card fade-in-up';

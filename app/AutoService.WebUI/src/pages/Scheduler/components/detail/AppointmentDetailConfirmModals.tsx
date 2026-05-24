@@ -4,10 +4,10 @@ import { LogOut, Save, UserPlus } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import {
+  buttonClass,
+  dangerButtonClass,
   mutedBodyTextClass,
-  referenceChipDangerButtonClass,
-  referenceChipNeutralButtonClass,
-  referenceChipPrimaryButtonClass,
+  secondaryButtonClass,
 } from '../../../../utils/formStyles';
 
 interface AppointmentDetailConfirmModalsProps {
@@ -62,7 +62,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseStatusConfirm}
               disabled={isUpdating}
-              className={referenceChipNeutralButtonClass}
+              className={secondaryButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -70,7 +70,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmStatusChange}
               disabled={isUpdating || pendingStatusChange === null}
-              className={referenceChipPrimaryButtonClass}
+              className={buttonClass}
             >
               <Save className="h-4 w-4 shrink-0" />
               <span>{isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}</span>
@@ -96,7 +96,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseClaimConfirm}
               disabled={isClaiming}
-              className={referenceChipNeutralButtonClass}
+              className={secondaryButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -104,7 +104,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmClaim}
               disabled={isClaiming}
-              className={referenceChipPrimaryButtonClass}
+              className={buttonClass}
             >
               <UserPlus className="h-4 w-4 shrink-0" />
               <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
@@ -126,7 +126,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseUnclaimConfirm}
               disabled={isUnclaiming}
-              className={referenceChipNeutralButtonClass}
+              className={secondaryButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -134,7 +134,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmUnclaim}
               disabled={isUnclaiming}
-              className={referenceChipDangerButtonClass}
+              className={dangerButtonClass}
             >
               <LogOut className="h-4 w-4 shrink-0" />
               <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
@@ -156,7 +156,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onCloseSaveConfirm}
               disabled={isSaving}
-              className={referenceChipNeutralButtonClass}
+              className={secondaryButtonClass}
             >
               {t('scheduler.intake.cancel')}
             </button>
@@ -164,7 +164,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               type="button"
               onClick={onConfirmSave}
               disabled={isSaving}
-              className={referenceChipPrimaryButtonClass}
+              className={buttonClass}
             >
               <Save className="h-4 w-4 shrink-0" />
               <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.confirmSave')}</span>

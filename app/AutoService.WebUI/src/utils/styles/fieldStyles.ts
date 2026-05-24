@@ -18,6 +18,12 @@ export const compactSelectClass = 'h-11 min-h-11 rounded-xl border border-arsm-b
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
+/** Compact select dedicated to filter toolbars (kept distinct from form/edit selects). */
+export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-[10px] font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-arsm-border focus-visible:ring-0 max-[350px]:h-11 max-[350px]:min-h-11 max-[350px]:py-2 max-[350px]:text-xs dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:outline-arsm-border-dark';
+
+/** Width wrapper for compact filter selects in responsive toolbar rows. */
+export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full overflow-hidden basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
+
 /** Width wrappers used to keep grouped controls responsive at 320px. */
 export const selectWrapperClass = 'min-w-0 max-w-full overflow-hidden';
 

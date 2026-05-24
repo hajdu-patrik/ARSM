@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { mutedBodyTextClass, referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import { dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
 
 interface DeleteVehicleTarget {
   customerId: number;
@@ -41,7 +41,7 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className={referenceChipNeutralButtonClass}
+            className={secondaryButtonClass}
           >
             {t('settings.cancel')}
           </button>
@@ -49,7 +49,7 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className={referenceChipDangerButtonClass}
+            className={dangerButtonClass}
           >
             <Trash2 className="h-4 w-4 shrink-0" />
             <span>{isDeleting ? t('customers.deleting') : t('customers.deleteVehicle')}</span>

@@ -10,13 +10,12 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 import {
   compactSelectFullClass,
   equalWidthControlGroupClass,
-  referenceChipPrimaryButtonClass,
+  mediumContextPrimaryButtonClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
-const footerTopControlClass = 'h-11 min-h-11 rounded-full px-3.5 py-2 text-xs';
 
 function isAppointmentStatus(value: string): value is AppointmentStatus {
   return STATUS_OPTIONS_SET.has(value);
@@ -69,7 +68,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
             }}
             disabled={isUpdating}
             aria-label={t('scheduler.changeStatus')}
-            className={`${compactSelectFullClass} ${footerTopControlClass}`}
+            className={compactSelectFullClass}
           >
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
@@ -85,7 +84,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           type="button"
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className={`${referenceChipPrimaryButtonClass} ${footerTopControlClass}`}
+          className={mediumContextPrimaryButtonClass}
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -97,7 +96,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           data-testid="appointment-detail-save"
           onClick={onSave}
           disabled={isSaving || !isSaveEnabled}
-          className={`${referenceChipPrimaryButtonClass} w-full`}
+          className={`${mediumContextPrimaryButtonClass} w-full`}
         >
           <Save className="h-4 w-4 shrink-0" />
           <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}</span>

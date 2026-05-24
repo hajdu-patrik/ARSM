@@ -116,10 +116,6 @@
     color: var(--color-arsm-accent-tint);
   }
 
-  button {
-    @apply transition-all duration-200 ease-out;
-  }
-
   ::selection {
     background: var(--color-arsm-accent);
     color: var(--color-arsm-primary);

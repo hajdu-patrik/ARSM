@@ -86,7 +86,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     closeUnclaimConfirm,
   } = cardActions;
 
-  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-all duration-200 hover:ring-2 hover:ring-arsm-focus-ring/45 dark:hover:ring-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
+  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-[background-color,border-color,color,transform] duration-200 hover:ring-2 hover:ring-arsm-focus-ring/45 dark:hover:ring-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
   const cardContentClassName = onClick ? 'pointer-events-none relative z-10 flex flex-col gap-3.5' : 'flex flex-col gap-3.5';
 
   const cardContent: ReactNode = (

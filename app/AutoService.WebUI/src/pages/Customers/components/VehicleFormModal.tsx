@@ -4,12 +4,12 @@ import { Save } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import { DRIVETRAIN_TYPES } from '../../../types/customers/customers.types';
 import {
+  buttonClass,
   formFieldGridClass,
   formFieldGroupClass,
   inputClass,
   labelClass,
-  referenceChipNeutralButtonClass,
-  referenceChipPrimaryButtonClass,
+  secondaryButtonClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
 import type { VehicleFormState } from '../helpers';
@@ -52,7 +52,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className={referenceChipNeutralButtonClass}
+            className={secondaryButtonClass}
           >
             {t('settings.cancel')}
           </button>
@@ -60,7 +60,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             type="submit"
             form="customers-vehicle-form"
             disabled={isSaving || !isSaveEnabled}
-            className={referenceChipPrimaryButtonClass}
+            className={buttonClass}
           >
             <Save className="h-4 w-4 shrink-0" />
             <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>

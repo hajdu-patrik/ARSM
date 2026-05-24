@@ -5,11 +5,11 @@ import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/sch
 import {
 	compactTwoColumnGridClass,
 	compactInputSurfaceClass,
-	customersToolbarPrimaryButtonClass,
 	inlineStatusTitleRowClass,
 	intakeFieldLabelClass,
 	intakeFieldWrapperClass,
 	intakeInputClass,
+	mediumContextPrimaryButtonClass,
 	mutedMetaTextClass,
 	warningNoticeSurfaceClass,
 } from '../../../../utils/formStyles';
@@ -114,7 +114,7 @@ export const NameLookupResults = memo(function NameLookupResults({
 						<button
 							type="button"
 							onClick={() => onSelect(result)}
-							className={`${customersToolbarPrimaryButtonClass} min-h-9 w-full px-3 py-1.5 text-xs sm:w-auto sm:shrink-0`}
+							className={`${mediumContextPrimaryButtonClass} w-full sm:w-auto sm:shrink-0`}
 						>
 							<span className="truncate">{translate('scheduler.intake.selectCustomerResult')}</span>
 						</button>

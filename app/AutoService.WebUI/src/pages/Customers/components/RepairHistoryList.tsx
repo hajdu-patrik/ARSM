@@ -21,6 +21,7 @@ interface RepairHistoryListProps {
 	readonly appointments: AppointmentDto[];
 	readonly locale: string;
 	readonly emptyMessage: string;
+	readonly emptyMessageClassName?: string;
 	readonly onOpenAppointment?: (appointment: AppointmentDto) => void;
 }
 
@@ -33,19 +34,24 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 	appointments,
 	locale,
 	emptyMessage,
+	emptyMessageClassName,
 	onOpenAppointment,
 }: RepairHistoryListProps) {
 	if (appointments.length === 0) {
-		return <p className={`text-center ${mutedSecondaryTextClass}`}>{emptyMessage}</p>;
+		const emptyStateClassName = emptyMessageClassName
+			? `${emptyMessageClassName} ${mutedSecondaryTextClass}`
+			: `text-center ${mutedSecondaryTextClass}`;
+
+		return <p className={emptyStateClassName}>{emptyMessage}</p>;
 	}
 
 	return (
-		<div className="divide-y divide-arsm-border/50 dark:divide-arsm-border-dark/50">
+		<div className="min-w-0 divide-y divide-arsm-border/80 dark:divide-arsm-border-dark/80">
 			{appointments.map((appointment) => (
 				<button
 					key={appointment.id}
 					type="button"
-					className={`flex min-h-[5.75rem] w-full min-w-0 flex-col justify-between py-3 text-left transition-colors duration-200 ${onOpenAppointment ? 'cursor-pointer hover:bg-arsm-hover/70 dark:hover:bg-arsm-hover-dark/70' : 'cursor-default'}`}
+					className={`flex min-h-[5.75rem] w-full min-w-0 flex-col justify-between px-3 py-3 text-left transition-colors duration-200 ${onOpenAppointment ? 'cursor-pointer hover:bg-arsm-hover/70 dark:hover:bg-arsm-hover-dark/70' : 'cursor-default'}`}
 					onClick={() => onOpenAppointment?.(appointment)}
 					disabled={!onOpenAppointment}
 				>

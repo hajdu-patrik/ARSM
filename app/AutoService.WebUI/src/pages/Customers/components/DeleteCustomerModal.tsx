@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { buildCustomerDisplayName } from '../helpers';
-import { mutedBodyTextClass, referenceChipDangerButtonClass, referenceChipNeutralButtonClass } from '../../../utils/formStyles';
+import { dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
 
 interface DeleteCustomerModalProps {
   target: CustomerListItem | null;
@@ -37,7 +37,7 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className={referenceChipNeutralButtonClass}
+            className={secondaryButtonClass}
           >
             {t('settings.cancel')}
           </button>
@@ -45,7 +45,7 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className={referenceChipDangerButtonClass}
+            className={dangerButtonClass}
           >
             <Trash2 className="h-4 w-4 shrink-0" />
             <span>{isDeleting ? t('customers.deleting') : t('customers.deleteCustomer')}</span>
