@@ -41,7 +41,7 @@ tools:
 - Neutral/cancel maps to `secondaryButtonClass`, `.arsm-btn-secondary`, and `customersToolbarNeutralButtonClass`.
 - Destructive maps to `dangerButtonClass`, `.arsm-btn-danger`, and `customersToolbarDangerButtonClass`.
 - Contextual actions must use `referenceChip*` or `compactFilterChip*` families.
-- Icon-only controls must use shared icon families (`iconButtonClass`, `schedulerNavIconButtonClass`, `modalConfirmCloseButtonClass`, `inputGroupOverlayButtonClass`, `iconDangerButtonClass`).
+- Icon-only controls must use shared icon families (`iconButtonClass`, `schedulerNavIconButtonClass`, `sidebarShellIconButtonClass`, `modalConfirmCloseButtonClass`, `inputGroupOverlayButtonClass`, `iconDangerButtonClass`).
 - Scheduler inline claim/unassign must use `schedulerInlineClaimButtonClass` and `schedulerInlineUnassignButtonClass`.
 
 ## Interaction and Color Contracts
@@ -85,5 +85,5 @@ tools:
 
 ## Enforcement
 
-- Must co-run with `Frontend Specialist` on every UI-facing iteration.
+- Must co-run with `Frontend Specialist` on every UI-facing, UI/UX, responsiveness, interaction, or style-policy iteration.
 - Any failed mandatory check blocks sign-off until remediated.

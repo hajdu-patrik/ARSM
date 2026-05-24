@@ -22,9 +22,9 @@
 
 1. Start with `Task Orchestrator`.
 2. Route implementation:
-   - backend/platform changes -> `Backend Specialist`
-   - frontend changes -> `Frontend Specialist` + `ui-ux-style-profile` (mandatory pair)
-   - schema-only delta -> optional `EF Migration`
+    - backend/platform changes -> `Backend Specialist`
+    - frontend/UI changes, including responsiveness, interaction, or style-policy changes -> `Frontend Specialist` + `ui-ux-style-profile` (mandatory pair)
+    - schema-only delta -> optional `EF Migration`
 3. Run `Build Validator`.
 4. Run `Docs Sync`.
 5. Run `Coding Principles` for source changes.

@@ -15,10 +15,7 @@ Plan-only agent. No direct implementation edits.
 ## Mandatory Execution Order
 
 1. Analyze task and split work.
-2. Route implementation:
-   - backend/platform -> `Backend Specialist`
-   - frontend -> `Frontend Specialist` + `ui-ux-style-profile` (mandatory pair)
-   - schema-only -> optional `EF Migration`
+2. Route implementation: backend/platform -> `Backend Specialist`; frontend/UI, responsiveness, interaction, or style-policy work -> `Frontend Specialist` + `ui-ux-style-profile` (mandatory pair); schema-only -> optional `EF Migration`.
 3. Run `Build Validator`.
 4. Run `Docs Sync`.
 5. Run `Coding Principles` for source changes.

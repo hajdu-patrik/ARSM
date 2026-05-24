@@ -20,7 +20,7 @@ tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 
 ## Mandatory Pair Rule
 
-- Every UI-facing change must co-run `ui-ux-style-profile`.
+- Every UI-facing, UI/UX, responsiveness, interaction, or style-policy change must co-run `ui-ux-style-profile`.
 - 320px checklist report is required before sign-off.
 
 ## Engineering Rules

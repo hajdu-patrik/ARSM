@@ -12,6 +12,7 @@ Use this skill for UI-facing frontend changes and UI/UX policy documentation upd
 - Localization-visible text change.
 - Toast/modal/confirmation flow change.
 - 320px responsive verification request.
+- Any frontend UI/UX, responsiveness, interaction, or style-policy rule change that must keep `ui-ux-style-profile` in the agent pipeline.
 - UI/UX policy file change in `.github/**` or `.claude/**`.
 
 ## Mandatory Checks

@@ -22,9 +22,9 @@
 
 1. Start with `orchestrator`.
 2. Route implementation:
-   - backend/platform changes -> `backend`
-   - frontend changes -> `frontend` + `ui-ux-style-profile` (mandatory pair)
-   - schema-only delta -> optional `migration`
+    - backend/platform changes -> `backend`
+    - frontend/UI changes, including responsiveness, interaction, or style-policy changes -> `frontend` + `ui-ux-style-profile` (mandatory pair)
+    - schema-only delta -> optional `migration`
 3. Run `validate`.
 4. Run `docs-sync`.
 5. Run `coding-principles` for source changes.

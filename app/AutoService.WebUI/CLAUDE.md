@@ -17,7 +17,7 @@
 ## Mandatory UI/UX Policy Coupling
 
 - Source of truth: `.claude/agents/ui-ux-style-profile.md`.
-- Every UI-facing iteration must co-run `frontend` + `ui-ux-style-profile`.
+- Every UI-facing, UI/UX, responsiveness, interaction, or style-token iteration must co-run `frontend` + `ui-ux-style-profile`.
 - 320px checklist pass/fail report is mandatory per changed UI component.
 
 ## Current UI Contract Anchors

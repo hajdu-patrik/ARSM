@@ -14,10 +14,7 @@ Plan-only agent. No direct implementation edits.
 ## Mandatory Execution Order
 
 1. Analyze task and split work.
-2. Route implementation:
-   - backend/platform -> `backend`
-   - frontend -> `frontend` + `ui-ux-style-profile` (mandatory pair)
-   - schema-only -> optional `migration`
+2. Route implementation: backend/platform -> `backend`; frontend/UI, responsiveness, interaction, or style-policy work -> `frontend` + `ui-ux-style-profile` (mandatory pair); schema-only -> optional `migration`.
 3. Run `validate`.
 4. Run `docs-sync`.
 5. Run `coding-principles` for source changes.
