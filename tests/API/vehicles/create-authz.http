@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonExistentCustomerId = 99999
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
@@ -17,6 +18,7 @@
 ### [Case][Vehicles] POST /api/customers/{{NonExistentCustomerId}}/vehicles
 
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -34,11 +36,13 @@ Content-Type: application/json
 
 ### [Setup][Vehicles] Logout admin, login as non-admin for write check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Vehicles] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -50,6 +54,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Non-admin can create vehicle (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

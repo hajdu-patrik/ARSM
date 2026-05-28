@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @SeedCustomerId = 1
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
@@ -16,6 +17,7 @@
 ### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -30,6 +32,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Update customer with invalid European phone format (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -44,6 +47,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Update customer with duplicate email conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -58,6 +62,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Update customer with duplicate phone conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -72,11 +77,13 @@ Content-Type: application/json
 
 ### [Setup][Customers] Logout admin, login as non-admin for update check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Customers] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -88,6 +95,7 @@ Content-Type: application/json
 
 ### [Positive][Customers] Non-admin can update customer (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

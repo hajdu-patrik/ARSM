@@ -5,14 +5,16 @@ from __future__ import annotations
 
 import json
 import os
-import ssl
 import sys
 import uuid
 from dataclasses import dataclass
 from http.cookiejar import CookieJar
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPCookieProcessor, HTTPSHandler, Request, build_opener
+from urllib.request import HTTPCookieProcessor, Request, build_opener
+
+APPLICATION_JSON = "application/json"
+PROFILE_PICTURE_PATH = "/api/profile/picture"
 
 VALID_PNG_BYTES = bytes.fromhex(
     "89504E470D0A1A0A"
@@ -20,6 +22,7 @@ VALID_PNG_BYTES = bytes.fromhex(
     "0000000A49444154789C6360000000020001E221BC330000000049454E44AE426082"
 )
 INVALID_TEXT_BYTES = b"not-an-image-payload"
+UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 @dataclass(frozen=True)
@@ -37,17 +40,19 @@ class StepResult:
 
 
 class HttpClient:
-    def __init__(self, base_url: str) -> None:
+    """Small cookie-aware HTTP client for profile picture endpoint checks."""
+
+    def __init__(self, base_url: str, allowed_origin: str) -> None:
         self.base_url = base_url.rstrip("/")
+        self.allowed_origin = allowed_origin
         self.cookie_jar = CookieJar()
-        ssl_context = ssl._create_unverified_context()
-        self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar), HTTPSHandler(context=ssl_context))
+        self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar))
 
     def request_json(self, method: str, path: str, payload: dict[str, Any] | None = None) -> tuple[int, str]:
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": APPLICATION_JSON}
         if payload is not None:
-            headers["Content-Type"] = "application/json"
+            headers["Content-Type"] = APPLICATION_JSON
         return self._request(method, path, body, headers)
 
     def request_multipart(
@@ -70,7 +75,7 @@ class HttpClient:
                 f"--{boundary}--\r\n".encode("utf-8"),
             ],
         )
-        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": "application/json"}
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": APPLICATION_JSON}
         return self._request(method, path, body, headers)
 
     def _request(
@@ -80,7 +85,11 @@ class HttpClient:
         body: bytes | None,
         headers: dict[str, str],
     ) -> tuple[int, str]:
-        request = Request(url=f"{self.base_url}{path}", data=body, headers=headers, method=method)
+        request_headers = dict(headers)
+        if method.upper() in UNSAFE_HTTP_METHODS:
+            request_headers["Origin"] = self.allowed_origin
+
+        request = Request(url=f"{self.base_url}{path}", data=body, headers=request_headers, method=method)
         try:
             with self.opener.open(request, timeout=30) as response:
                 return response.status, response.read().decode("utf-8", errors="replace")
@@ -113,6 +122,15 @@ def read_credentials() -> list[Credentials]:
     )
 
 
+def read_allowed_origin() -> str:
+    """Read the configured WebUI origin used by cookie-auth unsafe requests."""
+    origin = os.getenv("ARSM_TEST_WEBUI_ORIGIN", "").strip()
+    if origin:
+        return origin
+
+    raise RuntimeError("Missing ARSM_TEST_WEBUI_ORIGIN environment variable.")
+
+
 def assert_status(step: str, actual: int, expected: set[int], results: list[StepResult]) -> None:
     expected_list = sorted(expected)
     status = "passed" if actual in expected else "failed"
@@ -122,37 +140,17 @@ def assert_status(step: str, actual: int, expected: set[int], results: list[Step
 
 
 def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
-    valid_upload_status, _ = client.request_multipart(
-        "PUT",
-        "/api/profile/picture",
-        "file",
-        "valid-profile.png",
-        "image/png",
-        VALID_PNG_BYTES,
+    upload_cases = (
+        ("upload-valid-png", "valid-profile.png", "image/png", VALID_PNG_BYTES, {200, 204}),
+        ("upload-mime-mismatch", "mismatch.png", "image/jpeg", VALID_PNG_BYTES, {422}),
+        ("upload-invalid-magic-bytes", "not-image.png", "image/png", INVALID_TEXT_BYTES, {422}),
     )
-    assert_status("upload-valid-png", valid_upload_status, {200, 204}, results)
 
-    mime_mismatch_status, _ = client.request_multipart(
-        "PUT",
-        "/api/profile/picture",
-        "file",
-        "mismatch.png",
-        "image/jpeg",
-        VALID_PNG_BYTES,
-    )
-    assert_status("upload-mime-mismatch", mime_mismatch_status, {422}, results)
+    for step, filename, content_type, payload_bytes, expected_statuses in upload_cases:
+        upload_status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", filename, content_type, payload_bytes)
+        assert_status(step, upload_status, expected_statuses, results)
 
-    invalid_payload_status, _ = client.request_multipart(
-        "PUT",
-        "/api/profile/picture",
-        "file",
-        "not-image.png",
-        "image/png",
-        INVALID_TEXT_BYTES,
-    )
-    assert_status("upload-invalid-magic-bytes", invalid_payload_status, {422}, results)
-
-    delete_status, _ = client.request_json("DELETE", "/api/profile/picture")
+    delete_status, _ = client.request_json("DELETE", PROFILE_PICTURE_PATH)
     assert_status("delete-picture", delete_status, {200, 204}, results)
 
     logout_status, _ = client.request_json("POST", "/api/auth/logout")
@@ -168,11 +166,12 @@ def main() -> int:
             raise RuntimeError("Missing AutoService_ApiService_HostAddress environment variable.")
 
         credentials = read_credentials()
+        allowed_origin = read_allowed_origin()
         login_attempt_statuses: list[int] = []
 
         for credential in credentials:
             results.clear()
-            client = HttpClient(base_url)
+            client = HttpClient(base_url, allowed_origin)
             login_status, _ = client.request_json(
                 "POST",
                 "/api/auth/login",

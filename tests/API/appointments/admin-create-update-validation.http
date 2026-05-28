@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @CustomerId = 1
@@ -21,6 +22,7 @@
 
 ### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly create endpoint)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -35,6 +37,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{PastScheduledApptId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -46,6 +49,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Admin updates past appointment vehicle details (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -63,6 +67,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin update rejects vehicle numeric values above max limits (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -80,6 +85,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails when customer does not exist (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/99999/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -93,6 +99,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails when vehicle is not owned by customer (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -106,6 +113,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails when vehicle does not exist (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -119,6 +127,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails for empty mechanicIds (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -132,6 +141,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails for duplicate mechanicIds (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -145,6 +155,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails for non-positive mechanicIds (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -158,6 +169,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails for empty taskDescription (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -171,6 +183,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin create fails for invalid mechanicIds (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

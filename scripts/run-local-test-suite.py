@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import Iterable, Sequence
 from urllib.parse import unquote, urlparse
 
+from httpyac_summary import extract_http_summary
+
 TARGET_ORDER = ("playwright", "http", "sql")
+DEFAULT_COMMAND_TIMEOUT_SECONDS = 300
 SENSITIVE_NAME_PATTERN = re.compile(r"(?i)(password|passwd|secret|token|cookie|key|connection|pgpassword)")
 POSTGRES_URI_PATTERN = re.compile(r"postgres(?:ql)?://[^\s\"']+", re.IGNORECASE)
 ASSIGNMENT_SECRET_PATTERN = re.compile(
@@ -149,17 +152,30 @@ class CommandRunner:
         environment: dict[str, str],
         input_text: str | None = None,
     ) -> CommandResult:
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            env=environment,
-            input=input_text,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=False,
-        )
+        timeout_seconds = self._timeout_seconds(environment)
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=cwd,
+                env=environment,
+                input=input_text,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            stdout = self._timeout_output(error.stdout)
+            stderr = self._timeout_output(error.stderr)
+            timeout_message = f"{command_name} timed out after {timeout_seconds} seconds."
+            return CommandResult(
+                command_name=command_name,
+                return_code=124,
+                stdout=self.sanitizer.sanitize(stdout),
+                stderr=self.sanitizer.sanitize("\n".join(part for part in (stderr, timeout_message) if part)),
+            )
 
         return CommandResult(
             command_name=command_name,
@@ -167,6 +183,20 @@ class CommandRunner:
             stdout=self.sanitizer.sanitize(completed.stdout),
             stderr=self.sanitizer.sanitize(completed.stderr),
         )
+
+    def _timeout_seconds(self, environment: dict[str, str]) -> int:
+        raw_timeout = environment.get("ARSM_TEST_COMMAND_TIMEOUT_SECONDS", str(DEFAULT_COMMAND_TIMEOUT_SECONDS))
+        try:
+            return max(1, int(raw_timeout))
+        except ValueError:
+            return DEFAULT_COMMAND_TIMEOUT_SECONDS
+
+    def _timeout_output(self, value: str | bytes | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
 
 
 class LocalTestRunner:
@@ -224,7 +254,7 @@ class LocalTestRunner:
             environment,
         )
 
-        details = self._http_summary(result.stdout)
+        details = extract_http_summary(result.stdout)
         upload_details = self._extract_json_payload(upload_result.stdout) or {
             "status": "failed",
             "error": "Profile picture upload check did not return JSON output.",
@@ -329,79 +359,6 @@ class LocalTestRunner:
     def _command_suite_result(self, name: str, result: CommandResult) -> SuiteResult:
         status = "passed" if result.return_code == 0 else "failed"
         return SuiteResult(name, status, result.return_code, output_tail=self._tail(result.stdout + result.stderr))
-
-    @staticmethod
-    def _http_summary(output: str) -> dict[str, object]:
-        payload = LocalTestRunner._extract_httpyac_payload(output)
-        if not isinstance(payload, dict):
-            regex_summary = LocalTestRunner._extract_http_summary_with_regex(output)
-            if regex_summary is not None:
-                return regex_summary
-            return {"parseError": "HTTPYAC JSON output could not be parsed."}
-
-        summary = payload.get("summary", {})
-        if not isinstance(summary, dict):
-            return {"parseError": "HTTPYAC summary payload was not found in command output."}
-
-        return {
-            "totalRequests": int(summary.get("totalRequests", 0) or 0),
-            "successRequests": int(summary.get("successRequests", 0) or 0),
-            "failedRequests": int(summary.get("failedRequests", 0) or 0),
-            "erroredRequests": int(summary.get("erroredRequests", 0) or 0),
-        }
-
-    @staticmethod
-    def _extract_http_summary_with_regex(output: str) -> dict[str, int] | None:
-        summary_keys = ("totalRequests", "successRequests", "failedRequests", "erroredRequests")
-        summary: dict[str, int] = {}
-
-        for key in summary_keys:
-            matches = re.findall(rf'"{key}"\s*:\s*(\d+)', output)
-            if not matches:
-                return None
-            summary[key] = int(matches[-1])
-
-        return summary
-
-    @staticmethod
-    def _extract_httpyac_payload(output: str) -> dict[str, object] | None:
-        payload = LocalTestRunner._extract_json_payload(output)
-        if isinstance(payload, dict):
-            summary = payload.get("summary")
-            if isinstance(summary, dict) and any(
-                key in summary for key in ("totalRequests", "successRequests", "failedRequests", "erroredRequests")
-            ):
-                return payload
-
-        decoder = json.JSONDecoder()
-        best_payload: dict[str, object] | None = None
-        best_total_requests = -1
-
-        for index, char in enumerate(output):
-            if char != "{":
-                continue
-
-            try:
-                candidate, _ = decoder.raw_decode(output[index:])
-            except json.JSONDecodeError:
-                continue
-
-            if not isinstance(candidate, dict):
-                continue
-
-            summary = candidate.get("summary")
-            if not isinstance(summary, dict):
-                continue
-
-            if not any(key in summary for key in ("totalRequests", "successRequests", "failedRequests", "erroredRequests")):
-                continue
-
-            total_requests = int(summary.get("totalRequests", 0) or 0)
-            if total_requests >= best_total_requests:
-                best_total_requests = total_requests
-                best_payload = candidate
-
-        return best_payload
 
     @staticmethod
     def _extract_json_payload(output: str) -> dict[str, object] | None:

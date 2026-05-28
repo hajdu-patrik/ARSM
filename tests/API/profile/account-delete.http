@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
@@ -16,6 +17,7 @@
 
 ### [Setup][Profile] Login as admin for self-delete negative test
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -27,6 +29,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Self-delete with wrong password (400 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -37,6 +40,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Self-delete with missing password body (400 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {}
@@ -45,6 +49,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Admin self-delete forbidden (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -55,6 +60,7 @@ Content-Type: application/json
 
 ### [Setup][Profile] Register disposable non-admin mechanic for self-delete flow
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -72,11 +78,13 @@ Content-Type: application/json
 
 ### [Setup][Profile] Logout admin before non-admin self-delete check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Profile] Login as disposable non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -88,6 +96,7 @@ Content-Type: application/json
 
 ### [Positive][Profile] Non-admin self-delete (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -104,6 +113,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile
 ### [Negative][Profile] Unauthenticated self-delete (no session cookie) returns 401
 # Run in a fresh session with no active cookies.
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

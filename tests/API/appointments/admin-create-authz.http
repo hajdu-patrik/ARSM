@@ -5,6 +5,7 @@
 # Unauthenticated 401 coverage for this endpoint is maintained in appointments-unauth.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @CustomerId = 1
@@ -15,6 +16,7 @@
 
 ### [Setup][Appointments] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -27,6 +29,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Non-admin mechanic cannot create appointment for customer (403 expected)
 # POST /api/customers/{customerId}/appointments requires AdminOnly policy.
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

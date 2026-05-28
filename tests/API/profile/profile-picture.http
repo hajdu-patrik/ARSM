@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
@@ -16,6 +17,7 @@
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -44,11 +46,13 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonI
 
 ### [Setup][Profile] Logout non-admin before admin picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Profile] Login as admin for person-id picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -94,11 +98,13 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 
 ### [Positive][Profile] Remove profile picture
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Profile] Logout before unauthenticated picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -114,3 +120,4 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonI
 
 ### [Negative][Profile] Unauthenticated delete profile picture (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+Origin: {{WebUI_Origin}}

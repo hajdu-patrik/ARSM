@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
@@ -19,6 +20,7 @@
 
 ### [Setup][Vehicles] Login as admin (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -62,6 +64,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 
 ### [Positive][Vehicles] Admin creates vehicle for customer (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -79,6 +82,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Create vehicle with EU-style Latin plate formatting (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -96,6 +100,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Create vehicle with European Cyrillic plate formatting (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

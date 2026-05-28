@@ -3,6 +3,7 @@
 # Set @CancelledApptId to an appointment that is in Cancelled status.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
@@ -19,6 +20,7 @@
 
 ### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -33,6 +35,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -41,16 +44,19 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/
 ### [Case][Appointments] DELETE /api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Positive][Appointments] Admin assign mechanic to appointment
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Positive][Appointments] Admin unassign mechanic from appointment
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -59,6 +65,7 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedA
 ### [Case][Appointments] PUT /api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -67,12 +74,14 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/
 ### [Case][Appointments] DELETE /api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Admin cannot unassign last mechanic from appointment (422 expected)
 # Expected error code: last_assigned_mechanic.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -81,6 +90,7 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedA
 ### [Case][Appointments] PUT /api/appointments/99999/assign/{{MechanicIdToAssign}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -89,6 +99,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{Mecha
 ### [Case][Appointments] PUT /api/appointments/{{SingleAssignedApptId}}/assign/99999
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/99999
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -97,6 +108,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedAppt
 ### [Case][Appointments] PUT /api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -105,6 +117,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedAppt
 ### [Case][Appointments] DELETE /api/appointments/99999/assign/{{MechanicIdToAssign}}
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -113,16 +126,19 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{Me
 ### [Case][Appointments] DELETE /api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Appointments] Logout admin, login as non-admin for authz checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Appointments] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -134,8 +150,10 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Non-admin cannot admin-assign mechanic to appointment (403 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Non-admin cannot admin-unassign mechanic from appointment (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{MechanicIdToAssign}}
+Origin: {{WebUI_Origin}}

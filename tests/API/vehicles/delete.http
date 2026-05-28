@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
@@ -16,6 +17,7 @@
 
 ### [Setup][Vehicles] Login as admin for delete tests
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -27,16 +29,19 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Delete non-existent vehicle (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Vehicles] Logout admin, login as non-admin for delete auth check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Vehicles] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -48,11 +53,13 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Vehicles] Login as admin before positive delete
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -64,6 +71,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Admin deletes vehicle (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -74,6 +82,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
 
 ### [Negative][Vehicles] Re-delete deleted vehicle returns not found (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 
 ###
 

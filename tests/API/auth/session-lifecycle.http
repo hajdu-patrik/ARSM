@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
 @MatrixRunSuffix = {{$timestamp}}
@@ -13,6 +14,7 @@
 
 ### [Positive][Session] Login before validate/refresh/logout chain
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -29,6 +31,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ### [Positive][Session] Refresh authenticated session (204 expected; requires refresh cookie)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -58,6 +61,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 
 ### [Positive][Session] Logout current session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -68,8 +72,10 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ### [Negative][Session] Refresh without active cookie session (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Session] Logout without active access cookie (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}

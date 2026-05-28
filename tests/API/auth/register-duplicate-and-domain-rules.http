@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
@@ -15,6 +16,7 @@
 
 ### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -27,6 +29,7 @@ Content-Type: application/json
 ### [Case][Auth] POST /api/auth/register
 
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -45,6 +48,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (400 expected)
 # Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -62,6 +66,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Duplicate phone in another valid input format
 # Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -80,6 +85,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace
 # Expected ValidationProblem key: errors.register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -97,6 +103,7 @@ Content-Type: application/json
 
 ### [Negative][Register][Admin] Invalid email format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -113,6 +120,7 @@ Content-Type: application/json
 
 ### [Negative][Register][Admin] Invalid phone format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

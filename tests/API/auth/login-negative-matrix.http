@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @MatrixEuPhoneCanonical = +4915112345678
 
@@ -12,6 +13,7 @@
 ### [Case][Auth] POST /api/auth/login
 
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -23,6 +25,7 @@ Content-Type: application/json
 
 ### [Positive][Login Phone Matrix] EU phone (+49) for matrix user
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -34,6 +37,7 @@ Content-Type: application/json
 
 ### [Negative][Login Phone Matrix] Invalid phone format
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -45,6 +49,7 @@ Content-Type: application/json
 
 ### [Negative][Login Phone Matrix] Unsupported area/prefix
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

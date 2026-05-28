@@ -5,6 +5,7 @@
 # or after logging out.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @RunId = {{$timestamp}}
 @UnauthIntakeVin = TST{{RunId}}0601
 @UnauthUpdateVin = TST{{RunId}}0602
@@ -24,6 +25,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 
 ### [Negative][Appointments] Unauthenticated intake create (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -49,6 +51,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Unauthenticated appointment update (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -60,6 +63,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Unauthenticated appointment vehicle update (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -77,6 +81,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Unauthenticated appointment status update (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -87,26 +92,31 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Unauthenticated claim (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Unauthenticated unclaim (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Unauthenticated admin assign mechanic to appointment (401 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Unauthenticated admin unassign mechanic from appointment (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Unauthenticated admin create appointment for customer (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/1/appointments
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

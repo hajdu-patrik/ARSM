@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
@@ -15,6 +16,7 @@
 ### [Case][Customers] POST /api/customers
 
 POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -29,6 +31,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Create customer with duplicate phone conflict (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -43,11 +46,13 @@ Content-Type: application/json
 
 ### [Setup][Customers] Logout admin, login as non-admin for write check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Customers] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -59,6 +64,7 @@ Content-Type: application/json
 
 ### [Positive][Customers] Non-admin can create customer (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

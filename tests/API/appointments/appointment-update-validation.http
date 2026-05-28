@@ -5,6 +5,7 @@
 # Prerequisites: admin session cookie required.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @ApptId = 1
@@ -15,6 +16,7 @@
 
 ### [Setup][Appointments] Login as admin (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -26,6 +28,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin update rejects empty taskDescription (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -37,6 +40,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin update rejects taskDescription exceeding 200 characters (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -49,6 +53,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin update rejects dueDateTime earlier than scheduledDate (422 expected)
 # dueDateTime must be >= scheduledDate for the linked appointment.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -61,6 +66,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin vehicle update missing required fields (422 expected)
 # LicensePlate, Vin, Brand, Model, and DrivetrainType are required for /vehicle update payloads.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -71,6 +77,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin vehicle update rejects invalid VIN format (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -88,6 +95,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Admin vehicle update rejects unsupported drivetrain type (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

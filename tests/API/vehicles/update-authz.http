@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @SeedVehicleId = 1
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
@@ -14,6 +15,7 @@
 ### [Case][Vehicles] PUT /api/vehicles/{{SeedVehicleId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -31,11 +33,13 @@ Content-Type: application/json
 
 ### [Setup][Vehicles] Logout admin, login as non-admin for update check
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Vehicles] Login as non-admin mechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -47,6 +51,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Non-admin can update vehicle (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

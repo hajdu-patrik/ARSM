@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @ApptId = 1
@@ -15,6 +16,7 @@
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -26,6 +28,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Claim appointment by id
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -34,11 +37,13 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Positive][Appointments] Complete appointment (setup for unclaim-completed check)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -53,6 +58,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -62,11 +68,13 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 ### [Case][Appointments] DELETE /api/appointments/{{ApptId}}/claim
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Appointments] Cancel appointment for unclaim-cancelled check
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -80,11 +88,13 @@ Content-Type: application/json
 ### [Case][Appointments] DELETE /api/appointments/{{PastCancelledApptId}}/claim
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Appointments] Reopen completed appointment to InProgress for remaining tests
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -95,6 +105,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Unclaim appointment by id
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -103,11 +114,13 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 ### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/claim
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Claim non-existent appointment (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -116,6 +129,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 ### [Case][Appointments] DELETE /api/appointments/99999/claim
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -124,9 +138,11 @@ DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 ### [Case][Appointments] DELETE /api/appointments/{{NonAssignedApptId}}/claim
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
 # Expected error code: last_assigned_mechanic.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim
+Origin: {{WebUI_Origin}}

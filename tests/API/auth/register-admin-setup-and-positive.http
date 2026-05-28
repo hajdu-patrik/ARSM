@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
@@ -23,6 +24,7 @@
 
 ### [Negative][Register] Unauthenticated registration (AdminOnly policy -> 401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -39,6 +41,7 @@ Content-Type: application/json
 
 ### [Setup][Admin Session] Login as admin before register matrix (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -55,6 +58,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ### [Positive][Register][Admin] Email-only mechanic registration
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -71,6 +75,7 @@ Content-Type: application/json
 
 ### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -88,6 +93,7 @@ Content-Type: application/json
 
 ### [Positive][Register][Admin] Mechanic registration with local Hungarian phone (no 36/06 prefix)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -105,6 +111,7 @@ Content-Type: application/json
 
 ### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -122,6 +129,7 @@ Content-Type: application/json
 
 ### [Positive][Register][Admin] Mechanic registration with EU phone (+49)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -139,6 +147,7 @@ Content-Type: application/json
 
 ### [Positive][Register][Admin] Mechanic registration with leading/trailing whitespace in email and phone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

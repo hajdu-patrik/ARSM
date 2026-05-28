@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @CustomerVehicleId = 1
@@ -21,6 +22,7 @@
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -62,6 +64,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 
 ### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -76,6 +79,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -106,6 +110,7 @@ Content-Type: application/json
 ### [Case][Appointments] POST /api/appointments/intake
 
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -136,6 +141,7 @@ Content-Type: application/json
 ### [Case][Appointments] POST /api/appointments/intake
 
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @SeedCustomerId = 1
@@ -15,6 +16,7 @@
 
 ### [Setup][Appointments] Login as non-admin mechanic (history endpoints require authenticated user)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -56,6 +58,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 
 ### [Setup][Appointments] Logout to verify unauthenticated behavior
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 

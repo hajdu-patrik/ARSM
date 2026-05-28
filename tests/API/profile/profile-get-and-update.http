@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
@@ -18,6 +19,7 @@
 
 ### [Setup][Profile] Login as admin to seed profile conflict identity
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -29,6 +31,7 @@ Content-Type: application/json
 
 ### [Setup][Profile] Register mechanic used for duplicate email/phone profile validation
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -46,11 +49,13 @@ Content-Type: application/json
 
 ### [Setup][Profile] Logout admin before mechanic profile checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -67,6 +72,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile
 
 ### [Positive][Profile] Update own profile (middle name only)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -79,6 +85,7 @@ Content-Type: application/json
 
 ### [Positive][Profile] Update first and last name
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -90,6 +97,7 @@ Content-Type: application/json
 
 ### [Positive][Profile] Update all name fields together
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -102,6 +110,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with duplicate email validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -112,6 +121,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with duplicate phone validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -122,6 +132,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with invalid email format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -132,6 +143,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with invalid European phone format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -142,6 +154,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with empty firstName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -152,6 +165,7 @@ Content-Type: application/json
 
 ### [Negative][Profile] Update with empty lastName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -162,6 +176,7 @@ Content-Type: application/json
 
 ### [Positive][Profile] Update phone with local format (default region normalization)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @ApptId = 1
@@ -14,6 +15,7 @@
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -25,6 +27,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Update appointment status to InProgress (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -38,6 +41,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -52,6 +56,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+Origin: {{WebUI_Origin}}
 
 ###
 
@@ -60,6 +65,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 ### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -73,6 +79,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -83,6 +90,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Move reopened appointment to Completed (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -96,6 +104,7 @@ Content-Type: application/json
 ### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
 
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -106,6 +115,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Update non-existent appointment status (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -117,6 +127,7 @@ Content-Type: application/json
 # Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
 ### [Negative][Appointments] Non-assigned mechanic cannot change appointment status (403 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/status
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -128,6 +139,7 @@ Content-Type: application/json
 # Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
 ### [Negative][Appointments] Non-assigned non-admin mechanic cannot update appointment (403 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - Origin proof for cookie-based unsafe requests
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@OriginProofEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@OriginProofPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Origin] Login establishes auth cookies
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{OriginProofEmail}}",
+  "password": "{{OriginProofPassword}}"
+}
+
+###
+
+### [Positive][Origin] Safe authenticated validation does not require Origin
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+###
+
+### [Positive][Origin] Unsafe authenticated refresh accepts configured WebUI Origin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Origin] Unsafe authenticated refresh rejects hostile Origin (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: https://evil.example.test
+
+###
+
+### [Negative][Origin] Unsafe authenticated logout rejects missing Origin (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
 @CustomerVehicleId = 1
@@ -15,6 +16,7 @@
 
 ### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -30,6 +32,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Scheduler intake requires exactly one vehicle path (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -54,6 +57,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Scheduler intake rejects dueDateTime earlier than scheduledDate (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -68,6 +72,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -95,6 +100,7 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -123,6 +129,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Scheduler intake rejects non-existent vehicleId (404 expected)
 # When vehicleId is provided but does not exist in the database.
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -137,6 +144,7 @@ Content-Type: application/json
 
 ### [Positive][Appointments] Scheduler intake allows past scheduled date
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -152,6 +160,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Scheduler intake requires customer name fields when email is unknown and not a mechanic email (422 expected)
 # When the email does not match any customer or mechanic, customerFirstName and customerLastName are mandatory.
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

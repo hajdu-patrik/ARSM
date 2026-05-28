@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
@@ -15,6 +16,7 @@
 
 ### [Setup][Customers] Login as admin for update tests
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -26,6 +28,7 @@ Content-Type: application/json
 
 ### [Positive][Customers] Admin updates existing customer (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -40,6 +43,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Update non-existent customer (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -54,6 +58,7 @@ Content-Type: application/json
 
 ### [Negative][Customers] Update customer with missing required fields (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -71,6 +76,7 @@ Content-Type: application/json
 ### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -88,6 +94,7 @@ Content-Type: application/json
 ### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -105,6 +112,7 @@ Content-Type: application/json
 ### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
 
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @SeedCustomerId = 1
@@ -19,6 +20,7 @@
 
 ### [Setup][Vehicles] Login as admin for update tests
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -30,6 +32,7 @@ Content-Type: application/json
 
 ### [Positive][Vehicles] Admin updates existing vehicle (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -47,6 +50,7 @@ Content-Type: application/json
 
 ### [Setup][Vehicles] Create second vehicle for duplicate plate update validation
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -64,6 +68,7 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Update vehicle with duplicate license plate conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -81,6 +86,7 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Update vehicle with duplicate VIN conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -98,6 +104,7 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Update non-existent vehicle (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -115,6 +122,7 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Update vehicle with missing required fields (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
@@ -132,6 +140,7 @@ Content-Type: application/json
 
 ### [Negative][Vehicles] Update vehicle with unsupported drivetrain type (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {

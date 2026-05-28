@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @CurrentAdminMechanicId = 6
 @AnotherAdminMechanicId = 9
 @MechanicIdWithSoleAssignments = 7
@@ -14,43 +15,51 @@
 
 ### [Negative][Admin] Try deleting self mechanic (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{CurrentAdminMechanicId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 # Preconditions: AnotherAdminMechanicId exists, has Admin role, and differs from CurrentAdminMechanicId.
 ### [Negative][Admin] Try deleting another admin mechanic (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AnotherAdminMechanicId}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Admin] Cannot delete mechanic if it would leave appointments unassigned (422 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdWithSoleAssignments}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 # Preconditions: database has exactly one mechanic left and target is that mechanic.
 ### [Negative][Admin] Cannot delete last remaining mechanic globally (422 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 # Preconditions: target is non-admin, not self, and all its appointments are reassigned.
 ### [Positive][Admin] Delete non-admin mechanic when invariants hold
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 # Preconditions: induce concurrent update/delete contention on the same mechanic in another client/session.
 ### [Negative][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 # Preconditions: force linked identity deletion to fail (for example fault-inject UserManager.DeleteAsync failure).
 ### [Negative][Admin][Manual] Linked identity delete failure returns server error (500 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+Origin: {{WebUI_Origin}}
 
 ###
 
 ### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
+Origin: {{WebUI_Origin}}
