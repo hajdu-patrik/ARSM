@@ -9,8 +9,6 @@ import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
 	compactItemTitleTextClass,
-	iconButtonClass,
-	iconDangerButtonClass,
 	mutedMetaTextClass,
 } from '../../../utils/formStyles';
 import { VehicleSpecsGrid } from './VehicleSpecsGrid';
@@ -37,11 +35,10 @@ const VehicleItemComponent = memo(function VehicleItem({
 	isDetailsOpen,
 }: VehicleItemProps) {
 	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
-	const vehicleDetailsActionClass = `${iconButtonClass} ${isDetailsOpen
-		? 'border-arsm-info-border bg-arsm-info-bg text-arsm-info-text ring-1 ring-arsm-info-ring/45 dark:border-arsm-info-border-dark dark:bg-arsm-info-bg-dark dark:text-arsm-info-text-dark dark:ring-arsm-info-ring/55'
-		: 'text-arsm-info-text hover:text-arsm-info-text dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark'}`;
-	const vehicleInlineEditActionClass = `${iconButtonClass} text-arsm-warning-accent hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:text-arsm-warning-text-dark`;
-	const vehicleInlineDeleteActionClass = iconDangerButtonClass;
+	const vehicleIconActionClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30';
+	const vehicleDetailsActionClass = `${vehicleIconActionClass} text-arsm-info-text hover:text-arsm-info-ring dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark`;
+	const vehicleInlineEditActionClass = `${vehicleIconActionClass} text-arsm-warning-text hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:text-arsm-warning-text-dark`;
+	const vehicleInlineDeleteActionClass = `${vehicleIconActionClass} text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
 	const vehicleInlineViewIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
 	const vehicleInlineEditIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
 	const vehicleInlineDeleteIconClass = 'h-3.5 w-3.5 shrink-0 text-current';

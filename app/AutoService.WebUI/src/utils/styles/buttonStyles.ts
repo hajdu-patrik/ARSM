@@ -54,18 +54,10 @@ export const mainCtaNeutralButtonClass = `${mainCtaActionBaseClass} border borde
 export const mainCtaPrimaryButtonClass = `${mainCtaActionBaseClass} bg-arsm-accent font-semibold text-arsm-on-accent hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:hover:bg-arsm-accent-dark-hover`;
 export const mainCtaDangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-arsm-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 
-/** Scheduler action chips used inside appointment cards and detail panels. */
-export const schedulerMiniPrimaryActionButtonClass = `group pointer-events-auto ${mediumContextPrimaryButtonClass}`;
-export const schedulerMiniNeutralActionButtonClass = `${mediumContextNeutralButtonClass} max-[350px]:basis-full`;
-export const schedulerInlineClaimButtonClass = `group ${mediumContextPrimaryButtonClass}`;
-export const schedulerInlineUnassignButtonClass = `group ${mediumContextDangerButtonClass}`;
-
-/** Compact list and filter actions used in Customers/Scheduler tool rows. */
+/** Compact list and filter actions used in compact tool rows. */
 export const compactActionButtonBaseClass = `inline-flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium max-[350px]:w-full ${buttonMicroInteractionClass}`;
 export const compactActionButtonNeutralClass = `${compactActionButtonBaseClass} border border-arsm-border text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark`;
 export const compactSortToggleButtonClass = `${smallMetaNeutralButtonClass} text-[11px]`;
-export const schedulerFilterControlBaseClass = smallMetaNeutralButtonClass;
-export const schedulerFilterChipButtonClass = schedulerFilterControlBaseClass;
 
 /** Reference chips: canonical action sizes for details panels, compact toolbars, and history actions. */
 export const referenceChipNeutralButtonClass = mediumContextNeutralButtonClass;
@@ -81,8 +73,6 @@ export const customersToolbarDangerButtonClass = mainCtaDangerButtonClass;
 
 export const compactActionButtonAccentClass = `${compactActionButtonBaseClass} border border-arsm-accent/45 bg-arsm-accent-subtle font-semibold text-arsm-primary hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/45 dark:bg-arsm-hover-dark dark:text-arsm-primary-dark dark:hover:bg-arsm-toggle-bg-dark`;
 export const compactActionButtonDangerClass = `${compactActionButtonBaseClass} border border-arsm-error-border bg-arsm-error-bg text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
-export const schedulerMiniDangerActionButtonClass = `group pointer-events-auto ${mediumContextDangerButtonClass} max-[350px]:w-full max-[350px]:justify-center`;
-export const schedulerMiniDangerStrongActionButtonClass = `group pointer-events-auto ${mediumContextDangerButtonClass}`;
 
 /** Binary pill toggle helper used by compact on/off filter controls. */
 const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass}`;

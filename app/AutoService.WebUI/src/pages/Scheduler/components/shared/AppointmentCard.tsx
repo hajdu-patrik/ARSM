@@ -11,9 +11,8 @@ import {
   contentCardFrameClass,
   mutedBodyTextClass,
   mutedMetaTextClass,
-  schedulerInlineClaimButtonClass,
-  schedulerInlineUnassignButtonClass,
 } from '../../../../utils/formStyles';
+import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
 import { CompactOverflowBadge } from './CompactOverflowBadge';

@@ -7,10 +7,9 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { compactSortToggleButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass } from '../../../../utils/formStyles';
+import { filterSelectCompactClass, filterSelectCompactWrapperClass } from '../../../../utils/formStyles';
+import { schedulerMonthClearFilterButtonClass, schedulerMonthSortButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
-const schedulerChipBaseClass = 'inline-flex min-h-7 min-w-0 shrink-0 items-center gap-1 rounded-xl border px-2.5 py-0.5 text-[10px] font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-[350px]:min-h-11 max-[350px]:px-3 max-[350px]:py-2 max-[350px]:text-xs dark:focus-visible:ring-arsm-focus-ring/30';
-const schedulerStatusChipClass = schedulerChipBaseClass;
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
@@ -89,13 +88,13 @@ const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSort
 
   return (
     <div className={`${schedulerControlRowClass} w-full justify-start sm:w-auto sm:flex-nowrap sm:justify-end`}>
-      <button type="button" onClick={onToggleSort} className={compactSortToggleButtonClass} title={t('scheduler.monthList.sortByDate')}>
+      <button type="button" onClick={onToggleSort} className={schedulerMonthSortButtonClass} title={t('scheduler.monthList.sortByDate')}>
         <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
       </button>
 
       {selectedDay !== null && (
-        <button type="button" onClick={onClearFilter} className={`${compactSortToggleButtonClass} hover:border-arsm-accent/55 dark:hover:border-arsm-accent-dark/55`}>
+        <button type="button" onClick={onClearFilter} className={schedulerMonthClearFilterButtonClass}>
           <X className="h-3 w-3 shrink-0" />
           <span className="min-w-0 truncate">{t('scheduler.monthList.clearFilter')}</span>
         </button>
@@ -127,7 +126,7 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
           : `${colors.inactive} ${colors.inactiveHover} ${colors.inactivePress}`;
 
         return (
-          <button type="button" key={status} onClick={() => onToggleStatus(status)} aria-pressed={isActive} className={`${schedulerStatusChipClass} ${chipStateClass}`}>
+          <button type="button" key={status} onClick={() => onToggleStatus(status)} aria-pressed={isActive} className={`${schedulerStatusFilterChipButtonClass} ${chipStateClass}`}>
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors.dot}`} aria-hidden="true" />
             <span>{t(`scheduler.status.${status.toLowerCase()}`)}</span>
           </button>

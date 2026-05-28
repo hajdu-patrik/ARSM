@@ -5,6 +5,7 @@
  */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { errorNoticeSurfaceClass } from '../../utils/formStyles';
 
 /** Props for the {@link FormErrorMessage} component. */
 interface FormErrorMessageProps {
@@ -21,8 +22,7 @@ interface FormErrorMessageProps {
 }
 
 /** Default Tailwind classes for the error message container (light + dark). */
-const DEFAULT_CLASS_NAME =
-	'fade-in-up rounded-xl border border-arsm-error-border bg-arsm-error-bg px-3.5 py-2.5 text-sm font-semibold text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
+const DEFAULT_CLASS_NAME = `fade-in-up ${errorNoticeSurfaceClass}`;
 
 /** Memoized form error message that resolves an i18n key and renders a styled alert paragraph. */
 const FormErrorMessageComponent = memo(function FormErrorMessage({

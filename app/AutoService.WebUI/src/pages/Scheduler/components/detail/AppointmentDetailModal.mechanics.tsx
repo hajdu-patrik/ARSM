@@ -12,11 +12,10 @@ import {
   schedulerAccentTagClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
-  schedulerInlineClaimButtonClass,
-  schedulerInlineUnassignButtonClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
+import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
 
 export interface MechanicOption {
   readonly personId: number;

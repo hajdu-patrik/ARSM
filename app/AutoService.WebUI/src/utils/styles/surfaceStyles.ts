@@ -19,10 +19,15 @@ export const defaultBorderToneClass = 'border-arsm-border dark:border-arsm-borde
 export const contentCardFrameClass = `${roundedOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-arsm-card dark:bg-arsm-card-dark`;
 export const compactInputSurfaceClass = 'rounded-xl border border-arsm-border bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-input-dark';
 
+/** Shared outer frame for popup, toast, and live notification surfaces. */
+export const feedbackFrameClass = 'outline outline-1 outline-offset-1 outline-arsm-primary/25 dark:outline-purple-900/80';
+
 /** Warning feedback tones for inline status/warning messages and chips. */
 export const warningFeedbackToneClass = 'border-arsm-warning-border/60 bg-arsm-warning-bg text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
 export const warningStatusPillClass = `inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${warningFeedbackToneClass}`;
-export const warningNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${warningFeedbackToneClass}`;
+export const successNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} border-arsm-success-border/60 bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark`;
+export const warningNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} ${warningFeedbackToneClass}`;
+export const errorNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${feedbackFrameClass} border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light`;
 
 /** Compact list/detail building blocks for Customers history/details presentation. */
 export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2';

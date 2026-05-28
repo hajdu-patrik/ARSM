@@ -6,7 +6,7 @@
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { controlPanelFooterClass } from '../../utils/formStyles';
+import { controlPanelFooterClass, feedbackFrameClass } from '../../utils/formStyles';
 import { ModalCloseButton } from './ModalCloseButton';
 
 interface ModalProps {
@@ -75,7 +75,7 @@ const ModalComponent = memo(function Modal({
         open
         aria-label={title}
         aria-modal="true"
-        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-arsm-card p-5 text-arsm-primary transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6`}
+        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-arsm-card p-5 text-arsm-primary transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6 ${feedbackFrameClass}`}
       >
         <div
           aria-hidden="true"

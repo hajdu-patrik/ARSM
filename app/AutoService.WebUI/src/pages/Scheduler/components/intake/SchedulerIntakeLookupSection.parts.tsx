@@ -11,6 +11,7 @@ import {
 	intakeInputClass,
 	mediumContextPrimaryButtonClass,
 	mutedMetaTextClass,
+	successNoticeSurfaceClass,
 	warningNoticeSurfaceClass,
 } from '../../../../utils/formStyles';
 import type { LookupMode } from './SchedulerIntakeModal.types';
@@ -71,7 +72,7 @@ export const FoundCustomerSummary = memo(function FoundCustomerSummary({
 	translate,
 }: FoundCustomerSummaryProps) {
 	return (
-		<div className="fade-in-up rounded-xl border border-arsm-success-border/60 bg-arsm-success-bg px-3.5 py-2.5 text-sm text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark">
+		<div className={`fade-in-up ${successNoticeSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
 				<UserCheck className="h-4 w-4 shrink-0" />
 				<span className="min-w-0 truncate">{translate('scheduler.intake.customerFound')}</span>

@@ -18,11 +18,11 @@ import {
   mutedSectionIconClass,
   referenceChipDangerButtonClass,
   referenceChipNeutralButtonClass,
-  smallMetaPrimaryButtonClass,
 } from '../../../utils/formStyles';
 import { buildCustomerDisplayName } from '../helpers';
 import { CustomerDetailsPanel, type ResolvedCustomerDetailsPanelTarget } from './CustomerDetailsPanel';
 import { VehicleItem } from './VehicleItem';
+import { customerCompactChipPrimaryButtonClass } from './customerCompactActionStyles';
 import type { CustomerHistoryState, CustomerListActions } from './customerListSection.types';
 
 interface CustomerCardProps {
@@ -158,14 +158,14 @@ const CustomerCardComponent = memo(function CustomerCard({
 
       {isExpanded && (
         <div className="min-w-0 border-t border-arsm-border/85 px-4 pb-4 pt-4 dark:border-arsm-border-dark/85 sm:px-5">
-          <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+          <div className="grid min-w-0 gap-5 lg:grid-cols-2">
             <section className="min-w-0 space-y-3">
               <div className={compactHeaderRowClass}>
                 <h3 className={inlineSectionTitleClass}>
                   <CarFront className="h-4 w-4 shrink-0" />
                   <span className="truncate">{t('customers.vehiclesTitle')}</span>
                 </h3>
-                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${smallMetaPrimaryButtonClass} w-full sm:w-auto`}>
+                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${customerCompactChipPrimaryButtonClass} w-full sm:w-auto`}>
                   <Plus className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{t('customers.createVehicle')}</span>
                 </button>
@@ -192,7 +192,7 @@ const CustomerCardComponent = memo(function CustomerCard({
               )}
             </section>
 
-            <div className="min-w-0 border-t border-arsm-border/65 pt-4 dark:border-arsm-border-dark/65 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+            <div className="min-w-0 border-t border-arsm-border/65 pt-4 dark:border-arsm-border-dark/65 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
               <CustomerDetailsPanel
                 target={detailsTarget}
                 variant="inline"

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
 import { SYSTEM_ERROR_TOAST_KEYS, WARNING_TOAST_KEYS } from '../../store/toast.keys';
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
+import { feedbackFrameClass } from '../../utils/formStyles';
 
 interface ToastItemProps {
   readonly toast: ToastMessage;
@@ -48,7 +49,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   return (
     <output
       aria-live="polite"
-      className={`toast-enter pointer-events-auto relative flex min-w-0 w-[min(92vw,33rem)] items-center gap-2 overflow-hidden rounded-2xl border px-4 py-3 text-sm font-medium backdrop-blur-md ${toastVariantClass}`}
+      className={`toast-enter pointer-events-auto relative flex min-w-0 w-[min(92vw,33rem)] items-center gap-2 overflow-hidden rounded-2xl border px-4 py-3 text-sm font-medium backdrop-blur-md ${feedbackFrameClass} ${toastVariantClass}`}
     >
       {isSystemErrorToast ? (
         <span

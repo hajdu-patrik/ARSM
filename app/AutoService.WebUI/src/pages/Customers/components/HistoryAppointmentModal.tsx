@@ -11,12 +11,12 @@ import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
   compactDataSurfaceClass,
-  compactFilterChipNeutralButtonClass,
   compactPrimaryValueTextClass,
   mutedMetaTextClass,
 } from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
+import { customerCompactChipNeutralButtonClass } from './customerCompactActionStyles';
 
 interface HistoryAppointmentModalProps {
   readonly appointment: AppointmentDto | null;
@@ -61,7 +61,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           <button
             type="button"
             onClick={handleOpenInScheduler}
-            className={compactFilterChipNeutralButtonClass}
+            className={customerCompactChipNeutralButtonClass}
             title={t('customers.openInScheduler')}
             aria-label={t('customers.openInScheduler')}
           >
