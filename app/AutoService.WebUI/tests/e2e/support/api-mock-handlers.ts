@@ -6,6 +6,8 @@ import { tryHandleAuthRoute, tryHandleProfileRoute } from './api-mock-auth-profi
 import { tryHandleAppointmentRoute, tryHandleCustomerRoute } from './api-mock-customer-appointment-handlers';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
+const unauthorizedOnceHits = new WeakMap<InstallApiMockOptions, Set<string>>();
+
 function normalizeApiPath(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith('/')) {
     return pathname.slice(0, -1);
@@ -13,6 +15,7 @@ function normalizeApiPath(pathname: string): string {
   return pathname;
 }
 
+/** Dispatches one mocked API request to the matching domain handler. */
 export async function handleApiRoute(
   route: Route,
   state: MockApiState,
@@ -22,9 +25,17 @@ export async function handleApiRoute(
   const url = new URL(request.url());
   const method = request.method().toUpperCase();
   const path = normalizeApiPath(url.pathname);
+  const routeKey = `${method} ${path}`;
+
+  options.routeCallLog?.push(routeKey);
 
   if (method === 'OPTIONS') {
     await fulfillNoContent(route);
+    return;
+  }
+
+  if (shouldRejectOnce(options, routeKey)) {
+    await fulfillJson(route, { detail: 'Unauthorized' }, 401);
     return;
   }
 
@@ -49,4 +60,21 @@ export async function handleApiRoute(
   }
 
   await fulfillJson(route, { detail: `Unhandled mock route: ${method} ${path}` }, 404);
+}
+
+/** Returns true once for configured route keys so refresh/retry tests stay deterministic. */
+function shouldRejectOnce(options: InstallApiMockOptions, routeKey: string): boolean {
+  if (!options.unauthorizedOnceRouteKeys?.includes(routeKey)) {
+    return false;
+  }
+
+  const hits = unauthorizedOnceHits.get(options) ?? new Set<string>();
+  unauthorizedOnceHits.set(options, hits);
+
+  if (hits.has(routeKey)) {
+    return false;
+  }
+
+  hits.add(routeKey);
+  return true;
 }

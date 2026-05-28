@@ -73,4 +73,30 @@ test.describe('Settings edge cases', () => {
     const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
     expect(hasDarkClass).toBe(changedTheme === 'dark');
   });
+
+  test('keeps profile deletion disabled until password confirmation matches', async ({ page }) => {
+    await page.getByRole('button', { name: /Delete Profile|Profil törlése/i }).click();
+
+    const deleteDialog = page.getByRole('dialog', { name: /Confirm profile deletion|Profil törlésének megerősítése/i });
+    await expect(deleteDialog).toBeVisible();
+
+    await fillLockedPasswordField(page, '#delete-profile-password', 'CurrentPass1!');
+    await fillLockedPasswordField(page, '#delete-profile-password-confirm', 'DifferentPass1!');
+
+    await expect(deleteDialog.getByRole('button', { name: /Confirm Deletion|Törlés megerősítése/i })).toBeDisabled();
+  });
+
+  test('deletes profile after matching password confirmation and clears session hint', async ({ page }) => {
+    await page.getByRole('button', { name: /Delete Profile|Profil törlése/i }).click();
+
+    const deleteDialog = page.getByRole('dialog', { name: /Confirm profile deletion|Profil törlésének megerősítése/i });
+    await fillLockedPasswordField(page, '#delete-profile-password', 'CurrentPass1!');
+    await fillLockedPasswordField(page, '#delete-profile-password-confirm', 'CurrentPass1!');
+    await deleteDialog.getByRole('button', { name: /Confirm Deletion|Törlés megerősítése/i }).click();
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText(/Profile deleted successfully|Profil sikeresen törölve/i);
+    const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
+    expect(sessionHint).toBeNull();
+  });
 });

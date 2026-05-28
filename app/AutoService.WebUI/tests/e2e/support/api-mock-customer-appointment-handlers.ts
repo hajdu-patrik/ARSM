@@ -48,7 +48,7 @@ export async function tryHandleCustomerRoute(
     return true;
   }
 
-  return tryHandleCustomerNestedRoute(route, method, path, state);
+  return tryHandleCustomerNestedRoute(route, method, path, state, options);
 }
 
 async function tryHandleCustomerNestedRoute(
@@ -56,6 +56,7 @@ async function tryHandleCustomerNestedRoute(
   method: string,
   path: string,
   state: MockApiState,
+  options: InstallApiMockOptions,
 ): Promise<boolean> {
   const customerVehiclesMatch = /^\/api\/customers\/(\d+)\/vehicles$/.exec(path);
   if (customerVehiclesMatch && method === 'GET') {
@@ -73,13 +74,25 @@ async function tryHandleCustomerNestedRoute(
 
   const customerHistoryMatch = /^\/api\/customers\/(\d+)\/appointments$/.exec(path);
   if (customerHistoryMatch && method === 'GET') {
-    await fulfillJson(route, state.customerHistoryByCustomerId[Number(customerHistoryMatch[1])] ?? []);
+    const customerId = Number(customerHistoryMatch[1]);
+    if (options.failedCustomerHistoryIds?.includes(customerId)) {
+      await fulfillJson(route, { detail: 'Customer history unavailable' }, 422);
+      return true;
+    }
+
+    await fulfillJson(route, state.customerHistoryByCustomerId[customerId] ?? []);
     return true;
   }
 
   const vehicleHistoryMatch = /^\/api\/vehicles\/(\d+)\/appointments$/.exec(path);
   if (vehicleHistoryMatch && method === 'GET') {
-    await fulfillJson(route, state.vehicleHistoryByVehicleId[Number(vehicleHistoryMatch[1])] ?? []);
+    const vehicleId = Number(vehicleHistoryMatch[1]);
+    if (options.failedVehicleHistoryIds?.includes(vehicleId)) {
+      await fulfillJson(route, { detail: 'Vehicle history unavailable' }, 422);
+      return true;
+    }
+
+    await fulfillJson(route, state.vehicleHistoryByVehicleId[vehicleId] ?? []);
     return true;
   }
 

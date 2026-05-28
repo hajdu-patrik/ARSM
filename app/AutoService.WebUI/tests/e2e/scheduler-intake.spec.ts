@@ -25,6 +25,24 @@ test.describe('Scheduler intake customer lookup', () => {
     await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toContainText('NXE-441 - Volkswagen Golf (2018)');
   });
 
+  test('creates an intake for an existing vehicle and adds it to the monthly list', async ({ page }) => {
+    const schedulerPage = new SchedulerPage(page);
+    const taskDescription = 'Brake diagnosis from Playwright';
+
+    await schedulerPage.goto();
+    const dialog = await schedulerPage.openIntakeForCurrentDay();
+
+    await schedulerPage.searchByLicensePlate('NXE-441');
+    await dialog.getByRole('button', { name: 'Select' }).first().click();
+    await dialog.getByTestId('scheduler-intake-task-description').fill(taskDescription);
+    await schedulerPage.createWithCurrentForm();
+
+    await expect(schedulerPage.intakeDialog()).toHaveCount(0);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText('Intake created successfully.');
+    await expect(page.getByText(taskDescription)).toBeVisible();
+    await expect(page.getByText('NXE-441').first()).toBeVisible();
+  });
+
   test('shows multiple name lookup results and selects one customer', async ({ page }) => {
     const schedulerPage = new SchedulerPage(page);
     await schedulerPage.goto();

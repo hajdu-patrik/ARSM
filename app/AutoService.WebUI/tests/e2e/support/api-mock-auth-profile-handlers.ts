@@ -31,8 +31,10 @@ export async function tryHandleAuthRoute(
       await handleAuthRegister(route, state, options);
       return true;
     case 'GET /api/auth/validate':
-    case 'POST /api/auth/refresh':
       await handleAuthValidate(route, state, options);
+      return true;
+    case 'POST /api/auth/refresh':
+      await handleAuthRefresh(route, state, options);
       return true;
     case 'POST /api/auth/logout':
       await fulfillNoContent(route);
@@ -78,6 +80,19 @@ async function handleAuthRegister(
   state.nextMechanicPersonId += 1;
   state.mechanics.push(createdMechanic);
   await fulfillJson(route, { personId: createdMechanic.personId, personType: 'mechanic', email: createdMechanic.email }, 201);
+}
+
+async function handleAuthRefresh(
+  route: Route,
+  state: MockApiState,
+  options: InstallApiMockOptions,
+): Promise<void> {
+  if (options.refreshShouldFail) {
+    await fulfillJson(route, { detail: 'Unauthorized' }, 401);
+    return;
+  }
+
+  await handleAuthValidate(route, state, options);
 }
 
 async function handleAuthValidate(

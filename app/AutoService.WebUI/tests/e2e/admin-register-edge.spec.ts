@@ -14,14 +14,31 @@ function registrationSelectors(page: Page) {
   };
 }
 
-async function fillRequiredRegistrationFields(page: Page, email: string): Promise<void> {
+function selectedMechanicsSection(page: Page) {
+  return page.locator('section[aria-label="Selected Mechanics"], section[aria-label="Kijelölt szerelők"]');
+}
+
+/** Required registration form values with overridable defaults for edge cases. */
+interface RequiredRegistrationFields {
+  readonly email: string;
+  readonly lastName?: string;
+  readonly confirmPassword?: string;
+}
+
+/** Fills the required mechanic registration fields with deterministic defaults. */
+async function fillRequiredRegistrationFields(page: Page, fields: RequiredRegistrationFields): Promise<void> {
+  const {
+    email,
+    lastName = 'Mechanic',
+    confirmPassword = 'StrongPass1!',
+  } = fields;
   const selectors = registrationSelectors(page);
 
   await selectors.firstName.fill('Edge');
-  await selectors.lastName.fill('Mechanic');
+  await selectors.lastName.fill(lastName);
   await selectors.email.fill(email);
   await selectors.password.fill('StrongPass1!');
-  await selectors.confirmPassword.fill('StrongPass1!');
+  await selectors.confirmPassword.fill(confirmPassword);
   await selectors.specialization.selectOption('GasolineAndDiesel');
   await page.locator('label').filter({ hasText: /Engine|Motor/i }).first().click();
 }
@@ -39,15 +56,13 @@ test.describe('Admin mechanic registration edge cases', () => {
   });
 
   test('shows frontend mismatch validation before confirmation step', async ({ page }) => {
-    const selectors = registrationSelectors(page);
+    await fillRequiredRegistrationFields(page, {
+      email: 'mismatch.mechanic@example.test',
+      lastName: 'Mismatch',
+      confirmPassword: 'DifferentPass1!',
+    });
 
-    await selectors.firstName.fill('Edge');
-    await selectors.lastName.fill('Mismatch');
-    await selectors.email.fill('mismatch.mechanic@example.test');
-    await selectors.password.fill('StrongPass1!');
-    await selectors.confirmPassword.fill('DifferentPass1!');
-    await selectors.specialization.selectOption('GasolineAndDiesel');
-    await page.locator('label').filter({ hasText: /Engine|Motor/i }).first().click();
+    const selectors = registrationSelectors(page);
 
     await expect(page.locator('#reg-confirm-password')).toHaveAttribute('aria-invalid', 'true');
     await expect(selectors.submit).toBeDisabled();
@@ -58,7 +73,7 @@ test.describe('Admin mechanic registration edge cases', () => {
     const newEmail = 'new.mechanic@example.test';
     const selectors = registrationSelectors(page);
 
-    await fillRequiredRegistrationFields(page, newEmail);
+    await fillRequiredRegistrationFields(page, { email: newEmail });
     await selectors.submit.click();
 
     const confirmDialog = page.getByRole('dialog', { name: /Confirm Registration|Regisztráció megerősítése/i });
@@ -66,7 +81,29 @@ test.describe('Admin mechanic registration edge cases', () => {
     await confirmDialog.getByRole('button', { name: /Register|Regisztrálás/i }).click();
 
     await expect(page.locator('output[aria-live="polite"]')).toContainText(/registered successfully|sikeresen regisztrálva/i);
-    const mechanicsSection = page.locator('section[aria-label="Selected Mechanics"], section[aria-label="Kijelölt szerelők"]');
+    const mechanicsSection = selectedMechanicsSection(page);
     await expect(mechanicsSection.getByText(newEmail, { exact: true })).toBeVisible();
+  });
+
+  test('deletes a newly registered mechanic through confirmation modal', async ({ page }) => {
+    const newEmail = 'delete.mechanic@example.test';
+    const selectors = registrationSelectors(page);
+    const mechanicsSection = selectedMechanicsSection(page);
+
+    await fillRequiredRegistrationFields(page, { email: newEmail });
+    await selectors.submit.click();
+    await page.getByRole('dialog', { name: /Confirm Registration|Regisztráció megerősítése/i })
+      .getByRole('button', { name: /Register|Regisztrálás/i })
+      .click();
+
+    await expect(mechanicsSection.getByText(newEmail, { exact: true })).toBeVisible();
+    await mechanicsSection.getByRole('button', { name: /Delete mechanic|Szerelő törlése/i }).last().click();
+
+    const deleteDialog = page.getByRole('dialog', { name: /Confirm mechanic deletion|Szerelő törlésének megerősítése/i });
+    await expect(deleteDialog).toContainText(newEmail);
+    await deleteDialog.getByRole('button', { name: /Delete|Törlés/i }).click();
+
+    await expect(page.locator('output[aria-live="polite"]')).toContainText(newEmail);
+    await expect(mechanicsSection.getByText(newEmail, { exact: true })).toHaveCount(0);
   });
 });

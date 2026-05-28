@@ -2,6 +2,10 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 const vehicleDetailsToggleLabelPattern = /Show vehicle history|Hide vehicle history|Open vehicle details|Jármű előzmények mutatása|Jármű előzmények elrejtése|Jármű részleteinek megnyitása/i;
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+}
+
 export class CustomersPage {
   constructor(private readonly page: Page) {}
 
@@ -23,8 +27,8 @@ export class CustomersPage {
     return this.page.getByRole('complementary', { name: 'Customer details panel' });
   }
 
-  vehicleDetailsToggle(customerId: number): Locator {
-    return this.customerCard(customerId).getByRole('button', { name: vehicleDetailsToggleLabelPattern }).first();
+  vehicleDetailsToggle(customerId: number, index = 0): Locator {
+    return this.customerCard(customerId).getByRole('button', { name: vehicleDetailsToggleLabelPattern }).nth(index);
   }
 
   vehicleDialog(title: string): Locator {
@@ -43,6 +47,21 @@ export class CustomersPage {
   async openFirstVehicleDetails(customerId: number): Promise<void> {
     await this.vehicleDetailsToggle(customerId).click();
     await expect(this.detailsPanel()).toBeVisible();
+  }
+
+  async expectVehicleHistoryOnlyPanel(licensePlate: string): Promise<void> {
+    const panel = this.detailsPanel();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('heading', {
+      name: new RegExp(`${escapeRegExp(licensePlate)} (vehicle repair history|jármű javítási előzményei)`, 'i'),
+    })).toBeVisible();
+    await expect(panel).not.toContainText(/VIN|Engine power \(kW\)|Drivetrain|WVWZZZAUZJW123456|110 kW/i);
+  }
+
+  async expectCustomerHistoryPanel(): Promise<void> {
+    const panel = this.detailsPanel();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('heading', { name: /Customer repair history|Ügyfél javítási előzményei/i })).toBeVisible();
   }
 
   async openCreateVehicle(customerId: number): Promise<Locator> {
