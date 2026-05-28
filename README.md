@@ -106,9 +106,12 @@ AppHost starts and wires:
 | Run all local tests | `python scripts/run-local-test-suite.py` |
 | Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
 
+NuGet restore is lock-file based: `app/Directory.Build.props` enables `packages.lock.json`, and CI runs `dotnet restore --locked-mode`.
+
 ## Running Tests
 
 Use the Python runner from repository root. It loads `.secrets` and `tests/.env`, runs selected suites, and writes a sanitized summary to `tests/.artifacts/test-suite-summary.json`.
+Each child command has a 300-second timeout by default; set `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` for slower local runs.
 
 ```bash
 python scripts/run-local-test-suite.py
@@ -152,9 +155,17 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - Backend local secrets belong in `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
 - WebUI local env values belong in `app/AutoService.WebUI/.env.development` (template: `app/AutoService.WebUI/.env.development.template`).
 - API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
+  - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
 - Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
 - PostgreSQL MCP access uses `ARSM_MCP_POSTGRES_CONNECTION_STRING` (recommended user: `ai_agent_test_user`, read-only policy).
+
+## Deployment Security Notes
+
+- Vite/Aspire WebUI hosting is local-development only. The Vite dev server binds to `localhost` by default; use `VITE_DEV_HOST` only for an explicit local LAN/container debugging opt-in.
+- Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
+- Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
+- The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
 
 ## Contributor Notes (AI Workflow)
 

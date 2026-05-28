@@ -6,6 +6,12 @@
 - Architecture sign-off: Patrik
 - Security/testing escalation: Zsombor
 
+## Decision Ownership
+
+- The user owns backend product, architecture, contract, persistence, auth/session, and runtime-composition decisions.
+- Do not add or change API behavior, DTO fields, EF schema, auth/session flow, runtime defaults, validation rules, tests, or documentation policy unless explicitly requested, specified by instructions, or agreed in the active plan.
+- If backend requirements are ambiguous, ask the user before choosing an approach.
+
 ## Hard Invariants
 
 - `People` stays abstract TPH.
@@ -22,7 +28,9 @@
 ## Auth and Runtime Anchors
 
 - Cookies: `autoservice_at` (10 min), `autoservice_rt` (7 days).
+- Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header.
 - Rate limits: login `10/min`, refresh `20/min`; lockout after 5 failed attempts for 15 min.
+- In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
 - Preserve middleware and endpoint mapping order in `Program.cs`.
 
 ## Engineering and Size Rules

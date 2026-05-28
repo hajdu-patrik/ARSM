@@ -1,6 +1,6 @@
 ---
 name: ui-ux-sync
-description: 'Enforce ARSM WebUI UI/UX policy with evidence-backed audits. Use when frontend UI code, responsive 320px behavior, button settings, animations, i18n text, toast/popup flows, push-notification readiness, or ui-ux-style-profile agent/skill docs change. Keywords: frontend audit, UI UX analysis, 320px, toast, popup, push notification.'
+description: 'Enforce ARSM WebUI UI/UX policy with evidence-backed audits. Use for frontend UI code, responsive 320px behavior, style extraction boundaries, no-redesign preservation checks, buttons, animations, i18n, toast/modal flows, push-notification readiness, or ui-ux-style-profile docs changes.'
 disable-model-invocation: true
 ---
 
@@ -12,13 +12,16 @@ Use this skill for UI-facing frontend changes and UI/UX policy documentation upd
 - Localization-visible text change.
 - Toast/modal/confirmation flow change.
 - 320px responsive verification request.
+- Style extraction, shared primitive, or visual-preservation review.
 - Any frontend UI/UX, responsiveness, interaction, or style-policy rule change that must keep `ui-ux-style-profile` in the agent pipeline.
 - UI/UX policy file change in `.github/**` or `.claude/**`.
 
 ## Mandatory Checks
 
+- No unintended visual redesign: preserve current colors, spacing, radii, motion, focus, layout, and responsive behavior unless explicitly requested.
 - Token usage and surface consistency; no shadows.
-- Button/control-group mapping to shared style primitives.
+- Extraction boundary: shared primitives contain only repeated minimum common subsets; feature-specific classes remain local.
+- Button/control-group mapping, touch targets, and local semantic overrides.
 - Icon-only controls keep scale-only hover behavior.
 - Vehicle action icon semantics remain fixed (Eye info, Pencil warning, Trash danger).
 - 320px responsive checklist pass/fail per changed component.
@@ -28,18 +31,15 @@ Use this skill for UI-facing frontend changes and UI/UX policy documentation upd
 
 ## Evidence Anchors
 
-- `app/AutoService.WebUI/src/styles/tokens.css`
-- `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
-- `app/AutoService.WebUI/src/utils/formStyles.ts`
-- `app/AutoService.WebUI/src/components/common/{Modal.tsx,ModalCloseButton.tsx,ToastViewport.tsx}`
-- `app/AutoService.WebUI/src/utils/locales/{en.core.ts,hu.core.ts,en.feature.ts,hu.feature.ts}`
+- Use `.claude/agents/ui-ux-style-profile.md` as the authoritative audit guide.
+- Cite only the files actually inspected or changed.
 
 ## Output Contract
 
 1. Scope
-2. Dimension results (PASS/FAIL/WARN)
-3. 320px checklist (per component)
-4. Evidence (file + line)
-5. Push status
-6. Remediation plan
-7. Validation summary
+2. Visual preservation status
+3. Extraction-boundary findings
+4. 320px checklist per component
+5. Evidence
+6. Push status
+7. Remediation plan and validation summary

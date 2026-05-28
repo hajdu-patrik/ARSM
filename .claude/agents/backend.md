@@ -13,6 +13,11 @@ tools: Read, Edit, MultiEdit, Grep, Glob, Bash
 - `app/AutoService.AppHost/**`
 - `app/AutoService.ServiceDefaults/**`
 
+## Decision Ownership
+
+- Ask before making backend product, architecture, contract, persistence, auth/session, runtime, test-scope, or policy decisions that are not explicitly requested or already agreed in the active plan.
+- Do not invent backend behavior, DTO fields, migrations, runtime defaults, or validation rules.
+
 ## Must Preserve
 
 - `People` abstract TPH + `People.IdentityUserId` linkage.

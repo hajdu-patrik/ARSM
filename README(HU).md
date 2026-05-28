@@ -104,9 +104,12 @@ Az AppHost elindítja és összeköti:
 | Összes lokális teszt futtatása | `python scripts/run-local-test-suite.py` |
 | Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
 
+A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a `packages.lock.json` használatát, a CI pedig `dotnet restore --locked-mode` módban fut.
+
 ## Tesztek futtatása
 
 A Python futtatót a repository gyökeréből indítsd. Betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, és maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
+Minden alparancs alapértelmezett timeoutja 300 másodperc; lassabb lokális futtatáshoz az `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` állítható.
 
 ```bash
 python scripts/run-local-test-suite.py
@@ -150,9 +153,17 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 - Backend lokális titkok: `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
 - Frontend lokális env értékek: `app/AutoService.WebUI/.env.development` (sablon: `app/AutoService.WebUI/.env.development.template`).
 - API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
+  - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
 - Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 - MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
 - PostgreSQL MCP eléréshez az `ARSM_MCP_POSTGRES_CONNECTION_STRING` változót használd (ajánlott felhasználó: `ai_agent_test_user`, read-only policy).
+
+## Deployment biztonsági megjegyzések
+
+- A Vite/Aspire WebUI hosting csak lokális fejlesztésre szolgál. A Vite dev szerver alapból `localhost` címre bindol; `VITE_DEV_HOST` csak tudatos lokális LAN/konténeres hibakeresési opt-in legyen.
+- Production API hostingnál az `AllowedHosts` és `Cors:AllowedOrigins` valós, nem localhost hostokra legyen állítva. Non-Development induláskor a wildcard, localhost, nem HTTPS, hibás vagy path-ot tartalmazó WebUI origin elutasításra kerül.
+- Az auth login/refresh rate limit és login ban állapot processzen belüli. Non-Development deploymentben a `Deployment:RateLimiterTopology=SingleInstance` csak akkor állítható be, ha pontosan egy ApiService példány fut; skálázás előtt distributed limiter kell.
+- A production WebUI static hostnak vagy reverse proxy-nak kell érvényesítenie a biztonsági fejléceket, mert a Vite nem release szerver. Kötelező fejlécek: `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` vagy ezzel egyenértékű frame protection, és `Strict-Transport-Security`, ha ott terminálódik a TLS.
 
 ## Fejlesztői megjegyzések (AI workflow)
 

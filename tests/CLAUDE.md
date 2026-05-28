@@ -25,11 +25,13 @@
 
 - Never hardcode credentials, hosts, or connection strings.
 - `.secrets` for Playwright; `tests/.env` for HTTP; `tests/.env.example` as template.
+- HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
 - Keep MCP SQL profile on `ARSM_MCP_POSTGRES_CONNECTION_STRING` with read-only user.
 
 ## Canonical Runner Contract
 
 - Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]`.
+- Runner child commands default to a 300-second timeout; use `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` only for slower local runs.
 - Use `tests/.artifacts/test-suite-summary.json` as sanitized AI-readable source.
 - Never publish raw `.env`, `.secrets`, tokens, cookies, absolute paths, or unsanitized logs.
 

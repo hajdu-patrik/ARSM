@@ -26,11 +26,13 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 
 - Never hardcode credentials/hosts/connection strings.
 - HTTP uses `tests/.env` with `{{$processEnv VAR}}`.
+- HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
 - Playwright uses `.secrets`.
 - Template file is `tests/.env.example`.
 
 ## AI Reporting Contract
 
+- Runner child commands default to a 300-second timeout; use `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` only for slower local runs.
 - Use `tests/.artifacts/test-suite-summary.json` as sanitized source.
 - Never publish raw env/secrets/tokens/cookies/absolute paths/unsanitized logs.
 
