@@ -30,6 +30,7 @@ export default defineConfig(({ mode, command }) => {
   }
 
   const parsedPort = Number(env.PORT)
+  const devHost = env.VITE_DEV_HOST?.trim() || 'localhost'
 
   if (!env.PORT || Number.isNaN(parsedPort)) {
     throw new Error('Missing or invalid PORT in environment configuration.')
@@ -39,7 +40,7 @@ export default defineConfig(({ mode, command }) => {
     ...config,
     server: {
       https: {},
-      host: true,
+      host: devHost,
       port: parsedPort,
       strictPort: true,
     },

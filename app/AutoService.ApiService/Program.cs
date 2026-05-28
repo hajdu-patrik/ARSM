@@ -10,6 +10,7 @@ using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Profile.Realtime;
+using AutoService.ApiService.Security;
 using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -99,16 +100,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var jwtSecret = JwtSettingsResolver.ResolveSecret(builder.Configuration);
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "AutoService.ApiService";
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "AutoService.WebUI";
-var webUiOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?.Where(x => !string.IsNullOrWhiteSpace(x))
-    .ToArray()
-    ?? [];
-
-if (webUiOrigins.Length == 0)
-{
-    throw new InvalidOperationException(
-        "CORS allowed origins are missing. Configure 'Cors:AllowedOrigins' for the WebUI endpoint.");
-}
+var webUiOriginPolicy = WebUiOriginPolicy.Create(builder.Configuration, builder.Environment);
+var webUiOrigins = webUiOriginPolicy.AllowedOrigins.ToArray();
+builder.Services.AddSingleton(webUiOriginPolicy);
 
 builder.Services
     .AddIdentityCore<IdentityUser>(options =>
@@ -293,6 +287,8 @@ if (!app.Environment.IsDevelopment())
         throw new InvalidOperationException(
             "In non-Development environments, AllowedHosts must be explicitly configured and must not contain wildcard (*) or localhost.");
     }
+
+    InProcessLimiterTopologyGuard.Validate(app.Configuration, app.Environment);
 }
 
 // Ensure the database is created and seeded with demo data at startup.
@@ -311,6 +307,7 @@ await app.EnsureSeededAsync();
  * - login ban middleware
  * - rate limiter
  * - cors
+ * - unsafe cookie request origin validation
  * - audit access denied middleware (wraps auth pipeline to log 401/403)
  * - authentication
  * - authorization
@@ -331,6 +328,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();
 app.UseCors("WebUIPolicy");
+app.UseMiddleware<UnsafeCookieRequestOriginMiddleware>();
 app.UseMiddleware<AuditAccessDeniedMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();

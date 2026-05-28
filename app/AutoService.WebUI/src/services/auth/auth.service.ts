@@ -10,31 +10,10 @@
 import { apiClient } from '../http/api.client';
 import type { LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse } from '../../types/auth/login.types';
 import { useAuthStore } from '../../store/auth.store';
-
-/** {@code localStorage} key indicating a session may exist. */
-const SESSION_HINT_KEY = 'autoservice-session-hint';
+import { clearAuthSessionHint, hasAuthSessionHint, setAuthSessionHint } from './session-hint';
 
 /** In-flight restore promise for single-flight deduplication. */
 let restorePromise: Promise<AuthUser | null> | null = null;
-
-/** Records a session hint in {@code localStorage}. */
-function setSessionHint(): void {
-  localStorage.setItem(SESSION_HINT_KEY, '1');
-}
-
-/** Clears the session hint from {@code localStorage}. */
-function clearSessionHint(): void {
-  localStorage.removeItem(SESSION_HINT_KEY);
-}
-
-/**
- * Checks whether a session hint exists, indicating a prior login
- * in this browser that may still be valid.
- * @returns {@code true} if a session hint is present.
- */
-function hasSessionHint(): boolean {
-  return localStorage.getItem(SESSION_HINT_KEY) === '1';
-}
 
 /**
  * Updates the auth store with an authenticated user.
@@ -68,7 +47,7 @@ export const authService = {
     };
 
     setAuthenticatedUser(authUser);
-    setSessionHint();
+    setAuthSessionHint();
 
     return authUser;
   },
@@ -81,7 +60,7 @@ export const authService = {
     try {
       await apiClient.post('/api/auth/logout');
     } finally {
-      clearSessionHint();
+      clearAuthSessionHint();
       clearAuthState();
     }
   },
@@ -101,7 +80,7 @@ export const authService = {
    * @returns The restored user, or {@code null} if no valid session exists.
    */
   async restoreAuth(): Promise<AuthUser | null> {
-    if (!hasSessionHint()) {
+    if (!hasAuthSessionHint()) {
       clearAuthState();
       return null;
     }
@@ -117,7 +96,7 @@ export const authService = {
         });
 
         if (response.status === 401) {
-          clearSessionHint();
+          clearAuthSessionHint();
           clearAuthState();
           return null;
         }
@@ -128,10 +107,10 @@ export const authService = {
         };
 
         setAuthenticatedUser(validatedUser);
-        setSessionHint();
+        setAuthSessionHint();
         return validatedUser;
       } catch {
-        clearSessionHint();
+        clearAuthSessionHint();
         clearAuthState();
         return null;
       } finally {

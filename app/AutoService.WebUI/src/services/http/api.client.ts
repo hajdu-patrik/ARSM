@@ -11,6 +11,7 @@
 import axios from 'axios';
 import type { AxiosError, AxiosInstance } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
+import { clearAuthSessionHint } from '../auth/session-hint';
 
 /** Base API URL read from environment configuration. */
 const API_URL = import.meta.env.VITE_API_URL;
@@ -149,6 +150,7 @@ apiClient.interceptors.response.use(
       await refreshPromise;
       return apiClient(originalRequest);
     } catch {
+      clearAuthSessionHint();
       useAuthStore.getState().clearAuth();
     }
 
