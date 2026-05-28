@@ -23,19 +23,19 @@ jobs:
         working-directory: app
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
     - name: Execution policy
       run: |
         echo 'Policy: local CLI-first execution; avoid MCP-equivalent tooling when native commands/tasks are available.'
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2
       with:
         dotnet-version: 10.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore --locked-mode
 
     - name: Build
       run: dotnet build --no-restore
@@ -62,14 +62,14 @@ jobs:
         working-directory: app/AutoService.WebUI
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
     - name: Execution policy
       run: |
         echo 'Policy: local CLI-first execution; avoid MCP-equivalent tooling when native commands/tasks are available.'
 
     - name: Setup Node.js
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
       with:
         node-version: 22
         cache: 'npm'
