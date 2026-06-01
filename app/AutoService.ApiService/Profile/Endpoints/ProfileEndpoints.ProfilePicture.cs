@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -18,6 +19,16 @@ public static partial class ProfileEndpoints
     private static readonly TimeSpan ProfilePictureUpdatesIdleTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
     private const int ProfilePictureCacheMaxAgeSeconds = 3600;
+
+    /**
+     * Represents the possible outcomes when waiting for the next profile-picture SSE channel item.
+     */
+    private enum ProfilePictureUpdateReadState
+    {
+        Available,
+        Closed,
+        TimedOut
+    }
 
     /**
      * Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture.
@@ -31,7 +42,7 @@ public static partial class ProfileEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (person is null)
         {
             return Results.Problem(
@@ -73,7 +84,7 @@ public static partial class ProfileEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var currentPerson = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        var currentPerson = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (currentPerson is null)
         {
             return Results.Problem(
@@ -130,7 +141,7 @@ public static partial class ProfileEndpoints
         CancellationToken cancellationToken)
     {
         var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        var userId = int.TryParse(personIdClaim, out var pid) ? pid : 0;
+        var userId = int.TryParse(personIdClaim, out var parsedPersonId) ? parsedPersonId : 0;
 
         if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
         {
@@ -139,48 +150,11 @@ public static partial class ProfileEndpoints
                 statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
-        httpContext.Response.Headers.CacheControl = "no-cache";
-        httpContext.Response.Headers.Append("X-Accel-Buffering", "no");
-        httpContext.Response.ContentType = "text/event-stream";
-        var idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
+        ConfigureProfilePictureUpdateStream(httpContext.Response);
 
         try
         {
-            await httpContext.Response.WriteAsync(": profile picture updates stream ready\n\n", cancellationToken);
-            await httpContext.Response.Body.FlushAsync(cancellationToken);
-
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                using var readCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                readCts.CancelAfter(ProfilePictureUpdatesKeepAliveInterval);
-
-                try
-                {
-                    var hasData = await reader.WaitToReadAsync(readCts.Token);
-                    if (!hasData)
-                    {
-                        break;
-                    }
-
-                    while (reader.TryRead(out var update))
-                    {
-                        var payload = JsonSerializer.Serialize(update);
-                        await httpContext.Response.WriteAsync($"event: profile-picture-updated\ndata: {payload}\n\n", cancellationToken);
-                        await httpContext.Response.Body.FlushAsync(cancellationToken);
-                        idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
-                    }
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-                {
-                    if (DateTime.UtcNow >= idleDeadlineUtc)
-                    {
-                        break;
-                    }
-
-                    await httpContext.Response.WriteAsync(": keep-alive\n\n", cancellationToken);
-                    await httpContext.Response.Body.FlushAsync(cancellationToken);
-                }
-            }
+            await WriteProfilePictureUpdateStreamAsync(httpContext.Response, reader, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -194,12 +168,161 @@ public static partial class ProfileEndpoints
         return Results.Empty;
     }
 
+    /**
+     * Configures SSE-specific response headers before the profile-picture update stream starts writing.
+     */
+    private static void ConfigureProfilePictureUpdateStream(HttpResponse response)
+    {
+        response.Headers.CacheControl = "no-cache";
+        response.Headers.Append("X-Accel-Buffering", "no");
+        response.ContentType = "text/event-stream";
+    }
+
+    /**
+     * Writes profile-picture SSE events until the channel closes, the client disconnects, or the idle timeout expires.
+     */
+    private static async Task WriteProfilePictureUpdateStreamAsync(
+        HttpResponse response,
+        ChannelReader<ProfilePictureUpdatedEvent> reader,
+        CancellationToken cancellationToken)
+    {
+        var idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
+
+        await WriteProfilePictureStreamCommentAsync(
+            response,
+            "profile picture updates stream ready",
+            cancellationToken);
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var readState = await WaitForProfilePictureUpdateAsync(reader, cancellationToken);
+
+            if (readState == ProfilePictureUpdateReadState.Closed)
+            {
+                break;
+            }
+
+            if (readState == ProfilePictureUpdateReadState.TimedOut)
+            {
+                if (DateTime.UtcNow >= idleDeadlineUtc)
+                {
+                    break;
+                }
+
+                await WriteProfilePictureStreamCommentAsync(response, "keep-alive", cancellationToken);
+                continue;
+            }
+
+            idleDeadlineUtc = await WriteAvailableProfilePictureUpdatesAsync(
+                response,
+                reader,
+                idleDeadlineUtc,
+                cancellationToken);
+        }
+    }
+
+    /**
+     * Waits for the next SSE update while distinguishing channel closure from keep-alive timeouts.
+     */
+    private static async Task<ProfilePictureUpdateReadState> WaitForProfilePictureUpdateAsync(
+        ChannelReader<ProfilePictureUpdatedEvent> reader,
+        CancellationToken cancellationToken)
+    {
+        using var readCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        readCts.CancelAfter(ProfilePictureUpdatesKeepAliveInterval);
+
+        try
+        {
+            var hasData = await reader.WaitToReadAsync(readCts.Token);
+            return hasData ? ProfilePictureUpdateReadState.Available : ProfilePictureUpdateReadState.Closed;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ProfilePictureUpdateReadState.TimedOut;
+        }
+    }
+
+    /**
+     * Drains queued profile-picture updates and extends the stream idle deadline after each delivered event.
+     */
+    private static async Task<DateTime> WriteAvailableProfilePictureUpdatesAsync(
+        HttpResponse response,
+        ChannelReader<ProfilePictureUpdatedEvent> reader,
+        DateTime idleDeadlineUtc,
+        CancellationToken cancellationToken)
+    {
+        while (reader.TryRead(out var update))
+        {
+            var payload = JsonSerializer.Serialize(update);
+            await response.WriteAsync($"event: profile-picture-updated\ndata: {payload}\n\n", cancellationToken);
+            await response.Body.FlushAsync(cancellationToken);
+            idleDeadlineUtc = DateTime.UtcNow.Add(ProfilePictureUpdatesIdleTimeout);
+        }
+
+        return idleDeadlineUtc;
+    }
+
+    /**
+     * Writes an SSE comment frame used for stream readiness and keep-alive messages.
+     */
+    private static async Task WriteProfilePictureStreamCommentAsync(
+        HttpResponse response,
+        string comment,
+        CancellationToken cancellationToken)
+    {
+        await response.WriteAsync($": {comment}\n\n", cancellationToken);
+        await response.Body.FlushAsync(cancellationToken);
+    }
+
+    /**
+     * Handles profile-picture uploads with metadata validation, byte-level image validation, and tracked persistence.
+     */
     private static async Task<IResult> UploadProfilePictureAsync(
         [FromForm] IFormFile file,
         HttpContext httpContext,
         AutoServiceDbContext db,
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
+    {
+        var metadataValidationResult = ValidateProfilePictureUploadMetadata(file);
+        if (metadataValidationResult is not null)
+        {
+            return metadataValidationResult;
+        }
+
+        var normalizedContentType = file.ContentType.ToLowerInvariant();
+        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        if (person is null)
+        {
+            return Results.Problem(
+                detail: "Linked person record not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var fileBytes = await ReadProfilePictureFileBytesAsync(file, cancellationToken);
+        var contentValidationResult = ValidateProfilePictureBytes(fileBytes, normalizedContentType);
+        if (contentValidationResult is not null)
+        {
+            return contentValidationResult;
+        }
+
+        person.ProfilePicture = fileBytes;
+        person.ProfilePictureContentType = normalizedContentType;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        broadcaster.Publish(new ProfilePictureUpdatedEvent(
+            person.Id,
+            true,
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+
+        return Results.Ok(new { message = "Profile picture updated." });
+    }
+
+    /**
+     * Validates upload metadata before reading the profile-picture file into memory.
+     */
+    private static IResult? ValidateProfilePictureUploadMetadata(IFormFile file)
     {
         if (file.Length == 0)
         {
@@ -218,7 +341,6 @@ public static partial class ProfileEndpoints
         }
 
         var normalizedContentType = file.ContentType.ToLowerInvariant();
-
         if (!ImageContentTypeDetector.AllowedImageContentTypes.Contains(normalizedContentType))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -227,18 +349,26 @@ public static partial class ProfileEndpoints
             });
         }
 
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person is null)
-        {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
+        return null;
+    }
 
+    /**
+     * Reads the already size-validated profile-picture file bytes for content inspection and persistence.
+     */
+    private static async Task<byte[]> ReadProfilePictureFileBytesAsync(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
-        var fileBytes = memoryStream.ToArray();
+        return memoryStream.ToArray();
+    }
 
+    /**
+     * Validates the uploaded image bytes against the declared profile-picture content type.
+     */
+    private static IResult? ValidateProfilePictureBytes(byte[] fileBytes, string normalizedContentType)
+    {
         if (!ImageContentTypeDetector.TryDetect(fileBytes, out var detectedContentType))
         {
             return Results.ValidationProblem(
@@ -259,19 +389,12 @@ public static partial class ProfileEndpoints
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
-        person.ProfilePicture = fileBytes;
-        person.ProfilePictureContentType = normalizedContentType;
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        broadcaster.Publish(new ProfilePictureUpdatedEvent(
-            person.Id,
-            true,
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
-
-        return Results.Ok(new { message = "Profile picture updated." });
+        return null;
     }
 
+    /**
+     * Removes the tracked user's profile picture and publishes the realtime state change after persistence.
+     */
     private static async Task<IResult> DeleteProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -309,12 +432,13 @@ public static partial class ProfileEndpoints
     }
 
     /**
-     * Appends shared cache headers used by both profile-picture GET endpoints.
+     * Appends private browser-cache headers used by both authenticated profile-picture GET endpoints.
      */
     private static void AppendProfilePictureCacheHeaders(HttpResponse response, string etag)
     {
-        response.Headers.CacheControl = $"public, max-age={ProfilePictureCacheMaxAgeSeconds}";
+        response.Headers.CacheControl = $"private, max-age={ProfilePictureCacheMaxAgeSeconds}";
         response.Headers.ETag = etag;
+        response.Headers.Append("Vary", "Cookie, Authorization");
     }
 
     /**

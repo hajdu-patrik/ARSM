@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
+import {
+  CUSTOMER_HISTORY_STALE_TIME_MS,
+  CUSTOMER_REGISTRY_STALE_TIME_MS,
+  PERSISTED_QUERY_CACHE_MAX_AGE_MS,
+} from '../../../services/cache/cache-policy';
+import { getAuthQueryScope, queryKeys } from '../../../services/cache/queryKeys';
+import { useAuthStore } from '../../../store/auth.store';
 import { buildCustomerDisplayName, normalizeSearchValue } from '../helpers';
 import type { SortDirection } from '../page.types';
 import { applyLoadedVehicleSummary } from './useCustomersListState.helpers';
@@ -14,12 +22,52 @@ interface UseCustomersListStateParams {
 }
 
 /**
+ * Resolves React set-state payloads so cache synchronization can mirror state updates exactly.
+ * @param update Direct state value or updater callback.
+ * @param previous Previous state value supplied by React.
+ * @returns The next state value.
+ */
+function resolveStateUpdate<T>(update: SetStateAction<T>, previous: T): T {
+  return typeof update === 'function'
+    ? (update as (previousValue: T) => T)(previous)
+    : update;
+}
+
+/**
+ * Mirrors record-shaped React state into per-entity query-cache entries and removes stale entries.
+ * @param queryClient Shared query client that owns the browser cache.
+ * @param previous Previous record state before the React update.
+ * @param next Next record state after the React update.
+ * @param keyFactory Query-key factory for each numeric record id.
+ */
+function syncRecordCache<TValue>(
+  queryClient: QueryClient,
+  previous: Record<number, TValue>,
+  next: Record<number, TValue>,
+  keyFactory: (id: number) => QueryKey,
+): void {
+  for (const [rawId, value] of Object.entries(next)) {
+    queryClient.setQueryData(keyFactory(Number(rawId)), value);
+  }
+
+  for (const rawId of Object.keys(previous)) {
+    if (!(rawId in next)) {
+      queryClient.removeQueries({ exact: true, queryKey: keyFactory(Number(rawId)) });
+    }
+  }
+}
+
+/**
  * Manages Customers page read-side state: list loading, search/sort, expansion,
  * and on-demand repair history loading for customers and vehicles.
  * @param params Hook dependencies for locale-aware sorting and error surfacing.
  * @returns Stateful values and actions consumed by the Customers page container.
  */
 export function useCustomersListState({ language, showErrorToast }: UseCustomersListStateParams) {
+  const queryClient = useQueryClient();
+  const authUser = useAuthStore((state) => state.user);
+  const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
+
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,70 +87,228 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
 
   const collator = useMemo(() => new Intl.Collator(language, { sensitivity: 'base' }), [language]);
 
-  const loadCustomers = useCallback(async () => {
-    setIsLoadingCustomers(true);
+  const setCustomersWithCache = useCallback<Dispatch<SetStateAction<CustomerListItem[]>>>((update) => {
+    setCustomers((previous) => {
+      const next = resolveStateUpdate(update, previous);
+
+      if (authScope) {
+        queryClient.setQueryData(queryKeys.customers.list(authScope), next);
+      }
+
+      return next;
+    });
+  }, [authScope, queryClient]);
+
+  const setVehiclesByCustomerIdWithCache = useCallback<Dispatch<SetStateAction<Record<number, VehicleDetailDto[]>>>>((update) => {
+    setVehiclesByCustomerId((previous) => {
+      const next = resolveStateUpdate(update, previous);
+
+      if (authScope) {
+        syncRecordCache(queryClient, previous, next, (customerId) => queryKeys.customers.vehicles(authScope, customerId));
+      }
+
+      return next;
+    });
+  }, [authScope, queryClient]);
+
+  const setCustomerHistoryByCustomerIdWithCache = useCallback<Dispatch<SetStateAction<Record<number, AppointmentDto[]>>>>((update) => {
+    setCustomerHistoryByCustomerId((previous) => {
+      const next = resolveStateUpdate(update, previous);
+
+      if (authScope) {
+        syncRecordCache(queryClient, previous, next, (customerId) => queryKeys.customers.customerHistory(authScope, customerId));
+      }
+
+      return next;
+    });
+  }, [authScope, queryClient]);
+
+  const setVehicleHistoryByVehicleIdWithCache = useCallback<Dispatch<SetStateAction<Record<number, AppointmentDto[]>>>>((update) => {
+    setVehicleHistoryByVehicleId((previous) => {
+      const next = resolveStateUpdate(update, previous);
+
+      if (authScope) {
+        syncRecordCache(queryClient, previous, next, (vehicleId) => queryKeys.customers.vehicleHistory(authScope, vehicleId));
+      }
+
+      return next;
+    });
+  }, [authScope, queryClient]);
+
+  const loadCustomers = useCallback(async (force = false) => {
+    if (!authScope) {
+      setCustomersWithCache([]);
+      setIsLoadingCustomers(false);
+      return;
+    }
+
+    const queryKey = queryKeys.customers.list(authScope);
+    const cachedCustomers = force ? undefined : queryClient.getQueryData<CustomerListItem[]>(queryKey);
+
+    if (cachedCustomers) {
+      setCustomersWithCache(cachedCustomers);
+    }
+
+    setIsLoadingCustomers(!cachedCustomers);
 
     try {
-      const data = await customerRegistryService.listCustomers();
-      setCustomers(data);
+      if (force) {
+        await queryClient.invalidateQueries({ exact: true, queryKey });
+      }
+
+      const data = await queryClient.fetchQuery({
+        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
+        queryFn: customerRegistryService.listCustomers,
+        queryKey,
+        staleTime: CUSTOMER_REGISTRY_STALE_TIME_MS,
+      });
+      setCustomersWithCache(data);
     } catch {
-      showErrorToast('customers.errors.loadFailed');
+      if (!cachedCustomers) {
+        showErrorToast('customers.errors.loadFailed');
+      }
     } finally {
       setIsLoadingCustomers(false);
     }
-  }, [showErrorToast]);
+  }, [authScope, queryClient, setCustomersWithCache, showErrorToast]);
 
   const loadVehicles = useCallback(async (customerId: number, force = false) => {
     if (!force && vehiclesByCustomerId[customerId]) {
       return;
     }
 
-    setIsLoadingVehiclesByCustomerId((prev) => ({ ...prev, [customerId]: true }));
+    if (!authScope) {
+      return;
+    }
+
+    const queryKey = queryKeys.customers.vehicles(authScope, customerId);
+    const cachedVehicles = force ? undefined : queryClient.getQueryData<VehicleDetailDto[]>(queryKey);
+
+    if (cachedVehicles) {
+      setVehiclesByCustomerIdWithCache((prev) => ({ ...prev, [customerId]: cachedVehicles }));
+      setCustomersWithCache((prev) => prev.map((item) => applyLoadedVehicleSummary(item, customerId, cachedVehicles)));
+    }
+
+    setIsLoadingVehiclesByCustomerId((prev) => ({ ...prev, [customerId]: !cachedVehicles }));
 
     try {
-      const data = await customerRegistryService.listVehicles(customerId);
-      setVehiclesByCustomerId((prev) => ({ ...prev, [customerId]: data }));
-      setCustomers((prev) => prev.map((item) => applyLoadedVehicleSummary(item, customerId, data)));
+      if (force) {
+        await queryClient.invalidateQueries({ exact: true, queryKey });
+      }
+
+      const data = await queryClient.fetchQuery({
+        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
+        queryFn: () => customerRegistryService.listVehicles(customerId),
+        queryKey,
+        staleTime: CUSTOMER_REGISTRY_STALE_TIME_MS,
+      });
+      setVehiclesByCustomerIdWithCache((prev) => ({ ...prev, [customerId]: data }));
+      setCustomersWithCache((prev) => prev.map((item) => applyLoadedVehicleSummary(item, customerId, data)));
     } catch {
-      showErrorToast('customers.errors.vehiclesLoadFailed');
+      if (!cachedVehicles) {
+        showErrorToast('customers.errors.vehiclesLoadFailed');
+      }
     } finally {
       setIsLoadingVehiclesByCustomerId((prev) => ({ ...prev, [customerId]: false }));
     }
-  }, [showErrorToast, vehiclesByCustomerId]);
+  }, [
+    authScope,
+    queryClient,
+    setCustomersWithCache,
+    setVehiclesByCustomerIdWithCache,
+    showErrorToast,
+    vehiclesByCustomerId,
+  ]);
 
   const loadCustomerHistory = useCallback(async (customerId: number, force = false) => {
     if (!force && customerHistoryByCustomerId[customerId]) {
       return;
     }
 
-    setIsLoadingCustomerHistoryByCustomerId((prev) => ({ ...prev, [customerId]: true }));
+    if (!authScope) {
+      return;
+    }
+
+    const queryKey = queryKeys.customers.customerHistory(authScope, customerId);
+    const cachedHistory = force ? undefined : queryClient.getQueryData<AppointmentDto[]>(queryKey);
+
+    if (cachedHistory) {
+      setCustomerHistoryByCustomerIdWithCache((prev) => ({ ...prev, [customerId]: cachedHistory }));
+    }
+
+    setIsLoadingCustomerHistoryByCustomerId((prev) => ({ ...prev, [customerId]: !cachedHistory }));
 
     try {
-      const data = await customerRegistryService.getCustomerHistory(customerId);
-      setCustomerHistoryByCustomerId((prev) => ({ ...prev, [customerId]: data }));
+      if (force) {
+        await queryClient.invalidateQueries({ exact: true, queryKey });
+      }
+
+      const data = await queryClient.fetchQuery({
+        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
+        queryFn: () => customerRegistryService.getCustomerHistory(customerId),
+        queryKey,
+        staleTime: CUSTOMER_HISTORY_STALE_TIME_MS,
+      });
+      setCustomerHistoryByCustomerIdWithCache((prev) => ({ ...prev, [customerId]: data }));
     } catch {
-      showErrorToast('customers.errors.historyLoadFailed');
+      if (!cachedHistory) {
+        showErrorToast('customers.errors.historyLoadFailed');
+      }
     } finally {
       setIsLoadingCustomerHistoryByCustomerId((prev) => ({ ...prev, [customerId]: false }));
     }
-  }, [customerHistoryByCustomerId, showErrorToast]);
+  }, [
+    authScope,
+    customerHistoryByCustomerId,
+    queryClient,
+    setCustomerHistoryByCustomerIdWithCache,
+    showErrorToast,
+  ]);
 
   const loadVehicleHistory = useCallback(async (vehicleId: number, force = false) => {
     if (!force && vehicleHistoryByVehicleId[vehicleId]) {
       return;
     }
 
-    setIsLoadingVehicleHistoryByVehicleId((prev) => ({ ...prev, [vehicleId]: true }));
+    if (!authScope) {
+      return;
+    }
+
+    const queryKey = queryKeys.customers.vehicleHistory(authScope, vehicleId);
+    const cachedHistory = force ? undefined : queryClient.getQueryData<AppointmentDto[]>(queryKey);
+
+    if (cachedHistory) {
+      setVehicleHistoryByVehicleIdWithCache((prev) => ({ ...prev, [vehicleId]: cachedHistory }));
+    }
+
+    setIsLoadingVehicleHistoryByVehicleId((prev) => ({ ...prev, [vehicleId]: !cachedHistory }));
 
     try {
-      const data = await customerRegistryService.getVehicleHistory(vehicleId);
-      setVehicleHistoryByVehicleId((prev) => ({ ...prev, [vehicleId]: data }));
+      if (force) {
+        await queryClient.invalidateQueries({ exact: true, queryKey });
+      }
+
+      const data = await queryClient.fetchQuery({
+        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
+        queryFn: () => customerRegistryService.getVehicleHistory(vehicleId),
+        queryKey,
+        staleTime: CUSTOMER_HISTORY_STALE_TIME_MS,
+      });
+      setVehicleHistoryByVehicleIdWithCache((prev) => ({ ...prev, [vehicleId]: data }));
     } catch {
-      showErrorToast('customers.errors.historyLoadFailed');
+      if (!cachedHistory) {
+        showErrorToast('customers.errors.historyLoadFailed');
+      }
     } finally {
       setIsLoadingVehicleHistoryByVehicleId((prev) => ({ ...prev, [vehicleId]: false }));
     }
-  }, [showErrorToast, vehicleHistoryByVehicleId]);
+  }, [
+    authScope,
+    queryClient,
+    setVehicleHistoryByVehicleIdWithCache,
+    showErrorToast,
+    vehicleHistoryByVehicleId,
+  ]);
 
   useEffect(() => {
     void loadCustomers();
@@ -177,10 +383,10 @@ export function useCustomersListState({ language, showErrorToast }: UseCustomers
   }, []);
 
   const mutationActions = useCustomersListMutations({
-    setCustomers,
-    setVehiclesByCustomerId,
-    setCustomerHistoryByCustomerId,
-    setVehicleHistoryByVehicleId,
+    setCustomers: setCustomersWithCache,
+    setVehiclesByCustomerId: setVehiclesByCustomerIdWithCache,
+    setCustomerHistoryByCustomerId: setCustomerHistoryByCustomerIdWithCache,
+    setVehicleHistoryByVehicleId: setVehicleHistoryByVehicleIdWithCache,
     setExpandedCustomerIds,
     vehiclesByCustomerId,
   });

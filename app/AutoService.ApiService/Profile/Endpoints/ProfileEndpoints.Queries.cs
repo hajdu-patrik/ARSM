@@ -9,12 +9,15 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-        private static async Task<IResult> GetProfileAsync(
+    /**
+     * Retrieves the authenticated user's profile without tracking because this read path does not mutate the person record.
+     */
+    private static async Task<IResult> GetProfileAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (person is null)
         {
             return Results.Problem(

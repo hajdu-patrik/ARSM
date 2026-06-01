@@ -10,6 +10,7 @@
 import { apiClient } from '../http/api.client';
 import type { LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse } from '../../types/auth/login.types';
 import { useAuthStore } from '../../store/auth.store';
+import { clearArsmQueryCache } from '../cache/queryClient';
 import { clearAuthSessionHint, hasAuthSessionHint, setAuthSessionHint } from './session-hint';
 
 /** In-flight restore promise for single-flight deduplication. */
@@ -23,7 +24,7 @@ function setAuthenticatedUser(user: AuthUser): void {
   useAuthStore.setState({ user, isAuthenticated: true, error: null });
 }
 
-/** Resets the auth store to its logged-out default state. */
+/** Resets the auth store and private query cache to logged-out defaults. */
 function clearAuthState(): void {
   useAuthStore.getState().clearAuth();
 }
@@ -46,6 +47,7 @@ export const authService = {
       isAdmin,
     };
 
+    clearArsmQueryCache();
     setAuthenticatedUser(authUser);
     setAuthSessionHint();
 

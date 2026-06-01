@@ -3,15 +3,22 @@
  *
  * Provides stable, memoized handlers for claim, unclaim, status change,
  * admin assign/unassign, intake creation, and appointment update. Each
- * handler calls the appointment service, applies optimistic store updates,
+ * handler calls the appointment service, applies store and query-cache updates,
  * and shows success/error toasts.
  *
  * @module useSchedulerActions
  */
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
+import {
+  invalidateAppointmentReadCaches,
+  writeAppointmentToSchedulerCache,
+} from '../../../services/cache/appointmentQueryCache';
+import { getAuthQueryScope } from '../../../services/cache/queryKeys';
+import { useAuthStore } from '../../../store/auth.store';
 import type {
   AppointmentDto,
   AppointmentStatus,
@@ -44,32 +51,51 @@ export function useSchedulerActions({
   showSuccessToast,
   showErrorToast,
 }: UseSchedulerActionsArgs) {
+  const queryClient = useQueryClient();
+  const authUser = useAuthStore((state) => state.user);
+  const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
+
+  /** Applies a scheduler mutation result to the UI store and related query caches. */
+  const applyAppointmentMutationResult = useCallback((
+    appointment: AppointmentDto,
+    options: { readonly invalidateCustomerRegistry?: boolean } = {},
+  ) => {
+    upsertAppointment(appointment);
+
+    if (!authScope) {
+      return;
+    }
+
+    writeAppointmentToSchedulerCache(queryClient, authScope, appointment);
+    invalidateAppointmentReadCaches(queryClient, authScope, appointment, options);
+  }, [authScope, queryClient, upsertAppointment]);
+
   const handleClaim = useCallback(async (id: number) => {
     try {
       const updated = await appointmentService.claim(id);
-      upsertAppointment(updated);
+      applyAppointmentMutationResult(updated);
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
       showSuccessToast('scheduler.claimSuccess');
     } catch {
       showErrorToast('scheduler.claimError');
     }
-  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
 
   const handleStatusChange = useCallback(async (id: number, status: AppointmentStatus) => {
     try {
       const updated = await appointmentService.updateStatus(id, { status });
-      upsertAppointment(updated);
+      applyAppointmentMutationResult(updated);
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
       showSuccessToast('scheduler.statusUpdateSuccess');
     } catch {
       showErrorToast('scheduler.statusUpdateError');
     }
-  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
 
   const handleUnclaim = useCallback(async (id: number) => {
     try {
       const updated = await appointmentService.unclaim(id);
-      upsertAppointment(updated);
+      applyAppointmentMutationResult(updated);
       setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
       showSuccessToast('scheduler.detail.unassignSuccess');
     } catch (err) {
@@ -100,35 +126,35 @@ export function useSchedulerActions({
 
       showErrorToast('scheduler.detail.unassignError');
     }
-  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
 
   const handleAdminAssign = useCallback(async (appointmentId: number, mechanicId: number) => {
     try {
       const updated = await appointmentService.adminAssign(appointmentId, mechanicId);
-      upsertAppointment(updated);
+      applyAppointmentMutationResult(updated);
       setSelectedAppointment(updated);
       showSuccessToast('scheduler.detail.assignSuccess');
     } catch {
       showErrorToast('scheduler.detail.assignError');
     }
-  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
 
   const handleAdminUnassign = useCallback(async (appointmentId: number, mechanicId: number) => {
     try {
       const updated = await appointmentService.adminUnassign(appointmentId, mechanicId);
-      upsertAppointment(updated);
+      applyAppointmentMutationResult(updated);
       setSelectedAppointment(updated);
       showSuccessToast('scheduler.detail.adminUnassignSuccess');
     } catch {
       showErrorToast('scheduler.detail.adminUnassignError');
     }
-  }, [showErrorToast, setSelectedAppointment, showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
 
   const handleCreateIntake = useCallback(async (request: SchedulerCreateIntakeRequest) => {
     const created = await appointmentService.createIntake(request);
-    upsertAppointment(created);
+    applyAppointmentMutationResult(created, { invalidateCustomerRegistry: true });
     showSuccessToast('scheduler.intake.createSuccess');
-  }, [showSuccessToast, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showSuccessToast]);
 
   const handleUpdateAppointment = useCallback(async (
     id: number,
@@ -141,10 +167,10 @@ export function useSchedulerActions({
       updated = await appointmentService.updateAppointmentVehicle(id, vehicleRequest);
     }
 
-    upsertAppointment(updated);
+    applyAppointmentMutationResult(updated, { invalidateCustomerRegistry: Boolean(vehicleRequest) });
     setSelectedAppointment(updated);
     showSuccessToast('scheduler.detail.updateSuccess');
-  }, [showSuccessToast, setSelectedAppointment, upsertAppointment]);
+  }, [applyAppointmentMutationResult, showSuccessToast, setSelectedAppointment]);
 
   return {
     handleClaim,

@@ -9,6 +9,7 @@
 
 import { create } from 'zustand';
 import type { AuthUser } from '../types/auth/login.types';
+import { clearArsmQueryCache } from '../services/cache/queryClient';
 
 /**
  * Shape of the authentication Zustand store.
@@ -30,13 +31,13 @@ interface AuthState {
   setIsLoading: (value: boolean) => void;
   /** Sets or clears the error message. */
   setError: (error: string | null) => void;
-  /** Resets all auth state to logged-out defaults. */
+  /** Resets auth state and private query cache to logged-out defaults. */
   clearAuth: () => void;
 }
 
 /**
  * Zustand store for authentication state.
- * Used throughout the app to check auth status and access the current user.
+ * Used throughout the app to check auth status, access the current user, and clear private cache data on logout.
  */
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -48,10 +49,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-  clearAuth: () =>
+  clearAuth: () => {
+    clearArsmQueryCache();
     set({
       user: null,
       isAuthenticated: false,
       error: null,
-    }),
+    });
+  },
 }));
