@@ -108,6 +108,8 @@ AppHost starts and wires:
 
 NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
 
+Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest`, `windows-latest`, and `macos-latest` to the Linux act container so `act -j backend-build` and `act -j frontend-build` exercise every matrix row locally. GitHub-hosted runners remain authoritative for real Windows and macOS behavior.
+
 ## Running Tests
 
 Use the Python runner from repository root. It loads `.secrets` and `tests/.env`, runs selected suites, and writes a sanitized summary to `tests/.artifacts/test-suite-summary.json`.
@@ -158,7 +160,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
   - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
 - Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
-- MCP templates keep `ARSM_MCP_POSTGRES_CONNECTION_STRING` as the portable placeholder; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
+- MCP templates stay portable placeholder files; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
 ## Deployment Security Notes
 

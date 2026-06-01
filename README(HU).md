@@ -106,6 +106,8 @@ Az AppHost elindítja és összeköti:
 
 A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a locked restore-t, az AppHost Linux és macOS alatt RID-specifikus lock fájlokat használ az Aspire Dashboard/DCP csomagokhoz, a CI pedig `dotnet restore --locked-mode` módban fut.
 
+A lokális GitHub Actions smoke ellenőrzésekhez a [.actrc](.actrc) tartozik: az `ubuntu-latest`, `windows-latest` és `macos-latest` matrix címkéket Linux act konténerre mapeli, így az `act -j backend-build` és az `act -j frontend-build` minden matrix sort lefuttat lokálisan. A valódi Windows és macOS viselkedésben továbbra is a GitHub-hosted runner a mérvadó.
+
 ## Tesztek futtatása
 
 A Python futtatót a repository gyökeréből indítsd. Betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, és maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
@@ -156,7 +158,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
   - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
 - Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 - MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
-- Az MCP sablonokban az `ARSM_MCP_POSTGRES_CONNECTION_STRING` marad a hordozható placeholder; a gitignore-olt lokális MCP profilok tartalmazhatják az `ai_agent_test_user` konkrét read-only PostgreSQL URI-ját.
+- Az MCP sablonok hordozható placeholder fájlok maradnak; a gitignore-olt lokális MCP profilok tartalmazhatják az `ai_agent_test_user` konkrét read-only PostgreSQL URI-ját.
 
 ## Deployment biztonsági megjegyzések
 

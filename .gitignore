@@ -103,8 +103,8 @@ secrets.json
 *.key
 *.crt
 
-# Local GitHub Actions runner (act)
-.actrc
+# Local GitHub Actions runner overrides
+.actrc.local
 
 # Docker / container local overrides
 docker-compose.override.yml
