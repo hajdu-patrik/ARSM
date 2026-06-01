@@ -29,7 +29,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 | Réteg | Technológiák |
 | ----- | ------------ |
 | Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | Adatbázis | PostgreSQL |
 | Orkesztráció | .NET Aspire (`AutoService.AppHost`) |
 
@@ -104,7 +104,7 @@ Az AppHost elindítja és összeköti:
 | Összes lokális teszt futtatása | `python scripts/run-local-test-suite.py` |
 | Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
 
-A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a `packages.lock.json` használatát, a CI pedig `dotnet restore --locked-mode` módban fut.
+A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a locked restore-t, az AppHost Linux és macOS alatt RID-specifikus lock fájlokat használ az Aspire Dashboard/DCP csomagokhoz, a CI pedig `dotnet restore --locked-mode` módban fut.
 
 ## Tesztek futtatása
 
@@ -156,7 +156,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
   - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
 - Playwright futtatási titkok: repo gyökérbeli `.secrets` (gitignored); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 - MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
-- PostgreSQL MCP eléréshez az `ARSM_MCP_POSTGRES_CONNECTION_STRING` változót használd (ajánlott felhasználó: `ai_agent_test_user`, read-only policy).
+- Az MCP sablonokban az `ARSM_MCP_POSTGRES_CONNECTION_STRING` marad a hordozható placeholder; a gitignore-olt lokális MCP profilok tartalmazhatják az `ai_agent_test_user` konkrét read-only PostgreSQL URI-ját.
 
 ## Deployment biztonsági megjegyzések
 
@@ -164,6 +164,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 - Production API hostingnál az `AllowedHosts` és `Cors:AllowedOrigins` valós, nem localhost hostokra legyen állítva. Non-Development induláskor a wildcard, localhost, nem HTTPS, hibás vagy path-ot tartalmazó WebUI origin elutasításra kerül.
 - Az auth login/refresh rate limit és login ban állapot processzen belüli. Non-Development deploymentben a `Deployment:RateLimiterTopology=SingleInstance` csak akkor állítható be, ha pontosan egy ApiService példány fut; skálázás előtt distributed limiter kell.
 - A production WebUI static hostnak vagy reverse proxy-nak kell érvényesítenie a biztonsági fejléceket, mert a Vite nem release szerver. Kötelező fejlécek: `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` vagy ezzel egyenértékű frame protection, és `Strict-Transport-Security`, ha ott terminálódik a TLS.
+- A production WebUI static hostnak cache fejléceket is érvényesítenie kell. Nginx referenciaként használd ezt: [docs/deployment/nginx-webui-cache.conf](docs/deployment/nginx-webui-cache.conf). Az `index.html` nem cache-elődik, a Vite `assets/` fájlok 30 napos `immutable` cache-t kapnak, a public képek/ikonok 30 napos cache-t és ETag revalidációt kapnak, a manifest/sitemap/robots jellegű fájlok pedig rövidebb, egynapos cache-t használnak.
 
 ## Fejlesztői megjegyzések (AI workflow)
 

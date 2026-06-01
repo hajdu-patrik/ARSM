@@ -29,7 +29,8 @@ description: "Use when editing ApiService API, auth/session, EF model, migration
 - Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header.
 - Rate limits: login `10/min`, refresh `20/min`; lockout after 5 failed attempts for 15 min.
 - In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
-- Keep profile picture ETag + SSE update behavior intact.
+- Keep profile picture private browser caching, ETag revalidation, auth/cookie-aware `Vary` headers, and SSE update behavior intact.
+- Keep read-only profile GET/person lookup paths on `AsNoTracking`; profile mutations keep tracked entities.
 
 ## Workflow Rules
 

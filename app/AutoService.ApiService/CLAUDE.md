@@ -31,6 +31,8 @@
 - Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header.
 - Rate limits: login `10/min`, refresh `20/min`; lockout after 5 failed attempts for 15 min.
 - In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
+- Profile picture GET responses keep private browser caching with ETag revalidation and auth/cookie-aware `Vary` headers; SSE update behavior remains intact.
+- Read-only profile GET/person lookup paths use `AsNoTracking`; profile mutations keep tracked entities.
 - Preserve middleware and endpoint mapping order in `Program.cs`.
 
 ## Engineering and Size Rules

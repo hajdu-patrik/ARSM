@@ -26,7 +26,7 @@
 - Never hardcode credentials, hosts, or connection strings.
 - `.secrets` for Playwright; `tests/.env` for HTTP; `tests/.env.example` as template.
 - HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
-- Keep MCP SQL profile on `ARSM_MCP_POSTGRES_CONNECTION_STRING` with read-only user.
+- Keep MCP SQL templates on `ARSM_MCP_POSTGRES_CONNECTION_STRING`; local gitignored `.claude/.mcp.json` and `.vscode/mcp.json` may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
 ## Canonical Runner Contract
 
@@ -39,4 +39,5 @@
 
 - VIN/kW/drivetrain contract (no HP/torque fields).
 - Customer search/list + scheduler lookup (email/plate/name).
+- Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior.
 - Scheduler intake and customer details/history split-view E2E behavior.

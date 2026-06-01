@@ -12,7 +12,10 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 
 ## Trigger Gates
 
-- Run heavy test agents only by explicit request or significant behavior changes.
+- Heavy test work only on explicit request or significant behavior change.
+- `http-endpoint-test`: API contract/auth/status/validation changes.
+- `sql-database-test`: schema/persistence/integrity changes.
+- `e2e-playwright-test`: frontend structural/user-flow changes.
 - New feature + triggered test agent: generate missing coverage first.
 - Non-behavioral changes: docs-sync only for test-layer docs.
 
@@ -29,6 +32,7 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 - HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
 - Playwright uses `.secrets`.
 - Template file is `tests/.env.example`.
+- Keep MCP SQL templates on `ARSM_MCP_POSTGRES_CONNECTION_STRING`; local gitignored `.claude/.mcp.json` and `.vscode/mcp.json` may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
 ## AI Reporting Contract
 
@@ -39,5 +43,6 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 ## Coverage Anchors
 
 - VIN/kW/drivetrain contract (no HP/torque fields).
-- Customer list/search and scheduler lookup contracts.
+- Customer search/list + scheduler lookup (email/plate/name).
+- Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior.
 - Scheduler intake + customer details/history split-view E2E expectations.

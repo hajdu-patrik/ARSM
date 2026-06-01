@@ -29,7 +29,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 | Layer | Technologies |
 | ----- | ------------ |
 | Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | Database | PostgreSQL |
 | Orchestration | .NET Aspire (`AutoService.AppHost`) |
 
@@ -106,7 +106,7 @@ AppHost starts and wires:
 | Run all local tests | `python scripts/run-local-test-suite.py` |
 | Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
 
-NuGet restore is lock-file based: `app/Directory.Build.props` enables `packages.lock.json`, and CI runs `dotnet restore --locked-mode`.
+NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
 
 ## Running Tests
 
@@ -158,7 +158,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
   - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
 - Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
-- PostgreSQL MCP access uses `ARSM_MCP_POSTGRES_CONNECTION_STRING` (recommended user: `ai_agent_test_user`, read-only policy).
+- MCP templates keep `ARSM_MCP_POSTGRES_CONNECTION_STRING` as the portable placeholder; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
 ## Deployment Security Notes
 
@@ -166,6 +166,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
 - Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
 - The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
+- The production WebUI static host should also enforce cache headers. Use [docs/deployment/nginx-webui-cache.conf](docs/deployment/nginx-webui-cache.conf) as the nginx reference: `index.html` is not cached, Vite `assets/` files are cached for 30 days with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and manifest/sitemap/robots-style files use a shorter one-day cache.
 
 ## Contributor Notes (AI Workflow)
 

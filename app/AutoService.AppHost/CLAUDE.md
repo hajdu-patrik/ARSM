@@ -27,6 +27,7 @@
 - Postgres port from config (`Ports:Postgres`, default `50000`).
 - WebUI port from config (`Ports:WebUi`, default `5173`).
 - API endpoint auto-assigned by Aspire (default `https://localhost:5200`).
+- Keep AppHost NuGet lock files aligned per build host RID; Linux and macOS use the RID-specific `packages.lock.*.json` files for Aspire Dashboard/DCP packages.
 
 ## Validation
 

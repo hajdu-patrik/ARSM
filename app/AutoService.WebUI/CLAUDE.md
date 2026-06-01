@@ -19,6 +19,7 @@
 - No hardcoded `VITE_API_URL` fallback.
 - Vite dev server binds to `localhost` by default; use `VITE_DEV_HOST` only for explicit local opt-in.
 - Keep API logic in `src/services`; keep UI logic in components/hooks/pages.
+- Private authenticated read models use TanStack Query with person/role-scoped keys, sessionStorage persistence, and cache clearing on auth-boundary transitions.
 - Clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`).
 - Style-system work is visual-preserving by default. Do not change current colors, spacing, radii, motion, focus, layout, or responsive behavior unless the user explicitly requests a redesign.
 
@@ -34,6 +35,7 @@
 - Customer search includes customer fields and related vehicle plates.
 - Customer/vehicle history uses details panel or split-view flow.
 - Scheduler intake supports email, exact plate, and name multi-result lookup.
+- Scheduler and customer reads keep query-cache stale times, visible-tab background refresh, and mutation invalidation behavior aligned with `src/services/cache`.
 
 ## Current Style Contract Anchors
 
