@@ -32,7 +32,7 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 - HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
 - Playwright uses `.secrets`.
 - Template file is `tests/.env.example`.
-- Keep MCP SQL templates on `ARSM_MCP_POSTGRES_CONNECTION_STRING`; local gitignored `.claude/.mcp.json` and `.vscode/mcp.json` may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
+- Keep tracked MCP SQL templates placeholder-based; local gitignored `.claude/.mcp.json` and `.vscode/mcp.json` must hold the concrete read-only PostgreSQL URI for `ai_agent_test_user` on developer machines.
 
 ## AI Reporting Contract
 
