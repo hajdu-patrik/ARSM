@@ -1,8 +1,8 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.3.5">
+<Project Sdk="Aspire.AppHost.Sdk/13.4.0">
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.3.5" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.3.5" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.4.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,6 +11,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>251e678a-5d1f-4579-8d82-85175558b81a</UserSecretsId>
+    <!-- Aspire injects Dashboard/DCP packages for the build host RID. -->
+    <NuGetLockFilePath Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-x64'">$(MSBuildProjectDirectory)/packages.lock.linux-x64.json</NuGetLockFilePath>
+    <NuGetLockFilePath Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'osx-arm64'">$(MSBuildProjectDirectory)/packages.lock.osx-arm64.json</NuGetLockFilePath>
+    <NuGetLockFilePath Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'osx-x64'">$(MSBuildProjectDirectory)/packages.lock.osx-x64.json</NuGetLockFilePath>
   </PropertyGroup>
 
   <!-- Stop a stale AppHost process before build so output files are not locked. -->
