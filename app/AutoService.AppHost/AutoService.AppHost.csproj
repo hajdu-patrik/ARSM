@@ -1,8 +1,8 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.4.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.0" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.4.0" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.5.3" />
   </ItemGroup>
 
   <PropertyGroup>
