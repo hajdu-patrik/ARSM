@@ -39,6 +39,13 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
 
+    - name: Restore .NET tools
+      run: dotnet tool restore
+
+    # Offline schema gate: fails when entities changed without a matching migration.
+    - name: Verify EF migrations match the model
+      run: dotnet tool run dotnet-ef -- migrations has-pending-model-changes --project AutoService.ApiService
+
     - name: Check NuGet vulnerabilities
       shell: bash
       run: |

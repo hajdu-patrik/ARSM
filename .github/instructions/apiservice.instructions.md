@@ -36,5 +36,6 @@ description: "Use when editing ApiService API, auth/session, EF model, migration
 
 - Apply SOLID/OOP boundaries; justify non-trivial pattern/architecture changes.
 - Migration only for actual schema/EF delta.
+- Schema gate: `dotnet tool run dotnet-ef -- migrations has-pending-model-changes --project AutoService.ApiService` must pass; it runs offline (no database) and fails when entities changed without a matching migration. The EF CLI is pinned in `dotnet-tools.json`.
 - Heavy test agents only by gate.
 - Always run `docs-sync`, `coding-principles`, and backend vulnerability scan/remediation.
