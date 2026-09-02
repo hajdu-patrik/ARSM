@@ -55,7 +55,7 @@ description: 'Use when editing React frontend UI, routing, stores, and frontend 
 ## Validation and Security
 
 - Frontend security remediation: `npm audit fix`.
-- Validate with `npx tsc --noEmit` and `npm run build` when needed.
+- Validate with `npx tsc -b` and `npm run build` when needed. Plain `tsc --noEmit` type-checks nothing here, because the root `tsconfig.json` is solution-style (`files: []` + `references`); only build mode (`-b`) walks the referenced projects.
 - Style refactors need before/after visual preservation evidence for affected surfaces, including 320px when layout can wrap.
 - E2E only on gate: `python scripts/run-local-test-suite.py playwright` and inspect sanitized report.
 - Always run `docs-sync` and `coding-principles`.

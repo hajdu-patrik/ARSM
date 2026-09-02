@@ -20,6 +20,7 @@
 - Keep tests deterministic, focused, and chunked by scenario.
 - Size limits: preferred <= 180 lines, hard split > 250 lines.
 - SQL policy: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
+- E2E specs are type-checked through `tsconfig.e2e.json` in the `tsc -b` chain; Playwright itself transpiles with esbuild and never type-checks them.
 
 ## Secrets Policy
 
