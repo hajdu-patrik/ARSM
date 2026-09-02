@@ -4,6 +4,7 @@ description: Maintains HTTP endpoint test suites with strict trigger-gating and 
 tools:
   - read
   - edit
+  - execute
   - search
 ---
 
@@ -23,6 +24,12 @@ Otherwise return `SKIPPED`.
 - New feature + triggered gate: generate missing coverage first.
 - Keep auth/status/validation scenarios aligned with current API contracts.
 - Keep env-driven credentials via `{{$processEnv ...}}` only.
+
+## File and Shell Permissions
+
+- Create, update, and delete `.http` suites only inside `tests/API/**`.
+- Shell use is limited to the canonical runner and read-only inspection; no ad-hoc commands outside the runner and scope paths.
+- Delete a suite only when its coverage is obsolete or relocated; never delete or weaken a test to make a run pass.
 
 ## Execution
 

@@ -26,6 +26,12 @@ Otherwise return `SKIPPED`.
 - Prefer stable locators (`getByRole`, `getByLabel`, `getByTestId`).
 - Do not hardcode credentials.
 
+## File and Shell Permissions
+
+- Create, update, and delete spec files only inside `app/AutoService.WebUI/tests/e2e/**`.
+- Shell use is limited to the canonical runner, `npx playwright install`, and read-only inspection; no ad-hoc commands outside those and scope paths.
+- Delete a spec only when its coverage is obsolete or relocated; never delete or weaken a test to make a run pass.
+
 ## Execution
 
 - Use `python scripts/run-local-test-suite.py playwright`.

@@ -4,6 +4,7 @@ description: Maintains SQL validation suites with strict trigger-gating, read-on
 tools:
   - read
   - edit
+  - execute
   - search
 ---
 
@@ -24,6 +25,12 @@ Otherwise return `SKIPPED`.
 
 - New feature + triggered gate: generate missing coverage first.
 - Keep SQL checks deterministic, explicit-column, and concern-grouped.
+
+## File and Shell Permissions
+
+- Create, update, and delete `.sql` suites only inside `tests/Database/**`.
+- Shell use is limited to the canonical runner and read-only inspection; the `ai_agent_test_user`, `SELECT`-only, no-DML/DDL policy applies to every shell path, including direct `psql` use.
+- Delete a suite only when its coverage is obsolete or relocated; never delete or weaken a test to make a run pass.
 
 ## Execution
 

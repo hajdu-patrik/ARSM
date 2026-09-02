@@ -24,6 +24,7 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 - Keep tests deterministic, focused, and chunked by responsibility.
 - Size limits: preferred <= 180 lines, hard split > 250 lines.
 - SQL policy: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
+- Test agents own create, update, and delete inside their own scope paths; delete only obsolete or relocated coverage, never to make a run pass.
 - E2E specs are type-checked through `tsconfig.e2e.json` in the `tsc -b` chain; Playwright itself transpiles with esbuild and never type-checks them.
 
 ## Secrets Policy
