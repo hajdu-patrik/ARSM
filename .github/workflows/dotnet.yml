@@ -23,10 +23,10 @@ jobs:
         working-directory: app
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
 
@@ -65,12 +65,12 @@ jobs:
         working-directory: app/AutoService.WebUI
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
 
     - name: Setup Node.js
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@v7
       with:
-        node-version: 22
+        node-version: 24
         cache: 'npm'
         cache-dependency-path: app/AutoService.WebUI/package-lock.json
 
@@ -78,7 +78,17 @@ jobs:
       run: npm ci
 
     - name: Type-check
-      run: npx tsc --noEmit
+      run: npx tsc -b
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Build
+      run: npm run build
+
+    # E2E specs sit outside every tsconfig, so this is the only gate that compiles them.
+    - name: Verify E2E specs compile
+      run: npx playwright test --list
 
     - name: Audit npm dependencies
       run: npm audit --audit-level=high
