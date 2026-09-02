@@ -98,7 +98,7 @@ function App() {
 
       {/* Main app */}
       <ErrorBoundary>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Router>
           <SeoManager />
 
           <Suspense fallback={null}>
