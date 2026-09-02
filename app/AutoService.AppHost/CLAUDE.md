@@ -25,6 +25,7 @@
 
 - Aspire dashboard default: `https://localhost:17094`.
 - Postgres port from config (`Ports:Postgres`, default `50000`).
+- Postgres container image tag is pinned in `AppHost.cs` via `WithImageTag`; a major-version change requires migrating the `autoservice-postgres-data` volume.
 - WebUI port from config (`Ports:WebUi`, default `5173`).
 - API endpoint auto-assigned by Aspire (default `https://localhost:5200`).
 - Keep AppHost NuGet lock files aligned per build host RID; Linux and macOS use the RID-specific `packages.lock.*.json` files for Aspire Dashboard/DCP packages.

@@ -12,7 +12,10 @@ var configuredWebUiSiteUrl = builder.Configuration["WebUi:SiteUrl"];
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
 
+// Pinned image tag: an implicit tag lets an Aspire package bump change the PostgreSQL major
+// version, which the postgres 18+ image refuses to start against an existing older data volume.
 var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
+                            .WithImageTag("18.3")
                             .WithHostPort(postgresPort)
                             .WithEndpoint("tcp", endpoint => endpoint.IsProxied = false)
                             .WithDataVolume("autoservice-postgres-data")
