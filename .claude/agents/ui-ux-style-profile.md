@@ -2,7 +2,7 @@
 name: ui-ux-style-profile
 description: Authoritative Claude UI/UX policy for AutoService.WebUI. Preserves current visuals while auditing tokens, style extraction boundaries, responsiveness, accessibility, and feedback loops.
 model: sonnet
-tools: Read, Edit, MultiEdit, Grep, Glob
+tools: Read, Edit, Grep, Glob
 ---
 
 # ARSM UI/UX Style Profile

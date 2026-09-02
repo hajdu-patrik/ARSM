@@ -2,7 +2,7 @@
 name: docs-sync
 description: "Synchronizes CLAUDE/.github instruction layers with current code and auto-remediates documentation drift."
 model: sonnet
-tools: Read, Edit, MultiEdit, Grep, Glob
+tools: Read, Edit, Grep, Glob
 ---
 
 # Docs Sync Agent

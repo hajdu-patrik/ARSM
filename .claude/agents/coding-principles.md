@@ -2,7 +2,7 @@
 name: coding-principles
 description: "Enforces naming, structure, and JSDoc-style documentation standards, with automatic remediation."
 model: sonnet
-tools: Read, Edit, MultiEdit, Grep, Glob
+tools: Read, Edit, Grep, Glob
 ---
 
 # Coding Principles Agent

@@ -2,7 +2,7 @@
 name: backend
 description: "Specialist agent for ApiService plus AppHost/ServiceDefaults backend-platform wiring, auth, EF Core, middleware, and contracts."
 model: sonnet
-tools: Read, Edit, MultiEdit, Grep, Glob, Bash
+tools: Read, Edit, Grep, Glob, Bash
 ---
 
 # Backend Specialist Agent

@@ -2,7 +2,7 @@
 name: frontend
 description: "Specialist agent for AutoService.WebUI behavior, component structure, local style composition, i18n, and routing."
 model: sonnet
-tools: Read, Edit, MultiEdit, Grep, Glob, Bash
+tools: Read, Edit, Grep, Glob, Bash
 ---
 
 # Frontend Specialist Agent
