@@ -28,6 +28,7 @@
 - WebUI port from config (`Ports:WebUi`, default `5173`).
 - API endpoint auto-assigned by Aspire (default `https://localhost:5200`).
 - Keep AppHost NuGet lock files aligned per build host RID; Linux and macOS use the RID-specific `packages.lock.*.json` files for Aspire Dashboard/DCP packages.
+- Dashboard/DCP stay NuGet-restored and lock-pinned (`AspireUseCliBundle=false`); `ASPIRE010` is suppressed in the csproj as a deliberate opt-out because the CLI bundle resolves from machine-local `~/.aspire` and is absent on clean CI runners.
 
 ## Validation
 

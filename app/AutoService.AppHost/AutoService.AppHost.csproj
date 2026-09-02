@@ -11,6 +11,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>251e678a-5d1f-4579-8d82-85175558b81a</UserSecretsId>
+    <!-- Dashboard/DCP stay NuGet-restored and lock-pinned so builds are reproducible.
+         The CLI bundle alternative resolves from machine-local ~/.aspire and is absent
+         on clean CI runners, so ASPIRE010 is a deliberate, informed opt-out. -->
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
     <!-- Aspire injects Dashboard/DCP packages for the build host RID. -->
     <NuGetLockFilePath Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'linux-x64'">$(MSBuildProjectDirectory)/packages.lock.linux-x64.json</NuGetLockFilePath>
     <NuGetLockFilePath Condition="'$(NETCoreSdkRuntimeIdentifier)' == 'osx-arm64'">$(MSBuildProjectDirectory)/packages.lock.osx-arm64.json</NuGetLockFilePath>

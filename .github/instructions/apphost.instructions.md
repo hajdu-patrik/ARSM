@@ -23,6 +23,7 @@ description: "Use when editing Aspire AppHost resource wiring and local runtime 
 - Postgres/WebUI ports come from config (`50000`, `5173` defaults).
 - API endpoint is Aspire-assigned (default `https://localhost:5200`).
 - Keep AppHost NuGet lock files aligned per build host RID; Linux and macOS use the RID-specific `packages.lock.*.json` files for Aspire Dashboard/DCP packages.
+- Dashboard/DCP stay NuGet-restored and lock-pinned (`AspireUseCliBundle=false`); `ASPIRE010` is suppressed in the csproj as a deliberate opt-out because the CLI bundle resolves from machine-local `~/.aspire` and is absent on clean CI runners.
 
 ## Validation
 
