@@ -14,8 +14,8 @@
 ## Model Selection (Auto)
 
 - Do not auto-select models that cost more than 3x baseline.
-- Forbidden for automatic selection: `claude-opus-4.7` and `gpt-5.5`.
-- Preferred pool: `gpt-5.3-codex`, `gpt-5.4`, `claude-sonnet 4.6`, or equivalent tier.
+- Forbidden for automatic selection: `claude-fable-5`, `claude-opus-5`, and `gpt-5.5`.
+- Preferred pool: `gpt-5.3-codex`, `gpt-5.4`, `claude-sonnet-5`, `claude-haiku-4-5`, or equivalent tier.
 - If top-tier is genuinely needed, ask user approval first.
 
 ## Mandatory Workflow

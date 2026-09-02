@@ -14,8 +14,8 @@
 ## Model Selection (Auto)
 
 - Do not auto-select models that cost more than 3x baseline.
-- Forbidden for automatic selection: `claude-opus-4.7`.
-- Preferred pool: `claude-sonnet 4.6`, `claude-haiku` (or equivalent).
+- Forbidden for automatic selection: `claude-fable-5`, `claude-opus-5`.
+- Preferred pool: `claude-sonnet-5`, `claude-haiku-4-5` (or equivalent tier).
 - If top-tier is truly needed, ask user approval first.
 
 ## Mandatory Workflow
