@@ -103,7 +103,11 @@ test.describe('Admin mechanic registration edge cases', () => {
     await expect(deleteDialog).toContainText(newEmail);
     await deleteDialog.getByRole('button', { name: /Delete|Törlés/i }).click();
 
-    await expect(page.locator('output[aria-live="polite"]')).toContainText(newEmail);
+    // The registration toast from the step above can still be on screen, so match the deletion
+    // message rather than the email, which both toasts contain.
+    await expect(page.locator('output[aria-live="polite"]')
+      .filter({ hasText: /deleted successfully|sikeresen törölve/i }))
+      .toContainText(newEmail);
     await expect(mechanicsSection.getByText(newEmail, { exact: true })).toHaveCount(0);
   });
 });
