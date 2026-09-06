@@ -10,7 +10,7 @@ namespace AutoService.ApiService.Admin;
 
 public static partial class AdminEndpoints
 {
-        private static async Task<IResult> ListMechanicsAsync(
+    private static async Task<IResult> ListMechanicsAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
@@ -39,15 +39,15 @@ public static partial class AdminEndpoints
                 m.PhoneNumber,
                 m.Specialization.ToString(),
                 m.IdentityUserId != null && adminIdentityUserIdSet.Contains(m.IdentityUserId),
-                m.ProfilePicture != null && m.ProfilePictureContentType != null))
+                m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
             .ToListAsync(cancellationToken);
 
-            logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", items.Count);
+        logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", items.Count);
 
         return Results.Ok(items);
     }
 
-        private static async Task<IResult> DeleteMechanicAsync(
+    private static async Task<IResult> DeleteMechanicAsync(
         int id,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -157,7 +157,7 @@ public static partial class AdminEndpoints
         return Results.Ok(new { message = "Mechanic deleted successfully." });
     }
 
-        private static async Task<IResult?> ValidateMechanicDeletionInvariantsAsync(
+    private static async Task<IResult?> ValidateMechanicDeletionInvariantsAsync(
         int mechanicId,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
@@ -184,7 +184,7 @@ public static partial class AdminEndpoints
         return null;
     }
 
-        private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
+    private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)
         {

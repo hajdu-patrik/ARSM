@@ -40,6 +40,8 @@ description: 'Use when editing React frontend UI, routing, stores, and frontend 
 - Customer/vehicle history stays in details panel/split-view flow.
 - Scheduler intake keeps email, exact plate, and name multi-result lookup.
 - Scheduler and customer reads keep query-cache stale times, visible-tab background refresh, and mutation invalidation behavior aligned with `src/services/cache`.
+- Profile picture upload accepts JPEG/PNG/WebP up to 4 MB (`MAX_PROFILE_PICTURE_BYTES`); the size check runs on both the selected file and the cropped blob, because cropping re-encodes and changes the size that is actually sent.
+- The crop modal produces `image/webp` at quality 0.9 with a `.webp` file name (`src/utils/imageCrop.ts`); the API re-encodes to WebP again server-side.
 
 ## Style Contract Anchors
 

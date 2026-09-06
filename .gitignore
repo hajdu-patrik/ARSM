@@ -39,6 +39,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Local database backups (contain real row data; never leave the developer machine)
+.local-backups/
+
 # Local test runner artifacts (sanitized summaries and raw tool traces are local-only)
 tests/.artifacts/
 **/test-results/

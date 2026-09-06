@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Profile.Endpoints;
@@ -54,11 +55,16 @@ public static partial class ProfileEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized);
 
+        // The size metadata makes Kestrel reject an oversized body while it is still on the wire.
+        // Without it the whole multipart payload is buffered before any validation code runs.
         group.MapPut("/picture", UploadProfilePictureAsync)
             .DisableAntiforgery()
+            .WithMetadata(new RequestSizeLimitAttribute(MaxProfilePictureRequestBytes))
+            .WithMetadata(new RequestFormLimitsAttribute { MultipartBodyLengthLimit = MaxProfilePictureRequestBytes })
             .Produces<object>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .Produces(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized);
 

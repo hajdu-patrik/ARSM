@@ -21,6 +21,9 @@ ORDER BY a."Id", am."MechanicId";
 -- 2. PROFILE UPDATE AUDIT (mechanics)
 --    Verifies profile fields changed by /api/profile endpoints.
 --    Includes firstName and lastName (updatable via PUT /api/profile).
+--    has_profile_picture mirrors the DTO projection the API computes
+--    (Profile/Endpoints/ProfileEndpoints.Queries.cs), which reads object-storage
+--    metadata since DropProfilePictureBytes removed the "ProfilePicture" bytea column.
 -- ------------------------------------------------------------
 SELECT "Id" AS mechanic_id,
        "Email",
@@ -28,7 +31,8 @@ SELECT "Id" AS mechanic_id,
        "FirstName",
        "MiddleName",
        "LastName",
-       ("ProfilePicture" IS NOT NULL) AS has_profile_picture
+       ("ProfilePictureObjectKey" IS NOT NULL
+        OR "ProfilePictureContentType" IS NOT NULL) AS has_profile_picture
 FROM people
 WHERE "PersonType" = 'Mechanic'
 ORDER BY "Id";
@@ -77,10 +81,12 @@ ORDER BY a."Id";
 
 -- ------------------------------------------------------------
 -- 5. PROFILE PICTURE STORAGE CHECK
---    Counts mechanics with and without stored profile pictures.
+--    Counts mechanics with and without stored profile pictures. Since
+--    DropProfilePictureBytes the picture itself lives in object storage, so the row
+--    only carries the key that points at it.
 -- ------------------------------------------------------------
-SELECT COUNT(*) FILTER (WHERE "ProfilePicture" IS NOT NULL) AS mechanics_with_profile_picture,
-       COUNT(*) FILTER (WHERE "ProfilePicture" IS NULL) AS mechanics_without_profile_picture,
+SELECT COUNT(*) FILTER (WHERE "ProfilePictureObjectKey" IS NOT NULL) AS mechanics_with_profile_picture,
+       COUNT(*) FILTER (WHERE "ProfilePictureObjectKey" IS NULL) AS mechanics_without_profile_picture,
        COUNT(*) AS total_mechanics
 FROM people
 WHERE "PersonType" = 'Mechanic';
@@ -121,7 +127,8 @@ WHERE p."Id" IS NULL;
 SELECT p."Id" AS mechanic_id,
        p."Email" AS mechanic_email,
        p."IdentityUserId" AS identity_user_id,
-    ((p."ProfilePicture" IS NOT NULL) AND (p."ProfilePictureContentType" IS NOT NULL)) AS "HasProfilePicture",
+    ((p."ProfilePictureObjectKey" IS NOT NULL)
+     OR (p."ProfilePictureContentType" IS NOT NULL)) AS "HasProfilePicture",
        COALESCE(BOOL_OR(r."Name" = 'Admin'), FALSE) AS "IsAdmin"
 FROM people p
 LEFT JOIN "AspNetUsers" u ON u."Id" = p."IdentityUserId"

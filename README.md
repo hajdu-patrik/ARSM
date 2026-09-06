@@ -37,7 +37,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 
 - `app/AutoService.ApiService`: API endpoints, domain model, EF Core, authentication
 - `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + ApiService + WebUI)
+- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + MinIO + ApiService + WebUI)
 - `app/AutoService.ServiceDefaults`: shared service defaults and resilience setup
 - `tests/API`: HTTP endpoint test suites (`.http`)
 - `tests/Database`: SQL validation suites (`.sql`, read-only policy)
@@ -52,7 +52,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - .NET 10 SDK
 - Node.js 20+ with npm
 - Python 3.11+ for the local test runner
-- Docker Desktop running locally (required for PostgreSQL container via AppHost)
+- Docker Desktop running locally (required for the PostgreSQL and MinIO containers via AppHost)
 
 ### 1) Create local API settings
 
@@ -93,8 +93,20 @@ dotnet run --project AutoService.AppHost
 AppHost starts and wires:
 
 - PostgreSQL
-- `AutoService.ApiService`
+- MinIO, the local S3-compatible object store for profile pictures (API on `Ports:MinioApi`, web console on `Ports:MinioConsole`)
+- `AutoService.ApiService`, which receives `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, and `ObjectStorage__SecretAccessKey` from the MinIO resource
 - `AutoService.WebUI` development server with `VITE_API_URL` injected from the API endpoint
+
+MinIO needs two Aspire secret parameters. Set them once per machine:
+
+```bash
+cd app/AutoService.AppHost
+dotnet user-secrets set "Parameters:minio-user" "<local-minio-user>"
+dotnet user-secrets set "Parameters:minio-password" "<local-minio-password>"
+```
+
+Hosted environments point `ObjectStorage__ServiceUrl` at the real S3-compatible endpoint instead,
+keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket up front.
 
 ## Useful Commands
 

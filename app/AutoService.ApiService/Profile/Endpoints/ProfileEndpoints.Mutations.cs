@@ -17,8 +17,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-
-        private static async Task<IResult> UpdateProfileAsync(
+    private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -193,10 +192,10 @@ public static partial class ProfileEndpoints
             person.Name.LastName,
             person.Email,
             person.PhoneNumber,
-            person.ProfilePicture is not null));
+            person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
     }
 
-        private static async Task<IResult> ChangePasswordAsync(
+    private static async Task<IResult> ChangePasswordAsync(
         ChangePasswordRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -270,7 +269,7 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Password changed successfully." });
     }
 
-        private static async Task<IResult> DeleteProfileAsync(
+    private static async Task<IResult> DeleteProfileAsync(
         [FromBody] DeleteProfileRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
@@ -366,5 +365,4 @@ public static partial class ProfileEndpoints
 
         return Results.Ok(new { message = "Profile deleted successfully." });
     }
-
 }

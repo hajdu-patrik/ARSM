@@ -25,11 +25,14 @@ public abstract class People
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
 
-    public byte[]? ProfilePicture { get; set; }
+    [MaxLength(256)]
+    public string? ProfilePictureObjectKey { get; set; }
+
+    [MaxLength(80)]
+    public string? ProfilePictureETag { get; set; }
 
     [MaxLength(50)]
     public string? ProfilePictureContentType { get; set; }
-
 
     /**
      * Parameterless constructor required by EF Core.

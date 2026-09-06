@@ -1,14 +1,8 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Profile.Realtime;
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
+using AutoService.ApiService.Storage;
 using AutoService.ApiService.Domain;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Channels;
 
@@ -19,6 +13,7 @@ public static partial class ProfileEndpoints
     private static readonly TimeSpan ProfilePictureUpdatesIdleTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan ProfilePictureUpdatesKeepAliveInterval = TimeSpan.FromSeconds(20);
     private const int ProfilePictureCacheMaxAgeSeconds = 3600;
+    private const string DefaultProfilePictureContentType = "image/webp";
 
     /**
      * Represents the possible outcomes when waiting for the next profile-picture SSE channel item.
@@ -34,12 +29,14 @@ public static partial class ProfileEndpoints
      * Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture.
      * @param httpContext - Current HTTP context.
      * @param db - Database context.
+     * @param storage - Profile picture object storage.
      * @param cancellationToken - Cancellation token.
      * @return Profile picture binary with ETag support, or 404 if not found.
      */
     private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
+        IProfilePictureStorage storage,
         CancellationToken cancellationToken)
     {
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
@@ -50,24 +47,7 @@ public static partial class ProfileEndpoints
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        if (person.ProfilePicture is null || person.ProfilePictureContentType is null)
-        {
-            return Results.NotFound();
-        }
-
-        var etag = BuildProfilePictureEtag(person.ProfilePicture);
-        AppendProfilePictureCacheHeaders(httpContext.Response, etag);
-
-        if (IsNotModified(httpContext.Request, etag))
-        {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
-        }
-
-        return Results.File(
-            person.ProfilePicture,
-            person.ProfilePictureContentType,
-            fileDownloadName: $"profile-{person.Id}",
-            enableRangeProcessing: false);
+        return await RespondWithProfilePictureAsync(httpContext, storage, person, cancellationToken);
     }
 
     /**
@@ -75,6 +55,7 @@ public static partial class ProfileEndpoints
      * @param personId - Target mechanic's person ID.
      * @param httpContext - Current HTTP context.
      * @param db - Database context.
+     * @param storage - Profile picture object storage.
      * @param cancellationToken - Cancellation token.
      * @return Profile picture binary with ETag support, 403 if forbidden, or 404 if not found.
      */
@@ -82,6 +63,7 @@ public static partial class ProfileEndpoints
         int personId,
         HttpContext httpContext,
         AutoServiceDbContext db,
+        IProfilePictureStorage storage,
         CancellationToken cancellationToken)
     {
         var currentPerson = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
@@ -108,24 +90,50 @@ public static partial class ProfileEndpoints
             return Results.NotFound();
         }
 
-        if (mechanic.ProfilePicture is null || mechanic.ProfilePictureContentType is null)
+        return await RespondWithProfilePictureAsync(httpContext, storage, mechanic, cancellationToken);
+    }
+
+    /**
+     * Serves a person's profile picture from object storage.
+     *
+     * The ETag is read from the person row, so a conditional request short-circuits to 304 without
+     * ever calling the object store.
+     *
+     * @param httpContext - Current HTTP context.
+     * @param storage - Profile picture object storage.
+     * @param person - Person whose picture is requested.
+     * @param cancellationToken - Cancellation token.
+     * @return Picture stream, 304 when unchanged, or 404 when the person has no picture.
+     */
+    private static async Task<IResult> RespondWithProfilePictureAsync(
+        HttpContext httpContext,
+        IProfilePictureStorage storage,
+        People person,
+        CancellationToken cancellationToken)
+    {
+        if (person.ProfilePictureObjectKey is not null && person.ProfilePictureETag is not null)
         {
-            return Results.NotFound();
+            AppendProfilePictureCacheHeaders(httpContext.Response, person.ProfilePictureETag);
+
+            if (IsNotModified(httpContext.Request, person.ProfilePictureETag))
+            {
+                return Results.StatusCode(StatusCodes.Status304NotModified);
+            }
+
+            var content = await storage.OpenReadAsync(person.ProfilePictureObjectKey, cancellationToken);
+            if (content is null)
+            {
+                return Results.NotFound();
+            }
+
+            return Results.Stream(
+                content,
+                person.ProfilePictureContentType ?? DefaultProfilePictureContentType,
+                fileDownloadName: $"profile-{person.Id}",
+                enableRangeProcessing: false);
         }
 
-        var etag = BuildProfilePictureEtag(mechanic.ProfilePicture);
-        AppendProfilePictureCacheHeaders(httpContext.Response, etag);
-
-        if (IsNotModified(httpContext.Request, etag))
-        {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
-        }
-
-        return Results.File(
-            mechanic.ProfilePicture,
-            mechanic.ProfilePictureContentType,
-            fileDownloadName: $"profile-{mechanic.Id}",
-            enableRangeProcessing: false);
+        return Results.NotFound();
     }
 
     /**
@@ -272,163 +280,6 @@ public static partial class ProfileEndpoints
     {
         await response.WriteAsync($": {comment}\n\n", cancellationToken);
         await response.Body.FlushAsync(cancellationToken);
-    }
-
-    /**
-     * Handles profile-picture uploads with metadata validation, byte-level image validation, and tracked persistence.
-     */
-    private static async Task<IResult> UploadProfilePictureAsync(
-        [FromForm] IFormFile file,
-        HttpContext httpContext,
-        AutoServiceDbContext db,
-        IProfilePictureUpdateBroadcaster broadcaster,
-        CancellationToken cancellationToken)
-    {
-        var metadataValidationResult = ValidateProfilePictureUploadMetadata(file);
-        if (metadataValidationResult is not null)
-        {
-            return metadataValidationResult;
-        }
-
-        var normalizedContentType = file.ContentType.ToLowerInvariant();
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person is null)
-        {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var fileBytes = await ReadProfilePictureFileBytesAsync(file, cancellationToken);
-        var contentValidationResult = ValidateProfilePictureBytes(fileBytes, normalizedContentType);
-        if (contentValidationResult is not null)
-        {
-            return contentValidationResult;
-        }
-
-        person.ProfilePicture = fileBytes;
-        person.ProfilePictureContentType = normalizedContentType;
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        broadcaster.Publish(new ProfilePictureUpdatedEvent(
-            person.Id,
-            true,
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
-
-        return Results.Ok(new { message = "Profile picture updated." });
-    }
-
-    /**
-     * Validates upload metadata before reading the profile-picture file into memory.
-     */
-    private static IResult? ValidateProfilePictureUploadMetadata(IFormFile file)
-    {
-        if (file.Length == 0)
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["file"] = ["File is empty."]
-            });
-        }
-
-        if (file.Length > MaxProfilePictureBytes)
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["file"] = [$"File size exceeds the maximum allowed size of {MaxProfilePictureBytes / 1024} KB."]
-            });
-        }
-
-        var normalizedContentType = file.ContentType.ToLowerInvariant();
-        if (!ImageContentTypeDetector.AllowedImageContentTypes.Contains(normalizedContentType))
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["file"] = ["Only JPEG, PNG, and WebP images are allowed."]
-            });
-        }
-
-        return null;
-    }
-
-    /**
-     * Reads the already size-validated profile-picture file bytes for content inspection and persistence.
-     */
-    private static async Task<byte[]> ReadProfilePictureFileBytesAsync(
-        IFormFile file,
-        CancellationToken cancellationToken)
-    {
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream, cancellationToken);
-        return memoryStream.ToArray();
-    }
-
-    /**
-     * Validates the uploaded image bytes against the declared profile-picture content type.
-     */
-    private static IResult? ValidateProfilePictureBytes(byte[] fileBytes, string normalizedContentType)
-    {
-        if (!ImageContentTypeDetector.TryDetect(fileBytes, out var detectedContentType))
-        {
-            return Results.ValidationProblem(
-                new Dictionary<string, string[]>
-                {
-                    ["file"] = ["File content is not a valid JPEG, PNG, or WebP image."]
-                },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!string.Equals(detectedContentType, normalizedContentType, StringComparison.Ordinal))
-        {
-            return Results.ValidationProblem(
-                new Dictionary<string, string[]>
-                {
-                    ["file"] = ["File content does not match the declared content type."]
-                },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        return null;
-    }
-
-    /**
-     * Removes the tracked user's profile picture and publishes the realtime state change after persistence.
-     */
-    private static async Task<IResult> DeleteProfilePictureAsync(
-        HttpContext httpContext,
-        AutoServiceDbContext db,
-        IProfilePictureUpdateBroadcaster broadcaster,
-        CancellationToken cancellationToken)
-    {
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person is null)
-        {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        person.ProfilePicture = null;
-        person.ProfilePictureContentType = null;
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        broadcaster.Publish(new ProfilePictureUpdatedEvent(
-            person.Id,
-            false,
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
-
-        return Results.Ok(new { message = "Profile picture removed." });
-    }
-
-    /**
-     * Builds a strong ETag from the binary profile picture payload.
-     */
-    private static string BuildProfilePictureEtag(byte[] pictureBytes)
-    {
-        var hash = SHA256.HashData(pictureBytes);
-        return $"\"{Convert.ToHexString(hash)}\"";
     }
 
     /**

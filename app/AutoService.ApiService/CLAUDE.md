@@ -35,6 +35,14 @@
 - Read-only profile GET/person lookup paths use `AsNoTracking`; profile mutations keep tracked entities.
 - Preserve middleware and endpoint mapping order in `Program.cs`.
 
+## Profile Picture Storage Anchors
+
+- Profile pictures live exclusively in S3-compatible object storage (`Storage/`: `IProfilePictureStorage`, `S3ProfilePictureStorage` via `AWSSDK.S3`); the `people.ProfilePicture` bytea column was dropped and `People` keeps only `ProfilePictureObjectKey`, `ProfilePictureETag`, `ProfilePictureContentType`.
+- `ObjectStorageSettingsResolver` resolves `ObjectStorage:*` settings, letting `ObjectStorage__*` environment variables win over config; it rejects blank values and template-placeholder markers and fails fast at startup.
+- `ObjectStorageBucketInitializer` (hosted service) verifies the bucket at startup and creates it only when `ObjectStorage:AutoCreateBucket` is true.
+- Uploads accept JPEG/PNG/WebP up to 4 MB (`MaxProfilePictureBytes`); the endpoint also enforces `MaxProfilePictureRequestBytes` (upload limit + 64 KB) via `RequestSizeLimitAttribute`/`RequestFormLimitsAttribute` so oversized bodies are rejected before buffering.
+- `ImageSharpProfilePictureProcessor` (`Imaging/`) guards a 50-megapixel decode limit, auto-orients, resizes to fit 512x512 without upscaling, and re-encodes to WebP (quality 80) with a SHA-256 ETag; stored objects are always WebP regardless of the accepted upload type.
+
 ## Engineering and Size Rules
 
 - Apply SOLID/OOP; use GoF patterns only when justified.

@@ -37,7 +37,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 
 - `app/AutoService.ApiService`: API endpointok, domain modell, EF Core, hitelesítés
 - `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + ApiService + WebUI)
+- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + MinIO + ApiService + WebUI)
 - `app/AutoService.ServiceDefaults`: közös service defaultok és resilience beállítások
 - `tests/API`: HTTP endpoint tesztek (`.http`)
 - `tests/Database`: SQL validációs lekérdezések (`.sql`, csak olvasási policy)
@@ -50,7 +50,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 - .NET 10 SDK
 - Node.js 20+ és npm
 - Python 3.11+ a lokális tesztfuttatóhoz
-- Futó Docker Desktop (az AppHost PostgreSQL konténert indít)
+- Futó Docker Desktop (az AppHost PostgreSQL és MinIO konténert indít)
 
 ### 1) Lokális API beállítás létrehozása
 
@@ -91,8 +91,20 @@ dotnet run --project AutoService.AppHost
 Az AppHost elindítja és összeköti:
 
 - PostgreSQL
-- `AutoService.ApiService`
+- MinIO, a profilképek lokális S3-kompatibilis objektumtárolója (API a `Ports:MinioApi`, webkonzol a `Ports:MinioConsole` porton)
+- `AutoService.ApiService`, amely a MinIO erőforrástól kapja az `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId` és `ObjectStorage__SecretAccessKey` értékeket
 - `AutoService.WebUI` fejlesztői szerver (`VITE_API_URL` automatikus injektálással)
+
+A MinIO két Aspire secret paramétert igényel. Gépenként egyszer állítsd be:
+
+```bash
+cd app/AutoService.AppHost
+dotnet user-secrets set "Parameters:minio-user" "<lokalis-minio-felhasznalo>"
+dotnet user-secrets set "Parameters:minio-password" "<lokalis-minio-jelszo>"
+```
+
+Hosztolt környezetben az `ObjectStorage__ServiceUrl` a valódi S3-kompatibilis végpontra mutat,
+az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig előre létre kell hozni.
 
 ## Hasznos parancsok
 

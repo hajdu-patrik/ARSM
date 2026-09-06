@@ -9,6 +9,9 @@
 /** Expected prefix for data URL strings from {@code FileReader}. */
 const FILE_READER_DATA_URL_PREFIX = 'data:';
 
+/** Encoder quality for the cropped output blob. */
+const CROP_OUTPUT_QUALITY = 0.9;
+
 /**
  * Loads an image from a source URL and resolves when fully loaded.
  * @param src - The image source URL or data URL.
@@ -60,13 +63,13 @@ export async function fileToImageSource(file: File): Promise<string> {
  * Draws the cropped area onto an off-screen canvas.
  * @param imageSrc - Source URL or data URL of the image to crop.
  * @param cropPixels - Pixel-based crop region (x, y, width, height).
- * @param outputType - Output MIME type (defaults to {@code 'image/png'}).
+ * @param outputType - Output MIME type (defaults to {@code 'image/webp'}).
  * @returns A {@code Blob} of the cropped image in the specified format.
  */
 export async function cropImageToBlob(
   imageSrc: string,
   cropPixels: { x: number; y: number; width: number; height: number },
-  outputType: 'image/png' | 'image/jpeg' | 'image/webp' = 'image/png',
+  outputType: 'image/png' | 'image/jpeg' | 'image/webp' = 'image/webp',
 ): Promise<Blob> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
@@ -105,7 +108,7 @@ export async function cropImageToBlob(
         resolve(blob);
       },
       outputType,
-      0.92,
+      CROP_OUTPUT_QUALITY,
     );
   });
 }

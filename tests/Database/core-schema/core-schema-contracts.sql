@@ -77,3 +77,36 @@ FROM (
       )
 ) contracts
 ORDER BY contract_type, source_table, contract_name;
+
+-- ------------------------------------------------------------
+-- 16. PROFILE PICTURE STORAGE COLUMNS
+--     Object-storage contract from AddProfilePictureObjectStorageColumns, after
+--     DropProfilePictureBytes removed the transitional bytea column.
+--     Expected rows:
+--       ProfilePictureContentType | character varying |  50  | YES
+--       ProfilePictureETag        | character varying |  80  | YES
+--       ProfilePictureObjectKey   | character varying | 256  | YES
+-- ------------------------------------------------------------
+SELECT column_name,
+       data_type,
+       character_maximum_length,
+       is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'people'
+  AND column_name LIKE 'ProfilePicture%'
+ORDER BY column_name;
+
+-- ------------------------------------------------------------
+-- 17. LEGACY PICTURE COLUMN REMOVAL
+--     Post-condition of DropProfilePictureBytes. Until that migration ran, this slot
+--     held the backfill gate (rows carrying picture bytes without an object key), which
+--     had to reach zero before the column could be dropped. The column is now gone, so
+--     the gate is no longer expressible; what stays checkable is that it did not return.
+--     Expected: legacy_profile_picture_columns = 0.
+-- ------------------------------------------------------------
+SELECT COUNT(*) AS legacy_profile_picture_columns
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'people'
+  AND column_name = 'ProfilePicture';

@@ -33,6 +33,6 @@ public static partial class ProfileEndpoints
             person.Name.LastName,
             person.Email,
             person.PhoneNumber,
-            person.ProfilePicture is not null));
+            person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
     }
 }

@@ -231,7 +231,7 @@ export const huFeature = {
     uploadPicture: 'Feltöltés',
     removePicture: 'Eltávolítás',
     uploading: 'Feltöltés...',
-    pictureHint: 'JPEG, PNG vagy WebP. Max. 512 KB.',
+    pictureHint: 'JPEG, PNG vagy WebP. Max. 4 MB.',
     pictureUploadError: 'Nem sikerült feltölteni a képet!',
     pictureRemoveError: 'Nem sikerült eltávolítani a képet!',
     personalInfo: 'Személyes adatok',

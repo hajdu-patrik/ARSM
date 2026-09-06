@@ -6,142 +6,34 @@ from __future__ import annotations
 import json
 import os
 import sys
-import uuid
-from dataclasses import dataclass
-from http.cookiejar import CookieJar
-from typing import Any, Iterable
-from urllib.error import HTTPError, URLError
-from urllib.request import HTTPCookieProcessor, Request, build_opener
+from pathlib import Path
 
-APPLICATION_JSON = "application/json"
-PROFILE_PICTURE_PATH = "/api/profile/picture"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-VALID_PNG_BYTES = bytes.fromhex(
-    "89504E470D0A1A0A"
-    "0000000D49484452000000010000000108060000001F15C489"
-    "0000000A49444154789C6360000000020001E221BC330000000049454E44AE426082"
+from profile_picture_check_support import (  # noqa: E402
+    CONNECTION_RESET_STATUS,
+    INVALID_TEXT_BYTES,
+    PROFILE_PICTURE_PATH,
+    VALID_PNG_BYTES,
+    HttpClient,
+    StepResult,
+    assert_condition,
+    assert_status,
+    build_png,
+    read_allowed_origin,
+    read_credentials,
 )
-INVALID_TEXT_BYTES = b"not-an-image-payload"
-UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
-
-@dataclass(frozen=True)
-class Credentials:
-    email: str
-    password: str
-
-
-@dataclass
-class StepResult:
-    step: str
-    expected: list[int]
-    actual: int
-    status: str
-
-
-class HttpClient:
-    """Small cookie-aware HTTP client for profile picture endpoint checks."""
-
-    def __init__(self, base_url: str, allowed_origin: str) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.allowed_origin = allowed_origin
-        self.cookie_jar = CookieJar()
-        self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar))
-
-    def request_json(self, method: str, path: str, payload: dict[str, Any] | None = None) -> tuple[int, str]:
-        body = json.dumps(payload).encode("utf-8") if payload is not None else None
-        headers = {"Accept": APPLICATION_JSON}
-        if payload is not None:
-            headers["Content-Type"] = APPLICATION_JSON
-        return self._request(method, path, body, headers)
-
-    def request_multipart(
-        self,
-        method: str,
-        path: str,
-        field_name: str,
-        filename: str,
-        content_type: str,
-        payload_bytes: bytes,
-    ) -> tuple[int, str]:
-        boundary = f"----ARSMBoundary{uuid.uuid4().hex}"
-        body = b"".join(
-            [
-                f"--{boundary}\r\n".encode("utf-8"),
-                f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'.encode("utf-8"),
-                f"Content-Type: {content_type}\r\n\r\n".encode("utf-8"),
-                payload_bytes,
-                b"\r\n",
-                f"--{boundary}--\r\n".encode("utf-8"),
-            ],
-        )
-        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": APPLICATION_JSON}
-        return self._request(method, path, body, headers)
-
-    def _request(
-        self,
-        method: str,
-        path: str,
-        body: bytes | None,
-        headers: dict[str, str],
-    ) -> tuple[int, str]:
-        request_headers = dict(headers)
-        if method.upper() in UNSAFE_HTTP_METHODS:
-            request_headers["Origin"] = self.allowed_origin
-
-        request = Request(url=f"{self.base_url}{path}", data=body, headers=request_headers, method=method)
-        try:
-            with self.opener.open(request, timeout=30) as response:
-                return response.status, response.read().decode("utf-8", errors="replace")
-        except HTTPError as error:
-            return error.code, error.read().decode("utf-8", errors="replace")
-        except URLError as error:
-            raise RuntimeError(f"Network error during {method} {path}: {error.reason}") from error
-
-
-def read_credentials() -> list[Credentials]:
-    credential_candidates: Iterable[tuple[str, str]] = (
-        ("ARSM_TEST_ADMIN_EMAIL", "ARSM_TEST_ADMIN_PASSWORD"),
-        ("ARSM_TEST_MECHANIC_EMAIL", "ARSM_TEST_MECHANIC_PASSWORD"),
-    )
-
-    credentials: list[Credentials] = []
-
-    for email_key, password_key in credential_candidates:
-        email = os.getenv(email_key, "").strip()
-        password = os.getenv(password_key, "").strip()
-        if email and password:
-            credentials.append(Credentials(email=email, password=password))
-
-    if credentials:
-        return credentials
-
-    raise RuntimeError(
-        "Missing credentials. Set ARSM_TEST_ADMIN_EMAIL/ARSM_TEST_ADMIN_PASSWORD "
-        "or ARSM_TEST_MECHANIC_EMAIL/ARSM_TEST_MECHANIC_PASSWORD.",
-    )
-
-
-def read_allowed_origin() -> str:
-    """Read the configured WebUI origin used by cookie-auth unsafe requests."""
-    origin = os.getenv("ARSM_TEST_WEBUI_ORIGIN", "").strip()
-    if origin:
-        return origin
-
-    raise RuntimeError("Missing ARSM_TEST_WEBUI_ORIGIN environment variable.")
-
-
-def assert_status(step: str, actual: int, expected: set[int], results: list[StepResult]) -> None:
-    expected_list = sorted(expected)
-    status = "passed" if actual in expected else "failed"
-    results.append(StepResult(step=step, expected=expected_list, actual=actual, status=status))
-    if status == "failed":
-        raise RuntimeError(f"{step} failed: expected {expected_list}, got {actual}")
+# 4 MB upload cap plus the multipart framing allowance the endpoint adds on top of it.
+MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+OVERSIZE_PAYLOAD_BYTES = 5 * 1024 * 1024
 
 
 def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
+    """Exercise the upload contract: accepted types, re-encoding, size cap, and deletion."""
     upload_cases = (
         ("upload-valid-png", "valid-profile.png", "image/png", VALID_PNG_BYTES, {200, 204}),
+        ("upload-larger-png", "portrait.png", "image/png", build_png(700, 500), {200, 204}),
         ("upload-mime-mismatch", "mismatch.png", "image/jpeg", VALID_PNG_BYTES, {422}),
         ("upload-invalid-magic-bytes", "not-image.png", "image/png", INVALID_TEXT_BYTES, {422}),
     )
@@ -150,11 +42,47 @@ def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
         upload_status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", filename, content_type, payload_bytes)
         assert_status(step, upload_status, expected_statuses, results)
 
+    run_stored_format_check(client, results)
+    run_size_limit_checks(client, results)
+
     delete_status, _ = client.request_json("DELETE", PROFILE_PICTURE_PATH)
     assert_status("delete-picture", delete_status, {200, 204}, results)
 
+    missing_status, _ = client.request_json("GET", PROFILE_PICTURE_PATH)
+    assert_status("get-after-delete", missing_status, {404}, results)
+
     logout_status, _ = client.request_json("POST", "/api/auth/logout")
     assert_status("logout", logout_status, {200, 204}, results)
+
+
+def run_stored_format_check(client: HttpClient, results: list[StepResult]) -> None:
+    """A PNG goes in, WebP comes back: the server re-encodes every stored picture."""
+    status, headers = client.request_headers("GET", PROFILE_PICTURE_PATH)
+    assert_status("get-picture", status, {200}, results)
+
+    content_type = headers.get("Content-Type", "")
+    assert_condition(
+        "stored-picture-is-webp",
+        content_type == "image/webp",
+        f"expected image/webp, got {content_type!r}",
+        results,
+    )
+
+
+def run_size_limit_checks(client: HttpClient, results: list[StepResult]) -> None:
+    """Reject payloads over the 4 MB cap.
+
+    A body just over the cap still fits inside the transport allowance, so it reaches the handler
+    and comes back as a validation problem. A grossly oversized body trips the transport limit
+    instead, which Kestrel answers with 413 or by aborting the connection.
+    """
+    just_over = build_png(600, 600).ljust(MAX_UPLOAD_BYTES + 1024, b"\x00")
+    status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", "just-over.png", "image/png", just_over)
+    assert_status("upload-just-over-limit", status, {400}, results)
+
+    oversize = build_png(600, 600).ljust(OVERSIZE_PAYLOAD_BYTES, b"\x00")
+    status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", "oversize.png", "image/png", oversize)
+    assert_status("upload-oversize-body", status, {400, 413, CONNECTION_RESET_STATUS}, results)
 
 
 def main() -> int:

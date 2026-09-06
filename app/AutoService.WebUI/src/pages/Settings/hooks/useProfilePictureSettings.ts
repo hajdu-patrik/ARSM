@@ -5,7 +5,10 @@ import { isAllowedPictureExtension } from '../../../utils/validation';
 import { emitProfilePictureUpdated } from '../../../services/profile/profile-picture-live.service';
 import type { ProfileData } from '../../../types/profile/profile.types';
 
-const MAX_PROFILE_PICTURE_BYTES = 512 * 1024;
+const MAX_PROFILE_PICTURE_BYTES = 4 * 1024 * 1024;
+const MAX_PROFILE_PICTURE_MB = MAX_PROFILE_PICTURE_BYTES / (1024 * 1024);
+const CROPPED_PICTURE_TYPE = 'image/webp';
+const CROPPED_PICTURE_EXTENSION = '.webp';
 
 interface UseProfilePictureSettingsParams {
   profile: ProfileData | null;
@@ -33,7 +36,7 @@ export function useProfilePictureSettings({
     }
 
     if (file.size > MAX_PROFILE_PICTURE_BYTES) {
-      showErrorToast('toast.pictureTooLarge', { maxKb: Math.floor(MAX_PROFILE_PICTURE_BYTES / 1024) });
+      showErrorToast('toast.pictureTooLarge', { maxMb: MAX_PROFILE_PICTURE_MB });
       return;
     }
 
@@ -56,11 +59,23 @@ export function useProfilePictureSettings({
       return;
     }
 
+    // Cropping re-encodes the image, so the size that actually travels to the server is the
+    // cropped blob, not the file the user picked. Checking only the source would let an upload
+    // through that the server then rejects.
+    if (blob.size > MAX_PROFILE_PICTURE_BYTES) {
+      showErrorToast('toast.pictureTooLarge', { maxMb: MAX_PROFILE_PICTURE_MB });
+      return;
+    }
+
     setIsUploadingPicture(true);
 
     try {
       const finalFileName = pendingPictureFileName?.replace(/\.[^.]+$/, '') ?? 'profile-picture';
-      const croppedFile = new File([blob], `${finalFileName}.png`, { type: blob.type || 'image/png' });
+      const croppedFile = new File(
+        [blob],
+        `${finalFileName}${CROPPED_PICTURE_EXTENSION}`,
+        { type: blob.type || CROPPED_PICTURE_TYPE },
+      );
 
       await profileService.uploadProfilePicture(croppedFile);
       setProfile((prev) => prev ? { ...prev, hasProfilePicture: true } : prev);

@@ -36,6 +36,6 @@ public static partial class AppointmentEndpoints
                 m.Id,
                 m.Name.ToString(),
                 m.Specialization.ToString(),
-                m.ProfilePicture is not null && m.ProfilePictureContentType is not null))
+                m.ProfilePictureObjectKey is not null || m.ProfilePictureContentType is not null))
             .ToList());
 }

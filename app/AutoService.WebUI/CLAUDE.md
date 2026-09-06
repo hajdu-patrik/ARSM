@@ -36,6 +36,8 @@
 - Customer/vehicle history uses details panel or split-view flow.
 - Scheduler intake supports email, exact plate, and name multi-result lookup.
 - Scheduler and customer reads keep query-cache stale times, visible-tab background refresh, and mutation invalidation behavior aligned with `src/services/cache`.
+- Profile picture upload accepts JPEG/PNG/WebP up to 4 MB (`MAX_PROFILE_PICTURE_BYTES`); the size check runs on both the selected file and the cropped blob, because cropping re-encodes and changes the size that is actually sent.
+- The crop modal produces `image/webp` at quality 0.9 with a `.webp` file name (`src/utils/imageCrop.ts`); the API re-encodes to WebP again server-side.
 
 ## Current Style Contract Anchors
 

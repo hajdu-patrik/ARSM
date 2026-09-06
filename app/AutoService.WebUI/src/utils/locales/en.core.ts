@@ -68,7 +68,7 @@ export const enCore = {
     passwordChangeFailed: 'Failed to change password!',
     pictureUploaded: 'Profile picture updated successfully!',
     pictureUploadFailed: 'Failed to upload profile picture!',
-    pictureTooLarge: 'Selected image is too large. Maximum size is {{maxKb}} KB!',
+    pictureTooLarge: 'Selected image is too large. Maximum size is {{maxMb}} MB!',
     pictureRemoved: 'Profile picture removed successfully!',
     pictureRemoveFailed: 'Failed to remove profile picture!',
     pictureCropFailed: 'Failed to process selected image!',

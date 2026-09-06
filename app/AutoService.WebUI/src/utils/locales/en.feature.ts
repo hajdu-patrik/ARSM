@@ -231,7 +231,7 @@ export const enFeature = {
     uploadPicture: 'Upload',
     removePicture: 'Remove',
     uploading: 'Uploading...',
-    pictureHint: 'JPEG, PNG or WebP. Max 512 KB.',
+    pictureHint: 'JPEG, PNG or WebP. Max 4 MB.',
     pictureUploadError: 'Failed to upload picture.',
     pictureRemoveError: 'Failed to remove picture.',
     personalInfo: 'Personal Information',

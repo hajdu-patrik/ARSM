@@ -47,4 +47,7 @@ description: Use when editing API/SQL test suites under tests/ with env-driven c
 - VIN/kW/drivetrain contract (no HP/torque fields).
 - Customer search/list + scheduler lookup (email/plate/name).
 - Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior.
+- Profile picture upload contract: JPEG/PNG/WebP in, always `image/webp` out, 4 MB cap, 422 on magic-byte or decode failure. Image fixtures must be structurally valid (correct chunk CRCs), because the API decodes and re-encodes every upload.
+- `people` profile-picture column contract and the legacy-column-removal post-condition check in `tests/Database/core-schema/core-schema-contracts.sql`.
+- Profile-picture HTTP checks share `tests/API/profile/profile_picture_check_support.py`; the runner still invokes only `profile-picture-upload-check.py`.
 - Scheduler intake + customer details/history split-view E2E expectations.

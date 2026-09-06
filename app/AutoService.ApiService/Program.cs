@@ -10,7 +10,10 @@ using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Profile.Realtime;
+using AutoService.ApiService.Imaging;
+using AutoService.ApiService.Maintenance;
 using AutoService.ApiService.Security;
+using AutoService.ApiService.Storage;
 using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -254,10 +257,19 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
 builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
 builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
+builder.Services.AddSingleton<IProfilePictureProcessor, ImageSharpProfilePictureProcessor>();
+builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCleanupService>();
 
 // Build.
 var app = builder.Build();
+
+// Maintenance entrypoint. The profile-picture verification needs the same DI graph as the API,
+// but must not start the web host or the demo-data seeder, so it short-circuits right after Build().
+if (ProfilePictureStorageMigrator.IsRequested(args))
+{
+    return await ProfilePictureStorageMigrator.RunAsync(app.Services, CancellationToken.None);
+}
 
 /**
  * AllowedHosts validation for production safety.
@@ -349,3 +361,5 @@ app.MapVehicleEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();
+
+return 0;

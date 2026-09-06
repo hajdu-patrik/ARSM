@@ -43,7 +43,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
 
     let croppedBlob: Blob;
     try {
-      croppedBlob = await cropImageToBlob(imageSrc, croppedAreaPixels, 'image/png');
+      croppedBlob = await cropImageToBlob(imageSrc, croppedAreaPixels, 'image/webp');
     } catch {
       showErrorToast('toast.pictureCropFailed');
       return;

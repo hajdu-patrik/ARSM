@@ -68,7 +68,7 @@ export const huCore = {
     passwordChangeFailed: 'Nem sikerült módosítani a jelszót!',
     pictureUploaded: 'Profilkép sikeresen frissítve!',
     pictureUploadFailed: 'Nem sikerült feltölteni a profilképet!',
-    pictureTooLarge: 'A kiválasztott kép túl nagy. A maximális méret {{maxKb}} KB!',
+    pictureTooLarge: 'A kiválasztott kép túl nagy. A maximális méret {{maxMb}} MB!',
     pictureRemoved: 'Profilkép sikeresen eltávolítva!',
     pictureRemoveFailed: 'Nem sikerült eltávolítani a profilképet!',
     pictureCropFailed: 'Nem sikerült feldolgozni a kiválasztott képet!',

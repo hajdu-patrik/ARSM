@@ -32,6 +32,14 @@ description: "Use when editing ApiService API, auth/session, EF model, migration
 - Keep profile picture private browser caching, ETag revalidation, auth/cookie-aware `Vary` headers, and SSE update behavior intact.
 - Keep read-only profile GET/person lookup paths on `AsNoTracking`; profile mutations keep tracked entities.
 
+## Profile Picture Storage
+
+- Profile pictures live exclusively in S3-compatible object storage (`Storage/`: `IProfilePictureStorage`, `S3ProfilePictureStorage` via `AWSSDK.S3`); the `people.ProfilePicture` bytea column was dropped and `People` keeps only `ProfilePictureObjectKey`, `ProfilePictureETag`, `ProfilePictureContentType`.
+- `ObjectStorageSettingsResolver` lets `ObjectStorage__*` environment variables win over `ObjectStorage:*` config, rejects blank/template-placeholder values, and fails fast at startup.
+- `ObjectStorageBucketInitializer` (hosted service) verifies the bucket at startup and creates it only when `ObjectStorage:AutoCreateBucket` is true.
+- Uploads accept JPEG/PNG/WebP up to 4 MB (`MaxProfilePictureBytes`); the endpoint also enforces `MaxProfilePictureRequestBytes` (upload limit + 64 KB) via `RequestSizeLimitAttribute`/`RequestFormLimitsAttribute` so oversized bodies are rejected before buffering.
+- `ImageSharpProfilePictureProcessor` (`Imaging/`) guards a 50-megapixel decode limit, auto-orients, resizes to fit 512x512 without upscaling, and re-encodes to WebP (quality 80) with a SHA-256 ETag; stored objects are always WebP regardless of the accepted upload type.
+
 ## Workflow Rules
 
 - Apply SOLID/OOP boundaries; justify non-trivial pattern/architecture changes.
