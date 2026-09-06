@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
+import { CustomersPage } from './pages/customers.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { MOCK_CUSTOMER_IDS } from './support/test-data';
 import { primeBrowserState } from './support/browser-state';
 
 const tokenStorageKeyPattern = /token|jwt|access|refresh/i;
@@ -33,6 +35,10 @@ test.describe('Auth session security flows', () => {
 
     await page.goto('/customers');
     await expect(page.getByRole('heading', { name: 'Customers' })).toBeVisible();
+    // The heading belongs to the page shell and renders before the customer request settles,
+    // so the refresh and retry are still in flight at that point. Wait for a rendered card,
+    // which only appears once the retried request has succeeded.
+    await expect(new CustomersPage(page).customerCard(MOCK_CUSTOMER_IDS.anna)).toBeVisible();
 
     expect(routeCallLog.filter((routeKey) => routeKey === 'POST /api/auth/refresh').length).toBeGreaterThanOrEqual(1);
     expect(routeCallLog.filter((routeKey) => routeKey === 'GET /api/customers').length).toBeGreaterThanOrEqual(2);
