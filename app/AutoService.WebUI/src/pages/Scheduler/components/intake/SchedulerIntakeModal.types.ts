@@ -1,5 +1,4 @@
 import type { DrivetrainType } from '../../../../types/customers/customers.types';
-import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 
 export type LookupMode = 'licensePlate' | 'name';
 export type LookupState = 'idle' | 'found' | 'not-found' | 'name-results';
@@ -18,28 +17,6 @@ export interface VehicleFormState {
   mileageKm: string;
   enginePowerKw: string;
   drivetrainType: DrivetrainType | '';
-}
-
-export interface SchedulerIntakeFormState {
-  lookupMode: LookupMode;
-  lookupState: LookupState;
-  customerLookup: SchedulerCustomerLookupDto | null;
-  nameLookupResults: SchedulerCustomerLookupDto[];
-  email: string;
-  licensePlateLookup: string;
-  nameLookup: string;
-  customerFirstName: string;
-  customerMiddleName: string;
-  customerLastName: string;
-  customerPhone: string;
-  taskDescription: string;
-  dueDateTime: string;
-  vehicleMode: VehicleMode;
-  existingVehicleId: string;
-  vehicle: VehicleFormState;
-  isSearching: boolean;
-  isSubmitting: boolean;
-  errorKey: string | null;
 }
 
 export const EMPTY_VEHICLE: VehicleFormState = {

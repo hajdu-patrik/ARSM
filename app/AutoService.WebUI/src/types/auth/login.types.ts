@@ -22,15 +22,3 @@ export interface AuthUser {
   personId: number;
   isAdmin: boolean;
 }
-
-/** JWT access token claims structure. */
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  person_id: number;
-  person_type: string;
-  exp: number;
-  iat: number;
-  iss: string;
-  aud: string;
-}

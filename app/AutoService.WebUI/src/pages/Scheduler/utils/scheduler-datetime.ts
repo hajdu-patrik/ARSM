@@ -7,17 +7,6 @@
  * @module scheduler-datetime
  */
 
-/**
- * Formats a datetime string to a localized 24-hour time string (e.g. "14:30").
- */
-export function formatScheduledTime(isoValue: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(isoValue));
-}
-
 /** Formats a Date to a long localized date string (e.g. "Monday, April 14, 2026"). */
 export function formatLongDate(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {

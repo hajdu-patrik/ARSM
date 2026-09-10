@@ -1,50 +1,9 @@
-import { isAxiosError } from 'axios';
 import {
-  extractServerFieldErrors,
-  normalizeServerFieldErrors,
-  type ServerFieldErrors,
-} from '../../../utils/serverValidation';
-import {
-  hasServerFieldErrors,
-  mapVehicleValidationMessageToKey,
   parseVehicleNumericValues,
   isDrivetrainType,
   type VehicleFormState,
 } from '../helpers';
 import type { CreateVehicleRequest, UpdateVehicleRequest } from '../../../types/customers/customers.types';
-
-/**
- * Normalizes server-side vehicle mutation failures and shows localized toast keys.
- * @param error Caught mutation error.
- * @param showErrorToast Error toast presenter.
- * @param getFirstFieldErrorMessage Field-error extractor for multi-field responses.
- */
-export function showVehicleMutationError(
-  error: unknown,
-  showErrorToast: (message: string) => void,
-  getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null,
-) {
-  if (isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-    const responseData = error.response?.data;
-    const mappedFieldErrors = normalizeServerFieldErrors(
-      extractServerFieldErrors(responseData),
-      mapVehicleValidationMessageToKey,
-    );
-
-    if (hasServerFieldErrors(mappedFieldErrors)) {
-      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.vehicleSaveFailed');
-      return;
-    }
-
-    const detailKey = responseData?.detail
-      ? mapVehicleValidationMessageToKey(responseData.detail)
-      : 'customers.errors.vehicleSaveFailed';
-    showErrorToast(detailKey);
-    return;
-  }
-
-  showErrorToast('customers.errors.vehicleSaveFailed');
-}
 
 /**
  * Builds a validated vehicle payload from modal form state.

@@ -213,13 +213,3 @@ export function buildVehicleNumericFieldErrors(values: VehicleNumericValues): Se
  * @param status Appointment status string.
  * @returns Tailwind class name for badge appearance.
  */
-export function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'Completed':
-      return 'bg-arsm-success-soft text-arsm-success-text dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
-    case 'Cancelled':
-      return 'bg-arsm-error-soft text-arsm-error-text dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
-    default:
-      return 'bg-arsm-warning-bg text-arsm-warning-text dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
-  }
-}
