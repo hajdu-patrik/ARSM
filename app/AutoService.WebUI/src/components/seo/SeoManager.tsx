@@ -9,7 +9,10 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   APP_NAME,
+  DEFAULT_SOCIAL_IMAGE_HEIGHT,
   DEFAULT_SOCIAL_IMAGE_PATH,
+  DEFAULT_SOCIAL_IMAGE_TYPE,
+  DEFAULT_SOCIAL_IMAGE_WIDTH,
   NOINDEX_ROBOTS,
   buildAbsoluteUrl,
   buildJsonLdPayload,
@@ -131,6 +134,9 @@ export function SeoManager() {
     getOrCreateMeta('og:locale', 'property').content = locale;
     getOrCreateMeta('og:site_name', 'property').content = APP_NAME;
     getOrCreateMeta('og:image', 'property').content = socialImageUrl;
+    getOrCreateMeta('og:image:type', 'property').content = DEFAULT_SOCIAL_IMAGE_TYPE;
+    getOrCreateMeta('og:image:width', 'property').content = DEFAULT_SOCIAL_IMAGE_WIDTH;
+    getOrCreateMeta('og:image:height', 'property').content = DEFAULT_SOCIAL_IMAGE_HEIGHT;
     getOrCreateMeta('og:image:alt', 'property').content = socialImageAlt;
     getOrCreateMeta('og:url', 'property').content = canonicalUrl;
 

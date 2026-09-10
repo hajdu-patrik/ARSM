@@ -24,6 +24,9 @@ type SeoMetaName =
   | 'og:locale'
   | 'og:site_name'
   | 'og:image'
+  | 'og:image:type'
+  | 'og:image:width'
+  | 'og:image:height'
   | 'og:image:alt'
   | 'og:url'
   | 'twitter:card'
@@ -49,6 +52,12 @@ export const APP_NAME = 'ARSM';
 
 /** Default social preview image path served from public assets. */
 export const DEFAULT_SOCIAL_IMAGE_PATH = '/AppLogoFrameBlack.webp';
+
+/** Intrinsic size and MIME type of the default social image, declared so unfurlers can
+ * render a card without downloading the asset first. Keep in sync with the public file. */
+export const DEFAULT_SOCIAL_IMAGE_TYPE = 'image/webp';
+export const DEFAULT_SOCIAL_IMAGE_WIDTH = '789';
+export const DEFAULT_SOCIAL_IMAGE_HEIGHT = '662';
 
 /** Strict crawler directive used for authenticated application routes. */
 export const NOINDEX_ROBOTS = 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none, max-snippet:0, max-video-preview:0';

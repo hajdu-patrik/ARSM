@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # ARSM is an authenticated SPA. Route-level crawl/index directives are enforced via SEO meta tags.
-Sitemap: /sitemap.xml
+# No Sitemap directive: it requires an absolute URL, and sitemap.xml stays empty until public routes exist.
