@@ -1,0 +1,118 @@
+# ─────────────────────────────────────────────────────────────
+# CATALOG - AUTHZ (PARTS + LABOR TYPES, MechanicOnly POLICY)
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SomePartId = 1
+@SomeLaborTypeId = 1
+
+# COVERAGE GAP (do not fill with a fabricated token):
+# The F1 brief asks every route below to also prove that a request carrying a
+# valid CUSTOMER token gets 403 (authenticated but not authorized), not 401.
+# That case cannot be produced against the live API today: Customer person
+# records never receive an IdentityUserId (DemoDataInitializer.cs: "Customers
+# are passive data records - no login account, no IdentityUserId") and
+# POST /api/auth/register only accepts personType "Mechanic"
+# (AuthEndpoints.Register.cs: "Registration is only available for
+# mechanics."). No endpoint issues a session for a person whose person_type
+# claim resolves to "customer", so MechanicOnly (Program.cs:
+# RequireClaim("person_type","mechanic")) can only currently be observed
+# distinguishing "authenticated" from "unauthenticated" below, never
+# "authenticated non-mechanic" from "authenticated mechanic". See the test
+# agent's report for the full discrepancy writeup instead of a fake token.
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Catalog] Logout before unauthenticated checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Catalog] Unauthenticated list parts (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts
+
+###
+
+### [Negative][Catalog] Unauthenticated get part by id (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{SomePartId}}
+
+###
+
+### [Negative][Catalog] Unauthenticated create part (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "UNAUTH-PART",
+  "name": "Unauthenticated",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][Catalog] Unauthenticated update part (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{SomePartId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "UNAUTH-PART",
+  "name": "Unauthenticated",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][Catalog] Unauthenticated delete part (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{SomePartId}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Catalog] Unauthenticated list labor types (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+
+###
+
+### [Negative][Catalog] Unauthenticated get labor type by id (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{SomeLaborTypeId}}
+
+###
+
+### [Negative][Catalog] Unauthenticated create labor type (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "UNAUTH-LT",
+  "name": "Unauthenticated",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][Catalog] Unauthenticated update labor type (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{SomeLaborTypeId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "UNAUTH-LT",
+  "name": "Unauthenticated",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][Catalog] Unauthenticated delete labor type (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{SomeLaborTypeId}}
+Origin: {{WebUI_Origin}}

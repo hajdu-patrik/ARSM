@@ -1,0 +1,174 @@
+# ─────────────────────────────────────────────────────────────
+# LABOR TYPES - VALIDATION AND CONFLICTS
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@ValidLaborTypeCode = ZZV{{RunId}}A
+@SeedLaborTypeCode = OLAJCSERE
+@LowercaseSeedLaborTypeCode = olajcsere
+@NonExistentLaborTypeId = 999999999
+@OverLengthCode = C9999999999999999999999999999999999999999
+@OverLengthName = N999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][LaborTypes] Login as admin for validation tests
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with missing code (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "",
+  "name": "Valid Name",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with missing name (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with code over 40 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{OverLengthCode}}",
+  "name": "Valid Name",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with name over 120 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "{{OverLengthName}}",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with negative hourly net rate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "Valid Name",
+  "hourlyNetRate": -1,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with hourly net rate over 100000000 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "Valid Name",
+  "hourlyNetRate": 100000000.01,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with unsupported VAT rate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "Valid Name",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 10
+}
+
+###
+
+### [Negative][LaborTypes] Create labor type with duplicate code matching seeded key (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{SeedLaborTypeCode}}",
+  "name": "Duplicate Check",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Lowercase code normalizes and collides with existing uppercase key (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{LowercaseSeedLaborTypeCode}}",
+  "name": "Duplicate Lowercase Check",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Update non-existent labor type (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentLaborTypeId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{ValidLaborTypeCode}}",
+  "name": "Ghost Update",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Negative][LaborTypes] Delete non-existent labor type (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentLaborTypeId}}
+Origin: {{WebUI_Origin}}

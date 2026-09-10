@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────
+# LABOR TYPES - CRUD HAPPY PATH
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@NewLaborTypeCode = ZZT{{RunId}}A
+@LowercaseLaborTypeCode = zzt{{RunId}}b
+@RoundingLaborTypeCode = ZZT{{RunId}}C
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][LaborTypes] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][LaborTypes] List labor types (200 expected, ordered by code ascending)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+
+###
+
+### [Positive][LaborTypes] Admin creates labor type (201 expected, grossHourlyRate = 8000.00 * 1.27 = 10160.00)
+# @name createdLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{NewLaborTypeCode}}",
+  "name": "Catalog Happy Labor",
+  "hourlyNetRate": 8000.00,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Positive][LaborTypes] Get created labor type by id (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+
+###
+
+### [Positive][LaborTypes] Create with lowercase code normalizes to uppercase (201 expected, code echoes uppercase)
+# @name lowercaseLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{LowercaseLaborTypeCode}}",
+  "name": "Catalog Lowercase Labor",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 0
+}
+
+###
+
+### [Positive][LaborTypes] Create demonstrates gross rounded away from zero at a monetary midpoint (201 expected, grossHourlyRate = 10.10 * 1.05 = 10.61)
+# @name roundingLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{RoundingLaborTypeCode}}",
+  "name": "Catalog Rounding Labor",
+  "hourlyNetRate": 10.10,
+  "vatRatePercent": 5
+}
+
+###
+
+### [Positive][LaborTypes] Admin updates created labor type (204 expected, grossHourlyRate recomputed to 9000.00 * 1.18 = 10620.00)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "{{NewLaborTypeCode}}",
+  "name": "Catalog Happy Labor Updated",
+  "hourlyNetRate": 9000.00,
+  "vatRatePercent": 18
+}
+
+###
+
+### [Positive][LaborTypes] Admin deletes created labor type (204 expected, no soft delete/no in-use blocking)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][LaborTypes] Deleted labor type cannot be fetched (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+
+###
+
+### [Negative][LaborTypes] Re-delete deleted labor type returns not found (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Cleanup][LaborTypes] Delete lowercase-normalization fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{lowercaseLaborType.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Cleanup][LaborTypes] Delete rounding-demo fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{roundingLaborType.id}}
+Origin: {{WebUI_Origin}}

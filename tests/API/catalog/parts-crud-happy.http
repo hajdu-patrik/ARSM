@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────
+# PARTS - CRUD HAPPY PATH
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@NewPartNumber = ZZT{{RunId}}A
+@LowercasePartNumber = zzt{{RunId}}b
+@RoundingPartNumber = ZZT{{RunId}}C
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Positive][Parts] List parts (200 expected, ordered by partNumber ascending)
+GET {{AutoService_ApiService_HostAddress}}/api/parts
+
+###
+
+### [Positive][Parts] Admin creates part (201 expected, grossUnitPrice = 4500.00 * 1.27 = 5715.00)
+# @name createdPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{NewPartNumber}}",
+  "name": "Catalog Happy Part",
+  "netUnitPrice": 4500.00,
+  "vatRatePercent": 27
+}
+
+###
+
+### [Positive][Parts] Get created part by id (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+
+###
+
+### [Positive][Parts] Create with lowercase part number normalizes to uppercase (201 expected, partNumber echoes uppercase)
+# @name lowercasePart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{LowercasePartNumber}}",
+  "name": "Catalog Lowercase Part",
+  "netUnitPrice": 100,
+  "vatRatePercent": 0
+}
+
+###
+
+### [Positive][Parts] Create demonstrates gross rounded away from zero at a monetary midpoint (201 expected, grossUnitPrice = 10.10 * 1.05 = 10.61)
+# @name roundingPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{RoundingPartNumber}}",
+  "name": "Catalog Rounding Part",
+  "netUnitPrice": 10.10,
+  "vatRatePercent": 5
+}
+
+###
+
+### [Positive][Parts] Admin updates created part (204 expected, grossUnitPrice recomputed to 5000.00 * 1.18 = 5900.00)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{NewPartNumber}}",
+  "name": "Catalog Happy Part Updated",
+  "netUnitPrice": 5000.00,
+  "vatRatePercent": 18
+}
+
+###
+
+### [Positive][Parts] Admin deletes created part (204 expected, no soft delete/no in-use blocking)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Parts] Deleted part cannot be fetched (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+
+###
+
+### [Negative][Parts] Re-delete deleted part returns not found (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Cleanup][Parts] Delete lowercase-normalization fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{lowercasePart.id}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Cleanup][Parts] Delete rounding-demo fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{roundingPart.id}}
+Origin: {{WebUI_Origin}}
