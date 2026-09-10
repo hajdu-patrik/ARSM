@@ -27,10 +27,6 @@ export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full overflow-hidd
 /** Width wrappers used to keep grouped controls responsive at 320px. */
 export const selectWrapperClass = 'min-w-0 max-w-full overflow-hidden';
 
-export const groupedControlWidthClass = 'min-w-0 basis-full max-[350px]:basis-full sm:basis-auto sm:min-w-[7.75rem] sm:max-w-[9.25rem]';
-
-export const groupedControlWideWidthClass = 'min-w-0 basis-full max-[350px]:basis-full sm:basis-auto sm:min-w-[8.5rem] sm:max-w-[10rem]';
-
 export const formFieldGroupClass = 'min-w-0 max-w-full';
 
 export const formFieldGridClass = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2';

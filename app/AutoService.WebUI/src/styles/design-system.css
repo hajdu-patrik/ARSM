@@ -108,7 +108,6 @@
   }
 
   .arsm-control-row,
-  .arsm-button-group,
   .arsm-modal-footer {
     display: flex;
     min-width: 0;
@@ -122,17 +121,8 @@
     justify-content: flex-start;
   }
 
-  .arsm-button-group,
   .arsm-modal-footer {
     justify-content: flex-end;
-  }
-
-  .arsm-control-panel {
-    display: flex;
-    min-width: 0;
-    max-width: 100%;
-    flex-direction: column;
-    gap: 0.75rem;
   }
 
   .arsm-equal-control-group {
@@ -241,7 +231,6 @@
 @media (max-width: 350px) {
   .arsm-action-cluster > *,
   .arsm-control-row > *,
-  .arsm-button-group > *,
   .arsm-modal-footer > *,
   .arsm-equal-control-group > * {
     width: 100%;

@@ -42,16 +42,6 @@
   }
 }
 
-/* Skeleton loading shimmer sweep */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
 /* General fade-in from below (used via .fade-in-up) */
 @keyframes fade-in-up {
   from {

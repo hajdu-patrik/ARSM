@@ -95,28 +95,6 @@
     animation: toast-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
-  /* Skeleton placeholder — applied to loading placeholder blocks */
-  .shimmer-skeleton {
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 6%, transparent) 25%,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 14%, transparent) 50%,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 6%, transparent) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.8s ease-in-out infinite;
-  }
-
-  .dark .shimmer-skeleton {
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 4%, transparent) 25%,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 10%, transparent) 50%,
-      color-mix(in srgb, var(--color-arsm-focus-ring) 4%, transparent) 75%
-    );
-    background-size: 200% 100%;
-  }
-
   /* Entrance animation for banners, error blocks, etc. */
   .fade-in-up {
     animation: fade-in-up 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -129,8 +107,7 @@
   @media (prefers-reduced-motion: reduce) {
     .toast-enter,
     .fade-in-up,
-    .arsm-modal-dialog,
-    .shimmer-skeleton {
+    .arsm-modal-dialog {
       animation: none;
     }
   }

@@ -2,10 +2,8 @@
 
 /** Shared layout wrappers for grouped control rows and modal/footer action zones. */
 export const controlRowClass = 'arsm-control-row';
-export const controlPanelClass = 'arsm-control-panel';
 export const controlPanelFooterClass = 'arsm-modal-footer';
 export const equalWidthControlGroupClass = 'arsm-equal-control-group';
-export const buttonGroupClass = 'arsm-button-group';
 
 /** Scheduler details surfaces used in appointment side panels and info rows. */
 export const schedulerDetailPanelClass = 'rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65';
@@ -27,7 +25,6 @@ export const warningFeedbackToneClass = 'border-arsm-warning-border/60 bg-arsm-w
 export const warningStatusPillClass = `inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${warningFeedbackToneClass}`;
 export const successNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} border-arsm-success-border/60 bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark`;
 export const warningNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} ${warningFeedbackToneClass}`;
-export const errorNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${feedbackFrameClass} border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light`;
 
 /** Compact list/detail building blocks for Customers history/details presentation. */
 export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2';
