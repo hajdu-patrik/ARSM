@@ -30,7 +30,7 @@ public static partial class AdminEndpoints
             .AsNoTracking()
             .OrderBy(m => m.Name.LastName)
             .ThenBy(m => m.Name.FirstName)
-            .Select(m => new MechanicListItem(
+            .Select(m => new MechanicListItemDto(
                 m.Id,
                 m.Name.FirstName,
                 m.Name.MiddleName,

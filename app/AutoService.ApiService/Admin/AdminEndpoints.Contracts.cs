@@ -2,7 +2,7 @@ namespace AutoService.ApiService.Admin;
 
 public static partial class AdminEndpoints
 {
-    internal sealed record MechanicListItem(
+    internal sealed record MechanicListItemDto(
         int PersonId,
         string FirstName,
         string? MiddleName,

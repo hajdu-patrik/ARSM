@@ -2,6 +2,8 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    internal sealed record ErrorCodeResponse(string Code);
+
     /** Customer summary DTO with minimal identification details. */
     internal sealed record CustomerSummaryDto(
         int Id,

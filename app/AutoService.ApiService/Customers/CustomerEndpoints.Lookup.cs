@@ -185,27 +185,4 @@ public static partial class CustomerEndpoints
         vehicle.MileageKm,
         vehicle.EnginePowerKw,
         vehicle.DrivetrainType.ToString());
-
-    /** Scheduler customer lookup payload with optional matched vehicle context. */
-    private sealed record SchedulerCustomerLookupDto(
-        int Id,
-        string FirstName,
-        string? MiddleName,
-        string LastName,
-        string Email,
-        string? PhoneNumber,
-        IReadOnlyList<SchedulerVehicleLookupDto> Vehicles,
-        int? MatchedVehicleId = null);
-
-    /** Vehicle summary payload used by scheduler customer lookup responses. */
-    private sealed record SchedulerVehicleLookupDto(
-        int Id,
-        string LicensePlate,
-        string Vin,
-        string Brand,
-        string Model,
-        int Year,
-        int MileageKm,
-        int EnginePowerKw,
-        string DrivetrainType);
 }

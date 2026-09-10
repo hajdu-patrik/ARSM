@@ -13,7 +13,7 @@ public static partial class AdminEndpoints
         var group = endpoints.MapGroup("/api/admin").WithTags("Admin").RequireAuthorization("AdminOnly");
 
         group.MapGet("/mechanics", ListMechanicsAsync)
-            .Produces<List<MechanicListItem>>(StatusCodes.Status200OK)
+            .Produces<List<MechanicListItemDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 

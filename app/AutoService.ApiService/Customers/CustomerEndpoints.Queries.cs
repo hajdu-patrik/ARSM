@@ -67,22 +67,4 @@ public static partial class CustomerEndpoints
 
         return Results.Ok(dto);
     }
-
-    // Extended DTO for single-customer retrieval (includes vehicles).
-    private sealed record CustomerWithVehiclesDto(
-        int Id,
-        string FirstName,
-        string? MiddleName,
-        string LastName,
-        string Email,
-        string? PhoneNumber,
-        IReadOnlyList<VehicleSummaryDto> Vehicles);
-
-    private sealed record VehicleSummaryDto(
-        int Id,
-        string LicensePlate,
-        string Brand,
-        string Model,
-        int Year);
-
 }

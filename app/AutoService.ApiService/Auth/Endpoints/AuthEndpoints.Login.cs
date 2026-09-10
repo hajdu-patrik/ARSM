@@ -63,7 +63,7 @@ public static partial class AuthEndpoints
                 logger.LogWarning("Login rejected due to invalid email format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    [nameof(request.Email)] = ["Email must be a valid email address."]
+                    [nameof(request.Email)] = [ValidationMessages.InvalidEmail]
                 });
             }
 

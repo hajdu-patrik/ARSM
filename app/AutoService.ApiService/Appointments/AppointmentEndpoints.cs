@@ -2,8 +2,6 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    private sealed record ErrorCodeResponse(string Code);
-
     /**
      * Maps appointment and customer-appointment endpoints to the route builder.
      *
