@@ -33,18 +33,11 @@ export const compactDividerLineClass = 'h-px flex-1 bg-arsm-border dark:bg-arsm-
 export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
 export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
 
-/** Shared marketing/placeholder surface classes used by "coming soon" cards. */
-export const comingSoonCardClass = 'arsm-coming-soon-card fade-in-up';
-export const comingSoonSheenClass = 'arsm-coming-soon-sheen';
-export const comingSoonIconBadgeClass = 'arsm-coming-soon-icon-badge';
-export const comingSoonDividerClass = 'arsm-coming-soon-divider';
-
 /** Page-shell and section wrappers used across top-level route pages. */
 export const cardClass = 'arsm-card-surface';
 export const insetSurfaceClass = 'arsm-surface-inset';
 export const pageShellClass = 'arsm-page-shell';
 export const pageShellNarrowClass = 'arsm-page-shell-narrow';
-export const pageShellCompactClass = 'arsm-page-shell-compact';
 export const centeredAmbientOrbLayoutClass = 'pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full';
 export const pageHeaderClass = 'arsm-page-header';
 export const pageHeaderWithSubtitleClass = 'arsm-page-header-with-subtitle';

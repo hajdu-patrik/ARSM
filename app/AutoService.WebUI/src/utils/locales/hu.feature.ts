@@ -299,16 +299,6 @@ export const huFeature = {
       passwordMissingSpecial: 'A jelszónak tartalmaznia kell legalább egy speciális karaktert.',
     },
   },
-  tools: {
-    pageTitle: 'Eszközök',
-    comingSoonTitle: 'Eszközkezelés hamarosan',
-    comingSoonDescription: 'Ez a rész fejlesztés alatt áll. Az eszközkezelési funkciók egy jövőbeli frissítésben lesznek elérhetők.',
-  },
-  inventory: {
-    pageTitle: 'Készlet',
-    comingSoonTitle: 'Készletkezelés hamarosan',
-    comingSoonDescription: 'Ez a rész fejlesztés alatt áll. A készletkezelési funkciók egy jövőbeli frissítésben lesznek elérhetők.',
-  },
   notFound: {
     pageNotFound: 'Oldal nem található',
     imageAlt: 'AutoService 404 illusztráció',

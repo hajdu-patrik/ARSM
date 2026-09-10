@@ -22,8 +22,5 @@ export const inlineStatusTitleRowClass = 'flex min-w-0 items-center gap-2 font-s
 export const inlineSectionTitleClass = 'inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark';
 export const mutedSectionIconClass = 'h-5 w-5 shrink-0 text-arsm-muted dark:text-arsm-muted-dark';
 
-/** Shared loading + placeholder icon typography used in reusable "coming soon" surfaces. */
+/** Shared loading spinner typography used in reusable async-state surfaces. */
 export const loadingSpinnerClass = 'animate-spin motion-reduce:animate-none rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark';
-export const comingSoonIconClass = 'h-9 w-9 text-arsm-accent-vivid dark:text-arsm-accent';
-export const comingSoonTitleClass = 'mb-2 text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark';
-export const comingSoonDescriptionClass = 'mx-auto max-w-sm text-sm leading-relaxed text-arsm-muted dark:text-arsm-muted-dark';

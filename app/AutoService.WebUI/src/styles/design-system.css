@@ -16,13 +16,6 @@
     max-width: 48rem;
   }
 
-  .arsm-page-shell-compact {
-    margin-inline: auto;
-    width: 100%;
-    max-width: 42rem;
-    padding: 1.5rem 1rem;
-  }
-
   .arsm-page-header {
     margin-bottom: 1rem;
   }
@@ -167,65 +160,6 @@
     background-color: var(--color-arsm-toggle-bg-dark);
     color: var(--color-arsm-primary-dark);
   }
-
-  .arsm-coming-soon-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 1rem;
-    border: 1px solid var(--color-arsm-border);
-    background-color: var(--color-arsm-input);
-    padding: 2.5rem;
-    text-align: center;
-  }
-
-  .dark .arsm-coming-soon-card {
-    border-color: var(--color-arsm-border-dark);
-    background-color: var(--color-arsm-card-dark);
-  }
-
-  .arsm-coming-soon-sheen {
-    pointer-events: none;
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: 6rem;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 40%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-coming-soon-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 8%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-coming-soon-icon-badge {
-    margin-inline: auto;
-    margin-bottom: 1.25rem;
-    display: flex;
-    height: 5rem;
-    width: 5rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--color-arsm-accent) 25%, transparent);
-    background-color: var(--color-arsm-accent-wash);
-  }
-
-  .dark .arsm-coming-soon-icon-badge {
-    border-color: color-mix(in srgb, var(--color-arsm-accent-dark) 30%, transparent);
-    background-color: var(--color-arsm-hover-dark);
-  }
-
-  .arsm-coming-soon-divider {
-    margin-inline: auto;
-    margin-top: 1.5rem;
-    height: 0.25rem;
-    width: 4rem;
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--color-arsm-accent) 30%, transparent);
-  }
-
-  .dark .arsm-coming-soon-divider {
-    background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 30%, transparent);
-  }
 }
 
 @media (max-width: 350px) {
@@ -239,23 +173,17 @@
 }
 
 @media (max-width: 320px) {
-  .arsm-page-shell,
-  .arsm-page-shell-compact {
+  .arsm-page-shell {
     padding: 1.25rem 0.75rem;
   }
 
   .arsm-card-surface {
     padding: 1rem;
   }
-
-  .arsm-coming-soon-card {
-    padding: 1.5rem;
-  }
 }
 
 @media (min-width: 640px) {
-  .arsm-page-shell,
-  .arsm-page-shell-compact {
+  .arsm-page-shell {
     padding: 2rem 1.5rem;
   }
 

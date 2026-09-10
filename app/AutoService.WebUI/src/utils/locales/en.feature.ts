@@ -299,16 +299,6 @@ export const enFeature = {
       passwordMissingSpecial: 'Password must contain at least one special character.',
     },
   },
-  tools: {
-    pageTitle: 'Tools',
-    comingSoonTitle: 'Tools Management Coming Soon',
-    comingSoonDescription: 'This section is under development. Tools management features will be available in a future update.',
-  },
-  inventory: {
-    pageTitle: 'Inventory',
-    comingSoonTitle: 'Inventory Management Coming Soon',
-    comingSoonDescription: 'This section is under development. Inventory management features will be available in a future update.',
-  },
   notFound: {
     pageNotFound: 'Page Not Found',
     imageAlt: 'AutoService 404 illustration',
