@@ -77,6 +77,9 @@ public static partial class DemoDataInitializer
 
         await NormalizePersistedDataAsync(db, cancellationToken);
 
+        // Runs on every startup, independent of the mechanic/customer dataset state below.
+        await EnsurePricingCatalogSeededAsync(db, cancellationToken);
+
         if (hasMechanics || hasCustomers || hasVehicles || hasAppointments || hasIdentityUsers)
         {
             await EnsureDemoMechanicPasswordsAsync(userManager, mechanicPassword);

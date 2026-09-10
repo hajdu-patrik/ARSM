@@ -11,7 +11,7 @@ namespace AutoService.ApiService.Data;
 /**
  * Entity Framework Core DbContext for the AutoService domain.
  */
-public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
+public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
     // Entity sets.
     public DbSet<People> People => Set<People>();
@@ -21,7 +21,8 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
     public DbSet<RevokedJwtToken> RevokedJwtTokens => Set<RevokedJwtToken>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
-
+    public DbSet<Part> Parts => Set<Part>();
+    public DbSet<LaborType> LaborTypes => Set<LaborType>();
 
     /** Configures entity mappings, constraints, and relationships. */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -199,6 +200,8 @@ public sealed class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> 
                         j.HasKey("AppointmentId", "MechanicId");
                     });
         });
+
+        ConfigurePricingModel(modelBuilder);
     }
 
     /**
