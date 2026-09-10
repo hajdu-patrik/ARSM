@@ -1,9 +1,9 @@
 /**
- * React Error Boundary with i18n-aware fallback UI.
+ * React Error Boundary that falls back to the server-error page.
  *
- * Catches unhandled errors in the component tree and displays a
- * localized error message with a reload button. Logs errors to
- * console in development mode only. Wraps the main app router.
+ * Catches unhandled errors in the component tree and renders the
+ * localized ServerError page. Logs errors to console in development
+ * mode only. Wraps the main app router.
  * @module components/common/ErrorBoundary
  */
 
