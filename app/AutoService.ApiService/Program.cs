@@ -3,6 +3,7 @@ using AutoService.ApiService.Appointments;
 using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
+using AutoService.ApiService.Catalog;
 using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
@@ -254,6 +255,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("MechanicOnly", policy => policy.RequireClaim("person_type", "mechanic"));
 });
 builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
 builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
@@ -359,6 +361,8 @@ app.MapProfileEndpoints();
 app.MapAdminEndpoints();
 app.MapCustomerEndpoints();
 app.MapVehicleEndpoints();
+app.MapPartEndpoints();
+app.MapLaborTypeEndpoints();
 
 app.MapDefaultEndpoints();
 
