@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Clock3, LogOut, UserPlus } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
+  compactHeaderRowClass,
   compactItemTitleTextClass,
   contentCardFrameClass,
   mutedBodyTextClass,
@@ -90,7 +91,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
   const cardContent: ReactNode = (
     <div className={cardContentClassName}>
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 pb-1">
+      <div className={`${compactHeaderRowClass} pb-1`}>
         <StatusBadge status={appointment.status} />
         <span className={`truncate ${mutedMetaTextClass}`}>{scheduleDateLabel}</span>
       </div>

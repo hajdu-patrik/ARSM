@@ -51,6 +51,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 							type="button"
 							onClick={onClearSearch}
 							title={t('customers.clearSearch')}
+							aria-label={t('customers.clearSearch')}
 							className={searchClearButtonClass}
 						>
 							<X className="h-4 w-4" aria-hidden="true" />
