@@ -2,8 +2,8 @@
 /**
  * ARSM UserPromptSubmit hook.
  *
- * Re-injects the CLAUDE.md "Mandatory Workflow" contract on every user prompt so the
- * orchestrator-first routing cannot drift out of attention during a long session.
+ * Re-injects the CLAUDE.md workflow contract on every user prompt so the ask-first rule and
+ * the routing chain behind it cannot drift out of attention during a long session.
  * CLAUDE.md itself is only loaded once at session start; this keeps the contract present
  * on every turn instead.
  *
@@ -12,9 +12,17 @@
  */
 
 const REMINDER = [
-  'ARSM MANDATORY WORKFLOW (root CLAUDE.md). This governs every request in this repository.',
-  'Evaluate the task against these steps first and say which ones apply before acting.',
+  'ARSM WORKFLOW CONTRACT (root CLAUDE.md). This governs every request in this repository.',
   '',
+  'ASK FIRST. At the start of every task, ask the user whether the agent workflow is needed',
+  'for it, and wait for the answer before acting. Ask once per task, not on every follow-up',
+  'prompt of the same task. Then act on the answer:',
+  '  - workflow requested -> run the routed chain below',
+  '  - workflow declined -> do the work directly, without `orchestrator` and without the',
+  '    specialist agents',
+  '  - partial answer -> run exactly the steps the user named and nothing else',
+  '',
+  'Routed chain, only when the user asks for it:',
   '1. Start with the `orchestrator` agent. It is plan-only and owns decomposition and routing.',
   '2. Route implementation from the orchestrator plan:',
   '   - backend/platform changes (ApiService, AppHost, ServiceDefaults) -> `backend`',
@@ -29,6 +37,8 @@ const REMINDER = [
   '   - backend: `dotnet list package --vulnerable --include-transitive`',
   '7. Heavy test agents only when their gate matches (`http-endpoint-test`,',
   '   `sql-database-test`, `e2e-playwright-test`) or on explicit request.',
+  '',
+  'These always apply, workflow or not:',
   '',
   'Decision ownership: the user owns all product, architecture, UX, policy, data-contract',
   'and behavior decisions. If a choice is not unambiguous from the prompt, repo instructions,',

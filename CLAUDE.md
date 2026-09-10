@@ -20,18 +20,27 @@
   forbidden list under the same cost rule before using it here, and correct any model id that a
   newer release has superseded.
 
-## Mandatory Workflow
+## Workflow (Ask First)
 
-1. Start with `orchestrator`.
-2. Route implementation:
-    - backend/platform changes -> `backend`
-    - frontend/UI changes, including responsiveness, interaction, or style-policy changes -> `frontend` + `ui-ux-style-profile` (mandatory pair)
-    - schema-only delta -> optional `migration`
-3. Run `validate`.
-4. Run `docs-sync`.
-5. Run `coding-principles` for source changes.
-6. Run security remediation for code changes.
-7. Run heavy test agents only when gate conditions match.
+- At the start of every task, ask the user whether the agent workflow is needed for it, and wait
+  for the answer before acting. Ask once per task, not on every follow-up prompt of the same task.
+- Act on the answer:
+    - workflow requested -> run the routed chain below
+    - workflow declined -> do the work directly, without `orchestrator` and without the specialist agents
+    - partial answer -> run exactly the steps the user named and nothing else
+- Routed chain, when the user asks for it:
+    1. Start with `orchestrator`.
+    2. Route implementation:
+        - backend/platform changes -> `backend`
+        - frontend/UI changes, including responsiveness, interaction, or style-policy changes -> `frontend` + `ui-ux-style-profile` (mandatory pair)
+        - schema-only delta -> optional `migration`
+    3. Run `validate`.
+    4. Run `docs-sync`.
+    5. Run `coding-principles` for source changes.
+    6. Run security remediation for code changes.
+    7. Run heavy test agents only when gate conditions match.
+- Skipping the workflow never waives Decision Ownership, Security and Secrets, Engineering
+  Guardrails, Core Invariants, or Version Control Attribution. Those apply to every task.
 
 ## Decision Ownership
 
