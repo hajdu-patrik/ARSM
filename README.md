@@ -50,7 +50,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 ### Prerequisites
 
 - .NET 10 SDK
-- Node.js 20+ with npm
+- Node.js 24+ with npm (CI pins Node 24)
 - Python 3.11+ for the local test runner
 - Docker Desktop running locally (required for the PostgreSQL and MinIO containers via AppHost)
 
@@ -175,7 +175,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - WebUI local env values belong in `app/AutoService.WebUI/.env.development` (template: `app/AutoService.WebUI/.env.development.template`).
 - API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
   - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
-- Playwright runtime secrets belong in `.secrets` at repository root (gitignored); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
+- Playwright runtime secrets and the read-only SQL connection string belong in `.secrets` at repository root (gitignored; template: `.secrets.example`); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
 - MCP templates stay portable placeholder files; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
@@ -185,7 +185,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
 - Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
 - The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
-- The production WebUI static host should also enforce cache headers. Use [docs/deployment/nginx-webui-cache.conf](docs/deployment/nginx-webui-cache.conf) as the nginx reference: `index.html` is not cached, Vite `assets/` files are cached for 30 days with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and manifest/sitemap/robots-style files use a shorter one-day cache.
+- The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files are cached for 30 days with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and manifest/sitemap/robots-style files use a shorter one-day cache.
 
 ## Contributor Notes (AI Workflow)
 
