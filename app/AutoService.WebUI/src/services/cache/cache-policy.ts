@@ -27,3 +27,6 @@ export const CUSTOMER_REGISTRY_STALE_TIME_MS = MINUTE_MS;
 
 /** Stale time for customer and vehicle appointment-history reads. */
 export const CUSTOMER_HISTORY_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for part and labor-type catalog reads. */
+export const CATALOG_STALE_TIME_MS = MINUTE_MS;

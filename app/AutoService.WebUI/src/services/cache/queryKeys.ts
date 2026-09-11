@@ -77,4 +77,9 @@ export const queryKeys = {
       vehicleId,
     ] as const,
   },
+  catalog: {
+    root: (scope: AuthQueryScope) => [...scope, 'catalog'] as const,
+    parts: (scope: AuthQueryScope) => [...scope, 'catalog', 'parts'] as const,
+    laborTypes: (scope: AuthQueryScope) => [...scope, 'catalog', 'labor-types'] as const,
+  },
 };
