@@ -28,3 +28,13 @@ export const PROTECTED_DEMO_MECHANIC_EMAILS = new Set([
   'peter.nagy@example.com',
   'mate.szabo@example.com',
 ]);
+
+export const MOCK_PART_IDS = {
+  timingBelt: 3001,
+  brakePad: 3002,
+} as const;
+
+export const MOCK_LABOR_TYPE_IDS = {
+  diagnostics: 4001,
+  oilChange: 4002,
+} as const;

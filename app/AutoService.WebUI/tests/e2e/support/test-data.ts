@@ -2,13 +2,17 @@ import type { AppointmentDto, SchedulerCustomerLookupDto } from '../../../src/ty
 import type { CustomerListItem, VehicleDetailDto } from '../../../src/types/customers/customers.types';
 import type { MechanicListItem } from '../../../src/services/admin/admin.service';
 import type { ProfileData } from '../../../src/types/profile/profile.types';
+import type { LaborTypeDto, PartDto } from '../../../src/types/catalog/catalog.types';
 import { MOCK_MECHANIC_IDS } from './test-data.constants';
 import { createFixtureState } from './test-data.fixtures';
+import { createCatalogFixtureState } from './test-data.catalog.fixtures';
 
 export {
   MOCK_APPOINTMENT_IDS,
   MOCK_CUSTOMER_IDS,
+  MOCK_LABOR_TYPE_IDS,
   MOCK_MECHANIC_IDS,
+  MOCK_PART_IDS,
   MOCK_VEHICLE_IDS,
   PROTECTED_DEMO_MECHANIC_EMAILS,
 } from './test-data.constants';
@@ -22,16 +26,24 @@ export interface MockApiState {
   readonly appointments: AppointmentDto[];
   readonly profile: ProfileData;
   readonly mechanics: MechanicListItem[];
+  readonly parts: PartDto[];
+  readonly laborTypes: LaborTypeDto[];
   nextVehicleId: number;
   nextAppointmentId: number;
   nextMechanicPersonId: number;
+  nextPartId: number;
+  nextLaborTypeId: number;
+  /** One-shot override consumed by the next mocked part/labor-type create or update response. */
+  catalogGrossOverride: number | null;
 }
 
 export function createMockApiState(profileEmail: string): MockApiState {
   const fixtures = createFixtureState();
+  const catalogFixtures = createCatalogFixtureState();
 
   return {
     ...fixtures,
+    ...catalogFixtures,
     appointments: [],
     profile: {
       personId: MOCK_MECHANIC_IDS.gabor,
@@ -46,5 +58,8 @@ export function createMockApiState(profileEmail: string): MockApiState {
     nextVehicleId: 2000,
     nextAppointmentId: 6000,
     nextMechanicPersonId: 9000,
+    nextPartId: 3100,
+    nextLaborTypeId: 4100,
+    catalogGrossOverride: null,
   };
 }
