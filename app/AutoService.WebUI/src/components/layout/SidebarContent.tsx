@@ -5,7 +5,7 @@
 import { memo, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
-import { CalendarDays, ChevronsLeft, LogOut, Settings, Shield, Users } from 'lucide-react';
+import { CalendarDays, ChevronsLeft, LogOut, Package, Settings, Shield, Users } from 'lucide-react';
 import { compactListPrimaryTextClass, compactListSecondaryTextClass, sidebarIconSlotClass } from '../../utils/formStyles';
 
 export interface NavItem {
@@ -53,6 +53,7 @@ interface SidebarProfileSummaryProps {
 const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
   { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
   { key: 'customers', labelKey: 'nav.customers', icon: Users, path: '/customers' },
+  { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
 ];
 
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };

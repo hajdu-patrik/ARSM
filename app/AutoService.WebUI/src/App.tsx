@@ -23,6 +23,7 @@ import './utils/i18n';
 const Login = lazy(() => import('./pages/Login/page').then((module) => ({ default: module.Login })));
 const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then((module) => ({ default: module.SchedulerPage })));
 const CustomersPage = lazy(() => import('./pages/Customers/page').then((module) => ({ default: module.CustomersPage })));
+const InventoryPage = lazy(() => import('./pages/Inventory/page').then((module) => ({ default: module.InventoryPage })));
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
 const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then((module) => ({ default: module.RegisterMechanicPage })));
 const SettingsPage = lazy(() => import('./pages/Settings/page').then((module) => ({ default: module.SettingsPage })));
@@ -44,6 +45,14 @@ function App() {
     <PrivateRoute>
       <SidebarLayout>
         <CustomersPage />
+      </SidebarLayout>
+    </PrivateRoute>
+  );
+
+  const inventoryElement = (
+    <PrivateRoute>
+      <SidebarLayout>
+        <InventoryPage />
       </SidebarLayout>
     </PrivateRoute>
   );
@@ -118,6 +127,7 @@ function App() {
               <Route path="/scheduler" element={<Navigate to="/" replace />} />
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="/customers" element={customersElement} />
+              <Route path="/inventory" element={inventoryElement} />
 
               {/* Admin Routes */}
               <Route path="/admin/register" element={registerMechanicElement} />

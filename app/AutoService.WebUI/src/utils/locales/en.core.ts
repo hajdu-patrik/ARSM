@@ -37,6 +37,7 @@ export const enCore = {
   nav: {
     scheduler: 'Scheduler',
     customers: 'Customers',
+    inventory: 'Inventory',
     settings: 'Settings',
     admin: 'Admin',
   },
