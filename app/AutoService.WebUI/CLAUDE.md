@@ -40,6 +40,12 @@
 - The scheduler subscribes to `/api/appointments/updates` while mounted and refreshes the current view on each event, rather than patching local state, because an appointment can move between months.
 - Profile picture upload accepts JPEG/PNG/WebP up to 4 MB (`MAX_PROFILE_PICTURE_BYTES`); the size check runs on both the selected file and the cropped blob, because cropping re-encodes and changes the size that is actually sent.
 - The crop modal produces `image/webp` at quality 0.9 with a `.webp` file name (`src/utils/imageCrop.ts`); the API re-encodes to WebP again server-side.
+- Quotes live on `/quotes`: the list carries search (quote number, title, plate) and a status filter whose `Expired` option reads the server-computed `isExpired` flag, never a stored status.
+- A quote is anchored to a vehicle, so creation starts from the vehicle row on the Customers page (`FilePlus`, accent tone, outside the fixed Eye/Pencil/Trash semantics) and navigates to `/quotes?vehicleId=<id>&new=1`; the Quotes page consumes those parameters once and opens the create modal.
+- `QuoteEditorModal` is split into `.header`, `.lines`, `.totals` and `.footer` files, and its body scrolls inside the dialog (`max-h-[60vh]`), because a document-sized modal otherwise pushes its footer actions off screen.
+- Editor affordances follow the quote status: a draft is fully editable, a sent quote keeps its fields visible but disabled with a notice and only accepts a validity extension, and a decided quote is read-only. The appointment link is set at creation only, because the header update contract does not carry it.
+- Every amount rendered on a saved line or in the totals comes from the server DTO. The only client-side computation is the live line preview in `pages/Quotes/helpers.ts`, which mirrors the server formula.
+- The quote line editor relabels itself by line kind: a part is counted in pieces at a net unit price, labor in hours at a net hourly rate.
 
 ## Current Style Contract Anchors
 

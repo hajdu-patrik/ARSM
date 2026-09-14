@@ -37,6 +37,7 @@ export const huCore = {
   nav: {
     scheduler: 'Ütemező',
     customers: 'Ügyfelek',
+    quotes: 'Ajánlatok',
     inventory: 'Készlet',
     settings: 'Beállítások',
     admin: 'Admin',
