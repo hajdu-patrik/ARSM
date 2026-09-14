@@ -6,8 +6,9 @@
  * @module pages/Customers/page
  */
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
@@ -37,6 +38,7 @@ import {
  */
 const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
   const showWarningToast = useToastStore((state) => state.showWarning);
@@ -117,6 +119,12 @@ const CustomersPageComponent = memo(function CustomersPage() {
     resolvedDetailsTarget,
   ]);
 
+  // A quote is anchored to a vehicle, so the vehicle row starts one, and the
+  // Quotes page owns the editor from there.
+  const handleCreateQuoteForVehicle = useCallback((vehicleId: number) => {
+    navigate(`/quotes?vehicleId=${vehicleId}&new=1`);
+  }, [navigate]);
+
   const customerListActions = useMemo<CustomerListActions>(() => ({
     onToggleCustomerExpanded: listState.toggleCustomerExpanded,
     onOpenCustomerDetails: detailsPanel.openCustomerPanel,
@@ -126,11 +134,13 @@ const CustomersPageComponent = memo(function CustomersPage() {
     onOpenEditVehicleModal: vehicleMutations.openEditVehicleModal,
     onOpenDeleteVehicleModal: vehicleMutations.openDeleteVehicleModal,
     onOpenVehicleDetails: detailsPanel.openVehiclePanel,
+    onCreateQuoteForVehicle: handleCreateQuoteForVehicle,
   }), [
     customerMutations.openDeleteCustomerModal,
     customerMutations.openEditCustomerModal,
     detailsPanel.openCustomerPanel,
     detailsPanel.openVehiclePanel,
+    handleCreateQuoteForVehicle,
     listState.toggleCustomerExpanded,
     vehicleMutations.openCreateVehicleModal,
     vehicleMutations.openDeleteVehicleModal,

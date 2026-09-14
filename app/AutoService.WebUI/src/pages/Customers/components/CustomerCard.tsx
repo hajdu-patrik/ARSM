@@ -85,6 +85,7 @@ const CustomerCardComponent = memo(function CustomerCard({
     onOpenEditVehicleModal,
     onOpenDeleteVehicleModal,
     onOpenVehicleDetails,
+    onCreateQuoteForVehicle,
   } = actions;
   const {
     customerHistoryByCustomerId,
@@ -185,6 +186,7 @@ const CustomerCardComponent = memo(function CustomerCard({
                       onOpenEditVehicleModal={onOpenEditVehicleModal}
                       onOpenDeleteVehicleModal={onOpenDeleteVehicleModal}
                       onOpenVehicleDetails={onOpenVehicleDetails}
+                      onCreateQuoteForVehicle={onCreateQuoteForVehicle}
                       isDetailsOpen={isVehicleDetailsOpen === vehicle.id}
                     />
                   ))}

@@ -51,6 +51,7 @@ export const enFeature = {
     vehiclesTitle: 'Vehicles',
     loadingVehicles: 'Loading vehicles...',
     emptyVehicles: 'No vehicles found for this customer.',
+    createQuote: 'Create quote',
     createVehicle: 'Create vehicle',
     editVehicle: 'Edit vehicle',
     deleteVehicle: 'Delete vehicle',

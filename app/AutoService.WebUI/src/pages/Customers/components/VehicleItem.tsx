@@ -5,7 +5,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FilePlus, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
 	compactItemTitleTextClass,
@@ -21,6 +21,7 @@ interface VehicleItemProps {
 	onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
 	onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
 	onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
+	onCreateQuoteForVehicle: (vehicleId: number) => void;
 	isDetailsOpen: boolean;
 }
 
@@ -32,11 +33,15 @@ const VehicleItemComponent = memo(function VehicleItem({
 	onOpenEditVehicleModal,
 	onOpenDeleteVehicleModal,
 	onOpenVehicleDetails,
+	onCreateQuoteForVehicle,
 	isDetailsOpen,
 }: VehicleItemProps) {
 	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
 	const vehicleIconActionClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30';
 	const vehicleDetailsActionClass = `${vehicleIconActionClass} text-arsm-info-text hover:text-arsm-info-ring dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark`;
+	// A new quote is neither info, edit nor delete, so it keeps its own icon
+	// and accent tone instead of borrowing one of the three fixed semantics.
+	const vehicleQuoteActionClass = `${vehicleIconActionClass} text-arsm-accent-vivid hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:text-arsm-accent-dark-hover`;
 	const vehicleInlineEditActionClass = `${vehicleIconActionClass} text-arsm-warning-text hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:text-arsm-warning-text-dark`;
 	const vehicleInlineDeleteActionClass = `${vehicleIconActionClass} text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
 	const vehicleInlineViewIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
@@ -54,6 +59,17 @@ const VehicleItemComponent = memo(function VehicleItem({
 				</div>
 
 				<div className="flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end">
+					<button
+						data-testid="vehicle-create-quote-button"
+						type="button"
+						onClick={() => onCreateQuoteForVehicle(vehicle.id)}
+						className={vehicleQuoteActionClass}
+						title={t('customers.createQuote')}
+						aria-label={t('customers.createQuote')}
+					>
+						<FilePlus className={vehicleInlineViewIconClass} />
+					</button>
+
 					<button
 						type="button"
 						onClick={() => onOpenVehicleDetails(customerId, vehicle.id)}

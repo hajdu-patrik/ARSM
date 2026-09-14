@@ -51,6 +51,7 @@ export const huFeature = {
     vehiclesTitle: 'Járművek',
     loadingVehicles: 'Járművek betöltése...',
     emptyVehicles: 'Ehhez az ügyfélhez nincs jármű.',
+    createQuote: 'Ajánlat készítése',
     createVehicle: 'Jármű létrehozása',
     editVehicle: 'Jármű szerkesztése',
     deleteVehicle: 'Jármű törlése',

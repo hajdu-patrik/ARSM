@@ -28,6 +28,7 @@ export interface CustomerListActions {
   readonly onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
   readonly onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
   readonly onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
+  readonly onCreateQuoteForVehicle: (vehicleId: number) => void;
 }
 
 export interface CustomerHistoryState {
