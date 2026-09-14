@@ -20,7 +20,8 @@ from httpyac_summary import extract_http_summary
 TARGET_ORDER = ("playwright", "http", "sql")
 
 # Behaviour that HTTPYAC cannot express: multipart upload contracts, a streaming SSE round
-# trip, and a per-quote line cap that only shows up after 200 successful additions.
+# trip, a per-quote line cap that only shows up after 200 successful additions, and a
+# binary PDF response whose text has to be read back.
 # (report key, command label, script path, human-readable name)
 PYTHON_HTTP_CHECKS = (
     (
@@ -40,6 +41,12 @@ PYTHON_HTTP_CHECKS = (
         "http-quote-line-limit-check",
         "tests/API/quotes/quote-line-limit-check.py",
         "Quote line limit check",
+    ),
+    (
+        "quotePdfCheck",
+        "http-quote-pdf-check",
+        "tests/API/quotes/quote-pdf-check.py",
+        "Quote PDF check",
     ),
 )
 DEFAULT_COMMAND_TIMEOUT_SECONDS = 300

@@ -81,6 +81,10 @@ class HttpClient:
         status, _, headers = self._request(method, path, None, {"Accept": "*/*"})
         return status, headers
 
+    def request_binary(self, method: str, path: str) -> tuple[int, bytes, dict[str, str]]:
+        """Issue a request and return the raw body, for endpoints that answer with a file."""
+        return self._request_raw(method, path, None, {"Accept": "*/*"})
+
     def _request(
         self,
         method: str,
@@ -88,6 +92,16 @@ class HttpClient:
         body: bytes | None,
         headers: dict[str, str],
     ) -> tuple[int, str, dict[str, str]]:
+        status, raw_body, response_headers = self._request_raw(method, path, body, headers)
+        return status, raw_body.decode("utf-8", errors="replace"), response_headers
+
+    def _request_raw(
+        self,
+        method: str,
+        path: str,
+        body: bytes | None,
+        headers: dict[str, str],
+    ) -> tuple[int, bytes, dict[str, str]]:
         request_headers = dict(headers)
         if method.upper() in UNSAFE_HTTP_METHODS:
             request_headers["Origin"] = self.allowed_origin
@@ -95,11 +109,11 @@ class HttpClient:
         request = Request(url=f"{self.base_url}{path}", data=body, headers=request_headers, method=method)
         try:
             with self.opener.open(request, timeout=30) as response:
-                return response.status, response.read().decode("utf-8", errors="replace"), dict(response.headers)
+                return response.status, response.read(), dict(response.headers)
         except HTTPError as error:
-            return error.code, error.read().decode("utf-8", errors="replace"), dict(error.headers)
+            return error.code, error.read(), dict(error.headers)
         except (URLError, ConnectionResetError, OSError):
-            return CONNECTION_RESET_STATUS, "", {}
+            return CONNECTION_RESET_STATUS, b"", {}
 
 
 def read_credentials() -> list[Credentials]:
