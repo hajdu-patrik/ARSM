@@ -69,7 +69,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
 
     public static int BanWindowSeconds => (int)Math.Ceiling(BanWindow.TotalSeconds);
 
-    private static string ResolveClientKey(HttpContext context)
+    public static string ResolveClientKey(HttpContext context)
     {
         var ip = context.Connection.RemoteIpAddress?.ToString();
         return string.IsNullOrWhiteSpace(ip) ? "unknown" : ip;

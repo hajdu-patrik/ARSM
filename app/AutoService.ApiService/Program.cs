@@ -223,13 +223,28 @@ builder.Services.AddRateLimiter(options =>
             cancellationToken);
     };
 
-    options.AddFixedWindowLimiter("AuthLoginAttempts", limiterOptions =>
-    {
-        limiterOptions.PermitLimit = 10;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        limiterOptions.QueueLimit = 0;
-    });
+    /**
+     * AuthLoginAttempts partitioning rationale.
+     *
+     * Login attempts are partitioned per client (same key as LoginBanMiddleware's ban
+     * tracking) rather than pooled into one global bucket. A global bucket lets a single
+     * noisy client exhaust the shared quota and lock every other user out of logging in.
+     * The permit limit is raised only under IsDevelopment(): the canonical local test
+     * suite logs in from one machine dozens of times per run and would otherwise trip
+     * the shared production ceiling and the 3-minute ban; production keeps the original
+     * 10-per-minute-per-client limit.
+     */
+    var authLoginPermitLimit = builder.Environment.IsDevelopment() ? 100 : 10;
+
+    options.AddPolicy("AuthLoginAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
+        LoginBanMiddleware.ResolveClientKey(context),
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = authLoginPermitLimit,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        }));
 
     options.AddFixedWindowLimiter("AuthRefreshAttempts", limiterOptions =>
     {
