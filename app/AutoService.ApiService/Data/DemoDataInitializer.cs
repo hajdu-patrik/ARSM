@@ -28,7 +28,7 @@ public static partial class DemoDataInitializer
      * Applies pending migrations and inserts demo data when the database is empty.
      *
      * @param app The web application used to resolve scoped services.
-    * @param cancellationToken Token used to cancel migration and EF seeding I/O.
+     * @param cancellationToken Token used to cancel migration and EF seeding I/O.
      * @return A task that completes when migration and conditional seeding are finished.
      */
     public static async Task EnsureSeededAsync(this WebApplication app, CancellationToken cancellationToken = default)
@@ -85,6 +85,9 @@ public static partial class DemoDataInitializer
             await EnsureDemoMechanicPasswordsAsync(userManager, mechanicPassword);
             // Ensure Admin role assignment still converges on already-seeded datasets.
             await EnsureAdminRoleAsync(userManager, roleManager);
+            // Vehicles/mechanics already exist on this path, so the quote seed's
+            // FK lookups (D12) can resolve; runs on every startup, idempotent.
+            await EnsureQuotesSeededAsync(db, cancellationToken);
             return;
         }
 
@@ -125,6 +128,10 @@ public static partial class DemoDataInitializer
 
         // Ensure role exists and first mechanic is assigned Admin after identity users were created.
         await EnsureAdminRoleAsync(userManager, roleManager);
+
+        // Vehicles and mechanics now exist on this first-run path too, so the
+        // quote seed's FK lookups (D12) can resolve.
+        await EnsureQuotesSeededAsync(db, cancellationToken);
     }
 
     /**

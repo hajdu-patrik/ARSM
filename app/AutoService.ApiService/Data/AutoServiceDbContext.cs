@@ -1,4 +1,5 @@
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
@@ -23,6 +24,8 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Part> Parts => Set<Part>();
     public DbSet<LaborType> LaborTypes => Set<LaborType>();
+    public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
 
     /** Configures entity mappings, constraints, and relationships. */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -202,10 +205,11 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         });
 
         ConfigurePricingModel(modelBuilder);
+        ConfigureQuotesModel(modelBuilder);
     }
 
     /**
-     * Validates mechanic expertise constraints before persisting changes.
+     * Validates mechanic expertise constraints and quote totals before persisting changes.
      *
      * @param acceptAllChangesOnSuccess Indicates whether ChangeTracker.AcceptAllChanges() is called after save.
      * @return The number of state entries written to the database.
@@ -213,11 +217,12 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ValidateMechanicExpertise();
+        ValidateQuoteTotals();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     /**
-     * Async variant of SaveChanges with mechanic expertise validation.
+     * Async variant of SaveChanges with mechanic expertise and quote totals validation.
      *
      * @param acceptAllChangesOnSuccess Indicates whether ChangeTracker.AcceptAllChanges() is called after save.
      * @param cancellationToken A token to cancel the async operation.
@@ -226,6 +231,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         ValidateMechanicExpertise();
+        ValidateQuoteTotals();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
@@ -253,6 +259,54 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             if (expertise.Distinct().Count() != expertise.Count)
             {
                 throw new InvalidOperationException("A mechanic expertise list cannot contain duplicate items.");
+            }
+        }
+    }
+
+    /**
+     * Ensures each modified quote's stored TotalNet/TotalVat/TotalGross
+     * match the sum of its line amounts, computed via
+     * Pricing/QuoteTotalsCalculator so rounding never drifts from the
+     * handler that set them. Validates the sum whenever Lines is loaded.
+     * When Lines is not loaded (a handler that only touched the header or
+     * status), there is nothing to recompute against, so instead this
+     * requires that TotalNet/TotalVat/TotalGross were left untouched; a
+     * handler that changes totals without loading Lines is exactly the bug
+     * this second branch is meant to catch.
+     */
+    private void ValidateQuoteTotals()
+    {
+        var quoteEntries = ChangeTracker
+            .Entries<Quote>()
+            .Where(x => x.State is EntityState.Added or EntityState.Modified);
+
+        foreach (var entry in quoteEntries)
+        {
+            var quote = entry.Entity;
+            var linesLoaded = entry.Collection(q => q.Lines).IsLoaded;
+
+            if (linesLoaded)
+            {
+                var expectedTotals = QuoteTotalsCalculator.Calculate(
+                    quote.Lines.Select(line => new QuoteLineAmounts(line.NetAmount, line.VatAmount, line.GrossAmount)));
+
+                if (quote.TotalNet != expectedTotals.TotalNet
+                    || quote.TotalVat != expectedTotals.TotalVat
+                    || quote.TotalGross != expectedTotals.TotalGross)
+                {
+                    throw new InvalidOperationException($"Quote {quote.Id} totals do not match the sum of its line amounts.");
+                }
+
+                continue;
+            }
+
+            var totalsTouched = entry.Property(q => q.TotalNet).IsModified
+                || entry.Property(q => q.TotalVat).IsModified
+                || entry.Property(q => q.TotalGross).IsModified;
+
+            if (totalsTouched)
+            {
+                throw new InvalidOperationException($"Quote {quote.Id} totals were changed without loading Lines to recompute them.");
             }
         }
     }
