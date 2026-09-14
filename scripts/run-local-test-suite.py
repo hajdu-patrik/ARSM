@@ -46,7 +46,16 @@ DEFAULT_COMMAND_TIMEOUT_SECONDS = 300
 SENSITIVE_NAME_PATTERN = re.compile(r"(?i)(password|passwd|secret|token|cookie|key|connection|pgpassword)")
 POSTGRES_URI_PATTERN = re.compile(r"postgres(?:ql)?://[^\s\"']+", re.IGNORECASE)
 ASSIGNMENT_SECRET_PATTERN = re.compile(
-    r"(?i)\b(password|passwd|secret|token|authorization|cookie|connectionstring|pgpassword)\b([\s:=]+)([^\s,;]+)",
+    r"(?i)\b(password|passwd|secret|token|authorization|cookie|connectionstring|pgpassword)\b([\s:=\"']+)([^\s,;]+)",
+)
+# JSON-shaped secrets need a rule of their own. The assignment pattern above
+# stops at the first "," or ";", which leaves the rest of a multi-cookie
+# header readable, and it only reaches a quoted field name now that quotes
+# count as separators. This rule replaces the whole quoted value instead,
+# and matches compound names too (accessToken, refreshToken, set-cookie).
+JSON_SECRET_FIELD_PATTERN = re.compile(
+    r"(?i)(\"[\w-]*(?:password|passwd|secret|token|authorization|cookie|connectionstring|pgpassword)[\w-]*\"\s*:\s*)"
+    r"\"(?:[^\"\\]|\\.)*\"",
 )
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"[A-Za-z]:[\\/](?:[^\s\"'<>|:]+[\\/])*[^\s\"'<>|:]*")
 UNIX_ABSOLUTE_PATH_PATTERN = re.compile(r"(?<![\w.])/[^\s\"']+(?:/[^\s\"']+)*")
@@ -103,6 +112,11 @@ class OutputSanitizer:
 
         sanitized = POSTGRES_URI_PATTERN.sub("postgresql://<redacted>", sanitized)
         sanitized = ASSIGNMENT_SECRET_PATTERN.sub(r"\1\2<redacted>", sanitized)
+        # Runs after the assignment rule on purpose: that one stops at the
+        # first "," or ";", so a multi-cookie header keeps a readable tail,
+        # and this one then replaces the whole quoted value, closing quote
+        # included.
+        sanitized = JSON_SECRET_FIELD_PATTERN.sub(r'\1"<redacted>"', sanitized)
         sanitized = WINDOWS_ABSOLUTE_PATH_PATTERN.sub("<local-path>", sanitized)
         sanitized = UNIX_ABSOLUTE_PATH_PATTERN.sub(self._sanitize_unix_path, sanitized)
         return sanitized
