@@ -1,0 +1,190 @@
+# ─────────────────────────────────────────────────────────────
+# QUOTES - CRUD HAPPY PATH
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@SomeLaborTypeId = 1
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# Vehicle identity ids depend on the local database's insert history, so a literal
+# id is right on one machine and 404 on the next. The three demo quotes (D12) are
+# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+{{
+  exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+###
+
+### [Positive][Quotes] Create draft quote with no ValidUntil (201 expected, validUntil defaults to now + 30 days, D22)
+# @name createdQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "CRUD Happy Quote {{RunId}}",
+  "notes": "Created by the quotes-crud-happy suite"
+}
+
+###
+
+### [Positive][Quotes] Get created quote by id (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
+
+###
+
+### [Positive][Quotes] List the anchor vehicle's quotes (200 expected, includes the created quote)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+
+###
+
+### [Positive][Quotes] List quotes filtered by vehicleId and Draft status (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{AnchorVehicleId}}&status=Draft
+
+###
+
+### [Positive][Quotes] Update draft quote title and notes (200 expected)
+# @name updatedQuote
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "CRUD Happy Quote {{RunId}} Updated",
+  "notes": "Updated by the quotes-crud-happy suite",
+  "version": {{createdQuote.version}}
+}
+
+###
+
+### [Positive][Quotes] Extend draft quote's ValidUntil (200 expected, Draft accepts any future date)
+# @name extendedQuote
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "validUntil": "2027-06-01T00:00:00",
+  "version": {{updatedQuote.version}}
+}
+
+###
+
+### [Positive][Quotes] Add a manual part line (201 expected, no catalog reference)
+# @name lineAdded1
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 2,
+  "description": "Manual brake pad set",
+  "netUnitPrice": 15000,
+  "vatRatePercent": 27,
+  "version": {{extendedQuote.version}}
+}
+
+###
+
+### [Positive][Quotes] Add a catalog labor line (201 expected, snapshot from LaborType {{SomeLaborTypeId}})
+# @name lineAdded2
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Labor",
+  "quantity": 1,
+  "laborTypeId": {{SomeLaborTypeId}},
+  "version": {{lineAdded1.version}}
+}
+
+###
+
+### [Positive][Quotes] Update the manual part line's quantity (200 expected)
+# @name lineUpdated
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines/{{lineAdded2.lines[0].id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 3,
+  "description": "Manual brake pad set",
+  "netUnitPrice": 15000,
+  "vatRatePercent": 27,
+  "version": {{lineAdded2.version}}
+}
+
+###
+
+### [Positive][Quotes] Remove the catalog labor line (200 expected, returns the updated quote, not 204)
+# @name lineDeleted
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines/{{lineUpdated.lines[1].id}}?version={{lineUpdated.version}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Positive][Quotes] Transition draft quote to Sent (200 expected, at least one line remains)
+# @name sentQuote
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{lineDeleted.version}}
+}
+
+###
+
+### [Positive][Quotes] Transition sent quote to Accepted (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Accepted",
+  "version": {{sentQuote.version}}
+}
+
+###
+
+### [Positive][Quotes] Create a second draft quote for the delete happy path (201 expected)
+# @name deletableQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "CRUD Happy Deletable Quote {{RunId}}"
+}
+
+###
+
+### [Positive][Quotes] Delete the draft quote (204 expected, D7: only Draft is deletable)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{deletableQuote.id}}?version={{deletableQuote.version}}
+Origin: {{WebUI_Origin}}

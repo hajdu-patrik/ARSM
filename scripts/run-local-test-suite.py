@@ -19,7 +19,8 @@ from httpyac_summary import extract_http_summary
 
 TARGET_ORDER = ("playwright", "http", "sql")
 
-# Behaviour that HTTPYAC cannot express: multipart upload contracts and a streaming SSE round trip.
+# Behaviour that HTTPYAC cannot express: multipart upload contracts, a streaming SSE round
+# trip, and a per-quote line cap that only shows up after 200 successful additions.
 # (report key, command label, script path, human-readable name)
 PYTHON_HTTP_CHECKS = (
     (
@@ -33,6 +34,12 @@ PYTHON_HTTP_CHECKS = (
         "http-appointment-updates-check",
         "tests/API/appointments/appointment-updates-check.py",
         "Appointment live updates check",
+    ),
+    (
+        "quoteLineLimitCheck",
+        "http-quote-line-limit-check",
+        "tests/API/quotes/quote-line-limit-check.py",
+        "Quote line limit check",
     ),
 )
 DEFAULT_COMMAND_TIMEOUT_SECONDS = 300

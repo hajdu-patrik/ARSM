@@ -1,0 +1,172 @@
+# ─────────────────────────────────────────────────────────────
+# QUOTES - STATUS TRANSITION STATE MACHINE
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][QuoteStatus] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Setup][QuoteStatus] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# Vehicle identity ids depend on the local database's insert history, so a literal
+# id is right on one machine and 404 on the next. The three demo quotes (D12) are
+# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+{{
+  exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+###
+
+### [Setup][QuoteStatus] Create a draft quote with no lines (201 expected)
+# @name noLinesQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Status Transition No-Lines Quote {{RunId}}"
+}
+
+###
+
+### [Negative][QuoteStatus] Sending a quote with no lines is rejected (409 expected, D21)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{noLinesQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{noLinesQuote.version}}
+}
+
+###
+
+### [Setup][QuoteStatus] Create a draft quote to drive through the whole state machine (201 expected)
+# @name mainQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Status Transition Main Quote {{RunId}}"
+}
+
+###
+
+### [Setup][QuoteStatus] Add a line so the quote can be sent (201 expected)
+# @name mainQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "Status transition fixture line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{mainQuote.version}}
+}
+
+###
+
+### [Negative][QuoteStatus] Draft to Accepted skips Sent and is a forbidden transition (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Accepted",
+  "version": {{mainQuoteLine.version}}
+}
+
+###
+
+### [Negative][QuoteStatus] Unknown status value is rejected (422 expected, quote is still Draft)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Bogus",
+  "version": {{mainQuoteLine.version}}
+}
+
+###
+
+### [Positive][QuoteStatus] Transition Draft to Sent (200 expected)
+# @name mainQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{mainQuoteLine.version}}
+}
+
+###
+
+### [Negative][QuoteStatus] Sent to Draft is a forbidden transition (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Draft",
+  "version": {{mainQuoteSent.version}}
+}
+
+###
+
+### [Positive][QuoteStatus] Transition Sent to Accepted (200 expected)
+# @name mainQuoteAccepted
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Accepted",
+  "version": {{mainQuoteSent.version}}
+}
+
+###
+
+### [Negative][QuoteStatus] Accepted to Draft is a forbidden transition, Accepted is terminal (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Draft",
+  "version": {{mainQuoteAccepted.version}}
+}
+
+###
+
+### [Negative][QuoteStatus] Accepted to Draft with a missing version is still 409, not 422 (the transition check runs before the version check)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Draft"
+}

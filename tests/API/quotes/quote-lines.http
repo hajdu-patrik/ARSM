@@ -1,0 +1,167 @@
+# ─────────────────────────────────────────────────────────────
+# QUOTES - LINE CRUD, CATALOG SNAPSHOT/OVERRIDE, AND DRAFT LOCK
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@SomePartId = 1
+@NonExistentCatalogId = 999999999
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][QuoteLines] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+### [Setup][QuoteLines] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# Vehicle identity ids depend on the local database's insert history, so a literal
+# id is right on one machine and 404 on the next. The three demo quotes (D12) are
+# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+{{
+  exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+###
+
+### [Setup][QuoteLines] Create a draft quote fixture for line validation (201 expected)
+# @name draftQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Quote Line Fixture {{RunId}}"
+}
+
+###
+
+### [Positive][QuoteLines] Add catalog part line with no override (201 expected, snapshot fills description/price/VAT from Part {{SomePartId}}, D40)
+# @name catalogLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "partId": {{SomePartId}},
+  "version": {{draftQuote.version}}
+}
+
+###
+
+### [Positive][QuoteLines] Add catalog part line with an explicit override (201 expected, override NetUnitPrice wins over the Part snapshot, D40)
+# @name overrideLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "partId": {{SomePartId}},
+  "netUnitPrice": 4321,
+  "version": {{catalogLine.version}}
+}
+
+###
+
+### [Negative][QuoteLines] Add line with no catalog id and no manual fields (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "version": {{overrideLine.version}}
+}
+
+###
+
+### [Negative][QuoteLines] Add line with a non-existent PartId (404 expected; a non-existent LaborTypeId shares the same lookup path)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "partId": {{NonExistentCatalogId}},
+  "version": {{overrideLine.version}}
+}
+
+###
+
+### [Negative][QuoteLines] NetUnitPrice over the 100,000,000 cap is rejected (422 expected, D24)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "Over-priced manual line",
+  "netUnitPrice": 100000001,
+  "vatRatePercent": 27,
+  "version": {{overrideLine.version}}
+}
+
+###
+
+### [Negative][QuoteLines] Quantity over the 10,000 cap is rejected (422 expected, D24)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 10001,
+  "description": "Over-quantity manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{overrideLine.version}}
+}
+
+###
+
+### [Setup][QuoteLines] Send the fixture quote, reusing its 2 existing lines (200 expected)
+# @name sentQuote
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{overrideLine.version}}
+}
+
+###
+
+### [Negative][QuoteLines] Adding a line to a Sent quote is rejected (409 expected, Draft-only lock; update/delete share the same lock, see quotes-validation.http for the Title-edit sibling case)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "Should not be added",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{sentQuote.version}}
+}

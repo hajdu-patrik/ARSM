@@ -1,0 +1,147 @@
+# ─────────────────────────────────────────────────────────────
+# QUOTES - AUTHZ (ALL 11 ROUTES, MechanicOnly POLICY)
+# ─────────────────────────────────────────────────────────────
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SomeVehicleId = 1
+@SomeQuoteId = 1
+@SomeQuoteLineId = 1
+@SomeVersion = 1
+
+# COVERAGE GAP (do not fill with a fabricated token):
+# The F3 brief asks every route below to also prove that a request carrying a
+# valid CUSTOMER token gets 403 (authenticated but not authorized), not 401.
+# That case cannot be produced against the live API today, for exactly the
+# reason already recorded in catalog-authz.http: Customer person records never
+# receive an IdentityUserId (DemoDataInitializer.cs: "Customers are passive
+# data records - no login account, no IdentityUserId") and
+# POST /api/auth/register only accepts personType "Mechanic"
+# (AuthEndpoints.Register.cs: "Registration is only available for
+# mechanics."). No endpoint issues a session for a person whose person_type
+# claim resolves to "customer", so MechanicOnly (Program.cs:
+# RequireClaim("person_type","mechanic")) can only currently be observed
+# distinguishing "authenticated" from "unauthenticated" below, never
+# "authenticated non-mechanic" from "authenticated mechanic".
+#
+# The path ids below are literals on purpose: an unauthenticated request is
+# rejected by the policy before any handler resolves them, so whether the row
+# exists is irrelevant here. Every other file in this folder resolves its
+# fixtures from the seeded quotes instead.
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][QuotesAuthz] Logout before unauthenticated checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated list quotes (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated get quote by id (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated update quote (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Unauthenticated",
+  "notes": null,
+  "version": {{SomeVersion}}
+}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated delete quote (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}?version={{SomeVersion}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated add quote line (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "Unauthenticated",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{SomeVersion}}
+}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated update quote line (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/lines/{{SomeQuoteLineId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "Unauthenticated",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{SomeVersion}}
+}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated delete quote line (401 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/lines/{{SomeQuoteLineId}}?version={{SomeVersion}}
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated change quote status (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{SomeVersion}}
+}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated extend quote validity (401 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "validUntil": "2030-01-01T00:00:00",
+  "version": {{SomeVersion}}
+}
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated list a vehicle's quotes (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SomeVehicleId}}/quotes
+
+###
+
+### [Negative][QuotesAuthz] Unauthenticated create a quote for a vehicle (401 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SomeVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Unauthenticated",
+  "notes": null,
+  "validUntil": null,
+  "appointmentId": null
+}
