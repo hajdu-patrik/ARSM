@@ -10,6 +10,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
+using AutoService.ApiService.Quotes;
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Imaging;
@@ -378,6 +379,7 @@ app.MapCustomerEndpoints();
 app.MapVehicleEndpoints();
 app.MapPartEndpoints();
 app.MapLaborTypeEndpoints();
+app.MapQuoteEndpoints();
 
 app.MapDefaultEndpoints();
 

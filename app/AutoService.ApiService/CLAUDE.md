@@ -46,6 +46,15 @@
 - Uploads accept JPEG/PNG/WebP up to 4 MB (`MaxProfilePictureBytes`); the endpoint also enforces `MaxProfilePictureRequestBytes` (upload limit + 64 KB) via `RequestSizeLimitAttribute`/`RequestFormLimitsAttribute` so oversized bodies are rejected before buffering.
 - `ImageSharpProfilePictureProcessor` (`Imaging/`) guards a 50-megapixel decode limit, auto-orients, resizes to fit 512x512 without upscaling, and re-encodes to WebP (quality 80) with a SHA-256 ETag; stored objects are always WebP regardless of the accepted upload type.
 
+## Quote Anchors
+
+- 11 endpoints under the `MechanicOnly` policy (`Quotes/QuoteEndpoints.cs`): 9 on `/api/quotes` (list, get, update, delete, add/update/delete line, change status, extend valid-until) and 2 on `/api/vehicles/{vehicleId}/quotes` (list, create).
+- `Domain/Quote.cs` and `Domain/QuoteLine.cs`: `QuoteStatus` (Draft, Sent, Accepted, Rejected) and `QuoteLineKind` (Part, Labor) are string-enum columns. `Expired` is a computed DTO flag (`Status == Sent && ValidUntil < now`), never a stored value.
+- Optimistic concurrency: `Quote.Version` maps to the Postgres `xmin` system column via `IsRowVersion()`, not a real column. Every write mutation requires the client-submitted version; DELETE takes it as a `?version=` query parameter. A stale version returns 409 with body `{"code":"quote_version_conflict"}`; a missing (zero) version returns 422.
+- `Validation/QuoteValidation.cs`: required title <= 120 chars, `ValidUntil` cannot be in the past, and a 200-line-per-quote cap enforced at the handler level (a per-row CHECK constraint cannot see sibling row counts). `CK_QuoteLines_LineKindIntegrity` plus a matching handler check enforce that a Part line carries no `LaborTypeId` and a Labor line carries no `PartId`.
+- Line and quote totals are stored, not computed on read: `Pricing/QuoteLineCalculator` and `Pricing/QuoteTotalsCalculator` are the only place amounts are computed, and `AutoServiceDbContext.ValidateQuoteTotals` throws on `SaveChanges`/`SaveChangesAsync` if a modified quote's stored totals disagree with its loaded lines, or if totals changed without loading `Lines`.
+- Demo seed (`Data/DemoDataInitializer.QuotesSeed.cs`) inserts 3 quotes (6 lines total) keyed by `QuoteNumber`, idempotent across restarts, and skips any seed whose vehicle/mechanic/part/labor-type natural-key reference cannot be resolved instead of throwing during startup.
+
 ## Engineering and Size Rules
 
 - Apply SOLID/OOP; use GoF patterns only when justified.
