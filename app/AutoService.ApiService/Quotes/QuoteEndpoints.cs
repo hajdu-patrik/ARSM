@@ -79,6 +79,12 @@ public static partial class QuoteEndpoints
             .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapGet("/{id:int}/pdf", GetQuotePdfAsync)
+            .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         group.MapPut("/{id:int}/valid-until", ExtendQuoteValidityAsync)
             .Produces<QuoteDetailDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)

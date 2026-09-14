@@ -11,6 +11,7 @@ using AutoService.ApiService.DataInitialization;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Quotes;
+using AutoService.ApiService.Quotes.Pdf;
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Imaging;
@@ -55,6 +56,21 @@ builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, relo
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 var connectionString = ConnectionStringResolver.Resolve(builder.Configuration);
+
+/**
+ * Quote PDF runtime setup, resolved in the composition root rather than in the
+ * handler. The company profile fails fast when a field is missing (D26), the
+ * QuestPDF license has to be registered before the first render or every call
+ * throws, and the embedded fonts are registered once: system fonts are turned
+ * off so a missing Hungarian glyph surfaces as a startup-time font error
+ * instead of an empty box on a customer's paper.
+ */
+var companyProfile = CompanyProfileResolver.Resolve(builder.Configuration);
+builder.Services.AddSingleton(companyProfile);
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+QuestPDF.Settings.UseSystemFonts = false;
+QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
+QuoteDocumentAssets.RegisterFonts();
 builder.Services.AddDbContext<AutoServiceDbContext>(options =>
 {
     options.UseNpgsql(connectionString);

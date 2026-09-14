@@ -48,12 +48,17 @@
 
 ## Quote Anchors
 
-- 11 endpoints under the `MechanicOnly` policy (`Quotes/QuoteEndpoints.cs`): 9 on `/api/quotes` (list, get, update, delete, add/update/delete line, change status, extend valid-until) and 2 on `/api/vehicles/{vehicleId}/quotes` (list, create).
+- 12 endpoints under the `MechanicOnly` policy (`Quotes/QuoteEndpoints.cs`): 10 on `/api/quotes` (list, get, update, delete, add/update/delete line, change status, extend valid-until, pdf) and 2 on `/api/vehicles/{vehicleId}/quotes` (list, create).
 - `Domain/Quote.cs` and `Domain/QuoteLine.cs`: `QuoteStatus` (Draft, Sent, Accepted, Rejected) and `QuoteLineKind` (Part, Labor) are string-enum columns. `Expired` is a computed DTO flag (`Status == Sent && ValidUntil < now`), never a stored value.
 - Optimistic concurrency: `Quote.Version` maps to the Postgres `xmin` system column via `IsRowVersion()`, not a real column. Every write mutation requires the client-submitted version; DELETE takes it as a `?version=` query parameter. A stale version returns 409 with body `{"code":"quote_version_conflict"}`; a missing (zero) version returns 422.
 - `Validation/QuoteValidation.cs`: required title <= 120 chars, `ValidUntil` cannot be in the past, and a 200-line-per-quote cap enforced at the handler level (a per-row CHECK constraint cannot see sibling row counts). `CK_QuoteLines_LineKindIntegrity` plus a matching handler check enforce that a Part line carries no `LaborTypeId` and a Labor line carries no `PartId`.
 - Line and quote totals are stored, not computed on read: `Pricing/QuoteLineCalculator` and `Pricing/QuoteTotalsCalculator` are the only place amounts are computed, and `AutoServiceDbContext.ValidateQuoteTotals` throws on `SaveChanges`/`SaveChangesAsync` if a modified quote's stored totals disagree with its loaded lines, or if totals changed without loading `Lines`.
 - Demo seed (`Data/DemoDataInitializer.QuotesSeed.cs`) inserts 3 quotes (6 lines total) keyed by `QuoteNumber`, idempotent across restarts, and skips any seed whose vehicle/mechanic/part/labor-type natural-key reference cannot be resolved instead of throwing during startup.
+- `GET /api/quotes/{id}/pdf` renders the quote with QuestPDF and answers `application/pdf` named after the quote number; a missing quote is 404, never 500. Every status is printable, and the document prints its own status, expiry included.
+- `Quotes/Pdf/` holds the render pipeline: `QuoteDocumentModel` (flat, no EF entity reaches the renderer), `QuoteDocument` (A4 portrait, 2 cm margins, repeating letterhead and page counter), `QuoteDocumentSections[.Lines]` (sections, with separate parts and labor blocks whose column labels differ), `QuoteDocumentFormatting` (hu-HU culture pinned, unit prices two decimals, line and total amounts whole forints) and `QuoteDocumentAssets` (embedded Noto Sans faces and the black logo).
+- PDF runtime setup lives in the composition root: the QuestPDF Community license, `UseSystemFonts = false` and `ThrowOnMissingTextGlyphs = true`. A font without the Hungarian letters therefore fails the request instead of printing empty boxes on a customer's paper.
+- `Configuration/CompanyProfileResolver.cs` resolves the `CompanyProfile` section (name, address, postal code, city, tax number, phone, email), letting `CompanyProfile__*` environment variables win, and fails fast at startup on a missing field or a template marker. Real company data never enters the repository.
+- The part number and labor code printed next to a line description come from the live catalog, not from the line snapshot: the snapshot keeps description, price and VAT rate only, so a hand-written or orphaned line prints a dash.
 
 ## Engineering and Size Rules
 
