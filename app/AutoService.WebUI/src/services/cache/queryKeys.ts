@@ -82,4 +82,8 @@ export const queryKeys = {
     parts: (scope: AuthQueryScope) => [...scope, 'catalog', 'parts'] as const,
     laborTypes: (scope: AuthQueryScope) => [...scope, 'catalog', 'labor-types'] as const,
   },
+  quotes: {
+    root: (scope: AuthQueryScope) => [...scope, 'quotes'] as const,
+    list: (scope: AuthQueryScope) => [...scope, 'quotes', 'list'] as const,
+  },
 };

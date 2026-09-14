@@ -40,6 +40,12 @@ export const customerRegistryService = {
     await apiClient.delete(`/api/customers/${id}`);
   },
 
+  /** Returns one vehicle with its owner summary. */
+  async getVehicle(id: number): Promise<VehicleDetailDto> {
+    const response = await apiClient.get<VehicleDetailDto>(`/api/vehicles/${id}`);
+    return response.data;
+  },
+
   /** Returns all vehicles belonging to a customer. */
   async listVehicles(customerId: number): Promise<VehicleDetailDto[]> {
     const response = await apiClient.get<VehicleDetailDto[]>(`/api/customers/${customerId}/vehicles`);

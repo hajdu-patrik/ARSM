@@ -30,3 +30,6 @@ export const CUSTOMER_HISTORY_STALE_TIME_MS = MINUTE_MS;
 
 /** Stale time for part and labor-type catalog reads. */
 export const CATALOG_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for the quote list read. */
+export const QUOTES_STALE_TIME_MS = MINUTE_MS;
