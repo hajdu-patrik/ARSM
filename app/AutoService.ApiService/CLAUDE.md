@@ -60,6 +60,14 @@
 - `Configuration/CompanyProfileResolver.cs` resolves the `CompanyProfile` section (name, address, postal code, city, tax number, phone, email), letting `CompanyProfile__*` environment variables win, and fails fast at startup on a missing field or a template marker. Real company data never enters the repository.
 - The part number and labor code printed next to a line description come from the live catalog, not from the line snapshot: the snapshot keeps description, price and VAT rate only, so a hand-written or orphaned line prints a dash.
 
+## Company Result Anchors
+
+- `GET /api/company-results?year={int?}&month={int?}` (`Reporting/CompanyResultEndpoints.*`) under the `MechanicOnly` policy, the first aggregating endpoint in the project. It follows the AdminEndpoints pattern: hand-written LINQ projected straight into a DTO, no service layer.
+- A quote belongs to the period its `CreatedAt` falls in, whatever its status is today, so the monthly figures add up to the yearly one and a past month never changes because an old quote was accepted now. The period is cut as a UTC range, the same way the monthly appointment query cuts one.
+- `Sent` splits into two rows at query time from `ValidUntil >= now`: pending (still live) and expired. There is no stored Expired status, so the report ages with the calendar without a background job. `Draft` appears in no revenue row at all, only as a count.
+- An empty period answers 200 with zeroed rows and a full month list, never 404, so the page has one rendering path. An out-of-range year or month is 400 `invalid_date_range`, matching the appointment month query.
+- Totals come from the stored quote amounts; the VAT and parts/labor breakdowns come from the accepted quotes' stored line amounts. Nothing is recomputed in the report.
+
 ## Engineering and Size Rules
 
 - Apply SOLID/OOP; use GoF patterns only when justified.

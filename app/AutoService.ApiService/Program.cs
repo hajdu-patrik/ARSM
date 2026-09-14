@@ -12,6 +12,7 @@ using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Quotes;
 using AutoService.ApiService.Quotes.Pdf;
+using AutoService.ApiService.Reporting;
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Imaging;
@@ -396,6 +397,7 @@ app.MapVehicleEndpoints();
 app.MapPartEndpoints();
 app.MapLaborTypeEndpoints();
 app.MapQuoteEndpoints();
+app.MapCompanyResultEndpoints();
 
 app.MapDefaultEndpoints();
 
