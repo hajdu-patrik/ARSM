@@ -27,8 +27,12 @@ export interface QuoteFixtureState {
 /** Far-future deadline, so a sent fixture never expires while the suite runs. */
 const FUTURE_VALID_UNTIL = '2099-12-31T23:59:59.000Z';
 
-/** Past deadline, so the expired fixture always exercises the computed expiry flag. */
-const PAST_VALID_UNTIL = '2020-01-10T23:59:59.000Z';
+/**
+ * Past deadline, so the expired fixture always exercises the computed expiry
+ * flag. It stays inside the reporting year picker's range on purpose: a
+ * quote the report cannot reach is a quote the report cannot be tested on.
+ */
+const PAST_VALID_UNTIL = '2026-02-20T23:59:59.000Z';
 
 const gaborMechanic = { id: MOCK_MECHANIC_IDS.gabor, fullName: 'Gabor Kovacs' };
 
@@ -114,9 +118,9 @@ const expiredQuote: QuoteDetailDto = {
   id: MOCK_QUOTE_IDS.expiredOilChange,
   quoteNumber: 'ARSM-2026-0003',
   title: 'Oil change offer',
-  createdAt: '2019-12-01T09:00:00.000Z',
+  createdAt: '2026-02-01T09:00:00.000Z',
   validUntil: PAST_VALID_UNTIL,
-  sentAt: '2019-12-01T10:00:00.000Z',
+  sentAt: '2026-02-01T10:00:00.000Z',
   totalNet: 6000,
   totalVat: 1620,
   totalGross: 7620,

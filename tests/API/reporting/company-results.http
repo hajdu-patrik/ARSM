@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────
+# REPORTING - COMPANY RESULTS (MechanicOnly POLICY)
+# ─────────────────────────────────────────────────────────────
+# The report places a quote by its CreatedAt month whatever its status is,
+# splits Sent into pending and expired, and answers an empty period with
+# zeros rather than 404, so the page has one rendering path.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@SeededYear = 2026
+@EmptyYear = 2001
+@InvalidMonth = 13
+@OutOfRangeYear = 1999
+
+# COVERAGE GAP (do not fill with a fabricated token):
+# The customer-token 403 case cannot be produced against the live API, for the
+# same reason the catalog and quote authz files record: a Customer person never
+# receives an IdentityUserId, and registration only accepts mechanics. The 401
+# path below is the observable half of the MechanicOnly policy.
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Reporting] Logout before unauthenticated checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Reporting] Company results require authentication (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}
+
+###
+
+### [Setup][Reporting] Login as non-admin mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+###
+
+### [Positive][Reporting] Whole-year report returns the four status rows (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}
+
+###
+
+### [Positive][Reporting] Report defaults to the current year when no parameter is sent (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results
+
+###
+
+### [Positive][Reporting] Single-month report narrows the same period (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month=9
+
+###
+
+### [Positive][Reporting] Empty period answers 200 with zeroed rows, not 404
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{EmptyYear}}
+
+###
+
+### [Negative][Reporting] Month above 12 is rejected (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month={{InvalidMonth}}
+
+###
+
+### [Negative][Reporting] Month below 1 is rejected (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month=0
+
+###
+
+### [Negative][Reporting] Year below the accepted range is rejected (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{OutOfRangeYear}}
+
+###
+
+### [Setup][Reporting] Logout after the authenticated checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
