@@ -86,4 +86,13 @@ export const queryKeys = {
     root: (scope: AuthQueryScope) => [...scope, 'quotes'] as const,
     list: (scope: AuthQueryScope) => [...scope, 'quotes', 'list'] as const,
   },
+  companyResults: {
+    root: (scope: AuthQueryScope) => [...scope, 'company-results'] as const,
+    period: (scope: AuthQueryScope, year: number, month: number | null) => [
+      ...scope,
+      'company-results',
+      year,
+      month ?? 'year',
+    ] as const,
+  },
 };

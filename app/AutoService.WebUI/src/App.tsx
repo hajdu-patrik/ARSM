@@ -25,6 +25,7 @@ const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then((module) 
 const CustomersPage = lazy(() => import('./pages/Customers/page').then((module) => ({ default: module.CustomersPage })));
 const InventoryPage = lazy(() => import('./pages/Inventory/page').then((module) => ({ default: module.InventoryPage })));
 const QuotesPage = lazy(() => import('./pages/Quotes/page').then((module) => ({ default: module.QuotesPage })));
+const CompanyResultsPage = lazy(() => import('./pages/CompanyResults/page').then((module) => ({ default: module.CompanyResultsPage })));
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
 const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then((module) => ({ default: module.RegisterMechanicPage })));
 const SettingsPage = lazy(() => import('./pages/Settings/page').then((module) => ({ default: module.SettingsPage })));
@@ -62,6 +63,14 @@ function App() {
     <PrivateRoute>
       <SidebarLayout>
         <QuotesPage />
+      </SidebarLayout>
+    </PrivateRoute>
+  );
+
+  const companyResultsElement = (
+    <PrivateRoute>
+      <SidebarLayout>
+        <CompanyResultsPage />
       </SidebarLayout>
     </PrivateRoute>
   );
@@ -138,6 +147,7 @@ function App() {
               <Route path="/customers" element={customersElement} />
               <Route path="/quotes" element={quotesElement} />
               <Route path="/inventory" element={inventoryElement} />
+              <Route path="/company-results" element={companyResultsElement} />
 
               {/* Admin Routes */}
               <Route path="/admin/register" element={registerMechanicElement} />

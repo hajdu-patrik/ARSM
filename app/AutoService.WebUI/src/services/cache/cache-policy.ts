@@ -33,3 +33,6 @@ export const CATALOG_STALE_TIME_MS = MINUTE_MS;
 
 /** Stale time for the quote list read. */
 export const QUOTES_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for the company result report read. */
+export const COMPANY_RESULTS_STALE_TIME_MS = MINUTE_MS;

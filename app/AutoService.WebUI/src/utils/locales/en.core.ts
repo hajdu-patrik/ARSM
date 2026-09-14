@@ -38,6 +38,7 @@ export const enCore = {
     scheduler: 'Scheduler',
     customers: 'Customers',
     quotes: 'Quotes',
+    companyResults: 'Company results',
     inventory: 'Inventory',
     settings: 'Settings',
     admin: 'Admin',

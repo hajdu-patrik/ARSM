@@ -5,7 +5,7 @@
 import { memo, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
-import { CalendarDays, ChevronsLeft, FileText, LogOut, Package, Settings, Shield, Users } from 'lucide-react';
+import { CalendarDays, ChevronsLeft, FileText, LogOut, Package, Settings, Shield, TrendingUp, Users } from 'lucide-react';
 import { compactListPrimaryTextClass, compactListSecondaryTextClass, sidebarIconSlotClass } from '../../utils/formStyles';
 
 export interface NavItem {
@@ -55,6 +55,7 @@ const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
   { key: 'customers', labelKey: 'nav.customers', icon: Users, path: '/customers' },
   { key: 'quotes', labelKey: 'nav.quotes', icon: FileText, path: '/quotes' },
   { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
+  { key: 'company-results', labelKey: 'nav.companyResults', icon: TrendingUp, path: '/company-results' },
 ];
 
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };

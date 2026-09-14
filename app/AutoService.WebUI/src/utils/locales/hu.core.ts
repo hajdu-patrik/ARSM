@@ -38,6 +38,7 @@ export const huCore = {
     scheduler: 'Ütemező',
     customers: 'Ügyfelek',
     quotes: 'Ajánlatok',
+    companyResults: 'Cégeredmény',
     inventory: 'Készlet',
     settings: 'Beállítások',
     admin: 'Admin',
