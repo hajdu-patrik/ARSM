@@ -73,6 +73,16 @@ Then update placeholder values in `appsettings.Local.json`, especially:
 - `JwtSettings.Secret`
 - `ConnectionStrings.AutoServiceDb`
 - `DemoData.MechanicPassword`
+- `CompanyProfile.*` (name, address, postal code, city, tax number, phone, email)
+
+`CompanyProfile` is the workshop identity printed on the quote PDF letterhead. The API refuses to
+start while any of its fields is missing or still holds a placeholder, because a quote handed to a
+customer must not carry a half-empty letterhead. Real company data stays out of the repository; use
+the gitignored local file or `CompanyProfile__*` environment variables.
+
+The quote PDF embeds Noto Sans (SIL Open Font License 1.1, licence text in
+`app/AutoService.ApiService/Assets/Fonts/OFL.txt`) so Hungarian accents render in containers that
+ship no fonts.
 
 ### 2) Restore tools and install frontend dependencies
 

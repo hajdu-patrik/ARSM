@@ -71,6 +71,16 @@ Ezután töltsd ki a helyőrző értékeket az `appsettings.Local.json` fájlban
 - `JwtSettings.Secret`
 - `ConnectionStrings.AutoServiceDb`
 - `DemoData.MechanicPassword`
+- `CompanyProfile.*` (név, cím, irányítószám, város, adószám, telefon, e-mail)
+
+A `CompanyProfile` a szerviz azonosító adata, amit az ajánlat PDF fejléce kinyomtat. Az API nem indul el,
+amíg bármelyik mező hiányzik vagy még helyőrzőt tartalmaz: az ügyfélnek átadott ajánlat nem mehet ki
+félkész fejléccel. Valódi cégadat nem kerül a repóba; a gitignore-olt lokális fájl vagy a
+`CompanyProfile__*` környezeti változók valók erre.
+
+Az ajánlat PDF beágyazott Noto Sans betűtípust használ (SIL Open Font License 1.1, a licencszöveg az
+`app/AutoService.ApiService/Assets/Fonts/OFL.txt` fájlban), hogy a magyar ékezetek olyan konténerben is
+helyesen jelenjenek meg, amelyben nincs telepített font.
 
 ### 2) Eszközök visszaállítása és frontend függőségek telepítése
 
