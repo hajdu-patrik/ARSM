@@ -9,7 +9,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Eye, Trash2 } from 'lucide-react';
+import { Download, Eye, Trash2 } from 'lucide-react';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
 import {
@@ -30,21 +30,26 @@ interface QuoteCardProps {
   readonly locale: string;
   readonly quote: QuoteListItemDto;
   readonly onOpen: (quote: QuoteListItemDto) => void;
+  readonly onDownloadPdf: (quote: QuoteListItemDto) => void;
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
 const quoteActionIconClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30';
 const quoteOpenActionClass = `${quoteActionIconClass} text-arsm-info-text hover:text-arsm-info-ring dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark`;
 const quoteDeleteActionClass = `${quoteActionIconClass} text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
+// Printing is neither info, edit nor delete, so it keeps the accent tone the
+// new-quote action uses rather than borrowing one of the three semantics.
+const quoteDownloadActionClass = `${quoteActionIconClass} text-arsm-accent-vivid hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:text-arsm-accent-dark-hover`;
 const quoteNumberTextClass = 'min-w-0 truncate font-mono text-xs text-arsm-label dark:text-arsm-label-dark';
 const quotePlateTextClass = 'min-w-0 truncate font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
 const quoteDateTextClass = 'min-w-0 truncate text-sm tabular-nums text-arsm-label dark:text-arsm-label-dark';
 const quoteAmountTextClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 
-const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDelete }: QuoteCardProps) {
+const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
   const displayStatus = resolveQuoteDisplayStatus(quote);
   const isDraft = quote.status === 'Draft';
   const openLabel = t('quotes.openQuote', { quoteNumber: quote.quoteNumber });
+  const downloadLabel = t('quotes.downloadPdfFor', { quoteNumber: quote.quoteNumber });
   const deleteLabel = t('quotes.deleteQuote');
 
   const actions = (
@@ -58,6 +63,16 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
         aria-label={openLabel}
       >
         <Eye className="h-3.5 w-3.5 shrink-0" />
+      </button>
+      <button
+        data-testid="quote-download-button"
+        type="button"
+        onClick={() => onDownloadPdf(quote)}
+        className={quoteDownloadActionClass}
+        title={downloadLabel}
+        aria-label={downloadLabel}
+      >
+        <Download className="h-3.5 w-3.5 shrink-0" />
       </button>
       {isDraft && (
         <button

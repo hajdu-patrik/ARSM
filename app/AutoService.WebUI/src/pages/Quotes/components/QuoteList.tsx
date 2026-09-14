@@ -15,6 +15,7 @@ interface QuoteListProps {
   readonly quotes: QuoteListItemDto[];
   readonly isLoading: boolean;
   readonly onOpenQuote: (quote: QuoteListItemDto) => void;
+  readonly onDownloadQuotePdf: (quote: QuoteListItemDto) => void;
   readonly onDeleteQuote: (quote: QuoteListItemDto) => void;
 }
 
@@ -24,6 +25,7 @@ const QuoteListComponent = memo(function QuoteList({
   quotes,
   isLoading,
   onOpenQuote,
+  onDownloadQuotePdf,
   onDeleteQuote,
 }: QuoteListProps) {
   return (
@@ -51,6 +53,7 @@ const QuoteListComponent = memo(function QuoteList({
               locale={locale}
               quote={quote}
               onOpen={onOpenQuote}
+              onDownloadPdf={onDownloadQuotePdf}
               onDelete={onDeleteQuote}
             />
           ))}

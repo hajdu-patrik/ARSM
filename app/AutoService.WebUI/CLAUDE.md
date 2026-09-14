@@ -46,6 +46,7 @@
 - Editor affordances follow the quote status: a draft is fully editable, a sent quote keeps its fields visible but disabled with a notice and only accepts a validity extension, and a decided quote is read-only. The appointment link is set at creation only, because the header update contract does not carry it.
 - Every amount rendered on a saved line or in the totals comes from the server DTO. The only client-side computation is the live line preview in `pages/Quotes/helpers.ts`, which mirrors the server formula.
 - The quote line editor relabels itself by line kind: a part is counted in pieces at a net unit price, labor in hours at a net hourly rate.
+- The quote PDF is downloaded through `quoteService.downloadPdf` (blob response, file name taken from `Content-Disposition`) and handed to the browser by `saveBlobAsFile`, which revokes the object URL right after the click. The action sits both on the list row and in the editor footer, and it is offered in every status, because every status is printable.
 
 ## Current Style Contract Anchors
 

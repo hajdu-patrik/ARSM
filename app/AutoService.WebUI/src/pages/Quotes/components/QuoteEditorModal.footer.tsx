@@ -9,7 +9,7 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Check, Save, Send, Trash2, X } from 'lucide-react';
+import { Check, Download, Save, Send, Trash2, X } from 'lucide-react';
 import type { QuoteDetailDto, QuoteStatus } from '../../../types/quotes/quotes.types';
 import { buttonClass, dangerButtonClass, secondaryButtonClass } from '../../../utils/formStyles';
 
@@ -18,11 +18,13 @@ interface QuoteEditorFooterProps {
   readonly quote: QuoteDetailDto | null;
   readonly isSaving: boolean;
   readonly isChangingStatus: boolean;
+  readonly isDownloadingPdf: boolean;
   readonly canSaveHeader: boolean;
   readonly onClose: () => void;
   readonly onCreate: () => void;
   readonly onSaveHeader: () => void;
   readonly onChangeStatus: (status: QuoteStatus) => void;
+  readonly onDownloadPdf: () => void;
   readonly onDelete: () => void;
 }
 
@@ -31,17 +33,35 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
   quote,
   isSaving,
   isChangingStatus,
+  isDownloadingPdf,
   canSaveHeader,
   onClose,
   onCreate,
   onSaveHeader,
   onChangeStatus,
+  onDownloadPdf,
   onDelete,
 }: QuoteEditorFooterProps) {
   const closeButton = (
     <button type="button" onClick={onClose} disabled={isSaving || isChangingStatus} className={secondaryButtonClass}>
       <X className="h-4 w-4 shrink-0" />
       <span>{t('quotes.close')}</span>
+    </button>
+  );
+
+  // Printable in every status, a draft included: the mechanic needs the paper
+  // for review and for handing it over, and the document names its own status.
+  const downloadButton = (
+    <button
+      data-testid="quote-download-pdf-button"
+      type="button"
+      onClick={onDownloadPdf}
+      disabled={isDownloadingPdf}
+      aria-busy={isDownloadingPdf}
+      className={secondaryButtonClass}
+    >
+      <Download className="h-4 w-4 shrink-0" />
+      <span>{isDownloadingPdf ? t('quotes.downloadingPdf') : t('quotes.downloadPdf')}</span>
     </button>
   );
 
@@ -70,6 +90,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
     return (
       <>
         {closeButton}
+        {downloadButton}
         <button
           data-testid="quote-delete-draft-button"
           type="button"
@@ -111,6 +132,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
     return (
       <>
         {closeButton}
+        {downloadButton}
         <button
           data-testid="quote-reject-button"
           type="button"
@@ -137,7 +159,12 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
     );
   }
 
-  return closeButton;
+  return (
+    <>
+      {closeButton}
+      {downloadButton}
+    </>
+  );
 });
 
 QuoteEditorFooterComponent.displayName = 'QuoteEditorFooter';

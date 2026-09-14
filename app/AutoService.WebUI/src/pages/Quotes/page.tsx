@@ -72,6 +72,10 @@ const QuotesPageComponent = memo(function QuotesPage() {
     void openQuote(quote.id);
   }, [openQuote]);
 
+  const handleDownloadPdf = useCallback((quote: QuoteListItemDto) => {
+    void mutations.handleDownloadPdf(quote);
+  }, [mutations]);
+
   const handleRequestDelete = useCallback((quote: QuoteListItemDto) => {
     mutations.openDeleteModal({
       id: quote.id,
@@ -103,6 +107,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
         quotes={listState.filteredQuotes}
         isLoading={listState.isLoading}
         onOpenQuote={handleOpenQuote}
+        onDownloadQuotePdf={handleDownloadPdf}
         onDeleteQuote={handleRequestDelete}
       />
 

@@ -17,7 +17,7 @@ import {
 } from '../../../utils/serverValidation';
 import type { QuoteDetailDto, QuoteLineDto, QuoteStatus } from '../../../types/quotes/quotes.types';
 import { quoteService } from '../../../services/quotes/quote.service';
-import { mapQuoteValidationMessageToKey, toValidUntilIso } from '../helpers';
+import { mapQuoteValidationMessageToKey, saveBlobAsFile, toValidUntilIso } from '../helpers';
 import type { QuoteEditorState } from './useQuoteEditor';
 import {
   buildCreateQuoteRequest,
@@ -67,6 +67,7 @@ export function useQuoteMutations({
   const [isSavingLine, setIsSavingLine] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [isDeletingQuote, setIsDeletingQuote] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteQuoteTarget | null>(null);
 
   const { applyQuote, cancelLineEditing, close: closeEditor } = editor;
@@ -275,6 +276,24 @@ export function useQuoteMutations({
     }
   }, [adoptMutationResult, editor.quote, handleMutationError]);
 
+  /**
+   * Downloads the quote PDF. Every status is printable, so this is offered on
+   * a draft too; the error branch is a single toast because a failed binary
+   * response carries a blob body, not a validation detail to map.
+   */
+  const handleDownloadPdf = useCallback(async (quote: { id: number; quoteNumber: string }) => {
+    setIsDownloadingPdf(true);
+
+    try {
+      const { blob, fileName } = await quoteService.downloadPdf(quote.id);
+      saveBlobAsFile(blob, fileName ?? `${quote.quoteNumber}.pdf`);
+    } catch {
+      showErrorToast('quotes.errors.pdfDownloadFailed');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }, [showErrorToast]);
+
   const openDeleteModal = useCallback((target: DeleteQuoteTarget) => setDeleteTarget(target), []);
 
   const closeDeleteModal = useCallback(() => {
@@ -314,6 +333,7 @@ export function useQuoteMutations({
     isSavingLine,
     isChangingStatus,
     isDeletingQuote,
+    isDownloadingPdf,
     deleteTarget,
     handleCreateQuote,
     handleSaveHeader,
@@ -321,6 +341,7 @@ export function useQuoteMutations({
     handleSubmitLine,
     handleDeleteLine,
     handleChangeStatus,
+    handleDownloadPdf,
     openDeleteModal,
     closeDeleteModal,
     handleDeleteQuote,

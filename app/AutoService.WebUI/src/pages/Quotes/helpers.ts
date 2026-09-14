@@ -203,7 +203,7 @@ export function matchesQuoteStatusFilter(quote: QuoteListItemDto, filter: QuoteS
 export function normalizeQuoteSearchValue(value: string): string {
   return value
     .normalize('NFD')
-    .replaceAll(/[̀-ͯ]/g, '')
+    .replaceAll(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 }
 
@@ -250,6 +250,26 @@ export function computeQuoteLineAmountsPreview(
   const vatAmount = Math.round(((netAmount * vatRatePercent) / 100) * 100) / 100;
 
   return { netAmount, vatAmount, grossAmount: netAmount + vatAmount };
+}
+
+/**
+ * Hands a downloaded blob to the browser as a file.
+ *
+ * The object URL is revoked right after the click, because the blob would
+ * otherwise stay in memory for the lifetime of the document.
+ * @param blob File content returned by the API.
+ * @param fileName Name to save the file under.
+ */
+export function saveBlobAsFile(blob: Blob, fileName: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 /** Ordered validation-message fragments mapped to their Quotes page i18n keys. */

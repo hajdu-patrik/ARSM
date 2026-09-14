@@ -84,11 +84,17 @@ const QuoteEditorModalComponent = memo(function QuoteEditorModal({
           quote={quote}
           isSaving={mutations.isSavingQuote}
           isChangingStatus={mutations.isChangingStatus}
+          isDownloadingPdf={mutations.isDownloadingPdf}
           canSaveHeader={quote !== null && canEditHeader && hasQuoteHeaderChanges(editor.headerForm, quote)}
           onClose={editor.close}
           onCreate={() => void mutations.handleCreateQuote()}
           onSaveHeader={() => void mutations.handleSaveHeader()}
           onChangeStatus={(status) => void mutations.handleChangeStatus(status)}
+          onDownloadPdf={() => {
+            if (quote) {
+              void mutations.handleDownloadPdf(quote);
+            }
+          }}
           onDelete={() => {
             if (quote) {
               mutations.openDeleteModal({

@@ -12,6 +12,20 @@ import type {
 } from '../../types/quotes/quotes.types';
 
 /**
+ * Reads the file name out of a Content-Disposition header.
+ * @param disposition Raw header value, when the response carried one.
+ * @returns The file name, or null when the header is absent or has none.
+ */
+function parseContentDispositionFileName(disposition: unknown): string | null {
+  if (typeof disposition !== 'string') {
+    return null;
+  }
+
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  return match ? decodeURIComponent(match[1].trim()) : null;
+}
+
+/**
  * Quote API service.
  *
  * Thin axios wrapper for {@code /api/quotes} and the vehicle-nested quote
@@ -77,6 +91,18 @@ export const quoteService = {
   async changeStatus(id: number, request: ChangeQuoteStatusRequest): Promise<QuoteDetailDto> {
     const response = await apiClient.post<QuoteDetailDto>(`/api/quotes/${id}/status`, request);
     return response.data;
+  },
+
+  /**
+   * Downloads the quote as a PDF. The response is binary, so it is requested
+   * as a blob; the file name comes from the Content-Disposition header the API
+   * sets, and is null when the header is missing or unparsable.
+   */
+  async downloadPdf(id: number): Promise<{ blob: Blob; fileName: string | null }> {
+    const response = await apiClient.get<Blob>(`/api/quotes/${id}/pdf`, { responseType: 'blob' });
+    const disposition = response.headers['content-disposition'];
+
+    return { blob: response.data, fileName: parseContentDispositionFileName(disposition) };
   },
 
   /** Extends a quote's validity deadline. */
