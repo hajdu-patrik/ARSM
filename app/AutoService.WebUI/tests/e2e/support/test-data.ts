@@ -3,9 +3,11 @@ import type { CustomerListItem, VehicleDetailDto } from '../../../src/types/cust
 import type { MechanicListItem } from '../../../src/services/admin/admin.service';
 import type { ProfileData } from '../../../src/types/profile/profile.types';
 import type { LaborTypeDto, PartDto } from '../../../src/types/catalog/catalog.types';
+import type { QuoteDetailDto } from '../../../src/types/quotes/quotes.types';
 import { MOCK_MECHANIC_IDS } from './test-data.constants';
 import { createFixtureState } from './test-data.fixtures';
 import { createCatalogFixtureState } from './test-data.catalog.fixtures';
+import { createQuoteFixtureState } from './test-data.quotes.fixtures';
 
 export {
   MOCK_APPOINTMENT_IDS,
@@ -13,6 +15,8 @@ export {
   MOCK_LABOR_TYPE_IDS,
   MOCK_MECHANIC_IDS,
   MOCK_PART_IDS,
+  MOCK_QUOTE_IDS,
+  MOCK_QUOTE_LINE_IDS,
   MOCK_VEHICLE_IDS,
   PROTECTED_DEMO_MECHANIC_EMAILS,
 } from './test-data.constants';
@@ -28,11 +32,15 @@ export interface MockApiState {
   readonly mechanics: MechanicListItem[];
   readonly parts: PartDto[];
   readonly laborTypes: LaborTypeDto[];
+  readonly quotes: QuoteDetailDto[];
   nextVehicleId: number;
   nextAppointmentId: number;
   nextMechanicPersonId: number;
   nextPartId: number;
   nextLaborTypeId: number;
+  nextQuoteId: number;
+  nextQuoteLineId: number;
+  nextQuoteSequence: number;
   /** One-shot override consumed by the next mocked part/labor-type create or update response. */
   catalogGrossOverride: number | null;
 }
@@ -40,10 +48,12 @@ export interface MockApiState {
 export function createMockApiState(profileEmail: string): MockApiState {
   const fixtures = createFixtureState();
   const catalogFixtures = createCatalogFixtureState();
+  const quoteFixtures = createQuoteFixtureState();
 
   return {
     ...fixtures,
     ...catalogFixtures,
+    ...quoteFixtures,
     appointments: [],
     profile: {
       personId: MOCK_MECHANIC_IDS.gabor,

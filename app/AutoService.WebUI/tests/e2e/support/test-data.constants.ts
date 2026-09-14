@@ -38,3 +38,15 @@ export const MOCK_LABOR_TYPE_IDS = {
   diagnostics: 4001,
   oilChange: 4002,
 } as const;
+
+export const MOCK_QUOTE_IDS = {
+  draftTimingBelt: 7001,
+  sentDiagnostics: 7002,
+  expiredOilChange: 7003,
+} as const;
+
+export const MOCK_QUOTE_LINE_IDS = {
+  draftTimingBelt: 7011,
+  sentDiagnostics: 7012,
+  expiredOilChange: 7013,
+} as const;

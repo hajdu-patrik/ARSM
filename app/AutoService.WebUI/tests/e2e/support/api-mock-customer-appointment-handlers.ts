@@ -84,6 +84,20 @@ async function tryHandleCustomerNestedRoute(
     return true;
   }
 
+  const vehicleMatch = /^\/api\/vehicles\/(\d+)$/.exec(path);
+  if (vehicleMatch && method === 'GET') {
+    const vehicleId = Number(vehicleMatch[1]);
+    const vehicle = Object.values(state.vehiclesByCustomerId).flat().find((candidate) => candidate.id === vehicleId);
+
+    if (!vehicle) {
+      await fulfillJson(route, { detail: 'Vehicle not found.' }, 404);
+      return true;
+    }
+
+    await fulfillJson(route, vehicle);
+    return true;
+  }
+
   const vehicleHistoryMatch = /^\/api\/vehicles\/(\d+)\/appointments$/.exec(path);
   if (vehicleHistoryMatch && method === 'GET') {
     const vehicleId = Number(vehicleHistoryMatch[1]);

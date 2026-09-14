@@ -52,3 +52,6 @@
 - `appointment-updates-check.py` asserts the SSE payload keys are camelCase. That contract is easy to break silently, because the payload is serialized by a static `JsonSerializer` call that does not pick up the ASP.NET Core JSON options, and the browser parsers drop anything they cannot read.
 - `quote-line-limit-check.py` fills a dedicated draft quote to the 200-line cap (`QuoteValidation.MaxLineCount`), asserts the 201st add is refused with 422, and deletes the fixture afterwards so the demo seed the SQL integrity suite asserts against stays untouched.
 - Scheduler intake and customer details/history split-view E2E behavior.
+- Quote E2E coverage in `tests/e2e/quote-editor.spec.ts` (list totals, search, draft creation from a vehicle row, catalog part and labor lines, line edit and delete) and `tests/e2e/quote-status.spec.ts` (send gating, the post-send lock, accept/reject, the status filter including the computed expiry, draft deletion).
+- The quote mock (`tests/e2e/support/api-mock-quote-*.ts`) recomputes line amounts and totals and bumps the version on every write, so a total asserted in a spec is a server-shaped number, not one the UI derived.
+- Quote page-object locators take the visible copy of each row control (`filter({ visible: true })`), because a row renders its actions twice: once for the wide grid and once for the compact tiles below `md`.

@@ -5,6 +5,7 @@ import { tryHandleAdminRoute } from './api-mock-admin-handlers';
 import { tryHandleAuthRoute, tryHandleProfileRoute } from './api-mock-auth-profile-handlers';
 import { tryHandleAppointmentRoute, tryHandleCustomerRoute } from './api-mock-customer-appointment-handlers';
 import { tryHandleCatalogRoute } from './api-mock-catalog-handlers';
+import { tryHandleQuoteRoute } from './api-mock-quote-handlers';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 const unauthorizedOnceHits = new WeakMap<InstallApiMockOptions, Set<string>>();
@@ -61,6 +62,10 @@ export async function handleApiRoute(
   }
 
   if (await tryHandleCatalogRoute(route, method, path, state, options)) {
+    return;
+  }
+
+  if (await tryHandleQuoteRoute(route, method, path, url, state, options)) {
     return;
   }
 
