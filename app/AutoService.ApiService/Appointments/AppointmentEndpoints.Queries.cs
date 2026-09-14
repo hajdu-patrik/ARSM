@@ -9,14 +9,14 @@ public static partial class AppointmentEndpoints
      * Returns all appointments for a given customer across all owned vehicles.
      *
      * @param customerId Target customer identifier.
-     * @param descending Whether to sort by scheduled date in descending order.
+     * @param descending Whether to sort by scheduled date in descending order; omitted means ascending.
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Appointment list or 404 if the customer does not exist.
      */
     private static async Task<IResult> GetByCustomerAsync(
         int customerId,
-        bool descending,
+        bool? descending,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public static partial class AppointmentEndpoints
             .Include(a => a.Mechanics)
             .Where(a => a.Vehicle.CustomerId == customerId);
 
-        var orderedAppointmentsQuery = descending
+        var orderedAppointmentsQuery = descending == true
             ? appointmentsQuery.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
             : appointmentsQuery.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
 
@@ -49,14 +49,14 @@ public static partial class AppointmentEndpoints
      * Returns all appointments linked to a specific vehicle.
      *
      * @param vehicleId Target vehicle identifier.
-     * @param descending Whether to sort by scheduled date in descending order.
+     * @param descending Whether to sort by scheduled date in descending order; omitted means ascending.
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Appointment list or 404 if the vehicle does not exist.
      */
     private static async Task<IResult> GetByVehicleAsync(
         int vehicleId,
-        bool descending,
+        bool? descending,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -76,7 +76,7 @@ public static partial class AppointmentEndpoints
             .Include(a => a.Mechanics)
             .Where(a => a.VehicleId == vehicleId);
 
-        var orderedAppointmentsQuery = descending
+        var orderedAppointmentsQuery = descending == true
             ? appointmentsQuery.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
             : appointmentsQuery.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
 
