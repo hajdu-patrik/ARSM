@@ -19,11 +19,11 @@ internal sealed class QuoteNumberGenerator
     // failure is actually something else.
     private const int MaxAttempts = 5;
 
-    private readonly AutoServiceDbContext _dbContext;
+    private readonly AutoServiceDbContext dbContext;
 
     internal QuoteNumberGenerator(AutoServiceDbContext dbContext)
     {
-        _dbContext = dbContext;
+        this.dbContext = dbContext;
     }
 
     /**
@@ -38,7 +38,7 @@ internal sealed class QuoteNumberGenerator
      */
     internal async Task<Quote> CreateAsync(Quote quote, CancellationToken cancellationToken)
     {
-        _dbContext.Quotes.Add(quote);
+        dbContext.Quotes.Add(quote);
 
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
@@ -46,7 +46,7 @@ internal sealed class QuoteNumberGenerator
 
             try
             {
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
                 return quote;
             }
             catch (DbUpdateException ex) when (UniqueConstraintDetection.IsUniqueConstraintViolation(ex) && attempt < MaxAttempts)
@@ -82,7 +82,7 @@ internal sealed class QuoteNumberGenerator
         // max in C#, in a single row instead of the whole year. The unique
         // index on QuoteNumber remains the real source of truth against
         // races; this only reduces how often two concurrent inserts collide.
-        var highestQuoteNumber = await _dbContext.Quotes
+        var highestQuoteNumber = await dbContext.Quotes
             .AsNoTracking()
             .Where(q => q.QuoteNumber.StartsWith(yearPrefix))
             .OrderByDescending(q => q.QuoteNumber)

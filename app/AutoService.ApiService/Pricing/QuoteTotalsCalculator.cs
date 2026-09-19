@@ -7,9 +7,8 @@ internal readonly record struct QuoteTotals(decimal TotalNet, decimal TotalVat, 
 
 /**
  * Sums quote line amounts into quote-level totals.
- *
- * Not yet consumed in F1 — quotes are introduced in phase F3. Kept here
- * intentionally alongside QuoteLineCalculator.
+ * Consumed by Quotes/QuoteEndpoints.Helpers.cs and the demo quote seed,
+ * alongside QuoteLineCalculator.
  */
 internal static class QuoteTotalsCalculator
 {

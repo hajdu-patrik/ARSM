@@ -7,9 +7,8 @@ internal readonly record struct QuoteLineAmounts(decimal NetAmount, decimal VatA
 
 /**
  * Computes line-level net, VAT, and gross amounts for a single quote line.
- *
- * Not yet consumed in F1 — quote lines are introduced in phase F3. Kept here
- * intentionally so the pricing math has a single owner from the start.
+ * Consumed by Quotes/QuoteEndpoints.Helpers.cs and the demo quote seed, the
+ * single owner of quote-line pricing math.
  */
 internal static class QuoteLineCalculator
 {
