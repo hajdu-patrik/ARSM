@@ -23,6 +23,9 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 - Állapotfrissítés aktív munkákhoz
 - Havi naptárnézet és kijelölt napi összegzés
 - Szerepkör-alapú működés (szerelő és admin)
+- Alkatrész- és munkatípus-törzs ÁFA-alapú nettó/bruttó árakkal
+- Járművenkénti árajánlatok alkatrész- és munkatételekkel, állapot-életciklussal és PDF exporttal
+- Cégeredmény kimutatás év és hónap szerint
 
 ## Technológiai stack
 

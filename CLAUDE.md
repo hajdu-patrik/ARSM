@@ -89,6 +89,10 @@
 - `People` remains abstract TPH; identity link via `People.IdentityUserId`.
 - DTO-only API boundaries.
 - Config-first runtime addressing; no localhost fallback hardcoding.
+- Money columns (`Part`/`LaborType`/`Quote`/`QuoteLine`) are `numeric(18,2)`; gross is always computed
+  by addition (`net + vat`), never by a separate gross-rate multiplication — enforced in
+  `Pricing/QuoteLineCalculator` and `Pricing/QuoteTotalsCalculator`, and backed by the `CK_Quotes_Totals`
+  database check constraint.
 
 ## Version Control Attribution
 

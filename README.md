@@ -23,6 +23,9 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - Real-time status updates across active jobs
 - Monthly calendar view plus selected-day summary
 - Role-aware behavior for mechanic and admin users
+- Parts and labor pricing catalog with VAT-aware net/gross rates
+- Price quotes per vehicle, with part/labor lines, a status lifecycle, and PDF export
+- Company results reporting by year and month
 
 ## Technology Stack
 

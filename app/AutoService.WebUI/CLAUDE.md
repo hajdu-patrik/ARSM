@@ -40,6 +40,7 @@
 - The scheduler subscribes to `/api/appointments/updates` while mounted and refreshes the current view on each event, rather than patching local state, because an appointment can move between months.
 - Profile picture upload accepts JPEG/PNG/WebP up to 4 MB (`MAX_PROFILE_PICTURE_BYTES`); the size check runs on both the selected file and the cropped blob, because cropping re-encodes and changes the size that is actually sent.
 - The crop modal produces `image/webp` at quality 0.9 with a `.webp` file name (`src/utils/imageCrop.ts`); the API re-encodes to WebP again server-side.
+- Parts and labor types live on `/inventory`: two tabs (Parts, Labor types) sharing create/edit and delete modals, with the active tab reflected in the URL (`?tab=parts` / `?tab=labor-types`). Every gross value shown in a list row comes from the server DTO (`grossUnitPrice` / `grossHourlyRate`); the one client-side gross computation in the whole pricing vertical is the create/edit live preview (`computeLiveGrossPreview` in `pages/Inventory/helpers.ts`), which mirrors `Pricing/PricingCalculator.GrossUnitPrice` exactly.
 - Quotes live on `/quotes`: the list carries search (quote number, title, plate) and a status filter whose `Expired` option reads the server-computed `isExpired` flag, never a stored status.
 - A quote is anchored to a vehicle, so creation starts from the vehicle row on the Customers page (`FilePlus`, accent tone, outside the fixed Eye/Pencil/Trash semantics) and navigates to `/quotes?vehicleId=<id>&new=1`; the Quotes page consumes those parameters once and opens the create modal.
 - `QuoteEditorModal` is split into `.header`, `.lines`, `.totals` and `.footer` files, and its body scrolls inside the dialog (`max-h-[60vh]`), because a document-sized modal otherwise pushes its footer actions off screen.
@@ -48,12 +49,15 @@
 - The quote line editor relabels itself by line kind: a part is counted in pieces at a net unit price, labor in hours at a net hourly rate.
 - Company results live on `/company-results`: a year plus an optional month, the accepted net and gross as the headline, and the pending, expired and rejected amounts beside them at a lower weight. Every figure comes from the server DTO through `formatHuf`, so the page shows whole forints and never derives an amount. Charts are deliberately out of scope.
 - The quote PDF is downloaded through `quoteService.downloadPdf` (blob response, file name taken from `Content-Disposition`) and handed to the browser by `saveBlobAsFile`, which revokes the object URL right after the click. The action sits both on the list row and in the editor footer, and it is offered in every status, because every status is printable.
+- `utils/currency.ts` exports two formatters, never a value the server did not already compute: `formatHuf` for whole-forint amounts (line/total amounts, report totals) and `formatHufUnitPrice` for a unit price or hourly rate with exactly 2 decimals.
+- The pricing vertical's locale strings live in their own pair, `utils/locales/{en,hu}.pricing.ts`, merged into `en.ts`/`hu.ts` alongside the existing `.core.ts`/`.feature.ts` split, with the same EN/HU key-for-key parity discipline.
 
 ## Current Style Contract Anchors
 
 - Canonical style sources: `src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`, `src/utils/formStyles.ts`, `src/styles/tokens.css`.
 - Extract only the repeated minimum common subset: geometry, base layout, radius, focus, motion, disabled state, typography, and reusable responsive wrappers.
 - Keep feature-specific color, state, placement, spacing, icons, and rare variants local in the owning TS/TSX file or feature module.
+- The quote line row grid (`quoteLineRowGridClass` in `QuoteLineEditorRow.tsx`) and the catalog row layout stay local to their own component files rather than joining `utils/styles/`: a pricing-specific row grid was judged too narrow to pay for a shared primitive.
 - Compose component styles by importing a small shared base and adding local semantic classes in `className`.
 - Do not create global style exports for one-off or domain-specific details.
 - Icon-only controls must use scale-only hover behavior.
