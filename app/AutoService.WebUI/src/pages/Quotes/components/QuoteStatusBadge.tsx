@@ -8,6 +8,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { QuoteDisplayStatus } from '../helpers';
 
+/** Props for the {@link QuoteStatusBadge} component. */
 interface QuoteStatusBadgeProps {
   /** The status to display, expiry included. */
   readonly status: QuoteDisplayStatus;
