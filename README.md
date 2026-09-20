@@ -190,6 +190,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
   - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
 - Playwright runtime secrets and the read-only SQL connection string belong in `.secrets` at repository root (gitignored; template: `.secrets.example`); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
+- The MCP read-only PostgreSQL URI belongs in `.env` at repository root (gitignored; template: `.env.example`); the tracked MCP templates reference it as `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}`, while the local gitignored MCP configs hold the resolved URI.
 - MCP templates stay portable placeholder files; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
 
 ## Deployment Security Notes

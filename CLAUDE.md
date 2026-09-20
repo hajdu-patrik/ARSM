@@ -63,7 +63,9 @@
 - Frontend code-change workflows: run `npm audit fix`.
 - Backend code-change workflows: run `dotnet list package --vulnerable --include-transitive` and remediate safely.
 - AI SQL tooling must use `ai_agent_test_user` with `SELECT`-only policy.
-- Keep tracked MCP SQL templates placeholder-based; local gitignored `.claude/.mcp.json` and `.vscode/mcp.json` must hold the concrete read-only PostgreSQL URI for `ai_agent_test_user` on developer machines.
+- Keep tracked MCP SQL templates (`.claude/.mcp.template.json`, `.vscode/mcp.template.json`, `.env.example`)
+  placeholder-based; local gitignored `.claude/.mcp.json`, `.vscode/mcp.json`, and `.env` must hold the
+  concrete read-only PostgreSQL URI for `ai_agent_test_user` on developer machines.
 
 ## Canonical Local Test Runner
 

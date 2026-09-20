@@ -188,6 +188,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
   - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
 - Playwright futtatási titkok és a read-only SQL connection string: repo gyökérbeli `.secrets` (gitignored; sablon: `.secrets.example`); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 - MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
+- Az MCP read-only PostgreSQL URI a repo gyökérbeli `.env` fájlban van (gitignored; sablon: `.env.example`); a trackelt MCP sablonok `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}` formában hivatkoznak rá, a lokális gitignore-olt MCP configok pedig a feloldott URI-t tartalmazzák.
 - Az MCP sablonok hordozható placeholder fájlok maradnak; a gitignore-olt lokális MCP profilok tartalmazhatják az `ai_agent_test_user` konkrét read-only PostgreSQL URI-ját.
 
 ## Deployment biztonsági megjegyzések
