@@ -11,14 +11,24 @@
 
 ## Model Selection (Auto)
 
-- Do not auto-select models that cost more than 3x baseline.
-- Forbidden for automatic selection: `claude-fable-5-1`, `claude-fable-5`, `claude-opus-5`,
-  `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6`.
-- Preferred pool: `claude-sonnet-5`, `claude-haiku-4-5` (or equivalent tier).
-- If top-tier is truly needed, ask user approval first.
-- Keep both lists current. When a new Claude model ships, place it in the preferred pool or in the
-  forbidden list under the same cost rule before using it here, and correct any model id that a
-  newer release has superseded.
+<!-- model-policy:start -->
+<!-- Generated daily by scripts/update-model-policy.py (.github/workflows/model-policy.yml). Do not edit by hand. -->
+| Family | Latest model | Effort to use | Use for | Approval | Supported effort (Models API) |
+|---|---|---|---|---|---|
+| Sonnet | `claude-sonnet-5` | `max` | easy and medium tasks (default) | not needed | low, medium, high, xhigh, max |
+| Opus | `claude-opus-5-5` | `xhigh`–`max` | serious tasks | not needed | low, medium, high, xhigh, max |
+| Fable | `claude-fable-5-1` | `high` | only very extreme tasks | ask the user first | low, medium, high, xhigh, max |
+<!-- model-policy:end -->
+
+- Only the Sonnet, Opus and Fable families are used, and only the latest model of each (the table
+  above). Haiku and every older version of a family are never selected.
+- Sonnet at `max` effort is the default. Opus at `xhigh`–`max` may be selected without asking for a
+  serious task. Fable at `high` is reserved for very extreme tasks and needs the user's approval first.
+- The table is refreshed every day at 12:00 (Europe/Budapest) from the Models API and pushed to `main`
+  when a newer model or a changed effort ladder appears; the tier rules themselves are the owner's
+  policy and live in `FAMILY_POLICIES` in `scripts/update-model-policy.py`.
+- In the routed chain, `orchestrator` names the model tier for every step from the prompt, and the
+  session passes it as the agent's `model`; an agent's frontmatter model is only the fallback.
 
 ## Workflow (Ask First)
 

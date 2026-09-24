@@ -9,7 +9,37 @@
  *
  * Emits the reminder through hookSpecificOutput.additionalContext, which the harness
  * injects into model context. Never blocks the prompt.
+ *
+ * The model-selection line is read from the generated model-policy table in the root CLAUDE.md
+ * (refreshed daily by scripts/update-model-policy.py), so the reminder never drifts from it.
  */
+
+const fs = require('fs');
+const path = require('path');
+
+const FALLBACK_MODEL_LINE = 'Model selection: follow the model-policy table in the root CLAUDE.md.';
+
+/**
+ * Builds the model-selection reminder from the CLAUDE.md model-policy table.
+ * @returns {string} One paragraph naming each family's latest model, effort, use and approval.
+ */
+function readModelSelectionLine() {
+  try {
+    const claudeMd = fs.readFileSync(path.join(process.env.CLAUDE_PROJECT_DIR || '.', 'CLAUDE.md'), 'utf8');
+    const block = claudeMd.split('<!-- model-policy:start -->')[1]?.split('<!-- model-policy:end -->')[0] ?? '';
+    const rows = block.split(/\r?\n/)
+      .filter((line) => line.startsWith('| ') && !line.startsWith('| Family'))
+      .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim().replace(/`/g, '')));
+    if (rows.length === 0) {
+      return FALLBACK_MODEL_LINE;
+    }
+    const tiers = rows.map(([family, model, effort, useFor, approval]) =>
+      `${family} ${model} at ${effort} for ${useFor}${approval === 'not needed' ? '' : ` (${approval})`}`);
+    return `Model selection (root CLAUDE.md table): ${tiers.join('; ')}. Never Haiku, never an older version of a family.`;
+  } catch {
+    return FALLBACK_MODEL_LINE;
+  }
+}
 
 const REMINDER = [
   'ARSM WORKFLOW CONTRACT (root CLAUDE.md). This governs every request in this repository.',
@@ -44,9 +74,7 @@ const REMINDER = [
   'and behavior decisions. If a choice is not unambiguous from the prompt, repo instructions,',
   'existing code conventions, or the active plan, ASK instead of deciding.',
   '',
-  'Model selection: never auto-select above 3x baseline. Forbidden for automatic selection:',
-  'claude-fable-5-1, claude-fable-5, claude-opus-5, claude-opus-4-8, claude-opus-4-7,',
-  'claude-opus-4-6. Preferred pool: claude-sonnet-5, claude-haiku-4-5.',
+  readModelSelectionLine(),
   '',
   'Version control: the repository owner is the only commit author. Never add Co-Authored-By,',
   'Claude-Session, or any "generated with" attribution to a commit, PR, or merge message.',

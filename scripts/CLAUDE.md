@@ -30,6 +30,13 @@
   entrypoint so verification reads the bucket the same way the serving path does. `--verify` is
   accepted for backwards compatibility; verification runs either way. Read-only: touches neither
   the database nor the bucket. Report: `tests/.artifacts/profile-picture-migration-summary.json`.
+- `update-model-policy.py`: rewrites the generated model-policy table between the
+  `<!-- model-policy:start/end -->` markers in the root `CLAUDE.md` from the Anthropic Models API
+  (newest Sonnet, Opus and Fable model plus their supported effort levels); the tier rules are the
+  owner's policy in `FAMILY_POLICIES`. Writes only on change; `--dry-run` prints the block. Needs
+  `ANTHROPIC_API_KEY`; exit 2 when a family is missing or its policy effort is unsupported, so a bad
+  catalog never reaches `main`. Run daily at 12:00 Europe/Budapest by `.github/workflows/model-policy.yml`,
+  which pushes a changed table straight to `main` under the latest commit's author identity.
 
 ## Validation
 

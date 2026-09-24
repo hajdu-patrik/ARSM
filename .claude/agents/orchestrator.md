@@ -21,6 +21,13 @@ Plan-only agent. No direct implementation edits.
 6. Run security remediation stage.
 7. Run heavy tests only when gate conditions match.
 
+## Model Routing
+
+- Name the model tier for every routed step, chosen from the prompt against the model-policy table in
+  the root `CLAUDE.md`: Sonnet (`max`) for easy and medium steps, Opus (`xhigh`–`max`) for serious ones,
+  Fable (`high`) only for very extreme steps and only after the user approves it.
+- Never route a step to Haiku or to an older version of a family.
+
 ## Gates
 
 - Heavy tests only on explicit request or significant behavior changes.

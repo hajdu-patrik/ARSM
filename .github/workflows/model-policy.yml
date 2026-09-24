@@ -1,0 +1,75 @@
+name: Model policy refresh
+
+# Daily at 12:00 Europe/Budapest. GitHub cron runs in UTC, so both 10:00 UTC (CEST) and 11:00 UTC
+# (CET) are scheduled and the first step lets only the run that lands on 12:00 local time through.
+on:
+  schedule:
+    - cron: "0 10 * * *"
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-policy
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Gate on 12:00 Budapest time
+      id: gate
+      run: |
+        if [ "${{ github.event_name }}" = "schedule" ] && [ "$(TZ=Europe/Budapest date +%H)" != "12" ]; then
+          echo "run=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "run=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - uses: actions/checkout@v7
+      if: steps.gate.outputs.run == 'true'
+      with:
+        ref: main
+
+    - uses: actions/setup-python@v6
+      if: steps.gate.outputs.run == 'true'
+      with:
+        python-version: "3.12"
+
+    - name: Install the Anthropic SDK
+      if: steps.gate.outputs.run == 'true'
+      run: pip install --disable-pip-version-check anthropic
+
+    - name: Refresh the model-policy table
+      if: steps.gate.outputs.run == 'true'
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        if [ -z "$ANTHROPIC_API_KEY" ]; then
+          echo "::error::The ANTHROPIC_API_KEY repository secret is not set."
+          exit 1
+        fi
+        python scripts/update-model-policy.py
+
+    # The repository owner is the only commit author, so the commit reuses the identity of the
+    # latest commit on main instead of a bot identity, and carries no attribution trailer.
+    - name: Commit and push when the table changed
+      if: steps.gate.outputs.run == 'true'
+      run: |
+        if git diff --quiet -- CLAUDE.md; then
+          echo "Model policy unchanged; nothing to push."
+          exit 0
+        fi
+        export GIT_AUTHOR_NAME="$(git log -1 --format=%an)"
+        export GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae)"
+        export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+        export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+        git add CLAUDE.md
+        git commit -m "chore(governance): refresh the model policy"
+        git push origin HEAD:main
