@@ -1,22 +1,22 @@
 {
-    "css.lint.unknownAtRules": "ignore",
-    "scss.lint.unknownAtRules": "ignore",
-    "less.lint.unknownAtRules": "ignore",
-    "sqltools.connections": [
-        {
-            "ssh": "Disabled",
-            "previewLimit": 100,
-            "server": "localhost",
-            "port": 50000,
-            "askForPassword": true,
-            "sshOptions": {
-                "port": 22
-            },
-            "driver": "PostgreSQL",
-            "name": "Onlab",
-            "username": "postgres",
-            "database": "AutoServiceDb",
-            "connectionTimeout": 15
-        }
-    ]
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 100,
+      "server": "localhost",
+      "port": 50000,
+      "askForPassword": true,
+      "sshOptions": {
+        "port": 22
+      },
+      "driver": "PostgreSQL",
+      "name": "Szakdoga",
+      "username": "postgres",
+      "database": "AutoServiceDb",
+      "connectionTimeout": 15
+    }
+  ]
 }
