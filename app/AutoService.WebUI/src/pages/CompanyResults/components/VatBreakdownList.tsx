@@ -9,7 +9,12 @@ import { DataList, DataListRow, type DataListColumn } from '../../../components/
 import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { CompanyResultVatRowDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
-import { compactSectionHeadingTextClass, numericValueTextClass } from '../../../utils/formStyles';
+import {
+  compactItemTitleTextClass,
+  compactSectionHeadingTextClass,
+  compactTwoColumnGridClass,
+  numericValueTextClass,
+} from '../../../utils/formStyles';
 
 interface VatBreakdownListProps {
   readonly t: TFunction;
@@ -18,8 +23,8 @@ interface VatBreakdownListProps {
 }
 
 /** Column grid shared by the header row and every VAT row via CSS subgrid. */
-const vatColumnsClass = '@lg:grid-cols-[minmax(4rem,auto)_minmax(0,1fr)_minmax(0,1fr)]';
-const vatRateTextClass = 'min-w-0 truncate text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+const vatColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
+const vatRateTextClass = `${compactItemTitleTextClass} tabular-nums`;
 
 const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, rows }: VatBreakdownListProps) {
   const columns: DataListColumn[] = [
@@ -55,7 +60,7 @@ const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, ro
             mobile={(
               <>
                 <p className={vatRateTextClass}>{row.vatRatePercent}%</p>
-                <div className="grid min-w-0 grid-cols-1 gap-2">
+                <div className={compactTwoColumnGridClass}>
                   <LabeledValueTile
                     label={t('companyResults.taxBase')}
                     value={formatHuf(row.net, locale)}

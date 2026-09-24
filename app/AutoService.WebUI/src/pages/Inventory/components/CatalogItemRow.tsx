@@ -73,7 +73,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       testId="catalog-item-row"
       desktop={(
         <>
-          <p className={`min-w-0 truncate ${compactItemTitleTextClass}`}>{name}</p>
+          <p className={compactItemTitleTextClass}>{name}</p>
           <p className={catalogIdentifierTextClass}>{identifier}</p>
           <p className={numericValueTextClass}>{formatHufUnitPrice(netAmount, locale)}</p>
           <p className={numericMutedValueTextClass}>{vatRatePercent}%</p>
@@ -84,7 +84,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       mobile={(
         <>
           <div className="flex min-w-0 items-start justify-between gap-2">
-            <p className={`min-w-0 truncate ${compactItemTitleTextClass}`}>{name}</p>
+            <p className={compactItemTitleTextClass}>{name}</p>
             {actions}
           </div>
 

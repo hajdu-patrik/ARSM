@@ -9,7 +9,12 @@ import { DataList, DataListRow, type DataListColumn } from '../../../components/
 import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { CompanyResultMonthDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
-import { compactSectionHeadingTextClass, numericValueTextClass } from '../../../utils/formStyles';
+import {
+  compactItemTitleTextClass,
+  compactSectionHeadingTextClass,
+  compactTwoColumnGridClass,
+  numericValueTextClass,
+} from '../../../utils/formStyles';
 import { formatQuantity } from '../../../utils/number';
 
 interface CompanyResultMonthListProps {
@@ -19,9 +24,7 @@ interface CompanyResultMonthListProps {
 }
 
 /** Column grid shared by the header row and every month row via CSS subgrid. */
-const monthColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(4rem,auto)_minmax(7rem,auto)_minmax(7rem,auto)]';
-
-const monthLabelClass = 'min-w-0 truncate text-sm text-arsm-primary dark:text-arsm-primary-dark';
+const monthColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(3.5rem,auto)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
 
 const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
   t,
@@ -52,7 +55,7 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
               testId="company-results-month-row"
               desktop={(
                 <>
-                  <p className={monthLabelClass}>{monthName}</p>
+                  <p className={compactItemTitleTextClass}>{monthName}</p>
                   <p className={numericValueTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
                   <p className={numericValueTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
                   <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
@@ -60,8 +63,8 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
               )}
               mobile={(
                 <>
-                  <p className={monthLabelClass}>{monthName}</p>
-                  <div className="grid min-w-0 grid-cols-1 gap-2">
+                  <p className={compactItemTitleTextClass}>{monthName}</p>
+                  <div className={compactTwoColumnGridClass}>
                     <LabeledValueTile
                       label={t('companyResults.quotes')}
                       value={formatQuantity(month.acceptedQuoteCount, locale)}

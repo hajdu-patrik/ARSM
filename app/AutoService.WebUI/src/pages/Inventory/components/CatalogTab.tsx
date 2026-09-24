@@ -20,8 +20,8 @@ import {
 } from '../../../utils/formStyles';
 import { CatalogItemRow } from './CatalogItemRow';
 
-/** Text columns keep an `fr` share with a non-zero floor; numeric/action columns size to the widest cell across all rows and the header. */
-const catalogColumnsClass = '@3xl:grid-cols-[minmax(10rem,1.6fr)_minmax(6rem,1fr)_auto_auto_auto_auto]';
+/** Text columns keep an `fr` share with a non-zero floor; numeric/action columns size to the widest cell across all rows and the header, above the same floors the quote lists use. */
+const catalogColumnsClass = '@3xl:grid-cols-[minmax(10rem,1.6fr)_minmax(6rem,1fr)_minmax(6.5rem,auto)_minmax(3rem,auto)_minmax(6.5rem,auto)_auto]';
 
 interface CatalogTabProps<TDto> {
   readonly t: TFunction;
