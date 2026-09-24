@@ -90,6 +90,7 @@ export const huPricing = {
     close: 'Bezárás',
     openQuote: '{{quoteNumber}} ajánlat megnyitása',
     deleteQuote: 'Ajánlat törlése',
+    deleteDraftOnlyHint: 'Csak piszkozat törölhető.',
     downloadPdf: 'PDF letöltése',
     downloadingPdf: 'Letöltés...',
     downloadPdfFor: '{{quoteNumber}} ajánlat PDF letöltése',

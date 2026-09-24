@@ -1,13 +1,16 @@
 /**
- * Quote list section: the column header from `md` up, the rows, and the
- * loading and empty states.
+ * Quote list section: renders through `DataList` so the header and every row
+ * share one column model, table from `@4xl` up, labeled tiles below it.
  * @module pages/Quotes/components/QuoteList
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { DataList, type DataListColumn } from '../../../components/common/DataList';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
-import { contentCardFrameClass, mutedSecondaryTextClass } from '../../../utils/formStyles';
-import { QuoteCard, quoteRowGridClass } from './QuoteCard';
+import { QuoteCard } from './QuoteCard';
+
+/** Column grid template shared by the list header and every row's desktop cells. */
+const quoteColumnsClass = '@4xl:grid-cols-[minmax(10rem,1.7fr)_minmax(5rem,1fr)_minmax(5.5rem,auto)_minmax(6rem,auto)_minmax(6.5rem,auto)_minmax(6.5rem,auto)_auto]';
 
 interface QuoteListProps {
   readonly t: TFunction;
@@ -28,38 +31,39 @@ const QuoteListComponent = memo(function QuoteList({
   onDownloadQuotePdf,
   onDeleteQuote,
 }: QuoteListProps) {
-  return (
-    <section className={`min-w-0 ${contentCardFrameClass}`}>
-      <div className={`hidden ${quoteRowGridClass} border-b border-arsm-border px-3 py-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:border-arsm-border-dark dark:text-arsm-muted-dark sm:px-3.5`}>
-        <span>{t('quotes.columns.quote')}</span>
-        <span>{t('quotes.columns.vehicle')}</span>
-        <span>{t('quotes.columns.status')}</span>
-        <span>{t('quotes.columns.validUntil')}</span>
-        <span className="text-right">{t('quotes.columns.totalNet')}</span>
-        <span className="text-right">{t('quotes.columns.totalGross')}</span>
-        <span aria-hidden="true" />
-      </div>
+  const columns: DataListColumn[] = [
+    { key: 'quote', label: t('quotes.columns.quote') },
+    { key: 'vehicle', label: t('quotes.columns.vehicle') },
+    { key: 'status', label: t('quotes.columns.status') },
+    { key: 'validUntil', label: t('quotes.columns.validUntil') },
+    { key: 'totalNet', label: t('quotes.columns.totalNet'), align: 'right' },
+    { key: 'totalGross', label: t('quotes.columns.totalGross'), align: 'right' },
+    { key: 'actions', label: '' },
+  ];
 
-      {isLoading && <p className={`px-3.5 py-6 text-center ${mutedSecondaryTextClass}`}>{t('quotes.loadingQuotes')}</p>}
-      {!isLoading && quotes.length === 0 && (
-        <p data-testid="quotes-empty" className={`px-3.5 py-6 text-center ${mutedSecondaryTextClass}`}>{t('quotes.emptyQuotes')}</p>
-      )}
-      {!isLoading && quotes.length > 0 && (
-        <div className="min-w-0 divide-y divide-arsm-border/80 dark:divide-arsm-border-dark/80">
-          {quotes.map((quote) => (
-            <QuoteCard
-              key={quote.id}
-              t={t}
-              locale={locale}
-              quote={quote}
-              onOpen={onOpenQuote}
-              onDownloadPdf={onDownloadQuotePdf}
-              onDelete={onDeleteQuote}
-            />
-          ))}
-        </div>
-      )}
-    </section>
+  return (
+    <DataList
+      breakpoint="4xl"
+      columnsClassName={quoteColumnsClass}
+      columns={columns}
+      isLoading={isLoading}
+      loadingText={t('quotes.loadingQuotes')}
+      isEmpty={quotes.length === 0}
+      emptyText={t('quotes.emptyQuotes')}
+      emptyTestId="quotes-empty"
+    >
+      {quotes.map((quote) => (
+        <QuoteCard
+          key={quote.id}
+          t={t}
+          locale={locale}
+          quote={quote}
+          onOpen={onOpenQuote}
+          onDownloadPdf={onDownloadQuotePdf}
+          onDelete={onDeleteQuote}
+        />
+      ))}
+    </DataList>
   );
 });
 

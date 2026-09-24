@@ -23,6 +23,7 @@ import {
   insetSurfaceClass,
   mutedMetaTextClass,
 } from '../../../utils/formStyles';
+import { formatQuantity } from '../../../utils/number';
 
 interface CompanyResultSummaryProps {
   readonly t: TFunction;
@@ -30,9 +31,9 @@ interface CompanyResultSummaryProps {
   readonly result: CompanyResultDto;
 }
 
-const headlineValueClass = 'truncate text-2xl font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
-const secondaryValueClass = 'truncate text-sm font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
-const countTextClass = 'truncate text-xs tabular-nums text-arsm-muted dark:text-arsm-muted-dark';
+const headlineValueClass = '[overflow-wrap:anywhere] text-xl sm:text-2xl font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+const secondaryValueClass = '[overflow-wrap:anywhere] text-sm font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+const countTextClass = '[overflow-wrap:anywhere] text-xs tabular-nums text-arsm-muted dark:text-arsm-muted-dark';
 
 const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
   t,
@@ -59,7 +60,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
             <p data-testid="company-results-accepted-gross" className={headlineValueClass}>{formatHuf(result.accepted.gross, locale)}</p>
           </div>
         </div>
-        <p className={countTextClass}>{t('companyResults.quoteCount', { count: result.accepted.quoteCount })}</p>
+        <p className={countTextClass}>{t('companyResults.quoteCount', { count: formatQuantity(result.accepted.quoteCount, locale) })}</p>
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
@@ -70,7 +71,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
             <p className={countTextClass}>
               {t('companyResults.netAndCount', {
                 net: formatHuf(entry.row.net, locale),
-                count: entry.row.quoteCount,
+                count: formatQuantity(entry.row.quoteCount, locale),
               })}
             </p>
           </div>
@@ -89,7 +90,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
         ))}
       </div>
 
-      <p className={mutedMetaTextClass}>{t('companyResults.draftCount', { count: result.draftQuoteCount })}</p>
+      <p className={mutedMetaTextClass}>{t('companyResults.draftCount', { count: formatQuantity(result.draftQuoteCount, locale) })}</p>
     </section>
   );
 });

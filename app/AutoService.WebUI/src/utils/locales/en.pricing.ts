@@ -90,6 +90,7 @@ export const enPricing = {
     close: 'Close',
     openQuote: 'Open quote {{quoteNumber}}',
     deleteQuote: 'Delete quote',
+    deleteDraftOnlyHint: 'Only a draft can be deleted.',
     downloadPdf: 'Download PDF',
     downloadingPdf: 'Downloading...',
     downloadPdfFor: 'Download the PDF of quote {{quoteNumber}}',

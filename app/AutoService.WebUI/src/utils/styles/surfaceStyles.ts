@@ -1,4 +1,5 @@
 /** Shared surface, content, card, panel, and layout style primitives. */
+import { mutedDarkCardToneClass } from './textStyles';
 
 /** Shared layout wrappers for grouped control rows and modal/footer action zones. */
 export const controlRowClass = 'arsm-control-row';
@@ -49,3 +50,30 @@ export const actionClusterClass = 'arsm-action-cluster';
 
 /** Sidebar icon alignment helper used by authenticated shell navigation. */
 export const sidebarIconSlotClass = 'inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center';
+
+/** Dashed empty-state box shown when a list/search has no results. */
+export const emptyStateBoxClass = `rounded-2xl border border-dashed border-arsm-border bg-arsm-input px-4 py-12 text-center text-sm ${mutedDarkCardToneClass}`;
+
+/** Container-query thresholds at which an aligned data list switches from labeled tiles to the column table. */
+export type DataListBreakpoint = 'lg' | '3xl' | '4xl';
+
+export interface DataListBreakpointClasses {
+  /** Grid root: the feature adds its own `@…:grid-cols-[…]` template next to this. */
+  readonly root: string;
+  /** Spans every track and inherits them, so header, body and rows share one column model. */
+  readonly subgrid: string;
+  /** Vertical centering for a data row. */
+  readonly rowAlign: string;
+  /** Full-width child of the body (for example an inline editor) once the table is active. */
+  readonly fullSpan: string;
+  /** Wrapper of the desktop cells: dissolves so the cells become subgrid items. */
+  readonly desktopCells: string;
+  /** Labeled-tile block shown below the threshold. */
+  readonly mobileBlock: string;
+}
+
+export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreakpointClasses> = {
+  lg:    { root: '@lg:grid @lg:gap-x-3',   subgrid: '@lg:col-span-full @lg:grid @lg:grid-cols-subgrid',    rowAlign: '@lg:items-center',  fullSpan: '@lg:col-span-full',  desktopCells: 'hidden @lg:contents',  mobileBlock: '@lg:hidden' },
+  '3xl': { root: '@3xl:grid @3xl:gap-x-3', subgrid: '@3xl:col-span-full @3xl:grid @3xl:grid-cols-subgrid', rowAlign: '@3xl:items-center', fullSpan: '@3xl:col-span-full', desktopCells: 'hidden @3xl:contents', mobileBlock: '@3xl:hidden' },
+  '4xl': { root: '@4xl:grid @4xl:gap-x-3', subgrid: '@4xl:col-span-full @4xl:grid @4xl:grid-cols-subgrid', rowAlign: '@4xl:items-center', fullSpan: '@4xl:col-span-full', desktopCells: 'hidden @4xl:contents', mobileBlock: '@4xl:hidden' },
+};

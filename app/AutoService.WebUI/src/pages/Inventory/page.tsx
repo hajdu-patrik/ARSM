@@ -13,11 +13,11 @@ import { useToastStore } from '../../store/toast.store';
 import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
 import { useCatalogState } from './hooks/useCatalogState';
 import { useCatalogMutations } from './hooks/useCatalogMutations';
-import { PartsTab } from './components/PartsTab';
-import { LaborTypesTab } from './components/LaborTypesTab';
-import { PartFormModal } from './components/PartFormModal';
-import { LaborTypeFormModal } from './components/LaborTypeFormModal';
+import { CatalogTab } from './components/CatalogTab';
+import { CatalogFormModal } from './components/CatalogFormModal';
 import { DeleteCatalogItemModal } from './components/DeleteCatalogItemModal';
+import { laborTypeCatalogTabConfig, partCatalogTabConfig } from './catalogTab.config';
+import { laborTypeCatalogFormConfig, partCatalogFormConfig } from './catalogForm.config';
 import type { DeleteCatalogItemTarget } from './helpers';
 import {
   getSegmentedControlOptionClass,
@@ -131,10 +131,10 @@ const InventoryPageComponent = memo(function InventoryPage() {
       </div>
 
       {activeTab === 'parts' ? (
-        <PartsTab
+        <CatalogTab
           t={t}
           locale={i18n.language}
-          parts={catalogState.parts.filteredItems}
+          items={catalogState.parts.filteredItems}
           isLoading={catalogState.parts.isLoading}
           searchTerm={catalogState.parts.searchTerm}
           onSearchChange={catalogState.parts.setSearchTerm}
@@ -144,12 +144,13 @@ const InventoryPageComponent = memo(function InventoryPage() {
           onOpenCreateModal={catalogMutations.openCreatePartModal}
           onOpenEditModal={catalogMutations.openEditPartModal}
           onOpenDeleteModal={catalogMutations.openDeletePartModal}
+          config={partCatalogTabConfig}
         />
       ) : (
-        <LaborTypesTab
+        <CatalogTab
           t={t}
           locale={i18n.language}
-          laborTypes={catalogState.laborTypes.filteredItems}
+          items={catalogState.laborTypes.filteredItems}
           isLoading={catalogState.laborTypes.isLoading}
           searchTerm={catalogState.laborTypes.searchTerm}
           onSearchChange={catalogState.laborTypes.setSearchTerm}
@@ -159,10 +160,11 @@ const InventoryPageComponent = memo(function InventoryPage() {
           onOpenCreateModal={catalogMutations.openCreateLaborTypeModal}
           onOpenEditModal={catalogMutations.openEditLaborTypeModal}
           onOpenDeleteModal={catalogMutations.openDeleteLaborTypeModal}
+          config={laborTypeCatalogTabConfig}
         />
       )}
 
-      <PartFormModal
+      <CatalogFormModal
         isOpen={catalogMutations.partModalOpen}
         mode={catalogMutations.partModalMode}
         isSaving={catalogMutations.isSavingPart}
@@ -173,9 +175,10 @@ const InventoryPageComponent = memo(function InventoryPage() {
         onClose={catalogMutations.closePartModal}
         onSubmit={catalogMutations.handleSubmitPart}
         setForm={catalogMutations.setPartForm}
+        config={partCatalogFormConfig}
       />
 
-      <LaborTypeFormModal
+      <CatalogFormModal
         isOpen={catalogMutations.laborTypeModalOpen}
         mode={catalogMutations.laborTypeModalMode}
         isSaving={catalogMutations.isSavingLaborType}
@@ -186,6 +189,7 @@ const InventoryPageComponent = memo(function InventoryPage() {
         onClose={catalogMutations.closeLaborTypeModal}
         onSubmit={catalogMutations.handleSubmitLaborType}
         setForm={catalogMutations.setLaborTypeForm}
+        config={laborTypeCatalogFormConfig}
       />
 
       <DeleteCatalogItemModal

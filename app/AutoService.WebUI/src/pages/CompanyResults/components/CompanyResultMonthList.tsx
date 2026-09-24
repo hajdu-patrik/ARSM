@@ -5,14 +5,12 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';
+import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { CompanyResultMonthDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
-import {
-  compactDataSurfaceClass,
-  compactSectionHeadingTextClass,
-  contentCardFrameClass,
-  mutedMetaTextClass,
-} from '../../../utils/formStyles';
+import { compactSectionHeadingTextClass, numericValueTextClass } from '../../../utils/formStyles';
+import { formatQuantity } from '../../../utils/number';
 
 interface CompanyResultMonthListProps {
   readonly t: TFunction;
@@ -20,10 +18,9 @@ interface CompanyResultMonthListProps {
   readonly months: CompanyResultMonthDto[];
 }
 
-/** Column grid shared by the header row and the month rows. */
-const monthRowGridClass = 'sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(4rem,auto)_minmax(7rem,auto)_minmax(7rem,auto)] sm:items-center sm:gap-3';
+/** Column grid shared by the header row and every month row via CSS subgrid. */
+const monthColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(4rem,auto)_minmax(7rem,auto)_minmax(7rem,auto)]';
 
-const monthValueClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 const monthLabelClass = 'min-w-0 truncate text-sm text-arsm-primary dark:text-arsm-primary-dark';
 
 const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
@@ -33,53 +30,60 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
 }: CompanyResultMonthListProps) {
   const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'long' });
 
+  const columns: DataListColumn[] = [
+    { key: 'month', label: t('companyResults.month') },
+    { key: 'quotes', label: t('companyResults.quotes'), align: 'right' },
+    { key: 'net', label: t('companyResults.net'), align: 'right' },
+    { key: 'gross', label: t('companyResults.gross'), align: 'right' },
+  ];
+
   return (
     <section className="min-w-0 space-y-3">
       <h2 className={compactSectionHeadingTextClass}>{t('companyResults.monthsTitle')}</h2>
 
-      <div className={`min-w-0 ${contentCardFrameClass}`}>
-        <div className={`hidden ${monthRowGridClass} border-b border-arsm-border px-3 py-2 text-xs font-medium uppercase tracking-wide text-arsm-muted dark:border-arsm-border-dark dark:text-arsm-muted-dark sm:px-3.5`}>
-          <span>{t('companyResults.month')}</span>
-          <span className="text-right">{t('companyResults.quotes')}</span>
-          <span className="text-right">{t('companyResults.net')}</span>
-          <span className="text-right">{t('companyResults.gross')}</span>
-        </div>
+      <DataList breakpoint="lg" columnsClassName={monthColumnsClass} columns={columns} isEmpty={false} emptyText="">
+        {months.map((month) => {
+          const monthName = monthFormatter.format(new Date(Date.UTC(2000, month.month - 1, 1)));
 
-        <div className="min-w-0 divide-y divide-arsm-border/80 dark:divide-arsm-border-dark/80">
-          {months.map((month) => {
-            const monthName = monthFormatter.format(new Date(Date.UTC(2000, month.month - 1, 1)));
-
-            return (
-              <div key={month.month} data-testid="company-results-month-row" className="min-w-0 px-3 py-3 sm:px-3.5">
-                <div className={`hidden min-w-0 ${monthRowGridClass}`}>
+          return (
+            <DataListRow
+              key={month.month}
+              breakpoint="lg"
+              testId="company-results-month-row"
+              desktop={(
+                <>
                   <p className={monthLabelClass}>{monthName}</p>
-                  <p className={monthValueClass}>{month.acceptedQuoteCount}</p>
-                  <p className={monthValueClass}>{formatHuf(month.acceptedNet, locale)}</p>
-                  <p className={`${monthValueClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
-                </div>
-
-                <div className="min-w-0 space-y-2 sm:hidden">
+                  <p className={numericValueTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
+                  <p className={numericValueTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
+                  <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
+                </>
+              )}
+              mobile={(
+                <>
                   <p className={monthLabelClass}>{monthName}</p>
                   <div className="grid min-w-0 grid-cols-1 gap-2">
-                    <div className={compactDataSurfaceClass}>
-                      <p className={mutedMetaTextClass}>{t('companyResults.quotes')}</p>
-                      <p className={monthValueClass}>{month.acceptedQuoteCount}</p>
-                    </div>
-                    <div className={compactDataSurfaceClass}>
-                      <p className={mutedMetaTextClass}>{t('companyResults.net')}</p>
-                      <p className={monthValueClass}>{formatHuf(month.acceptedNet, locale)}</p>
-                    </div>
-                    <div className={compactDataSurfaceClass}>
-                      <p className={mutedMetaTextClass}>{t('companyResults.gross')}</p>
-                      <p className={`${monthValueClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
-                    </div>
+                    <LabeledValueTile
+                      label={t('companyResults.quotes')}
+                      value={formatQuantity(month.acceptedQuoteCount, locale)}
+                      valueClassName="text-right tabular-nums"
+                    />
+                    <LabeledValueTile
+                      label={t('companyResults.net')}
+                      value={formatHuf(month.acceptedNet, locale)}
+                      valueClassName="text-right tabular-nums"
+                    />
+                    <LabeledValueTile
+                      label={t('companyResults.gross')}
+                      value={formatHuf(month.acceptedGross, locale)}
+                      valueClassName="text-right tabular-nums font-semibold"
+                    />
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                </>
+              )}
+            />
+          );
+        })}
+      </DataList>
     </section>
   );
 });

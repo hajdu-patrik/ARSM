@@ -8,8 +8,8 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
   compactDividerLineClass,
+  emptyStateBoxClass,
   loadingSpinnerClass,
-  mutedDarkCardToneClass,
 } from '../../../utils/formStyles';
 import { CustomerCard } from './CustomerCard';
 import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './customerListSection.types';
@@ -47,7 +47,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
       )}
 
       {!isLoadingCustomers && filteredCustomers.length === 0 && (
-        <p className={`rounded-2xl border border-dashed border-arsm-border bg-arsm-input px-4 py-12 text-center text-sm ${mutedDarkCardToneClass}`}>
+        <p className={emptyStateBoxClass}>
           {t('customers.empty')}
         </p>
       )}

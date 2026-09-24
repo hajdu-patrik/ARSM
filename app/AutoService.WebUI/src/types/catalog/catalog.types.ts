@@ -9,6 +9,12 @@ export type VatRatePercent = (typeof VAT_RATE_OPTIONS)[number];
 /** Default VAT rate applied to new catalog items. */
 export const DEFAULT_VAT_RATE_PERCENT: VatRatePercent = 27;
 
+/** Maximum part number / labor type code length, matching the backend `MaxLength` validation. */
+export const MAX_CATALOG_IDENTIFIER_LENGTH = 40;
+
+/** Maximum part/labor-type name length, matching the backend `MaxLength` validation. */
+export const MAX_CATALOG_NAME_LENGTH = 120;
+
 /** Part catalog item returned by {@code GET /api/parts} and {@code GET /api/parts/{id}}. */
 export interface PartDto {
   id: number;

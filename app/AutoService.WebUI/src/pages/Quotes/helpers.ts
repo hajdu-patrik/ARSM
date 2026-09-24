@@ -7,7 +7,7 @@
  * @module pages/Quotes/helpers
  */
 
-import { DEFAULT_VAT_RATE_PERCENT } from '../../types/catalog/catalog.types';
+import { DEFAULT_VAT_RATE_PERCENT, type LaborTypeDto, type PartDto } from '../../types/catalog/catalog.types';
 import {
   DEFAULT_QUOTE_VALIDITY_DAYS,
   type QuoteDetailDto,
@@ -162,6 +162,64 @@ export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
     netUnitPrice: String(line.netUnitPrice),
     vatRatePercent: line.vatRatePercent,
   };
+}
+
+/**
+ * Picks the label set for a line kind: a part is counted in pieces at a unit
+ * price, labor in hours at an hourly rate (requirement 4).
+ * @param lineKind Kind of the line being rendered.
+ * @returns i18n keys for the quantity and unit-price labels.
+ */
+export function resolveLineLabelKeys(lineKind: QuoteLineKind): { quantityKey: string; unitPriceKey: string } {
+  return lineKind === 'Labor'
+    ? { quantityKey: 'quotes.line.hours', unitPriceKey: 'quotes.line.hourlyNetRate' }
+    : { quantityKey: 'quotes.line.quantity', unitPriceKey: 'quotes.line.netUnitPrice' };
+}
+
+/**
+ * Applies a catalog selection to the line form, pre-filling the snapshot
+ * fields while leaving them editable, so an override still wins server-side.
+ * @param form Current line form state.
+ * @param catalogId Selected catalog entry id, or an empty string for a manual line.
+ * @param parts Part catalog entries.
+ * @param laborTypes Labor type catalog entries.
+ * @returns The next line form state.
+ */
+export function applyCatalogSelection(
+  form: QuoteLineFormState,
+  catalogId: string,
+  parts: PartDto[],
+  laborTypes: LaborTypeDto[],
+): QuoteLineFormState {
+  if (catalogId.length === 0) {
+    return { ...form, catalogId };
+  }
+
+  const numericId = Number(catalogId);
+
+  if (form.lineKind === 'Part') {
+    const part = parts.find((candidate) => candidate.id === numericId);
+    return part
+      ? {
+        ...form,
+        catalogId,
+        description: part.name,
+        netUnitPrice: String(part.netUnitPrice),
+        vatRatePercent: part.vatRatePercent,
+      }
+      : { ...form, catalogId };
+  }
+
+  const laborType = laborTypes.find((candidate) => candidate.id === numericId);
+  return laborType
+    ? {
+      ...form,
+      catalogId,
+      description: laborType.name,
+      netUnitPrice: String(laborType.hourlyNetRate),
+      vatRatePercent: laborType.vatRatePercent,
+    }
+    : { ...form, catalogId };
 }
 
 /**
