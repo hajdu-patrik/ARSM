@@ -2,6 +2,10 @@
 
 > **Purpose**: Route diagnostics requests to the correct tool based on where the application is running.
 
+> **Installed here**: only the local-dev branch. `aspire-deployment`, `aspireify` and
+> `azure-diagnostics` are not installed in this repository — the app is run locally and never
+> deployed, so treat the deployed branches below as reference material.
+
 ## Decision Flowchart
 
 ```
@@ -132,7 +136,7 @@ The `Aspire.Hosting.Browsers` integration captures **browser console logs, netwo
 |------|--------|
 | Inspect existing browser telemetry | Open the dashboard or run `aspire otel logs <frontend-resource>` |
 | Check whether a frontend has it enabled | Look for `.WithBrowserLogs()` in the AppHost |
-| Add `WithBrowserLogs()` to a resource | → **`aspireify` skill** (AppHost authoring) |
+| Add `WithBrowserLogs()` to a resource | **`aspireify`** (AppHost authoring) — not installed here |
 
 ---
 

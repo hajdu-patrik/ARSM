@@ -7,10 +7,12 @@ description: >-
   USE FOR: aspire logs, aspire otel logs, aspire otel traces, aspire otel spans, aspire
   describe, aspire ps, aspire export, aspire dashboard run, --include-hidden, browser logs
   in dashboard, WithBrowserLogs, App Insights query, AKS pod logs, container app logs.
-  DO NOT USE FOR: start/stop/wait (use aspire-orchestration), deploy/publish/destroy (use
-  aspire-deployment), AppHost code edits like WithBrowserLogs() (use aspireify), Azure
-  provisioning (use azure-prepare).
-  INVOKES: aspire CLI, azure-diagnostics (deployed Azure), kubectl + Container Insights.
+  DO NOT USE FOR: start/stop/wait (use aspire-orchestration), deploy/publish/destroy
+  (aspire-deployment skill, not installed here), AppHost code edits like WithBrowserLogs()
+  (aspireify skill, not installed here), Azure provisioning (azure-prepare skill, not
+  installed here).
+  INVOKES: aspire CLI, kubectl + Container Insights; azure-diagnostics for deployed Azure is
+  not installed here.
   FOR SINGLE OPERATIONS: Run the aspire CLI command directly for quick log or describe lookups.
 license: MIT
 metadata:
@@ -24,6 +26,10 @@ metadata:
 
 ## Diagnostics Bridge — Where To Look
 
+> Only the local-dev rows apply here. This app is run locally and never deployed, and the
+> `aspire-deployment`, `aspireify` and `azure-diagnostics` skills are not installed in this
+> repository, so treat the deployed rows as reference material.
+
 | Need | Environment | Tool | Command / Route |
 |------|------------|------|-----------------|
 | Console logs | Local dev | Aspire CLI | `aspire logs <resource>` |
@@ -34,7 +40,7 @@ metadata:
 | Telemetry export | Local dev | Aspire CLI | `aspire export [resource]` |
 | Standalone dashboard | Any (no AppHost) | Aspire CLI | `aspire dashboard run` (foreground/blocking — see below) |
 | Browser console / network / screenshots | Local dev (frontend) | Aspire dashboard | Surfaced via `Aspire.Hosting.Browsers` + `WithBrowserLogs()` |
-| AppHost / deployment definition | Authoring | aspire-deployment skill | → `aspire-deployment` skill |
+| AppHost / deployment definition | Authoring | aspire-deployment skill | `aspire-deployment` — not installed here |
 | AKS workload (pod logs, pod state) | Deployed AKS | kubectl + Container Insights | `kubectl logs <pod>`, `kubectl describe pod <pod>`, Container Insights in Azure Monitor |
 | Azure resource health (App Insights, Front Door, NSP, private endpoint) | Deployed Azure | azure-diagnostics | → `azure-diagnostics` skill |
 | App Service / Container Apps logs | Deployed Azure | azure-diagnostics | → `azure-diagnostics` skill |
@@ -42,7 +48,8 @@ metadata:
 
 **Decision tree:**
 
-1. Is this about **AppHost code or deployment definition**? → `aspire-deployment` skill.
+1. Is this about **AppHost code or deployment definition**? → `aspire-deployment` skill (not
+   installed here — the app is never deployed; handle inline or ask the user).
 2. Is the app **running locally** via `aspire start`? → Aspire CLI.
 3. Is it deployed to **AKS**? → kubectl + Container Insights for workload; `azure-diagnostics` for the cluster's Azure resources.
 4. Is it deployed to **other Azure** (App Service, Container Apps)? → `azure-diagnostics`.
@@ -154,7 +161,7 @@ The `Aspire.Hosting.Browsers` integration captures **browser console logs, netwo
 |------|--------|
 | Inspect browser telemetry that is already wired | Open the dashboard; browser logs / network / screenshots appear next to server telemetry for the resource |
 | Confirm a frontend has it enabled | Check the AppHost for `.WithBrowserLogs()` on the resource (e.g., `AddViteApp("frontend").WithBrowserLogs()`) |
-| Add `WithBrowserLogs()` to a resource | → **`aspireify` skill** (AppHost authoring) — do not edit the AppHost from this skill |
+| Add `WithBrowserLogs()` to a resource | **`aspireify`** (AppHost authoring) — not installed here; do not edit the AppHost from this skill |
 
 When parsing telemetry programmatically, browser logs surface as additional OTLP log records associated with the frontend resource — `aspire otel logs <frontend-resource>` returns them alongside server logs.
 
@@ -166,7 +173,7 @@ Agents inspecting a running dashboard should know:
 - **Rebuild command** — available on container and project resources; rebuilds the image and restarts the resource without restarting the whole AppHost. Result lands in the notification center.
 - **Structured command results** — custom resource commands return `ExecuteCommandResult` with a `Message` payload that the dashboard renders inline; HTTP commands set `HttpCommandResultMode.Auto | Json | Text | None` to control how the response body is shown.
 
-> Authoring custom commands or `WithBrowserLogs()` calls is AppHost work — route to **`aspireify`**. This skill is for *observing* what those features surface in the dashboard.
+> Authoring custom commands or `WithBrowserLogs()` calls is AppHost work — route to **`aspireify`**, which is not installed here. This skill is for *observing* what those features surface in the dashboard.
 
 ## Why Aspire CLI Can't Do Remote Diagnostics
 
@@ -178,10 +185,10 @@ The Aspire CLI talks to a *running AppHost* through a local backchannel socket a
 
 | Scenario | Route To |
 |----------|----------|
-| Start/stop/wait/rebuild lifecycle | → `aspire-orchestration` skill |
-| Deploy, publish, pipeline steps, AppHost compute environment binding | → `aspire-deployment` skill |
-| AppHost code changes (`WithBrowserLogs()`, custom commands, `WithHttpCommand`) | → `aspireify` skill |
-| Deployed Azure resource health (App Insights, Front Door, NSP, private endpoint, ACA, App Service) | → `azure-diagnostics` skill (azure-skills) |
+| Start/stop/wait/rebuild lifecycle | → [aspire-orchestration](../aspire-orchestration/SKILL.md) skill |
+| Deploy, publish, pipeline steps, AppHost compute environment binding | `aspire-deployment` — not installed here; the app is never deployed |
+| AppHost code changes (`WithBrowserLogs()`, custom commands, `WithHttpCommand`) | `aspireify` — not installed here |
+| Deployed Azure resource health (App Insights, Front Door, NSP, private endpoint, ACA, App Service) | `azure-diagnostics` (azure-skills) — not installed here |
 | AKS workload diagnostics (pod logs, pod state, Container Insights) | → `kubectl` + Azure Monitor Container Insights |
 | Docker / Compose container logs | → `docker logs` / `docker compose logs` |
 

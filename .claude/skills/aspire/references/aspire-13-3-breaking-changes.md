@@ -24,7 +24,7 @@ code, scripts, CI snippets, or skill routing. Source:
 | CLI telemetry `--format json` schema aligned with MCP tool format | Update parsers consuming `--format json` from telemetry commands. |
 | `ASPIREEXTENSION001` JS diagnostic ID renamed to `ASPIREJAVASCRIPT001` | Update `#pragma warning disable` and any code-search rules. |
 | Docker Swarm `UpdateConfig` property types changed | Update generated/hand-written Swarm overrides. |
-| `aspire init` no longer wires up the AppHost | Follow with `aspireify` (in-plugin sibling skill or project-local copy). |
+| `aspire init` no longer wires up the AppHost | Follow with `aspireify` — not installed here; handle inline or use a project-local copy. |
 | In-dashboard GitHub Copilot UI removed | Replaced by `aspire agent init`-driven agentic flow (works with Copilot, Claude, Cursor, any MCP/skill agent). |
 
 ## TypeScript `withEnvironment` migration
@@ -70,11 +70,11 @@ In 13.3, `aspire init` drops a skeleton (`aspire.config.json` + AppHost stub) an
 Workflow:
 
 1. `aspire init --language csharp|typescript --non-interactive`
-2. Hand off to the `aspireify` skill (in-plugin sibling or project-local
-   `.agents/skills/aspireify/SKILL.md`) to scan the repo, propose a resource graph, edit the
-   AppHost, wire `Aspire.ServiceDefaults` + OTel, and validate via `aspire start`.
+2. Hand off to the `aspireify` skill (not installed here; a project-local
+   `.agents/skills/aspireify/SKILL.md` wins if present) to scan the repo, propose a resource
+   graph, edit the AppHost, wire `Aspire.ServiceDefaults` + OTel, and validate via `aspire start`.
 
-Skills shipped in this plugin:
+Upstream sub-skills for that flow, neither of which is installed in this repository:
 
 - `aspire-init` — owns the skeleton drop and template choice.
 - `aspireify` — owns the wiring step after the skeleton lands.
@@ -99,8 +99,8 @@ recommending Aspire-related changes against an existing repo.
    `ASPIRE_DASHBOARD_MCP_ENDPOINT_URL` env var.
 7. **Re-pin Node versions** in Dockerfiles if you were relying on `package.json`
    `engines.node` for base-image selection.
-8. **Rewire AppHost via `aspireify`** if the repo went through `aspire init` on 13.3 — the
-   skeleton is unwired by design.
+8. **Rewire AppHost via `aspireify`** (not installed here — do it inline or ask the user) if
+   the repo went through `aspire init` on 13.3; the skeleton is unwired by design.
 9. **Replace deprecated TS `withEnvironment*` helpers** with the unified
    `withEnvironment(name, value)` (see [migration table](#typescript-withenvironment-migration)).
 10. **Update Kubernetes Ingress / Gateway `using` directives** if your AppHost references the

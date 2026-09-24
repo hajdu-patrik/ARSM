@@ -86,7 +86,7 @@ See [safety-guardrails.md](references/safety-guardrails.md) for detailed rules a
 | Show hidden resources (proxies, helpers, migrations) | `aspire ps --include-hidden` / `aspire describe --include-hidden` |
 | Resource operation | `aspire resource <resource-name> <command>` such as `stop`, `start`, or `rebuild` when exposed |
 | Create new project | `aspire new aspire-starter` |
-| Add Aspire to existing | `aspire init` (then hand off to `aspireify` skill for wiring) |
+| Add Aspire to existing | `aspire init` (wiring hand-off is `aspireify` — not installed here) |
 | Add integration | `aspire add <package>` |
 | Discover integrations | `aspire integration list --format Json` / `aspire integration search <query> --format Json` |
 | Upgrade the CLI itself | `aspire update --self` |
@@ -144,16 +144,21 @@ The same rule applies to any "file in use", "cannot access the file", or
 
 ## Handoff Rules
 
+> Only `aspire` and `aspire-monitoring` are installed beside this skill in `.claude/skills/`.
+> `aspireify`, `aspire-init` and `aspire-deployment` were deliberately left out: the AppHost
+> already exists and the app is run locally, never deployed. Handle such a request inline with
+> the `aspire` CLI, or ask the user before reinstalling the missing sub-skill.
+
 | Scenario | Route To |
 |----------|----------|
-| AppHost wiring after `aspire init` (scan repo, add resources, ServiceDefaults/OTel) | → `aspireify` skill ([`../aspireify/SKILL.md`](../aspireify/SKILL.md)) or project-local `.agents/skills/aspireify/SKILL.md` |
-| Browser logs (`Aspire.Hosting.Browsers` / `WithBrowserLogs()`) and dashboard authoring | → `aspireify` skill (code edits) and `aspire-monitoring` (discovery) |
-| Custom resource commands (`WithCommand`, `ExecuteCommandResult`, `HttpCommandResultMode`) | → `aspireify` skill |
-| Lifecycle hooks (`SubscribeBeforeStart`, `SubscribeAfterResourcesCreated`, BeforeStart pipeline phase) | → `aspireify` skill |
-| Endpoint authoring (`WithEndpoint` updates, `ExcludeReferenceEndpoint` flag) | → `aspireify` skill |
-| Deploy, publish, pipeline steps, `aspire destroy` | → `aspire-deployment` skill |
+| AppHost wiring after `aspire init` (scan repo, add resources, ServiceDefaults/OTel) | `aspireify` — not installed; a project-local `.agents/skills/aspireify/SKILL.md` wins if present |
+| Browser logs (`Aspire.Hosting.Browsers` / `WithBrowserLogs()`) and dashboard authoring | `aspireify` (code edits) — not installed; → `aspire-monitoring` for discovery |
+| Custom resource commands (`WithCommand`, `ExecuteCommandResult`, `HttpCommandResultMode`) | `aspireify` — not installed |
+| Lifecycle hooks (`SubscribeBeforeStart`, `SubscribeAfterResourcesCreated`, BeforeStart pipeline phase) | `aspireify` — not installed |
+| Endpoint authoring (`WithEndpoint` updates, `ExcludeReferenceEndpoint` flag) | `aspireify` — not installed |
+| Deploy, publish, pipeline steps, `aspire destroy` | `aspire-deployment` — not installed; the app is never deployed |
 | Logs, traces, metrics, dashboard, `aspire dashboard run` | → `aspire-monitoring` skill |
-| Deployed app diagnostics | → `azure-diagnostics` skill (azure-skills) |
+| Deployed app diagnostics | `azure-diagnostics` (azure-skills) — not installed |
 
 ## Runtime Settings And Environment
 
@@ -166,7 +171,9 @@ The same rule applies to any "file in use", "cannot access the file", or
 
 ## TypeScript AppHost Note
 
-Detection covers TS AppHosts (`apphost.ts`), but **all TS AppHost authoring is delegated to `aspireify`**.
+Detection covers TS AppHosts (`apphost.ts`), but **all TS AppHost authoring is delegated to
+`aspireify`**, which is not installed here — and this repository's AppHost is C#
+(`app/AutoService.AppHost/AppHost.cs`), so the section below is reference material only.
 Current rules to apply when handing off:
 
 | Rule | Why |
@@ -175,14 +182,17 @@ Current rules to apply when handing off:
 | Never edit `.aspire/modules/` directly | Generated; use `aspire add <package>` to regenerate and `aspire restore` to recover missing files |
 | Use `aspire docs api search <query> --language typescript` for API lookup | TS surface differs from C# |
 
-## Skill Routing — In-Plugin Sibling Skills
+## Skill Routing — Sibling Skills
 
-After `aspire init` drops a skeleton AppHost + `aspire.config.json`, route AppHost wiring
-(scan repo → propose resource graph → edit AppHost → wire `Aspire.ServiceDefaults` / OTel →
-validate via `aspire start`) to the in-plugin **aspireify** skill: [`../aspireify/SKILL.md`](../aspireify/SKILL.md).
-For first-run flows that only need the skeleton drop, see the in-plugin **aspire-init** skill:
-[`../aspire-init/SKILL.md`](../aspire-init/SKILL.md). This orchestration skill stays focused
-on lifecycle (start/stop/wait/restart) and never edits AppHost code itself.
+The installed siblings are [aspire](../aspire/SKILL.md) (top-level router) and
+[aspire-monitoring](../aspire-monitoring/SKILL.md) (observability).
+
+The upstream **aspireify** skill owns AppHost wiring after `aspire init` drops a skeleton
+AppHost plus `aspire.config.json` (scan repo → propose resource graph → edit AppHost → wire
+`Aspire.ServiceDefaults` / OTel → validate via `aspire start`), and **aspire-init** owns the
+skeleton drop itself. Neither is installed here, so handle such a request inline with the `aspire`
+CLI, or ask the user first. This orchestration skill stays focused on lifecycle
+(start/stop/wait/restart) and never edits AppHost code itself.
 
 ## Project-Local Skill Precedence
 

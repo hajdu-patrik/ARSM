@@ -10,8 +10,8 @@ description: >-
   aspire logs, aspire otel, --include-hidden, aspireify, WithBrowserLogs, custom
   dashboard/resource commands, .aspire/modules recovery, Playwright URL discovery.
   DO NOT USE FOR: non-Aspire .NET projects (use dotnet directly), Azure provisioning
-  without Aspire (use azure-prepare), container-only repos with no AppHost, ordinary
-  build/test tasks.
+  without Aspire (azure-prepare skill, not installed here), container-only repos with no
+  AppHost, ordinary build/test tasks.
   INVOKES: aspire-orchestration, aspire-monitoring.
   FOR SINGLE OPERATIONS: Route directly to the matching sub-skill.
 license: MIT
@@ -28,27 +28,28 @@ AppHost or its resources through the Aspire CLI rather than falling back to ad-h
 
 ## Detection
 
-Activate when ANY signal is present. Use the **Scope** column to decide whether to route to
-the bootstrap skills (`aspire-init` / `aspireify`) or to a runtime sub-skill:
+Activate when ANY signal is present. Use the **Scope** column to decide whether the request is
+a bootstrap one — the `aspire-init` / `aspireify` skills that would own it are not installed here
+(see Routing), so handle it inline or ask the user — or a runtime one for a sub-skill:
 
 | Signal | How to Detect | Confidence | Scope |
 |--------|---------------|------------|-------|
 | C# AppHost | `.csproj` containing `Aspire.AppHost.Sdk` | ✅ Definitive | AppHost present → orchestration / deployment / monitoring |
 | File-based C# AppHost | `apphost.cs` with `#:sdk Aspire.AppHost.Sdk` | ✅ Definitive | AppHost present → orchestration / deployment / monitoring |
 | TypeScript AppHost | `apphost.ts` file in project | ✅ Definitive | AppHost present → orchestration / deployment / monitoring |
-| Aspire config without AppHost | `aspire.config.json` present **and no AppHost** above | High | Bootstrap → `aspireify` (skeleton dropped, needs wiring) |
+| Aspire config without AppHost | `aspire.config.json` present **and no AppHost** above | High | Bootstrap (`aspireify`, not installed) — skeleton dropped, needs wiring |
 | Aspire config with AppHost | `aspire.config.json` present **and** AppHost above | High | AppHost present → orchestration / deployment / monitoring |
 | Aspire settings | `.aspire/` directory present | High | AppHost present (usually) |
 | Generated TS modules | `.aspire/modules/` directory present | High | AppHost present (TS) |
 | Service defaults | `Aspire.ServiceDefaults` in project references | Medium | AppHost present |
-| **No AppHost, no `aspire.config.json`** | None of the above and user asks to add Aspire | n/a | Bootstrap → `aspire-init` (skeleton drop) |
+| **No AppHost, no `aspire.config.json`** | None of the above and user asks to add Aspire | n/a | Bootstrap (`aspire-init`, not installed) — skeleton drop |
 
 ## Default Workflow
 
-0. **Bootstrap branch** — if **no AppHost exists** in the repo, route to
-   [`aspire-init`](../aspire-init/SKILL.md) for the skeleton drop. If an AppHost stub exists
-   but is **unwired** (no resources declared), route to [`aspireify`](../aspireify/SKILL.md).
-   Only continue with the steps below once a wired AppHost is present.
+0. **Bootstrap branch** — does not apply here: this repository already has a wired C# AppHost
+   (`app/AutoService.AppHost/AppHost.cs`). The `aspire-init` and `aspireify` sub-skills are not
+   installed (see Routing), so handle a skeleton-drop or wiring request inline with the `aspire`
+   CLI, or ask the user first. Otherwise continue with the steps below.
 1. Confirm workspace is Aspire — identify the AppHost
 2. `aspire start` (or `aspire start --isolated` in worktrees or whenever shared local state is risky)
 3. `aspire wait <resource>` before interacting with any resource
@@ -81,22 +82,22 @@ the bootstrap skills (`aspire-init` / `aspireify`) or to a runtime sub-skill:
 | Task | Route To |
 |------|----------|
 | Start, stop, wait, restart, rebuild | → [aspire-orchestration](../aspire-orchestration/SKILL.md) |
-| Create a new Aspire project from a template (`aspire new`) | → [aspire-init](../aspire-init/SKILL.md) (in-plugin) |
-| Add Aspire to an existing repo (`aspire init`, drop skeleton) | → [aspire-init](../aspire-init/SKILL.md) (in-plugin) |
-| Wire AppHost / scaffold resource graph / add integrations after `aspire init` | → [aspireify](../aspireify/SKILL.md) (in-plugin) |
-| Deploy, publish, destroy, pipeline steps | → [aspire-deployment](../aspire-deployment/SKILL.md) |
+| Create a new Aspire project from a template (`aspire new`) | `aspire-init` — not installed; handle inline or ask the user |
+| Add Aspire to an existing repo (`aspire init`, drop skeleton) | `aspire-init` — not installed; handle inline or ask the user |
+| Wire AppHost / scaffold resource graph / add integrations after `aspire init` | `aspireify` — not installed; handle inline or ask the user |
+| Deploy, publish, destroy, pipeline steps | `aspire-deployment` — not installed; the app is never deployed |
 | Logs, traces, metrics, dashboard, browser logs | → [aspire-monitoring](../aspire-monitoring/SKILL.md) |
-| Deployed app monitoring (Azure) | → `azure-diagnostics` skill (azure-skills plugin) |
+| Deployed app monitoring (Azure) | `azure-diagnostics` (azure-skills plugin) — not installed |
 
 ## Sub-Skills
 
-### aspire-init
+### aspire-init (not installed)
 First-run flow only. Owns the skeleton drop for repos that do **not** yet have an AppHost —
 picks `aspire new <template>` (greenfield) or `aspire init` (existing repo), runs the CLI,
 and hands off to `aspireify` for the actual wiring. Self-deactivates once the skeleton is in
 place. Do **not** use it on a repo that already contains an AppHost.
 
-### aspireify
+### aspireify (not installed)
 Agentic AppHost wiring after `aspire init` lands the skeleton. Scans the repo, proposes a
 resource graph (Postgres / Redis / Rabbit / etc.), edits the AppHost (C#, file-based C#, or
 TypeScript), wires `Aspire.ServiceDefaults` + OTel, validates with `aspire start`, then
@@ -110,7 +111,7 @@ Safety guardrails that prevent agent self-harm. Owns `aspire ps` / `aspire descr
 `--include-hidden` inspection and CLI upgrades (`aspire update --self`). Does **not** edit
 AppHost code — defers to `aspireify` for wiring.
 
-### aspire-deployment
+### aspire-deployment (not installed)
 Multi-target deployment and tear-down: `aspire deploy`, `aspire publish`, `aspire destroy`,
 `aspire do <step>`. Targets: Azure Container Apps, App Service, AKS, Kubernetes (Helm),
 Docker Compose. Owns current deployment surfaces (Front Door, NSP, AKS hosting, Foundry
@@ -131,8 +132,8 @@ guidance there should not be overridden by the in-plugin sibling:
 | Project-local file | Precedence |
 |--------------------|-----------|
 | `.agents/skills/aspire/SKILL.md` | This file (top-level router) defers to it for deeper C# / TS AppHost editing, Playwright handoff, investigation workflows. |
-| `.agents/skills/aspireify/SKILL.md` | The in-plugin `aspireify` sibling defers to it for AppHost wiring. |
-| `.agents/skills/aspire-init/SKILL.md` | The in-plugin `aspire-init` sibling defers to it for the skeleton/first-run flow. |
+| `.agents/skills/aspireify/SKILL.md` | Owns AppHost wiring; no `aspireify` sibling is installed here to compete with it. |
+| `.agents/skills/aspire-init/SKILL.md` | Owns the skeleton/first-run flow; no `aspire-init` sibling is installed here to compete with it. |
 
 **Safety guardrails from this plugin always apply** even when project-local skills are
 active.
@@ -160,5 +161,3 @@ Either install method works. The `dotnet tool install` path produces a NativeAOT
 - [../aspire-orchestration/references/resource-management.md](../aspire-orchestration/references/resource-management.md) — Resource wait and resource-command guidance.
 - [../aspire-monitoring/references/monitoring.md](../aspire-monitoring/references/monitoring.md) — App state, logs, traces, search filtering, dashboard links, and export workflows.
 - [../aspire-monitoring/references/playwright-handoff.md](../aspire-monitoring/references/playwright-handoff.md) — Playwright handoff after Aspire endpoint discovery.
-- [../aspire-deployment/SKILL.md](../aspire-deployment/SKILL.md) — Deployment and pipeline-step workflows.
-- [../aspireify/references/apphost-wiring.md](../aspireify/references/apphost-wiring.md) — C# and TypeScript AppHost API lookup and wiring patterns.

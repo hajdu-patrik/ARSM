@@ -15,7 +15,7 @@ Otherwise return `SKIPPED`.
 ## Scope
 
 - `app/AutoService.WebUI/tests/e2e/**`
-- `playwright.config.ts`
+- `app/AutoService.WebUI/playwright.config.ts`
 
 ## Rules
 

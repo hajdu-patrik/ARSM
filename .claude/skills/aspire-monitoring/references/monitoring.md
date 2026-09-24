@@ -148,6 +148,9 @@ No additional configuration is needed for Azure once the AppHost and deployment 
 
 ## Deployed App Monitoring — Route by Target
 
+> `azure-diagnostics` is not installed in this repository and the app is never deployed; the
+> table below is reference material.
+
 | Target | Tool | Commands |
 |--------|------|----------|
 | Azure Container Apps / App Service | azure-diagnostics | `az containerapp logs show`, `az webapp log tail`, App Insights |
@@ -191,7 +194,7 @@ Frontend resources opted into `Aspire.Hosting.Browsers` via `WithBrowserLogs()` 
 |------|--------|
 | Inspect browser telemetry that is already wired | Open the dashboard; browser logs / network / screenshots appear next to server telemetry for the resource |
 | Confirm a frontend has it enabled | Check the AppHost for `.WithBrowserLogs()` on the resource |
-| Add `WithBrowserLogs()` to a resource | Route to `aspireify`; this is AppHost authoring, not monitoring |
+| Add `WithBrowserLogs()` to a resource | Route to `aspireify` (not installed here); this is AppHost authoring, not monitoring |
 
 ## Why Aspire CLI Can't Do Remote Diagnostics
 
