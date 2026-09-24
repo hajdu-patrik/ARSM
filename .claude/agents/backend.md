@@ -33,6 +33,6 @@ tools: Read, Edit, Grep, Glob, Bash
 
 ## Required Validation
 
-- Build from `app`.
-- Run backend security remediation (`dotnet list package --vulnerable --include-transitive`).
+- Inside `arsm-chain`, leave validation to the chain's gate. Otherwise run `python scripts/validate.py`
+  (build, size, and the vulnerable-package check when a manifest changed).
 - Run HTTP/SQL suites only when gate requires.

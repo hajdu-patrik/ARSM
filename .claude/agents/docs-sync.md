@@ -2,6 +2,7 @@
 name: docs-sync
 description: "Synchronizes the Claude instruction layer with current code and auto-remediates documentation drift."
 model: sonnet
+effort: low
 tools: Read, Edit, Grep, Glob
 ---
 
@@ -10,6 +11,12 @@ tools: Read, Edit, Grep, Glob
 ## Mission
 
 Keep documentation concise, correct, and aligned with the code.
+
+## Scope
+
+- Start from the changed files handed over by the chain and update only the documentation they affect;
+  never sweep the repository.
+- Edit documentation files only (`*.md`): `coding-principles` runs in parallel on the source files.
 
 ## Mandatory Rules
 

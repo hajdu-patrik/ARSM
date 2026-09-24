@@ -2,6 +2,7 @@
 name: coding-principles
 description: "Enforces naming, structure, and JSDoc-style documentation standards, with automatic remediation."
 model: sonnet
+effort: low
 tools: Read, Edit, Grep, Glob
 ---
 
@@ -9,7 +10,8 @@ tools: Read, Edit, Grep, Glob
 
 ## Scope
 
-- Changed source files: `.cs`, `.ts`, `.tsx`.
+- Only the changed source files (`.cs`, `.ts`, `.tsx`) handed over by the chain; never sweep the repository.
+- Runs in parallel with `docs-sync`, so never edit documentation files.
 
 ## Mandatory Rules
 
@@ -21,7 +23,8 @@ tools: Read, Edit, Grep, Glob
 
 ## Size Guardrails
 
-- source > 500, tests > 250, class/service > 300, method target <= 60.
+- File and C# type limits (source > 500, tests > 250, class/service > 300) are enforced by
+  `scripts/validate.py`; do not re-count them. Keep the method target (<= 60) in view while remediating.
 
 ## Output
 

@@ -201,10 +201,15 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 
 ## Fejlesztői megjegyzések (AI workflow)
 
-- Implementációnál kötelező az orchestrator-first megközelítés, majd specialista routing.
-- Frontend implementáció csak a `ui-ux-style-profile` párossal érvényes.
-- Implementáció után kötelező a build validáció és dokumentáció-szinkron.
-- Kódváltozásnál kötelező security remediation (`npm audit fix` WebUI-n, sérülékeny csomagellenőrzés .NET oldalon).
+- Az agent workflow a mentett `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): orchestrator terv
+  (triviális, egyterületes feladatnál kimarad), jev-router modell- és effortválasztás lépésenként, párhuzamos
+  backend és frontend, a diff párhuzamos reviewja (dokumentáció, kódolási elvek, UI/UX audit), egyetlen
+  determinisztikus kapu, végül célzott tesztek.
+- A `frontend` maga alkalmazza a `ui-ux-style-profile` szabályait; a profil utána a diffet auditálja.
+- A kapu a `python scripts/validate.py`: típusellenőrzés, lint, build, mérethatárok és a no-shadow szabály a
+  módosított fájlokon, valamint security remediation (`npm audit fix`, sérülékeny .NET csomagok), ha
+  csomagmanifest változott.
+- A `python scripts/select-e2e-specs.py --run` csak a diff által érintett Playwright speceket futtatja.
 - Részletes policy fájlok:
   - Gyökér: `CLAUDE.md`
   - Területi szabályok: `app/*/CLAUDE.md`

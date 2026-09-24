@@ -26,8 +26,8 @@
 ## Mandatory UI/UX Policy Coupling
 
 - Source of truth: `.claude/agents/ui-ux-style-profile.md`.
-- Every UI-facing, UI/UX, responsiveness, interaction, style-token, or style-architecture iteration must co-run `frontend` + `ui-ux-style-profile`.
-- `frontend` implements behavior and local composition; `ui-ux-style-profile` audits visual consistency, extraction boundaries, accessibility, feedback loops, and 320px behavior.
+- Every UI-facing, UI/UX, responsiveness, interaction, style-token, or style-architecture iteration is implemented by `frontend`, which applies the `ui-ux-style-profile` policy itself.
+- `ui-ux-style-profile` then audits the changed WebUI files report-only (visual consistency, extraction boundaries, accessibility, feedback loops, 320px behavior); `frontend` fixes the findings in the gate's fix round.
 - Iterate until implementation and UI/UX audit both pass.
 
 ## Current UI Contract Anchors
@@ -69,8 +69,8 @@
 
 ## Validation Policy
 
-- Frontend security remediation: `npm audit fix`.
-- Validate with `npx tsc -b` and `npm run build` when needed. Plain `tsc --noEmit` type-checks nothing here, because the root `tsconfig.json` is solution-style (`files: []` + `references`); only build mode (`-b`) walks the referenced projects.
+- Frontend security remediation (`npm audit fix`) runs in the `scripts/validate.py` security stage when `package.json` or `package-lock.json` changes.
+- Validate with `python scripts/validate.py` (runs `npx tsc -b --noEmit` and eslint on the changed files), and `npm run build` when needed. Plain `tsc --noEmit` type-checks nothing here, because the root `tsconfig.json` is solution-style (`files: []` + `references`); only build mode (`-b`) walks the referenced projects.
 - Style refactors need before/after visual preservation evidence for affected surfaces, including 320px when layout can wrap.
 - E2E only on gate: `python scripts/run-local-test-suite.py playwright` and inspect sanitized report.
 

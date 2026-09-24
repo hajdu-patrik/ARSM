@@ -18,7 +18,7 @@ tools: Read, Edit, Grep, Glob
 - Work iteratively with `frontend` on every UI-facing, responsiveness, interaction, or style-policy change.
 - Frontend owns behavior, data flow, React state, component boundaries, and local class composition.
 - UI/UX owns consistency, accessibility, 320px behavior, feedback loops, and style extraction boundaries.
-- Sign-off requires both implementation correctness and UI/UX audit pass.
+- Sign-off requires both implementation correctness and UI/UX audit pass (findings fixed in the fix round).
 - Policy/profile/instruction files may be updated only for rules explicitly requested by the user or agreed in the active implementation plan.
 
 ## Non-Negotiable Contracts
@@ -96,6 +96,8 @@ tools: Read, Edit, Grep, Glob
 
 ## Enforcement
 
-- Must co-run with `frontend` on every UI-facing, UI/UX, responsiveness, interaction, or style-policy iteration.
+- `frontend` applies this policy while implementing; this agent then audits the changed WebUI files
+  only, report-only, in the chain's parallel review stage, and its findings go to `frontend` in the
+  gate's fix round.
 - Any failed mandatory check blocks sign-off until remediated.
 - If a requested style-system refactor would alter the current appearance, pause and ask for explicit redesign approval.

@@ -11,44 +11,42 @@
 
 ## Model Selection (Auto)
 
-<!-- model-policy:start -->
-<!-- Generated daily by scripts/update-model-policy.py (.github/workflows/model-policy.yml). Do not edit by hand. -->
-| Family | Latest model | Effort to use | Use for | Approval | Supported effort (Models API) |
-|---|---|---|---|---|---|
-| Sonnet | `claude-sonnet-5` | `max` | easy and medium tasks (default) | not needed | low, medium, high, xhigh, max |
-| Opus | `claude-opus-5-5` | `xhigh`–`max` | serious tasks | not needed | low, medium, high, xhigh, max |
-| Fable | `claude-fable-5-1` | `high` | only very extreme tasks | ask the user first | low, medium, high, xhigh, max |
-<!-- model-policy:end -->
-
-- Only the Sonnet, Opus and Fable families are used, and only the latest model of each (the table
-  above). Haiku and every older version of a family are never selected.
-- Sonnet at `max` effort is the default. Opus at `xhigh`–`max` may be selected without asking for a
-  serious task. Fable at `high` is reserved for very extreme tasks and needs the user's approval first.
-- The table is refreshed every day at 12:00 (Europe/Budapest) from the Models API and pushed to `main`
-  when a newer model or a changed effort ladder appears; the tier rules themselves are the owner's
-  policy and live in `FAMILY_POLICIES` in `scripts/update-model-policy.py`.
-- In the routed chain, `orchestrator` names the model tier for every step from the prompt, and the
-  session passes it as the agent's `model`; an agent's frontmatter model is only the fallback.
+- jev-router (the global `UserPromptSubmit` hook that injects the `[router]` line) owns the model and
+  effort policy for every project; this repository keeps no model table of its own. Claude models are
+  used only through the generic aliases `sonnet`, `opus` and `fable`, which always resolve to the newest
+  release, and Haiku is never used.
+- Follow the `[router]` line for the session. In the routed chain every step is routed again through
+  `python ~/.jev-router/bin/route.py --json` (prompt on stdin), and the step's agent runs with the
+  returned `model` and `effort`.
 
 ## Workflow (Ask First)
 
 - At the start of every task, ask the user whether the agent workflow is needed for it, and wait
   for the answer before acting. Ask once per task, not on every follow-up prompt of the same task.
 - Act on the answer:
-    - workflow requested -> run the routed chain below
+    - workflow requested -> run the saved workflow `arsm-chain` (`.claude/workflows/arsm-chain.js`) with
+      `args: {task, difficulty, area?, baseRef?}` (`difficulty` from the `[router]` line; `task` is the
+      request plus every agreed constraint)
     - workflow declined -> do the work directly, without `orchestrator` and without the specialist agents
     - partial answer -> run exactly the steps the user named and nothing else
-- Routed chain, when the user asks for it:
-    1. Start with `orchestrator`.
-    2. Route implementation:
-        - backend/platform changes -> `backend`
-        - frontend/UI changes, including responsiveness, interaction, or style-policy changes -> `frontend` + `ui-ux-style-profile` (mandatory pair)
-        - schema-only delta -> optional `migration`
-    3. Run `validate`.
-    4. Run `docs-sync`.
-    5. Run `coding-principles` for source changes.
-    6. Run security remediation for code changes.
-    7. Run heavy test agents only when gate conditions match.
+- `arsm-chain` encodes the routed chain deterministically:
+    1. Plan: `orchestrator` decomposes the task, fixes any shared DTO/API contract up front, and returns
+       open decisions as questions instead of choosing. Skipped when the router difficulty is 1 and the
+       task touches a single area.
+    2. Route: jev-router picks `model` and `effort` for every step.
+    3. Implement: `backend` and `frontend` run in parallel on their disjoint trees; `migration` runs
+       after `backend`, only on a real schema delta. `frontend` applies the `ui-ux-style-profile` policy
+       itself while implementing.
+    4. Review, in parallel and on the changed files only: `docs-sync` (documentation only),
+       `coding-principles` (naming, SOLID/OOP, JSDoc) and, for UI changes, `ui-ux-style-profile` as a
+       report-only audit.
+    5. Gate: `python scripts/validate.py` once; failures and UI findings go back to the owning
+       specialist for at most two fix rounds.
+    6. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
+       `python scripts/select-e2e-specs.py --run` (3 workers).
+- Without the Workflow tool, run the same steps by hand in the same order and with the same parallelism.
+- Whatever the answer, run `python scripts/validate.py` before committing a source change: it is
+  deterministic, takes seconds, and costs no tokens.
 - Skipping the workflow never waives Decision Ownership, Security and Secrets, Engineering
   Guardrails, Core Invariants, or Version Control Attribution. Those apply to every task.
 
@@ -70,8 +68,9 @@
 ## Security and Secrets
 
 - Never hardcode credentials, tokens, connection strings, or runtime hosts.
-- Frontend code-change workflows: run `npm audit fix`.
-- Backend code-change workflows: run `dotnet list package --vulnerable --include-transitive` and remediate safely.
+- Security remediation runs in the `scripts/validate.py` security stage whenever a package manifest or
+  lockfile changes (or with `--security`): `npm audit fix` then `npm audit --audit-level=high` for the
+  WebUI, and `dotnet list package --vulnerable --include-transitive` for the backend, remediated safely.
 - AI SQL tooling must use `ai_agent_test_user` with `SELECT`-only policy.
 - Keep tracked MCP SQL templates (`.claude/.mcp.template.json`, `.vscode/mcp.template.json`, `.env.example`)
   placeholder-based; local gitignored `.claude/.mcp.json`, `.vscode/mcp.json`, and `.env` must hold the
@@ -94,6 +93,8 @@
   - test file > 250 lines: split
   - class/service > 300 lines: split
   - method/function target <= 60 lines where practical
+- `scripts/validate.py` enforces the file limits (and the C# type limit) on the changed files; `--all`
+  checks the whole repository.
 
 ## Core Invariants
 

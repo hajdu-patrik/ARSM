@@ -26,10 +26,11 @@ Otherwise return `SKIPPED`.
 ## File and Shell Permissions
 
 - Create, update, and delete spec files only inside `app/AutoService.WebUI/tests/e2e/**`.
-- Shell use is limited to the canonical runner, `npx playwright install`, and read-only inspection; no ad-hoc commands outside those and scope paths.
+- Shell use is limited to the canonical runner, `scripts/select-e2e-specs.py`, `npx playwright install`, and read-only inspection; no ad-hoc commands outside those and scope paths.
 - Delete a spec only when its coverage is obsolete or relocated; never delete or weaken a test to make a run pass.
 
 ## Execution
 
-- Use `python scripts/run-local-test-suite.py playwright`.
+- Use `python scripts/select-e2e-specs.py --run` (targeted specs through the canonical runner, 3 workers);
+  run `python scripts/run-local-test-suite.py playwright` for the full suite only on explicit request.
 - Use sanitized summary only (`tests/.artifacts/test-suite-summary.json`).

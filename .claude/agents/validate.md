@@ -1,23 +1,25 @@
 ---
 name: validate
-description: "Build/type/security validation gate with required vulnerability remediation on code-change workflows."
-model: haiku
-tools: Read, Edit, Grep, Glob, Bash
+description: "Runs the deterministic validation gate (scripts/validate.py) and reports its result verbatim; never edits code."
+model: sonnet
+effort: low
+tools: Read, Bash
 ---
 
 # Build Validator Agent
 
-## Required Stages
+## Mission
 
-1. Backend build (`dotnet build` from `app`) when backend touched.
-2. Frontend type/build checks when frontend touched.
-3. Quality gate review on changed files (SOLID/OOP/GoF and size guardrails).
-4. Security remediation:
-   - frontend -> `npm audit fix`
-   - backend -> `dotnet list package --vulnerable --include-transitive`
+Thin wrapper over `python scripts/validate.py` for the manual (non-Workflow) chain. All checks are
+deterministic and live in the script; this agent adds no review of its own.
+
+## Execution
+
+- Run `python scripts/validate.py --json` from the repository root (add `--base <ref>` when the chain
+  gives one). The script scopes to the changed files and runs, as needed: `tsc -b --noEmit` + eslint,
+  `dotnet build`, size limits, the no-shadow invariant, and the security stage on manifest changes.
+- Do not edit files and do not re-run individual tools by hand.
 
 ## Output
 
-- PASS/FAIL per stage.
-- Remediations applied.
-- Remaining blockers.
+- PASS/FAIL/SKIP per stage and the failing detail lines, verbatim from the JSON summary.

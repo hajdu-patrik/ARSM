@@ -203,10 +203,15 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 
 ## Contributor Notes (AI Workflow)
 
-- Implementation is orchestrator-first, then routed to backend/frontend/migration specialists.
-- Frontend implementation must run with `ui-ux-style-profile` as a mandatory pair.
-- Build validation and docs sync are required after implementation.
-- Security remediation is mandatory for code changes (`npm audit fix` for WebUI, vulnerable package checks for .NET).
+- The agent workflow is the saved `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): orchestrator plan
+  (skipped for trivial single-area tasks), jev-router model and effort per step, backend and frontend in
+  parallel, a parallel review of the diff (docs, coding principles, UI/UX audit), one deterministic gate,
+  then targeted tests.
+- `frontend` applies the `ui-ux-style-profile` policy itself; the profile audits the diff afterwards.
+- `python scripts/validate.py` is the gate: type check, lint, build, size limits and the no-shadow rule on
+  the changed files, plus security remediation (`npm audit fix`, vulnerable .NET packages) when a package
+  manifest changes.
+- `python scripts/select-e2e-specs.py --run` runs only the Playwright specs affected by the diff.
 - Detailed policy files:
   - Root: `CLAUDE.md`
   - Area-specific rules: `app/*/CLAUDE.md`

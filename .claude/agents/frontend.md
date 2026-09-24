@@ -23,11 +23,12 @@ tools: Read, Edit, Grep, Glob, Bash
 - No hardcoded `VITE_API_URL` fallback.
 - Auth guard/session behavior and routing shell.
 
-## Mandatory Pair Rule
+## UI/UX Policy
 
-- Every UI-facing, UI/UX, responsiveness, interaction, style-token, or style-policy change must co-run `ui-ux-style-profile`.
-- Implement behavior and local style composition first; let `ui-ux-style-profile` audit visual preservation, extraction boundaries, accessibility, feedback loops, and 320px behavior.
-- Iterate with `ui-ux-style-profile` until both implementation and UI/UX checks pass.
+- Before any UI-facing, UI/UX, responsiveness, interaction, style-token, or style-policy change, read
+  `.claude/agents/ui-ux-style-profile.md` and apply it yourself while implementing (visual preservation,
+  extraction boundaries, accessibility, feedback loops, 320px behavior).
+- `ui-ux-style-profile` then audits the diff report-only; fix its findings in the gate's fix round.
 
 ## Engineering Rules
 
@@ -39,6 +40,6 @@ tools: Read, Edit, Grep, Glob, Bash
 
 ## Required Validation
 
-- Frontend type/build checks.
-- Frontend security remediation: `npm audit fix`.
+- Inside `arsm-chain`, leave validation to the chain's gate. Otherwise run `python scripts/validate.py`
+  (type check, lint, size, no-shadow, and `npm audit fix` when a manifest changed).
 - Playwright only when gate requires.
