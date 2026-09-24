@@ -8,7 +8,9 @@ export class QuotesPage {
 
   async goto(): Promise<void> {
     await this.page.goto('/quotes');
-    await expect(this.page.getByRole('heading', { name: 'Quotes' })).toBeVisible();
+    // A test id rather than the heading text, so this readiness wait works
+    // regardless of the UI language the page renders in.
+    await expect(this.searchInput()).toBeVisible();
   }
 
   searchInput(): Locator {
@@ -33,10 +35,11 @@ export class QuotesPage {
   }
 
   /**
-   * A row renders its controls twice, once for the wide grid and once for the
-   * compact tiles below `md`, and exactly one of the two is visible. Every
-   * row-scoped locator therefore picks the visible copy, so the same page
-   * object works at any viewport width.
+   * A row renders its controls twice, once in `DataListRow`'s desktop cells
+   * and once in its labeled tiles, switched by a container query on the
+   * list's own width rather than a viewport breakpoint, and exactly one of
+   * the two is visible. Every row-scoped locator therefore picks the visible
+   * copy, so the same page object works at any width.
    */
   rowAction(quoteNumber: string, testId: string): Locator {
     return this.row(quoteNumber).getByTestId(testId).filter({ visible: true }).first();
@@ -54,9 +57,13 @@ export class QuotesPage {
     return this.page.getByRole('dialog').first();
   }
 
-  /** The footer close action; exact, so it never matches the modal chrome's close controls. */
+  /**
+   * The footer close action, anchored per language so it never matches the
+   * modal chrome's "Close modal" control (both buttons share the word
+   * "Close" in English).
+   */
   closeEditorButton(): Locator {
-    return this.page.getByRole('button', { name: 'Close', exact: true });
+    return this.page.getByRole('button', { name: /^(Close|Bezárás)$/ });
   }
 
   lineRows(): Locator {

@@ -31,13 +31,16 @@ test.describe('Quotes - list and editor', () => {
     await expect(draftRow).toContainText(/15,240/);
   });
 
-  test('offers delete only on a draft row, because the API refuses it afterwards', async ({ page }) => {
+  test('offers delete on every row, disabled for anything but a draft', async ({ page }) => {
     await prepareQuotesPage(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 
-    await expect(quotesPage.rowAction('ARSM-2026-0001', 'quote-delete-button')).toBeVisible();
-    await expect(quotesPage.row('ARSM-2026-0002').getByTestId('quote-delete-button')).toHaveCount(0);
+    await expect(quotesPage.rowAction('ARSM-2026-0001', 'quote-delete-button')).toBeEnabled();
+
+    const nonDraftDelete = quotesPage.rowAction('ARSM-2026-0002', 'quote-delete-button');
+    await expect(nonDraftDelete).toBeDisabled();
+    await expect(nonDraftDelete).toHaveAttribute('title', 'Only a draft can be deleted.');
   });
 
   test('searches by quote number, title and license plate', async ({ page }) => {

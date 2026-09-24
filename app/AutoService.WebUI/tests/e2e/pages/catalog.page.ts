@@ -3,7 +3,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export type CatalogTab = 'parts' | 'labor-types';
 export type CatalogItemKind = 'part' | 'laborType';
 
-const TAB_LABEL: Record<CatalogTab, string> = { parts: 'Parts', 'labor-types': 'Labor types' };
+// Anchored per language: the tab buttons have no test id of their own, and
+// the Inventory page has no other control whose accessible name collides.
+const TAB_LABEL: Record<CatalogTab, RegExp> = {
+  parts: /^(Parts|Alkatrészek)$/,
+  'labor-types': /^(Labor types|Munkatípusok)$/,
+};
 const CREATE_TITLE: Record<CatalogItemKind, string> = { part: 'Create part', laborType: 'Create labor type' };
 const EDIT_TITLE: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labor type' };
 const DELETE_TITLE: Record<CatalogItemKind, string> = {
@@ -22,7 +27,10 @@ export class CatalogPage {
 
   async goto(tab?: CatalogTab): Promise<void> {
     await this.page.goto(tab ? `/inventory?tab=${tab}` : '/inventory');
-    await expect(this.page.getByRole('heading', { name: 'Inventory' })).toBeVisible();
+    // A test id rather than the heading text, so this readiness wait works
+    // regardless of the UI language the page renders in.
+    const activeKind: CatalogItemKind = tab === 'labor-types' ? 'laborType' : 'part';
+    await expect(this.searchInput(activeKind)).toBeVisible();
   }
 
   tabButton(tab: CatalogTab): Locator {
