@@ -6,6 +6,7 @@
  */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StatusPillBadge } from '../../../components/common/StatusPillBadge';
 import type { QuoteDisplayStatus } from '../helpers';
 
 /** Props for the {@link QuoteStatusBadge} component. */
@@ -47,13 +48,13 @@ const QuoteStatusBadgeComponent = memo(function QuoteStatusBadge({ status, class
   const { t } = useTranslation();
 
   return (
-    <span
-      data-testid="quote-status-badge"
-      className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-normal ${QUOTE_STATUS_COLORS[status]} ${className}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${QUOTE_STATUS_DOT[status]}`} aria-hidden="true" />
-      {t(QUOTE_STATUS_I18N_KEY[status])}
-    </span>
+    <StatusPillBadge
+      testId="quote-status-badge"
+      colorClassName={QUOTE_STATUS_COLORS[status]}
+      dotClassName={QUOTE_STATUS_DOT[status]}
+      label={t(QUOTE_STATUS_I18N_KEY[status])}
+      className={className}
+    />
   );
 });
 

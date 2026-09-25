@@ -7,6 +7,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
+  centeredLoadingWrapperClass,
   compactDividerLineClass,
   emptyStateBoxClass,
   loadingSpinnerClass,
@@ -41,7 +42,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
   return (
     <section className="space-y-3">
       {isLoadingCustomers && (
-        <div className="flex min-w-0 items-center justify-center py-12">
+        <div className={centeredLoadingWrapperClass}>
           <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
         </div>
       )}

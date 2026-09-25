@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus, CalendarDay } from '../../../../types/scheduler/scheduler.types';
 import {
+  centeredLoadingWrapperClass,
   insetSurfaceClass,
   loadingSpinnerClass,
   mutedDarkCardToneClass,
@@ -199,7 +200,7 @@ const CalendarViewComponent = memo(function CalendarView({
       </div>
 
       {isLoading ? (
-        <div className="flex min-w-0 items-center justify-center py-12">
+        <div className={centeredLoadingWrapperClass}>
           <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
         </div>
       ) : (

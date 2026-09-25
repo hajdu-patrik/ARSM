@@ -16,6 +16,7 @@ import {
   searchClearButtonClass,
   searchInputClass,
   selectWrapperClass,
+  toolbarRowLayoutClass,
 } from '../../../utils/formStyles';
 import { QUOTE_STATUS_FILTERS, type QuoteStatusFilter } from '../helpers';
 
@@ -48,7 +49,7 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
 }: QuotesToolbarProps) {
   return (
     <section className={cardClass}>
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className={toolbarRowLayoutClass}>
         <div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
           <Search className={inputGroupIconClass} />
           <input

@@ -17,7 +17,10 @@ import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
 import {
   compactItemTitleTextClass,
+  compactRowActionsClusterClass,
+  compactRowHeaderClass,
   compactTwoColumnGridClass,
+  monoIdentifierTextClass,
   numericValueTextClass,
   rowIconActionAccentClass,
   rowIconActionDangerClass,
@@ -36,7 +39,6 @@ interface QuoteCardProps {
 }
 
 const quoteNumberTextClass = 'min-w-0 truncate font-mono text-xs text-arsm-label dark:text-arsm-label-dark';
-const quotePlateTextClass = 'min-w-0 truncate font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
 const quoteDateTextClass = 'min-w-0 truncate text-sm tabular-nums text-arsm-label dark:text-arsm-label-dark';
 
 const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
@@ -47,7 +49,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
   const deleteLabel = t('quotes.deleteQuote');
 
   const actions = (
-    <div className="flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end">
+    <div className={compactRowActionsClusterClass}>
       <button
         data-testid="quote-open-button"
         type="button"
@@ -95,7 +97,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
             <p className={compactItemTitleTextClass}>{quote.title}</p>
             <p className={quoteNumberTextClass}>{quote.quoteNumber}</p>
           </div>
-          <p className={quotePlateTextClass}>{quote.vehicle.licensePlate}</p>
+          <p className={monoIdentifierTextClass}>{quote.vehicle.licensePlate}</p>
           <QuoteStatusBadge status={displayStatus} className="justify-self-start" />
           <p className={quoteDateTextClass}>{formatQuoteDate(quote.validUntil, locale)}</p>
           <p className={numericValueTextClass}>{formatHuf(quote.totalNet, locale)}</p>
@@ -105,7 +107,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       )}
       mobile={(
         <>
-          <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className={compactRowHeaderClass}>
             <div className="min-w-0">
               <p className={compactItemTitleTextClass}>{quote.title}</p>
               <p className={quoteNumberTextClass}>{quote.quoteNumber}</p>

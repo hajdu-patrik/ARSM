@@ -18,6 +18,8 @@ import type { QuoteLineDto } from '../../../types/quotes/quotes.types';
 import { formatHuf, formatHufUnitPrice } from '../../../utils/currency';
 import {
   compactItemTitleTextClass,
+  compactRowActionsClusterClass,
+  compactRowHeaderClass,
   compactTwoColumnGridClass,
   metadataPillClass,
   numericMutedValueTextClass,
@@ -51,7 +53,7 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
   const kindLabel = line.lineKind === 'Labor' ? t('quotes.line.kindLabor') : t('quotes.line.kindPart');
 
   const actions = (
-    <div className="flex shrink-0 items-center gap-1">
+    <div className={compactRowActionsClusterClass}>
       <button
         data-testid="quote-line-edit-button"
         type="button"
@@ -97,7 +99,7 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
       )}
       mobile={(
         <>
-          <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className={compactRowHeaderClass}>
             <div className="min-w-0">
               <p className={compactItemTitleTextClass}>{line.description}</p>
               <p className={`mt-1 ${metadataPillClass}`}>{kindLabel}</p>

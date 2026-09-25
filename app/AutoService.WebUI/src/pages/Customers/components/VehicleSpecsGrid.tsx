@@ -6,6 +6,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
+	compactTwoColumnGridClass,
 	inlinePrimaryLabelTextClass,
 	mutedMetaTextClass,
 } from '../../../utils/formStyles';
@@ -24,7 +25,7 @@ export const VehicleSpecsGrid = memo(function VehicleSpecsGrid({
 	vehicle,
 	className = '',
 }: VehicleSpecsGridProps) {
-	const classNames = [`grid min-w-0 grid-cols-1 gap-1 ${mutedMetaTextClass} sm:grid-cols-2`, className]
+	const classNames = [compactTwoColumnGridClass, mutedMetaTextClass, className]
 		.filter(Boolean)
 		.join(' ');
 

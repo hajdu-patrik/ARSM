@@ -1,3 +1,7 @@
+/**
+ * Section components for the appointment detail modal body (header, due date, vehicle, task).
+ * @module pages/Scheduler/components/detail/AppointmentDetailModal.sections
+ */
 import { memo } from 'react';
 import { Clock3 } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -7,6 +11,7 @@ import type { DueState } from '../../utils/due-date';
 import {
   baseSectionHeadingTextClass,
   compactPrimaryValueTextClass,
+  compactStackedRowClass,
   compactTwoColumnGridClass,
   inputClassCompact,
   mutedMetaTextClass,
@@ -127,7 +132,7 @@ const HeaderSection = memo(function HeaderSection({
 }: HeaderSectionProps) {
   return (
     <div className={`${schedulerDetailRowClass} px-3.5 py-2.5`}>
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className={compactStackedRowClass}>
         <StatusBadge status={appointmentStatus} />
         <span className={`truncate ${mutedSecondaryTextClass}`}>{formattedDate}</span>
       </div>

@@ -25,6 +25,9 @@ export const mutedSectionIconClass = 'h-5 w-5 shrink-0 text-arsm-muted dark:text
 /** Shared loading spinner typography used in reusable async-state surfaces. */
 export const loadingSpinnerClass = 'animate-spin motion-reduce:animate-none rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark';
 
+/** Monospaced identifier text (plates, codes) shared by catalog and quote row components. */
+export const monoIdentifierTextClass = 'min-w-0 truncate font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
+
 /** Right-aligned tabular figures for money, quantities and percentages in list rows. */
 export const numericValueTextClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 export const numericMutedValueTextClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-label dark:text-arsm-label-dark';

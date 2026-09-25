@@ -68,7 +68,7 @@ tools: Read, Edit, Grep, Glob
 - `app/AutoService.WebUI/src/styles/{design-system.css,components.css}`
 - `app/AutoService.WebUI/src/utils/styles/{buttonStyles,fieldStyles,surfaceStyles,textStyles}.ts`
 - `app/AutoService.WebUI/src/utils/formStyles.ts`
-- `app/AutoService.WebUI/src/components/common/{Modal.tsx,ModalCloseButton.tsx,ToastViewport.tsx}`
+- `app/AutoService.WebUI/src/components/common/{Modal.tsx,ModalCloseButton.tsx,ToastViewport.tsx,StatusPillBadge.tsx}`
 - `app/AutoService.WebUI/src/utils/locales/{en.core.ts,hu.core.ts,en.feature.ts,hu.feature.ts}`
 
 ## 320px Checklist

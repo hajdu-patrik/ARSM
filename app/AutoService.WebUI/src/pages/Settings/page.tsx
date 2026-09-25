@@ -114,7 +114,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
   if (isLoadingProfile) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
-        <div className={`h-10 w-10 ${loadingSpinnerClass}`} />
+        <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
       </div>
     );
   }

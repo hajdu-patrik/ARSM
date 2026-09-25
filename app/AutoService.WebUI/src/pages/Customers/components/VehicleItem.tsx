@@ -9,6 +9,8 @@ import { Eye, EyeOff, FilePlus, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
 	compactItemTitleTextClass,
+	compactRowActionsClusterClass,
+	compactRowHeaderClass,
 	mutedMetaTextClass,
 	rowIconActionAccentClass,
 	rowIconActionDangerClass,
@@ -43,13 +45,11 @@ const VehicleItemComponent = memo(function VehicleItem({
 	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
 	// A new quote is neither info, edit nor delete, so it keeps its own icon
 	// and accent tone instead of borrowing one of the three fixed semantics.
-	const vehicleInlineViewIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
-	const vehicleInlineEditIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
-	const vehicleInlineDeleteIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
+	const vehicleInlineActionIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
 
 	return (
 		<div className="min-w-0 px-3 py-3 sm:px-3.5">
-			<div className="flex min-w-0 items-start justify-between gap-2">
+			<div className={compactRowHeaderClass}>
 				<div className="min-w-0">
 					<p className={compactItemTitleTextClass}>{vehicle.licensePlate}</p>
 					<p className={`truncate ${mutedMetaTextClass}`}>
@@ -57,7 +57,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 					</p>
 				</div>
 
-				<div className="flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end">
+				<div className={compactRowActionsClusterClass}>
 					<button
 						data-testid="vehicle-create-quote-button"
 						type="button"
@@ -66,7 +66,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.createQuote')}
 						aria-label={t('customers.createQuote')}
 					>
-						<FilePlus className={vehicleInlineViewIconClass} />
+						<FilePlus className={vehicleInlineActionIconClass} />
 					</button>
 
 					<button
@@ -77,8 +77,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 						aria-label={detailsActionLabel}
 					>
 						{isDetailsOpen
-							? <EyeOff className={vehicleInlineViewIconClass} />
-							: <Eye className={vehicleInlineViewIconClass} />}
+							? <EyeOff className={vehicleInlineActionIconClass} />
+							: <Eye className={vehicleInlineActionIconClass} />}
 					</button>
 
 					<button
@@ -88,7 +88,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.editVehicle')}
 						aria-label={t('customers.editVehicle')}
 					>
-						<Pencil className={vehicleInlineEditIconClass} />
+						<Pencil className={vehicleInlineActionIconClass} />
 					</button>
 
 					<button
@@ -98,7 +98,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.deleteVehicle')}
 						aria-label={t('customers.deleteVehicle')}
 					>
-						<Trash2 className={vehicleInlineDeleteIconClass} />
+						<Trash2 className={vehicleInlineActionIconClass} />
 					</button>
 				</div>
 			</div>

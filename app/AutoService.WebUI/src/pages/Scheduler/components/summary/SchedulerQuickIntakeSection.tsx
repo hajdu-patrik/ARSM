@@ -11,6 +11,7 @@ import {
 	mediumContextPrimaryButtonClass,
 	mutedSecondaryTextClass,
 	sectionHeadingToneClass,
+	toolbarRowLayoutClass,
 } from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerQuickIntakeSection} component. */
@@ -34,7 +35,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 }: SchedulerQuickIntakeSectionProps) {
 	return (
 		<section className={`${insetSurfaceClass} relative overflow-hidden p-4`}>
-			<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<div className={toolbarRowLayoutClass}>
 				<div className="min-w-0">
 					<h3 className={`text-base ${sectionHeadingToneClass}`}>
 						{t('scheduler.intake.quickTitle')}

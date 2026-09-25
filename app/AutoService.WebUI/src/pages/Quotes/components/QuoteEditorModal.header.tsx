@@ -19,6 +19,7 @@ import {
 } from '../../../types/quotes/quotes.types';
 import {
   compactDataSurfaceClass,
+  compactInlineClusterClass,
   compactPrimaryValueTextClass,
   compactTwoColumnGridClass,
   formFieldGridClass,
@@ -140,7 +141,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
       <div className={formFieldGridClass}>
         <div className={formFieldGroupClass}>
           <label htmlFor="quote-valid-until" className={labelClass}>{t('quotes.validUntil')}</label>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className={compactInlineClusterClass}>
             <input
               data-testid="quote-valid-until-input"
               id="quote-valid-until"

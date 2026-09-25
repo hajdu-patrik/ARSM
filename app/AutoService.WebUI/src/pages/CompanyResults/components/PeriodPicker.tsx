@@ -9,6 +9,7 @@ import type { TFunction } from 'i18next';
 import {
   cardClass,
   compactSelectFullClass,
+  formFieldGridClass,
   labelClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
@@ -52,7 +53,7 @@ const PeriodPickerComponent = memo(function PeriodPicker({
 
   return (
     <section className={cardClass}>
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className={formFieldGridClass}>
         <div className="min-w-0">
           <label htmlFor="company-results-year" className={labelClass}>{t('companyResults.year')}</label>
           <div className={selectWrapperClass}>

@@ -1,3 +1,7 @@
+/**
+ * Customers page toolbar: search input, sort direction toggle, and create-customer action.
+ * @module CustomersToolbar
+ */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
@@ -9,6 +13,8 @@ import {
 	referenceChipPrimaryButtonClass,
 	searchClearButtonClass,
 	searchInputClass,
+	toolbarActionsWrapperClass,
+	toolbarRowLayoutClass,
 } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
 import type { SortDirection } from '../page.types';
@@ -34,7 +40,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 }: CustomersToolbarProps) {
 	return (
 		<section className={cardClass}>
-			<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<div className={toolbarRowLayoutClass}>
 				<div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
 					<Search className={inputGroupIconClass} />
 					<input
@@ -59,7 +65,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 					)}
 				</div>
 
-				<div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+				<div className={toolbarActionsWrapperClass}>
 					<button
 						data-testid="customers-sort-toggle"
 						type="button"

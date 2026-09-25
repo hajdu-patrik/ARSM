@@ -14,7 +14,10 @@ import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import { formatHufUnitPrice } from '../../../utils/currency';
 import {
   compactItemTitleTextClass,
+  compactRowActionsClusterClass,
+  compactRowHeaderClass,
   compactTwoColumnGridClass,
+  monoIdentifierTextClass,
   numericMutedValueTextClass,
   numericValueTextClass,
   rowIconActionDangerClass,
@@ -38,8 +41,6 @@ interface CatalogItemRowProps {
   readonly onDelete: () => void;
 }
 
-const catalogIdentifierTextClass = 'min-w-0 truncate font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
-
 const CatalogItemRowComponent = memo(function CatalogItemRow({
   locale,
   name,
@@ -57,7 +58,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
   onDelete,
 }: CatalogItemRowProps) {
   const actions = (
-    <div className="flex shrink-0 items-center gap-1">
+    <div className={compactRowActionsClusterClass}>
       <button type="button" onClick={onEdit} className={rowIconActionWarningClass} title={editLabel} aria-label={editLabel}>
         <Pencil className="h-3.5 w-3.5 shrink-0" />
       </button>
@@ -74,7 +75,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       desktop={(
         <>
           <p className={compactItemTitleTextClass}>{name}</p>
-          <p className={catalogIdentifierTextClass}>{identifier}</p>
+          <p className={monoIdentifierTextClass}>{identifier}</p>
           <p className={numericValueTextClass}>{formatHufUnitPrice(netAmount, locale)}</p>
           <p className={numericMutedValueTextClass}>{vatRatePercent}%</p>
           <p className={`${numericValueTextClass} font-semibold`}>{formatHufUnitPrice(grossAmount, locale)}</p>
@@ -83,7 +84,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       )}
       mobile={(
         <>
-          <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className={compactRowHeaderClass}>
             <p className={compactItemTitleTextClass}>{name}</p>
             {actions}
           </div>

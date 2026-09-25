@@ -6,7 +6,11 @@
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { compactSectionHeadingTextClass, insetSurfaceClass } from '../../../../utils/formStyles';
+import {
+	compactSectionHeadingTextClass,
+	compactStackedRowClass,
+	insetSurfaceClass,
+} from '../../../../utils/formStyles';
 
 /** Props for the {@link SchedulerSummaryStrip} component. */
 interface SchedulerSummaryStripProps {
@@ -26,7 +30,7 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 }: SchedulerSummaryStripProps) {
 	return (
 		<section className={`${insetSurfaceClass} relative overflow-hidden px-4 py-3.5`}>
-			<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+			<div className={compactStackedRowClass}>
 				<p className={`min-w-0 truncate ${compactSectionHeadingTextClass}`}>{summaryDateText}</p>
 				<span className="inline-flex shrink-0 items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
 					{t('scheduler.scheduledCount', { count: summaryCount })}

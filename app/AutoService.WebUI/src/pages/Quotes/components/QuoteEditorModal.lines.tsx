@@ -12,6 +12,7 @@ import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types
 import { MAX_QUOTE_LINE_COUNT, type QuoteDetailDto, type QuoteLineDto } from '../../../types/quotes/quotes.types';
 import { DataList, type DataListColumn } from '../../../components/common/DataList';
 import {
+  compactHeaderRowClass,
   compactSectionHeadingTextClass,
   dataListBreakpointClasses,
   mutedMetaTextClass,
@@ -86,7 +87,7 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
 
   return (
     <section className="min-w-0 space-y-3">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <div className={compactHeaderRowClass}>
         <h3 className={compactSectionHeadingTextClass}>{t('quotes.linesTitle')}</h3>
         {canEdit && (
           <button

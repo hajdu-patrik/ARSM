@@ -34,6 +34,27 @@ export const compactDividerLineClass = 'h-px flex-1 bg-arsm-border dark:bg-arsm-
 export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
 export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
 
+/** Toolbar row layout shared by Customers/Inventory/Quotes toolbars and the scheduler quick-intake section. */
+export const toolbarRowLayoutClass = 'flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between';
+/** Wrapper for a toolbar's action controls, allowed to wrap on narrow widths before the toolbar itself stacks. */
+export const toolbarActionsWrapperClass = 'flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap';
+
+/** Compact row header layout shared by vehicle, catalog, and quote row/card components. */
+export const compactRowHeaderClass = 'flex min-w-0 items-start justify-between gap-2';
+/** Compact row actions cluster paired with `compactRowHeaderClass`, wrapping under very narrow widths. */
+export const compactRowActionsClusterClass = 'flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end';
+
+/** Centered loading wrapper shared by list/calendar sections while their async data resolves. */
+export const centeredLoadingWrapperClass = 'flex min-w-0 items-center justify-center py-12';
+
+/** Shared hover/focus micro-motion for list/nav rows (sidebar nav rows, admin list rows). */
+export const rowHoverMotionClass = 'transition-[background-color,border-color,color,transform] duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-colors';
+
+/** Inline wrapper for wrapping chip/action clusters without a justify-between split (compare `compactHeaderRowClass`). */
+export const compactInlineClusterClass = 'flex min-w-0 flex-wrap items-center gap-2';
+/** Stacked-to-row layout for compact header/summary strips (gap-2; compare the gap-3 `toolbarRowLayoutClass`). */
+export const compactStackedRowClass = 'flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between';
+
 /** Page-shell and section wrappers used across top-level route pages. */
 export const cardClass = 'arsm-card-surface';
 export const insetSurfaceClass = 'arsm-surface-inset';

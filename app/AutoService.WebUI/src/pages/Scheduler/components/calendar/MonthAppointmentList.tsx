@@ -7,10 +7,11 @@ import { useTranslation } from 'react-i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import {
   baseSectionHeadingTextClass,
+  centeredLoadingWrapperClass,
+  emptyStateBoxClass,
   insetSurfaceClass,
   loadingSpinnerClass,
   mutedMetaTextClass,
-  mutedSecondaryTextClass,
 } from '../../../../utils/formStyles';
 import { AppointmentCard } from '../shared/AppointmentCard';
 import { MonthAppointmentFilters, MonthAppointmentSortControls } from './MonthAppointmentFilters';
@@ -117,13 +118,13 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   let listContent: ReactNode;
   if (isLoading) {
     listContent = (
-      <div className="flex min-w-0 items-center justify-center py-12">
+      <div className={centeredLoadingWrapperClass}>
         <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
       </div>
     );
   } else if (sortedAppointments.length === 0) {
     listContent = (
-      <div className={`rounded-xl border border-arsm-border border-dashed bg-arsm-toggle-bg px-4 py-8 text-center dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark ${mutedSecondaryTextClass}`}>
+      <div className={emptyStateBoxClass}>
         {t(emptyMessageKey)}
       </div>
     );

@@ -12,6 +12,7 @@ import {
   compactSectionHeadingTextClass,
   insetSurfaceClass,
   mutedMetaTextClass,
+  numericValueTextClass,
 } from '../../../utils/formStyles';
 
 interface QuoteEditorTotalsSectionProps {
@@ -21,7 +22,7 @@ interface QuoteEditorTotalsSectionProps {
 }
 
 const totalRowClass = 'flex min-w-0 items-baseline justify-between gap-3';
-const totalValueClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+const totalValueClass = numericValueTextClass;
 const grandTotalValueClass = 'min-w-0 truncate text-right text-base font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 
 const QuoteEditorTotalsSectionComponent = memo(function QuoteEditorTotalsSection({

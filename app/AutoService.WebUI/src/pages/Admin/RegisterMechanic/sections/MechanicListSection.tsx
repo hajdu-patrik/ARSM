@@ -13,9 +13,11 @@ import {
 	compactListSecondaryTextClass,
 	compactInputSurfaceClass,
 	dangerButtonClass,
+	emptyStateBoxClass,
 	iconDangerButtonClass,
 	loadingSpinnerClass,
 	mutedBodyTextClass,
+	rowHoverMotionClass,
 	secondaryButtonClass,
 } from '../../../../utils/formStyles';
 
@@ -34,6 +36,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 	const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
+	/** Fetches the mechanic roster from the admin service and updates local state. */
 	const loadMechanics = useCallback(async () => {
 		setIsLoading(true);
 		try {
@@ -73,6 +76,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 		setDeleteTarget(null);
 	}, [isDeleting]);
 
+	/** Deletes the selected mechanic and maps known API error responses to toast messages. */
 	const handleDelete = useCallback(async () => {
 		if (!deleteTarget) {
 			return;
@@ -123,7 +127,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 	return (
 		<>
 			{mechanics.length === 0 ? (
-				<p className={mutedBodyTextClass}>{t('admin.noMechanics')}</p>
+				<p className={emptyStateBoxClass}>{t('admin.noMechanics')}</p>
 			) : (
 				<div className="space-y-3">
 					{Array.from(new Map(mechanics.map((mechanic) => [mechanic.personId, mechanic])).values()).map((mechanic) => {
@@ -136,7 +140,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 						return (
 							<div
 								key={mechanic.personId}
-								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-px motion-reduce:transform-none motion-reduce:transition-colors sm:items-center ${compactInputSurfaceClass}`}
+								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
 							>
 								<MechanicAvatar
 									mechanicId={mechanic.personId}

@@ -11,6 +11,7 @@ import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
   compactDataSurfaceClass,
+  compactInlineClusterClass,
   compactPrimaryValueTextClass,
   mutedMetaTextClass,
 } from '../../../utils/formStyles';
@@ -56,7 +57,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
       widthClassName="max-w-xl"
     >
       <div className="min-w-0 space-y-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className={compactInlineClusterClass}>
           <StatusBadge status={appointment.status} className="min-h-0 w-fit px-2.5 py-1 text-xs" />
           <button
             type="button"
