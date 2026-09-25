@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { insetSurfaceClass, intakeFieldLabelClass, intakeFieldWrapperClass, intakeTextareaClass } from '../../../../utils/formStyles';
+import { insetSurfaceClass, intakeFieldLabelClass, intakeFieldWrapperClass, textareaClass } from '../../../../utils/formStyles';
 
 interface SchedulerIntakeTaskSectionProps {
   readonly taskDescription: string;
@@ -25,7 +25,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
           placeholder={translate('scheduler.intake.taskDescriptionPlaceholder')}
           maxLength={200}
           rows={4}
-          className={`${intakeTextareaClass} min-h-[7rem]`}
+          className={textareaClass}
         />
       </label>
     </div>

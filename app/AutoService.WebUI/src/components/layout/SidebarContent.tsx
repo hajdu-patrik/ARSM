@@ -9,6 +9,7 @@ import { CalendarDays, ChevronsLeft, FileText, LogOut, Package, Settings, Shield
 import {
   compactListPrimaryTextClass,
   compactListSecondaryTextClass,
+  largeIconClass,
   rowHoverMotionClass,
   sidebarIconSlotClass,
 } from '../../utils/formStyles';
@@ -125,7 +126,7 @@ const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedTex
         {profile.showProfilePicture ? (
           <img
             src={profile.profilePictureUrl}
-            alt={translate('settings.profilePictureAlt')}
+            alt={translate('settings.profilePicture')}
             className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover ring-2 ring-arsm-accent/15 dark:border-arsm-accent-dark/50 dark:ring-arsm-accent-dark/15"
             onError={profile.onAvatarLoadFailed}
           />
@@ -194,7 +195,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           className={collapsed ? SIDEBAR_COLLAPSED_ACTION_CLASS : SIDEBAR_ACTION_ROW_CLASS}
         >
           <span className={sidebarIconSlotClass}>
-            <ChevronsLeft className={`h-5 w-5 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
+            <ChevronsLeft className={`${largeIconClass} transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
           </span>
           <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-sm font-medium`}>{translate('sidebar.collapse')}</span>
         </button>
@@ -214,7 +215,7 @@ const SidebarContentComponent = memo(function SidebarContent({
           className={collapsed ? SIDEBAR_COLLAPSED_DANGER_ACTION_CLASS : SIDEBAR_DANGER_ACTION_ROW_CLASS}
         >
           <span className={sidebarIconSlotClass}>
-            <LogOut className="h-5 w-5 shrink-0" />
+            <LogOut className={largeIconClass} />
           </span>
           <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-sm font-medium`}>{translate('layout.logout')}</span>
         </button>

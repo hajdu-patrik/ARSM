@@ -6,6 +6,7 @@ import { Modal } from '../../../../components/common/Modal';
 import {
   buttonClass,
   dangerButtonClass,
+  defaultIconClass,
   mutedBodyTextClass,
   secondaryButtonClass,
 } from '../../../../utils/formStyles';
@@ -64,7 +65,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isUpdating}
               className={secondaryButtonClass}
             >
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -73,8 +74,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               aria-busy={isUpdating}
               className={buttonClass}
             >
-              <Save className="h-4 w-4 shrink-0" />
-              <span>{isUpdating ? t('scheduler.detail.saving') : t('scheduler.detail.confirmStatusChange')}</span>
+              <Save className={defaultIconClass} />
+              <span>{isUpdating ? t('common.actions.saving') : t('scheduler.detail.confirmStatusChange')}</span>
             </button>
           </>
         )}
@@ -99,7 +100,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isClaiming}
               className={secondaryButtonClass}
             >
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -108,8 +109,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               aria-busy={isClaiming}
               className={buttonClass}
             >
-              <UserPlus className="h-4 w-4 shrink-0" />
-              <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
+              <UserPlus className={defaultIconClass} />
+              <span>{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
             </button>
           </>
         )}
@@ -130,7 +131,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isUnclaiming}
               className={secondaryButtonClass}
             >
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -139,8 +140,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               aria-busy={isUnclaiming}
               className={dangerButtonClass}
             >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
+              <LogOut className={defaultIconClass} />
+              <span>{isUnclaiming ? t('common.actions.saving') : t('scheduler.detail.confirmUnassign')}</span>
             </button>
           </>
         )}
@@ -161,7 +162,7 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               disabled={isSaving}
               className={secondaryButtonClass}
             >
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -170,8 +171,8 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
               aria-busy={isSaving}
               className={buttonClass}
             >
-              <Save className="h-4 w-4 shrink-0" />
-              <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.confirmSave')}</span>
+              <Save className={defaultIconClass} />
+              <span>{isSaving ? t('common.actions.saving') : t('common.actions.save')}</span>
             </button>
           </>
         )}

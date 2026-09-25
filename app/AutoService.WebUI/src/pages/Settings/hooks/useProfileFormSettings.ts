@@ -72,7 +72,7 @@ export function useProfileFormSettings({
 
   const profileSaveDisabledReasonKey = useMemo(() => {
     if (isUpdatingProfile) {
-      return 'settings.saving';
+      return 'common.actions.saving';
     }
 
     if (!hasProfileChanges) {

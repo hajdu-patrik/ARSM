@@ -7,6 +7,7 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
 import {
 	cardClass,
+	defaultIconClass,
 	inputGroupContainerClass,
 	inputGroupIconClass,
 	referenceChipNeutralButtonClass,
@@ -56,11 +57,11 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 							data-testid="customers-search-clear"
 							type="button"
 							onClick={onClearSearch}
-							title={t('customers.clearSearch')}
-							aria-label={t('customers.clearSearch')}
+							title={t('common.actions.clearSearch')}
+							aria-label={t('common.actions.clearSearch')}
 							className={searchClearButtonClass}
 						>
-							<X className="h-4 w-4" aria-hidden="true" />
+							<X className={defaultIconClass} aria-hidden="true" />
 						</button>
 					)}
 				</div>
@@ -72,8 +73,8 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						onClick={onToggleSortDirection}
 						className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
 					>
-						<ArrowUpDown className="h-4 w-4 shrink-0" />
-						<span className="truncate">{sortDirection === 'asc' ? t('customers.sortDirectionAsc') : t('customers.sortDirectionDesc')}</span>
+						<ArrowUpDown className={defaultIconClass} />
+						<span className="truncate">{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
 					</button>
 
 					<button
@@ -82,7 +83,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						onClick={onOpenCreateCustomerModal}
 						className={`${referenceChipPrimaryButtonClass} flex-1 sm:flex-none`}
 					>
-						<Plus className="h-4 w-4 shrink-0" />
+						<Plus className={defaultIconClass} />
 						<span className="truncate">{t('customers.createCustomer')}</span>
 					</button>
 				</div>

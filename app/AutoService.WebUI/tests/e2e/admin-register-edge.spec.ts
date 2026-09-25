@@ -15,7 +15,7 @@ function registrationSelectors(page: Page) {
 }
 
 function selectedMechanicsSection(page: Page) {
-  return page.locator('section[aria-label="Selected Mechanics"], section[aria-label="Kijelölt szerelők"]');
+  return page.locator('section[aria-label="Selected mechanics"], section[aria-label="Kijelölt szerelők"]');
 }
 
 /** Required registration form values with overridable defaults for edge cases. */

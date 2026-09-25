@@ -9,6 +9,7 @@ import { Save } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import {
   compactSelectFullClass,
+  defaultIconClass,
   equalWidthControlGroupClass,
   mediumContextPrimaryButtonClass,
   selectWrapperClass,
@@ -99,8 +100,8 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           aria-busy={isSaving}
           className={`${mediumContextPrimaryButtonClass} w-full`}
         >
-          <Save className="h-4 w-4 shrink-0" />
-          <span>{isSaving ? t('scheduler.detail.saving') : t('scheduler.detail.save')}</span>
+          <Save className={defaultIconClass} />
+          <span>{isSaving ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>
         </button>
       )}
     </div>

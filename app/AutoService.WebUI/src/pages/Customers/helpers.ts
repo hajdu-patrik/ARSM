@@ -91,19 +91,19 @@ export function mapCustomerValidationMessageToKey(message: string): string {
   }
 
   if (normalized.includes('email must be a valid email address')) {
-    return 'customers.errors.invalidEmail';
+    return 'common.validation.invalidEmail';
   }
 
   if (normalized.includes('phone number must be a valid european number')) {
-    return 'customers.errors.invalidPhone';
+    return 'common.validation.invalidPhone';
   }
 
   if (normalized.includes('may only contain letters and hyphens')) {
-    return 'customers.errors.invalidName';
+    return 'common.validation.invalidName';
   }
 
   if (normalized.includes('required') || normalized.includes('must not be blank')) {
-    return 'customers.errors.fieldRequired';
+    return 'common.validation.fieldRequired';
   }
 
   if (normalized.includes('customer not found')) {
@@ -122,7 +122,7 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
   if (normalized.includes('license plate format is invalid')) {
-    return 'customers.errors.vehicleLicensePlateInvalid';
+    return 'common.validation.licensePlateInvalid';
   }
 
   if (normalized.includes('vehicle with this license plate already exists')) {
@@ -130,15 +130,15 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   }
 
   if (normalized.includes('vin')) {
-    return 'customers.errors.vehicleVinInvalid';
+    return 'common.validation.vehicleVinInvalid';
   }
 
   if (normalized.includes('drivetrain')) {
-    return 'customers.errors.vehicleDrivetrainInvalid';
+    return 'common.validation.vehicleDrivetrainInvalid';
   }
 
   if (normalized.includes('year must be between')) {
-    return 'customers.errors.vehicleYearInvalid';
+    return 'common.validation.vehicleYearInvalid';
   }
 
   if (normalized.includes('must be non-negative')) {
@@ -154,7 +154,7 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   }
 
   if (normalized.includes('required') || normalized.includes('must not be blank')) {
-    return 'customers.errors.fieldRequired';
+    return 'common.validation.fieldRequired';
   }
 
   return 'customers.errors.vehicleSaveFailed';

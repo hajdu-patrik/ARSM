@@ -128,7 +128,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
       <div className={pageShellNarrowClass}>
         <header className={pageHeaderClass}>
           <h1 className={pageTitleClass}>
-            {t('settings.title')}
+            {t('nav.settings')}
           </h1>
         </header>
 
@@ -146,7 +146,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
             />
           </section>
 
-          <section aria-label={t('settings.personalInfo')}>
+          <section aria-label={t('common.fields.personalInformation')}>
             <PersonalInfoSection
               firstName={firstName}
               middleName={middleName}

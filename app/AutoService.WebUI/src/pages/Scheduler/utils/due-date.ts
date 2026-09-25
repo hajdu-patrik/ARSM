@@ -7,6 +7,8 @@
  * @module due-date
  */
 
+import { toneTextClasses } from '../../../utils/formStyles';
+
 /** Computed due-state for an appointment's due datetime. */
 export interface DueState {
   /** Whether the due datetime has already passed. */
@@ -59,7 +61,7 @@ export function getDueState(dueDateTime: string): DueState {
     const overdueDuration = splitDuration(Math.abs(diffMs));
     return {
       isOverdue: true,
-      toneClassName: 'text-arsm-error-text dark:text-arsm-error-text-light',
+      toneClassName: toneTextClasses.error,
       labelKey: 'scheduler.due.overdueByDays',
       labelValues: overdueDuration,
     };
@@ -70,8 +72,8 @@ export function getDueState(dueDateTime: string): DueState {
   return {
     isOverdue: false,
     toneClassName: diffMs < MS_PER_DAY
-      ? 'text-arsm-warning-text dark:text-arsm-warning-text-dark'
-      : 'text-arsm-label dark:text-arsm-label-dark',
+      ? toneTextClasses.warning
+      : toneTextClasses.neutral,
     labelKey: 'scheduler.due.daysLeft',
     labelValues: dueDuration,
   };

@@ -15,6 +15,7 @@ import {
   passwordToggleButtonClass,
   secondaryButtonClass,
 } from './constants';
+import { defaultIconClass, largeIconClass } from '../../utils/formStyles';
 
 interface DeleteProfileConfirmModalProps {
   readonly isOpen: boolean;
@@ -50,7 +51,7 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
 
   let deleteConfirmDisabledReasonKey: string | null = null;
   if (isDeleting) {
-    deleteConfirmDisabledReasonKey = 'settings.deletingProfile';
+    deleteConfirmDisabledReasonKey = 'common.actions.deleting';
   } else if (!deletePassword.trim() || !deletePasswordConfirm.trim()) {
     deleteConfirmDisabledReasonKey = 'settings.fillDeletePasswordsToContinue';
   } else if (deletePassword !== deletePasswordConfirm) {
@@ -118,7 +119,7 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
             disabled={isDeleting}
             className={secondaryButtonClass}
           >
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <div title={deleteConfirmDisabledTitle}>
             <button
@@ -128,8 +129,8 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
               aria-busy={isDeleting}
               className={dangerButtonClass}
             >
-              <Trash2 className="h-4 w-4 shrink-0" />
-              <span>{isDeleting ? t('settings.deletingProfile') : t('settings.confirmDeleteProfile')}</span>
+              <Trash2 className={defaultIconClass} />
+              <span>{isDeleting ? t('common.actions.deleting') : t('settings.confirmDeleteProfile')}</span>
             </button>
           </div>
         </>
@@ -182,11 +183,11 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
         <button
           type="button"
           onClick={() => setShowDeletePassword((isVisible) => !isVisible)}
-          className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
+          className={passwordToggleButtonClass}
           aria-label={showDeletePassword ? t('settings.hidePassword') : t('settings.showPassword')}
           disabled={isDeleting}
         >
-          {showDeletePassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          {showDeletePassword ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
         </button>
       </div>
 
@@ -215,11 +216,11 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
         <button
           type="button"
           onClick={() => setShowDeletePasswordConfirm((isVisible) => !isVisible)}
-          className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
+          className={passwordToggleButtonClass}
           aria-label={showDeletePasswordConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
           disabled={isDeleting}
         >
-          {showDeletePasswordConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          {showDeletePasswordConfirm ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
         </button>
       </div>
     </Modal>

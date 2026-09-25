@@ -65,7 +65,7 @@ export function useLaborTypeMutations({
   const hasRequiredValues = hasRequiredLaborTypeFields(laborTypeForm);
   const payloadResult = hasRequiredValues
     ? buildLaborTypeRequest(laborTypeForm)
-    : { payload: null as never, fieldError: 'inventory.errors.fieldRequired' };
+    : { payload: null as never, fieldError: 'common.validation.fieldRequired' };
   const hasValidPayload = hasRequiredValues && payloadResult.fieldError === null;
   const isLaborTypeSaveEnabled = hasValidPayload
     && (laborTypeModalMode === 'create' || Boolean(editingLaborTypeSnapshot && hasLaborTypeUpdateChanges(editingLaborTypeSnapshot, payloadResult.payload)))

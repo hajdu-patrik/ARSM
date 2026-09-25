@@ -6,7 +6,10 @@ import { cropImageToBlob } from '../../utils/imageCrop';
 import { useToastStore } from '../../store/toast.store';
 import {
   buttonClass,
+  compactDataSurfaceClass,
   defaultBorderToneClass,
+  labelClass,
+  mutedSecondaryTextClass,
   relativeOverflowBorderLayoutClass,
   secondaryButtonClass,
 } from '../../utils/formStyles';
@@ -70,7 +73,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
             disabled={isSubmitting}
             className={secondaryButtonClass}
           >
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="button"
@@ -87,7 +90,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
       )}
     >
       <div className="space-y-4">
-        <p className="rounded-xl border border-arsm-border bg-arsm-input/75 px-3.5 py-2.5 text-sm text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-input-dark/70 dark:text-arsm-muted-dark">
+        <p className={`${compactDataSurfaceClass} ${mutedSecondaryTextClass}`}>
           {t('settings.cropModalHint')}
         </p>
 
@@ -109,7 +112,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
           )}
         </div>
 
-        <label htmlFor="crop-zoom" className="block text-sm font-medium text-arsm-label dark:text-arsm-label-dark">
+        <label htmlFor="crop-zoom" className={labelClass}>
           {t('settings.zoom')}
         </label>
         <input

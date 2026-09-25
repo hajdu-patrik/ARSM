@@ -1,5 +1,6 @@
 /** Shared surface, content, card, panel, and layout style primitives. */
 import { mutedDarkCardToneClass } from './textStyles';
+import { toneFeedbackClasses } from './toneStyles';
 
 /** Shared layout wrappers for grouped control rows and modal/footer action zones. */
 export const controlRowClass = 'arsm-control-row';
@@ -21,11 +22,10 @@ export const compactInputSurfaceClass = 'rounded-xl border border-arsm-border bg
 /** Shared outer frame for popup, toast, and live notification surfaces. */
 export const feedbackFrameClass = 'outline outline-1 outline-offset-1 outline-arsm-primary/25 dark:outline-purple-900/80';
 
-/** Warning feedback tones for inline status/warning messages and chips. */
-export const warningFeedbackToneClass = 'border-arsm-warning-border/60 bg-arsm-warning-bg text-arsm-warning-text dark:border-arsm-warning-border-dark/60 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
-export const warningStatusPillClass = `inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${warningFeedbackToneClass}`;
-export const successNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} border-arsm-success-border/60 bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark/60 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark`;
-export const warningNoticeSurfaceClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass} ${warningFeedbackToneClass}`;
+/** Inline notice banners: the shared notice shell in a feedback tone. */
+const noticeSurfaceBaseClass = `rounded-xl border px-3.5 py-2.5 text-sm ${feedbackFrameClass}`;
+export const successNoticeSurfaceClass = `${noticeSurfaceBaseClass} ${toneFeedbackClasses.success}`;
+export const warningNoticeSurfaceClass = `${noticeSurfaceBaseClass} ${toneFeedbackClasses.warning}`;
 
 /** Compact list/detail building blocks for Customers history/details presentation. */
 export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2';

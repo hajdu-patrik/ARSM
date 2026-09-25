@@ -6,10 +6,13 @@ export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border 
 /** Compact input variant used in denser rows and table-like edit surfaces. */
 export const inputClassCompact = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/24';
 
-/** Intake form controls used by scheduler intake and related modal forms. */
-export const intakeInputClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
+/** Intake form controls: one shared field body; the input and the textarea each add their own minimum height. */
+const intakeFieldBaseClass = 'min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
 
-export const intakeTextareaClass = `${intakeInputClass} resize-y`;
+export const intakeInputClass = `min-h-11 ${intakeFieldBaseClass}`;
+
+/** The one multi-line text field (task descriptions, quote notes, appointment descriptions). */
+export const textareaClass = `min-h-[6.5rem] resize-y ${intakeFieldBaseClass}`;
 
 export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClass}`;
 

@@ -119,7 +119,7 @@ export function useVehicleFormMutations({
   const hasVehicleFormRequiredValues = hasRequiredVehicleFields(vehicleForm);
   const vehiclePayloadResult = hasVehicleFormRequiredValues
     ? buildVehiclePayload(vehicleForm)
-    : { payload: null as never, fieldError: 'customers.errors.fieldRequired' };
+    : { payload: null as never, fieldError: 'common.validation.fieldRequired' };
   const hasValidVehiclePayload = hasVehicleFormRequiredValues && vehiclePayloadResult.fieldError === null;
   const isVehicleSaveEnabled = hasValidVehiclePayload
     && (
@@ -158,7 +158,7 @@ export function useVehicleFormMutations({
 
   const hasRequiredFieldError = useCallback((errors: ServerFieldErrors, fieldName: string) => {
     const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
-    return variants.some((variant) => (errors[variant] ?? []).includes('customers.errors.fieldRequired'));
+    return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
   }, []);
 
   const restoreRequiredVehicleFields = useCallback((errors: ServerFieldErrors) => {

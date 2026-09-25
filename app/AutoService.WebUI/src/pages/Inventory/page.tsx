@@ -107,7 +107,7 @@ const InventoryPageComponent = memo(function InventoryPage() {
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
-        <h1 className={pageTitleClass}>{t('inventory.pageTitle')}</h1>
+        <h1 className={pageTitleClass}>{t('nav.inventory')}</h1>
         <p className={pageSubtitleClass}>{t('inventory.pageDescription')}</p>
       </header>
 

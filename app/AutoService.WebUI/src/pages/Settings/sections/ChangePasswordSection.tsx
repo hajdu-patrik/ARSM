@@ -13,6 +13,7 @@ import { buttonClass, cardClass, mutedMetaTextClass, sectionTitleClass } from '.
 import { getCredentialsDisabledReasonKey } from '../passwordFormPolicy';
 import { useClearAutofilledCredentials, useLockFieldWhenEmpty } from '../hooks/usePasswordFieldProtection';
 import { PasswordInputWithToggle } from './PasswordInputWithToggle';
+import { defaultIconClass } from '../../../utils/formStyles';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
@@ -133,7 +134,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           onToggleVisibility={toggleShowNew}
           inputName="settings-security-new"
           toggleAriaLabel={showNew ? t('settings.hidePassword') : t('settings.showPassword')}
-          hintText={t('settings.passwordHint')}
+          hintText={t('common.validation.passwordHint')}
         />
 
         <PasswordInputWithToggle
@@ -159,8 +160,8 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
             aria-busy={isSubmitting}
             aria-describedby={shouldShowPasswordSubmitDisabledHint ? credentialsSubmitDisabledHintId : undefined}
           >
-            <KeyRound className="h-4 w-4 shrink-0" />
-            <span>{isSubmitting ? t('settings.changingCredentials') : t('settings.changePasswordButton')}</span>
+            <KeyRound className={defaultIconClass} />
+            <span>{isSubmitting ? t('settings.changingCredentials') : t('settings.changePassword')}</span>
           </button>
         </div>
         {shouldShowPasswordSubmitDisabledHint ? (

@@ -6,14 +6,17 @@
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { AppointmentDto, AppointmentStatus, CalendarDay } from '../../../../types/scheduler/scheduler.types';
+import type { AppointmentDto, CalendarDay } from '../../../../types/scheduler/scheduler.types';
 import {
   centeredLoadingWrapperClass,
+  defaultIconClass,
   insetSurfaceClass,
   loadingSpinnerClass,
   mutedDarkCardToneClass,
   schedulerNavIconButtonClass,
+  toneDotClasses,
 } from '../../../../utils/formStyles';
+import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
@@ -24,12 +27,6 @@ interface CalendarViewProps {
   readonly onDayClick?: (day: number) => void;
   readonly selectedDay?: number | null;
 }
-
-const STATUS_DOT_COLORS: Record<AppointmentStatus, string> = {
-  InProgress: 'bg-arsm-warning-accent',
-  Completed: 'bg-arsm-success-accent',
-  Cancelled: 'bg-arsm-error-accent',
-};
 
 /**
  * Formats a Date into local YYYY-MM-DD for scheduler day bucketing.
@@ -180,7 +177,7 @@ const CalendarViewComponent = memo(function CalendarView({
           aria-label={t('scheduler.calendar.prevMonth')}
           className={`${schedulerNavIconButtonClass} mx-1`}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className={defaultIconClass} />
         </button>
 
         <h3 className="min-w-0 truncate px-1 text-center text-lg font-semibold capitalize text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
@@ -195,7 +192,7 @@ const CalendarViewComponent = memo(function CalendarView({
           aria-label={t('scheduler.calendar.nextMonth')}
           className={`${schedulerNavIconButtonClass} mx-1`}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className={defaultIconClass} />
         </button>
       </div>
 
@@ -256,7 +253,7 @@ const CalendarViewComponent = memo(function CalendarView({
                           {earliestAppointment ? (
                             <div className={`relative inline-flex h-5 w-5 items-center justify-center ${overflowTone}`}>
                               <span
-                                className={`h-3.5 w-3.5 shrink-0 rounded-full ${STATUS_DOT_COLORS[earliestAppointment.status] ?? 'bg-arsm-status-dot-fallback'}`}
+                                className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
                                 title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
                               />
                               {day.appointments.length > 1 && (

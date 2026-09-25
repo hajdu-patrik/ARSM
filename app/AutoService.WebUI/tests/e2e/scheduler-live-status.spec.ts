@@ -48,8 +48,8 @@ test.describe('Scheduler live status propagation', () => {
       (window as unknown as { __arsmNoReload: boolean }).__arsmNoReload = true;
     });
 
-    await page.getByRole('button', { name: 'Appointment Details' }).first().click();
-    const detailDialog = page.getByRole('dialog', { name: /Appointment Details/i });
+    await page.getByRole('button', { name: 'Appointment details' }).first().click();
+    const detailDialog = page.getByRole('dialog', { name: /Appointment details/i });
     await expect(detailDialog).toBeVisible();
 
     await detailDialog.getByLabel('Change appointment status').selectOption('Cancelled');

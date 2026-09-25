@@ -7,6 +7,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatusPillBadge } from '../../../components/common/StatusPillBadge';
+import { toneBadgeClasses, toneDotClasses, type SemanticTone } from '../../../utils/formStyles';
 import type { QuoteDisplayStatus } from '../helpers';
 
 /** Props for the {@link QuoteStatusBadge} component. */
@@ -17,22 +18,13 @@ interface QuoteStatusBadgeProps {
   readonly className?: string;
 }
 
-/** Tailwind color classes for each quote status (light + dark mode). */
-const QUOTE_STATUS_COLORS: Record<QuoteDisplayStatus, string> = {
-  Draft: 'bg-arsm-toggle-bg text-arsm-label border-arsm-border dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:border-arsm-border-dark',
-  Sent: 'bg-arsm-info-bg text-arsm-info-text border-arsm-info-border/70 dark:bg-arsm-info-bg-dark dark:text-arsm-info-text-dark dark:border-arsm-info-border-dark/70',
-  Expired: 'bg-arsm-warning-bg text-arsm-warning-text border-arsm-warning-border/70 dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark dark:border-arsm-warning-border-dark/70',
-  Accepted: 'bg-arsm-success-soft text-arsm-success-text border-arsm-success-border/70 dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:border-arsm-success-border-dark/70',
-  Rejected: 'bg-arsm-error-soft text-arsm-error-text border-arsm-error-border/70 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:border-arsm-error-dark/70',
-};
-
-/** Dot color classes for each quote status. */
-const QUOTE_STATUS_DOT: Record<QuoteDisplayStatus, string> = {
-  Draft: 'bg-arsm-status-dot-fallback',
-  Sent: 'bg-arsm-info-ring',
-  Expired: 'bg-arsm-warning-accent',
-  Accepted: 'bg-arsm-success-accent',
-  Rejected: 'bg-arsm-error-accent',
+/** Semantic tone of each quote status; the shared tone recipes supply the colors. */
+const QUOTE_STATUS_TONE: Record<QuoteDisplayStatus, SemanticTone> = {
+  Draft: 'neutral',
+  Sent: 'info',
+  Expired: 'warning',
+  Accepted: 'success',
+  Rejected: 'error',
 };
 
 /** i18n translation key for each quote status label. */
@@ -46,12 +38,13 @@ const QUOTE_STATUS_I18N_KEY: Record<QuoteDisplayStatus, string> = {
 
 const QuoteStatusBadgeComponent = memo(function QuoteStatusBadge({ status, className = '' }: QuoteStatusBadgeProps) {
   const { t } = useTranslation();
+  const tone = QUOTE_STATUS_TONE[status];
 
   return (
     <StatusPillBadge
       testId="quote-status-badge"
-      colorClassName={QUOTE_STATUS_COLORS[status]}
-      dotClassName={QUOTE_STATUS_DOT[status]}
+      colorClassName={toneBadgeClasses[tone]}
+      dotClassName={toneDotClasses[tone]}
       label={t(QUOTE_STATUS_I18N_KEY[status])}
       className={className}
     />

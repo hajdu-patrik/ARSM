@@ -26,6 +26,7 @@ import {
   numericValueTextClass,
   rowIconActionDangerClass,
   rowIconActionWarningClass,
+  smallIconClass,
 } from '../../../utils/formStyles';
 import { formatQuantity } from '../../../utils/number';
 import { resolveLineLabelKeys } from '../helpers';
@@ -63,7 +64,7 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
         title={t('quotes.line.edit')}
         aria-label={t('quotes.line.edit')}
       >
-        <Pencil className="h-3.5 w-3.5 shrink-0" />
+        <Pencil className={smallIconClass} />
       </button>
       <button
         data-testid="quote-line-delete-button"
@@ -74,7 +75,7 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
         title={t('quotes.line.delete')}
         aria-label={t('quotes.line.delete')}
       >
-        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+        <Trash2 className={smallIconClass} />
       </button>
     </div>
   );
@@ -110,9 +111,9 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
           <div className={compactTwoColumnGridClass}>
             <LabeledValueTile label={t(quantityKey)} value={formatQuantity(line.quantity, locale)} valueClassName="text-right tabular-nums" />
             <LabeledValueTile label={t(unitPriceKey)} value={formatHufUnitPrice(line.netUnitPrice, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('quotes.line.vatRate')} value={`${line.vatRatePercent}%`} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('quotes.line.netAmount')} value={formatHuf(line.netAmount, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('quotes.line.grossAmount')} value={formatHuf(line.grossAmount, locale)} valueClassName="text-right font-semibold tabular-nums" />
+            <LabeledValueTile label={t('common.fields.vatRate')} value={`${line.vatRatePercent}%`} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('common.fields.net')} value={formatHuf(line.netAmount, locale)} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('common.fields.gross')} value={formatHuf(line.grossAmount, locale)} valueClassName="text-right font-semibold tabular-nums" />
           </div>
         </>
       )}

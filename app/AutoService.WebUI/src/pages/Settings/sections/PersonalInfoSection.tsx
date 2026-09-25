@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
 import { buttonClass, cardClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
+import { defaultIconClass } from '../../../utils/formStyles';
 
 /** Props for the PersonalInfoSection component. */
 interface PersonalInfoSectionProps {
@@ -56,14 +57,14 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
   return (
     <div className={cardClass}>
       <h2 className={sectionTitleClass}>
-        {t('settings.personalInfo')}
+        {t('common.fields.personalInformation')}
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="settings-firstName" className={labelClass}>
-              {t('settings.firstName')}
+              {t('common.fields.firstName')}
             </label>
             <input
               id="settings-firstName"
@@ -79,7 +80,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
           <div>
             <label htmlFor="settings-middleName" className={labelClass}>
-              {t('settings.middleName')}
+              {t('common.fields.middleName')}
             </label>
             <input
               id="settings-middleName"
@@ -95,7 +96,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
           <div>
             <label htmlFor="settings-lastName" className={labelClass}>
-              {t('settings.lastName')}
+              {t('common.fields.lastName')}
             </label>
             <input
               id="settings-lastName"
@@ -112,7 +113,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
         <div>
           <label htmlFor="settings-email" className={labelClass}>
-            {t('settings.email')}
+            {t('common.fields.email')}
           </label>
           <input
             id="settings-email"
@@ -128,7 +129,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
 
         <div>
           <label htmlFor="settings-phone" className={labelClass}>
-            {t('settings.phoneNumber')}
+            {t('common.fields.phoneNumber')}
           </label>
           <input
             id="settings-phone"
@@ -136,7 +137,7 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             inputMode="tel"
             value={phoneNumber}
             onChange={(event) => onPhoneNumberChange(filterPhoneInput(event.target.value))}
-            placeholder={t('settings.phonePlaceholder')}
+            placeholder={t('common.placeholders.phone')}
             className={inputClass}
             disabled={isSubmitting}
             autoComplete="tel"
@@ -151,8 +152,8 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             aria-busy={isSubmitting}
             aria-describedby={shouldShowSaveDisabledHint ? saveDisabledHintId : undefined}
           >
-            <Save className="h-4 w-4 shrink-0" />
-            <span>{isSubmitting ? t('settings.saving') : t('settings.saveChanges')}</span>
+            <Save className={defaultIconClass} />
+            <span>{isSubmitting ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>
           </button>
         </div>
         {shouldShowSaveDisabledHint ? (

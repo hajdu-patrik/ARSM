@@ -33,9 +33,9 @@ const QuoteListComponent = memo(function QuoteList({
 }: QuoteListProps) {
   const columns: DataListColumn[] = [
     { key: 'quote', label: t('quotes.columns.quote') },
-    { key: 'vehicle', label: t('quotes.columns.vehicle') },
+    { key: 'vehicle', label: t('common.fields.vehicle') },
     { key: 'status', label: t('quotes.columns.status') },
-    { key: 'validUntil', label: t('quotes.columns.validUntil') },
+    { key: 'validUntil', label: t('quotes.validUntil') },
     { key: 'totalNet', label: t('quotes.columns.totalNet'), align: 'right' },
     { key: 'totalGross', label: t('quotes.columns.totalGross'), align: 'right' },
     { key: 'actions', label: '' },

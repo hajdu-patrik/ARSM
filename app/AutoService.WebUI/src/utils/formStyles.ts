@@ -6,3 +6,4 @@ export * from './styles/buttonStyles';
 export * from './styles/fieldStyles';
 export * from './styles/surfaceStyles';
 export * from './styles/textStyles';
+export * from './styles/toneStyles';

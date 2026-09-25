@@ -11,7 +11,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, Download, Save, Send, Trash2, X } from 'lucide-react';
 import type { QuoteDetailDto, QuoteStatus } from '../../../types/quotes/quotes.types';
-import { buttonClass, dangerButtonClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { buttonClass, dangerButtonClass, defaultIconClass, secondaryButtonClass } from '../../../utils/formStyles';
 
 interface QuoteEditorFooterProps {
   readonly t: TFunction;
@@ -44,7 +44,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
 }: QuoteEditorFooterProps) {
   const closeButton = (
     <button type="button" onClick={onClose} disabled={isSaving || isChangingStatus} className={secondaryButtonClass}>
-      <X className="h-4 w-4 shrink-0" />
+      <X className={defaultIconClass} />
       <span>{t('quotes.close')}</span>
     </button>
   );
@@ -60,7 +60,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
       aria-busy={isDownloadingPdf}
       className={secondaryButtonClass}
     >
-      <Download className="h-4 w-4 shrink-0" />
+      <Download className={defaultIconClass} />
       <span>{isDownloadingPdf ? t('quotes.downloadingPdf') : t('quotes.downloadPdf')}</span>
     </button>
   );
@@ -77,8 +77,8 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           aria-busy={isSaving}
           className={buttonClass}
         >
-          <Save className="h-4 w-4 shrink-0" />
-          <span>{isSaving ? t('quotes.saving') : t('quotes.createDraft')}</span>
+          <Save className={defaultIconClass} />
+          <span>{isSaving ? t('common.actions.saving') : t('quotes.createDraft')}</span>
         </button>
       </>
     );
@@ -98,7 +98,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           disabled={isSaving || isChangingStatus}
           className={dangerButtonClass}
         >
-          <Trash2 className="h-4 w-4 shrink-0" />
+          <Trash2 className={defaultIconClass} />
           <span>{t('quotes.deleteQuote')}</span>
         </button>
         <button
@@ -109,8 +109,8 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           aria-busy={isSaving}
           className={secondaryButtonClass}
         >
-          <Save className="h-4 w-4 shrink-0" />
-          <span>{isSaving ? t('quotes.saving') : t('quotes.saveChanges')}</span>
+          <Save className={defaultIconClass} />
+          <span>{isSaving ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>
         </button>
         <button
           data-testid="quote-send-button"
@@ -121,7 +121,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           title={hasNoLines ? t('quotes.sendNeedsLineHint') : undefined}
           className={buttonClass}
         >
-          <Send className="h-4 w-4 shrink-0" />
+          <Send className={defaultIconClass} />
           <span>{t('quotes.sendQuote')}</span>
         </button>
       </>
@@ -141,7 +141,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           aria-busy={isChangingStatus}
           className={dangerButtonClass}
         >
-          <X className="h-4 w-4 shrink-0" />
+          <X className={defaultIconClass} />
           <span>{t('quotes.rejectQuote')}</span>
         </button>
         <button
@@ -152,7 +152,7 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
           aria-busy={isChangingStatus}
           className={buttonClass}
         >
-          <Check className="h-4 w-4 shrink-0" />
+          <Check className={defaultIconClass} />
           <span>{t('quotes.acceptQuote')}</span>
         </button>
       </>

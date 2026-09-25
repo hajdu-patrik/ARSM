@@ -5,6 +5,7 @@ import { Modal } from '../../../components/common/Modal';
 import { DRIVETRAIN_TYPES } from '../../../types/customers/customers.types';
 import {
   buttonClass,
+  defaultIconClass,
   formFieldGridClass,
   formFieldGroupClass,
   inputClass,
@@ -54,7 +55,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             disabled={isSaving}
             className={secondaryButtonClass}
           >
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="submit"
@@ -63,8 +64,8 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
             aria-busy={isSaving}
             className={buttonClass}
           >
-            <Save className="h-4 w-4 shrink-0" />
-            <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>
+            <Save className={defaultIconClass} />
+            <span>{isSaving ? t('common.actions.saving') : t('common.actions.save')}</span>
           </button>
         </>
       )}
@@ -72,20 +73,20 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
       <form id="customers-vehicle-form" onSubmit={onSubmit} className="space-y-3" noValidate>
         <div className={`${formFieldGridClass} lg:grid-cols-3`}>
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-license-plate" className={labelClass}>{t('customers.licensePlate')}</label>
+            <label htmlFor="vehicle-license-plate" className={labelClass}>{t('common.fields.licensePlate')}</label>
             <input
               id="vehicle-license-plate"
               type="text"
               value={form.licensePlate}
               onChange={(event) => setForm((prev) => ({ ...prev, licensePlate: event.target.value }))}
               className={inputClass}
-              placeholder={t('customers.licensePlatePlaceholder')}
+              placeholder={t('common.placeholders.licensePlate')}
               disabled={isSaving}
             />
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-vin" className={labelClass}>{t('customers.vin')}</label>
+            <label htmlFor="vehicle-vin" className={labelClass}>{t('common.fields.vin')}</label>
             <input
               id="vehicle-vin"
               type="text"
@@ -99,7 +100,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-brand" className={labelClass}>{t('customers.brand')}</label>
+            <label htmlFor="vehicle-brand" className={labelClass}>{t('common.fields.brand')}</label>
             <input
               id="vehicle-brand"
               type="text"
@@ -112,7 +113,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-model" className={labelClass}>{t('customers.model')}</label>
+            <label htmlFor="vehicle-model" className={labelClass}>{t('common.fields.model')}</label>
             <input
               id="vehicle-model"
               type="text"
@@ -127,7 +128,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
 
         <div className={formFieldGridClass}>
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-year" className={labelClass}>{t('customers.year')}</label>
+            <label htmlFor="vehicle-year" className={labelClass}>{t('common.fields.vehicleYear')}</label>
             <input
               id="vehicle-year"
               type="number"
@@ -140,7 +141,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-mileage" className={labelClass}>{t('customers.mileageKm')}</label>
+            <label htmlFor="vehicle-mileage" className={labelClass}>{t('common.fields.mileageKm')}</label>
             <input
               id="vehicle-mileage"
               type="number"
@@ -153,7 +154,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-power" className={labelClass}>{t('customers.enginePowerKw')}</label>
+            <label htmlFor="vehicle-power" className={labelClass}>{t('common.fields.enginePowerKw')}</label>
             <input
               id="vehicle-power"
               type="number"
@@ -166,7 +167,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="vehicle-drivetrain" className={labelClass}>{t('customers.drivetrainType')}</label>
+            <label htmlFor="vehicle-drivetrain" className={labelClass}>{t('common.fields.drivetrain')}</label>
             <div className={selectWrapperClass}>
               <select
                 id="vehicle-drivetrain"
@@ -176,7 +177,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
                 disabled={isSaving}
               >
                 <option value="" disabled hidden>
-                  {t('customers.drivetrainPlaceholder')}
+                  {t('common.placeholders.drivetrain')}
                 </option>
                 {DRIVETRAIN_TYPES.map((type) => (
                   <option key={type} value={type}>

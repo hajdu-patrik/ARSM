@@ -26,17 +26,17 @@ function isIntakeApiError(value: unknown): value is IntakeApiError {
 }
 
 const INTAKE_ERROR_TERM_MAP: ReadonlyArray<{ readonly term: string; readonly key: string }> = [
-  { term: 'invalid email', key: 'scheduler.intake.errors.invalidEmail' },
+  { term: 'invalid email', key: 'common.validation.invalidEmail' },
   { term: 'taskdescription is required', key: 'scheduler.intake.errors.taskRequired' },
   { term: 'duedatetime must be greater than or equal to scheduleddate', key: 'scheduler.intake.errors.dueBeforeScheduled' },
   { term: 'customerfirstname and customerlastname are required', key: 'scheduler.intake.errors.customerNameRequired' },
-  { term: 'phone number must be a valid european number', key: 'scheduler.intake.errors.invalidPhone' },
+  { term: 'phone number must be a valid european number', key: 'common.validation.invalidPhone' },
   { term: 'vehicle with this license plate already exists', key: 'scheduler.intake.errors.licensePlateExists' },
-  { term: 'vehicle with this vin already exists', key: 'scheduler.intake.errors.vehicleVinInvalid' },
-  { term: 'vin', key: 'scheduler.intake.errors.vehicleVinInvalid' },
-  { term: 'drivetrain', key: 'scheduler.intake.errors.vehicleDrivetrainInvalid' },
-  { term: 'license plate', key: 'scheduler.intake.errors.licensePlateInvalid' },
-  { term: 'vehicle.year must be between 1886 and 2100', key: 'scheduler.intake.errors.vehicleYearInvalid' },
+  { term: 'vehicle with this vin already exists', key: 'common.validation.vehicleVinInvalid' },
+  { term: 'vin', key: 'common.validation.vehicleVinInvalid' },
+  { term: 'drivetrain', key: 'common.validation.vehicleDrivetrainInvalid' },
+  { term: 'license plate', key: 'common.validation.licensePlateInvalid' },
+  { term: 'vehicle.year must be between 1886 and 2100', key: 'common.validation.vehicleYearInvalid' },
   { term: 'must be non-negative', key: 'scheduler.intake.errors.vehicleNumberInvalid' },
   { term: 'scheduleddate cannot be in the past', key: 'scheduler.intake.errors.scheduledInPast' },
   { term: 'already exists', key: 'scheduler.intake.errors.conflictData' },
@@ -103,7 +103,7 @@ export function mapIntakeErrorToKey(error: unknown): string {
   }
 
   if (matchesAnyDetailTerm(detail, ['invalid first name', 'invalid last name', 'invalid middle name'])) {
-    return 'scheduler.intake.errors.invalidName';
+    return 'common.validation.invalidName';
   }
 
   if (detail.includes('vehicle.') && detail.includes('required')) {

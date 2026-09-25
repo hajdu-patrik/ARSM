@@ -43,7 +43,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="firstName" className={labelClass}>
-            {t('admin.firstName')} *
+            {t('common.fields.firstName')} *
           </label>
           <input
             id="firstName"
@@ -60,7 +60,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
         <div>
           <label htmlFor="middleName" className={labelClass}>
-            {t('admin.middleName')}
+            {t('common.fields.middleName')}
           </label>
           <input
             id="middleName"
@@ -76,7 +76,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
         <div>
           <label htmlFor="lastName" className={labelClass}>
-            {t('admin.lastName')} *
+            {t('common.fields.lastName')} *
           </label>
           <input
             id="lastName"
@@ -94,7 +94,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
       <div>
         <label htmlFor="reg-email" className={labelClass}>
-          {t('admin.email')} *
+          {t('common.fields.email')} *
         </label>
         <input
           id="reg-email"
@@ -111,7 +111,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
       <div>
         <label htmlFor="reg-phone" className={labelClass}>
-          {t('admin.phoneNumber')}
+          {t('common.fields.phoneNumber')}
         </label>
         <input
           id="reg-phone"
@@ -120,7 +120,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           autoComplete="tel"
           value={phoneNumber}
           onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
-          placeholder={t('admin.phonePlaceholder')}
+          placeholder={t('common.placeholders.phone')}
           className={inputClass}
           disabled={isSubmitting}
         />

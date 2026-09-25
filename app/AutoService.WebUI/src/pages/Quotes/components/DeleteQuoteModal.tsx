@@ -8,7 +8,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
-import { dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
 import type { DeleteQuoteTarget } from '../hooks/useQuoteMutations';
 
 interface DeleteQuoteModalProps {
@@ -39,7 +39,7 @@ const DeleteQuoteModalComponent = memo(function DeleteQuoteModal({
       footer={(
         <>
           <button type="button" onClick={onClose} disabled={isDeleting} className={secondaryButtonClass}>
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             data-testid="quote-delete-confirm-button"
@@ -49,8 +49,8 @@ const DeleteQuoteModalComponent = memo(function DeleteQuoteModal({
             aria-busy={isDeleting}
             className={dangerButtonClass}
           >
-            <Trash2 className="h-4 w-4 shrink-0" />
-            <span>{isDeleting ? t('quotes.deleting') : t('quotes.deleteQuote')}</span>
+            <Trash2 className={defaultIconClass} />
+            <span>{isDeleting ? t('common.actions.deleting') : t('quotes.deleteQuote')}</span>
           </button>
         </>
       )}

@@ -11,6 +11,7 @@ import {
   compactDividerLineClass,
   emptyStateBoxClass,
   loadingSpinnerClass,
+  uppercaseMetaLabelTextClass,
 } from '../../../utils/formStyles';
 import { CustomerCard } from './CustomerCard';
 import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './customerListSection.types';
@@ -70,7 +71,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
       ))}
 
       {!isLoadingCustomers && filteredCustomers.length > 0 && (
-        <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-arsm-muted dark:text-arsm-muted-dark">
+        <div className={`flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2 py-2 text-center ${uppercaseMetaLabelTextClass}`}>
           <div className={compactDividerLineClass} />
           <span className="min-w-0 basis-full break-words text-center sm:basis-auto">{t('customers.endOfList')}</span>
           <div className={compactDividerLineClass} />

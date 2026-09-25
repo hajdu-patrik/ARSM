@@ -7,7 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LogOut, UserPlus } from 'lucide-react';
 import { Modal } from '../../../../components/common/Modal';
-import { buttonClass, dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../../utils/formStyles';
+import { buttonClass, dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../../utils/formStyles';
 
 interface AppointmentCardActionModalsProps {
   readonly isClaimConfirmOpen: boolean;
@@ -43,11 +43,11 @@ const AppointmentCardActionModalsComponent = memo(function AppointmentCardAction
         footer={(
           <>
             <button type="button" onClick={onCloseClaimConfirm} disabled={isClaiming} className={secondaryButtonClass}>
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button type="button" onClick={onConfirmClaim} disabled={isClaiming} aria-busy={isClaiming} className={buttonClass}>
-              <UserPlus className="h-4 w-4 shrink-0" />
-              <span>{isClaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmClaim')}</span>
+              <UserPlus className={defaultIconClass} />
+              <span>{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
             </button>
           </>
         )}
@@ -63,11 +63,11 @@ const AppointmentCardActionModalsComponent = memo(function AppointmentCardAction
         footer={(
           <>
             <button type="button" onClick={onCloseUnclaimConfirm} disabled={isUnclaiming} className={secondaryButtonClass}>
-              {t('scheduler.intake.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button type="button" onClick={onConfirmUnclaim} disabled={isUnclaiming} aria-busy={isUnclaiming} className={dangerButtonClass}>
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span>{isUnclaiming ? t('scheduler.detail.saving') : t('scheduler.detail.confirmUnassign')}</span>
+              <LogOut className={defaultIconClass} />
+              <span>{isUnclaiming ? t('common.actions.saving') : t('scheduler.detail.confirmUnassign')}</span>
             </button>
           </>
         )}

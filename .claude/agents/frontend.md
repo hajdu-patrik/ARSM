@@ -34,7 +34,7 @@ tools: Read, Edit, Grep, Glob, Bash
 
 - SOLID/OOP boundaries for components/hooks/services.
 - Use shared style primitives for repeated minimum common subsets only.
-- Keep feature-specific color, state, placement, spacing, icons, and rare variants local to the owning component or feature module.
+- Take colors from the shared semantic tones (`utils/styles/toneStyles.ts`); a feature only maps its states to a tone. Keep feature-specific state, placement, spacing, and rare variants local to the owning component or feature module.
 - Preserve current rendered appearance during style-architecture refactors unless the user explicitly requests visual redesign.
 - Enforce size limits (500/250/300/60).
 

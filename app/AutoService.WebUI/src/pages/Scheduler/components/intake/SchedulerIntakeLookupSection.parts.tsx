@@ -3,8 +3,10 @@ import { UserCheck, UserPlus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
-	compactTwoColumnGridClass,
 	compactInputSurfaceClass,
+	compactPrimaryValueTextClass,
+	compactTwoColumnGridClass,
+	defaultIconClass,
 	inlineStatusTitleRowClass,
 	intakeFieldLabelClass,
 	intakeFieldWrapperClass,
@@ -34,7 +36,7 @@ export const LookupInput = memo(function LookupInput({
 }: LookupInputProps) {
 	return (
 		<div className={compactTwoColumnGridClass}>
-			<label className={`min-w-0 ${intakeFieldWrapperClass}`}>
+			<label className={intakeFieldWrapperClass}>
 				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.lookupName')}</span>
 				<input
 					type="text"
@@ -46,14 +48,14 @@ export const LookupInput = memo(function LookupInput({
 				/>
 			</label>
 
-			<label className={`min-w-0 ${intakeFieldWrapperClass}`}>
-				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.lookupLicensePlate')}</span>
+			<label className={intakeFieldWrapperClass}>
+				<span className={intakeFieldLabelClass}>{translate('common.fields.licensePlate')}</span>
 				<input
 					type="text"
 					data-testid="scheduler-intake-license-plate-lookup"
 					value={licensePlateLookup}
 					onChange={(event) => onLicensePlateLookupChange(event.target.value)}
-					placeholder={translate('scheduler.intake.lookupLicensePlatePlaceholder')}
+					placeholder={translate('common.placeholders.licensePlate')}
 					className={`${intakeInputClass} truncate uppercase`}
 				/>
 			</label>
@@ -74,7 +76,7 @@ export const FoundCustomerSummary = memo(function FoundCustomerSummary({
 	return (
 		<div className={`fade-in-up ${successNoticeSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
-				<UserCheck className="h-4 w-4 shrink-0" />
+				<UserCheck className={defaultIconClass} />
 				<span className="min-w-0 truncate">{translate('scheduler.intake.customerFound')}</span>
 			</div>
 			<p className="mt-1 truncate">{getLookupCustomerName(customerLookup)}</p>
@@ -96,9 +98,9 @@ export const NameLookupResults = memo(function NameLookupResults({
 	onSelect,
 }: NameLookupResultsProps) {
 	return (
-		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 text-sm text-arsm-primary dark:text-arsm-primary-dark ${compactInputSurfaceClass}`}>
+		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 ${compactPrimaryValueTextClass} ${compactInputSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
-				<Users className="h-4 w-4 shrink-0 text-arsm-muted dark:text-arsm-muted-dark" />
+				<Users className={`${defaultIconClass} text-arsm-muted dark:text-arsm-muted-dark`} />
 				<span className="min-w-0 truncate">{translate('scheduler.intake.nameResultsTitle', { count: results.length })}</span>
 			</div>
 
@@ -109,7 +111,7 @@ export const NameLookupResults = memo(function NameLookupResults({
 							<p className="truncate font-semibold">{getLookupCustomerName(result)}</p>
 							<p className={`truncate ${mutedMetaTextClass}`}>{result.email}</p>
 							<p className={`truncate ${mutedMetaTextClass}`}>
-								{translate('scheduler.intake.resultVehicleCount', { count: result.vehicles.length })}
+								{translate('common.fields.vehicleCount', { count: result.vehicles.length })}
 							</p>
 						</div>
 						<button
@@ -139,7 +141,7 @@ export const LookupNoMatch = memo(function LookupNoMatch({ lookupMode, translate
 	return (
 		<div className={`fade-in-up ${warningNoticeSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
-				<UserPlus className="h-4 w-4 shrink-0" />
+				<UserPlus className={defaultIconClass} />
 				<span className="min-w-0 truncate">{translate(titleKey)}</span>
 			</div>
 			<p className="mt-1 text-xs">{translate(hintKey)}</p>

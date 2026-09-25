@@ -13,11 +13,14 @@ import {
   compactPrimaryValueTextClass,
   compactStackedRowClass,
   compactTwoColumnGridClass,
+  defaultIconClass,
   inputClassCompact,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
+  textareaClass,
+  toneFeedbackClasses,
 } from '../../../../utils/formStyles';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicsSection, type MechanicOption } from './AppointmentDetailModal.mechanics';
@@ -131,7 +134,7 @@ const HeaderSection = memo(function HeaderSection({
   formattedDate,
 }: HeaderSectionProps) {
   return (
-    <div className={`${schedulerDetailRowClass} px-3.5 py-2.5`}>
+    <div className={schedulerDetailRowClass}>
       <div className={compactStackedRowClass}>
         <StatusBadge status={appointmentStatus} />
         <span className={`truncate ${mutedSecondaryTextClass}`}>{formattedDate}</span>
@@ -161,12 +164,12 @@ const DueSection = memo(function DueSection({
     <div
       className={`rounded-2xl border px-4 py-3 ${
         dueState.isOverdue
-          ? 'border-arsm-error-border bg-arsm-error-bg dark:border-arsm-error-dark/80 dark:bg-arsm-error-bg-dark'
+          ? toneFeedbackClasses.error
           : 'border-arsm-border bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark'
       }`}
     >
       <div className={`flex min-w-0 items-center gap-2 ${mutedSecondaryTextClass}`}>
-        <Clock3 className="h-4 w-4 shrink-0" />
+        <Clock3 className={defaultIconClass} />
         {t('scheduler.due.label')}
       </div>
       <p
@@ -187,7 +190,7 @@ const DueSection = memo(function DueSection({
             data-testid="appointment-detail-due-datetime"
             value={dueDateTime}
             onChange={(event) => onDueDateTimeChange(event.target.value)}
-            className={`${inputClassCompact} min-h-11 px-3 py-2`}
+            className={inputClassCompact}
           />
         </label>
       )}
@@ -211,42 +214,42 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
       </h4>
       <div className={compactTwoColumnGridClass}>
         <VehicleValueRow
-          label={t('scheduler.detail.licensePlate')}
+          label={t('common.fields.licensePlate')}
           displayValue={vehicle.licensePlate}
           displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleVin')}
+          label={t('common.fields.vin')}
           displayValue={vehicle.vin}
           displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleBrand')}
+          label={t('common.fields.brand')}
           displayValue={vehicle.brand}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleModel')}
+          label={t('common.fields.model')}
           displayValue={vehicle.model}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleYear')}
+          label={t('common.fields.vehicleYear')}
           displayValue={String(vehicle.year)}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleMileageKm')}
+          label={t('common.fields.mileageKm')}
           displayValue={`${vehicle.mileageKm.toLocaleString()} km`}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleEnginePowerKw')}
+          label={t('common.fields.enginePowerKw')}
           displayValue={`${vehicle.enginePowerKw} kW`}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
-          label={t('scheduler.intake.vehicleDrivetrainType')}
+          label={t('common.fields.drivetrain')}
           displayValue={t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
           displayClassName={`truncate ${compactPrimaryValueTextClass}`}
         />
@@ -294,14 +297,14 @@ const TaskSection = memo(function TaskSection({
   return (
     <div className={schedulerDetailPanelClass}>
       <h4 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
-        {t('scheduler.detail.task')}
+        {t('scheduler.intake.taskDescription')}
       </h4>
       {isEditing ? (
         <textarea
           value={taskDescription}
           onChange={(event) => onTaskChange(event.target.value)}
           rows={3}
-          className={`${inputClassCompact} min-h-[6.5rem] px-3 py-2 text-arsm-primary dark:text-arsm-primary-dark`}
+          className={textareaClass}
         />
       ) : (
         <p className={`break-words ${compactPrimaryValueTextClass}`}>{displayTask}</p>

@@ -36,6 +36,7 @@ import {
   normalizeServerFieldErrors,
 } from '../../../utils/serverValidation';
 import type { RegisterMechanicFormValues } from './types';
+import { defaultIconClass } from '../../../utils/formStyles';
 
 function mapAdminMessageToToastKey(message: string): string {
   const mappedMessage = mapAdminValidationMessageToKey(message);
@@ -163,7 +164,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
       e.preventDefault();
 
       if (formValues.password !== formValues.confirmPassword) {
-        showErrorToast('admin.passwordMismatch');
+        showErrorToast('common.validation.passwordMismatch');
         return;
       }
 
@@ -253,11 +254,11 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`mt-2 w-full ${buttonClass} sm:text-base`}
+                className={`mt-2 w-full ${buttonClass}`}
                 aria-busy={isSubmitting}
               >
-                <Save className="h-4 w-4 shrink-0" />
-                <span>{isSubmitting ? t('admin.submitting') : t('admin.submit')}</span>
+                <Save className={defaultIconClass} />
+                <span>{isSubmitting ? t('admin.submitting') : t('admin.registerMechanic')}</span>
               </button>
             </form>
           </section>
@@ -277,7 +278,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               disabled={isSubmitting}
               className={secondaryButtonClass}
             >
-              {t('settings.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -286,7 +287,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
               aria-busy={isSubmitting}
               className={buttonClass}
             >
-              <Save className="h-4 w-4 shrink-0" />
+              <Save className={defaultIconClass} />
               <span>{isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}</span>
             </button>
           </>

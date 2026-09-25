@@ -9,7 +9,7 @@ export class SchedulerPage {
   }
 
   intakeDialog(): Locator {
-    return this.page.getByRole('dialog', { name: /New Intake|Új felvétel/ });
+    return this.page.getByRole('dialog', { name: /New intake|Új felvétel/ });
   }
 
   async openIntakeForCurrentDay(): Promise<Locator> {

@@ -22,13 +22,14 @@ import {
   compactInlineClusterClass,
   compactPrimaryValueTextClass,
   compactTwoColumnGridClass,
+  defaultIconClass,
   formFieldGridClass,
   formFieldGroupClass,
   inputClass,
-  intakeTextareaClass,
   labelClass,
   mutedMetaTextClass,
   referenceChipNeutralButtonClass,
+  textareaClass,
   warningNoticeSurfaceClass,
 } from '../../../utils/formStyles';
 import { formatQuoteDate, resolveQuoteDisplayStatus, type QuoteHeaderFormState } from '../helpers';
@@ -81,7 +82,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
     <section className="min-w-0 space-y-3">
       <div className={compactTwoColumnGridClass}>
         <div className={compactDataSurfaceClass}>
-          <p className={mutedMetaTextClass}>{t('quotes.columns.vehicle')}</p>
+          <p className={mutedMetaTextClass}>{t('common.fields.vehicle')}</p>
           <p className={`truncate ${compactPrimaryValueTextClass}`}>{vehicleLabel}</p>
         </div>
         {quote && (
@@ -130,7 +131,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
           id="quote-notes"
           value={form.notes}
           onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
-          className={`${intakeTextareaClass} min-h-[5.5rem]`}
+          className={textareaClass}
           placeholder={t('quotes.notesPlaceholder')}
           maxLength={MAX_QUOTE_NOTES_LENGTH}
           rows={3}
@@ -159,7 +160,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
                 disabled={isSaving || !canChangeValidity || form.validUntil.length === 0}
                 className={referenceChipNeutralButtonClass}
               >
-                <CalendarClock className="h-4 w-4 shrink-0" />
+                <CalendarClock className={defaultIconClass} />
                 <span className="truncate">{t('quotes.saveValidUntil')}</span>
               </button>
             )}

@@ -84,7 +84,7 @@ export function SeoManager() {
 
     if (path === '/500') {
       return {
-        pageTitle: translate('seo.pages.serverError.title'),
+        pageTitle: translate('serverError.title'),
         description: translate('seo.pages.serverError.description'),
         robots: NOINDEX_ROBOTS,
         canonicalPath: '/500',

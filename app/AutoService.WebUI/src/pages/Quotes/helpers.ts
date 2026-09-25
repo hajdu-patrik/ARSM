@@ -172,8 +172,8 @@ export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
  */
 export function resolveLineLabelKeys(lineKind: QuoteLineKind): { quantityKey: string; unitPriceKey: string } {
   return lineKind === 'Labor'
-    ? { quantityKey: 'quotes.line.hours', unitPriceKey: 'quotes.line.hourlyNetRate' }
-    : { quantityKey: 'quotes.line.quantity', unitPriceKey: 'quotes.line.netUnitPrice' };
+    ? { quantityKey: 'quotes.line.hours', unitPriceKey: 'common.fields.hourlyNetRate' }
+    : { quantityKey: 'quotes.line.quantity', unitPriceKey: 'common.fields.netUnitPrice' };
 }
 
 /**
@@ -355,7 +355,7 @@ const QUOTE_VALIDATION_MESSAGE_RULES: ReadonlyArray<readonly [readonly string[],
   [['version is required'], 'quotes.errors.versionRequired'],
   [['quantity must be'], 'quotes.errors.invalidQuantity'],
   [['amount must be at least'], 'quotes.errors.invalidMoney'],
-  [['vat rate must be'], 'quotes.errors.invalidVatRate'],
+  [['vat rate must be'], 'common.validation.invalidVatRate'],
   [['status must be one of'], 'quotes.errors.invalidStatus'],
   [['linekind must be one of'], 'quotes.errors.invalidLineKind'],
 ];

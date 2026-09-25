@@ -60,10 +60,7 @@ function containsAll(text: string, fragments: readonly string[]): boolean {
   return fragments.every((fragment) => text.includes(fragment));
 }
 
-function mapCommonValidationMessageToKey(
-  normalizedMessage: string,
-  context: ValidationContext,
-): string | null {
+function mapCommonValidationMessageToKey(normalizedMessage: string): string | null {
   const commonRules: Array<{ readonly suffix: string; readonly isMatch: (message: string) => boolean }> = [
     {
       suffix: 'emailExists',
@@ -92,24 +89,18 @@ function mapCommonValidationMessageToKey(
   ];
 
   const matchedRule = commonRules.find((rule) => rule.isMatch(normalizedMessage));
-  return matchedRule ? `${context}.errors.${matchedRule.suffix}` : null;
+  return matchedRule ? `common.validation.${matchedRule.suffix}` : null;
 }
 
-function mapPasswordMismatchMessageToKey(
-  normalizedMessage: string,
-  context: ValidationContext,
-): string | null {
+function mapPasswordMismatchMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('passwords do not match')) {
     return null;
   }
 
-  return context === 'settings' ? 'settings.passwordsDoNotMatch' : 'admin.passwordMismatch';
+  return 'common.validation.passwordMismatch';
 }
 
-function mapPasswordValidationMessageToKey(
-  normalizedMessage: string,
-  context: ValidationContext,
-): string | null {
+function mapPasswordValidationMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('password')) {
     return null;
   }
@@ -142,7 +133,7 @@ function mapPasswordValidationMessageToKey(
   ];
 
   const matchedRule = passwordRules.find((rule) => rule.isMatch(normalizedMessage));
-  return matchedRule ? `${context}.errors.${matchedRule.suffix}` : null;
+  return matchedRule ? `common.validation.${matchedRule.suffix}` : null;
 }
 
 function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): string | null {
@@ -155,8 +146,8 @@ function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): s
 
 /**
  * Maps a backend validation message string to its corresponding i18n key.
- * Handles email/phone uniqueness, format validation, name validation,
- * and password-related errors based on the operation context.
+ * Email/phone uniqueness, format, name and password errors map to the shared
+ * `common.validation.*` keys; the context only adds the settings-specific ones.
  * @param message - The raw validation message from the server.
  * @param context - The operation context ({@code 'admin'} or {@code 'settings'}).
  * @returns The mapped i18n key, or the original message if no mapping matches.
@@ -164,17 +155,17 @@ function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): s
 export function mapValidationMessageToKey(message: string, context: ValidationContext): string {
   const normalized = message.trim().toLowerCase();
 
-  const commonMessageKey = mapCommonValidationMessageToKey(normalized, context);
+  const commonMessageKey = mapCommonValidationMessageToKey(normalized);
   if (commonMessageKey) {
     return commonMessageKey;
   }
 
-  const passwordMismatchKey = mapPasswordMismatchMessageToKey(normalized, context);
+  const passwordMismatchKey = mapPasswordMismatchMessageToKey(normalized);
   if (passwordMismatchKey) {
     return passwordMismatchKey;
   }
 
-  const passwordMessageKey = mapPasswordValidationMessageToKey(normalized, context);
+  const passwordMessageKey = mapPasswordValidationMessageToKey(normalized);
   if (passwordMessageKey) {
     return passwordMessageKey;
   }

@@ -9,10 +9,11 @@ import { Modal } from '../../../../components/common/Modal';
 import type { MechanicListItem } from '../../../../services/admin/admin.service';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 import {
+	compactInputSurfaceClass,
 	compactListPrimaryTextClass,
 	compactListSecondaryTextClass,
-	compactInputSurfaceClass,
 	dangerButtonClass,
+	defaultIconClass,
 	emptyStateBoxClass,
 	iconDangerButtonClass,
 	loadingSpinnerClass,
@@ -164,7 +165,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 										aria-label={t('admin.deleteMechanic')}
 										className={`ml-auto ${iconDangerButtonClass}`}
 									>
-										<Trash2 className="h-4 w-4" aria-hidden="true" />
+										<Trash2 className={defaultIconClass} aria-hidden="true" />
 									</button>
 								)}
 							</div>
@@ -186,7 +187,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 							disabled={isDeleting}
 							className={secondaryButtonClass}
 						>
-							{t('settings.cancel')}
+							{t('common.actions.cancel')}
 						</button>
 						<button
 							type="button"
@@ -197,8 +198,8 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 							aria-busy={isDeleting}
 							className={dangerButtonClass}
 						>
-							<Trash2 className="h-4 w-4 shrink-0" />
-							<span>{isDeleting ? t('admin.deleting') : t('admin.confirmDelete')}</span>
+							<Trash2 className={defaultIconClass} />
+							<span>{isDeleting ? t('common.actions.deleting') : t('admin.confirmDelete')}</span>
 						</button>
 					</>
 				)}

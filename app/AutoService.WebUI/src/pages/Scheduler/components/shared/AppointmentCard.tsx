@@ -12,6 +12,7 @@ import {
   contentCardFrameClass,
   mutedBodyTextClass,
   mutedMetaTextClass,
+  smallIconClass,
 } from '../../../../utils/formStyles';
 import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
 import { StatusBadge } from './StatusBadge';
@@ -106,7 +107,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
         <div className="flex min-w-0 items-center gap-2 rounded-lg border border-arsm-border/70 bg-arsm-input/70 px-2.5 py-2 dark:border-arsm-border-dark/70 dark:bg-arsm-input-dark/70">
           <span className={`inline-flex shrink-0 items-center gap-1 ${mutedMetaTextClass}`}>
-            <Clock3 className="h-3.5 w-3.5 shrink-0" />
+            <Clock3 className={smallIconClass} />
             <span>{t('scheduler.due.label')}</span>
           </span>
           {hasValidDueDate && (
@@ -146,7 +147,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   {isClaiming ? <span className="truncate">{t('scheduler.detail.claiming')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.claim')}</span>
-                      <UserPlus className="h-3 w-3 shrink-0" />
+                      <UserPlus className={smallIconClass} />
                     </>
                   )}
                 </button>
@@ -165,7 +166,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   {isUnclaiming ? <span className="truncate">{t('scheduler.detail.unassigning')}</span> : (
                     <>
                       <span className="truncate">{t('scheduler.detail.unassignMe')}</span>
-                      <LogOut className="h-3 w-3 shrink-0" />
+                      <LogOut className={smallIconClass} />
                     </>
                   )}
                 </button>

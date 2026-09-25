@@ -11,6 +11,7 @@ import { Search, X } from 'lucide-react';
 import {
   cardClass,
   compactSelectFullClass,
+  defaultIconClass,
   inputGroupContainerClass,
   inputGroupIconClass,
   searchClearButtonClass,
@@ -65,11 +66,11 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
               data-testid="quotes-search-clear"
               type="button"
               onClick={onClearSearch}
-              title={t('quotes.clearSearch')}
-              aria-label={t('quotes.clearSearch')}
+              title={t('common.actions.clearSearch')}
+              aria-label={t('common.actions.clearSearch')}
               className={searchClearButtonClass}
             >
-              <X className="h-4 w-4" aria-hidden="true" />
+              <X className={defaultIconClass} aria-hidden="true" />
             </button>
           )}
         </div>

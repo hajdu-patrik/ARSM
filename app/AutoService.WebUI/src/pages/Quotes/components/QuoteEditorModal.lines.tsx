@@ -15,6 +15,7 @@ import {
   compactHeaderRowClass,
   compactSectionHeadingTextClass,
   dataListBreakpointClasses,
+  defaultIconClass,
   mutedMetaTextClass,
   referenceChipPrimaryButtonClass,
 } from '../../../utils/formStyles';
@@ -79,9 +80,9 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
     { key: 'description', label: t('quotes.line.description') },
     { key: 'quantity', label: t('quotes.line.quantityShort'), align: 'right' },
     { key: 'unitPrice', label: t('quotes.line.unitPriceShort'), align: 'right' },
-    { key: 'vat', label: t('quotes.line.vatShort'), align: 'right' },
-    { key: 'net', label: t('quotes.line.netAmount'), align: 'right' },
-    { key: 'gross', label: t('quotes.line.grossAmount'), align: 'right' },
+    { key: 'vat', label: t('common.fields.vat'), align: 'right' },
+    { key: 'net', label: t('common.fields.net'), align: 'right' },
+    { key: 'gross', label: t('common.fields.gross'), align: 'right' },
     ...(canEdit ? [{ key: 'actions', label: '' }] : []),
   ];
 
@@ -98,7 +99,7 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
             title={hasReachedLineLimit ? t('quotes.errors.lineLimitExceeded') : undefined}
             className={referenceChipPrimaryButtonClass}
           >
-            <Plus className="h-4 w-4 shrink-0" />
+            <Plus className={defaultIconClass} />
             <span className="truncate">{t('quotes.addLine')}</span>
           </button>
         )}

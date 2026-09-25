@@ -9,6 +9,7 @@ import { KeyRound, Save, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 import { DeleteProfileConfirmModal } from './DeleteProfileConfirmModal';
 import { buttonClass, dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from './constants';
+import { defaultIconClass } from '../../utils/formStyles';
 
 interface SettingsActionModalsProps {
   readonly isPictureRemoveConfirmOpen: boolean;
@@ -76,7 +77,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               disabled={isUploadingPicture}
               className={secondaryButtonClass}
             >
-              {t('settings.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -85,7 +86,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               aria-busy={isUploadingPicture}
               className={dangerButtonClass}
             >
-              <Trash2 className="h-4 w-4 shrink-0" />
+              <Trash2 className={defaultIconClass} />
               <span>{isUploadingPicture ? t('settings.uploading') : t('settings.confirmPictureRemove')}</span>
             </button>
           </>
@@ -111,7 +112,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               disabled={isUpdatingProfile}
               className={secondaryButtonClass}
             >
-              {t('settings.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -120,8 +121,8 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               aria-busy={isUpdatingProfile}
               className={buttonClass}
             >
-              <Save className="h-4 w-4 shrink-0" />
-              <span>{isUpdatingProfile ? t('settings.saving') : t('settings.confirmSave')}</span>
+              <Save className={defaultIconClass} />
+              <span>{isUpdatingProfile ? t('common.actions.saving') : t('common.actions.save')}</span>
             </button>
           </>
         )}
@@ -146,7 +147,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               disabled={isChangingPassword}
               className={secondaryButtonClass}
             >
-              {t('settings.cancel')}
+              {t('common.actions.cancel')}
             </button>
             <button
               type="button"
@@ -155,8 +156,8 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
               aria-busy={isChangingPassword}
               className={buttonClass}
             >
-              <KeyRound className="h-4 w-4 shrink-0" />
-              <span>{isChangingPassword ? t('settings.changingCredentials') : t('settings.confirmPasswordChange')}</span>
+              <KeyRound className={defaultIconClass} />
+              <span>{isChangingPassword ? t('settings.changingCredentials') : t('settings.changePassword')}</span>
             </button>
           </>
         )}

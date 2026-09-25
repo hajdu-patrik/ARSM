@@ -16,11 +16,17 @@ export const compactSectionHeadingTextClass = `text-sm ${sectionHeadingToneClass
 export const compactListPrimaryTextClass = 'truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark';
 export const compactListSecondaryTextClass = 'truncate text-xs text-arsm-label dark:text-arsm-label-dark';
 export const compactItemTitleTextClass = 'min-w-0 truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark';
+/** Large standalone headline (auth card title, headline figures), one step up on wider screens. */
+export const displayHeadingTextClass = 'text-xl font-semibold text-arsm-primary sm:text-2xl dark:text-arsm-primary-dark';
 export const inlinePrimaryLabelTextClass = 'font-semibold text-arsm-primary dark:text-arsm-primary-dark';
 export const uppercaseMetaLabelTextClass = 'text-xs font-medium uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark';
 export const inlineStatusTitleRowClass = 'flex min-w-0 items-center gap-2 font-semibold';
 export const inlineSectionTitleClass = 'inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark';
-export const mutedSectionIconClass = 'h-5 w-5 shrink-0 text-arsm-muted dark:text-arsm-muted-dark';
+/** Icon size scale: small for compact chips and 44px row icon actions, default for buttons and titles, large for icon-only toggles. */
+export const smallIconClass = 'h-3.5 w-3.5 shrink-0';
+export const defaultIconClass = 'h-4 w-4 shrink-0';
+export const largeIconClass = 'h-5 w-5 shrink-0';
+export const mutedSectionIconClass = `${largeIconClass} text-arsm-muted dark:text-arsm-muted-dark`;
 
 /** Shared loading spinner typography used in reusable async-state surfaces. */
 export const loadingSpinnerClass = 'animate-spin motion-reduce:animate-none rounded-full border-[3px] border-arsm-accent/30 border-t-arsm-accent dark:border-arsm-accent-dark/30 dark:border-t-arsm-accent-dark';

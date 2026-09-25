@@ -6,8 +6,8 @@
 const CREDENTIALS_DISABLED_REASON_KEYS = {
   submitting: 'settings.changingCredentials',
   incomplete: 'settings.fillPasswordFieldsToContinue',
-  tooShort: 'settings.passwordTooShort',
-  mismatch: 'settings.passwordsDoNotMatch',
+  tooShort: 'common.validation.passwordTooShort',
+  mismatch: 'common.validation.passwordMismatch',
 } as const;
 
 interface CredentialsDisabledReasonInput {

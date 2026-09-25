@@ -86,11 +86,11 @@ export function mapCatalogValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
   if (normalized.includes('partnumber and name are required') || normalized.includes('code and name are required')) {
-    return 'inventory.errors.fieldRequired';
+    return 'common.validation.fieldRequired';
   }
 
   if (normalized.includes('part number is required') || normalized.includes('code is required')) {
-    return 'inventory.errors.fieldRequired';
+    return 'common.validation.fieldRequired';
   }
 
   if (normalized.includes('partnumber must be at most') || normalized.includes('code must be at most')) {
@@ -118,7 +118,7 @@ export function mapCatalogValidationMessageToKey(message: string): string {
   }
 
   if (normalized.includes('vat rate must be')) {
-    return 'inventory.errors.invalidVatRate';
+    return 'common.validation.invalidVatRate';
   }
 
   if (normalized.includes('amount must be at least')) {

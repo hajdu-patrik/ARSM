@@ -15,7 +15,7 @@ import {
 } from '../../utils/serverValidation';
 import { extractFieldErrors } from './helpers';
 
-const SETTINGS_REQUIRED_FIELD_KEY = 'settings.errors.fieldRequired';
+const SETTINGS_REQUIRED_FIELD_KEY = 'common.validation.fieldRequired';
 
 function mapSettingsMessageToToastKey(message: string, fallbackKey: string): string {
   const mappedMessage = mapSettingsValidationMessageToKey(message);
@@ -45,7 +45,7 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
 
   const normalizedFieldErrors = normalizeServerFieldErrors(
     extractFieldErrors(err.response?.data),
-    (message) => mapSettingsMessageToToastKey(message, 'settings.updateError'),
+    (message) => mapSettingsMessageToToastKey(message, 'toast.profileUpdateFailed'),
   );
 
   if (hasFieldErrors(normalizedFieldErrors)) {
@@ -55,7 +55,7 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
   const detail = err.response?.data?.detail;
   if (detail) {
     return {
-      Detail: [mapSettingsMessageToToastKey(detail, 'settings.updateError')],
+      Detail: [mapSettingsMessageToToastKey(detail, 'toast.profileUpdateFailed')],
     };
   }
 
@@ -73,7 +73,7 @@ export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
   const mapped: FieldErrors = {};
 
   Object.entries(errors).forEach(([key, value]) => {
-    const normalizedValues = value.map((message) => mapSettingsMessageToToastKey(message, 'settings.passwordChangeError'));
+    const normalizedValues = value.map((message) => mapSettingsMessageToToastKey(message, 'toast.passwordChangeFailed'));
 
     if (key === 'CurrentPassword' || key === 'PasswordMismatch') {
       mapped.CurrentPassword = [...(mapped.CurrentPassword ?? []), ...normalizedValues];
@@ -109,7 +109,7 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
 
   if (data?.detail) {
     return {
-      Detail: [mapSettingsMessageToToastKey(data.detail, 'settings.passwordChangeError')],
+      Detail: [mapSettingsMessageToToastKey(data.detail, 'toast.passwordChangeFailed')],
     };
   }
 

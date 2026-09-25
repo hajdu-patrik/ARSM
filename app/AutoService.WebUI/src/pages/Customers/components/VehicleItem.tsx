@@ -16,6 +16,7 @@ import {
 	rowIconActionDangerClass,
 	rowIconActionInfoClass,
 	rowIconActionWarningClass,
+	smallIconClass,
 } from '../../../utils/formStyles';
 import { VehicleSpecsGrid } from './VehicleSpecsGrid';
 
@@ -43,9 +44,6 @@ const VehicleItemComponent = memo(function VehicleItem({
 	isDetailsOpen,
 }: VehicleItemProps) {
 	const detailsActionLabel = isDetailsOpen ? t('customers.hideVehicleHistory') : t('customers.showVehicleHistory');
-	// A new quote is neither info, edit nor delete, so it keeps its own icon
-	// and accent tone instead of borrowing one of the three fixed semantics.
-	const vehicleInlineActionIconClass = 'h-3.5 w-3.5 shrink-0 text-current';
 
 	return (
 		<div className="min-w-0 px-3 py-3 sm:px-3.5">
@@ -58,6 +56,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 				</div>
 
 				<div className={compactRowActionsClusterClass}>
+					{/* A new quote is neither info, edit nor delete, so it keeps its own icon
+					    and accent tone instead of borrowing one of the three fixed semantics. */}
 					<button
 						data-testid="vehicle-create-quote-button"
 						type="button"
@@ -66,7 +66,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.createQuote')}
 						aria-label={t('customers.createQuote')}
 					>
-						<FilePlus className={vehicleInlineActionIconClass} />
+						<FilePlus className={smallIconClass} />
 					</button>
 
 					<button
@@ -77,8 +77,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 						aria-label={detailsActionLabel}
 					>
 						{isDetailsOpen
-							? <EyeOff className={vehicleInlineActionIconClass} />
-							: <Eye className={vehicleInlineActionIconClass} />}
+							? <EyeOff className={smallIconClass} />
+							: <Eye className={smallIconClass} />}
 					</button>
 
 					<button
@@ -88,7 +88,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.editVehicle')}
 						aria-label={t('customers.editVehicle')}
 					>
-						<Pencil className={vehicleInlineActionIconClass} />
+						<Pencil className={smallIconClass} />
 					</button>
 
 					<button
@@ -98,7 +98,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 						title={t('customers.deleteVehicle')}
 						aria-label={t('customers.deleteVehicle')}
 					>
-						<Trash2 className={vehicleInlineActionIconClass} />
+						<Trash2 className={smallIconClass} />
 					</button>
 				</div>
 			</div>

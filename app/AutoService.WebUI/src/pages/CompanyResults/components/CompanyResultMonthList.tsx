@@ -35,9 +35,9 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
 
   const columns: DataListColumn[] = [
     { key: 'month', label: t('companyResults.month') },
-    { key: 'quotes', label: t('companyResults.quotes'), align: 'right' },
-    { key: 'net', label: t('companyResults.net'), align: 'right' },
-    { key: 'gross', label: t('companyResults.gross'), align: 'right' },
+    { key: 'quotes', label: t('nav.quotes'), align: 'right' },
+    { key: 'net', label: t('common.fields.net'), align: 'right' },
+    { key: 'gross', label: t('common.fields.gross'), align: 'right' },
   ];
 
   return (
@@ -66,17 +66,17 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
                   <p className={compactItemTitleTextClass}>{monthName}</p>
                   <div className={compactTwoColumnGridClass}>
                     <LabeledValueTile
-                      label={t('companyResults.quotes')}
+                      label={t('nav.quotes')}
                       value={formatQuantity(month.acceptedQuoteCount, locale)}
                       valueClassName="text-right tabular-nums"
                     />
                     <LabeledValueTile
-                      label={t('companyResults.net')}
+                      label={t('common.fields.net')}
                       value={formatHuf(month.acceptedNet, locale)}
                       valueClassName="text-right tabular-nums"
                     />
                     <LabeledValueTile
-                      label={t('companyResults.gross')}
+                      label={t('common.fields.gross')}
                       value={formatHuf(month.acceptedGross, locale)}
                       valueClassName="text-right tabular-nums font-semibold"
                     />

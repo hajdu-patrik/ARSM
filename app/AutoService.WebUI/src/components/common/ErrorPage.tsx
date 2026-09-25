@@ -13,6 +13,7 @@ import {
 	defaultBorderToneClass,
 	mutedSecondaryTextClass,
 	relativeOverflowBorderLayoutClass,
+	uppercaseMetaLabelTextClass,
 } from '../../utils/formStyles';
 import { getCachedErrorIllustrationSource } from '../../utils/errorIllustrationCache';
 import { ThemeLanguageControls } from '../layout/ThemeLanguageControls';
@@ -46,7 +47,7 @@ interface ErrorPageCountdownProps {
 	readonly secondsLeft: number;
 }
 
-const errorPageCtaClass = `${buttonClass} mt-5 w-full px-8 py-3 sm:w-auto sm:text-base`;
+const errorPageCtaClass = `${buttonClass} mt-5 w-full sm:w-auto`;
 
 /**
  * Displays the optional redirect countdown section in error states.
@@ -54,7 +55,7 @@ const errorPageCtaClass = `${buttonClass} mt-5 w-full px-8 py-3 sm:w-auto sm:tex
 const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft }: ErrorPageCountdownProps) {
 	return (
 		<div className="mt-6 border-t border-arsm-border pt-4 text-center dark:border-arsm-border-dark">
-			<p className="text-[11px] uppercase tracking-[0.2em] text-arsm-muted dark:text-arsm-muted-dark">
+			<p className={uppercaseMetaLabelTextClass}>
 				{label}
 			</p>
 			<p className="mt-1 text-3xl font-semibold leading-none text-arsm-primary dark:text-arsm-primary-dark">

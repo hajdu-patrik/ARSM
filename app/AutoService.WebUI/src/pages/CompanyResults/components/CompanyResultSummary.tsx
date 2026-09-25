@@ -20,6 +20,7 @@ import {
   compactDataSurfaceClass,
   compactSectionHeadingTextClass,
   compactTwoColumnGridClass,
+  displayHeadingTextClass,
   insetSurfaceClass,
   mutedMetaTextClass,
 } from '../../../utils/formStyles';
@@ -31,9 +32,9 @@ interface CompanyResultSummaryProps {
   readonly result: CompanyResultDto;
 }
 
-const headlineValueClass = '[overflow-wrap:anywhere] text-xl sm:text-2xl font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
-const secondaryValueClass = '[overflow-wrap:anywhere] text-sm font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
-const countTextClass = '[overflow-wrap:anywhere] text-xs tabular-nums text-arsm-muted dark:text-arsm-muted-dark';
+const headlineValueClass = `[overflow-wrap:anywhere] tabular-nums ${displayHeadingTextClass}`;
+const secondaryValueClass = `[overflow-wrap:anywhere] tabular-nums ${compactSectionHeadingTextClass}`;
+const countTextClass = `[overflow-wrap:anywhere] tabular-nums ${mutedMetaTextClass}`;
 
 const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
   t,
@@ -42,7 +43,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
 }: CompanyResultSummaryProps) {
   const secondaryRows: Array<{ key: string; label: string; row: CompanyResultStatusRowDto }> = [
     { key: 'pending', label: t('companyResults.rows.pending'), row: result.pending },
-    { key: 'expired', label: t('companyResults.rows.expired'), row: result.expired },
+    { key: 'expired', label: t('quotes.status.expired'), row: result.expired },
     { key: 'rejected', label: t('companyResults.rows.rejected'), row: result.rejected },
   ];
 
@@ -52,11 +53,11 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
         <h2 className={compactSectionHeadingTextClass}>{t('companyResults.rows.accepted')}</h2>
         <div className={compactTwoColumnGridClass}>
           <div className={compactDataSurfaceClass}>
-            <p className={mutedMetaTextClass}>{t('companyResults.net')}</p>
+            <p className={mutedMetaTextClass}>{t('common.fields.net')}</p>
             <p data-testid="company-results-accepted-net" className={headlineValueClass}>{formatHuf(result.accepted.net, locale)}</p>
           </div>
           <div className={compactDataSurfaceClass}>
-            <p className={mutedMetaTextClass}>{t('companyResults.gross')}</p>
+            <p className={mutedMetaTextClass}>{t('common.fields.gross')}</p>
             <p data-testid="company-results-accepted-gross" className={headlineValueClass}>{formatHuf(result.accepted.gross, locale)}</p>
           </div>
         </div>

@@ -63,7 +63,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
               onClick={onClose}
               className={`${secondaryButtonClass} w-full sm:w-auto`}
             >
-              {translate('scheduler.intake.cancel')}
+              {translate('common.actions.cancel')}
             </button>
             <button
               type="button"

@@ -7,7 +7,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { modalConfirmCloseButtonClass } from '../../utils/formStyles';
+import { defaultIconClass, modalConfirmCloseButtonClass } from '../../utils/formStyles';
 
 interface ModalCloseButtonProps {
   readonly onClick: () => void;
@@ -29,7 +29,7 @@ const ModalCloseButtonComponent = memo(function ModalCloseButton({
       title={translate('modal.close')}
       className={modalConfirmCloseButtonClass}
     >
-      <X className="h-4 w-4" />
+      <X className={defaultIconClass} />
     </button>
   );
 });

@@ -9,8 +9,10 @@ import { CarFront, ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucid
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
+  compactChipPrimaryButtonClass,
   compactHeaderRowClass,
   contentCardFrameClass,
+  defaultIconClass,
   inlineSectionTitleClass,
   metadataPillClass,
   mutedMetaTextClass,
@@ -18,11 +20,12 @@ import {
   mutedSectionIconClass,
   referenceChipDangerButtonClass,
   referenceChipNeutralButtonClass,
+  rowIconActionNeutralClass,
+  smallIconClass,
 } from '../../../utils/formStyles';
 import { buildCustomerDisplayName } from '../helpers';
 import { CustomerDetailsPanel, type ResolvedCustomerDetailsPanelTarget } from './CustomerDetailsPanel';
 import { VehicleItem } from './VehicleItem';
-import { customerCompactChipPrimaryButtonClass } from './customerCompactActionStyles';
 import type { CustomerHistoryState, CustomerListActions } from './customerListSection.types';
 
 interface CustomerCardProps {
@@ -120,7 +123,7 @@ const CustomerCardComponent = memo(function CustomerCard({
                 onOpenCustomerDetails(customer.id);
               }
             }}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-arsm-muted transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-arsm-primary motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:text-arsm-muted-dark dark:hover:text-arsm-primary-dark"
+            className={rowIconActionNeutralClass}
             aria-label={isExpanded ? t('customers.collapseCustomerVehicles') : t('customers.expandCustomerVehicles')}
             title={isExpanded ? t('customers.collapseCustomerVehicles') : t('customers.expandCustomerVehicles')}
           >
@@ -143,15 +146,15 @@ const CustomerCardComponent = memo(function CustomerCard({
         <div className={`flex min-w-0 flex-wrap items-center gap-2 ${mutedMetaTextClass}`}>
           <span className={metadataPillClass}>{customer.email}</span>
           {customer.phoneNumber && <span className={metadataPillClass}>{customer.phoneNumber}</span>}
-          <span className="rounded-full border border-arsm-border bg-arsm-accent-subtle px-2.5 py-1 font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-hover-dark dark:text-arsm-primary-dark">
-            {t('customers.vehicleCount', { count: customer.vehicleCount })}
+          <span className={metadataPillClass}>
+            {t('common.fields.vehicleCount', { count: customer.vehicleCount })}
           </span>
-          <button type="button" onClick={() => onOpenEditCustomerModal(customer)} className={`${referenceChipNeutralButtonClass} shrink-0`}>
-            <Pencil className="h-3.5 w-3.5 shrink-0 text-current" />
+          <button type="button" onClick={() => onOpenEditCustomerModal(customer)} className={referenceChipNeutralButtonClass}>
+            <Pencil className={defaultIconClass} />
             <span className="truncate">{t('customers.editCustomer')}</span>
           </button>
-          <button type="button" onClick={() => onOpenDeleteCustomerModal(customer)} className={`${referenceChipDangerButtonClass} shrink-0`}>
-            <Trash2 className="h-3.5 w-3.5 shrink-0 text-arsm-error-accent dark:text-arsm-error-text-light" />
+          <button type="button" onClick={() => onOpenDeleteCustomerModal(customer)} className={referenceChipDangerButtonClass}>
+            <Trash2 className={defaultIconClass} />
             <span className="truncate">{t('customers.deleteCustomer')}</span>
           </button>
         </div>
@@ -163,11 +166,11 @@ const CustomerCardComponent = memo(function CustomerCard({
             <section className="min-w-0 space-y-3">
               <div className={compactHeaderRowClass}>
                 <h3 className={inlineSectionTitleClass}>
-                  <CarFront className="h-4 w-4 shrink-0" />
+                  <CarFront className={defaultIconClass} />
                   <span className="truncate">{t('customers.vehiclesTitle')}</span>
                 </h3>
-                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${customerCompactChipPrimaryButtonClass} w-full sm:w-auto`}>
-                  <Plus className="h-3.5 w-3.5 shrink-0" />
+                <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${compactChipPrimaryButtonClass} w-full sm:w-auto`}>
+                  <Plus className={smallIconClass} />
                   <span className="truncate">{t('customers.createVehicle')}</span>
                 </button>
               </div>

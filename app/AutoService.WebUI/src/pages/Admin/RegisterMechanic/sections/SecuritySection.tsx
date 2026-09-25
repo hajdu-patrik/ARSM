@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { inputClass, inputGroupContainerClass, labelClass, mutedMetaTextClass, passwordToggleButtonClass } from '../constants';
+import { largeIconClass } from '../../../../utils/formStyles';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {
@@ -40,7 +41,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
     <div className="space-y-4">
       <div>
         <label htmlFor="reg-password" className={labelClass}>
-          {t('admin.password')} *
+          {t('common.fields.password')} *
         </label>
         <div className={inputGroupContainerClass}>
           <input
@@ -63,13 +64,13 @@ const SecuritySectionComponent = memo(function SecuritySection({
             aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
           >
             {showPassword ? (
-              <EyeOff className="h-5 w-5" aria-hidden="true" />
+              <EyeOff className={largeIconClass} aria-hidden="true" />
             ) : (
-              <Eye className="h-5 w-5" aria-hidden="true" />
+              <Eye className={largeIconClass} aria-hidden="true" />
             )}
           </button>
         </div>
-        <p id={credentialHintId} className={`mt-1 ${mutedMetaTextClass}`}>{t('admin.passwordHint')}</p>
+        <p id={credentialHintId} className={`mt-1 ${mutedMetaTextClass}`}>{t('common.validation.passwordHint')}</p>
       </div>
 
       <div>
@@ -97,9 +98,9 @@ const SecuritySectionComponent = memo(function SecuritySection({
             aria-label={showConfirmPassword ? t('login.hidePassword') : t('login.showPassword')}
           >
             {showConfirmPassword ? (
-              <EyeOff className="h-5 w-5" aria-hidden="true" />
+              <EyeOff className={largeIconClass} aria-hidden="true" />
             ) : (
-              <Eye className="h-5 w-5" aria-hidden="true" />
+              <Eye className={largeIconClass} aria-hidden="true" />
             )}
           </button>
         </div>

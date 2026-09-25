@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
+  compactPrimaryValueTextClass,
   defaultBorderToneClass,
   formFieldGridClass,
   insetSurfaceClass,
@@ -10,9 +11,9 @@ import {
   intakeInputClass,
   relativeOverflowBorderLayoutClass,
   uppercaseMetaLabelTextClass,
-  warningStatusPillClass,
 } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
+import { StatusBadge } from '../shared/StatusBadge';
 
 interface SchedulerIntakeHeaderProps {
   readonly selectedDayLabel: string;
@@ -30,7 +31,7 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 }: SchedulerIntakeHeaderProps) {
   return (
     <div className="space-y-3">
-      <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-arsm-input/90 px-4 py-3 text-sm text-arsm-primary dark:bg-arsm-card-dark dark:text-arsm-primary-dark`}>
+      <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-arsm-input/90 px-4 py-3 dark:bg-arsm-card-dark ${compactPrimaryValueTextClass}`}>
         <div aria-hidden="true" className="arsm-intake-sheen pointer-events-none absolute inset-x-0 top-0 h-10" />
         <span className="relative font-medium">{translate('scheduler.intake.selectedDay')}</span>
         <span className="relative ml-1">{selectedDayLabel}</span>
@@ -51,7 +52,7 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
 
       <div className={`${insetSurfaceClass} p-3.5 text-sm`}>
         <span className="font-medium text-arsm-muted dark:text-arsm-muted-dark">{translate('scheduler.intake.statusLabel')}</span>
-        <p className={`mt-1 ${warningStatusPillClass}`}>{translate('scheduler.status.inprogress')}</p>
+        <StatusBadge status="InProgress" className="mt-1" />
       </div>
     </div>
   );
@@ -87,7 +88,7 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
 }: SchedulerIntakeCustomerFormProps) {
   return (
     <div className={`${insetSurfaceClass} ${formFieldGridClass} p-3.5`}>
-      <p className={`${uppercaseMetaLabelTextClass} sm:col-span-2`}>{translate('scheduler.intake.personalInformation')}</p>
+      <p className={`${uppercaseMetaLabelTextClass} sm:col-span-2`}>{translate('common.fields.personalInformation')}</p>
 
       <label className={`${intakeFieldWrapperClass} sm:col-span-2`}>
         <span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerEmail')}</span>
@@ -102,17 +103,17 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
       </label>
 
       <label className={intakeFieldWrapperClass}>
-        <span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerFirstName')}</span>
+        <span className={intakeFieldLabelClass}>{translate('common.fields.firstName')}</span>
         <input
           value={customerFirstName}
           onChange={(event) => onCustomerFirstNameChange(filterNameInput(event.target.value))}
-          placeholder={translate('scheduler.intake.customerFirstNamePlaceholder')}
+          placeholder={translate('common.placeholders.firstName')}
           className={intakeInputClass}
         />
       </label>
 
       <label className={intakeFieldWrapperClass}>
-        <span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerMiddleNameOptional')}</span>
+        <span className={intakeFieldLabelClass}>{translate('common.fields.middleName')}</span>
         <input
           value={customerMiddleName}
           onChange={(event) => onCustomerMiddleNameChange(filterNameInput(event.target.value))}
@@ -122,21 +123,21 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
       </label>
 
       <label className={intakeFieldWrapperClass}>
-        <span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerLastName')}</span>
+        <span className={intakeFieldLabelClass}>{translate('common.fields.lastName')}</span>
         <input
           value={customerLastName}
           onChange={(event) => onCustomerLastNameChange(filterNameInput(event.target.value))}
-          placeholder={translate('scheduler.intake.customerLastNamePlaceholder')}
+          placeholder={translate('common.placeholders.lastName')}
           className={intakeInputClass}
         />
       </label>
 
       <label className={intakeFieldWrapperClass}>
-        <span className={intakeFieldLabelClass}>{translate('scheduler.intake.customerPhoneOptional')}</span>
+        <span className={intakeFieldLabelClass}>{translate('common.fields.phoneNumber')}</span>
         <input
           value={customerPhone}
           onChange={(event) => onCustomerPhoneChange(filterPhoneInput(event.target.value))}
-          placeholder={translate('scheduler.intake.customerPhonePlaceholder')}
+          placeholder={translate('common.placeholders.phone')}
           className={intakeInputClass}
         />
       </label>

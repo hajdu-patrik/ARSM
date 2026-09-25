@@ -6,7 +6,8 @@
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Upload } from 'lucide-react';
-import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, sectionTitleClass } from '../constants';
+import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
+import { defaultIconClass } from '../../../utils/formStyles';
 
 interface ProfilePictureSectionProps {
 	readonly hasProfilePicture: boolean;
@@ -61,7 +62,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 					<img
 						key={pictureKey}
 						src={pictureUrl}
-						alt={t('settings.profilePictureAlt')}
+						alt={t('settings.profilePicture')}
 						className="h-20 w-20 rounded-full border-2 border-arsm-accent/50 object-cover ring-3 ring-arsm-accent/15 dark:border-arsm-accent-dark/60 dark:ring-arsm-accent-dark/15"
 					/>
 				) : (
@@ -77,9 +78,9 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 							onClick={handleUploadClick}
 							disabled={isUploading}
 							aria-busy={isUploading}
-							className={`${buttonClass} min-h-11 bg-arsm-accent-hover hover:bg-arsm-accent-hover dark:bg-arsm-accent-dark-hover dark:hover:bg-arsm-accent-dark-hover`}
+							className={buttonClass}
 						>
-							<Upload className="h-4 w-4 shrink-0" />
+							<Upload className={defaultIconClass} />
 							<span>{isUploading ? t('settings.uploading') : t('settings.uploadPicture')}</span>
 						</button>
 
@@ -88,9 +89,9 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 								type="button"
 								onClick={onRemove}
 								disabled={isUploading}
-								className={`${dangerButtonClass} min-h-11`}
+								className={dangerButtonClass}
 							>
-								<Trash2 className="h-4 w-4 shrink-0" />
+								<Trash2 className={defaultIconClass} />
 								<span>{t('settings.removePicture')}</span>
 							</button>
 						)}
@@ -107,7 +108,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 				/>
 			</div>
 
-			<p className="mt-3 text-xs text-arsm-placeholder dark:text-arsm-placeholder-dark">
+			<p className={`mt-3 ${mutedMetaTextClass}`}>
 				{t('settings.pictureHint')}
 			</p>
 		</div>

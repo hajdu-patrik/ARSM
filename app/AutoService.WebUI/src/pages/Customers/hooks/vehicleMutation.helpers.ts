@@ -17,7 +17,7 @@ export function buildVehiclePayload(form: VehicleFormState): {
   const numericValues = parseVehicleNumericValues(form);
 
   if (Number.isNaN(numericValues.year)) {
-    return { payload: null as never, fieldError: 'customers.errors.vehicleYearInvalid' };
+    return { payload: null as never, fieldError: 'common.validation.vehicleYearInvalid' };
   }
 
   if (Number.isNaN(numericValues.mileageKm)) {
@@ -29,7 +29,7 @@ export function buildVehiclePayload(form: VehicleFormState): {
   }
 
   if (!isDrivetrainType(form.drivetrainType)) {
-    return { payload: null as never, fieldError: 'customers.errors.vehicleDrivetrainInvalid' };
+    return { payload: null as never, fieldError: 'common.validation.vehicleDrivetrainInvalid' };
   }
 
   return {

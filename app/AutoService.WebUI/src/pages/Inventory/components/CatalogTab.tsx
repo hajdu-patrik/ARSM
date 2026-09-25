@@ -11,6 +11,7 @@ import type { CatalogTabConfig } from '../catalogTab.config';
 import type { CatalogSortDirection } from '../hooks/useCatalogState';
 import {
   cardClass,
+  defaultIconClass,
   inputGroupContainerClass,
   inputGroupIconClass,
   referenceChipNeutralButtonClass,
@@ -57,10 +58,10 @@ function CatalogTab<TDto>({
   config,
 }: CatalogTabProps<TDto>) {
   const columns: DataListColumn[] = [
-    { key: 'name', label: t('inventory.columns.name') },
+    { key: 'name', label: t('inventory.name') },
     { key: 'identifier', label: t(config.identifierColumnKey) },
     { key: 'net', label: t(config.netColumnKey), align: 'right' },
-    { key: 'vat', label: t('inventory.columns.vatRate'), align: 'right' },
+    { key: 'vat', label: t('common.fields.vat'), align: 'right' },
     { key: 'gross', label: t(config.grossColumnKey), align: 'right' },
     { key: 'actions', label: '' },
   ];
@@ -84,11 +85,11 @@ function CatalogTab<TDto>({
                 data-testid={`${config.testIdPrefix}-search-clear`}
                 type="button"
                 onClick={onClearSearch}
-                title={t('inventory.clearSearch')}
-                aria-label={t('inventory.clearSearch')}
+                title={t('common.actions.clearSearch')}
+                aria-label={t('common.actions.clearSearch')}
                 className={searchClearButtonClass}
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className={defaultIconClass} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -100,8 +101,8 @@ function CatalogTab<TDto>({
               onClick={onToggleSortDirection}
               className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
             >
-              <ArrowUpDown className="h-4 w-4 shrink-0" />
-              <span className="truncate">{sortDirection === 'asc' ? t('inventory.sortDirectionAsc') : t('inventory.sortDirectionDesc')}</span>
+              <ArrowUpDown className={defaultIconClass} />
+              <span className="truncate">{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
             </button>
 
             <button
@@ -110,7 +111,7 @@ function CatalogTab<TDto>({
               onClick={onOpenCreateModal}
               className={`${referenceChipPrimaryButtonClass} flex-1 sm:flex-none`}
             >
-              <Plus className="h-4 w-4 shrink-0" />
+              <Plus className={defaultIconClass} />
               <span className="truncate">{t(config.createLabelKey)}</span>
             </button>
           </div>
@@ -136,7 +137,7 @@ function CatalogTab<TDto>({
             netAmount={config.getNet(item)}
             netLabel={t(config.netColumnKey)}
             vatRatePercent={config.getVat(item)}
-            vatLabel={t('inventory.columns.vatRate')}
+            vatLabel={t('common.fields.vat')}
             grossAmount={config.getGross(item)}
             grossLabel={t(config.grossColumnKey)}
             editLabel={t(config.editLabelKey)}

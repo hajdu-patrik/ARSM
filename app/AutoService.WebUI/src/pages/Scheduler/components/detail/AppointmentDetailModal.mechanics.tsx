@@ -3,8 +3,8 @@ import { LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
-  compactSelectFullClass,
   compactListPrimaryTextClass,
+  compactSelectFullClass,
   equalWidthControlGroupClass,
   mediumContextPrimaryButtonClass,
   mutedMetaTextClass,
@@ -13,6 +13,7 @@ import {
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
   selectWrapperClass,
+  smallIconClass,
 } from '../../../../utils/formStyles';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
 import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
@@ -115,15 +116,15 @@ export const MechanicsSection = memo(function MechanicsSection({
           aria-busy={isClaiming}
           className={`${schedulerInlineClaimButtonClass} mt-3`}
         >
-          <UserPlus className="h-3 w-3 shrink-0" />
-          <span className="min-w-0 truncate">{isClaiming ? t('scheduler.detail.saving') : t('scheduler.claim')}</span>
+          <UserPlus className={smallIconClass} />
+          <span className="min-w-0 truncate">{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
         </button>
       )}
 
       {isAdmin && !isClosedForMechanicMutations && (
         <div className="mt-3">
           <h5 className={`mb-1.5 flex min-w-0 items-center gap-1 font-medium ${mutedMetaTextClass}`}>
-            <UserPlus className="h-3.5 w-3.5 shrink-0" />
+            <UserPlus className={smallIconClass} />
             {t('scheduler.detail.addMechanic')}
           </h5>
           <div className={equalWidthControlGroupClass}>
@@ -154,7 +155,7 @@ export const MechanicsSection = memo(function MechanicsSection({
               aria-busy={isAssigning}
               className={mediumContextPrimaryButtonClass}
             >
-              <span className="min-w-0 truncate">{isAssigning ? t('scheduler.detail.saving') : t('scheduler.detail.addMechanic')}</span>
+              <span className="min-w-0 truncate">{isAssigning ? t('common.actions.saving') : t('scheduler.detail.addMechanic')}</span>
             </button>
           </div>
         </div>
@@ -213,7 +214,7 @@ const MechanicCard = memo(function MechanicCard({
             disabled={isDisabled}
             className={`${schedulerInlineUnassignButtonClass} max-[350px]:justify-center`}
           >
-            <LogOut className="h-3 w-3 shrink-0" />
+            <LogOut className={smallIconClass} />
             <span className="min-w-0 truncate">{t(removeLabelKey)}</span>
           </button>
         )}

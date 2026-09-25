@@ -12,7 +12,7 @@ import {
 } from '../../services/profile/profile-picture-live.service';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
-import { sidebarShellIconButtonClass } from '../../utils/formStyles';
+import { largeIconClass, sidebarShellIconButtonClass } from '../../utils/formStyles';
 import { SidebarContent, type NavItem } from './SidebarContent';
 
 interface SidebarLayoutProps {
@@ -212,7 +212,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
             aria-label={translate('sidebar.openMenu')}
             className={`${sidebarShellIconButtonClass} md:hidden`}
           >
-            <Menu className="h-5 w-5 shrink-0" />
+            <Menu className={largeIconClass} />
           </button>
 
           <div className="flex-1" />

@@ -21,10 +21,12 @@ import {
   compactRowHeaderClass,
   compactTwoColumnGridClass,
   monoIdentifierTextClass,
+  mutedBodyTextClass,
   numericValueTextClass,
   rowIconActionAccentClass,
   rowIconActionDangerClass,
   rowIconActionInfoClass,
+  smallIconClass,
 } from '../../../utils/formStyles';
 import { formatQuoteDate, resolveQuoteDisplayStatus } from '../helpers';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
@@ -38,8 +40,7 @@ interface QuoteCardProps {
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
-const quoteNumberTextClass = 'min-w-0 truncate font-mono text-xs text-arsm-label dark:text-arsm-label-dark';
-const quoteDateTextClass = 'min-w-0 truncate text-sm tabular-nums text-arsm-label dark:text-arsm-label-dark';
+const quoteDateTextClass = `min-w-0 truncate tabular-nums ${mutedBodyTextClass}`;
 
 const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
   const displayStatus = resolveQuoteDisplayStatus(quote);
@@ -58,7 +59,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
         title={openLabel}
         aria-label={openLabel}
       >
-        <Eye className="h-3.5 w-3.5 shrink-0" />
+        <Eye className={smallIconClass} />
       </button>
       {/* Printing is neither info, edit nor delete, so it keeps the accent tone
           the new-quote action uses rather than borrowing one of the three
@@ -71,18 +72,18 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
         title={downloadLabel}
         aria-label={downloadLabel}
       >
-        <Download className="h-3.5 w-3.5 shrink-0" />
+        <Download className={smallIconClass} />
       </button>
       <button
         data-testid="quote-delete-button"
         type="button"
         onClick={() => onDelete(quote)}
         disabled={!isDraft}
-        className={`${rowIconActionDangerClass} dark:disabled:opacity-45`}
+        className={rowIconActionDangerClass}
         title={isDraft ? deleteLabel : t('quotes.deleteDraftOnlyHint')}
         aria-label={deleteLabel}
       >
-        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+        <Trash2 className={smallIconClass} />
       </button>
     </div>
   );
@@ -95,7 +96,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
         <>
           <div className="min-w-0">
             <p className={compactItemTitleTextClass}>{quote.title}</p>
-            <p className={quoteNumberTextClass}>{quote.quoteNumber}</p>
+            <p className={monoIdentifierTextClass}>{quote.quoteNumber}</p>
           </div>
           <p className={monoIdentifierTextClass}>{quote.vehicle.licensePlate}</p>
           <QuoteStatusBadge status={displayStatus} className="justify-self-start" />
@@ -110,7 +111,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
           <div className={compactRowHeaderClass}>
             <div className="min-w-0">
               <p className={compactItemTitleTextClass}>{quote.title}</p>
-              <p className={quoteNumberTextClass}>{quote.quoteNumber}</p>
+              <p className={monoIdentifierTextClass}>{quote.quoteNumber}</p>
             </div>
             {actions}
           </div>
@@ -118,8 +119,8 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
           <QuoteStatusBadge status={displayStatus} />
 
           <div className={compactTwoColumnGridClass}>
-            <LabeledValueTile label={t('quotes.columns.vehicle')} value={quote.vehicle.licensePlate} valueClassName="font-mono" />
-            <LabeledValueTile label={t('quotes.columns.validUntil')} value={formatQuoteDate(quote.validUntil, locale)} valueClassName="tabular-nums" />
+            <LabeledValueTile label={t('common.fields.vehicle')} value={quote.vehicle.licensePlate} valueClassName="font-mono" />
+            <LabeledValueTile label={t('quotes.validUntil')} value={formatQuoteDate(quote.validUntil, locale)} valueClassName="tabular-nums" />
             <LabeledValueTile label={t('quotes.columns.totalNet')} value={formatHuf(quote.totalNet, locale)} valueClassName="text-right tabular-nums" />
             <LabeledValueTile label={t('quotes.columns.totalGross')} value={formatHuf(quote.totalGross, locale)} valueClassName="text-right font-semibold tabular-nums" />
           </div>

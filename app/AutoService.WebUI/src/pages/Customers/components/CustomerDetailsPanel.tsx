@@ -5,17 +5,20 @@ import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
+  compactChipNeutralButtonClass,
+  compactHeaderRowClass,
+  defaultIconClass,
   inlineSectionTitleClass,
   modalConfirmCloseButtonClass,
-  compactHeaderRowClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
+  smallIconClass,
+  uppercaseMetaLabelTextClass,
 } from '../../../utils/formStyles';
 import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
 import { RepairHistoryList } from './RepairHistoryList';
 import { VehicleSpecsGrid } from './VehicleSpecsGrid';
-import { customerCompactChipNeutralButtonClass } from './customerCompactActionStyles';
 
 export type ResolvedCustomerDetailsPanelTarget =
   | { readonly kind: 'customer'; readonly customer: CustomerListItem }
@@ -88,10 +91,10 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
       {!isInline && (
         <div className="flex min-w-0 items-start justify-between gap-3 border-b border-arsm-border px-4 py-3 dark:border-arsm-border-dark">
           <div className="min-w-0">
-            <p className="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wide text-arsm-muted dark:text-arsm-muted-dark">
-              {target.kind === 'customer' ? <UserRound className="h-4 w-4 shrink-0" /> : <CarFront className="h-4 w-4 shrink-0" />}
+            <p className={`flex min-w-0 items-center gap-2 ${uppercaseMetaLabelTextClass}`}>
+              {target.kind === 'customer' ? <UserRound className={defaultIconClass} /> : <CarFront className={defaultIconClass} />}
               <span className="min-w-0 truncate">
-                {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('customers.vehicleDetailsTitle')}
+                {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('common.fields.vehicleDetails')}
               </span>
             </p>
             <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
@@ -112,7 +115,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
               aria-label={t('customers.closeDetailsPanel')}
               title={t('customers.closeDetailsPanel')}
             >
-              <X className="h-4 w-4 shrink-0" />
+              <X className={defaultIconClass} />
             </button>
           )}
         </div>
@@ -131,15 +134,15 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
         <section className={isInline ? 'min-w-0 space-y-3' : 'min-w-0 space-y-3 pt-2'}>
           <div className={compactHeaderRowClass}>
             <h3 className={inlineSectionTitleClass}>
-              <History className="h-4 w-4 shrink-0" />
+              <History className={defaultIconClass} />
               <span className="truncate">{historySource.title}</span>
             </h3>
             <button
               type="button"
               onClick={historySource.toggleSort}
-              className={`${customerCompactChipNeutralButtonClass} w-full sm:w-auto`}
+              className={`${compactChipNeutralButtonClass} w-full sm:w-auto`}
             >
-              <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
+              <ArrowUpDown className={smallIconClass} />
               <span className="truncate">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
             </button>
           </div>

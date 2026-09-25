@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { buildCustomerDisplayName } from '../helpers';
-import { dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
 
 interface DeleteCustomerModalProps {
   target: CustomerListItem | null;
@@ -39,7 +39,7 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
             disabled={isDeleting}
             className={secondaryButtonClass}
           >
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="button"
@@ -48,8 +48,8 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
             aria-busy={isDeleting}
             className={dangerButtonClass}
           >
-            <Trash2 className="h-4 w-4 shrink-0" />
-            <span>{isDeleting ? t('customers.deleting') : t('customers.deleteCustomer')}</span>
+            <Trash2 className={defaultIconClass} />
+            <span>{isDeleting ? t('common.actions.deleting') : t('customers.deleteCustomer')}</span>
           </button>
         </>
       )}

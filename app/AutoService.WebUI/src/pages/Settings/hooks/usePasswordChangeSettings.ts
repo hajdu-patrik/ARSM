@@ -54,12 +54,12 @@ export function usePasswordChangeSettings({
     event.preventDefault();
 
     if (newPassword.length < 8) {
-      showErrorToast('settings.passwordTooShort');
+      showErrorToast('common.validation.passwordTooShort');
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      showErrorToast('settings.passwordsDoNotMatch');
+      showErrorToast('common.validation.passwordMismatch');
       return;
     }
 

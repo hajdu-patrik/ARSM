@@ -17,6 +17,7 @@ import { formatHuf } from '../../../utils/currency';
 import {
   compactDataSurfaceClass,
   compactPrimaryValueTextClass,
+  defaultIconClass,
   formFieldGridClass,
   formFieldGroupClass,
   getSegmentedControlOptionClass,
@@ -87,7 +88,7 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
 
       <div className={formFieldGroupClass}>
         <label htmlFor="quote-line-catalog" className={labelClass}>
-          {form.lineKind === 'Part' ? t('quotes.line.partCatalog') : t('quotes.line.laborCatalog')}
+          {form.lineKind === 'Part' ? t('quotes.line.kindPart') : t('quotes.line.laborCatalog')}
         </label>
         <div className={selectWrapperClass}>
           <select
@@ -157,7 +158,7 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
 
       <div className={formFieldGridClass}>
         <div className={formFieldGroupClass}>
-          <label htmlFor="quote-line-vat" className={labelClass}>{t('quotes.line.vatRate')}</label>
+          <label htmlFor="quote-line-vat" className={labelClass}>{t('common.fields.vatRate')}</label>
           <div className={selectWrapperClass}>
             <select
               data-testid="quote-line-vat-select"
@@ -187,8 +188,8 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
 
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
         <button type="button" onClick={onCancel} disabled={isSaving} className={referenceChipNeutralButtonClass}>
-          <X className="h-4 w-4 shrink-0" />
-          <span className="truncate">{t('quotes.line.cancel')}</span>
+          <X className={defaultIconClass} />
+          <span className="truncate">{t('common.actions.cancel')}</span>
         </button>
         <button
           data-testid="quote-line-save-button"
@@ -198,8 +199,8 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           aria-busy={isSaving}
           className={referenceChipPrimaryButtonClass}
         >
-          <Check className="h-4 w-4 shrink-0" />
-          <span className="truncate">{isSaving ? t('quotes.saving') : t('quotes.line.save')}</span>
+          <Check className={defaultIconClass} />
+          <span className="truncate">{isSaving ? t('common.actions.saving') : t('quotes.line.save')}</span>
         </button>
       </div>
     </div>

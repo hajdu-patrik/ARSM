@@ -31,7 +31,7 @@ const CompanyResultsPageComponent = memo(function CompanyResultsPage() {
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
-        <h1 className={pageTitleClass}>{t('companyResults.pageTitle')}</h1>
+        <h1 className={pageTitleClass}>{t('nav.companyResults')}</h1>
         <p className={pageSubtitleClass}>{t('companyResults.pageDescription')}</p>
       </header>
 

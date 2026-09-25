@@ -5,6 +5,7 @@
 
 import { Eye, EyeOff } from 'lucide-react';
 import { inputClass, inputGroupContainerClass, labelClass, mutedMetaTextClass, passwordToggleButtonClass } from '../constants';
+import { largeIconClass } from '../../../utils/formStyles';
 
 interface PasswordInputWithToggleProps {
   readonly id: string;
@@ -64,10 +65,10 @@ export function PasswordInputWithToggle({
         <button
           type="button"
           onClick={onToggleVisibility}
-          className={`${passwordToggleButtonClass} min-h-11 min-w-11`}
+          className={passwordToggleButtonClass}
           aria-label={toggleAriaLabel}
         >
-          {isVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          {isVisible ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
         </button>
       </div>
       {hintText ? <p className={`mt-1 ${mutedMetaTextClass}`}>{hintText}</p> : null}

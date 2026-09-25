@@ -48,7 +48,7 @@ export const partCatalogFormConfig: CatalogFormModalConfig<PartFormState> = {
   },
   rate: {
     elementId: 'part-net-price',
-    labelKey: 'inventory.netUnitPrice',
+    labelKey: 'common.fields.netUnitPrice',
     placeholderKey: 'inventory.netUnitPricePlaceholder',
     get: (form) => form.netUnitPrice,
     set: (form, value) => ({ ...form, netUnitPrice: value }),
@@ -73,7 +73,7 @@ export const laborTypeCatalogFormConfig: CatalogFormModalConfig<LaborTypeFormSta
   },
   rate: {
     elementId: 'labor-type-hourly-rate',
-    labelKey: 'inventory.hourlyNetRate',
+    labelKey: 'common.fields.hourlyNetRate',
     placeholderKey: 'inventory.hourlyNetRatePlaceholder',
     get: (form) => form.hourlyNetRate,
     set: (form, value) => ({ ...form, hourlyNetRate: value }),

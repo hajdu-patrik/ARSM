@@ -5,6 +5,7 @@ import { Modal } from '../../../components/common/Modal';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 import {
   buttonClass,
+  defaultIconClass,
   formFieldGridClass,
   formFieldGroupClass,
   inputClass,
@@ -60,7 +61,7 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             disabled={isSaving}
             className={secondaryButtonClass}
           >
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="submit"
@@ -69,8 +70,8 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             aria-busy={isSaving}
             className={buttonClass}
           >
-            <Save className="h-4 w-4 shrink-0" />
-            <span>{isSaving ? t('customers.saving') : t('customers.save')}</span>
+            <Save className={defaultIconClass} />
+            <span>{isSaving ? t('common.actions.saving') : t('common.actions.save')}</span>
           </button>
         </>
       )}
@@ -78,20 +79,20 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
       <form id="customers-customer-form" onSubmit={onSubmit} className="space-y-3" noValidate>
         <div className={`${formFieldGridClass} lg:grid-cols-3`}>
           <div className={formFieldGroupClass}>
-            <label htmlFor="customer-first-name" className={labelClass}>{t('customers.firstName')}</label>
+            <label htmlFor="customer-first-name" className={labelClass}>{t('common.fields.firstName')}</label>
             <input
               id="customer-first-name"
               type="text"
               value={form.firstName}
               onChange={(event) => setForm((prev) => ({ ...prev, firstName: filterNameInput(event.target.value) }))}
               className={inputClass}
-              placeholder={t('customers.firstNamePlaceholder')}
+              placeholder={t('common.placeholders.firstName')}
               disabled={isSaving}
             />
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="customer-middle-name" className={labelClass}>{t('customers.middleName')}</label>
+            <label htmlFor="customer-middle-name" className={labelClass}>{t('common.fields.middleName')}</label>
             <input
               id="customer-middle-name"
               type="text"
@@ -104,21 +105,21 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor="customer-last-name" className={labelClass}>{t('customers.lastName')}</label>
+            <label htmlFor="customer-last-name" className={labelClass}>{t('common.fields.lastName')}</label>
             <input
               id="customer-last-name"
               type="text"
               value={form.lastName}
               onChange={(event) => setForm((prev) => ({ ...prev, lastName: filterNameInput(event.target.value) }))}
               className={inputClass}
-              placeholder={t('customers.lastNamePlaceholder')}
+              placeholder={t('common.placeholders.lastName')}
               disabled={isSaving}
             />
           </div>
         </div>
 
         <div className={formFieldGroupClass}>
-          <label htmlFor="customer-email" className={labelClass}>{t('customers.email')}</label>
+          <label htmlFor="customer-email" className={labelClass}>{t('common.fields.email')}</label>
           <input
             id="customer-email"
             type="email"
@@ -131,14 +132,14 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
         </div>
 
         <div className={formFieldGroupClass}>
-          <label htmlFor="customer-phone" className={labelClass}>{t('customers.phoneNumber')}</label>
+          <label htmlFor="customer-phone" className={labelClass}>{t('common.fields.phoneNumber')}</label>
           <input
             id="customer-phone"
             type="tel"
             value={form.phoneNumber}
             onChange={(event) => setForm((prev) => ({ ...prev, phoneNumber: filterPhoneInput(event.target.value) }))}
             className={inputClass}
-            placeholder={t('customers.phonePlaceholder')}
+            placeholder={t('common.placeholders.phone')}
             disabled={isSaving}
           />
         </div>

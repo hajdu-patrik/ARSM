@@ -88,7 +88,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
-        <h1 className={pageTitleClass}>{t('quotes.pageTitle')}</h1>
+        <h1 className={pageTitleClass}>{t('nav.quotes')}</h1>
         <p className={pageSubtitleClass}>{t('quotes.pageDescription')}</p>
       </header>
 

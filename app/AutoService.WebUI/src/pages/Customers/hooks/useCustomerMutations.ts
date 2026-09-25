@@ -130,7 +130,7 @@ export function useCustomerMutations({
 
   const hasRequiredFieldError = useCallback((errors: ServerFieldErrors, fieldName: string) => {
     const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
-    return variants.some((variant) => (errors[variant] ?? []).includes('customers.errors.fieldRequired'));
+    return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
   }, []);
 
   const restoreRequiredCustomerFields = useCallback((errors: ServerFieldErrors) => {

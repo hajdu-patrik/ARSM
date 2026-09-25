@@ -22,6 +22,7 @@ import {
   numericValueTextClass,
   rowIconActionDangerClass,
   rowIconActionWarningClass,
+  smallIconClass,
 } from '../../../utils/formStyles';
 
 interface CatalogItemRowProps {
@@ -60,10 +61,10 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
   const actions = (
     <div className={compactRowActionsClusterClass}>
       <button type="button" onClick={onEdit} className={rowIconActionWarningClass} title={editLabel} aria-label={editLabel}>
-        <Pencil className="h-3.5 w-3.5 shrink-0" />
+        <Pencil className={smallIconClass} />
       </button>
       <button type="button" onClick={onDelete} className={rowIconActionDangerClass} title={deleteLabel} aria-label={deleteLabel}>
-        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+        <Trash2 className={smallIconClass} />
       </button>
     </div>
   );

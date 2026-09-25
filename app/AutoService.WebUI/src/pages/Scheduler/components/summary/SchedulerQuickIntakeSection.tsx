@@ -52,7 +52,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${mediumContextPrimaryButtonClass} w-auto min-w-0 max-w-full self-start sm:shrink-0`}
+					className={`${mediumContextPrimaryButtonClass} w-auto self-start sm:shrink-0`}
 				>
 					<span className="truncate">{t('scheduler.intake.open')}</span>
 				</button>

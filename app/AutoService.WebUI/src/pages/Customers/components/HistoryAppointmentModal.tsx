@@ -10,14 +10,15 @@ import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../components/common/Modal';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
+  compactChipNeutralButtonClass,
   compactDataSurfaceClass,
   compactInlineClusterClass,
   compactPrimaryValueTextClass,
   mutedMetaTextClass,
+  smallIconClass,
 } from '../../../utils/formStyles';
 import { formatDateTime } from '../helpers';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
-import { customerCompactChipNeutralButtonClass } from './customerCompactActionStyles';
 
 interface HistoryAppointmentModalProps {
   readonly appointment: AppointmentDto | null;
@@ -62,11 +63,11 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
           <button
             type="button"
             onClick={handleOpenInScheduler}
-            className={customerCompactChipNeutralButtonClass}
+            className={compactChipNeutralButtonClass}
             title={t('customers.openInScheduler')}
             aria-label={t('customers.openInScheduler')}
           >
-            <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+            <CalendarDays className={smallIconClass} />
             <span className="truncate">{t('customers.checkAppointment')}</span>
           </button>
         </div>
@@ -100,7 +101,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
         </div>
 
         <div className={compactDataSurfaceClass}>
-          <p className={mutedMetaTextClass}>{t('scheduler.detail.vehicle')}</p>
+          <p className={mutedMetaTextClass}>{t('common.fields.vehicle')}</p>
           <p className={`truncate ${compactPrimaryValueTextClass}`}>
             {appointment.vehicle.brand} {appointment.vehicle.model} ({appointment.vehicle.year})
           </p>

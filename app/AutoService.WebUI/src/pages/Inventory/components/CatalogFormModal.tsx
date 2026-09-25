@@ -14,6 +14,7 @@ import { MAX_CATALOG_IDENTIFIER_LENGTH, MAX_CATALOG_NAME_LENGTH, VAT_RATE_OPTION
 import { formatHufUnitPrice } from '../../../utils/currency';
 import {
   buttonClass,
+  defaultIconClass,
   formFieldGridClass,
   formFieldGroupClass,
   inputClass,
@@ -64,7 +65,7 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
       footer={(
         <>
           <button type="button" onClick={onClose} disabled={isSaving} className={secondaryButtonClass}>
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="submit"
@@ -73,8 +74,8 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
             aria-busy={isSaving}
             className={buttonClass}
           >
-            <Save className="h-4 w-4 shrink-0" />
-            <span>{isSaving ? t('inventory.saving') : t('inventory.save')}</span>
+            <Save className={defaultIconClass} />
+            <span>{isSaving ? t('common.actions.saving') : t('common.actions.save')}</span>
           </button>
         </>
       )}
@@ -130,7 +131,7 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
           </div>
 
           <div className={formFieldGroupClass}>
-            <label htmlFor={config.vatRateElementId} className={labelClass}>{t('inventory.vatRate')}</label>
+            <label htmlFor={config.vatRateElementId} className={labelClass}>{t('common.fields.vatRate')}</label>
             <div className={selectWrapperClass}>
               <select
                 id={config.vatRateElementId}

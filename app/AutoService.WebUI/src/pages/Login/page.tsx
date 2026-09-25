@@ -12,16 +12,19 @@ import { useToastStore } from '../../store/toast.store';
 import { ThemeLanguageControls } from '../../components/layout/ThemeLanguageControls';
 import { Image } from '../../components/common/Image';
 import {
-	centeredAmbientOrbLayoutClass,
 	buttonClass,
+	centeredAmbientOrbLayoutClass,
+	displayHeadingTextClass,
 	getSegmentedControlOptionClass,
 	inputClass,
 	inputGroupContainerClass,
 	labelClass,
+	largeIconClass,
 	mutedMetaTextClass,
 	mutedSecondaryTextClass,
 	passwordToggleButtonClass,
 	segmentedControlClass,
+	uppercaseMetaLabelTextClass,
 } from '../../utils/formStyles';
 import { parseIdentifierByMethod, resolveLoginError, type LoginMethod } from './login.helpers';
 
@@ -106,7 +109,7 @@ const LoginComponent = memo(function Login() {
 	}, []);
 
 	const identifierLabel = useMemo(
-		() => (loginMethod === 'email' ? translate('login.email') : translate('login.phone')),
+		() => (loginMethod === 'email' ? translate('common.fields.email') : translate('login.phone')),
 		[loginMethod, translate],
 	);
 
@@ -154,7 +157,7 @@ const LoginComponent = memo(function Login() {
 								className="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24"
 							/>
 						</div>
-						<h1 className="mt-2 text-balance text-xl font-semibold text-arsm-primary dark:text-arsm-primary-dark sm:text-2xl">
+						<h1 className={`mt-2 text-balance ${displayHeadingTextClass}`}>
 							{translate('login.title')}
 						</h1>
 						<p className={`mt-2 ${mutedSecondaryTextClass}`}>{translate('login.subtitle')}</p>
@@ -184,7 +187,7 @@ const LoginComponent = memo(function Login() {
 
 						<div>
 							<label htmlFor="password" className={labelClass}>
-								{translate('login.passwordPlaceholder')}
+								{translate('common.fields.password')}
 							</label>
 							<div className={inputGroupContainerClass}>
 								<input
@@ -208,9 +211,9 @@ const LoginComponent = memo(function Login() {
 									disabled={isLoading}
 								>
 									{showPassword ? (
-										<EyeOff className="h-5 w-5" aria-hidden="true" />
+										<EyeOff className={largeIconClass} aria-hidden="true" />
 									) : (
-										<Eye className="h-5 w-5" aria-hidden="true" />
+										<Eye className={largeIconClass} aria-hidden="true" />
 									)}
 								</button>
 							</div>
@@ -219,14 +222,14 @@ const LoginComponent = memo(function Login() {
 						<button
 							type="submit"
 							disabled={!canSubmit}
-							className={`${buttonClass} mt-1.5 w-full sm:text-base`}
+							className={`${buttonClass} mt-1.5 w-full`}
 							aria-busy={isLoading}
 						>
 							{isLoading ? translate('login.loading') : translate('login.submit')}
 						</button>
 
 						<fieldset className="pt-1.5" aria-label={translate('login.loginMethodLabel')}>
-							<legend className={`mb-2 font-medium uppercase tracking-wide ${mutedMetaTextClass}`}>
+							<legend className={`mb-2 ${uppercaseMetaLabelTextClass}`}>
 								{translate('login.loginMethodLabel')}
 							</legend>
 							<div className={segmentedControlClass}>
@@ -237,7 +240,7 @@ const LoginComponent = memo(function Login() {
 									aria-pressed={loginMethod === 'email'}
 									disabled={isLoading}
 								>
-									{translate('login.loginWithEmail')}
+									{translate('common.fields.email')}
 								</button>
 								<button
 									type="button"
@@ -246,7 +249,7 @@ const LoginComponent = memo(function Login() {
 									aria-pressed={loginMethod === 'phone'}
 									disabled={isLoading}
 								>
-									{translate('login.loginWithPhone')}
+									{translate('login.phone')}
 								</button>
 							</div>
 						</fieldset>

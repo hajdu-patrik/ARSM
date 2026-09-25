@@ -65,7 +65,7 @@ export function usePartMutations({
   const hasRequiredValues = hasRequiredPartFields(partForm);
   const payloadResult = hasRequiredValues
     ? buildPartRequest(partForm)
-    : { payload: null as never, fieldError: 'inventory.errors.fieldRequired' };
+    : { payload: null as never, fieldError: 'common.validation.fieldRequired' };
   const hasValidPayload = hasRequiredValues && payloadResult.fieldError === null;
   const isPartSaveEnabled = hasValidPayload
     && (partModalMode === 'create' || Boolean(editingPartSnapshot && hasPartUpdateChanges(editingPartSnapshot, payloadResult.payload)))

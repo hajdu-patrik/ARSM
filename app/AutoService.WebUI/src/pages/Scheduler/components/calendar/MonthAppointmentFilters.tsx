@@ -7,42 +7,13 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { filterSelectCompactClass, filterSelectCompactWrapperClass } from '../../../../utils/formStyles';
-import { schedulerMonthClearFilterButtonClass, schedulerMonthSortButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
+import { compactChipNeutralButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
+import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
+import { schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
-
-const STATUS_CHIP_COLORS: Record<AppointmentStatus, { inactive: string; inactiveHover: string; inactivePress: string; active: string; activeHover: string; activePress: string; dot: string }> = {
-  InProgress: {
-    inactive: 'border-arsm-warning-border/65 bg-arsm-warning-bg/65 text-arsm-warning-text dark:border-arsm-warning-border-dark/65 dark:bg-arsm-warning-bg-dark/65 dark:text-arsm-warning-text-dark',
-    inactiveHover: 'hover:border-arsm-warning-border/80 hover:bg-arsm-warning-bg/80 dark:hover:border-arsm-warning-border-dark/80 dark:hover:bg-arsm-warning-bg-dark/80',
-    inactivePress: 'active:border-arsm-warning-border active:bg-arsm-warning-bg active:saturate-125 dark:active:border-arsm-warning-border-dark dark:active:bg-arsm-warning-bg-dark',
-    active: 'border-arsm-warning-border bg-arsm-warning-bg text-arsm-warning-text ring-2 ring-arsm-warning-border/35 dark:border-arsm-warning-border-dark dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark dark:ring-arsm-warning-border-dark/35',
-    activeHover: 'hover:border-arsm-warning-border hover:bg-arsm-warning-bg dark:hover:border-arsm-warning-border-dark dark:hover:bg-arsm-warning-bg-dark',
-    activePress: 'active:border-arsm-warning-border active:bg-arsm-warning-bg active:saturate-150 active:brightness-95 dark:active:border-arsm-warning-border-dark dark:active:bg-arsm-warning-bg-dark',
-    dot: 'bg-arsm-warning-accent',
-  },
-  Completed: {
-    inactive: 'border-arsm-success-border/65 bg-arsm-success-soft/65 text-arsm-success-text dark:border-arsm-success-border-dark/65 dark:bg-arsm-success-bg-dark/65 dark:text-arsm-success-text-dark',
-    inactiveHover: 'hover:border-arsm-success-border/80 hover:bg-arsm-success-soft/80 dark:hover:border-arsm-success-border-dark/80 dark:hover:bg-arsm-success-bg-dark/80',
-    inactivePress: 'active:border-arsm-success-border active:bg-arsm-success-soft active:saturate-125 dark:active:border-arsm-success-border-dark dark:active:bg-arsm-success-bg-dark',
-    active: 'border-arsm-success-border bg-arsm-success-soft text-arsm-success-text ring-2 ring-arsm-success-border/35 dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark dark:ring-arsm-success-border-dark/35',
-    activeHover: 'hover:border-arsm-success-border hover:bg-arsm-success-soft dark:hover:border-arsm-success-border-dark dark:hover:bg-arsm-success-bg-dark',
-    activePress: 'active:border-arsm-success-border active:bg-arsm-success-soft active:saturate-150 active:brightness-95 dark:active:border-arsm-success-border-dark dark:active:bg-arsm-success-bg-dark',
-    dot: 'bg-arsm-success-accent',
-  },
-  Cancelled: {
-    inactive: 'border-arsm-error-border/65 bg-arsm-error-soft/65 text-arsm-error-text dark:border-arsm-error-dark/65 dark:bg-arsm-error-bg-dark/65 dark:text-arsm-error-text-light',
-    inactiveHover: 'hover:border-arsm-error-border/80 hover:bg-arsm-error-soft/80 dark:hover:border-arsm-error-dark/80 dark:hover:bg-arsm-error-bg-dark/80',
-    inactivePress: 'active:border-arsm-error-border active:bg-arsm-error-soft active:saturate-125 dark:active:border-arsm-error-dark dark:active:bg-arsm-error-bg-dark',
-    active: 'border-arsm-error-border bg-arsm-error-soft text-arsm-error-text ring-2 ring-arsm-error-border/35 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/35',
-    activeHover: 'hover:border-arsm-error-border hover:bg-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark',
-    activePress: 'active:border-arsm-error-border active:bg-arsm-error-soft active:saturate-150 active:brightness-95 dark:active:border-arsm-error-dark dark:active:bg-arsm-error-bg-dark',
-    dot: 'bg-arsm-error-accent',
-  },
-};
 
 interface MonthAppointmentFiltersProps {
   readonly selectedStatuses: Set<AppointmentStatus>;
@@ -88,14 +59,14 @@ const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSort
 
   return (
     <div className={`${schedulerControlRowClass} w-full justify-start sm:w-auto sm:flex-nowrap sm:justify-end`}>
-      <button type="button" onClick={onToggleSort} className={schedulerMonthSortButtonClass} title={t('scheduler.monthList.sortByDate')}>
-        <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
+      <button type="button" onClick={onToggleSort} className={compactChipNeutralButtonClass} title={t('scheduler.monthList.sortByDate')}>
+        <ArrowUpDown className={smallIconClass} />
         <span className="min-w-0 truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
       </button>
 
       {selectedDay !== null && (
         <button type="button" onClick={onClearFilter} className={schedulerMonthClearFilterButtonClass}>
-          <X className="h-3 w-3 shrink-0" />
+          <X className={smallIconClass} />
           <span className="min-w-0 truncate">{t('scheduler.monthList.clearFilter')}</span>
         </button>
       )}
@@ -120,14 +91,15 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
     <div className={`${schedulerControlRowClass} w-full justify-start`}>
       {STATUS_FILTERS.map((status) => {
         const isActive = selectedStatuses.has(status);
-        const colors = STATUS_CHIP_COLORS[status];
+        const tone = APPOINTMENT_STATUS_TONE[status];
+        const colors = toneFilterChipClasses[tone];
         const chipStateClass = isActive
           ? `${colors.active} ${colors.activeHover} ${colors.activePress}`
           : `${colors.inactive} ${colors.inactiveHover} ${colors.inactivePress}`;
 
         return (
           <button type="button" key={status} onClick={() => onToggleStatus(status)} aria-pressed={isActive} className={`${schedulerStatusFilterChipButtonClass} ${chipStateClass}`}>
-            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors.dot}`} aria-hidden="true" />
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${toneDotClasses[tone]}`} aria-hidden="true" />
             <span>{t(`scheduler.status.${status.toLowerCase()}`)}</span>
           </button>
         );

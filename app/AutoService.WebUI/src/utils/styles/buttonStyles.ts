@@ -15,6 +15,10 @@ const focusRingAccentClass = 'focus-visible:ring-arsm-focus-ring/40 dark:focus-v
 /** Error focus ring used by danger variants, matching iconDangerButtonClass. */
 const focusRingDangerClass = 'focus-visible:ring-arsm-error-hover/40 dark:focus-visible:ring-arsm-error-dark/40';
 
+/** Action tones shared by the medium (reference chip) and compact chip button families. */
+const primaryActionToneClass = 'border-arsm-accent/60 bg-arsm-accent-subtle text-arsm-primary hover:border-arsm-accent hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark/25 dark:text-arsm-primary-dark dark:hover:border-arsm-accent-dark dark:hover:bg-arsm-accent-dark/35';
+const dangerActionToneClass = 'border-arsm-error-border/75 bg-arsm-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-soft dark:border-arsm-error-dark/75 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85';
+
 /** Generic utility and icon actions used in headers, toolbars, and modal close controls. */
 export const compactUtilityButtonClass = `inline-flex h-11 min-h-11 min-w-[4.9rem] shrink-0 items-center justify-center rounded-2xl border border-arsm-accent/30 bg-arsm-accent-subtle/85 px-5 text-[12px] font-medium leading-normal text-arsm-primary hover:bg-arsm-accent-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-[320px]:min-w-[3.9rem] max-[320px]:px-3.5 max-[320px]:text-[11px] dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark/80 dark:text-arsm-primary-dark dark:hover:bg-arsm-hover-dark dark:focus-visible:ring-arsm-focus-ring/30 ${buttonMicroInteractionClass}`;
 export const schedulerNavIconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-border bg-arsm-input text-arsm-label hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:border-arsm-border/60 disabled:opacity-50 disabled:hover:text-arsm-label dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark dark:disabled:border-arsm-border-dark/60 dark:disabled:hover:text-arsm-label-dark ${iconButtonMicroInteractionClass}`;
@@ -24,13 +28,18 @@ export const iconDangerButtonClass = `inline-flex h-11 w-11 shrink-0 items-cente
 
 /** Compact chip button base shared by Customers and Scheduler local chip variants (min-h-7, scales to a 44px target below 350px). */
 export const compactChipActionBaseClass = 'inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-[10px] font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:min-h-11 max-[350px]:px-3 max-[350px]:py-2 max-[350px]:text-xs dark:focus-visible:ring-arsm-focus-ring/30';
+/** Compact chip variants; the neutral one matches the compact filter select surface (bg-card) it sits beside. */
+export const compactChipNeutralButtonClass = `${compactChipActionBaseClass} border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark`;
+export const compactChipPrimaryButtonClass = `${compactChipActionBaseClass} ${primaryActionToneClass}`;
+export const compactChipDangerButtonClass = `${compactChipActionBaseClass} ${dangerActionToneClass}`;
 
-/** Row-level 44x44 icon actions (vehicle rows, quote rows, catalog rows): scale-only hover, tone per semantics. */
+/** Row-level 44x44 icon actions (vehicle/quote/catalog rows, card expand toggles): scale-only hover, tone per semantics. */
 const rowIconActionBaseClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:focus-visible:ring-arsm-focus-ring/30';
 export const rowIconActionInfoClass = `${rowIconActionBaseClass} text-arsm-info-text hover:text-arsm-info-ring dark:text-arsm-info-text-dark dark:hover:text-arsm-info-text-dark`;
 export const rowIconActionWarningClass = `${rowIconActionBaseClass} text-arsm-warning-text hover:text-arsm-warning-accent dark:text-arsm-warning-text-dark dark:hover:text-arsm-warning-text-dark`;
 export const rowIconActionDangerClass = `${rowIconActionBaseClass} text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-text-light dark:hover:text-arsm-error-text-light`;
 export const rowIconActionAccentClass = `${rowIconActionBaseClass} text-arsm-accent-vivid hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:text-arsm-accent-dark-hover`;
+export const rowIconActionNeutralClass = `${rowIconActionBaseClass} text-arsm-muted hover:text-arsm-primary dark:text-arsm-muted-dark dark:hover:text-arsm-primary-dark`;
 
 /** Option tile primitives used by selectable cards and grouped checkbox-like controls. */
 export const optionTileBaseClass = 'relative inline-flex h-11 min-h-11 w-auto max-w-full shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 text-xs transition has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-arsm-focus-ring/40 dark:has-[:focus-visible]:ring-arsm-focus-ring/30 disabled:cursor-not-allowed';
@@ -55,8 +64,8 @@ export const getSegmentedControlOptionClass = (isActive: boolean): string =>
 const mediumContextActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal whitespace-nowrap ring-1 ring-transparent disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusRingGeometryClass}`;
 
 export const mediumContextNeutralButtonClass = `${mediumContextActionBaseClass} border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/45 hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/45 dark:hover:bg-arsm-hover-dark/90 ${focusRingAccentClass}`;
-export const mediumContextPrimaryButtonClass = `${mediumContextActionBaseClass} border-arsm-accent/60 bg-arsm-accent-subtle text-arsm-primary hover:border-arsm-accent hover:bg-arsm-accent-wash dark:border-arsm-accent-dark/60 dark:bg-arsm-accent-dark/25 dark:text-arsm-primary-dark dark:hover:border-arsm-accent-dark dark:hover:bg-arsm-accent-dark/35 ${focusRingAccentClass}`;
-export const mediumContextDangerButtonClass = `${mediumContextActionBaseClass} border-arsm-error-border/75 bg-arsm-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-soft dark:border-arsm-error-dark/75 dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85 ${focusRingDangerClass}`;
+export const mediumContextPrimaryButtonClass = `${mediumContextActionBaseClass} ${primaryActionToneClass} ${focusRingAccentClass}`;
+export const mediumContextDangerButtonClass = `${mediumContextActionBaseClass} ${dangerActionToneClass} ${focusRingDangerClass}`;
 
 /** Canonical main CTA family for save/delete/edit and modal confirmation actions. */
 const mainCtaActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusRingGeometryClass}`;

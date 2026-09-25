@@ -8,7 +8,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
-import { dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
 import type { DeleteCatalogItemTarget } from '../helpers';
 
 interface DeleteCatalogItemModalProps {
@@ -42,7 +42,7 @@ const DeleteCatalogItemModalComponent = memo(function DeleteCatalogItemModal({
       footer={(
         <>
           <button type="button" onClick={onClose} disabled={isDeleting} className={secondaryButtonClass}>
-            {t('settings.cancel')}
+            {t('common.actions.cancel')}
           </button>
           <button
             type="button"
@@ -51,8 +51,8 @@ const DeleteCatalogItemModalComponent = memo(function DeleteCatalogItemModal({
             aria-busy={isDeleting}
             className={dangerButtonClass}
           >
-            <Trash2 className="h-4 w-4 shrink-0" />
-            <span>{isDeleting ? t('inventory.deleting') : confirmLabel}</span>
+            <Trash2 className={defaultIconClass} />
+            <span>{isDeleting ? t('common.actions.deleting') : confirmLabel}</span>
           </button>
         </>
       )}

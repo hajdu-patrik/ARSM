@@ -37,7 +37,7 @@ tools: Read, Edit, Grep, Glob
 
 1. Use tokens first: colors, surfaces, borders, text tones, and focus rings must come from ARSM tokens.
 2. Extract only the repeated minimum common subset: geometry, base layout, radius, focus, motion, disabled state, typography, and responsive wrapper behavior.
-3. Keep special behavior local: feature-specific colors, status tones, placement, one-off spacing, rare variants, unique icons, and domain-specific labels stay in the owning TS/TSX component or feature module.
+3. Keep special behavior local: status-to-tone mappings (the colors themselves come from the shared tones in `utils/styles/toneStyles.ts`), placement, one-off spacing, rare variants, unique icons, and domain-specific labels stay in the owning TS/TSX component or feature module.
 4. Compose locally by importing the shared base and adding local classes in `className` for semantic overrides.
 5. If a style is not reused across at least two independent surfaces, or its name requires domain knowledge, keep it local or feature-local.
 6. Mechanical refactors may move class strings only when generated class output and screenshots remain equivalent.

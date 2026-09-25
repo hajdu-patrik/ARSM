@@ -5,6 +5,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
+import { defaultIconClass, toneFeedbackClasses } from '../../../utils/formStyles';
 import { dangerButtonClass, relativeOverflowBorderLayoutClass } from '../constants';
 
 interface DeleteProfileSectionProps {
@@ -17,15 +18,15 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 	const { t: translate } = useTranslation();
 
 	return (
-		<div className={`${relativeOverflowBorderLayoutClass} border-arsm-error-border-light bg-arsm-error-bg p-5 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark sm:p-6`}>
+		<div className={`${relativeOverflowBorderLayoutClass} ${toneFeedbackClasses.error} p-5 sm:p-6`}>
 			<div
 				aria-hidden="true"
 				className="arsm-error-sheen pointer-events-none absolute inset-x-0 top-0 h-12"
 			/>
-			<h2 className="text-lg font-semibold text-arsm-error-text dark:text-arsm-error-soft">
+			<h2 className="text-lg font-semibold">
 				{translate('settings.deleteProfileTitle')}
 			</h2>
-			<p className="mt-2 text-sm text-arsm-error-hover dark:text-arsm-error-text-light/85">
+			<p className="mt-2 text-sm">
 				{translate('settings.deleteProfileDescription')}
 			</p>
 			<button
@@ -33,8 +34,8 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 				onClick={onDeleteRequest}
 				className={`mt-4 w-full ${dangerButtonClass}`}
 			>
-				<Trash2 className="h-4 w-4 shrink-0" />
-				<span>{translate('settings.deleteProfileButton')}</span>
+				<Trash2 className={defaultIconClass} />
+				<span>{translate('settings.deleteProfileTitle')}</span>
 			</button>
 		</div>
 	);

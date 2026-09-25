@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
 import { SYSTEM_ERROR_TOAST_KEYS, WARNING_TOAST_KEYS } from '../../store/toast.keys';
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
-import { feedbackFrameClass } from '../../utils/formStyles';
+import { defaultIconClass, feedbackFrameClass, largeIconClass, toneFeedbackClasses } from '../../utils/formStyles';
 
 interface ToastItemProps {
   readonly toast: ToastMessage;
@@ -36,14 +36,14 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light';
+  let toastVariantClass = toneFeedbackClasses.error;
 
   if (toast.variant === 'success') {
-    toastVariantClass = 'border-arsm-success-border bg-arsm-success-bg text-arsm-success-text dark:border-arsm-success-border-dark dark:bg-arsm-success-bg-dark dark:text-arsm-success-text-dark';
+    toastVariantClass = toneFeedbackClasses.success;
   } else if (isWarningToast) {
-    toastVariantClass = 'border-arsm-warning-border bg-arsm-warning-bg text-arsm-warning-text dark:border-arsm-warning-border-dark dark:bg-arsm-warning-bg-dark dark:text-arsm-warning-text-dark';
+    toastVariantClass = toneFeedbackClasses.warning;
   } else if (isSystemErrorToast) {
-    toastVariantClass = 'border-arsm-error-border bg-arsm-error-bg text-arsm-error-text ring-1 ring-arsm-error-hover/35 dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:ring-arsm-error-dark/45';
+    toastVariantClass = `${toneFeedbackClasses.error} ring-1 ring-arsm-error-hover/35 dark:ring-arsm-error-dark/45`;
   }
 
   return (
@@ -59,7 +59,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       ) : null}
 
       <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
-        {toast.variant === 'success' ? <Check className="h-5 w-5" /> : <CircleAlert className="h-5 w-5" />}
+        {toast.variant === 'success' ? <Check className={largeIconClass} /> : <CircleAlert className={largeIconClass} />}
       </span>
 
       <p className="min-w-0 flex-1 truncate whitespace-nowrap leading-5">{translate(toast.messageKey, toast.messageValues)}</p>
@@ -76,7 +76,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
         className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition-[opacity,transform] duration-150 ease-out hover:scale-105 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 focus-visible:opacity-100 motion-reduce:transform-none dark:focus-visible:ring-arsm-focus-ring/30"
         aria-label={translate('toast.dismiss')}
       >
-        <X className="h-4 w-4" />
+        <X className={defaultIconClass} />
       </button>
     </output>
   );
