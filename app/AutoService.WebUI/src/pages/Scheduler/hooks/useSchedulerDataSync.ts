@@ -181,6 +181,7 @@ export function useSchedulerDataSync({
   const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
 
   const isBackgroundRefreshingRef = useRef(false);
+  const refreshRequestedWhileRunningRef = useRef(false);
   const backgroundRefreshTaskRef = useRef<() => Promise<void>>(async () => {});
   const currentMonthViewRef = useRef({ year: calendarYear, month: calendarMonth });
 
@@ -356,21 +357,22 @@ export function useSchedulerDataSync({
   ]);
 
   useEffect(() => {
-    backgroundRefreshTaskRef.current = async () => {
-      if (!authScope || isBackgroundRefreshingRef.current) {
-        return;
-      }
-
+    /**
+     * Fetches and applies one refresh pass. A live-update trigger that arrives while a pass is
+     * already running only sets {@link refreshRequestedWhileRunningRef} (see below) instead of
+     * running concurrently, so its data is never dropped - the outer loop runs one more pass
+     * once the current one finishes.
+     */
+    const runRefreshPass = async (currentAuthScope: AuthQueryScope) => {
       const requestedView = currentMonthViewRef.current;
       const todayRequestId = nextTodayDataRequestId();
       const monthRequestId = nextMonthDataRequestId();
 
-      isBackgroundRefreshingRef.current = true;
       try {
         const adjacentViews = getAdjacentMonthViews(requestedView.year, requestedView.month);
         const [today, previousMonthAppointments, currentMonthAppointments, nextMonthAppointments] = await Promise.all([
-          fetchTodayAppointments(queryClient, authScope, true),
-          ...adjacentViews.map((view) => fetchMonthAppointments(queryClient, authScope, view, true)),
+          fetchTodayAppointments(queryClient, currentAuthScope, true),
+          ...adjacentViews.map((view) => fetchMonthAppointments(queryClient, currentAuthScope, view, true)),
         ]);
         const calendarAppointments = mergeUniqueAppointments(
           previousMonthAppointments,
@@ -387,6 +389,27 @@ export function useSchedulerDataSync({
           showErrorToast(isAuthExpiredError(error) ? 'scheduler.monthAuthExpiredError' : 'scheduler.monthLoadError');
           backgroundRefreshErrorShownRef.current = true;
         }
+      }
+    };
+
+    backgroundRefreshTaskRef.current = async () => {
+      if (!authScope) {
+        return;
+      }
+
+      if (isBackgroundRefreshingRef.current) {
+        // A pass is already in flight: remember that this trigger's change still needs a fetch
+        // instead of dropping it, so a live update that arrives mid-refresh is never lost.
+        refreshRequestedWhileRunningRef.current = true;
+        return;
+      }
+
+      isBackgroundRefreshingRef.current = true;
+      try {
+        do {
+          refreshRequestedWhileRunningRef.current = false;
+          await runRefreshPass(authScope);
+        } while (refreshRequestedWhileRunningRef.current);
       } finally {
         isBackgroundRefreshingRef.current = false;
       }

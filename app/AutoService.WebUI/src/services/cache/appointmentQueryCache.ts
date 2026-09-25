@@ -32,30 +32,34 @@ function upsertAppointment(appointments: AppointmentDto[], updated: AppointmentD
 }
 
 /**
- * Resolves the UTC month bucket used by cached scheduler month queries.
+ * Resolves the local month bucket used by cached scheduler month queries.
+ *
+ * Uses local time to match {@link getAdjacentMonthViews} (which keys the underlying month
+ * queries) and the scheduler store's own day/month matching - a UTC bucket here would silently
+ * drop or misplace an updated appointment whenever its local and UTC calendar day differ.
  * @param appointment Appointment whose scheduled date determines the bucket.
  * @returns Calendar year and 1-based month for the scheduled date.
  */
-function getAppointmentUtcMonth(appointment: AppointmentDto): { year: number; month: number } {
+function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; month: number } {
   const scheduledDate = new Date(appointment.scheduledDate);
   return {
-    year: scheduledDate.getUTCFullYear(),
-    month: scheduledDate.getUTCMonth() + 1,
+    year: scheduledDate.getFullYear(),
+    month: scheduledDate.getMonth() + 1,
   };
 }
 
 /**
  * Checks whether an appointment belongs in the cached today query.
- * @param appointment Appointment to compare with the current UTC date.
- * @returns {@code true} when the appointment is scheduled today in UTC.
+ * @param appointment Appointment to compare with the current local date.
+ * @returns {@code true} when the appointment is scheduled today in local time.
  */
-function isScheduledTodayUtc(appointment: AppointmentDto): boolean {
+function isScheduledToday(appointment: AppointmentDto): boolean {
   const scheduledDate = new Date(appointment.scheduledDate);
   const now = new Date();
 
-  return scheduledDate.getUTCFullYear() === now.getUTCFullYear()
-    && scheduledDate.getUTCMonth() === now.getUTCMonth()
-    && scheduledDate.getUTCDate() === now.getUTCDate();
+  return scheduledDate.getFullYear() === now.getFullYear()
+    && scheduledDate.getMonth() === now.getMonth()
+    && scheduledDate.getDate() === now.getDate();
 }
 
 /**
@@ -83,7 +87,7 @@ export function writeAppointmentToSchedulerCache(
   authScope: AuthQueryScope,
   appointment: AppointmentDto,
 ): void {
-  const appointmentMonth = getAppointmentUtcMonth(appointment);
+  const appointmentMonth = getAppointmentLocalMonth(appointment);
 
   queryClient.setQueryData<AppointmentDto[]>(queryKeys.scheduler.today(authScope), (current) => {
     if (!current) {
@@ -91,7 +95,7 @@ export function writeAppointmentToSchedulerCache(
     }
 
     const withoutUpdated = current.filter((item) => item.id !== appointment.id);
-    return isScheduledTodayUtc(appointment)
+    return isScheduledToday(appointment)
       ? upsertAppointment(withoutUpdated, appointment)
       : withoutUpdated;
   });
