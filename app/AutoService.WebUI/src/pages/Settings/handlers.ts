@@ -129,7 +129,7 @@ export function extractDeleteProfileErrorKey(err: unknown): string | null {
 
   const status = err.response?.status;
   if (status === 403 || status === 401) {
-    return 'settings.currentPasswordIncorrect';
+    return 'settings.errors.currentPasswordInvalid';
   }
 
   const data = err.response?.data;

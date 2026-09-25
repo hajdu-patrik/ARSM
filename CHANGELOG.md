@@ -60,6 +60,14 @@ writes/reads, so a lower bound, not a bill)._
 _Dev time: ~1h26m wall-clock. Cost: not measured (direct session work, no workflow run)._
 
 ### Fixed
+- Settings: deleting the profile with a wrong current password (401/403) showed the raw i18n key
+  `settings.currentPasswordIncorrect`, which never existed, in the error toast. It now shows the
+  existing "Current password is invalid." / "A jelenlegi jelszó hibás." message
+  (`settings.errors.currentPasswordInvalid`).
+
+_Dev time: ~2m wall-clock (implementation after the user's decision; the investigation happened
+during the unification task). Cost: not measured (direct session work, no workflow run)._
+
 - Scheduler: a background refresh trigger (SSE live-update, profile-picture update, or the periodic
   poll) that arrived while a previous refresh pass was still in flight was silently dropped instead
   of being retried, so an edited appointment's change could go unreflected in the UI until the next,
