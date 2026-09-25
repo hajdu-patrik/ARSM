@@ -30,18 +30,24 @@
     - workflow declined -> do the work directly, without `orchestrator` and without the specialist agents
     - partial answer -> run exactly the steps the user named and nothing else
 - `arsm-chain` encodes the routed chain deterministically:
-    1. Plan: `orchestrator` decomposes the task, fixes any shared DTO/API contract up front, and returns
-       open decisions as questions instead of choosing. Skipped when the router difficulty is 1 and the
-       task touches a single area.
-    2. Route: jev-router picks `model` and `effort` for every step.
-    3. Implement: `backend` and `frontend` run in parallel on their disjoint trees; `migration` runs
-       after `backend`, only on a real schema delta. `frontend` applies the `ui-ux-style-profile` policy
-       itself while implementing.
-    4. Review, in parallel and on the changed files only: `docs-sync` (documentation only),
-       `coding-principles` (naming, SOLID/OOP, JSDoc) and, for UI changes, `ui-ux-style-profile` as a
-       report-only audit.
-    5. Gate: `python scripts/validate.py` once; failures and UI findings go back to the owning
-       specialist for at most two fix rounds.
+    1. Plan: `orchestrator` rates the task 0-4, splits it into work packages (one area each, with
+       disjoint owned paths in the shared working tree, shared building blocks as their own package that
+       consumers depend on), fixes any shared DTO/API contract up front, and returns open decisions as
+       questions instead of choosing. Skipped when the router difficulty is 1 and the task touches a
+       single area.
+    2. Route: jev-router picks `model` and `effort` for every package.
+    3. Implement: packages run in parallel, at most 2/2/4/6/8 implementing agents at once for the
+       effective difficulty 0/1/2/3/4, which is the higher of the router and orchestrator ratings. A
+       package starts once its dependencies finished; packages with overlapping paths run one after the
+       other; `migration` runs after every `backend` package, only on a real schema delta. `frontend`
+       applies the `ui-ux-style-profile` policy itself while implementing. Changes a package needs outside
+       its paths are handed off and applied by one agent per area once every package is done.
+    4. Review, per package as soon as it finishes and on its changed files only: `coding-principles`
+       (naming, SOLID/OOP, JSDoc) and, for UI changes, `ui-ux-style-profile` as a report-only audit whose
+       findings go straight back to that package. `docs-sync` (documentation only) runs once, beside the
+       gate.
+    5. Gate: `python scripts/validate.py` once; each failure goes back to the package owning the path it
+       names (unowned paths to one agent per area) for at most two fix rounds.
     6. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
        `python scripts/select-e2e-specs.py --run` (3 workers).
 - Without the Workflow tool, run the same steps by hand in the same order and with the same parallelism.
@@ -132,6 +138,23 @@
 - ServiceDefaults: `app/AutoService.ServiceDefaults/CLAUDE.md`
 - Tests: `tests/CLAUDE.md`
 - Scripts: `scripts/CLAUDE.md`
+
+## Changelog & Development Metrics
+
+- Every completed feature gets one `CHANGELOG.md` entry under `[Unreleased]` (Keep a Changelog style,
+  ISO 8601 dates), whether it went through the `arsm-chain` workflow or was done directly.
+- Each entry ends with one metrics line: `_Dev time: ~<duration> wall-clock. <cost>._`
+  - Duration: wall-clock from the first prompt of the task to the last commit-ready state, captured
+    with `date` (e.g. via Bash) at task start and task end - measured, not estimated.
+  - Cost, `arsm-chain` runs: read `tokensSpent` from the workflow's return value (`budget.spent()`,
+    output tokens only) and convert with the pricing table below. Report it as a range (cheapest to
+    priciest model actually routed to the run's packages/reviews) and label it an output-token-only
+    estimate - it excludes input tokens and cache writes/reads, so it is a lower bound, not a bill.
+  - Cost, direct work (no workflow): token spend isn't queryable in a direct session - report
+    duration only and write `cost: not measured`.
+- Claude output pricing reference ($ / 1M output tokens) - re-verify before trusting this if it is
+  more than a few months old, Claude model versions and prices change: sonnet $10, opus $20, fable $50
+  (checked 2026-09-25 via the `claude-api` skill's model table, itself cached 2026-06-24).
 
 ## UI/UX Policy
 
