@@ -8,14 +8,21 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeedVehicleId = 1
-@SeedCustomerId = 1
 @NonExistentVehicleId = 99999
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = delete.vehicle.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0701
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Vehicles] Login as admin for delete tests
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin for delete tests (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -25,11 +32,54 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create a fixture customer to own the vehicle below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Delete",
+  "middleName": null,
+  "lastName": "VehicleFixture",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create a fixture vehicle to delete below (201 expected)
+# @name fixtureVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "DVH-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
+  "mileageKm": 45000,
+  "enginePowerKw": 110,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 201
+
 ###
 
 ### [Negative][Vehicles] Delete non-existent vehicle (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404
 
 ###
 
@@ -39,7 +89,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Vehicles] Login as non-admin mechanic
+### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -49,11 +99,15 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Vehicles] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404
 
 ###
 
@@ -67,31 +121,43 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Vehicles] Admin deletes vehicle (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+### [Positive][Vehicles] Admin deletes the fixture vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
 ### [Negative][Vehicles] Deleted vehicle cannot be fetched (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+
+?? status == 404
 
 ###
 
 ### [Negative][Vehicles] Re-delete deleted vehicle returns not found (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Cascade][Vehicles] Verify customer vehicle list remains queryable after cascade delete
-# Inspect response payload and confirm deleted vehicle id is absent.
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+?? status == 404
 
 ###
 
-### [Cascade][Vehicles] Verify month appointment list after vehicle delete
-# Inspect response payload and confirm entries tied to deleted vehicle are absent.
-GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
+### [Cascade][Vehicles] Customer vehicle list stays queryable and empty after its only vehicle is deleted (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+###
+
+### [Cleanup][Vehicles] Delete the fixture customer created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

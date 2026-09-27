@@ -1,10 +1,18 @@
 # ─────────────────────────────────────────────────────────────
 # AUTH - REGISTER VALIDATION AND NONADMIN AUTHZ
 # ─────────────────────────────────────────────────────────────
+# Verified against AuthEndpoints.Register.cs / AuthEndpoints.cs before writing this file:
+# - /api/auth/register requires the "AdminOnly" policy, so every validation case below needs an
+#   admin session first; without one, the authorization check answers 401 before ValidateRegisterRequest
+#   ever inspects personType/expertise/name fields (moved the admin login ahead of those cases).
+# - None of the cases below create a row: the Customer personType is rejected before CreatePerson runs,
+#   and every name/expertise case fails ValidateRegisterRequest before any account is created.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @RunId = {{$timestamp}}
@@ -12,8 +20,27 @@
 
 # ─────────────────────────────────────────────────────────────
 
-### [Case][Auth] POST /api/auth/register
+### [Setup][Admin Session] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
+###
+
+### [Setup][Admin Session] Login as admin before the validation matrix (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Register][Admin] Customer personType is rejected - registration is mechanic-only (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -26,9 +53,11 @@ Content-Type: application/json
   "personType": "Customer"
 }
 
+?? status == 400
+
 ###
 
-### [Negative][Register][Admin] Invalid expertise list (duplicate item expected)
+### [Negative][Register][Admin] Invalid expertise list (duplicate item expected) (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -43,12 +72,12 @@ Content-Type: application/json
   "expertise": ["Engine", "engine"]
 }
 
+?? status == 400
+
 ###
 
 ### [Negative][Register][Admin] firstName with space rejected (400 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Auth] POST /api/auth/register
-
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -63,12 +92,12 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
 ### [Negative][Register][Admin] firstName with digit rejected (400 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Auth] POST /api/auth/register
-
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -83,12 +112,12 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
 ### [Negative][Register][Admin] firstName with apostrophe rejected (400 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Auth] POST /api/auth/register
-
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -103,12 +132,12 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
 ### [Negative][Register][Admin] lastName with special character rejected (400 expected)
 # "Last name may only contain letters and hyphens."
-### [Case][Auth] POST /api/auth/register
-
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -123,12 +152,12 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
 ### [Negative][Register][Admin] middleName with space rejected (400 expected)
 # "Middle name may only contain letters and hyphens."
-### [Case][Auth] POST /api/auth/register
-
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -144,15 +173,19 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
-### [Setup][Admin Session] Logout admin before non-admin authorization check
+### [Setup][Admin Session] Logout admin before non-admin authorization check (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
-### [Setup][Non-Admin Session] Login as non-admin mechanic
+### [Setup][Non-Admin Session] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -161,6 +194,8 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+?? status == 200
 
 ###
 
@@ -178,3 +213,5 @@ Content-Type: application/json
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine"]
 }
+
+?? status == 403

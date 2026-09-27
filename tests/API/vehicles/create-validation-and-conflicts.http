@@ -4,20 +4,60 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@SeedCustomerId = 1
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@ValidVehicleVin = TST{{RunId}}0101
-@InvalidYearVehicleVin = TST{{RunId}}0102
-@InvalidPlateVehicleVin = TST{{RunId}}0103
-@InvalidMileageVehicleVin = TST{{RunId}}0104
-@DuplicatePlateVehicleVin = TST{{RunId}}0105
+@ValidVehicleVin = TST{{RunId.toString().slice(-10)}}0101
+@InvalidYearVehicleVin = TST{{RunId.toString().slice(-10)}}0102
+@InvalidPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0103
+@InvalidMileageVehicleVin = TST{{RunId.toString().slice(-10)}}0104
+@DuplicatePlateVehicleVin = TST{{RunId.toString().slice(-10)}}0105
 @SeedVehicleVin = WVWZZZAUZJW123456
+@FixtureCustomerEmail = vehicles.create.validation.{{RunId}}@example.test
 
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin for create validation tests (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create a fixture customer to own the vehicles below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Vehicle",
+  "middleName": null,
+  "lastName": "Validation",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
 ### [Negative][Vehicles] Create vehicle with missing required fields (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -32,10 +72,12 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with invalid year (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -50,10 +92,12 @@ Content-Type: application/json
   "drivetrainType": "Diesel"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with non-European script in plate (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -68,10 +112,12 @@ Content-Type: application/json
   "drivetrainType": "Hybrid"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with negative mileage (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -86,10 +132,12 @@ Content-Type: application/json
   "drivetrainType": "PHEV"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with invalid VIN format (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -104,16 +152,18 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with unsupported drivetrain type (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
   "licensePlate": "BAD-DRV",
-  "vin": "TST{{RunId}}0106",
+  "vin": "TST{{RunId.toString().slice(-10)}}0106",
   "brand": "Skoda",
   "model": "Octavia",
   "year": 2020,
@@ -122,10 +172,12 @@ Content-Type: application/json
   "drivetrainType": "Hydrogen"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with duplicate license plate (409 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -140,10 +192,12 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 409
+
 ###
 
 ### [Negative][Vehicles] Create vehicle with duplicate VIN conflict (409 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -157,3 +211,13 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Petrol"
 }
+
+?? status == 409
+
+###
+
+### [Cleanup][Vehicles] Delete the fixture customer created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

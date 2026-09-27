@@ -7,7 +7,6 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@SomePartId = 1
 @NonExistentCatalogId = 999999999
 
 # ─────────────────────────────────────────────────────────────
@@ -22,6 +21,8 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Setup][QuoteLines] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
@@ -35,6 +36,25 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
   exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
 }}
 
+?? status == 200
+
+###
+
+### [Setup][QuoteLines] Create a disposable part fixture for the catalog line checks below (201 expected)
+# @name createdPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "partNumber": "ZZL{{RunId}}A",
+  "name": "Quote Line Fixture Part",
+  "netUnitPrice": 1234,
+  "vatRatePercent": 27
+}
+
+?? status == 201
+
 ###
 
 ### [Setup][QuoteLines] Create a draft quote fixture for line validation (201 expected)
@@ -47,9 +67,11 @@ Content-Type: application/json
   "title": "Quote Line Fixture {{RunId}}"
 }
 
+?? status == 201
+
 ###
 
-### [Positive][QuoteLines] Add catalog part line with no override (201 expected, snapshot fills description/price/VAT from Part {{SomePartId}}, D40)
+### [Positive][QuoteLines] Add catalog part line with no override (201 expected, snapshot fills description/price/VAT from the disposable Part fixture, D40)
 # @name catalogLine
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
@@ -58,9 +80,11 @@ Content-Type: application/json
 {
   "lineKind": "Part",
   "quantity": 1,
-  "partId": {{SomePartId}},
+  "partId": {{createdPart.id}},
   "version": {{draftQuote.version}}
 }
+
+?? status == 201
 
 ###
 
@@ -73,10 +97,12 @@ Content-Type: application/json
 {
   "lineKind": "Part",
   "quantity": 1,
-  "partId": {{SomePartId}},
+  "partId": {{createdPart.id}},
   "netUnitPrice": 4321,
   "version": {{catalogLine.version}}
 }
+
+?? status == 201
 
 ###
 
@@ -91,6 +117,8 @@ Content-Type: application/json
   "version": {{overrideLine.version}}
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][QuoteLines] Add line with a non-existent PartId (404 expected; a non-existent LaborTypeId shares the same lookup path)
@@ -104,6 +132,8 @@ Content-Type: application/json
   "partId": {{NonExistentCatalogId}},
   "version": {{overrideLine.version}}
 }
+
+?? status == 404
 
 ###
 
@@ -121,6 +151,8 @@ Content-Type: application/json
   "version": {{overrideLine.version}}
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][QuoteLines] Quantity over the 10,000 cap is rejected (422 expected, D24)
@@ -137,6 +169,8 @@ Content-Type: application/json
   "version": {{overrideLine.version}}
 }
 
+?? status == 422
+
 ###
 
 ### [Setup][QuoteLines] Send the fixture quote, reusing its 2 existing lines (200 expected)
@@ -149,6 +183,8 @@ Content-Type: application/json
   "status": "Sent",
   "version": {{overrideLine.version}}
 }
+
+?? status == 200
 
 ###
 
@@ -165,3 +201,13 @@ Content-Type: application/json
   "vatRatePercent": 27,
   "version": {{sentQuote.version}}
 }
+
+?? status == 409
+
+###
+
+### [Cleanup][QuoteLines] Delete the disposable part fixture (204 expected, SetNull on delete leaves the quote's line snapshots intact, D4)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

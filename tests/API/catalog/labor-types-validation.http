@@ -17,6 +17,12 @@
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
 ### [Setup][LaborTypes] Login as admin for validation tests
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -26,6 +32,8 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+?? status == 200
 
 ###
 
@@ -41,6 +49,8 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][LaborTypes] Create labor type with missing name (422 expected)
@@ -54,6 +64,8 @@ Content-Type: application/json
   "hourlyNetRate": 100,
   "vatRatePercent": 27
 }
+
+?? status == 422
 
 ###
 
@@ -69,6 +81,8 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][LaborTypes] Create labor type with name over 120 characters (422 expected)
@@ -82,6 +96,8 @@ Content-Type: application/json
   "hourlyNetRate": 100,
   "vatRatePercent": 27
 }
+
+?? status == 422
 
 ###
 
@@ -97,6 +113,8 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][LaborTypes] Create labor type with hourly net rate over 100000000 (422 expected)
@@ -110,6 +128,8 @@ Content-Type: application/json
   "hourlyNetRate": 100000000.01,
   "vatRatePercent": 27
 }
+
+?? status == 422
 
 ###
 
@@ -125,6 +145,8 @@ Content-Type: application/json
   "vatRatePercent": 10
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][LaborTypes] Create labor type with duplicate code matching seeded key (409 expected)
@@ -138,6 +160,8 @@ Content-Type: application/json
   "hourlyNetRate": 100,
   "vatRatePercent": 27
 }
+
+?? status == 409
 
 ###
 
@@ -153,6 +177,8 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 409
+
 ###
 
 ### [Negative][LaborTypes] Update non-existent labor type (404 expected)
@@ -167,8 +193,12 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 404
+
 ###
 
 ### [Negative][LaborTypes] Delete non-existent labor type (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentLaborTypeId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404

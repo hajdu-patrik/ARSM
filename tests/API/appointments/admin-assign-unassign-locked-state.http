@@ -1,0 +1,189 @@
+# ── Admin Assign / Unassign — Completed/Cancelled Lockout ────────────────────
+# Split out of admin-assign-unassign.http to stay under the 250-line file limit.
+# AdminAssignAsync/AdminUnassignAsync (AppointmentEndpoints.Mutations.cs) reject any assign/unassign
+# once an appointment is Completed or Cancelled, before even checking whether the target mechanic is
+# already assigned. CompletedApptId/CancelledApptId are created with two mechanics so the disposable
+# secondary mechanic is never the sole assignee on either — it stays deletable at the end even though
+# neither appointment's mechanic list can ever change again once locked.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@SecondaryMechanicEmail = appt.assign.locked.{{RunId}}@example.test
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints, 200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+@AdminMechanicId = {{adminLogin.personId}}
+
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Register disposable secondary mechanic for the fixture appointments (200 expected)
+# @name secondaryMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "ApptAssign",
+  "lastName": "Locked",
+  "email": "{{SecondaryMechanicEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+@SecondaryMechanicId = {{secondaryMechanic.personId}}
+
+### [Setup][Appointments] Create appointment with both mechanics for the completed-state checks (201 expected)
+# @name completedApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Assign/unassign fixture: completed appointment",
+  "mechanicIds": [{{AdminMechanicId}}, {{SecondaryMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@CompletedApptId = {{completedApptCreate.id}}
+
+### [Setup][Appointments] Move the fixture appointment to Completed (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create appointment with both mechanics for the cancelled-state checks (201 expected)
+# @name cancelledApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Assign/unassign fixture: cancelled appointment",
+  "mechanicIds": [{{AdminMechanicId}}, {{SecondaryMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@CancelledApptId = {{cancelledApptCreate.id}}
+
+### [Setup][Appointments] Move the fixture appointment to Cancelled (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
+# Expected error code: appointment_completed.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_completed
+###
+
+### [Negative][Appointments] Admin unassign mechanic from completed appointment (422 expected)
+# Expected error code: appointment_completed.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_completed
+###
+
+### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
+# Expected error code: appointment_cancelled.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_cancelled
+###
+
+### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
+# Expected error code: appointment_cancelled.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_cancelled
+###
+
+### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
+# Safe: SecondaryMechanicId keeps company with AdminMechanicId on both fixture appointments (count 2
+# each), so the deletion invariant in AdminEndpoints.Handlers.cs never blocks it, even though the
+# appointments themselves are locked forever and cannot have their mechanic list changed again.
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200

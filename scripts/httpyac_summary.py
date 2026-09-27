@@ -120,3 +120,75 @@ def _extract_json_payload(output: str) -> dict[str, object] | None:
             return payload
 
     return None
+
+def extract_failed_http_requests(output: str, limit: int = 400) -> list[dict[str, object]]:
+    """Return the failed or errored HTTPYAC requests (file, line, title, status, failing test messages).
+
+    Only identifying metadata leaves this function - never request/response bodies or headers - so
+    the sanitized summary can name which case broke without carrying cookies or payloads.
+    """
+    payload = _extract_httpyac_payload(output)
+    requests = payload.get("requests") if isinstance(payload, dict) else None
+    if not isinstance(requests, list):
+        return _extract_failed_http_requests_with_regex(output, limit)
+
+    failed: list[dict[str, object]] = []
+    for request in requests:
+        if not isinstance(request, dict):
+            continue
+        tests = request.get("testResults") if isinstance(request.get("testResults"), list) else []
+        broken = [test for test in tests if isinstance(test, dict) and test.get("status") in ("FAILED", "ERROR")]
+        if not broken:
+            continue
+        response = request.get("response") if isinstance(request.get("response"), dict) else {}
+        failed.append({
+            "file": str(request.get("fileName", "")).replace("\\", "/"),
+            "line": request.get("line"),
+            "title": request.get("title") or request.get("name"),
+            "actualStatus": response.get("statusCode"),
+            "failedTests": [str(test.get("message", ""))[:200] for test in broken],
+        })
+        if len(failed) >= limit:
+            break
+    return failed
+
+
+REQUEST_SEGMENT_START = re.compile(r'"fileName"\s*:\s*"')
+SEGMENT_FILE = re.compile(r'^"fileName"\s*:\s*"(?P<file>[^"]*)"')
+SEGMENT_LINE_TITLE = re.compile(r'"line"\s*:\s*(?P<line>\d+)\s*,\s*"title"\s*:\s*(?P<title>"(?:[^"\\]|\\.)*"|null)')
+SEGMENT_STATUS = re.compile(r'"statusCode"\s*:\s*(?P<status>\d+)')
+SEGMENT_BROKEN_TEST = re.compile(r'"message"\s*:\s*"(?P<message>(?:[^"\\]|\\.)*)"\s*,\s*"status"\s*:\s*"(?:FAILED|ERROR)"')
+
+
+def _extract_failed_http_requests_with_regex(output: str, limit: int) -> list[dict[str, object]]:
+    """Fallback for output whose JSON the secret sanitizer broke.
+
+    The runner asks HTTPYAC to list only failed requests (``--filter only-failed``), so every request
+    entry found here is a failure. The output is cut into one segment per request entry (each starts
+    at its ``"fileName"`` key) and every field is read inside its own segment, so a missing field can
+    never be borrowed from the next request.
+    """
+    starts = [match.start() for match in REQUEST_SEGMENT_START.finditer(output)]
+    failed: list[dict[str, object]] = []
+    for index, start in enumerate(starts):
+        segment = output[start:starts[index + 1] if index + 1 < len(starts) else len(output)]
+        file_match = SEGMENT_FILE.match(segment)
+        line_title = SEGMENT_LINE_TITLE.search(segment)
+        if not file_match or not line_title:
+            continue
+        raw_title = line_title.group("title")
+        try:
+            title = json.loads(raw_title)
+        except json.JSONDecodeError:
+            title = raw_title.strip('"')
+        status = SEGMENT_STATUS.search(segment)
+        failed.append({
+            "file": file_match.group("file").replace("\\", "/"),
+            "line": int(line_title.group("line")),
+            "title": title,
+            "actualStatus": int(status.group("status")) if status else None,
+            "failedTests": [match.group("message")[:200] for match in SEGMENT_BROKEN_TEST.finditer(segment)][:5],
+        })
+        if len(failed) >= limit:
+            break
+    return failed

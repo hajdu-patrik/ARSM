@@ -4,19 +4,58 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonExistentCustomerId = 99999
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeedCustomerId = 1
 @RunId = {{$timestamp}}
-@GhostVehicleVin = TST{{RunId}}0201
-@NonAdminVehicleVin = TST{{RunId}}0202
+@GhostVehicleVin = TST{{RunId.toString().slice(-10)}}0201
+@NonAdminVehicleVin = TST{{RunId.toString().slice(-10)}}0202
+@FixtureCustomerEmail = vehicles.create.authz.{{RunId}}@example.test
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Case][Vehicles] POST /api/customers/{{NonExistentCustomerId}}/vehicles
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
+###
+
+### [Setup][Vehicles] Login as admin for setup (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create a fixture customer to own the vehicle below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Vehicle",
+  "middleName": null,
+  "lastName": "CreateAuthz",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Negative][Vehicles] POST /api/customers/{{NonExistentCustomerId}}/vehicles (404 expected: GhostVehicleVin is a syntactically valid 17-char VIN, so body validation passes and the route-id existence lookup is reached)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,6 +71,8 @@ Content-Type: application/json
   "drivetrainType": "Electric"
 }
 
+?? status == 404
+
 ###
 
 ### [Setup][Vehicles] Logout admin, login as non-admin for write check
@@ -40,7 +81,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Vehicles] Login as non-admin mechanic
+### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -50,10 +91,13 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Vehicles] Non-admin can create vehicle (201 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+# @name createdByNonAdmin
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -67,3 +111,13 @@ Content-Type: application/json
   "enginePowerKw": 74,
   "drivetrainType": "Petrol"
 }
+
+?? status == 201
+
+###
+
+### [Cleanup][Vehicles] Non-admin deletes the fixture customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

@@ -1,18 +1,80 @@
 # ─────────────────────────────────────────────────────────────
 #  AUTH – Session Lifecycle (cookie-based)
 # ─────────────────────────────────────────────────────────────
+# Verified against AuthEndpoints.Login/Refresh/Logout/Validate.cs before writing this file:
+# - Login sets both auth cookies and returns 200; Validate requires the access-token cookie (401
+#   without it); Refresh rotates both cookies from the refresh-token cookie and returns 204, or 401
+#   when the cookie is missing/unknown/expired; Logout revokes the refresh token, denylists the
+#   current access-token JTI, and clears both cookies, returning 204 - so a stale cookie replayed
+#   after logout is rejected on both Validate and Refresh.
+# - The [Manual] blocks below intentionally stay non-executing: tripping AuthRefreshAttempts (20/min),
+#   AuthLoginAttempts (10/min in production; raised in Development, see Program.cs) or the 5-attempt/
+#   15-minute lockout here would make this file fail its own later blocks and could ban the client
+#   running the rest of the suite.
+# This file provisions its own throwaway mechanic (own {{$timestamp}} suffix) instead of depending on
+# another file's fixtures surviving, and deletes it again at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @MatrixRunSuffix = {{$timestamp}}
-@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+@MatrixEmailWithPhone = session.lifecycle.{{MatrixRunSuffix}}@example.test
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Positive][Session] Login before validate/refresh/logout chain
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin Session] Login as admin to provision the session-lifecycle mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Register] Throwaway mechanic for the session-lifecycle chain (200 expected)
+# @name regSessionMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Session",
+  "lastName": "Lifecycle",
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+### [Setup][Admin Session] Logout admin before the session-lifecycle chain (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Positive][Session] Login before validate/refresh/logout chain (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -22,16 +84,22 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Session] Validate authenticated session (requires login cookie)
+### [Positive][Session] Validate authenticated session (200 expected; requires login cookie)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 200
 
 ###
 
 ### [Positive][Session] Refresh authenticated session (204 expected; requires refresh cookie)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
@@ -63,10 +131,14 @@ Origin: {{WebUI_Origin}}
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
 ### [Negative][Session] Validate after logout (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 401
 
 ###
 
@@ -74,8 +146,34 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
 
+?? status == 401
+
 ###
 
 ### [Negative][Session] Logout without active access cookie (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+
+?? status == 401
+
+###
+
+### [Setup][Cleanup] Login as admin again to delete the throwaway mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the session-lifecycle mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regSessionMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200

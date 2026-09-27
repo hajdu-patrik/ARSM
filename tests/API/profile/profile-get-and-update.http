@@ -1,53 +1,23 @@
 # ─────────────────────────────────────────────────────────────
-# PROFILE - GET & UPDATE
+# PROFILE - GET & UPDATE (HAPPY PATH)
 # ─────────────────────────────────────────────────────────────
+# Duplicate-email/phone and invalid-format conflict checks split out to the sibling
+# profile-update-conflicts.http (same disposable-mechanic naming convention) to stay <= 250 lines.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
-@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
-@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@MatrixRunSuffix = {{$timestamp}}
 @ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@ProfileConflictEmail = profile.conflict.{{MatrixRunSuffix}}@example.test
-@ProfileConflictPhoneSuffix = {{$randomInt 1000000 9999999}}
-@ProfileConflictPhone = +3630{{ProfileConflictPhoneSuffix}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@ProfileRunId = {{$timestamp}}
+@PhoneTail = {{ProfileRunId.toString().slice(-6)}}
+@PhoneTail7 = {{ProfileRunId.toString().slice(-7)}}
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Profile] Login as admin to seed profile conflict identity
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-###
-
-### [Setup][Profile] Register mechanic used for duplicate email/phone profile validation
-POST {{AutoService_ApiService_HostAddress}}/api/auth/register
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "firstName": "Profile",
-  "lastName": "Conflict",
-  "email": "{{ProfileConflictEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "{{ProfileConflictPhone}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
-
-###
-
-### [Setup][Profile] Logout admin before mechanic profile checks
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
@@ -63,14 +33,18 @@ Content-Type: application/json
   "password": "{{ProfileCurrentPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Profile] Get own profile
+### [Positive][Profile] Get own profile (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile
 
+?? status == 200
+
 ###
 
-### [Positive][Profile] Update own profile (middle name only)
+### [Positive][Profile] Update own profile (middle name only) (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -81,9 +55,11 @@ Content-Type: application/json
   "middleName": "TestMiddle"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Profile] Update first and last name
+### [Positive][Profile] Update first and last name (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -93,9 +69,11 @@ Content-Type: application/json
   "lastName": "UpdatedLast"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Profile] Update all name fields together
+### [Positive][Profile] Update all name fields together (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -106,81 +84,27 @@ Content-Type: application/json
   "lastName": "UpdatedLast"
 }
 
-###
-
-### [Negative][Profile] Update with duplicate email validation (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{ProfileConflictEmail}}"
-}
+?? status == 200
 
 ###
 
-### [Negative][Profile] Update with duplicate phone validation (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "{{ProfileConflictPhone}}"
-}
-
-###
-
-### [Negative][Profile] Update with invalid email format (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "invalid-email-format"
-}
-
-###
-
-### [Negative][Profile] Update with invalid European phone format (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "12345"
-}
-
-###
-
-### [Negative][Profile] Update with empty firstName (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "firstName": "   "
-}
-
-###
-
-### [Negative][Profile] Update with empty lastName (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "lastName": ""
-}
-
-###
-
-### [Positive][Profile] Update phone with local format (default region normalization)
+### [Positive][Profile] Update phone with local format (default region normalization) (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
   "email": null,
-  "phoneNumber": "301112233",
+  "phoneNumber": "304{{PhoneTail}}",
   "middleName": "TestMiddle"
 }
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Logout after happy-path profile checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204

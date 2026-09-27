@@ -10,7 +10,13 @@
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Origin] Login establishes auth cookies
+### [Setup][Origin] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Origin] Login establishes auth cookies (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -20,16 +26,22 @@ Content-Type: application/json
   "password": "{{OriginProofPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Origin] Safe authenticated validation does not require Origin
+### [Positive][Origin] Safe authenticated validation does not require Origin (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
+?? status == 200
+
 ###
 
-### [Positive][Origin] Unsafe authenticated refresh accepts configured WebUI Origin
+### [Positive][Origin] Unsafe authenticated refresh accepts configured WebUI Origin (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
@@ -37,7 +49,19 @@ Origin: {{WebUI_Origin}}
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: https://evil.example.test
 
+?? status == 403
+
 ###
 
 ### [Negative][Origin] Unsafe authenticated logout rejects missing Origin (403 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+
+?? status == 403
+
+###
+
+### [Setup][Origin] Logout with the correct Origin (204 expected, cleanup)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204

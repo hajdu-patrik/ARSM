@@ -1,6 +1,16 @@
 # ─────────────────────────────────────────────────────────────
 # PROFILE - PROFILE PICTURE
 # ─────────────────────────────────────────────────────────────
+# Verified against ProfileEndpoints.ProfilePicture.cs: GetProfilePictureAsync/GetMechanicProfilePictureAsync
+# return 404 immediately when the target has no ProfilePictureObjectKey, without ever inspecting
+# If-None-Match - so a conditional GET against an account with no stored picture never answers 304,
+# regardless of the If-None-Match value sent. This file never uploads a picture (multipart upload,
+# ETag/re-encode and the stored-format contract live in profile-picture-upload-check.py, run by the
+# local test runner after HTTPYAC per the [Note] block below), so a genuine ETag-match 304 round trip
+# is not covered here - see the "Decisions for the user" note in the work summary.
+# GetMechanicProfilePictureAsync forbids a non-admin from any personId other than their own
+# (httpContext.User.IsInRole("Admin") or currentPerson.Id == personId), so both person-id targets
+# below are resolved from login responses instead of a hardcoded seed id.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -8,14 +18,42 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@MechanicPersonIdForPicture = 7
 @NonExistentPersonId = 99999
-@ProfilePictureEtag = "REPLACE_WITH_ETAG_FROM_PREVIOUS_200_RESPONSE"
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Profile] Login as admin first, capture the admin's own person id
+# @name adminPictureLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Logout admin before the non-admin mechanic session
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Profile] Login as non-admin mechanic, capture their own person id
+# @name nonAdminPictureLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -25,28 +63,44 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Profile] Get profile picture (200 or 404 if none)
-# When 200: expect response headers ETag, Cache-Control: private, max-age=3600, and Vary: Cookie, Authorization
+### [Positive][Profile] Get own profile picture (200/304 if a picture exists, 404 if none)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
+?? status != 401
+?? status != 403
+?? status < 500
+
 ###
 
-### [Positive][Profile] Conditional get profile picture by ETag (304 expected when ETag matches)
+### [Positive][Profile] Conditional get own profile picture with a non-matching ETag
+# Never 304 here: the placeholder If-None-Match value cannot match a real stored ETag, and when no
+# picture exists the handler returns 404 before If-None-Match is even read.
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
-If-None-Match: {{ProfilePictureEtag}}
+If-None-Match: "no-picture-uploaded-by-this-file"
+
+?? status != 304
+?? status != 401
+?? status != 403
+?? status < 500
 
 ###
 
-### [Negative][Profile] Non-admin cannot get another mechanic profile picture by person id (403 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+### [Negative][Profile] Non-admin cannot get the admin's profile picture by person id (403 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{adminPictureLogin.personId}}
+
+?? status == 403
 
 ###
 
 ### [Setup][Profile] Logout non-admin before admin picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
@@ -60,26 +114,42 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
-###
-
-### [Positive][Profile] Admin can get mechanic profile picture by person id (200 or 404 if none)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+?? status == 200
 
 ###
 
-### [Positive][Profile] Admin conditional get mechanic profile picture by ETag (304 expected when ETag matches)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
-If-None-Match: {{ProfilePictureEtag}}
+### [Positive][Profile] Admin can get the mechanic's profile picture by person id (200/304 if a picture exists, 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
+
+?? status != 401
+?? status != 403
+?? status < 500
+
+###
+
+### [Positive][Profile] Admin conditional get with a non-matching ETag (never 304, see file header)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
+If-None-Match: "no-picture-uploaded-by-this-file"
+
+?? status != 304
+?? status != 401
+?? status != 403
+?? status < 500
 
 ###
 
 ### [Negative][Profile] Get profile picture for non-existent person id (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPersonId}}
 
+?? status == 404
+
 ###
 
 ### [Manual][Profile] Open realtime profile picture updates stream (authorized SSE)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
+# SSE streams never complete a normal HTTP response, so this is not run automatically.
+# Verify manually: GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates while
+# authenticated, then trigger a picture upload/delete from another session and confirm a
+# "profile-picture-updated" event arrives.
 
 ###
 
@@ -96,9 +166,11 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates
 
 ###
 
-### [Positive][Profile] Remove profile picture
+### [Positive][Profile] Remove own (admin) profile picture (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
+
+?? status == 200
 
 ###
 
@@ -106,18 +178,28 @@ Origin: {{WebUI_Origin}}
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
 ### [Negative][Profile] Unauthenticated get profile picture (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
+?? status == 401
+
 ###
 
 ### [Negative][Profile] Unauthenticated get profile picture by person id (401 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicPersonIdForPicture}}
+# Any integer id works: the group's RequireAuthorization answers 401 before the handler loads the person,
+# and a fixed id keeps this check independent of whether an earlier login in this file succeeded.
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/999999
+
+?? status == 401
 
 ###
 
 ### [Negative][Profile] Unauthenticated delete profile picture (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
+
+?? status == 401

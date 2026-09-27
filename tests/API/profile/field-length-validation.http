@@ -1,0 +1,155 @@
+# ─────────────────────────────────────────────────────────────
+# PROFILE - FIELD LENGTH VALIDATION (update & change-password)
+# ─────────────────────────────────────────────────────────────
+# FieldLengthValidator caps: Email 150, FirstName/MiddleName/LastName 50, PhoneNumber 20
+# (UpdateProfileAsync); CurrentPassword/NewPassword/ConfirmNewPassword 128 (ChangePasswordAsync).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
+@Over150LocalPart = lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+@Over20Phone = +491511234567890123456
+@Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{ProfileMechanicEmail}}",
+  "password": "{{ProfileCurrentPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Profile] Update firstName over 50 chars rejected (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "{{Over50Name}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update lastName over 50 chars rejected (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lastName": "{{Over50Name}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update middleName over 50 chars rejected (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "middleName": "{{Over50Name}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update email over 150 chars rejected (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{Over150LocalPart}}@example.test"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update phoneNumber over 20 chars rejected (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{Over20Phone}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Change password with currentPassword over 128 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{Over128Password}}",
+  "newPassword": "Valid-New-Password1!",
+  "confirmNewPassword": "Valid-New-Password1!"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Change password with newPassword over 128 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{ProfileCurrentPassword}}",
+  "newPassword": "{{Over128Password}}",
+  "confirmNewPassword": "{{Over128Password}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Change password with confirmNewPassword over 128 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{ProfileCurrentPassword}}",
+  "newPassword": "Valid-New-Password1!",
+  "confirmNewPassword": "{{Over128Password}}"
+}
+
+?? status == 400
+
+###
+
+### [Setup][Profile] Logout after field-length validation checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###

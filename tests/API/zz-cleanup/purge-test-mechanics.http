@@ -1,0 +1,119 @@
+# ─────────────────────────────────────────────────────────────
+# ZZ-CLEANUP - PURGE LEFTOVER TEST MECHANICS
+# ─────────────────────────────────────────────────────────────
+# One-off + recurring safety net: every other suite is now self-provisioning and self-deleting (see
+# tests/API/admin/delete-invariants.http, tests/API/auth/register-*.http, tests/API/profile/*.http,
+# tests/API/appointments/admin-*.http), but a run that dies mid-file (killed process, network drop,
+# an earlier assertion aborting before that file's own DELETE step) can still leave a disposable
+# mechanic behind. This file re-lists every mechanic and deletes only the ones a fixture in this
+# suite could plausibly have created and failed to clean up.
+#
+# Ordering caveat (verified, not assumed - same finding tests/API/_setup/ensure-test-accounts.http
+# documents): the runner invokes npx httpyac tests/API/**/*.http --all ...
+# (scripts/run-local-test-suite.py). Reading the pinned httpyac 6.16.7 bundle
+# (httpyac/dist/index.js) shows the CLI drains the resolved file list with exactly one worker
+# (Ss(e.parallel||1,...), and --parallel is never passed by the runner), so files run one at a
+# time, in whatever order globby(pattern, { gitignore: true }) produced - and that base order is
+# NOT stable: probing the same glob against this suite's own folders repeatedly (real requests, then
+# again against instantly-failing localhost requests to rule out network jitter) returned a
+# different folder order almost every run, because fast-glob/fdir walks sibling directories
+# concurrently and appends results as each directory read settles. "zz-cleanup" sorting after every
+# other folder name alphabetically does not guarantee httpyac resolves it last - no folder name can
+# guarantee that under this mechanism, and neither can "_setup" sorting first (see that file's own
+# comment for the same measurement from the other end of the suite). This file is written to not
+# depend on running last: it only ever matches rows a fixture explicitly self-provisioned (see the
+# filter below), so running early just finds nothing yet to purge, and running mid-suite only removes
+# a fixture already abandoned by a prior, incomplete run - never one another file still in flight is
+# relying on, because httpyac's single-worker draining means no other file's requests execute
+# concurrently with this one.
+#
+# @loop support (verified, not assumed): httpyac/dist/index.js metadata parser matches @loop against
+# a "for X of Y" regex and evaluates the captured iterable text as a JavaScript expression with every
+# httpFile variable (including named responses such as mechanics below) spread into scope - the same
+# mechanism {{seedCustomers.find(...)}} elsewhere in this suite relies on. The pinned 6.16.7 supports
+# "@loop for x of y" directly, so no substitution is needed.
+#
+# Status assertion (per loop delete, "?? status != 500" only, never a stronger code): verified against
+# AdminEndpoints.Handlers.cs (DeleteMechanicAsync / ValidateMechanicDeletionInvariantsAsync), the same
+# invariants tests/API/admin/delete-invariants.http exercises directly - self-delete and admin-role are
+# 403, the last-mechanic and sole-assignment guards are 422, and a concurrency race is 409. A leftover
+# mechanic from another file can legitimately trip any of these (for example if it is still a sole
+# appointment assignee), and that must not fail this cleanup run; only a genuine 500 should.
+#
+# Filter (defensive, layered): a mechanic is purged only if its email ends with "@example.test" (no
+# demo mechanic - Data/DemoDataInitializer.cs seeds only @example.com addresses - and no admin/customer
+# account ever uses this domain), AND its email starts with one of the prefixes literally used by this
+# suite's own fixtures (grepped from tests/API/**/*.http below, not assumed from an older list), AND it
+# is not the shared ARSM_TEST_MECHANIC_EMAIL account, AND it does not carry the Admin role. The prefix
+# list mirrors both fixtures a file already deletes itself (defence in depth against a run dying in
+# between) and fixtures a file's own validation case expects to be rejected before any row is created
+# (defence against a future backend regression that would let one through):
+#   matrix.                 auth/login-positive-matrix.http, login-positive-phone-matrix.http,
+#                            login-negative-matrix.http, register-admin-setup-and-positive.http
+#   appt.                    appointments/admin-create-update-happy.http, admin-assign-unassign.http,
+#                            admin-assign-unassign-locked-state.http
+#   delete.mechanic.         admin/delete-invariants.http
+#   login.negmatrix.         auth/login-negative-matrix.http
+#   duplicate.rules.target.  auth/register-duplicate-and-domain-rules.http
+#   duplicate.phone.         auth/register-duplicate-and-domain-rules.http (rejected, no row today)
+#   bad.phone.               auth/register-duplicate-and-domain-rules.http (rejected, no row today)
+#   bad.expertise.           auth/register-validation-and-nonadmin-authz.http (rejected, no row today)
+#   customer.should.fail.    auth/register-validation-and-nonadmin-authz.http (rejected, no row today)
+#   name.                    auth/register-validation-and-nonadmin-authz.http (rejected, no row today)
+#   lastname.                auth/register-validation-and-nonadmin-authz.http, field-length-validation.http (rejected)
+#   middlename.              auth/register-validation-and-nonadmin-authz.http, field-length-validation.http (rejected)
+#   firstname.toolong.       auth/field-length-validation.http (rejected, no row today)
+#   phone.toolong.           auth/field-length-validation.http (rejected, no row today)
+#   password.toolong.        auth/field-length-validation.http (rejected, no row today)
+#   blocked.nonadmin.        auth/register-validation-and-nonadmin-authz.http (rejected, no row today)
+#   blocked.unauth.          auth/register-admin-setup-and-positive.http (rejected, no row today)
+#   profile.conflict.        profile/profile-update-conflicts.http
+#   profile.delete.          profile/account-delete.http (self-deletes; kept as a backstop)
+#   session.lifecycle.       auth/session-lifecycle.http
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Cleanup] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Cleanup] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] List every mechanic (200 expected)
+# @name mechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 200
+
+###
+
+### [Cleanup] Delete every leftover test-fixture mechanic still matching the filter above
+# @loop for leftoverMechanic of mechanics.filter(m => !m.isAdmin && m.email.toLowerCase() !== MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test") && ["matrix.","appt.","delete.mechanic.","login.negmatrix.","duplicate.rules.target.","duplicate.phone.","bad.phone.","bad.expertise.","customer.should.fail.","name.","lastname.","middlename.","firstname.toolong.","phone.toolong.","password.toolong.","blocked.nonadmin.","blocked.unauth.","profile.conflict.","profile.delete.","session.lifecycle."].some(p => m.email.toLowerCase().startsWith(p)))
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{leftoverMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+# Never a stronger assertion here (see the header comment): DeleteMechanicAsync legitimately answers
+# 403 (self/admin-role), 404 (already gone), 409 (concurrency) or 422 (last-mechanic/sole-assignment)
+# for a leftover this file did not create context for, and none of those should fail this cleanup run.
+?? status != 500

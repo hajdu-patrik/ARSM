@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Sequence
 from urllib.parse import unquote, urlparse
 
-from httpyac_summary import extract_http_summary
+from httpyac_summary import extract_failed_http_requests, extract_http_summary
 # Re-exported: migrate-profile-pictures-to-object-storage.py reaches these through this module.
 from test_suite_secrets import POSTGRES_URI_PATTERN, EnvironmentLoader, OutputSanitizer
 
@@ -196,12 +196,15 @@ class LocalTestRunner:
 
         result = self.command_runner.run(
             "http",
-            [npx, "--yes", "httpyac", "tests/API/**/*.http", "--all", "--json"],
+            [npx, "--yes", "httpyac", "tests/API/**/*.http", "--all", "--json", "--output", "short", "--output-failed", "short", "--filter", "only-failed"],
             self.root_dir,
             environment,
         )
 
         details = extract_http_summary(result.stdout)
+        failed_requests = extract_failed_http_requests(result.stdout)
+        if failed_requests:
+            details["failedHttpRequests"] = failed_requests
         checks_passed = True
         output = result.stdout + result.stderr
 

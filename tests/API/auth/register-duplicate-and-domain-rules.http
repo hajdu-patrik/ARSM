@@ -1,20 +1,39 @@
 # ─────────────────────────────────────────────────────────────
 # AUTH - REGISTER DUPLICATE AND DOMAIN RULES
 # ─────────────────────────────────────────────────────────────
+# Verified against AuthEndpoints.Register.cs before writing this file:
+# - /api/auth/register is AdminOnly, so every case here runs with an admin session already
+#   established, or the authorization check would answer 401 before RegisterAsync ever runs.
+# - Every conflict path (duplicate email in Identity/People, duplicate phone in Identity/People)
+#   answers the same generic ValidationProblem (key "register", GenericRegistrationFailureMessage) -
+#   an anti-enumeration response, so the API never tells a caller *which* field collided.
+# - This file provisions its own "duplicate phone" target mechanic instead of depending on another
+#   file's fixture staying alive across the whole suite run, and deletes it again at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@MatrixRunSuffix = {{$timestamp}}
+@RunId = {{$timestamp}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@PhoneTail = {{RunId.toString().slice(-6)}}
+@PhoneTail7 = {{RunId.toString().slice(-7)}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
-@MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
+@DuplicateTargetEmail = duplicate.rules.target.{{RunId}}@example.test
+@DuplicateTargetPhone = +36 30 5{{PhoneTail}}
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks
+### [Setup][Admin Session] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -24,29 +43,33 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Case][Auth] POST /api/auth/register
-
+### [Setup][Register] Create the mechanic that later cases collide with (200 expected)
+# @name duplicateTarget
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
   "firstName": "Duplicate",
-  "lastName": "Email",
-  "email": "{{MatrixEmailWithPhone}}",
+  "lastName": "Target",
+  "email": "{{DuplicateTargetEmail}}",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "+36309998888",
+  "phoneNumber": "{{DuplicateTargetPhone}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (400 expected)
-# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
+# Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -61,10 +84,12 @@ Content-Type: application/json
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 400
+
 ###
 
-### [Negative][Register][Admin] Duplicate phone in another valid input format
-# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
+### [Negative][Register][Admin] Duplicate phone in another valid input format (400 expected)
+# Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -72,18 +97,20 @@ Content-Type: application/json
 {
   "firstName": "Duplicate",
   "lastName": "Phone",
-  "email": "duplicate.phone.{{MatrixRunSuffix}}@example.test",
+  "email": "duplicate.phone.{{RunId}}@example.test",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "+36 30 777 0991",
+  "phoneNumber": "+36305{{PhoneTail}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 400
+
 ###
 
-### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace
-# Expected ValidationProblem key: errors.register (generic anti-enumeration response).
+### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace (400 expected)
+# Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -91,17 +118,19 @@ Content-Type: application/json
 {
   "firstName": "Duplicate",
   "lastName": "PhoneWhitespace",
-  "email": "duplicate.phone.whitespace.{{MatrixRunSuffix}}@example.test",
+  "email": "duplicate.phone.whitespace.{{RunId}}@example.test",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "   06 30 777 0991   ",
+  "phoneNumber": "   06 30 5{{PhoneTail}}   ",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 400
+
 ###
 
-### [Negative][Register][Admin] Invalid email format
+### [Negative][Register][Admin] Invalid email format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -116,9 +145,11 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 400
+
 ###
 
-### [Negative][Register][Admin] Invalid phone format
+### [Negative][Register][Admin] Invalid phone format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -126,10 +157,20 @@ Content-Type: application/json
 {
   "firstName": "Bad",
   "lastName": "Phone",
-  "email": "bad.phone.{{MatrixRunSuffix}}@example.test",
+  "email": "bad.phone.{{RunId}}@example.test",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
   "phoneNumber": "12345",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine"]
 }
+
+?? status == 400
+
+###
+
+### [Setup][Cleanup] Delete the duplicate-target mechanic created above (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{duplicateTarget.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200

@@ -6,10 +6,21 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SomeMechanicId = 8
+@UnknownMechanicId = 999999
+
+# UnknownMechanicId does not need to resolve to a real mechanic: RequireAuthorization("AdminOnly")
+# runs before DeleteMechanicAsync ever loads the target (AdminEndpoints.cs), so every check below
+# rejects on the policy gate, never on a 404. Using the shared non-existent-id sentinel means this
+# file never needs its own fixture or cleanup.
 
 
 # ─────────────────────────────────────────────────────────────
+
+### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
 
 ### [Setup][Admin] Login as non-admin for forbidden access check (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -21,16 +32,22 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Admin] Non-admin cannot list mechanics (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 
+?? status == 403
+
 ###
 
 ### [Negative][Admin] Non-admin cannot delete mechanic (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SomeMechanicId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 403
 
 ###
 
@@ -38,13 +55,19 @@ Origin: {{WebUI_Origin}}
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
 ### [Negative][Admin] Unauthenticated list mechanics (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 
+?? status == 401
+
 ###
 
 ### [Negative][Admin] Unauthenticated delete mechanic (401 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SomeMechanicId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 401

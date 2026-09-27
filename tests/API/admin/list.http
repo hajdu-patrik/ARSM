@@ -10,7 +10,13 @@
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Admin] Login as admin (session prerequisite)
+### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin] Login as admin (session prerequisite) (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -20,10 +26,14 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Admin] List all mechanics
+### [Positive][Admin] List all mechanics (200 expected)
 # Response items include isAdmin and hasProfilePicture.
 ### [Case][Admin] GET /api/admin/mechanics
 
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 200

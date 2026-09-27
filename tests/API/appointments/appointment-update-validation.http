@@ -2,19 +2,29 @@
 # APPOINTMENTS - APPOINTMENT UPDATE FIELD VALIDATION
 # ─────────────────────────────────────────────────────────────
 # Tests for PUT /api/appointments/{id} field-level validation.
-# Prerequisites: admin session cookie required.
+# ApptId is an appointment this file creates via the AdminOnly create endpoint so field validation is
+# reached instead of a 404; AdminMechanicId is the admin's own person_id. SeedVehicleVin is a
+# well-formed but otherwise made-up VIN used only where the request must merely pass VIN *format*
+# validation (drivetrain-type parsing runs before the VIN uniqueness check in
+# AppointmentEndpoints.Update.cs, so it never needs to belong to the fixture's actual vehicle).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@ApptId = 1
 @SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as admin (session prerequisite)
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin (session prerequisite, 200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -24,7 +34,47 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
+
+@AdminMechanicId = {{adminLogin.personId}}
+
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create the appointment under field-level validation test (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Update-field-validation fixture",
+  "mechanicIds": [{{AdminMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@ApptId = {{apptCreate.id}}
 
 ### [Negative][Appointments] Admin update rejects empty taskDescription (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
@@ -35,6 +85,8 @@ Content-Type: application/json
   "dueDateTime": "2026-04-25T16:00:00",
   "taskDescription": "   "
 }
+
+?? status == 422
 
 ###
 
@@ -47,6 +99,8 @@ Content-Type: application/json
   "dueDateTime": "2026-04-25T16:00:00",
   "taskDescription": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"
 }
+
+?? status == 422
 
 ###
 
@@ -61,6 +115,8 @@ Content-Type: application/json
   "taskDescription": "Due before scheduled date should be rejected"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Appointments] Admin vehicle update missing required fields (422 expected)
@@ -72,6 +128,8 @@ Content-Type: application/json
 {
   "brand": "Volkswagen"
 }
+
+?? status == 422
 
 ###
 
@@ -91,6 +149,8 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Appointments] Admin vehicle update rejects unsupported drivetrain type (422 expected)
@@ -108,3 +168,5 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Hydrogen"
 }
+
+?? status == 422

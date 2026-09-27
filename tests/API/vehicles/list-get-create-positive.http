@@ -7,18 +7,24 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@SeedCustomerId = 1
-@SeedVehicleId = 1
 @NonExistentCustomerId = 99999
 @NonExistentVehicleId = 99999
-@NewVehicleVin = TST{{RunId}}0001
-@LatinPlateVehicleVin = TST{{RunId}}0002
-@CyrillicPlateVehicleVin = TST{{RunId}}0003
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0000
+@NewVehicleVin = TST{{RunId.toString().slice(-10)}}0001
+@LatinPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0002
+@CyrillicPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0003
+@FixtureCustomerEmail = vehicles.list.get.create.{{RunId}}@example.test
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Vehicles] Login as admin (session prerequisite)
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (session prerequisite) (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -28,19 +34,64 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create a fixture customer to own the vehicles below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Vehicle",
+  "middleName": null,
+  "lastName": "Owner",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create a fixture vehicle for the customer (201 expected)
+# @name fixtureVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "LST-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
+  "mileageKm": 45000,
+  "enginePowerKw": 110,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 201
+
 ###
 
 # ─────────────────────────────────────────────────────────────
 #  LIST VEHICLES FOR CUSTOMER
 # ─────────────────────────────────────────────────────────────
 
-### [Positive][Vehicles] List vehicles for seeded customer (200 expected, includes vin/enginePowerKw/drivetrainType)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+### [Positive][Vehicles] List vehicles for the fixture customer (200 expected, includes vin/enginePowerKw/drivetrainType)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+
+?? status == 200
 
 ###
 
 ### [Negative][Vehicles] List vehicles for non-existent customer (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/vehicles
+
+?? status == 404
 
 ###
 
@@ -49,12 +100,16 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId
 # ─────────────────────────────────────────────────────────────
 
 ### [Positive][Vehicles] Get vehicle by id (200 expected, includes vin/enginePowerKw/drivetrainType and customer summary)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+
+?? status == 200
 
 ###
 
 ### [Negative][Vehicles] Get non-existent vehicle (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+
+?? status == 404
 
 ###
 
@@ -63,7 +118,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 # ─────────────────────────────────────────────────────────────
 
 ### [Positive][Vehicles] Admin creates vehicle for customer (201 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -78,10 +133,12 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Vehicles] Create vehicle with EU-style Latin plate formatting (201 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -96,10 +153,12 @@ Content-Type: application/json
   "drivetrainType": "Diesel"
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Vehicles] Create vehicle with European Cyrillic plate formatting (201 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -113,3 +172,13 @@ Content-Type: application/json
   "enginePowerKw": 140,
   "drivetrainType": "Hybrid"
 }
+
+?? status == 201
+
+###
+
+### [Cleanup][Vehicles] Delete the fixture customer, cascading every vehicle created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

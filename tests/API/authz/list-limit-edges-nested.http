@@ -1,0 +1,164 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - LIST LIMIT QUERY-PARAMETER EDGES: NESTED AND CATALOG LISTS
+# ─────────────────────────────────────────────────────────────
+# limit=0, -1, 501, 100000 are clamped with Math.Clamp (Pagination/ListQueryLimits.Normalize, 1..500,
+# default 500; CustomerEndpoints.Lookup NormalizeCustomerLookupLimit, 1..25, default 10, for
+# GET /api/customers/by-name only) and answer 200. A non-numeric limit=abc fails ASP.NET Core model
+# binding for the nullable int parameter and answers 400. Neither path may ever answer 500.
+# Any mechanic session reaches every endpoint here (this file signs in with the admin account). GET /api/admin/mechanics uses the same
+# Normalize call but is AdminOnly, so it 403s before the clamp runs and is excluded.
+# Two-value smoke check (clamp floor, binding failure) for every other ListQueryLimits consumer; ids are resolved at run time.
+
+# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
+# passes MechanicOnly, and nothing in this file depends on the Admin role.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login with the admin account (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
+
+?? status == 200
+
+###
+
+
+### [Setup][Authz] Resolve a seeded customer that owns a vehicle (200 expected)
+# Resolved at run time: earlier suites delete fixture rows, so a hardcoded id can disappear.
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Authz] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+?? status == 200
+
+###
+
+
+# ── Smoke checks (limit=0, limit=abc) for the remaining shared-clamp endpoints ──
+
+
+### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/appointments?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/vehicles/{{seedVehicles[0].id}}/appointments?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/vehicles/{{seedVehicles[0].id}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/parts?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/parts?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/labor-types?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/labor-types?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/quotes?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/quotes?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?limit=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/vehicles/{{seedVehicles[0].id}}/quotes?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/quotes?limit=0
+
+?? status == 200
+?? js response.parsedBody.length <= 1
+
+###
+
+### [Case][Authz] GET /api/vehicles/{{seedVehicles[0].id}}/quotes?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/quotes?limit=abc
+
+?? status == 400

@@ -4,9 +4,8 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@SomeVehicleId = 1
-@SomeQuoteId = 1
-@SomeQuoteLineId = 1
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @SomeVersion = 1
 
 # COVERAGE GAP (do not fill with a fabricated token):
@@ -24,27 +23,73 @@
 # distinguishing "authenticated" from "unauthenticated" below, never
 # "authenticated non-mechanic" from "authenticated mechanic".
 #
-# The path ids below are literals on purpose: an unauthenticated request is
-# rejected by the policy before any handler resolves them, so whether the row
-# exists is irrelevant here. Every other file in this folder resolves its
-# fixtures from the seeded quotes instead.
+# The path ids below are resolved from the seeded quotes (like every other
+# file in this folder) before logging out, purely so this file carries no
+# magic numbers; an unauthenticated request is rejected by the policy before
+# any handler resolves them, so whether the row exists is irrelevant to the
+# 401 outcome itself.
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][QuotesAuthz] Logout before unauthenticated checks
+### [Setup][QuotesAuthz] Login as admin to resolve real ids for the checks below (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAuthz] Resolve the demo quote and vehicle anchors from the seeded quotes (200 expected)
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+{{
+  exports.SomeVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+  exports.SomeQuoteId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').id;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAuthz] Resolve that quote's first line id (200 expected)
+# @name seedQuoteDetail
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}
+
+{{
+  exports.SomeQuoteLineId = seedQuoteDetail.lines[0].id;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAuthz] Logout before unauthenticated checks (204 expected, the login above guarantees a live session)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated list quotes (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated get quote by id (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}
+
+?? status == 401
 
 ###
 
@@ -59,11 +104,15 @@ Content-Type: application/json
   "version": {{SomeVersion}}
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated delete quote (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}?version={{SomeVersion}}
 Origin: {{WebUI_Origin}}
+
+?? status == 401
 
 ###
 
@@ -81,6 +130,8 @@ Content-Type: application/json
   "version": {{SomeVersion}}
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated update quote line (401 expected)
@@ -97,11 +148,15 @@ Content-Type: application/json
   "version": {{SomeVersion}}
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated delete quote line (401 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/lines/{{SomeQuoteLineId}}?version={{SomeVersion}}
 Origin: {{WebUI_Origin}}
+
+?? status == 401
 
 ###
 
@@ -115,6 +170,8 @@ Content-Type: application/json
   "version": {{SomeVersion}}
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated extend quote validity (401 expected)
@@ -127,10 +184,14 @@ Content-Type: application/json
   "version": {{SomeVersion}}
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][QuotesAuthz] Unauthenticated list a vehicle's quotes (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SomeVehicleId}}/quotes
+
+?? status == 401
 
 ###
 
@@ -145,3 +206,5 @@ Content-Type: application/json
   "validUntil": null,
   "appointmentId": null
 }
+
+?? status == 401

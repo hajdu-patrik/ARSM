@@ -1,17 +1,27 @@
 # ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - STATUS TRANSITIONS & NON-ADMIN AUTHZ
+# APPOINTMENTS - STATUS TRANSITIONS
 # ─────────────────────────────────────────────────────────────
+# UpdateStatusAsync (AppointmentEndpoints.StatusMutations.cs) requires the caller to be one of the
+# appointment's assigned mechanics — there is no admin bypass — so ApptId and PastCancelledApptId are
+# created via the mechanic-facing intake endpoint, which auto-assigns the calling (non-admin) mechanic.
+# Non-assigned-mechanic 403 coverage lives in the sibling file mechanic-status-transitions-authz.http
+# (split out to stay under the 250-line file limit; it needs a short admin detour to create a fixture
+# this mechanic is deliberately not assigned to).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@ApptId = 1
-@PastCancelledApptId = 5
-@NonAssignedApptId = 3
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
 
 # ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -23,9 +33,61 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] Update appointment status to InProgress (200 expected)
+### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
+# @name knownCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+
+?? status == 200
+
+###
+
+@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
+
+### [Setup][Appointments] Create an appointment via intake, auto-assigned to this mechanic (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{KnownCustomerVehicleId}},
+  "scheduledDate": "2026-04-19T09:00:00",
+  "dueDateTime": "2026-04-20T09:00:00",
+  "taskDescription": "Status-transitions fixture: main appointment"
+}
+
+?? status == 201
+
+###
+
+@ApptId = {{apptCreate.id}}
+
+### [Setup][Appointments] Create a second appointment via intake for the cancel/reopen flow (201 expected)
+# @name pastCancelledApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{KnownCustomerVehicleId}},
+  "scheduledDate": "2026-04-19T09:00:00",
+  "dueDateTime": "2026-04-20T09:00:00",
+  "taskDescription": "Status-transitions fixture: cancel/reopen appointment"
+}
+
+?? status == 201
+
+###
+
+@PastCancelledApptId = {{pastCancelledApptCreate.id}}
+
+### [Positive][Appointments] Update appointment status to InProgress (200 expected, no-op since intake already sets it)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -34,12 +96,12 @@ Content-Type: application/json
   "status": "InProgress"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Appointments] Update appointment status to Completed (200 expected)
 # Response includes completedAt (DateTime) and canceledAt (null).
-### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
-
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -48,22 +110,22 @@ Content-Type: application/json
   "status": "Completed"
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Self-claim is only allowed for InProgress appointments.
 # Expected error code: appointment_completed.
-### [Case][Appointments] PUT /api/appointments/{{ApptId}}/claim
-
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 
+?? status == 422
+?? js response.parsedBody.code == appointment_completed
 ###
 
 ### [Positive][Appointments] Update appointment status to Cancelled (200 expected)
 # Response includes canceledAt (DateTime) and completedAt (null).
-### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
-
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -72,12 +134,12 @@ Content-Type: application/json
   "status": "Cancelled"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] Reopen cancelled appointment to InProgress (past-cancelled remains editable, 200 expected)
+### [Positive][Appointments] Reopen cancelled appointment to InProgress (200 expected)
 # Cancelled appointments can be moved back to active states even after cancellation.
-### [Case][Appointments] PUT /api/appointments/{{PastCancelledApptId}}/status
-
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -85,6 +147,8 @@ Content-Type: application/json
 {
   "status": "InProgress"
 }
+
+?? status == 200
 
 ###
 
@@ -97,12 +161,12 @@ Content-Type: application/json
   "status": "Completed"
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Appointments] Update appointment status with invalid value (400 expected)
 # Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
-### [Case][Appointments] PUT /api/appointments/{{ApptId}}/status
-
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -110,6 +174,8 @@ Content-Type: application/json
 {
   "status": "Scheduled"
 }
+
+?? status == 400
 
 ###
 
@@ -122,27 +188,4 @@ Content-Type: application/json
   "status": "InProgress"
 }
 
-###
-
-# Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
-### [Negative][Appointments] Non-assigned mechanic cannot change appointment status (403 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/status
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "status": "Completed"
-}
-
-###
-
-# Preconditions: NonAssignedApptId exists and the logged-in mechanic is not assigned to it.
-### [Negative][Appointments] Non-assigned non-admin mechanic cannot update appointment (403 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "dueDateTime": "2030-01-03T16:15:00",
-  "taskDescription": "Forbidden update attempt by non-assigned mechanic"
-}
+?? status == 404

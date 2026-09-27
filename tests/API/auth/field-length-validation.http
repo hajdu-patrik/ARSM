@@ -1,0 +1,201 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - FIELD LENGTH VALIDATION (register & login)
+# ─────────────────────────────────────────────────────────────
+# FieldLengthValidator caps: Email 150, FirstName/MiddleName/LastName 50, PhoneNumber 20,
+# Password 128. Applied before any hashing work in ValidateRegisterRequest/ValidateLoginRequest.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
+@Over150LocalPart = lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+@Over20Phone = +491511234567890123456
+@Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+# Every block below fails FieldLengthValidator (register/login) before any account is created or any
+# password hash is computed, so none of these requests leaves a row behind - no cleanup needed.
+# /api/auth/register is AdminOnly, so every register case here needs an admin session first, or the
+# AdminOnly authorization check would answer 401 before ValidateRegisterRequest ever runs.
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Auth] Login as admin before the register field-length cases (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Register] FirstName over 50 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "{{Over50Name}}",
+  "lastName": "Smith",
+  "email": "firstname.toolong.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Register] LastName over 50 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "{{Over50Name}}",
+  "email": "lastname.toolong.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Register] MiddleName over 50 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "middleName": "{{Over50Name}}",
+  "lastName": "Smith",
+  "email": "middlename.toolong.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Register] Email over 150 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "Smith",
+  "email": "{{Over150LocalPart}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Register] PhoneNumber over 20 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "Smith",
+  "email": "phone.toolong.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "phoneNumber": "{{Over20Phone}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Register] Password over 128 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Valid",
+  "lastName": "Smith",
+  "email": "password.toolong.{{RunId}}@example.test",
+  "password": "{{Over128Password}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 400
+
+###
+
+### [Negative][Login] Email over 150 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{Over150LocalPart}}@example.test",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Login] PhoneNumber over 20 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{Over20Phone}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Login] Password over 128 chars rejected (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "someone.{{RunId}}@example.test",
+  "password": "{{Over128Password}}"
+}
+
+?? status == 400
+
+###

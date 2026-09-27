@@ -1,65 +1,208 @@
 # ─────────────────────────────────────────────────────────────
 # ADMIN - DELETE INVARIANTS
 # ─────────────────────────────────────────────────────────────
+# Verified against AdminEndpoints.Handlers.cs (DeleteMechanicAsync / ValidateMechanicDeletionInvariantsAsync):
+# 403 self-delete (caller person_id claim == target id), 403 when the target carries the Admin role,
+# 404 unknown id, 422 when it is the last mechanic OR would leave an appointment without any
+# assignee, 409 only on a DbUpdateConcurrencyException/Postgres serialization-failure/deadlock, 200
+# with body { message } (not 204) on success.
+#
+# No id here is hardcoded: an earlier version of this file hardcoded
+# CurrentAdminMechanicId/AnotherAdminMechanicId/MechanicIdWithSoleAssignments/MechanicIdCandidateForDeletion
+# as literals 6/9/7/8 and deleted id 8 on every run; as other suites created and deleted fixtures, the
+# auto-increment counter drifted until id 8 pointed at the real ARSM_TEST_MECHANIC_EMAIL account,
+# deleting it on every run and turning that login into a permanent 401. Every id below is either
+# resolved from a same-run response or a disposable mechanic this file registers and disposes of
+# itself.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@CurrentAdminMechanicId = 6
-@AnotherAdminMechanicId = 9
-@MechanicIdWithSoleAssignments = 7
-@MechanicIdCandidateForDeletion = 8
-@UnknownMechanicId = 99999
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@UnknownMechanicId = 999999
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Negative][Admin] Try deleting self mechanic (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{CurrentAdminMechanicId}}
+### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
 ###
 
-# Preconditions: AnotherAdminMechanicId exists, has Admin role, and differs from CurrentAdminMechanicId.
-### [Negative][Admin] Try deleting another admin mechanic (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{AnotherAdminMechanicId}}
+### [Setup][Admin] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
 
 ###
 
-### [Negative][Admin] Cannot delete mechanic if it would leave appointments unassigned (422 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdWithSoleAssignments}}
+### [Negative][Admin] Admin cannot delete own account (403 expected)
+# CurrentAdminMechanicId is resolved from the login response personId field (AuthEndpoints.Contracts.cs
+# LoginResponse), never hardcoded, because DeleteMechanicAsync compares the caller person_id claim to
+# the route id, so it must be this session own id, whichever mechanic happens to be admin.
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 403
 
 ###
 
-# Preconditions: database has exactly one mechanic left and target is that mechanic.
-### [Negative][Admin] Cannot delete last remaining mechanic globally (422 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
-Origin: {{WebUI_Origin}}
+# COVERAGE GAP (do not fill by mutating shared seed):
+# DeleteMechanicAsync also 403s when the target mechanic carries the Admin role ("Cannot delete an
+# administrator account."). The demo seed (Data/DemoDataInitializer.cs) grants the Admin role to
+# exactly one mechanic, gabor.kovacs@example.com, and no API endpoint promotes another account to
+# Admin - only DemoDataInitializer does that at startup. Provisioning a second admin to exercise this
+# branch would require permanently mutating the shared demo seed every other suite depends on, so
+# this case is documented here instead of executed (same convention as the coverage-gap comment in
+# tests/API/catalog/catalog-authz.http).
+
+# COVERAGE GAP (do not fill by mutating shared seed):
+# ValidateMechanicDeletionInvariantsAsync also 422s when db.Mechanics.CountAsync() <= 1 ("Cannot
+# delete the last remaining mechanic."). Reaching that state would require deleting every other
+# mechanic in the shared demo database down to exactly one, which every other suite that logs in as
+# a seeded mechanic depends on staying intact, so this case is documented here instead of executed.
+
+
+### [Setup][Admin] Resolve a seeded customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
 
 ###
 
-# Preconditions: target is non-admin, not self, and all its appointments are reassigned.
-### [Positive][Admin] Delete non-admin mechanic when invariants hold
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
-Origin: {{WebUI_Origin}}
+@SoleAssignmentCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+
+### [Setup][Admin] Resolve one of that customer vehicles (200 expected)
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/vehicles
+
+?? status == 200
 
 ###
 
-# Preconditions: induce concurrent update/delete contention on the same mechanic in another client/session.
-### [Negative][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+### [Setup][Admin] Register a disposable mechanic to be an appointment sole assignee (200 expected)
+# @name soleAssignmentMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Delete",
+  "lastName": "SoleAssignment",
+  "email": "delete.mechanic.sole.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
 
 ###
 
-# Preconditions: force linked identity deletion to fail (for example fault-inject UserManager.DeleteAsync failure).
-### [Negative][Admin][Manual] Linked identity delete failure returns server error (500 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{MechanicIdCandidateForDeletion}}
+### [Setup][Admin] Create an appointment where the disposable mechanic is the sole assignee (201 expected)
+# No DELETE /api/appointments/{id} route exists (AppointmentEndpoints.cs), so this fixture
+# appointment stays on the calendar after this file runs - an accepted gap, the same as the two
+# coverage gaps documented above, because the API offers no way to remove it.
+# @name soleAssignmentAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2020-01-01T10:00:00",
+  "taskDescription": "ARSM delete-invariants sole-assignment fixture",
+  "mechanicIds": [{{soleAssignmentMechanic.personId}}]
+}
+
+?? status == 201
+
+###
+
+### [Negative][Admin] Cannot delete mechanic that would leave an appointment unassigned (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+
+###
+
+### [Cleanup][Admin] Assign a second mechanic so the disposable one is no longer the sole assignee (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{soleAssignmentAppt.id}}/assign/{{adminLogin.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Cleanup][Admin] Delete the disposable sole-assignment mechanic now that the invariant no longer blocks it (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Admin] Register a disposable mechanic with no appointment assignments (200 expected)
+# @name deletableMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Delete",
+  "lastName": "Candidate",
+  "email": "delete.mechanic.candidate.{{RunId}}@example.test",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+### [Positive][Admin] Delete non-admin mechanic when invariants hold (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{deletableMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Manual][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
+# Not automated: IsMechanicDeleteConcurrencyConflict only matches a DbUpdateConcurrencyException or a
+# Postgres serialization-failure/deadlock raised while the Serializable transaction in
+# DeleteMechanicAsync is in flight, which cannot be forced deterministically over plain sequential
+# HTTP calls. To reproduce by hand: register a disposable mechanic, then fire two concurrent
+# DELETE /api/admin/mechanics/{id} requests against it from separate admin sessions at the same time.
+
+###
+
+### [Manual][Admin] Linked identity delete failure returns server error (500 expected)
+# Not automated: reaching this branch requires UserManager.DeleteAsync to fail for a mechanic whose
+# IdentityUserId still resolves to a user, which normally cannot happen through the public API
+# surface (fault-inject the Identity store, or delete the IdentityUser row directly, to reproduce by
+# hand).
 
 ###
 
 ### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404

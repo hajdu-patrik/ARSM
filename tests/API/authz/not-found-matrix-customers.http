@@ -1,0 +1,153 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - NOT-FOUND MATRIX: CUSTOMERS, VEHICLES, APPOINTMENTS (NON-EXISTENT ROUTE IDS, ADMIN-ACCOUNT SESSION)
+# ─────────────────────────────────────────────────────────────
+# Part of the not-found matrix, split by resource for the 250-line test file limit: customers, vehicles and appointments (catalog and quotes live in not-found-matrix-catalog-quotes.http).
+# Every mutation endpoint that takes a route id, called with a non-existent
+# id (999999). Each must answer 404, never 500. A plain mechanic session is
+# enough for all of them: Customers/Vehicles/Appointments require only an
+# authenticated session (no Customer person ever gets an IdentityUserId, so
+# every session is a mechanic session, see catalog-authz.http), and
+# Parts/LaborTypes/Quotes are MechanicOnly. AdminOnly appointment
+# assign/unassign (PUT and DELETE /api/appointments/{id}/assign/{mechanicId})
+# would 403 under a mechanic session before reaching a not-found check, so
+# they are excluded here; their not-found cases (appointment_not_found,
+# mechanic_not_found) are already covered under an admin session in
+# tests/API/appointments/admin-assign-unassign.http.
+# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
+# passes MechanicOnly, and nothing in this file depends on the Admin role.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@NonExistentId = 999999
+@GhostVin = TST{{RunId.toString().slice(-10)}}0401
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login with the admin account (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{SessionEmail}}",
+  "password": "{{SessionPassword}}"
+}
+
+?? status == 200
+
+###
+
+# ── Customers (Customers/CustomerEndpoints*.cs) ───────────────
+
+
+### [Negative][Authz] PUT /api/customers/{{NonExistentId}} (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "firstName": "Ghost", "middleName": null, "lastName": "Customer", "email": "ghost.customer.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/customers/{{NonExistentId}} (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+# ── Vehicles (Vehicles/VehicleEndpoints*.cs) ──────────────────
+
+
+### [Negative][Authz] POST /api/customers/{{NonExistentId}}/vehicles (404 expected: GhostVin is a syntactically valid 17-char VIN, so body validation passes and the route-id existence lookup is reached)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/vehicles/{{NonExistentId}} (404 expected: GhostVin is a syntactically valid 17-char VIN, so body validation passes and the route-id existence lookup is reached)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/vehicles/{{NonExistentId}} (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+# ── Appointments (Appointments/AppointmentEndpoints*.cs) ──────
+
+
+### [Negative][Authz] PUT /api/appointments/{{NonExistentId}} (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-25T16:00:00", "taskDescription": "Ghost task" }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/vehicle (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/vehicle
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/claim (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/appointments/{{NonExistentId}}/claim (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/status (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "status": "InProgress" }
+
+?? status == 404

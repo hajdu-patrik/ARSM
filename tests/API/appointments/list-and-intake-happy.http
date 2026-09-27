@@ -1,26 +1,31 @@
 # ─────────────────────────────────────────────────────────────
 # APPOINTMENTS - LIST AND INTAKE HAPPY
 # ─────────────────────────────────────────────────────────────
+# CustomerVehicleId is resolved from the known customer's own vehicle instead of a literal id.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@CustomerVehicleId = 1
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
 @NewSchedulerCustomerEmail = scheduler.intake.new.{{RunId}}@example.test
 @NewSchedulerPlate = SCH-{{RunId}}
-@NewSchedulerVin = TST{{RunId}}0401
-@DuplicatePlateVin = TST{{RunId}}0402
+@NewSchedulerVin = TST{{RunId.toString().slice(-10)}}0401
+@DuplicatePlateVin = TST{{RunId.toString().slice(-10)}}0402
 @MechanicEmailFlowPlate = MEC-{{RunId}}
-@MechanicEmailFlowVin = TST{{RunId}}0403
-
+@MechanicEmailFlowVin = TST{{RunId.toString().slice(-10)}}0403
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite)
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -30,18 +35,32 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] List month appointments (2026-04)
-# Response items include intakeCreatedAt and dueDateTime.
-### [Case][Appointments] GET /api/appointments?year=2026&month=4
+### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
+# @name knownCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
 
+?? status == 200
+
+###
+
+@CustomerVehicleId = {{knownCustomer.vehicles[0].id}}
+
+### [Positive][Appointments] List month appointments (2026-04) (200 expected)
+# Response items include intakeCreatedAt and dueDateTime.
 GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] List appointments without month params (defaults to current UTC month)
+### [Positive][Appointments] List appointments without month params (defaults to current UTC month, 200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/appointments
+
+?? status == 200
 
 ###
 
@@ -49,20 +68,27 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments
 # Expected error code: invalid_date_range.
 GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=1999&month=4
 
+?? status == 400
+
 ###
 
 ### [Negative][Appointments] List appointments with invalid month range (400 expected)
 # Expected error code: invalid_date_range.
 GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=13
 
+?? status == 400
+
 ###
 
-### [Positive][Appointments] List today's appointments
+### [Positive][Appointments] List today's appointments (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned)
+### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned, 201 expected)
+# Coverage gap: appointments have no delete endpoint, so this fixture appointment is not cleaned up.
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -75,9 +101,13 @@ Content-Type: application/json
   "taskDescription": "Scheduler intake existing customer and vehicle"
 }
 
+?? status == 201
+
 ###
 
-### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found
+### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found (201 expected)
+# Coverage gap: appointments have no delete endpoint, so the created customer/vehicle/appointment
+# cannot be cleaned up afterward (the vehicle is FK-referenced by the appointment forever).
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -87,7 +117,7 @@ Content-Type: application/json
   "customerFirstName": "Scheduler",
   "customerMiddleName": null,
   "customerLastName": "New",
-  "customerPhoneNumber": "+36301239876",
+  "customerPhoneNumber": "+36301{{RunId.toString().slice(-6)}}",
   "vehicle": {
     "licensePlate": "{{NewSchedulerPlate}}",
     "vin": "{{NewSchedulerVin}}",
@@ -103,12 +133,12 @@ Content-Type: application/json
   "taskDescription": "Scheduler intake new customer and vehicle"
 }
 
+?? status == 201
+
 ###
 
 ### [Negative][Appointments] Scheduler intake rejects duplicate license plate for new vehicle (409 expected)
 # Reuses the plate from the previous successful new-vehicle intake case.
-### [Case][Appointments] POST /api/appointments/intake
-
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -134,12 +164,12 @@ Content-Type: application/json
   "taskDescription": "Scheduler intake duplicate plate conflict"
 }
 
+?? status == 409
+
 ###
 
-### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow
+### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow (201 expected)
 # Mechanic email is resolved to linked customer identity (mechanic-owner-{id}@customers.arsm.local) internally.
-### [Case][Appointments] POST /api/appointments/intake
-
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -160,4 +190,6 @@ Content-Type: application/json
   "dueDateTime": "2026-04-24T13:00:00",
   "taskDescription": "Scheduler intake mechanic email linked flow"
 }
+
+?? status == 201
 

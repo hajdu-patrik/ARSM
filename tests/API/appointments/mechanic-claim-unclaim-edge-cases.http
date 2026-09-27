@@ -1,0 +1,200 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - CLAIM/UNCLAIM EDGE CASES (CANCELLED, NOT ASSIGNED, LAST MECHANIC)
+# ─────────────────────────────────────────────────────────────
+# Split out of mechanic-claim-unclaim.http to stay under the 250-line file limit.
+# PastCancelledApptId/SingleAssignedApptId are created via the mechanic-facing intake endpoint, which
+# auto-assigns the calling (non-admin) mechanic as the sole mechanic. NonAssignedApptId deliberately
+# excludes that mechanic, so it is created via a short admin detour (POST
+# /api/customers/{id}/appointments with the admin's own mechanic id as the sole assignee) before
+# switching to the non-admin session used for the rest of the file.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin to create the not-assigned-to-me fixture (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+@AdminMechanicId = {{adminLogin.personId}}
+
+### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
+# @name knownCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+
+?? status == 200
+
+###
+
+@KnownCustomerId = {{knownCustomer.id}}
+@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
+
+### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
+# @name nonAssignedApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{KnownCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{KnownCustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Claim/unclaim edge-case fixture: not assigned to the test mechanic",
+  "mechanicIds": [{{AdminMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@NonAssignedApptId = {{nonAssignedApptCreate.id}}
+
+### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create an appointment via intake for the cancel-then-claim/unclaim checks (201 expected)
+# @name pastCancelledApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{KnownCustomerVehicleId}},
+  "scheduledDate": "2026-04-19T09:00:00",
+  "dueDateTime": "2026-04-20T09:00:00",
+  "taskDescription": "Claim/unclaim edge-case fixture: cancel then claim/unclaim"
+}
+
+?? status == 201
+
+###
+
+@PastCancelledApptId = {{pastCancelledApptCreate.id}}
+
+### [Setup][Appointments] Create a sole-mechanic appointment for the last-mechanic unclaim check (201 expected)
+# @name singleAssignedApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "customerEmail": "{{KnownCustomerEmail}}",
+  "vehicleId": {{KnownCustomerVehicleId}},
+  "scheduledDate": "2026-04-19T09:00:00",
+  "dueDateTime": "2026-04-20T09:00:00",
+  "taskDescription": "Claim/unclaim edge-case fixture: sole mechanic"
+}
+
+?? status == 201
+
+###
+
+@SingleAssignedApptId = {{singleAssignedApptCreate.id}}
+
+### [Setup][Appointments] Cancel appointment for unclaim-cancelled/claim-cancelled checks (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Appointments] Unclaim cancelled appointment is rejected (422 expected)
+# Expected error code: appointment_cancelled.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_cancelled
+###
+
+### [Negative][Appointments] Claim cancelled appointment is rejected (422 expected)
+# Expected error code: appointment_cancelled.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == appointment_cancelled
+###
+
+### [Negative][Appointments] Claim non-existent appointment (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+### [Negative][Appointments] Unclaim non-existent appointment (404 expected)
+# Expected error code: appointment_not_found.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+###
+
+### [Negative][Appointments] Unclaim when not assigned to appointment (409 expected)
+# Expected error code: not_assigned.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 409
+?? js response.parsedBody.code == not_assigned
+###
+
+### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
+# Expected error code: last_assigned_mechanic.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim
+Origin: {{WebUI_Origin}}
+
+?? status == 422
+?? js response.parsedBody.code == last_assigned_mechanic

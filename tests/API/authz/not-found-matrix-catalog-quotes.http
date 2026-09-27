@@ -1,0 +1,175 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - NOT-FOUND MATRIX: CATALOG AND QUOTES (NON-EXISTENT ROUTE IDS, ADMIN-ACCOUNT SESSION)
+# ─────────────────────────────────────────────────────────────
+# Part of the not-found matrix, split by resource for the 250-line test file limit: parts, labor types and quotes incl. quote lines (customers, vehicles and appointments live in not-found-matrix-customers.http).
+# Every mutation endpoint that takes a route id, called with a non-existent
+# id (999999). Each must answer 404, never 500. A plain mechanic session is
+# enough for all of them: Customers/Vehicles/Appointments require only an
+# authenticated session (no Customer person ever gets an IdentityUserId, so
+# every session is a mechanic session, see catalog-authz.http), and
+# Parts/LaborTypes/Quotes are MechanicOnly. AdminOnly appointment
+# assign/unassign (PUT and DELETE /api/appointments/{id}/assign/{mechanicId})
+# would 403 under a mechanic session before reaching a not-found check, so
+# they are excluded here; their not-found cases (appointment_not_found,
+# mechanic_not_found) are already covered under an admin session in
+# tests/API/appointments/admin-assign-unassign.http.
+# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
+# passes MechanicOnly, and nothing in this file depends on the Admin role.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@NonExistentId = 999999
+@GhostVin = TST{{RunId.toString().slice(-10)}}0401
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login with the admin account (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{SessionEmail}}",
+  "password": "{{SessionPassword}}"
+}
+
+?? status == 200
+
+###
+
+# ── Catalog: Parts (Catalog/PartEndpoints*.cs) ────────────────
+
+
+### [Negative][Authz] PUT /api/parts/{{NonExistentId}} (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "partNumber": "GHOST-PART", "name": "Ghost", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/parts/{{NonExistentId}} (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+# ── Catalog: Labor Types (Catalog/LaborTypeEndpoints*.cs) ─────
+
+
+### [Negative][Authz] PUT /api/labor-types/{{NonExistentId}} (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "code": "GHOST-LT", "name": "Ghost", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/labor-types/{{NonExistentId}} (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+# ── Quotes, incl. quote-line sub-routes (Quotes/QuoteEndpoints*.cs) ──
+
+
+### [Negative][Authz] POST /api/vehicles/{{NonExistentId}}/quotes (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "title": "Ghost Quote" }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/quotes/{{NonExistentId}} (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "title": "Ghost Update", "notes": null, "version": 1 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/quotes/{{NonExistentId}}?version=1 (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}?version=1
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+### [Negative][Authz] POST /api/quotes/{{NonExistentId}}/lines (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": null, "laborTypeId": null, "description": "Ghost line", "netUnitPrice": 10, "vatRatePercent": 27, "version": 1 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/quotes/{{NonExistentId}}/lines/1 (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines/1
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": null, "laborTypeId": null, "description": "Ghost line", "netUnitPrice": 10, "vatRatePercent": 27, "version": 1 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] DELETE /api/quotes/{{NonExistentId}}/lines/1?version=1 (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines/1?version=1
+Origin: {{WebUI_Origin}}
+
+?? status == 404
+
+###
+
+### [Negative][Authz] POST /api/quotes/{{NonExistentId}}/status (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": 1 }
+
+?? status == 404
+
+###
+
+### [Negative][Authz] PUT /api/quotes/{{NonExistentId}}/valid-until (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "validUntil": "2027-01-01T00:00:00", "version": 1 }
+
+?? status == 404

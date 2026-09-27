@@ -1,18 +1,53 @@
 # ─────────────────────────────────────────────────────────────
 # APPOINTMENTS - INTAKE VALIDATION
 # ─────────────────────────────────────────────────────────────
+# POST /api/appointments/intake sits under plain RequireAuthorization() (any mechanic session works, see
+# AppointmentEndpoints.cs), so this file no longer assumes a session left over from a previous file —
+# it logs in as the non-admin test mechanic itself. CustomerVehicleId is resolved from the known
+# customer's own vehicle instead of a literal id.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
-@CustomerVehicleId = 1
-@BothVehiclePathsVin = TST{{RunId}}0501
-@MaxVehicleVin = TST{{RunId}}0502
-@MissingNameVehicleVin = TST{{RunId}}0503
+@BothVehiclePathsVin = TST{{RunId.toString().slice(-10)}}0501
+@MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
+@MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
 
 
 # ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
+# @name knownCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+
+?? status == 200
+
+###
+
+@CustomerVehicleId = {{knownCustomer.vehicles[0].id}}
 
 ### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
@@ -27,6 +62,8 @@ Content-Type: application/json
   "taskDescription": "Scheduler status input should be blocked",
   "status": "Completed"
 }
+
+?? status == 422
 
 ###
 
@@ -53,6 +90,8 @@ Content-Type: application/json
   "taskDescription": "Scheduler invalid vehicle path selection"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Appointments] Scheduler intake rejects dueDateTime earlier than scheduledDate (422 expected)
@@ -67,6 +106,8 @@ Content-Type: application/json
   "dueDateTime": "2026-04-24T09:59:59",
   "taskDescription": "Scheduler invalid due date ordering"
 }
+
+?? status == 422
 
 ###
 
@@ -96,6 +137,8 @@ Content-Type: application/json
   "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
@@ -111,7 +154,7 @@ Content-Type: application/json
   "customerPhoneNumber": "+36305557777",
   "vehicle": {
     "licensePlate": "DRV-{{RunId}}",
-    "vin": "TST{{RunId}}0504",
+    "vin": "TST{{RunId.toString().slice(-10)}}0504",
     "brand": "Audi",
     "model": "A3",
     "year": 2021,
@@ -123,6 +166,8 @@ Content-Type: application/json
   "dueDateTime": "2026-04-25T10:00:00",
   "taskDescription": "Scheduler intake vehicle drivetrain should be rejected"
 }
+
+?? status == 422
 
 ###
 
@@ -140,9 +185,12 @@ Content-Type: application/json
   "taskDescription": "Scheduler intake with unknown vehicle id"
 }
 
+?? status == 404
+
 ###
 
-### [Positive][Appointments] Scheduler intake allows past scheduled date
+### [Positive][Appointments] Scheduler intake allows past scheduled date (201 expected)
+# Coverage gap: appointments have no delete endpoint, so this fixture appointment is not cleaned up.
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -154,6 +202,8 @@ Content-Type: application/json
   "dueDateTime": "2020-01-03T10:00:00",
   "taskDescription": "Scheduler intake with past date allowed"
 }
+
+?? status == 201
 
 ###
 
@@ -179,3 +229,5 @@ Content-Type: application/json
   "dueDateTime": "2026-05-01T10:00:00",
   "taskDescription": "Intake missing customer name fields"
 }
+
+?? status == 422

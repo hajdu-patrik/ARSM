@@ -1,6 +1,10 @@
 # ─────────────────────────────────────────────────────────────
-# QUOTES - CREATION VALIDATION, CONCURRENCY, AND VALID-UNTIL MATRIX
+# QUOTES - CREATION VALIDATION AND CONCURRENCY
 # ─────────────────────────────────────────────────────────────
+# The ValidUntil status-matrix scenarios (Sent/Accepted lock behavior) live in
+# the sibling file quotes-validity-matrix.http, split out to keep both files
+# under the 250-line limit once real status assertions were added to every
+# block.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -20,6 +24,8 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Setup][QuotesValidation] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
@@ -34,6 +40,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
   exports.OtherVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0002').vehicleId;
 }}
 
+?? status == 200
+
 ###
 
 ### [Setup][QuotesValidation] Resolve an appointment that belongs to the anchor vehicle (200 expected)
@@ -47,6 +55,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/appo
   exports.ForeignAppointmentId = anchorAppointments[0].id;
 }}
 
+?? status == 200
+
 ###
 
 ### [Negative][QuotesValidation] Create with a past ValidUntil is rejected (422 expected, D22)
@@ -58,6 +68,8 @@ Content-Type: application/json
   "title": "Past ValidUntil Quote {{RunId}}",
   "validUntil": "2020-01-01T00:00:00"
 }
+
+?? status == 422
 
 ###
 
@@ -71,10 +83,14 @@ Content-Type: application/json
   "appointmentId": {{ForeignAppointmentId}}
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][QuotesValidation] Unknown ?status= filter value is rejected (422 expected, D43: Expired is a computed flag, not a filter value)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Expired
+
+?? status == 422
 
 ###
 
@@ -88,6 +104,8 @@ Content-Type: application/json
   "title": "Version Conflict Quote {{RunId}}"
 }
 
+?? status == 201
+
 ###
 
 ### [Negative][QuotesValidation] Update with a version that does not match is rejected (409 expected, body {"code":"quote_version_conflict"}, D30/D38)
@@ -100,6 +118,8 @@ Content-Type: application/json
   "version": 123456789
 }
 
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
 ###
 
 ### [Negative][QuotesValidation] Update with no version is rejected (422 expected, "Version is required.", D38)
@@ -111,106 +131,6 @@ Content-Type: application/json
   "title": "Version Conflict Quote {{RunId}} No Version"
 }
 
-###
-
-### [Setup][QuotesValidation] Create a draft quote to drive the ValidUntil status matrix (201 expected)
-# @name sentQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "title": "ValidUntil Matrix Quote {{RunId}}"
-}
+?? status == 422
 
 ###
-
-### [Setup][QuotesValidation] Add a line so the quote can be sent (201 expected)
-# @name sentQuoteLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "ValidUntil matrix fixture line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{sentQuote.version}}
-}
-
-###
-
-### [Setup][QuotesValidation] Transition to Sent (200 expected)
-# @name sentQuoteSent
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "status": "Sent",
-  "version": {{sentQuoteLine.version}}
-}
-
-###
-
-### [Negative][QuotesValidation] Editing the Title of a Sent quote is rejected (409 expected, Draft-only lock)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "title": "Should not apply",
-  "version": {{sentQuoteSent.version}}
-}
-
-###
-
-### [Positive][QuotesValidation] Extending a Sent quote's ValidUntil to a later date succeeds (200 expected, D23)
-# @name sentQuoteExtended
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "validUntil": "2031-01-01T00:00:00",
-  "version": {{sentQuoteSent.version}}
-}
-
-###
-
-### [Negative][QuotesValidation] Moving a Sent quote's ValidUntil earlier is rejected (422 expected, Sent only allows extension)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "validUntil": "2030-01-01T00:00:00",
-  "version": {{sentQuoteExtended.version}}
-}
-
-###
-
-### [Setup][QuotesValidation] Transition to Accepted (200 expected)
-# @name sentQuoteAccepted
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "status": "Accepted",
-  "version": {{sentQuoteExtended.version}}
-}
-
-###
-
-### [Negative][QuotesValidation] Editing an Accepted quote's ValidUntil is rejected (409 expected, decided quotes are locked)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "validUntil": "2032-01-01T00:00:00",
-  "version": {{sentQuoteAccepted.version}}
-}

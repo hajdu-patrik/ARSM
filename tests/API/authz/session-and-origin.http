@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - STALE SESSION AND CROSS-ORIGIN REJECTION
+# ─────────────────────────────────────────────────────────────
+# Verified against the source before writing this file:
+# - AuthEndpoints.Logout.cs: logout revokes the active refresh token row, denylists the current
+#   access token JTI, and deletes both auth cookies, so a session used after logout is rejected
+#   whether or not the client still holds the old cookie values.
+# - Middleware/UnsafeCookieRequestOriginMiddleware.cs: any unsafe method (POST/PUT/PATCH/DELETE)
+#   under /api/** that carries an auth cookie is rejected with 403 Forbidden when the Origin header
+#   does not match the configured WebUI origin - this runs before the auth pipeline consumes the
+#   cookie, so a rejected request leaves the session untouched.
+#
+# tests/API/auth/session-lifecycle.http already proves "Validate after logout (401 expected)", and
+# tests/API/auth/origin-csrf.http already proves the foreign-Origin-rejected-403 and
+# missing-Origin-rejected-403 cases on /api/auth/refresh and /api/auth/logout. Both scenarios are
+# repeated here, with the admin account and the literal example origin from the audit
+# item, so this dedicated authz suite is self-contained.
+# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
+# passes MechanicOnly, and nothing in this file depends on the Admin role.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@ForeignOrigin = https://evil.example.com
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login with the admin account
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{SessionEmail}}",
+  "password": "{{SessionPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Authz] Session is authenticated before logout (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 200
+
+###
+
+### [Setup][Authz] Logout (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Negative][Authz] Replaying a request with the now-stale post-logout cookies is rejected (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 401
+
+###
+
+### [Setup][Authz] Login with the admin account again for the cross-origin check
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{SessionEmail}}",
+  "password": "{{SessionPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Authz] Cross-origin unsafe request with a foreign Origin and valid cookies is rejected (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{ForeignOrigin}}
+
+?? status == 403
+
+###
+
+### [Positive][Authz] Session survives the rejected cross-origin attempt (200 expected, still logged in)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 200
+
+###
+
+### [Setup][Authz] Logout with the correct Origin (204 expected, cleanup)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204

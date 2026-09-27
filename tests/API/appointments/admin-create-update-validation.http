@@ -1,26 +1,36 @@
 # ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - ADMIN CREATE UPDATE VALIDATION
+# APPOINTMENTS - ADMIN UPDATE VALIDATION
 # ─────────────────────────────────────────────────────────────
+# POST /api/customers/{id}/appointments negative-validation coverage moved to the sibling file
+# admin-create-validation.http (split by concern, both files stay under the 250-line limit).
+# PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId are appointments this
+# file creates itself (admin create allows an arbitrary — including past — ScheduledDate, see
+# admin-create-update-happy.http's "Admin create allows past scheduled date" case).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@CustomerId = 1
-@CustomerVehicleId = 1
-@AnotherCustomerVehicleId = 2
-@UnknownVehicleId = 99999
-@UnknownMechanicId = 99999
-@PrimaryMechanicId = 7
-@PastScheduledApptId = 4
-@ApptId = 1
-@PastVehicleVin = WF0PXXGCDPJL12345
+@RunId = {{$timestamp}}
+# Freshly generated, never-before-seen plate/VIN for the positive vehicle update below: reusing a real
+# seeded plate/VIN would collide with whichever demo vehicle actually owns it (409 instead of 200).
+@PastLicensePlate = PST-{{RunId}}
+@PastVehicleVin = TST{{RunId.toString().slice(-10)}}0701
+# SeedVehicleVin only appears in a negative test whose mileageKm/enginePowerKw violation is caught
+# before the handler ever reaches VIN validation, so a real seeded VIN here is harmless.
 @SeedVehicleVin = WVWZZZAUZJW123456
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly create endpoint)
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly create endpoint, 200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -30,12 +40,71 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Appointments] Admin updates past appointment dueDateTime/taskDescription (200 expected)
-# Preconditions: PastScheduledApptId exists. Confirms past appointments remain editable.
-### [Case][Appointments] PUT /api/appointments/{{PastScheduledApptId}}
+@PrimaryMechanicId = {{adminLogin.personId}}
 
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@CustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
+
+?? status == 200
+
+###
+
+@CustomerVehicleId = {{seedVehicles[0].id}}
+
+### [Setup][Appointments] Create an appointment with a past scheduled date (201 expected)
+# @name pastScheduledApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2020-06-15T09:00:00",
+  "taskDescription": "Update-validation fixture: past scheduled appointment",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@PastScheduledApptId = {{pastScheduledApptCreate.id}}
+
+### [Setup][Appointments] Create an appointment for the vehicle-numeric-max negative check (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{CustomerVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Update-validation fixture: numeric-max check",
+  "mechanicIds": [{{PrimaryMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@ApptId = {{apptCreate.id}}
+
+### [Positive][Appointments] Admin updates past appointment dueDateTime/taskDescription (200 expected)
+# Confirms past appointments remain editable.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -45,6 +114,8 @@ Content-Type: application/json
   "taskDescription": "Past appointment due and task update allowed"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Appointments] Admin updates past appointment vehicle details (200 expected)
@@ -53,7 +124,7 @@ Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "DEF-404",
+  "licensePlate": "{{PastLicensePlate}}",
   "vin": "{{PastVehicleVin}}",
   "brand": "Ford",
   "model": "Focus",
@@ -62,6 +133,8 @@ Content-Type: application/json
   "enginePowerKw": 92,
   "drivetrainType": "Petrol"
 }
+
+?? status == 200
 
 ###
 
@@ -81,115 +154,4 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
-###
-
-### [Negative][Appointments] Admin create fails when customer does not exist (404 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/99999/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails when vehicle is not owned by customer (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{AnotherCustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails when vehicle does not exist (404 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{UnknownVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails for empty mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": []
-}
-
-###
-
-### [Negative][Appointments] Admin create fails for duplicate mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}, {{PrimaryMechanicId}}]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails for non-positive mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [0]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails for empty taskDescription (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "   ",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
-
-###
-
-### [Negative][Appointments] Admin create fails for invalid mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{UnknownMechanicId}}]
-}
-
+?? status == 422

@@ -13,7 +13,11 @@
 ### [Positive][Health] Full health check — all registered checks must pass (200 Healthy expected)
 GET {{AutoService_ApiService_HostAddress}}/health
 
+?? status == 200
+
 ###
 
 ### [Positive][Health] Liveness check — only "live"-tagged checks (200 Healthy expected)
 GET {{AutoService_ApiService_HostAddress}}/alive
+
+?? status == 200

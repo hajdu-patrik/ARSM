@@ -1,21 +1,105 @@
 # ─────────────────────────────────────────────────────────────
-# AUTH - LOGIN POSITIVE MATRIX
+# AUTH - LOGIN POSITIVE MATRIX (identifier variety)
 # ─────────────────────────────────────────────────────────────
+# Verified against AuthEndpoints.Login.cs before writing this file: email lookup is
+# case/whitespace-insensitive (TryNormalizeEmail trims + lowercases before FindByEmailAsync), an
+# unknown identifier and a wrong password both answer the same generic 401 "invalid_credentials" by
+# design (anti-enumeration/timing-attack resistance - see the DummyPasswordHash comment in
+# AuthEndpoints.Login.cs), and a Customer record is never linked to a mechanic, so any of its
+# credentials also answer 401.
+# The phone-format matrix (same account family, every accepted input shape for one phone number) lives
+# in the sibling file login-positive-phone-matrix.http to keep both files under the size limit.
+# This file provisions its own throwaway mechanics (own {{$timestamp}} suffix) instead of depending on
+# another file's fixtures surviving, and deletes them again at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @MatrixRunSuffix = {{$timestamp}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@PhoneTail = {{MatrixRunSuffix.toString().slice(-6)}}
+@PhoneTail7 = {{MatrixRunSuffix.toString().slice(-7)}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
-@MatrixPhoneCanonical = +36307770991
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Positive][Login] Email-only user login by email
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin Session] Login as admin to provision the matrix accounts (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Register] Email-only mechanic (200 expected)
+# @name regEmailOnly
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "EmailOnly",
+  "email": "{{MatrixEmailOnly}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+### [Setup][Register] Email+phone mechanic (200 expected)
+# @name regPhoneUser
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "PhoneUser",
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "06 30 6{{PhoneTail}}",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+### [Setup][Admin Session] Logout admin before the login matrix (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Positive][Login] Email-only user login by email (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -25,9 +109,11 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Login] Email+phone user login by email (uppercase normalization)
+### [Positive][Login] Email+phone user login by email (uppercase normalization) (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -37,21 +123,25 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Login] Whitespace email login (trim + lowercase normalization)
+### [Positive][Login] Whitespace email login (trim + lowercase normalization) (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
+  "email": "   MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
   "password": "{{TestPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Negative][Login] Existing user wrong password
+### [Negative][Login] Existing user wrong password (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -61,9 +151,11 @@ Content-Type: application/json
   "password": "{{TestWrongPassword}}"
 }
 
+?? status == 401
+
 ###
 
-### [Negative][Login] Unknown account
+### [Negative][Login] Unknown account (401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -72,6 +164,8 @@ Content-Type: application/json
   "email": "unknown.user.{{MatrixRunSuffix}}@example.test",
   "password": "{{TestPassword}}"
 }
+
+?? status == 401
 
 ###
 
@@ -85,6 +179,8 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+?? status == 401
+
 ###
 
 ### [Negative][Login] Existing customer phone returns generic invalid credentials (401 expected)
@@ -97,86 +193,40 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+?? status == 401
+
 ###
 
-### [Positive][Login Phone Matrix] Canonical 363 format
+### [Setup][Cleanup] Logout the matrix mechanic session (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Cleanup] Login as admin again to delete the throwaway mechanics (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "phoneNumber": "{{MatrixPhoneCanonical}}",
-  "password": "{{TestPassword}}"
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
 }
+
+?? status == 200
 
 ###
 
-### [Positive][Login Phone Matrix] +36 format
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+### [Setup][Cleanup] Delete the email-only mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEmailOnly.personId}}
 Origin: {{WebUI_Origin}}
-Content-Type: application/json
 
-{
-  "phoneNumber": "+36307770991",
-  "password": "{{TestPassword}}"
-}
+?? status == 200
 
 ###
 
-### [Positive][Login Phone Matrix] 06 format
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+### [Setup][Cleanup] Delete the email+phone mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regPhoneUser.personId}}
 Origin: {{WebUI_Origin}}
-Content-Type: application/json
 
-{
-  "phoneNumber": "06307770991",
-  "password": "{{TestPassword}}"
-}
-
-###
-
-### [Positive][Login Phone Matrix] Spaced 06 format
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "06 30 777 0991",
-  "password": "{{TestPassword}}"
-}
-
-###
-
-### [Positive][Login Phone Matrix] Local Hungarian format without prefix
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "307770991",
-  "password": "{{TestPassword}}"
-}
-
-###
-
-### [Positive][Login Phone Matrix] Leading/trailing whitespace phone format
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "   06 30 777 0991   ",
-  "password": "{{TestPassword}}"
-}
-
-###
-
-### [Positive][Login Phone Matrix] Phone in email field (backward compatibility)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "06 30 777 0991",
-  "password": "{{TestPassword}}"
-}
+?? status == 200

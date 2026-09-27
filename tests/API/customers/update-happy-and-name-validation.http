@@ -6,15 +6,20 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
-@SeedCustomerId = 1
+@FixtureCustomerEmail = update.happy.{{RunId}}@example.test
 @NonExistentCustomerId = 99999
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Customers] Login as admin for update tests
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin for update tests (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -24,10 +29,30 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
+###
+
+### [Setup][Customers] Create a fixture customer to update below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "middleName": null,
+  "lastName": "Toth",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
 ###
 
 ### [Positive][Customers] Admin updates existing customer (204 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -35,9 +60,11 @@ Content-Type: application/json
   "firstName": "Anna",
   "middleName": "Maria",
   "lastName": "Toth-Updated",
-  "email": "{{KnownCustomerEmail}}",
-  "phoneNumber": "+36304445566"
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
 }
+
+?? status == 204
 
 ###
 
@@ -54,10 +81,12 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 404
+
 ###
 
 ### [Negative][Customers] Update customer with missing required fields (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -65,17 +94,17 @@ Content-Type: application/json
   "firstName": "",
   "middleName": null,
   "lastName": "Toth",
-  "email": "{{KnownCustomerEmail}}",
+  "email": "{{FixtureCustomerEmail}}",
   "phoneNumber": null
 }
+
+?? status == 422
 
 ###
 
 ### [Negative][Customers] Update customer with firstName containing a space (422 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
-
-PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -83,17 +112,17 @@ Content-Type: application/json
   "firstName": "Mary Jane",
   "middleName": null,
   "lastName": "Toth",
-  "email": "{{KnownCustomerEmail}}",
+  "email": "{{FixtureCustomerEmail}}",
   "phoneNumber": null
 }
+
+?? status == 422
 
 ###
 
 ### [Negative][Customers] Update customer with lastName containing a digit (422 expected)
 # "Last name may only contain letters and hyphens."
-### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
-
-PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -101,17 +130,17 @@ Content-Type: application/json
   "firstName": "Anna",
   "middleName": null,
   "lastName": "Toth2",
-  "email": "{{KnownCustomerEmail}}",
+  "email": "{{FixtureCustomerEmail}}",
   "phoneNumber": null
 }
+
+?? status == 422
 
 ###
 
 ### [Negative][Customers] Update customer with middleName containing an apostrophe (422 expected)
 # "Middle name may only contain letters and hyphens."
-### [Case][Customers] PUT /api/customers/{{SeedCustomerId}}
-
-PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -119,6 +148,16 @@ Content-Type: application/json
   "firstName": "Anna",
   "middleName": "O'Maria",
   "lastName": "Toth",
-  "email": "{{KnownCustomerEmail}}",
+  "email": "{{FixtureCustomerEmail}}",
   "phoneNumber": null
 }
+
+?? status == 422
+
+###
+
+### [Cleanup][Customers] Delete the fixture customer created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

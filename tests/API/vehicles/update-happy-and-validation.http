@@ -6,19 +6,24 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@SeedCustomerId = 1
-@SeedVehicleId = 1
 @NonExistentVehicleId = 99999
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = vehicles.update.happy.{{RunId}}@example.test
+@PrimaryVehicleVin = TST{{RunId.toString().slice(-10)}}0300
 @ConflictPlate = DUP-{{RunId}}
-@SeedVehicleVin = WVWZZZAUZJW123456
-@ConflictVehicleVin = TST{{RunId}}0301
-@GhostVehicleVin = TST{{RunId}}0302
+@ConflictVehicleVin = TST{{RunId.toString().slice(-10)}}0301
+@GhostVehicleVin = TST{{RunId.toString().slice(-10)}}0302
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Vehicles] Login as admin for update tests
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin for update tests (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -28,16 +33,57 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Vehicles] Admin updates existing vehicle (204 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+### [Setup][Vehicles] Create a fixture customer to own the vehicles below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "firstName": "Vehicle",
+  "middleName": null,
+  "lastName": "UpdateHappy",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the primary fixture vehicle to update below (201 expected)
+# @name primaryVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "PRI-{{RunId}}",
+  "vin": "{{PrimaryVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 201
+
+###
+
+### [Positive][Vehicles] Admin updates existing vehicle (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{primaryVehicle.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "PRI-{{RunId}}",
+  "vin": "{{PrimaryVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
   "year": 2018,
@@ -46,10 +92,12 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 204
+
 ###
 
-### [Setup][Vehicles] Create second vehicle for duplicate plate update validation
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+### [Setup][Vehicles] Create second vehicle for duplicate plate/VIN update validation (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
@@ -64,16 +112,18 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 201
+
 ###
 
 ### [Negative][Vehicles] Update vehicle with duplicate license plate conflict (409 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{primaryVehicle.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
   "licensePlate": "{{ConflictPlate}}",
-  "vin": "{{SeedVehicleVin}}",
+  "vin": "{{PrimaryVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
   "year": 2018,
@@ -82,15 +132,17 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 409
+
 ###
 
 ### [Negative][Vehicles] Update vehicle with duplicate VIN conflict (409 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{primaryVehicle.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "ABC-101",
+  "licensePlate": "PRI-{{RunId}}",
   "vin": "{{ConflictVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf 7",
@@ -99,6 +151,8 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Petrol"
 }
+
+?? status == 409
 
 ###
 
@@ -118,16 +172,18 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 404
+
 ###
 
 ### [Negative][Vehicles] Update vehicle with missing required fields (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{primaryVehicle.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
   "licensePlate": "",
-  "vin": "{{SeedVehicleVin}}",
+  "vin": "{{PrimaryVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
@@ -136,16 +192,18 @@ Content-Type: application/json
   "drivetrainType": "Petrol"
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Vehicles] Update vehicle with unsupported drivetrain type (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{primaryVehicle.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "licensePlate": "PRI-{{RunId}}",
+  "vin": "{{PrimaryVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
@@ -153,3 +211,13 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Hydrogen"
 }
+
+?? status == 422
+
+###
+
+### [Cleanup][Vehicles] Delete the fixture customer, cascading both vehicles created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

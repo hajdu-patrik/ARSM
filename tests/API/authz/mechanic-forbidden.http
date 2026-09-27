@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - PLAIN MECHANIC FORBIDDEN FROM ADMIN-ONLY ROUTES
+# ─────────────────────────────────────────────────────────────
+# Verified against the source before writing this file:
+# - AdminEndpoints.cs: the whole "/api/admin" group carries RequireAuthorization("AdminOnly").
+#   Only two routes exist under that prefix: GET /mechanics and DELETE /mechanics/{id}. There is
+#   no admin-only "create mechanic" route under /api/admin/*; mechanic creation is a separate
+#   route, POST /api/auth/register (also AdminOnly, not under /api/admin/*).
+# - AppointmentEndpoints.cs: PUT/DELETE /api/appointments/{id}/assign/{mechanicId} both carry
+#   RequireAuthorization("AdminOnly") too.
+# - DemoDataInitializer.cs: EnsureAdminRoleAsync grants the "Admin" role only to
+#   gabor.kovacs@example.com, so ARSM_TEST_ADMIN_EMAIL must resolve to that account and
+#   ARSM_TEST_MECHANIC_EMAIL to one of the other two seeded mechanics, which never receive it.
+#
+# Not duplicated here: PUT/DELETE /api/appointments/{id}/assign/{mechanicId} 403-for-non-admin is
+# already fully covered by tests/API/appointments/admin-assign-unassign.http's trailing non-admin
+# checks, and POST /api/auth/register 403-for-non-admin is already covered by
+# tests/API/auth/register-validation-and-nonadmin-authz.http. Both /api/admin/* routes are
+# repeated below (they already have partial coverage in tests/API/admin/authz.http, list.http and
+# delete-invariants.http) so this dedicated authz suite keeps every /api/admin/* outcome together.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@UnknownMechanicId = 999999
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login as plain mechanic (non-admin)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Authz] Plain mechanic cannot list mechanics (403 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 403
+
+###
+
+### [Negative][Authz] Plain mechanic cannot delete a mechanic (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 403
+
+###
+
+### [Setup][Authz] Logout plain mechanic, login as admin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Authz] Login as admin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Authz] Admin can list mechanics (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 200
+
+###
+
+### [Negative][Authz] Admin deleting a non-existent mechanic reaches the handler, not the policy gate (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 404

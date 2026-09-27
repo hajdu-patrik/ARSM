@@ -1,20 +1,28 @@
 # ─────────────────────────────────────────────────────────────
 # APPOINTMENTS - HISTORY BY CUSTOMER AND VEHICLE
 # ─────────────────────────────────────────────────────────────
+# GET /api/customers/{id}/appointments and GET /api/vehicles/{id}/appointments both sit under plain
+# RequireAuthorization() (AppointmentEndpoints.cs), so any authenticated mechanic session reaches them.
+# SeedCustomerId/SeedVehicleId are resolved at run time from a customer that actually owns a vehicle,
+# never a literal id, because earlier suites may have deleted lower-numbered demo rows.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeedCustomerId = 1
-@SeedVehicleId = 1
 @NonExistentCustomerId = 99999
 @NonExistentVehicleId = 99999
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as non-admin mechanic (history endpoints require authenticated user)
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (history endpoints require authenticated user, 200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -24,48 +32,85 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve a seeded customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+?? status == 200
+
 ###
 
 ### [Positive][Appointments] Get customer repair history oldest-first (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+
+?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get customer repair history newest-first (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?descending=true
 
+?? status == 200
+
 ###
 
 ### [Positive][Appointments] Get vehicle repair history oldest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments
+
+?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get vehicle repair history newest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}/appointments?descending=true
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments?descending=true
+
+?? status == 200
 
 ###
 
 ### [Negative][Appointments] Unknown customer history returns 404
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/appointments
 
+?? status == 404
+
 ###
 
 ### [Negative][Appointments] Unknown vehicle history returns 404
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}/appointments
 
+?? status == 404
+
 ###
 
-### [Setup][Appointments] Logout to verify unauthenticated behavior
+### [Setup][Appointments] Logout to verify unauthenticated behavior (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
 ### [Negative][Appointments] Unauthenticated customer history returns 401
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 
+?? status == 401
+
 ###
 
 ### [Negative][Appointments] Unauthenticated vehicle history returns 401
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments
+
+?? status == 401

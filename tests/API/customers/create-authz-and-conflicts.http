@@ -4,6 +4,8 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
@@ -13,8 +15,27 @@
 
 # ─────────────────────────────────────────────────────────────
 
-### [Case][Customers] POST /api/customers
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
+###
+
+### [Setup][Customers] Login as admin for conflict checks (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Customers] Create customer with duplicate email conflict (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -26,6 +47,8 @@ Content-Type: application/json
   "email": "{{KnownCustomerEmail}}",
   "phoneNumber": null
 }
+
+?? status == 409
 
 ###
 
@@ -42,6 +65,8 @@ Content-Type: application/json
   "phoneNumber": "{{KnownCustomerPhone}}"
 }
 
+?? status == 409
+
 ###
 
 ### [Setup][Customers] Logout admin, login as non-admin for write check
@@ -50,7 +75,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Customers] Login as non-admin mechanic
+### [Setup][Customers] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -60,9 +85,12 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Customers] Non-admin can create customer (201 expected)
+# @name createdByNonAdmin
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -74,3 +102,13 @@ Content-Type: application/json
   "email": "blocked.by.policy.{{RunId}}@example.test",
   "phoneNumber": null
 }
+
+?? status == 201
+
+###
+
+### [Cleanup][Customers] Delete the customer created by the non-admin session above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdByNonAdmin.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

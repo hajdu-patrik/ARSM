@@ -1,0 +1,111 @@
+# ─────────────────────────────────────────────────────────────
+# AUTHZ - PROFILE PICTURE IDOR (GET /api/profile/picture/{personId})
+# ─────────────────────────────────────────────────────────────
+# Verified against ProfileEndpoints.ProfilePicture.cs (GetMechanicProfilePictureAsync): the caller
+# is allowed only when httpContext.User.IsInRole("Admin") is true, or the requested personId
+# equals the caller's own resolved person id; every other combination returns Results.Forbid()
+# (403) before the picture lookup ever runs.
+#
+# tests/API/profile/profile-picture.http already proves the "someone else's id -> 403 for a
+# non-admin" and "admin -> 200/404" branches with a hardcoded @MechanicPersonIdForPicture. This
+# file adds the one branch that file does not exercise - a plain mechanic fetching their OWN
+# picture through the id-parameterized route (not the parameterless /picture shortcut) - and
+# resolves every person id dynamically from the login responses (LoginResponse.PersonId) instead
+# of a hardcoded seed id, so it keeps working if the demo seed's numeric ids ever change.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login as plain mechanic, capture own person id
+# @name mechanicLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Authz] Logout plain mechanic before the admin session
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Authz] Login as admin, capture own person id
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Authz] Admin fetches the plain mechanic's picture by id (200 or 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{mechanicLogin.personId}}
+
+?? status != 403
+?? status < 500
+
+###
+
+### [Setup][Authz] Logout admin, login as plain mechanic again
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Authz] Login as plain mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Authz] Plain mechanic fetches their own picture through the id route (200 or 404 if none)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{mechanicLogin.personId}}
+
+?? status != 403
+?? status < 500
+
+###
+
+### [Negative][Authz] Plain mechanic cannot fetch the admin's picture by id (403 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{adminLogin.personId}}
+
+?? status == 403

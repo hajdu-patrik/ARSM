@@ -4,23 +4,84 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@SeedVehicleId = 1
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeedVehicleVin = WVWZZZAUZJW123456
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = vehicles.update.authz.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0501
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Case][Vehicles] PUT /api/vehicles/{{SeedVehicleId}}
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
 
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+###
+
+### [Setup][Vehicles] Login as admin for setup (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create a fixture customer to own the vehicle below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Vehicle",
+  "middleName": null,
+  "lastName": "UpdateAuthz",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create a fixture vehicle to update below (201 expected)
+# @name fixtureVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "AUZ-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 81,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 201
+
+###
+
+### [Negative][Vehicles] Update vehicle with invalid year (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "AUZ-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2200,
@@ -28,6 +89,8 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Petrol"
 }
+
+?? status == 422
 
 ###
 
@@ -37,7 +100,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Vehicles] Login as non-admin mechanic
+### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -47,16 +110,18 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Vehicles] Non-admin can update vehicle (204 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedVehicleId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "licensePlate": "AUZ-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
@@ -64,3 +129,13 @@ Content-Type: application/json
   "enginePowerKw": 81,
   "drivetrainType": "Petrol"
 }
+
+?? status == 204
+
+###
+
+### [Cleanup][Vehicles] Non-admin deletes the fixture customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

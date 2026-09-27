@@ -4,12 +4,35 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
 
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin for create tests (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
 ### [Positive][Customers] Admin creates new customer (201 expected)
+# @name createdCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -19,12 +42,15 @@ Content-Type: application/json
   "middleName": null,
   "lastName": "Customer",
   "email": "test.customer.new.{{RunId}}@example.test",
-  "phoneNumber": "+36301234567"
+  "phoneNumber": "+36302{{RunId.toString().slice(-6)}}"
 }
+
+?? status == 201
 
 ###
 
 ### [Positive][Customers] Admin creates customer without optional fields (201 expected)
+# @name createdMinimalCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -36,6 +62,8 @@ Content-Type: application/json
   "email": "minimal.customer.{{RunId}}@example.test",
   "phoneNumber": null
 }
+
+?? status == 201
 
 ###
 
@@ -52,12 +80,12 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Customers] Create customer with firstName containing a space (422 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Customers] POST /api/customers
-
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -70,12 +98,12 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Customers] Create customer with firstName containing a digit (422 expected)
 # "First name may only contain letters and hyphens."
-### [Case][Customers] POST /api/customers
-
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -88,12 +116,12 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Customers] Create customer with lastName containing a special character (422 expected)
 # "Last name may only contain letters and hyphens."
-### [Case][Customers] POST /api/customers
-
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -106,12 +134,12 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Customers] Create customer with middleName containing a space (422 expected)
 # "Middle name may only contain letters and hyphens."
-### [Case][Customers] POST /api/customers
-
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -123,6 +151,8 @@ Content-Type: application/json
   "email": "middlename.space.customer.{{RunId}}@example.test",
   "phoneNumber": null
 }
+
+?? status == 422
 
 ###
 
@@ -139,6 +169,8 @@ Content-Type: application/json
   "phoneNumber": null
 }
 
+?? status == 422
+
 ###
 
 ### [Negative][Customers] Create customer with invalid European phone format (422 expected)
@@ -153,3 +185,21 @@ Content-Type: application/json
   "email": "invalid.customer.phone.{{RunId}}@example.test",
   "phoneNumber": "12345"
 }
+
+?? status == 422
+
+###
+
+### [Cleanup][Customers] Delete the customer created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the minimal customer created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdMinimalCustomer.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204

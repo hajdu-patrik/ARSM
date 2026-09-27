@@ -1,0 +1,199 @@
+# ─────────────────────────────────────────────────────────────
+# PROFILE - UPDATE CONFLICTS AND FORMAT VALIDATION
+# ─────────────────────────────────────────────────────────────
+# Split out of profile-get-and-update.http (same disposable-mechanic naming convention) to stay
+# <= 250 lines. The "Profile Conflict" mechanic is a disposable duplicate-email/phone fixture; it is
+# deleted via admin DELETE /api/admin/mechanics/{id} at the end of this file, resolved from the
+# register response (RegisterResponse.PersonId, camelCase personId in JSON), never a hardcoded id.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@ProfileConflictEmail = profile.conflict.{{MatrixRunSuffix}}@example.test
+@ProfileConflictPhoneSuffix = {{$randomInt 1000000 9999999}}
+@ProfileConflictPhone = +3630{{ProfileConflictPhoneSuffix}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Profile] Login as admin to seed profile conflict identity
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Register mechanic used for duplicate email/phone profile validation (200 expected)
+# @name profileConflictMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Profile",
+  "lastName": "Conflict",
+  "email": "{{ProfileConflictEmail}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "{{ProfileConflictPhone}}",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Logout admin before mechanic profile checks
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{ProfileMechanicEmail}}",
+  "password": "{{ProfileCurrentPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Negative][Profile] Update with duplicate email validation (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{ProfileConflictEmail}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update with duplicate phone validation (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{ProfileConflictPhone}}"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update with invalid email format (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "invalid-email-format"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update with invalid European phone format (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "12345"
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update with empty firstName (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "   "
+}
+
+?? status == 400
+
+###
+
+### [Negative][Profile] Update with empty lastName (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lastName": ""
+}
+
+?? status == 400
+
+###
+
+### [Setup][Profile] Logout non-admin mechanic before deleting the conflict fixture
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Setup][Profile] Login as admin to clean up the disposable conflict fixture
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Cleanup][Profile] Delete the disposable profile-conflict mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{profileConflictMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Logout admin after cleanup
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204

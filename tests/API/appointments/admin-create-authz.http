@@ -3,18 +3,26 @@
 # ─────────────────────────────────────────────────────────────
 # Tests that non-admin mechanics cannot use POST /api/customers/{id}/appointments.
 # Unauthenticated 401 coverage for this endpoint is maintained in appointments-unauth.http.
+# The AdminOnly policy on this route rejects the request before the handler ever reads CustomerId/
+# VehicleId from the URL, so a non-existent pair would 403 identically — CustomerId/VehicleId are
+# still resolved from a real customer/vehicle at run time to keep the fixture honest and reusable if
+# this file ever grows a positive case.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@CustomerId = 1
-@VehicleId = 1
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Appointments] Login as non-admin mechanic
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -23,6 +31,25 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected, GET /api/customers is plain-authenticated)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@CustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
+
+?? status == 200
 
 ###
 
@@ -33,9 +60,11 @@ Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{VehicleId}},
+  "vehicleId": {{seedVehicles[0].id}},
   "scheduledDate": "2026-04-30T10:00:00",
   "dueDateTime": "2026-05-01T10:00:00",
   "taskDescription": "Non-admin create attempt — should be rejected with 403",
   "mechanicIds": [1]
 }
+
+?? status == 403

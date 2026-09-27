@@ -14,6 +14,12 @@
 
 # ─────────────────────────────────────────────────────────────
 
+### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
 ### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -24,10 +30,14 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Parts] List parts (200 expected, ordered by partNumber ascending)
 GET {{AutoService_ApiService_HostAddress}}/api/parts
+
+?? status == 200
 
 ###
 
@@ -44,10 +54,14 @@ Content-Type: application/json
   "vatRatePercent": 27
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Parts] Get created part by id (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+
+?? status == 200
 
 ###
 
@@ -64,6 +78,8 @@ Content-Type: application/json
   "vatRatePercent": 0
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Parts] Create demonstrates gross rounded away from zero at a monetary midpoint (201 expected, grossUnitPrice = 10.10 * 1.05 = 10.61)
@@ -79,6 +95,8 @@ Content-Type: application/json
   "vatRatePercent": 5
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Parts] Admin updates created part (204 expected, grossUnitPrice recomputed to 5000.00 * 1.18 = 5900.00)
@@ -93,16 +111,22 @@ Content-Type: application/json
   "vatRatePercent": 18
 }
 
+?? status == 204
+
 ###
 
 ### [Positive][Parts] Admin deletes created part (204 expected, no soft delete/no in-use blocking)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
 ### [Negative][Parts] Deleted part cannot be fetched (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+
+?? status == 404
 
 ###
 
@@ -110,14 +134,20 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
 
+?? status == 404
+
 ###
 
 ### [Cleanup][Parts] Delete lowercase-normalization fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{lowercasePart.id}}
 Origin: {{WebUI_Origin}}
 
+?? status == 204
+
 ###
 
 ### [Cleanup][Parts] Delete rounding-demo fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{roundingPart.id}}
 Origin: {{WebUI_Origin}}
+
+?? status == 204

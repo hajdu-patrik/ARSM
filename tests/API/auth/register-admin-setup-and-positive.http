@@ -1,6 +1,13 @@
 # ─────────────────────────────────────────────────────────────
 # AUTH - REGISTER ADMIN SETUP AND POSITIVE
 # ─────────────────────────────────────────────────────────────
+# Verified against AuthEndpoints.Register.cs / AuthEndpoints.cs before writing this file:
+# - /api/auth/register requires the "AdminOnly" policy: unauthenticated -> 401 before the handler
+#   runs, authenticated non-admin -> 403 (see register-validation-and-nonadmin-authz.http), admin -> 200
+#   with {personId, personType, email} (RegisterResponse).
+# - This file is self-contained: it registers its own phone-format matrix with a unique {{$timestamp}}
+#   suffix and deletes every mechanic it created (DELETE /api/admin/mechanics/{id}) at the end, so no
+#   other file may depend on these accounts surviving past this file's own run.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -13,14 +20,20 @@
 
 # Dedicated matrix users
 @MatrixRunSuffix = {{$timestamp}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@PhoneTail = {{MatrixRunSuffix.toString().slice(-6)}}
+@PhoneTail7 = {{MatrixRunSuffix.toString().slice(-7)}}
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
 @MatrixBudapestEmail = matrix.budapest.user.{{MatrixRunSuffix}}@example.test
 @MatrixEuEmail = matrix.eu.phone.{{MatrixRunSuffix}}@example.test
 
-# NOTE:
-# If a positive register/login test starts failing with 401 because the account
-# already exists from an earlier run with a different password, change MatrixRunSuffix.
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
 
 ### [Negative][Register] Unauthenticated registration (AdminOnly policy -> 401 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
@@ -37,6 +50,8 @@ Content-Type: application/json
   "expertise": ["Engine"]
 }
 
+?? status == 401
+
 ###
 
 ### [Setup][Admin Session] Login as admin before register matrix (200 expected)
@@ -49,14 +64,20 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Admin Session] Validate authenticated admin session (200 expected, IsAdmin=true)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
+?? status == 200
+?? js response.parsedBody.isAdmin == true
+
 ###
 
-### [Positive][Register][Admin] Email-only mechanic registration
+### [Positive][Register][Admin] Email-only mechanic registration (200 expected)
+# @name regEmailOnly
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -71,9 +92,12 @@ Content-Type: application/json
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format)
+### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format) (200 expected)
+# @name regPhoneUser
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -84,14 +108,17 @@ Content-Type: application/json
   "email": "{{MatrixEmailWithPhone}}",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "06 30 777 0991",
+  "phoneNumber": "06 30 8{{PhoneTail}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Register][Admin] Mechanic registration with local Hungarian phone (no 36/06 prefix)
+### [Positive][Register][Admin] Mechanic registration with local Hungarian phone (no 36/06 prefix) (200 expected)
+# @name regLocalPhone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -102,14 +129,17 @@ Content-Type: application/json
   "email": "matrix.local.phone.{{MatrixRunSuffix}}@example.test",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "301112233",
+  "phoneNumber": "301{{PhoneTail}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1)
+### [Positive][Register][Admin] Mechanic registration with Budapest landline (+36 1) (200 expected)
+# @name regBudapest
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -120,14 +150,17 @@ Content-Type: application/json
   "email": "{{MatrixBudapestEmail}}",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "+36 1 234 5678",
+  "phoneNumber": "+36 1 2{{PhoneTail}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Register][Admin] Mechanic registration with EU phone (+49)
+### [Positive][Register][Admin] Mechanic registration with EU phone (+49) (200 expected)
+# @name regEuPhone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -138,14 +171,17 @@ Content-Type: application/json
   "email": "{{MatrixEuEmail}}",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "+49 151 1234 5678",
+  "phoneNumber": "+49 151 1{{PhoneTail7}}",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Register][Admin] Mechanic registration with leading/trailing whitespace in email and phone
+### [Positive][Register][Admin] Mechanic registration with leading/trailing whitespace in email and phone (200 expected)
+# @name regWhitespace
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -156,7 +192,57 @@ Content-Type: application/json
   "email": "   MATRIX.WHITESPACE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
   "password": "{{TestPassword}}",
   "personType": "Mechanic",
-  "phoneNumber": "   +36 30 888 0991   ",
+  "phoneNumber": "   +36 30 9{{PhoneTail}}   ",
   "specialization": "GasolineAndDiesel",
   "expertise": ["Engine", "Brakes"]
 }
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the email-only matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEmailOnly.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the phone-user matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regPhoneUser.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the local-phone matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regLocalPhone.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the Budapest-landline matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regBudapest.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the EU-phone matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEuPhone.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the whitespace-input matrix mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regWhitespace.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200

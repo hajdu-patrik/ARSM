@@ -1,0 +1,200 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - LOGIN POSITIVE PHONE MATRIX
+# ─────────────────────────────────────────────────────────────
+# Split out of login-positive-matrix.http (identifier variety) to keep both files under the size
+# limit. Verified against AuthEndpoints.Login.cs / ContactNormalization.TryNormalizeEuPhoneNumber
+# before writing this file: every shape below normalizes to the same E.164 number
+# (+36307 plus the run-unique PhoneTail) via libphonenumber with the "HU" default region, and the login handler builds
+# both a "+"-prefixed and a no-plus lookup candidate (BuildPhoneLookupCandidates), so any of these
+# inputs must resolve to the same mechanic.
+# This file provisions its own throwaway mechanic (own {{$timestamp}} suffix) instead of depending
+# on another file's fixtures surviving, and deletes it again at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MatrixRunSuffix = {{$timestamp}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@PhoneTail = {{MatrixRunSuffix.toString().slice(-6)}}
+@PhoneTail7 = {{MatrixRunSuffix.toString().slice(-7)}}
+@MatrixEmailWithPhone = matrix.phone.formats.{{MatrixRunSuffix}}@example.test
+@MatrixPhoneCanonical = +36307{{PhoneTail}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin Session] Login as admin to provision the phone-format mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Register] Mechanic with a run-unique 06 30 7xx xxxx phone (200 expected)
+# @name regPhoneUser
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Matrix",
+  "lastName": "PhoneFormats",
+  "email": "{{MatrixEmailWithPhone}}",
+  "password": "{{TestPassword}}",
+  "personType": "Mechanic",
+  "phoneNumber": "06 30 7{{PhoneTail}}",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine"]
+}
+
+?? status == 200
+
+###
+
+### [Setup][Admin Session] Logout admin before the phone-format login matrix (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Positive][Login Phone Matrix] Canonical E.164 format (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "{{MatrixPhoneCanonical}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] +36 format (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "+36307{{PhoneTail}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] 06 format (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "06307{{PhoneTail}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] Spaced 06 format (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "06 30 7{{PhoneTail}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] Local Hungarian format without prefix (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "307{{PhoneTail}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] Leading/trailing whitespace phone format (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "   06 30 7{{PhoneTail}}   ",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Positive][Login Phone Matrix] Phone in email field (backward compatibility) (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "06 30 7{{PhoneTail}}",
+  "password": "{{TestPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Logout the matrix mechanic session (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Cleanup] Login as admin again to delete the throwaway mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the phone-format mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regPhoneUser.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200

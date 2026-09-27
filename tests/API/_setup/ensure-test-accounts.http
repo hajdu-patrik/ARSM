@@ -1,0 +1,146 @@
+# ─────────────────────────────────────────────────────────────
+# SETUP - ENSURE TEST ACCOUNTS EXIST
+# ─────────────────────────────────────────────────────────────
+# Provisions the shared ARSM_TEST_MECHANIC_EMAIL/PASSWORD account that every other suite logs in as
+# "the plain mechanic" (tests/API/admin/*.http, tests/API/authz/mechanic-forbidden.http, and the
+# Python checks' http_check_support.read_credentials), so a fresh or drifted database always has an
+# account to authenticate against.
+#
+# Ordering caveat (verified, not assumed): the runner invokes
+# `npx httpyac tests/API/**/*.http --all ...` (scripts/run-local-test-suite.py), and httpyac resolves
+# that glob through `globby(pattern, { gitignore: true })` (confirmed by reading the bundled
+# httpyac/dist/index.js). Probing globby directly with the exact same pattern and cwd from a Node
+# REPL, repeated eight times, showed the cross-directory order is NOT stable run to run - even which
+# top-level folder comes first varied between runs (fast-glob/fdir walks sibling directories
+# concurrently and appends results as each directory's read settles). So "_setup" sorting before
+# "admin" alphabetically does not guarantee httpyac resolves it first on every run, and no folder
+# name can guarantee that under this mechanism. This file is written to not depend on running first:
+# the registration call below tolerates the account already existing (see its comment), and the
+# actual invariant this file protects - the account being usable - is proven by the login assertion
+# at the end. Once created, the account persists across runs (the API only reseeds the three
+# built-in demo mechanics' passwords on start, per Data/DemoDataInitializer.cs), so any run where
+# this file happens to execute after a file that needed the account self-heals on the next run.
+#
+# If the account already exists with a DIFFERENT password than ARSM_TEST_MECHANIC_PASSWORD (created
+# by hand, or by an older fixture), the login below fails with 401 and the owner must fix the local
+# tests/.env to match the real stored password - this file never attempts to reset it.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@MechanicPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup] Probe the plain mechanic test login (not asserted - the repair step below decides)
+# @name mechanicProbe
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{MechanicEmail}}",
+  "password": "{{MechanicPassword}}"
+}
+
+###
+
+### [Setup] Clear the probe session before the admin login (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup] Login as admin to provision the shared plain-mechanic test account (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup] List mechanics to find a stale plain-mechanic test account (200 expected)
+# @name allMechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 200
+
+###
+
+### [Repair] Delete the plain mechanic test account only when its login failed (200 expected per delete)
+# Self-healing (user decision 2026-09-27): an earlier, non-idempotent password-change test could leave
+# this account with a password that no longer matches ARSM_TEST_MECHANIC_PASSWORD, and every later
+# plain-mechanic case then fails with 401. When the probe login above did not return a personId, the
+# account is deleted here and re-registered below with the configured password. Strictly limited to an
+# '@example.test' address that is not an admin - a demo '@example.com' account is never touched (the API
+# re-seeds those on start). The loop runs zero times when the probe succeeded.
+# @loop for staleMechanic of (mechanicProbe && mechanicProbe.personId ? [] : allMechanics.filter(m => !m.isAdmin && m.email.toLowerCase() === MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test")))
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{staleMechanic.personId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Setup] Register the plain mechanic test account if it does not already exist
+# AuthEndpoints.Register (AdminOnly, verified in AuthEndpoints.Register.cs) answers 200 OK with
+# { personId, personType, email } for a fresh account, or 400 ValidationProblem with a generic
+# "register" field error for ANY conflict (duplicate email, duplicate phone, or a unique-constraint
+# race) - the same message regardless of cause, by design, to avoid account enumeration. Both are the
+# correct outcome here depending on whether an earlier run already created this account, so this
+# asserts the precise pair of allowed codes rather than a vague range.
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "Mechanic",
+  "email": "{{MechanicEmail}}",
+  "password": "{{MechanicPassword}}",
+  "personType": "Mechanic",
+  "specialization": "GasolineAndDiesel",
+  "expertise": ["Engine", "Brakes"]
+}
+
+?? js [200, 400].includes(response.statusCode) == true
+
+###
+
+### [Setup] Logout admin before proving the plain-mechanic account can log in (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 204
+
+###
+
+### [Positive] Plain mechanic test account logs in (200 expected)
+# After the repair step this succeeds for an '@example.test' account. A 401 that remains means the account
+# is a demo '@example.com' mechanic (never reset here) or could not be deleted (e.g. 422 sole appointment
+# assignee): fix tests/.env to match the stored password.
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{MechanicEmail}}",
+  "password": "{{MechanicPassword}}"
+}
+
+?? status == 200

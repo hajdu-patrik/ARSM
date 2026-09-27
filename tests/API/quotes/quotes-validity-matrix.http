@@ -1,0 +1,160 @@
+# ─────────────────────────────────────────────────────────────
+# QUOTES - VALIDUNTIL STATUS MATRIX (SENT/ACCEPTED LOCK BEHAVIOR)
+# ─────────────────────────────────────────────────────────────
+# Split out of quotes-validation.http to keep both files under the 250-line
+# limit once real status assertions were added to every block.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][QuotesValidityMatrix] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesValidityMatrix] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# Vehicle identity ids depend on the local database's insert history, so a literal
+# id is right on one machine and 404 on the next. The three demo quotes (D12) are
+# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes
+
+{{
+  exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesValidityMatrix] Create a draft quote to drive the ValidUntil status matrix (201 expected)
+# @name sentQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "ValidUntil Matrix Quote {{RunId}}"
+}
+
+?? status == 201
+
+###
+
+### [Setup][QuotesValidityMatrix] Add a line so the quote can be sent (201 expected)
+# @name sentQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "ValidUntil matrix fixture line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{sentQuote.version}}
+}
+
+?? status == 201
+
+###
+
+### [Setup][QuotesValidityMatrix] Transition to Sent (200 expected)
+# @name sentQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{sentQuoteLine.version}}
+}
+
+?? status == 200
+
+###
+
+### [Negative][QuotesValidityMatrix] Editing the Title of a Sent quote is rejected (409 expected, Draft-only lock)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "title": "Should not apply",
+  "version": {{sentQuoteSent.version}}
+}
+
+?? status == 409
+
+###
+
+### [Positive][QuotesValidityMatrix] Extending a Sent quote's ValidUntil to a later date succeeds (200 expected, D23)
+# @name sentQuoteExtended
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "validUntil": "2031-01-01T00:00:00",
+  "version": {{sentQuoteSent.version}}
+}
+
+?? status == 200
+
+###
+
+### [Negative][QuotesValidityMatrix] Moving a Sent quote's ValidUntil earlier is rejected (422 expected, Sent only allows extension)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "validUntil": "2030-01-01T00:00:00",
+  "version": {{sentQuoteExtended.version}}
+}
+
+?? status == 422
+
+###
+
+### [Setup][QuotesValidityMatrix] Transition to Accepted (200 expected)
+# @name sentQuoteAccepted
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "status": "Accepted",
+  "version": {{sentQuoteExtended.version}}
+}
+
+?? status == 200
+
+###
+
+### [Negative][QuotesValidityMatrix] Editing an Accepted quote's ValidUntil is rejected (409 expected, decided quotes are locked)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "validUntil": "2032-01-01T00:00:00",
+  "version": {{sentQuoteAccepted.version}}
+}
+
+?? status == 409

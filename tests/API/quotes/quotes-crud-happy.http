@@ -7,7 +7,6 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@SomeLaborTypeId = 1
 
 
 # ─────────────────────────────────────────────────────────────
@@ -22,6 +21,8 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
@@ -34,6 +35,25 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
 {{
   exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
 }}
+
+?? status == 200
+
+###
+
+### [Setup][Quotes] Create a disposable labor type fixture for the catalog line below (201 expected)
+# @name createdLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "ZZQ{{RunId}}A",
+  "name": "Quotes Happy Labor Fixture",
+  "hourlyNetRate": 5000,
+  "vatRatePercent": 27
+}
+
+?? status == 201
 
 ###
 
@@ -48,20 +68,28 @@ Content-Type: application/json
   "notes": "Created by the quotes-crud-happy suite"
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Quotes] Get created quote by id (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
+
+?? status == 200
 
 ###
 
 ### [Positive][Quotes] List the anchor vehicle's quotes (200 expected, includes the created quote)
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 
+?? status == 200
+
 ###
 
 ### [Positive][Quotes] List quotes filtered by vehicleId and Draft status (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{AnchorVehicleId}}&status=Draft
+
+?? status == 200
 
 ###
 
@@ -77,6 +105,8 @@ Content-Type: application/json
   "version": {{createdQuote.version}}
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Quotes] Extend draft quote's ValidUntil (200 expected, Draft accepts any future date)
@@ -89,6 +119,8 @@ Content-Type: application/json
   "validUntil": "2027-06-01T00:00:00",
   "version": {{updatedQuote.version}}
 }
+
+?? status == 200
 
 ###
 
@@ -107,9 +139,11 @@ Content-Type: application/json
   "version": {{extendedQuote.version}}
 }
 
+?? status == 201
+
 ###
 
-### [Positive][Quotes] Add a catalog labor line (201 expected, snapshot from LaborType {{SomeLaborTypeId}})
+### [Positive][Quotes] Add a catalog labor line (201 expected, snapshot from the disposable LaborType fixture created above)
 # @name lineAdded2
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines
 Origin: {{WebUI_Origin}}
@@ -118,9 +152,11 @@ Content-Type: application/json
 {
   "lineKind": "Labor",
   "quantity": 1,
-  "laborTypeId": {{SomeLaborTypeId}},
+  "laborTypeId": {{createdLaborType.id}},
   "version": {{lineAdded1.version}}
 }
+
+?? status == 201
 
 ###
 
@@ -139,12 +175,24 @@ Content-Type: application/json
   "version": {{lineAdded2.version}}
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Quotes] Remove the catalog labor line (200 expected, returns the updated quote, not 204)
 # @name lineDeleted
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines/{{lineUpdated.lines[1].id}}?version={{lineUpdated.version}}
 Origin: {{WebUI_Origin}}
+
+?? status == 200
+
+###
+
+### [Cleanup][Quotes] Delete the disposable labor type fixture now that no quote line references it (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
@@ -159,6 +207,8 @@ Content-Type: application/json
   "version": {{lineDeleted.version}}
 }
 
+?? status == 200
+
 ###
 
 ### [Positive][Quotes] Transition sent quote to Accepted (200 expected)
@@ -170,6 +220,8 @@ Content-Type: application/json
   "status": "Accepted",
   "version": {{sentQuote.version}}
 }
+
+?? status == 200
 
 ###
 
@@ -183,8 +235,12 @@ Content-Type: application/json
   "title": "CRUD Happy Deletable Quote {{RunId}}"
 }
 
+?? status == 201
+
 ###
 
 ### [Positive][Quotes] Delete the draft quote (204 expected, D7: only Draft is deletable)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{deletableQuote.id}}?version={{deletableQuote.version}}
 Origin: {{WebUI_Origin}}
+
+?? status == 204

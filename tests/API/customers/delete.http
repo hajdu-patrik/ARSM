@@ -8,14 +8,21 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeedCustomerId = 1
-@SeedCustomerVehicleId = 1
 @NonExistentCustomerId = 99999
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = delete.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0601
 
 
 # ─────────────────────────────────────────────────────────────
 
-### [Setup][Customers] Login as admin for delete tests
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin for delete tests (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -25,11 +32,54 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
+###
+
+### [Setup][Customers] Create a fixture customer to delete below (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "firstName": "Delete",
+  "middleName": null,
+  "lastName": "Fixture",
+  "email": "{{FixtureCustomerEmail}}",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create a fixture vehicle to verify the cascade delete (201 expected)
+# @name fixtureVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "licensePlate": "DEL-{{RunId}}",
+  "vin": "{{FixtureVehicleVin}}",
+  "brand": "Skoda",
+  "model": "Octavia",
+  "year": 2020,
+  "mileageKm": 45000,
+  "enginePowerKw": 110,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 201
+
 ###
 
 ### [Negative][Customers] Delete non-existent customer (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404
 
 ###
 
@@ -39,7 +89,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Customers] Login as non-admin mechanic
+### [Setup][Customers] Login as non-admin mechanic (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -49,11 +99,15 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
 ### [Negative][Customers] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
 Origin: {{WebUI_Origin}}
+
+?? status == 404
 
 ###
 
@@ -67,23 +121,33 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+?? status == 200
+
 ###
 
-### [Positive][Customers] Admin deletes customer (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+### [Positive][Customers] Admin deletes the fixture customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+
+?? status == 204
 
 ###
 
 ### [Negative][Customers] Deleted customer cannot be fetched (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+
+?? status == 404
 
 ###
 
 ### [Negative][Customers] Deleted customer vehicles endpoint returns not found (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+
+?? status == 404
 
 ###
 
-### [Negative][Customers] Cascade check - customer vehicle no longer exists (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SeedCustomerVehicleId}}
+### [Negative][Customers] Cascade check - customer's vehicle no longer exists (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+
+?? status == 404
