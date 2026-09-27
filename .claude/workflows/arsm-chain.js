@@ -1,11 +1,10 @@
 export const meta = {
   name: 'arsm-chain',
-  description: 'ARSM routed chain: plan into parallel work packages, jev-router model per package, pipelined implement and review, validate.py gate, targeted tests',
+  description: 'ARSM chain: opus/fable plan by difficulty, parallel sonnet-max work packages, opus/fable review, sonnet validate.py gate and targeted tests',
   whenToUse: 'The user asked for the agent workflow on an ARSM task. Pass args {task, difficulty?, area?, baseRef?}.',
   phases: [
     { title: 'Plan', detail: 'orchestrator splits the task into work packages with disjoint file ownership (skipped for difficulty-1 single-area tasks)' },
-    { title: 'Route', detail: 'jev-router picks model and effort for every package' },
-    { title: 'Implement', detail: 'packages run in parallel, capped by the max(router, orchestrator) difficulty' },
+    { title: 'Implement', detail: 'packages run in parallel on sonnet (max effort), capped by the max(router, orchestrator) difficulty' },
     { title: 'Review', detail: 'each package is reviewed as soon as it finishes; docs-sync runs beside the gate' },
     { title: 'Gate', detail: 'scripts/validate.py, failures go back to the owning package, max two rounds' },
     { title: 'Test', detail: 'heavy suites only when their gate matches; E2E targeted to the diff' },
@@ -28,10 +27,13 @@ const AREA_ROOTS = {
 const WEBUI_PREFIX = 'app/AutoService.WebUI/'
 // Implementing agents that may run at once, indexed by the effective 0-4 difficulty.
 const PARALLEL_CAP = [2, 2, 4, 6, 8]
-const MODELS = new Set(['sonnet', 'opus', 'fable'])
-const EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max'])
-// Reviewers and mechanical runners: cheap and fast (never Haiku - jev-router policy).
-const CHEAP = { model: 'sonnet', effort: 'low' }
+// Model policy (user decision 2026-09-27; never Haiku): planning and review run on opus for difficulty 0-2 and
+// on fable for 3-4, implementation and every fix round on sonnet at max effort, the gate and tests on sonnet.
+const THINKER_FABLE_FROM = 3
+const thinkerFor = (difficulty) => ({ model: (difficulty ?? 0) >= THINKER_FABLE_FROM ? 'fable' : 'opus', effort: 'high' })
+const IMPLEMENTER = { model: 'sonnet', effort: 'max' }
+const RUNNER = { model: 'sonnet', effort: 'low' }
+const TESTER = { model: 'sonnet', effort: 'medium' }
 
 const STR_LIST = { type: 'array', items: { type: 'string' } }
 const PACKAGE_SCHEMA = {
@@ -56,11 +58,6 @@ const PLAN_SCHEMA = {
     questions: { ...STR_LIST, description: 'Undecided product/UX/contract questions the user must answer before implementation.' },
   },
   required: ['difficulty', 'contract', 'packages', 'uiChange', 'gates', 'questions'],
-}
-const ROUTES_SCHEMA = {
-  type: 'object',
-  properties: { routes: { type: 'array', items: { type: 'object', properties: { model: { type: ['string', 'null'] }, effort: { type: ['string', 'null'] } }, required: ['model', 'effort'] } } },
-  required: ['routes'],
 }
 const IMPL_SCHEMA = {
   type: 'object',
@@ -106,7 +103,7 @@ if (routerDifficulty === 1 && AREAS.includes(directArea)) {
     `- Plan from a targeted scan: read what you need to assign ownership and write precise prompts, and leave reproduction and root-cause ` +
     `debugging to the owning package. Package prompts must not ask for tests, repro scripts, dev servers or validation; the chain runs those.\n` +
     `- Set gates per the root CLAUDE.md Gates section. List every undecided product/UX/contract decision in \`questions\` instead of choosing.\n\nTask:\n${task}`,
-    { agentType: 'orchestrator', phase: 'Plan', schema: PLAN_SCHEMA })
+    { agentType: 'orchestrator', phase: 'Plan', ...thinkerFor(routerDifficulty), schema: PLAN_SCHEMA })
 }
 if (!plan) throw new Error('The orchestrator returned no plan.')
 if (plan.questions.length) return { status: 'needs-user', questions: plan.questions, plan, tokensSpent: budget.spent() }
@@ -156,28 +153,8 @@ log(`Difficulty router ${routerDifficulty ?? '-'}, orchestrator ${planDifficulty
   `${ordered.length} package(s), at most ${cap} implementing at once.`)
 if (ordered.length > cap) log(`${ordered.length - cap} package(s) wait for a free slot.`)
 
-// ---------------------------------------------------------------- route
-phase('Route')
-let routed = null
-if (planSkipped) {
-  log('Route skipped: the single package already inherits the top-level router\'s model/effort.')
-} else {
-  routed = await agent(
-    `For each package prompt below, run \`python ~/.jev-router/bin/route.py --json\` with the prompt on stdin ` +
-    `(for example with a heredoc) and return its \`model\` and \`effort\` fields in the same order. ` +
-    `Issue every route.py call as its own Bash tool call, but put ALL of them in ONE response so they run in ` +
-    `parallel - never wait for one to finish before starting the next.\n` +
-    `If the shim is missing or fails, return null for both. Do nothing else.\n\n` +
-    ordered.map((p, i) => `--- package ${i + 1} (${p.area})\n${p.prompt}`).join('\n'),
-    { ...CHEAP, phase: 'Route', schema: ROUTES_SCHEMA })
-}
-const routeFor = (i) => {
-  const r = routed?.routes[i] || {}
-  return {
-    ...(MODELS.has(r.model) ? { model: r.model } : {}),
-    ...(EFFORTS.has(r.effort) ? { effort: r.effort } : {}),
-  }
-}
+const reviewer = thinkerFor(effective)
+log(`Models: plan ${thinkerFor(routerDifficulty).model}, implement ${IMPLEMENTER.model}/${IMPLEMENTER.effort}, review ${reviewer.model}, gate/test sonnet.`)
 
 /** Runs at most `limit` thunks at once; the rest queue for a free slot. A failing thunk resolves to null. */
 const limiter = (limit) => {
@@ -216,22 +193,21 @@ const reviewPrompt = (what, files) =>
   `${what}\nReview ONLY these changed files (diff against ${baseRef}); do not sweep the repository:\n${files.join('\n')}`
 
 const runPackage = async (p) => {
-  const route = routeFor(p.index)
-  const impl = await slot(() => agent(packagePrompt(p), { agentType: p.area, phase: 'Implement', label: `implement:${p.id}`, ...route, schema: IMPL_SCHEMA }))
+  const impl = await slot(() => agent(packagePrompt(p), { agentType: p.area, phase: 'Implement', label: `implement:${p.id}`, ...IMPLEMENTER, schema: IMPL_SCHEMA }))
   track(impl)
   if (!impl || impl.openQuestions.length) return { p, impl }
   const source = impl.filesChanged.filter((f) => /\.(cs|ts|tsx)$/.test(f))
   const ui = impl.filesChanged.filter((f) => normPath(f).startsWith(WEBUI_PREFIX))
   const [principles, audit] = await parallel([
     () => source.length ? agent(reviewPrompt('Apply naming, SOLID/OOP and JSDoc rules; size limits are checked by scripts/validate.py, not by you.', source),
-      { agentType: 'coding-principles', phase: 'Review', label: `principles:${p.id}`, ...CHEAP, schema: REVIEW_SCHEMA }) : null,
+      { agentType: 'coding-principles', phase: 'Review', label: `principles:${p.id}`, ...reviewer, schema: REVIEW_SCHEMA }) : null,
     () => plan.uiChange && ui.length ? agent(reviewPrompt('Audit against the UI/UX policy. REPORT ONLY: list findings, do not edit (a fix follows).', ui),
-      { agentType: 'ui-ux-style-profile', phase: 'Review', label: `ui-ux:${p.id}`, model: 'sonnet', effort: 'medium', schema: REVIEW_SCHEMA }) : null,
+      { agentType: 'ui-ux-style-profile', phase: 'Review', label: `ui-ux:${p.id}`, ...reviewer, schema: REVIEW_SCHEMA }) : null,
   ])
   track(principles)
   const uiFix = audit?.findings.length
     ? await slot(() => agent(fixPrompt([{ stage: 'ui-ux', detail: audit.findings }], p, []),
-      { agentType: p.area, phase: 'Review', label: `fix:${p.id}:ui-ux`, ...route, schema: IMPL_SCHEMA }))
+      { agentType: p.area, phase: 'Review', label: `fix:${p.id}:ui-ux`, ...IMPLEMENTER, schema: IMPL_SCHEMA }))
     : null
   track(uiFix)
   return { p, impl, review: [principles, audit].filter(Boolean), uiFix }
@@ -268,7 +244,7 @@ if (handoffs.length) {
     handoffs.filter((h) => h.area === area).map((h) => `- (${h.from}) ${h.change}`).join('\n') + '\n\n' +
     (plan.contract ? `Shared contract (fixed, do not change it):\n${plan.contract}\n\n` : '') +
     'Do not run validation or tests; the chain does that. Report every file you changed.',
-    { agentType: area, phase: 'Implement', label: `handoff:${area}`, ...routeFor(ordered.findIndex((p) => p.area === area)), schema: IMPL_SCHEMA }))))).filter(Boolean))
+    { agentType: area, phase: 'Implement', label: `handoff:${area}`, ...IMPLEMENTER, schema: IMPL_SCHEMA }))))).filter(Boolean))
   applied.forEach(track)
 }
 const openQuestions = [...finished, ...applied.map((impl) => ({ impl }))].flatMap((r) => r.impl.openQuestions)
@@ -277,11 +253,11 @@ if (openQuestions.length) return { status: 'needs-user', questions: openQuestion
 // ---------------------------------------------------------------- gate (docs-sync runs beside it: it edits docs only, which the gate does not check)
 phase('Gate')
 const docsSync = agent(reviewPrompt('Sync the Claude instruction layer and READMEs with these changes; edit documentation files only.', [...changed]),
-  { agentType: 'docs-sync', phase: 'Review', ...CHEAP, schema: REVIEW_SCHEMA })
+  { agentType: 'docs-sync', phase: 'Review', ...reviewer, schema: REVIEW_SCHEMA })
 const runGate = () => agent(
   `Run \`python scripts/validate.py --base ${baseRef} --json\` from the repository root and return \`passed\` and the failing stages ` +
   `with their detail lines, verbatim. Change nothing.`,
-  { ...CHEAP, phase: 'Gate', schema: GATE_SCHEMA })
+  { ...RUNNER, phase: 'Gate', schema: GATE_SCHEMA })
 
 const FILE_REF = /[\w-]+\.(?:tsx?|jsx?|mjs|cs|py|css|json)\b/
 const LABEL_LINE = /^\w+:$/
@@ -352,7 +328,7 @@ for (let round = 1; round <= 2 && gate?.passed === false; round++) {
   log(`Fix round ${round}: ${groups.map(fixLabel).join(', ')}`)
   const fixes = await parallel(groups.map((g) => () => slot(() => agent(fixPrompt(g.failures, g.owner, busy), {
     agentType: g.area, phase: 'Gate', label: `fix:${fixLabel(g)}:${round}`,
-    ...routeFor(g.owner ? g.owner.index : ordered.findIndex((p) => p.area === g.area)), schema: IMPL_SCHEMA,
+    ...IMPLEMENTER, schema: IMPL_SCHEMA,
   }))))
   fixes.forEach(track)
   gate = await runGate()
@@ -368,16 +344,16 @@ const tests = []
 if (plan.gates.e2e) tests.push(await agent(
   `Generate missing coverage first if this is a new feature, then run \`python scripts/select-e2e-specs.py --base ${baseRef} --run\` ` +
   `(targeted specs, 3 workers) and report the sanitized summary.\nChanged files:\n${files.join('\n')}`,
-  { agentType: 'e2e-playwright-test', phase: 'Test', model: 'sonnet', effort: 'medium' }))
+  { agentType: 'e2e-playwright-test', phase: 'Test', ...TESTER }))
 // All suites share the runner's summary file, so they run one after another.
 if (plan.gates.http) tests.push(await agent(`Run the HTTP endpoint gate for these changes:\n${files.join('\n')}`,
-  { agentType: 'http-endpoint-test', phase: 'Test', model: 'sonnet', effort: 'medium' }))
+  { agentType: 'http-endpoint-test', phase: 'Test', ...TESTER }))
 if (plan.gates.sql) tests.push(await agent(`Run the SQL gate for these changes:\n${files.join('\n')}`,
-  { agentType: 'sql-database-test', phase: 'Test', model: 'sonnet', effort: 'medium' }))
+  { agentType: 'sql-database-test', phase: 'Test', ...TESTER }))
 
 return {
   status: 'done',
   difficulty: { router: routerDifficulty, orchestrator: planDifficulty, effective, parallel: cap },
-  plan, routes: routed?.routes, packages, unfinished, applied, docs, gate, tests, changed: files,
+  plan, models: { plan: thinkerFor(routerDifficulty), implement: IMPLEMENTER, review: reviewer, gate: RUNNER, test: TESTER }, packages, unfinished, applied, docs, gate, tests, changed: files,
   tokensSpent: budget.spent(),
 }

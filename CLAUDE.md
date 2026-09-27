@@ -11,13 +11,15 @@
 
 ## Model Selection (Auto)
 
-- jev-router (the global `UserPromptSubmit` hook that injects the `[router]` line) owns the model and
-  effort policy for every project; this repository keeps no model table of its own. Claude models are
-  used only through the generic aliases `sonnet`, `opus` and `fable`, which always resolve to the newest
-  release, and Haiku is never used.
-- Follow the `[router]` line for the session. In the routed chain every step is routed again through
-  `python ~/.jev-router/bin/route.py --json` (prompt on stdin), and the step's agent runs with the
-  returned `model` and `effort`.
+- Claude models are used only through the generic aliases `sonnet`, `opus` and `fable`, which always
+  resolve to the newest release, and Haiku is never used.
+- The main session follows the `[router]` line that jev-router (the global `UserPromptSubmit` hook)
+  injects; its `difficulty` is also the `difficulty` argument of `arsm-chain`.
+- Inside `arsm-chain` the model policy is fixed (user decision, 2026-09-27) instead of routed per step:
+  planning (`orchestrator`) and every review (`coding-principles`, `ui-ux-style-profile`, `docs-sync`)
+  run on `opus` for difficulty 0-2 and on `fable` for 3-4, effort `high` (plan: router difficulty;
+  review: the effective difficulty); implementation, hand-offs and every fix round run on `sonnet` at
+  effort `max`; the validate gate runs on `sonnet` (low) and the test agents on `sonnet` (medium).
 
 ## Workflow (Ask First)
 
@@ -29,26 +31,25 @@
       request plus every agreed constraint)
     - workflow declined -> do the work directly, without `orchestrator` and without the specialist agents
     - partial answer -> run exactly the steps the user named and nothing else
-- `arsm-chain` encodes the routed chain deterministically:
+- `arsm-chain` encodes the chain deterministically (models per the Model Selection section):
     1. Plan: `orchestrator` rates the task 0-4, splits it into work packages (one area each, with
        disjoint owned paths in the shared working tree, shared building blocks as their own package that
        consumers depend on), fixes any shared DTO/API contract up front, and returns open decisions as
        questions instead of choosing. Skipped when the router difficulty is 1 and the task touches a
        single area.
-    2. Route: jev-router picks `model` and `effort` for every package.
-    3. Implement: packages run in parallel, at most 2/2/4/6/8 implementing agents at once for the
+    2. Implement: packages run in parallel, at most 2/2/4/6/8 implementing agents at once for the
        effective difficulty 0/1/2/3/4, which is the higher of the router and orchestrator ratings. A
        package starts once its dependencies finished; packages with overlapping paths run one after the
        other; `migration` runs after every `backend` package, only on a real schema delta. `frontend`
        applies the `ui-ux-style-profile` policy itself while implementing. Changes a package needs outside
        its paths are handed off and applied by one agent per area once every package is done.
-    4. Review, per package as soon as it finishes and on its changed files only: `coding-principles`
+    3. Review, per package as soon as it finishes and on its changed files only: `coding-principles`
        (naming, SOLID/OOP, JSDoc) and, for UI changes, `ui-ux-style-profile` as a report-only audit whose
        findings go straight back to that package. `docs-sync` (documentation only) runs once, beside the
        gate.
-    5. Gate: `python scripts/validate.py` once; each failure goes back to the package owning the path it
+    4. Gate: `python scripts/validate.py` once; each failure goes back to the package owning the path it
        names (unowned paths to one agent per area) for at most two fix rounds.
-    6. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
+    5. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
        `python scripts/select-e2e-specs.py --run` (3 workers).
 - Without the Workflow tool, run the same steps by hand in the same order and with the same parallelism.
 - Whatever the answer, run `python scripts/validate.py` before committing a source change: it is

@@ -28,13 +28,14 @@ Plan-only agent. No direct implementation edits.
    keep tests, repro scripts, dev servers and validation out of package prompts.
 6. Set the heavy-test gates (`e2e`, `http`, `sql`) from the Gates section.
 7. List every undecided product/UX/contract decision as a question instead of choosing.
-8. The rest of the chain (jev-router routing, pipelined per-package review, `scripts/validate.py`
+8. The rest of the chain (sonnet implementation, pipelined per-package review, `scripts/validate.py`
    gate, targeted tests) is run by the `arsm-chain` workflow, not by this agent.
 
 ## Model Routing
 
-- Do not pick models: jev-router routes every step of the plan (`model` and `effort`), so write each
-  step prompt so it describes that step's own difficulty on its own.
+- Do not pick models: the `arsm-chain` workflow fixes them (planning and review on opus for difficulty
+  0-2 and fable for 3-4, implementation on sonnet at max effort), so rate `difficulty` honestly - it
+  selects the review model and the parallelism - and write each package prompt so it stands on its own.
 
 ## Gates
 
