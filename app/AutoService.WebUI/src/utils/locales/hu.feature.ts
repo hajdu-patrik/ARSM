@@ -109,6 +109,8 @@ export const huFeature = {
     registerMechanic: 'Szerelő regisztrálása',
     mechanicList: 'Kijelölt szerelők',
     noMechanics: 'Még nincs regisztrált szerelő.',
+    noMechanicsFound: 'Nincs a keresésnek megfelelő szerelő.',
+    mechanicSearchPlaceholder: 'Keresés szerelőnév alapján...',
     deleteMechanic: 'Szerelő törlése',
     deleteMechanicModalTitle: 'Szerelő törlésének megerősítése',
     deleteMechanicWarning: 'Biztosan véglegesen törölni szeretné {{name}} ({{email}}) szerelőt? Ez a művelet nem vonható vissza.',

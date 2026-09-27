@@ -5,7 +5,7 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { inputClass, labelClass } from '../constants';
+import { inputClass, labelClass } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 
 /** Props for the BasicInfoSection component. */

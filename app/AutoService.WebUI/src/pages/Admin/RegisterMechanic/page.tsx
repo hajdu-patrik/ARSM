@@ -16,6 +16,7 @@ import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormV
 import {
   buttonClass,
   cardClass,
+  defaultIconClass,
   mutedBodyTextClass,
   pageHeaderClass,
   pageShellClass,
@@ -24,7 +25,7 @@ import {
   secondaryButtonClass,
   sectionStackClass,
   sectionTitleClass,
-} from './constants';
+} from '../../../utils/formStyles';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
@@ -36,7 +37,6 @@ import {
   normalizeServerFieldErrors,
 } from '../../../utils/serverValidation';
 import type { RegisterMechanicFormValues } from './types';
-import { defaultIconClass } from '../../../utils/formStyles';
 
 function mapAdminMessageToToastKey(message: string): string {
   const mappedMessage = mapAdminValidationMessageToKey(message);

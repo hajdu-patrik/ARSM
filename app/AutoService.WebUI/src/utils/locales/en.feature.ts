@@ -109,6 +109,8 @@ export const enFeature = {
     registerMechanic: 'Register mechanic',
     mechanicList: 'Selected mechanics',
     noMechanics: 'No mechanics registered yet.',
+    noMechanicsFound: 'No mechanics match your search.',
+    mechanicSearchPlaceholder: 'Search by mechanic name...',
     deleteMechanic: 'Delete mechanic',
     deleteMechanicModalTitle: 'Confirm mechanic deletion',
     deleteMechanicWarning: 'Are you sure you want to permanently delete {{name}} ({{email}})? This action cannot be undone.',

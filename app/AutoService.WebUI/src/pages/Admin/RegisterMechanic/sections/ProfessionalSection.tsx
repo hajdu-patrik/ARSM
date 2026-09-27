@@ -8,9 +8,8 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
+import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS } from '../constants';
 import {
-  EXPERTISE_OPTIONS,
-  SPECIALIZATION_OPTIONS,
   compactSelectFullClass,
   hiddenCheckboxClass,
   labelClass,
@@ -21,7 +20,7 @@ import {
   optionTileCheckboxInactiveClass,
   optionTileInactiveClass,
   selectWrapperClass,
-} from '../constants';
+} from '../../../../utils/formStyles';
 
 /** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {

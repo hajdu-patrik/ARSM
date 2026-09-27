@@ -97,7 +97,15 @@ test.describe('Admin mechanic registration edge cases', () => {
       .click();
 
     await expect(mechanicsSection.getByText(newEmail, { exact: true })).toBeVisible();
-    await mechanicsSection.getByRole('button', { name: /Delete mechanic|Szerelő törlése/i }).last().click();
+    // The list is sorted by name, so the new mechanic is not necessarily the last row: target the
+    // innermost element that holds both its e-mail and a delete button (its own row).
+    const deleteButtonName = /Delete mechanic|Szerelő törlése/i;
+    const newMechanicRow = mechanicsSection
+      .locator('div')
+      .filter({ has: page.getByText(newEmail, { exact: true }) })
+      .filter({ has: page.getByRole('button', { name: deleteButtonName }) })
+      .last();
+    await newMechanicRow.getByRole('button', { name: deleteButtonName }).click();
 
     const deleteDialog = page.getByRole('dialog', { name: /Confirm mechanic deletion|Szerelő törlésének megerősítése/i });
     await expect(deleteDialog).toContainText(newEmail);

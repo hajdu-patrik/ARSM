@@ -1,13 +1,13 @@
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isAxiosError } from 'axios';
 import { Trash2 } from 'lucide-react';
-import { adminService } from '../../../../services/admin/admin.service';
-import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
 import { useToastStore } from '../../../../store/toast.store';
 import { Modal } from '../../../../components/common/Modal';
-import type { MechanicListItem } from '../../../../services/admin/admin.service';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
+import { buildMechanicDisplayName } from '../helpers';
+import { useMechanicListState } from '../useMechanicListState';
+import { MECHANIC_LIST_VISIBLE_ROW_COUNT } from '../constants';
+import { MechanicListToolbar } from './MechanicListToolbar';
 import {
 	compactInputSurfaceClass,
 	compactListPrimaryTextClass,
@@ -26,96 +26,66 @@ interface MechanicListSectionProps {
 	readonly refreshKey: number;
 }
 
-/** Renders the admin mechanic roster with optional delete actions. */
+/** Renders the admin mechanic roster with search, sort, a scrollable window, and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection({ refreshKey }: MechanicListSectionProps) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
 	const showErrorToast = useToastStore((state) => state.showError);
 
-	const [mechanics, setMechanics] = useState<MechanicListItem[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
+	const {
+		isLoading,
+		mechanics,
+		searchTerm,
+		setSearchTerm,
+		sortDirection,
+		toggleSortDirection,
+		clearSearch,
+		visibleMechanics,
+		deleteTarget,
+		isDeleting,
+		openDeleteModal,
+		closeDeleteModal,
+		handleDelete,
+	} = useMechanicListState({
+		refreshKey,
+		language: i18n.language,
+		showErrorToast,
+		showSuccessToast,
+	});
 
-	/** Fetches the mechanic roster from the admin service and updates local state. */
-	const loadMechanics = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const data = await adminService.listMechanics();
-			setMechanics(data);
-		} catch {
-			showErrorToast('admin.mechanicListError');
-		} finally {
-			setIsLoading(false);
-		}
-	}, [showErrorToast]);
-
-	useEffect(() => {
-		void loadMechanics();
-	}, [loadMechanics, refreshKey]);
-
-	useEffect(() => {
-		const handleProfilePictureUpdated = () => {
-			void loadMechanics();
-		};
-
-		globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
-		return () => {
-			globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
-		};
-	}, [loadMechanics]);
-
-	const openDeleteModal = useCallback((mechanic: MechanicListItem) => {
-		setDeleteTarget(mechanic);
+	const listContainerRef = useRef<HTMLDivElement>(null);
+	const [firstRowNode, setFirstRowNode] = useState<HTMLDivElement | null>(null);
+	const firstRowRef = useCallback((node: HTMLDivElement | null) => {
+		setFirstRowNode(node);
 	}, []);
+	const [listMaxHeight, setListMaxHeight] = useState<number | undefined>(undefined);
+	const hasVisibleRows = visibleMechanics.length > 0;
 
-	const closeDeleteModal = useCallback(() => {
-		if (isDeleting) {
+	useEffect(() => {
+		const containerElement = listContainerRef.current;
+
+		if (!firstRowNode || !containerElement) {
 			return;
 		}
 
-		setDeleteTarget(null);
-	}, [isDeleting]);
+		const updateListMaxHeight = () => {
+			const rowHeight = firstRowNode.getBoundingClientRect().height;
+			const rowGap = Number.parseFloat(getComputedStyle(containerElement).rowGap || '0');
+			setListMaxHeight((rowHeight * MECHANIC_LIST_VISIBLE_ROW_COUNT) + (rowGap * (MECHANIC_LIST_VISIBLE_ROW_COUNT - 1)));
+		};
 
-	/** Deletes the selected mechanic and maps known API error responses to toast messages. */
-	const handleDelete = useCallback(async () => {
-		if (!deleteTarget) {
-			return;
-		}
+		updateListMaxHeight();
 
-		setIsDeleting(true);
-		try {
-			await adminService.deleteMechanic(deleteTarget.personId);
-			setMechanics((previousMechanics) => (
-				previousMechanics.filter((mechanicItem) => mechanicItem.personId !== deleteTarget.personId)
-			));
-			showSuccessToast('admin.mechanicDeleted', { email: deleteTarget.email });
-			setDeleteTarget(null);
-		} catch (error) {
-			if (isAxiosError<{ detail?: string }>(error)) {
-				const status = error.response?.status;
-				const detail = error.response?.data?.detail ?? '';
+		const resizeObserver = new ResizeObserver(updateListMaxHeight);
+		resizeObserver.observe(firstRowNode);
 
-				if (status === 422 && detail.includes('appointments would be left without')) {
-					showErrorToast('admin.mechanicDeleteHasAppointments');
-				} else if (status === 422 && detail.includes('last remaining mechanic')) {
-					showErrorToast('admin.mechanicDeleteLastMechanic');
-				} else if (status === 403) {
-					showErrorToast('admin.mechanicDeleteForbidden');
-				} else if (status === 409) {
-					showErrorToast('admin.mechanicDeleteConflict');
-				} else if (status === 500) {
-					showErrorToast('admin.mechanicDeleteIdentityFailed');
-				} else {
-					showErrorToast('admin.mechanicDeleteFailed');
-				}
-			} else {
-				showErrorToast('admin.mechanicDeleteFailed');
-			}
-		} finally {
-			setIsDeleting(false);
-		}
-	}, [deleteTarget, showErrorToast, showSuccessToast]);
+		return () => resizeObserver.disconnect();
+	}, [firstRowNode]);
+
+	const removableMechanicCount = useMemo(
+		() => mechanics.filter((item) => !item.isAdmin).length,
+		[mechanics],
+	);
 
 	if (isLoading) {
 		return (
@@ -131,46 +101,63 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 				<p className={emptyStateBoxClass}>{t('admin.noMechanics')}</p>
 			) : (
 				<div className="space-y-3">
-					{Array.from(new Map(mechanics.map((mechanic) => [mechanic.personId, mechanic])).values()).map((mechanic) => {
-						const removableMechanicCount = mechanics.filter((item) => !item.isAdmin).length;
-						const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
-						const displayName = [mechanic.firstName, mechanic.middleName, mechanic.lastName]
-							.filter(Boolean)
-							.join(' ');
+					<MechanicListToolbar
+						t={t}
+						searchTerm={searchTerm}
+						sortDirection={sortDirection}
+						onSearchChange={setSearchTerm}
+						onClearSearch={clearSearch}
+						onToggleSortDirection={toggleSortDirection}
+					/>
 
-						return (
-							<div
-								key={mechanic.personId}
-								className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
-							>
-								<MechanicAvatar
-									mechanicId={mechanic.personId}
-									fullName={displayName}
-									hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-									sizeClassName="h-9 w-9 text-xs"
-								/>
+					{hasVisibleRows ? (
+						<div
+							ref={listContainerRef}
+							className="flex flex-col gap-3 overflow-y-auto"
+							style={listMaxHeight === undefined ? undefined : { maxHeight: `${listMaxHeight}px` }}
+						>
+							{visibleMechanics.map((mechanic, index) => {
+								const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
+								const displayName = buildMechanicDisplayName(mechanic);
 
-								<div className="min-w-0 flex-1">
-									<p className={compactListPrimaryTextClass}>
-										{displayName}
-									</p>
-									<p className={compactListSecondaryTextClass}>{mechanic.email}</p>
-								</div>
-
-								{canRemoveMechanic && (
-									<button
-										type="button"
-										onClick={() => openDeleteModal(mechanic)}
-										title={t('admin.deleteMechanic')}
-										aria-label={t('admin.deleteMechanic')}
-										className={`ml-auto ${iconDangerButtonClass}`}
+								return (
+									<div
+										key={mechanic.personId}
+										ref={index === 0 ? firstRowRef : undefined}
+										className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
 									>
-										<Trash2 className={defaultIconClass} aria-hidden="true" />
-									</button>
-								)}
-							</div>
-						);
-					})}
+										<MechanicAvatar
+											mechanicId={mechanic.personId}
+											fullName={displayName}
+											hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
+											sizeClassName="h-9 w-9 text-xs"
+										/>
+
+										<div className="min-w-0 flex-1">
+											<p className={compactListPrimaryTextClass}>
+												{displayName}
+											</p>
+											<p className={compactListSecondaryTextClass}>{mechanic.email}</p>
+										</div>
+
+										{canRemoveMechanic && (
+											<button
+												type="button"
+												onClick={() => openDeleteModal(mechanic)}
+												title={t('admin.deleteMechanic')}
+												aria-label={t('admin.deleteMechanic')}
+												className={`ml-auto ${iconDangerButtonClass}`}
+											>
+												<Trash2 className={defaultIconClass} aria-hidden="true" />
+											</button>
+										)}
+									</div>
+								);
+							})}
+						</div>
+					) : (
+						<p className={emptyStateBoxClass}>{t('admin.noMechanicsFound')}</p>
+					)}
 				</div>
 			)}
 

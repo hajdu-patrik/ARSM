@@ -10,7 +10,8 @@ import {
 } from '../../../services/cache/cache-policy';
 import { getAuthQueryScope, queryKeys } from '../../../services/cache/queryKeys';
 import { useAuthStore } from '../../../store/auth.store';
-import { buildCustomerDisplayName, normalizeSearchValue } from '../helpers';
+import { buildCustomerDisplayName } from '../helpers';
+import { normalizeSearchValue } from '../../../utils/textSearch';
 import type { SortDirection } from '../page.types';
 import { applyLoadedVehicleSummary } from './useCustomersListState.helpers';
 import { useCustomersListMutations } from './useCustomersListMutations';

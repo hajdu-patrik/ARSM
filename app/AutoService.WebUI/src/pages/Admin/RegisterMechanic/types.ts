@@ -31,3 +31,6 @@ export type FieldErrors = Record<string, string[]>;
 
 /** Lookup function that returns the first validation error for a field. */
 export type GetFieldError = (field: string) => string | undefined;
+
+/** Sort direction used by the mechanic list. */
+export type SortDirection = 'asc' | 'desc';

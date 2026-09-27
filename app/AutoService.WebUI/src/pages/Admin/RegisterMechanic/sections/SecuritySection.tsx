@@ -6,8 +6,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
-import { inputClass, inputGroupContainerClass, labelClass, mutedMetaTextClass, passwordToggleButtonClass } from '../constants';
-import { largeIconClass } from '../../../../utils/formStyles';
+import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../../utils/formStyles';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {

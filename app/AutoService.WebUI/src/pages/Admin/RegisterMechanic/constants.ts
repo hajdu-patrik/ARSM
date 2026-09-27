@@ -1,6 +1,5 @@
 /**
  * Specialization and expertise option arrays for mechanic registration.
- * Re-exports shared form style classes from {@link utils/formStyles}.
  * @module pages/Admin/RegisterMechanic/constants
  */
 
@@ -12,6 +11,9 @@ export const SPECIALIZATION_OPTIONS: OptionItem[] = [
   { value: 'HybridAndElectric', labelKey: 'admin.spec.hybridAndElectric' },
   { value: 'All', labelKey: 'admin.spec.all' },
 ];
+
+/** Number of mechanic rows visible in the scrollable list window before it scrolls internally. */
+export const MECHANIC_LIST_VISIBLE_ROW_COUNT = 5;
 
 /** Available expertise tag options for the mechanic registration form. */
 export const EXPERTISE_OPTIONS: OptionItem[] = [
@@ -26,31 +28,3 @@ export const EXPERTISE_OPTIONS: OptionItem[] = [
   { value: 'CoolingSystem', labelKey: 'admin.expertise.coolingSystem' },
   { value: 'Bodywork', labelKey: 'admin.expertise.bodywork' },
 ];
-
-export {
-  buttonClass,
-  cardClass,
-  compactSelectFullClass,
-  hiddenCheckboxClass,
-  iconDangerButtonClass,
-  inputClass,
-  inputGroupContainerClass,
-  labelClass,
-  mutedBodyTextClass,
-  mutedMetaTextClass,
-  optionTileActiveClass,
-  optionTileBaseClass,
-  optionTileCheckboxActiveClass,
-  optionTileCheckboxClass,
-  optionTileCheckboxInactiveClass,
-  optionTileInactiveClass,
-  pageHeaderClass,
-  pageShellClass,
-  pageShellNarrowClass,
-  pageTitleClass,
-  passwordToggleButtonClass,
-  secondaryButtonClass,
-  selectWrapperClass,
-  sectionStackClass,
-  sectionTitleClass,
-} from '../../../utils/formStyles';

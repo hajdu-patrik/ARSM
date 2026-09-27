@@ -8,6 +8,9 @@
 
 import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
+import { normalizeSearchValue } from '../../utils/textSearch';
+
+export { normalizeSearchValue };
 
 /** Structured numeric values extracted from vehicle form inputs. */
 export interface VehicleNumericValues {
@@ -38,18 +41,6 @@ export function buildCustomerDisplayName(customer: CustomerListItem): string {
   return [customer.lastName, customer.firstName, customer.middleName]
     .filter((value) => value && value.trim().length > 0)
     .join(' ');
-}
-
-/**
- * Removes accents and lowercases input to support accent-insensitive search.
- * @param value Raw input value.
- * @returns Normalized value suitable for contains matching.
- */
-export function normalizeSearchValue(value: string): string {
-  return value
-    .normalize('NFD')
-    .replaceAll(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
 }
 
 /**
