@@ -4,12 +4,7 @@ public static partial class AppointmentEndpoints
 {
     internal sealed record ErrorCodeResponse(string Code);
 
-    /** Customer summary DTO with minimal identification details. */
-    internal sealed record CustomerSummaryDto(
-        int Id,
-        string FullName);
-
-    /** Vehicle DTO with full specifications and owner details. */
+    /** Vehicle DTO with full specifications and the owning customer's identifier. */
     internal sealed record VehicleDto(
         int Id,
         string LicensePlate,
@@ -20,7 +15,7 @@ public static partial class AppointmentEndpoints
         int MileageKm,
         int EnginePowerKw,
         string DrivetrainType,
-        CustomerSummaryDto Customer);
+        int CustomerId);
 
     /** Mechanic summary DTO with specialization and profile picture availability. */
     internal sealed record MechanicSummaryDto(

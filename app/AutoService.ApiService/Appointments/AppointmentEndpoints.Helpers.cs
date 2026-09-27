@@ -7,7 +7,7 @@ public static partial class AppointmentEndpoints
     /**
      * Maps an {@code Appointment} domain entity to its DTO representation.
      * @param appointment - The appointment entity to map.
-     * @return The mapped DTO with nested vehicle, customer, and mechanic summaries.
+     * @return The mapped DTO with the nested vehicle (including its owner's customer id) and mechanic summaries.
      */
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
@@ -28,9 +28,7 @@ public static partial class AppointmentEndpoints
             appointment.Vehicle.MileageKm,
             appointment.Vehicle.EnginePowerKw,
             appointment.Vehicle.DrivetrainType.ToString(),
-            new CustomerSummaryDto(
-                appointment.Vehicle.Customer.Id,
-                appointment.Vehicle.Customer.Name.ToString())),
+            appointment.Vehicle.CustomerId),
         appointment.Mechanics
             .Select(m => new MechanicSummaryDto(
                 m.Id,

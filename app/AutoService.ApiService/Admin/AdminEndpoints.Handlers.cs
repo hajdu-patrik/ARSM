@@ -1,5 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -10,12 +11,26 @@ namespace AutoService.ApiService.Admin;
 
 public static partial class AdminEndpoints
 {
+    /**
+     * Lists mechanics for the admin console, flagging each row with its
+     * Admin-role status and whether it has a stored profile picture.
+     *
+     * @param limit Optional row cap (1..500, default 500).
+     * @param httpContext Current request's HTTP context.
+     * @param db Database context.
+     * @param loggerFactory Factory used to create the scoped logger.
+     * @param cancellationToken Request cancellation token.
+     * @returns Mechanic list.
+     */
     private static async Task<IResult> ListMechanicsAsync(
+        int? limit,
         HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
+        var boundedLimit = ListQueryLimits.Normalize(limit);
+
         var logger = loggerFactory.CreateLogger("AdminEndpoints.ListMechanics");
 
         var adminIdentityUserIdSet = (await (
@@ -30,6 +45,8 @@ public static partial class AdminEndpoints
             .AsNoTracking()
             .OrderBy(m => m.Name.LastName)
             .ThenBy(m => m.Name.FirstName)
+            .ThenBy(m => m.Id)
+            .Take(boundedLimit)
             .Select(m => new MechanicListItemDto(
                 m.Id,
                 m.Name.FirstName,
@@ -47,6 +64,19 @@ public static partial class AdminEndpoints
         return Results.Ok(items);
     }
 
+    /**
+     * Deletes a mechanic and its linked identity account inside a
+     * serializable transaction, after rejecting self-deletion, deletion of
+     * an admin account, and any deletion-invariant violation.
+     *
+     * @param id Mechanic identifier to delete.
+     * @param httpContext Current request's HTTP context.
+     * @param userManager Identity user manager used to remove the linked account.
+     * @param db Database context.
+     * @param loggerFactory Factory used to create the scoped logger.
+     * @param cancellationToken Request cancellation token.
+     * @returns 200 on success, or 403/404/409/422/500 on the corresponding failure.
+     */
     private static async Task<IResult> DeleteMechanicAsync(
         int id,
         HttpContext httpContext,
@@ -157,6 +187,15 @@ public static partial class AdminEndpoints
         return Results.Ok(new { message = "Mechanic deleted successfully." });
     }
 
+    /**
+     * Validates that deleting a mechanic would not leave the shop without
+     * mechanics or leave an appointment without any assigned mechanic.
+     *
+     * @param mechanicId Mechanic identifier being deleted.
+     * @param db Database context.
+     * @param cancellationToken Request cancellation token.
+     * @returns A 422 problem result when a deletion invariant is violated, otherwise null.
+     */
     private static async Task<IResult?> ValidateMechanicDeletionInvariantsAsync(
         int mechanicId,
         AutoServiceDbContext db,
@@ -184,6 +223,14 @@ public static partial class AdminEndpoints
         return null;
     }
 
+    /**
+     * Determines whether an exception (or any of its inner exceptions)
+     * represents a concurrency conflict raised while deleting a mechanic.
+     *
+     * @param exception Exception thrown by the deletion transaction.
+     * @returns True when the exception chain contains an EF concurrency
+     * exception or a Postgres serialization/deadlock error.
+     */
     private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)

@@ -1,5 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Quotes;
@@ -13,6 +14,7 @@ public static partial class QuoteEndpoints
      *
      * @param vehicleId Optional vehicle filter.
      * @param status Optional status filter (Draft/Sent/Accepted/Rejected).
+     * @param limit Optional row cap (1..500, default 500).
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Quote list, or 422 when status is not a recognized value.
@@ -20,9 +22,12 @@ public static partial class QuoteEndpoints
     private static async Task<IResult> ListQuotesAsync(
         int? vehicleId,
         string? status,
+        int? limit,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
+        var boundedLimit = ListQueryLimits.Normalize(limit);
+
         QuoteStatus? statusFilter = null;
         if (status is not null)
         {
@@ -54,6 +59,8 @@ public static partial class QuoteEndpoints
 
         var quotes = await query
             .OrderByDescending(q => q.CreatedAt)
+            .ThenBy(q => q.Id)
+            .Take(boundedLimit)
             .ToListAsync(cancellationToken);
 
         var nowUtc = DateTime.UtcNow;
@@ -64,15 +71,19 @@ public static partial class QuoteEndpoints
      * Lists a vehicle's quotes, ordered by CreatedAt descending.
      *
      * @param vehicleId Target vehicle identifier.
+     * @param limit Optional row cap (1..500, default 500).
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Quote list, or 404 when the vehicle does not exist.
      */
     private static async Task<IResult> GetByVehicleAsync(
         int vehicleId,
+        int? limit,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
+        var boundedLimit = ListQueryLimits.Normalize(limit);
+
         var vehicleExists = await db.Vehicles.AnyAsync(v => v.Id == vehicleId, cancellationToken);
         if (!vehicleExists)
         {
@@ -85,6 +96,8 @@ public static partial class QuoteEndpoints
             .Include(q => q.CreatedByMechanic)
             .Where(q => q.VehicleId == vehicleId)
             .OrderByDescending(q => q.CreatedAt)
+            .ThenBy(q => q.Id)
+            .Take(boundedLimit)
             .ToListAsync(cancellationToken);
 
         var nowUtc = DateTime.UtcNow;

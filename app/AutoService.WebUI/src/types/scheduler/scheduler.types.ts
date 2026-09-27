@@ -3,14 +3,6 @@
 import type { DrivetrainType } from '../customers/customers.types';
 
 /**
- * Summary representation of a customer associated with a vehicle.
- */
-export interface CustomerSummaryDto {
-  id: number;
-  fullName: string;
-}
-
-/**
  * Full vehicle representation including owner information.
  * Returned as part of {@link AppointmentDto} to identify the serviced vehicle.
  */
@@ -33,8 +25,8 @@ export interface VehicleDto {
   enginePowerKw: number;
   /** Drivetrain category. */
   drivetrainType: DrivetrainType;
-  /** Owner of this vehicle. */
-  customer: CustomerSummaryDto;
+  /** Unique identifier of this vehicle's owner. */
+  customerId: number;
 }
 
 /**

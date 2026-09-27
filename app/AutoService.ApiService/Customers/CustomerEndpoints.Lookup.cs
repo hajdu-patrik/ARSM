@@ -134,23 +134,47 @@ public static partial class CustomerEndpoints
             .Replace(" ", string.Empty, StringComparison.Ordinal)
             .Replace("-", string.Empty, StringComparison.Ordinal);
         var boundedLimit = NormalizeCustomerLookupLimit(limit);
-        var customers = await db.Customers
-            .AsNoTracking()
-            .Include(c => c.Vehicles)
+        // Trigram search index: option (a). The predicate stays as it is, and the pg_trgm migration indexes
+        // these exact upper(...) expressions with GIN gin_trgm_ops. Npgsql translates
+        // .ToUpper().Contains(capturedVariable) to `upper(expr) LIKE @p` (p = escaped '%term%', default
+        // backslash escape), which a trigram index can serve. EF.Functions.ILike (option b) would change
+        // matches: ILIKE folds both sides with PostgreSQL lower(), whereas the term is upper-cased here by
+        // .NET and the column by PostgreSQL upper(), and a raw "%term%" makes a typed % or _ a wildcard.
+        // Expressions as generated (the IS NOT NULL guard keeps COALESCE out of the three-part name):
+        //   people:   upper("FirstName"), upper("MiddleName"), upper("LastName"),
+        //             upper("FirstName" || ' ' || "LastName"),
+        //             upper("FirstName" || ' ' || "MiddleName" || ' ' || "LastName")
+        //   vehicles: upper("LicensePlate"), upper(replace(replace("LicensePlate", ' ', ''), '-', ''))
+        // The predicate is split into a name-id/plate-id UNION, instead of one OR across both tables,
+        // because PostgreSQL can only combine indexes across an OR when every branch is index-matched;
+        // the vehicle EXISTS branch was not, so an OR containing it forced a full table scan of people.
+        // Each UNION branch now matches its own trigram indexes (5 on people, 2 on vehicles).
+        var nameMatchedCustomerIds = db.Customers
             .Where(c =>
                 c.Name.FirstName.ToUpper().Contains(searchTerm) ||
                 (c.Name.MiddleName != null && c.Name.MiddleName.ToUpper().Contains(searchTerm)) ||
                 c.Name.LastName.ToUpper().Contains(searchTerm) ||
                 (c.Name.FirstName + " " + c.Name.LastName).ToUpper().Contains(searchTerm) ||
                 (c.Name.MiddleName != null &&
-                 (c.Name.FirstName + " " + c.Name.MiddleName + " " + c.Name.LastName).ToUpper().Contains(searchTerm)) ||
-                c.Vehicles.Any(v =>
-                    v.LicensePlate.ToUpper().Contains(searchTerm) ||
-                    v.LicensePlate
-                        .Replace(" ", string.Empty)
-                        .Replace("-", string.Empty)
-                        .ToUpper()
-                        .Contains(compactSearchTerm)))
+                 (c.Name.FirstName + " " + c.Name.MiddleName + " " + c.Name.LastName).ToUpper().Contains(searchTerm)))
+            .Select(c => c.Id);
+
+        var plateMatchedCustomerIds = db.Vehicles
+            .Where(v =>
+                v.LicensePlate.ToUpper().Contains(searchTerm) ||
+                v.LicensePlate
+                    .Replace(" ", string.Empty)
+                    .Replace("-", string.Empty)
+                    .ToUpper()
+                    .Contains(compactSearchTerm))
+            .Select(v => v.CustomerId);
+
+        var matchedCustomerIds = nameMatchedCustomerIds.Union(plateMatchedCustomerIds);
+
+        var customers = await db.Customers
+            .AsNoTracking()
+            .Include(c => c.Vehicles)
+            .Where(c => matchedCustomerIds.Contains(c.Id))
             .OrderBy(c => c.Name.LastName)
             .ThenBy(c => c.Name.FirstName)
             .Take(boundedLimit)

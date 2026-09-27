@@ -49,7 +49,7 @@ export function createAppointment(state: MockApiState, request: SchedulerCreateI
       mileageKm: vehicle?.mileageKm ?? request.vehicle?.mileageKm ?? 0,
       enginePowerKw: vehicle?.enginePowerKw ?? request.vehicle?.enginePowerKw ?? 0,
       drivetrainType: vehicle?.drivetrainType ?? request.vehicle?.drivetrainType ?? 'Petrol',
-      customer: { id: lookup?.id ?? 9999, fullName: lookup ? getLookupName(lookup) : 'New Customer' },
+      customerId: lookup?.id ?? 9999,
     },
     mechanics: [],
   };

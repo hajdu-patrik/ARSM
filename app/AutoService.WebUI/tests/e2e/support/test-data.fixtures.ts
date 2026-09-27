@@ -217,7 +217,7 @@ function appointmentForVehicle(vehicle: VehicleDetailDto): AppointmentDto {
       mileageKm: vehicle.mileageKm,
       enginePowerKw: vehicle.enginePowerKw,
       drivetrainType: vehicle.drivetrainType,
-      customer: { id: vehicle.customer.id, fullName: `${vehicle.customer.lastName} ${vehicle.customer.firstName}` },
+      customerId: vehicle.customer.id,
     },
     mechanics: [],
   };

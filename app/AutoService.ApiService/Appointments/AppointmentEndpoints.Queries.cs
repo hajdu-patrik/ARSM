@@ -1,4 +1,8 @@
+using System.Linq.Expressions;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
@@ -6,10 +10,47 @@ namespace AutoService.ApiService.Appointments;
 public static partial class AppointmentEndpoints
 {
     /**
-     * Returns all appointments for a given customer across all owned vehicles.
+     * Server-side projection of an appointment into its list DTO.
+     *
+     * Mirrors {@code ToDto} field for field so list and mutation responses serialize identically,
+     * but lets EF Core fetch only the mapped columns instead of whole Vehicle/Customer/Mechanic rows.
+     * Name and enum formatting run through static helpers that EF Core evaluates on the client in the
+     * top-level projection, which keeps the exact domain formatting.
+     */
+    private static readonly Expression<Func<Appointment, AppointmentDto>> AppointmentDtoProjection = a => new AppointmentDto(
+        a.Id,
+        a.ScheduledDate,
+        a.IntakeCreatedAt,
+        a.DueDateTime,
+        a.TaskDescription,
+        FormatEnumName(a.Status),
+        a.CompletedAt,
+        a.CanceledAt,
+        new VehicleDto(
+            a.Vehicle.Id,
+            a.Vehicle.LicensePlate,
+            a.Vehicle.Vin,
+            a.Vehicle.Brand,
+            a.Vehicle.Model,
+            a.Vehicle.Year,
+            a.Vehicle.MileageKm,
+            a.Vehicle.EnginePowerKw,
+            FormatEnumName(a.Vehicle.DrivetrainType),
+            a.Vehicle.CustomerId),
+        a.Mechanics
+            .Select(m => new MechanicSummaryDto(
+                m.Id,
+                FormatFullName(m.Name.FirstName, m.Name.MiddleName, m.Name.LastName),
+                FormatEnumName(m.Specialization),
+                m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
+            .ToList());
+
+    /**
+     * Returns the appointments of a given customer across all owned vehicles, capped at the shared list limit.
      *
      * @param customerId Target customer identifier.
      * @param descending Whether to sort by scheduled date in descending order; omitted means ascending.
+     * @param limit Optional maximum row count, normalized by {@code ListQueryLimits.Normalize}.
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Appointment list or 404 if the customer does not exist.
@@ -17,6 +58,7 @@ public static partial class AppointmentEndpoints
     private static async Task<IResult> GetByCustomerAsync(
         int customerId,
         bool? descending,
+        int? limit,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -32,24 +74,22 @@ public static partial class AppointmentEndpoints
 
         var appointmentsQuery = db.Appointments
             .AsNoTracking()
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .Include(a => a.Mechanics)
             .Where(a => a.Vehicle.CustomerId == customerId);
 
-        var orderedAppointmentsQuery = descending == true
-            ? appointmentsQuery.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
-            : appointmentsQuery.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
+        var appointments = await OrderHistory(appointmentsQuery, descending)
+            .Take(ListQueryLimits.Normalize(limit))
+            .Select(AppointmentDtoProjection)
+            .ToListAsync(cancellationToken);
 
-        var appointments = await orderedAppointmentsQuery.ToListAsync(cancellationToken);
-
-        return Results.Ok(appointments.Select(ToDto).ToList());
+        return Results.Ok(appointments);
     }
 
     /**
-     * Returns all appointments linked to a specific vehicle.
+     * Returns the appointments linked to a specific vehicle, capped at the shared list limit.
      *
      * @param vehicleId Target vehicle identifier.
      * @param descending Whether to sort by scheduled date in descending order; omitted means ascending.
+     * @param limit Optional maximum row count, normalized by {@code ListQueryLimits.Normalize}.
      * @param db Database context.
      * @param cancellationToken Request cancellation token.
      * @returns Appointment list or 404 if the vehicle does not exist.
@@ -57,6 +97,7 @@ public static partial class AppointmentEndpoints
     private static async Task<IResult> GetByVehicleAsync(
         int vehicleId,
         bool? descending,
+        int? limit,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -72,17 +113,14 @@ public static partial class AppointmentEndpoints
 
         var appointmentsQuery = db.Appointments
             .AsNoTracking()
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .Include(a => a.Mechanics)
             .Where(a => a.VehicleId == vehicleId);
 
-        var orderedAppointmentsQuery = descending == true
-            ? appointmentsQuery.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
-            : appointmentsQuery.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
+        var appointments = await OrderHistory(appointmentsQuery, descending)
+            .Take(ListQueryLimits.Normalize(limit))
+            .Select(AppointmentDtoProjection)
+            .ToListAsync(cancellationToken);
 
-        var appointments = await orderedAppointmentsQuery.ToListAsync(cancellationToken);
-
-        return Results.Ok(appointments.Select(ToDto).ToList());
+        return Results.Ok(appointments);
     }
 
     /**
@@ -116,13 +154,12 @@ public static partial class AppointmentEndpoints
 
         var appointments = await db.Appointments
             .AsNoTracking()
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .Include(a => a.Mechanics)
             .Where(a => a.ScheduledDate >= rangeStart && a.ScheduledDate < rangeEnd)
             .OrderBy(a => a.ScheduledDate)
+            .Select(AppointmentDtoProjection)
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(appointments.Select(ToDto).ToList());
+        return Results.Ok(appointments);
     }
 
     /**
@@ -141,12 +178,44 @@ public static partial class AppointmentEndpoints
 
         var appointments = await db.Appointments
             .AsNoTracking()
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .Include(a => a.Mechanics)
             .Where(a => a.ScheduledDate >= todayStart && a.ScheduledDate < todayEnd)
             .OrderBy(a => a.ScheduledDate)
+            .Select(AppointmentDtoProjection)
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(appointments.Select(ToDto).ToList());
+        return Results.Ok(appointments);
     }
+
+    /**
+     * Applies the deterministic history ordering: scheduled date, then id as tie-breaker.
+     *
+     * @param query Filtered appointment query.
+     * @param descending Whether to sort newest first; omitted means ascending.
+     * @returns The ordered query.
+     */
+    private static IOrderedQueryable<Appointment> OrderHistory(IQueryable<Appointment> query, bool? descending)
+        => descending == true
+            ? query.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
+            : query.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
+
+    /**
+     * Formats owned name parts exactly like {@code FullName.ToString()}; EF Core evaluates it client-side.
+     *
+     * @param firstName First name column value.
+     * @param middleName Optional middle name column value.
+     * @param lastName Last name column value.
+     * @returns The readable full name.
+     */
+    private static string FormatFullName(string firstName, string? middleName, string lastName)
+        => new FullName(firstName, middleName, lastName).ToString();
+
+    /**
+     * Returns the enum member name exactly like {@code Enum.ToString()}; EF Core evaluates it client-side.
+     *
+     * @param value Materialized enum value.
+     * @returns The enum member name.
+     */
+    private static string FormatEnumName<TEnum>(TEnum value)
+        where TEnum : struct, Enum
+        => value.ToString();
 }

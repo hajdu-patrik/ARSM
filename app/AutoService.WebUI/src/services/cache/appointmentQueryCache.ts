@@ -134,7 +134,7 @@ export function invalidateAppointmentReadCaches(
   void queryClient.invalidateQueries({ queryKey: queryKeys.scheduler.root(authScope) });
   void queryClient.invalidateQueries({
     exact: true,
-    queryKey: queryKeys.customers.customerHistory(authScope, appointment.vehicle.customer.id),
+    queryKey: queryKeys.customers.customerHistory(authScope, appointment.vehicle.customerId),
   });
   void queryClient.invalidateQueries({
     exact: true,
