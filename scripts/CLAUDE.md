@@ -23,7 +23,9 @@
   quote line cap, quote PDF) rather than invoked separately; each entry reports under its own key in the
   sanitized summary. Every captured line passes the sanitizer first: loaded secret values, Postgres URIs,
   secret-shaped assignments and secret-named JSON fields (cookie, set-cookie, accessToken and friends) are
-  replaced, and local paths are masked.
+  replaced, and local paths are masked. HTTPYAC runs with `--output short --filter only-failed`, and every
+  failed request is listed under `failedHttpRequests` (file, line, title, actual status - never bodies or
+  headers); a regex fallback in `httpyac_summary.py` still finds them when the sanitizer breaks the JSON.
 - `migrate-profile-pictures-to-object-storage.py`: verifies every stored profile-picture object key
   resolves to a real object in object storage. Reuses the runner's secret loading and output
   masking, and delegates the actual check to the API project's `--migrate-profile-pictures`

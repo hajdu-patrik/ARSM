@@ -17,6 +17,7 @@
 - React + TypeScript + Tailwind only.
 - i18n for all user text (EN + HU).
 - No hardcoded `VITE_API_URL` fallback.
+- Production builds need `VITE_API_URL`: `vite.config.ts` injects a build-only Content-Security-Policy meta tag whose `connect-src` and `img-src` carry the API origin (profile pictures load as `<img>` straight from the API). `style-src` is `'self'` (no inline `<style>` element remains); `style-src-attr` is `'unsafe-inline'` because LoadingPage still sets a few React inline `style={...}` attributes. Vendor chunks use Rolldown `codeSplitting` groups with `strictExecutionOrder`; do not go back to `manualChunks`, which produced a circular chunk import and a blank built app.
 - Vite dev server binds to `localhost` by default; use `VITE_DEV_HOST` only for explicit local opt-in.
 - Keep API logic in `src/services`; keep UI logic in components/hooks/pages.
 - Private authenticated read models use TanStack Query with person/role-scoped keys, sessionStorage persistence, and cache clearing on auth-boundary transitions.
@@ -67,9 +68,10 @@
 - Icon sizes come from `smallIconClass` (compact chips, 44x44 row icon actions), `defaultIconClass` (buttons, reference chips, titles) and `largeIconClass` (icon-only toggles) in `utils/styles/textStyles.ts`; `rowIconActionNeutralClass` covers neutral icon-only toggles such as the customer card expand control. `textareaClass` (`utils/styles/fieldStyles.ts`) is the one multi-line field (6.5rem minimum height), and `displayHeadingTextClass` the large standalone headline.
 - Compose component styles by importing a small shared base and adding local semantic classes in `className`. Never append a class that conflicts with one already in the token (for example a second `text-*` size or `min-h-*`): CSS order, not class order, decides the winner.
 - Do not create global style exports for one-off or domain-specific details.
-- Icon-only controls must use scale-only hover behavior.
+- Icon-only controls must use a scale-up hover with a tone-colored soft background and a stronger icon color on hover, in both themes; a natively `disabled` icon-only control renders neutral grey with no hover effect at all (no scale, no background, no color change).
 - Vehicle icon semantics stay fixed: Eye=info, Pencil=warning, Trash=danger.
 - Interactive controls must preserve existing touch targets and 320px behavior.
+- Accepted exception: the Scheduler's 7-column calendar day grid (`CalendarView.tsx`) may fall below the 44px touch-target *width* per day cell at viewports <=320px, because seven columns cannot each reach 44px wide in that space; cell *height* still stays >=44px. This is a deliberate, user-approved exception, not a bug to fix.
 
 ## Validation Policy
 

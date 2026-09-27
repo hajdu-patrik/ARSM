@@ -22,7 +22,7 @@ Use this skill for UI-facing frontend changes and UI/UX policy documentation upd
 - Token usage and surface consistency; no shadows.
 - Extraction boundary: shared primitives contain only repeated minimum common subsets; feature-specific classes remain local.
 - Button/control-group mapping, touch targets, and local semantic overrides.
-- Icon-only controls keep scale-only hover behavior.
+- Icon-only controls use scale-up plus a tone-colored soft background and stronger icon color on hover in both themes; disabled controls stay neutral grey with no hover effect.
 - Vehicle action icon semantics remain fixed (Eye info, Pencil warning, Trash danger).
 - 320px responsive checklist pass/fail per changed component.
 - Localization completeness for any new visible text.

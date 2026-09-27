@@ -47,6 +47,9 @@
 - Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior.
 - Profile picture upload contract: JPEG/PNG/WebP in, always `image/webp` out, 4 MB cap, 422 on magic-byte or decode failure. Image fixtures must be structurally valid (correct chunk CRCs), because the API decodes and re-encodes every upload.
 - `people` profile-picture column contract and the legacy-column-removal post-condition check in `tests/Database/core-schema/core-schema-contracts.sql`.
+- Every `tests/API/**/*.http` suite asserts status codes in-file with httpyac `?? status == N`, so the
+  runner fails the request on a wrong status; none of them rely on a comment-only expected status
+  anymore.
 - Catalog schema contracts in `tests/Database/core-schema/pricing-catalog-contracts.sql`: `parts`/`labortypes` `numeric(18,2)` precision, the four named VAT/price-range check constraints, the two unique indexes (`PartNumber`, `Code`), and the `PartNumber`/`Code`/`Name` max-length contract.
 - Catalog API coverage in `tests/API/catalog/`: `parts-crud-happy.http`, `parts-validation.http`, `labor-types-crud-happy.http`, `labor-types-validation.http`, and `catalog-authz.http` (all 10 routes under the `MechanicOnly` policy).
 - Catalog E2E coverage in `app/AutoService.WebUI/tests/e2e/catalog-parts.spec.ts` and `app/AutoService.WebUI/tests/e2e/catalog-labor-types.spec.ts`: tab switch reflected in the URL, toolbar search and sort, the live gross-price preview on create, reloading the server-returned row after edit, and the duplicate part-number/code conflict.

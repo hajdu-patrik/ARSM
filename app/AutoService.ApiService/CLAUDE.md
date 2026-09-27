@@ -29,13 +29,16 @@
 
 - Cookies: `autoservice_at` (10 min), `autoservice_rt` (7 days).
 - Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header.
-- Rate limits: login `10/min`, refresh `20/min`; lockout after 5 failed attempts for 15 min.
+- Rate limits: login `10/min` (Development `300/min` for the local test suite), refresh `20/min`; lockout after 5 failed attempts for 15 min.
 - In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
 - Profile picture GET responses keep private browser caching with ETag revalidation and auth/cookie-aware `Vary` headers; SSE update behavior remains intact.
 - Live update channels share `Realtime/`: `UpdateBroadcaster<TEvent>` owns the bounded per-subscriber fan-out and the subscription caps, and `ServerSentEventStream` owns the SSE framing, keep-alive and idle timeout. Payloads serialize as camelCase, because the static `JsonSerializer` call does not pick up the ASP.NET Core JSON options and the browser parsers would drop PascalCased frames.
 - Every appointment mutation publishes `AppointmentUpdatedEvent` after its save, so `GET /api/appointments/updates` subscribers see other users' changes without polling. A handler that saves but does not publish is a bug.
 - Read-only profile GET/person lookup paths use `AsNoTracking`; profile mutations keep tracked entities.
 - Preserve middleware and endpoint mapping order in `Program.cs`.
+- Unbounded list endpoints across Appointments, Vehicles, Customers, Catalog, Quotes and Admin share one row-cap convention, `Pagination/ListQueryLimits.Normalize`: a client-supplied `limit` is clamped to `1..500`, defaulting to `500` when absent. `CustomerEndpoints.Lookup.cs`'s `NormalizeCustomerLookupLimit` keeps its own clamp for that one endpoint's different range.
+- `SecurityHeadersMiddleware` appends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` and, outside the Development OpenAPI/Scalar routes, a restrictive `Content-Security-Policy`, on every response, without overwriting a header a downstream component already set.
+- `JwtSettingsResolver.ResolveSecret` fails fast at startup if `JwtSettings:Secret` (env override `JwtSettings__Secret`) is missing, still carries a template placeholder marker, or is shorter than 32 bytes (the HMAC-SHA256 minimum).
 
 ## Profile Picture Storage Anchors
 

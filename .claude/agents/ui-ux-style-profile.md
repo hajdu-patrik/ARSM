@@ -29,7 +29,7 @@ tools: Read, Edit, Grep, Glob
 - Close paths must remain: top-right X, overlay, Escape, explicit cancel.
 - User-facing errors/toasts must be localized; no raw backend text in HU mode.
 - 320px is the required responsive floor.
-- Icon-only controls use scale-only hover behavior.
+- Icon-only controls use a scale-up hover with a tone-colored soft background and a stronger icon color on hover, in both themes; disabled renders neutral grey with no hover effect at all.
 - Vehicle row icon actions stay borderless/icon-only with password-toggle-like scale motion unless the user explicitly asks for a button/chip treatment.
 - Vehicle action icon semantics are fixed: Eye=info, Pencil=warning, Trash=danger.
 
