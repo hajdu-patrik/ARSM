@@ -46,8 +46,8 @@
   /* ── Form inputs ──────────────────────────────────────────────────────────── */
   --color-arsm-input:            #f8f5ff;  /* input background (light)    */
   --color-arsm-input-dark:       #202841;  /* input background (dark)     */
-  --color-arsm-placeholder:      #8a81a6;  /* placeholder text (light)    */
-  --color-arsm-placeholder-dark: #b1a8ce;  /* placeholder text (dark)     */
+  --color-arsm-placeholder:      #6d638c;  /* placeholder text (light), ~5.11:1 on #f8f5ff */
+  --color-arsm-placeholder-dark: #b1a8ce;  /* placeholder text (dark), ~6.50:1 on #202841 (already passing) */
 
   /* ── Primary accent — pastel purple CTA buttons, highlights ──────────────── */
   --color-arsm-accent:           #cdb8ff;  /* accent fill (light)               */
@@ -60,8 +60,8 @@
   --color-arsm-accent-vivid:     #6e53ad;  /* vivid accent text (badges, labels)*/
   --color-arsm-accent-wash:      #f1e9ff;  /* very pale accent wash (badge bg)  */
   --color-arsm-accent-tint:      #e6dbff;  /* light accent tint (hover icon bg) */
-  --color-arsm-on-accent:        #ffffff;  /* text color on vivid accent fills   */
-  --color-arsm-on-accent-dark:   #f8f5ff;  /* text color on accent in dark mode  */
+  --color-arsm-on-accent:        #2d2440;  /* text color on vivid accent fills (~8.28:1 on #cdb8ff, ~6.99:1 on hover #bea7f6) */
+  --color-arsm-on-accent-dark:   #0c1120;  /* text color on accent in dark mode (~6.23:1 on #9a86e8, ~7.72:1 on hover #ad99f2) */
 
   /* ── Neutral filter pills ────────────────────────────────────────────────── */
   --color-arsm-neutral-pill:        #f3f4f6;  /* neutral filter bg (light)      */

@@ -8,8 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { KeyRound, Save, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 import { DeleteProfileConfirmModal } from './DeleteProfileConfirmModal';
-import { buttonClass, dangerButtonClass, mutedBodyTextClass, secondaryButtonClass } from './constants';
-import { defaultIconClass } from '../../utils/formStyles';
+import { buttonClass, dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../utils/formStyles';
 
 interface SettingsActionModalsProps {
   readonly isPictureRemoveConfirmOpen: boolean;

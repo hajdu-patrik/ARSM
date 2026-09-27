@@ -6,8 +6,7 @@
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Upload } from 'lucide-react';
-import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
-import { defaultIconClass } from '../../../utils/formStyles';
+import { actionClusterClass, buttonClass, cardClass, dangerButtonClass, defaultIconClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
 
 interface ProfilePictureSectionProps {
 	readonly hasProfilePicture: boolean;

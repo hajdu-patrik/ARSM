@@ -95,6 +95,7 @@ export const authService = {
       try {
         const response = await apiClient.get<ValidateTokenResponse>('/api/auth/validate', {
           validateStatus: (status) => status === 200 || status === 401,
+          skipErrorRedirect: true,
         });
 
         if (response.status === 401) {

@@ -1,4 +1,7 @@
-/** Scheduler appointment API service. */
+/**
+ * Scheduler appointment API service.
+ * @module services/scheduler/appointment.service
+ */
 
 import { apiClient } from '../http/api.client';
 import type {
@@ -12,6 +15,12 @@ import type {
 
 /** Base API URL for constructing direct resource URLs. */
 const API_URL = import.meta.env.VITE_API_URL;
+
+/** Per-call options for read endpoints that can also run as a silent background refresh. */
+interface SilentRequestOptions {
+  /** When {@code true}, opts this request out of the global 500 redirect (background/polling call). */
+  readonly skipErrorRedirect?: boolean;
+}
 
 /**
  * Appointment service object for all scheduler-related API operations.
@@ -117,21 +126,26 @@ export const appointmentService = {
    * Fetches appointments for a given month via {@code GET /api/appointments}.
    * @param year - Calendar year.
    * @param month - Calendar month (1–12).
+   * @param options - Optional silent-request settings for background refresh callers.
    * @returns Array of appointments in the specified month.
    */
-  async getByMonth(year: number, month: number): Promise<AppointmentDto[]> {
+  async getByMonth(year: number, month: number, options?: SilentRequestOptions): Promise<AppointmentDto[]> {
     const response = await apiClient.get<AppointmentDto[]>('/api/appointments', {
       params: { year, month },
+      skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;
   },
 
   /**
    * Fetches today's appointments via {@code GET /api/appointments/today}.
+   * @param options - Optional silent-request settings for background refresh callers.
    * @returns Array of appointments scheduled for today.
    */
-  async getToday(): Promise<AppointmentDto[]> {
-    const response = await apiClient.get<AppointmentDto[]>('/api/appointments/today');
+  async getToday(options?: SilentRequestOptions): Promise<AppointmentDto[]> {
+    const response = await apiClient.get<AppointmentDto[]>('/api/appointments/today', {
+      skipErrorRedirect: options?.skipErrorRedirect,
+    });
     return response.data;
   },
 
@@ -154,7 +168,7 @@ export const appointmentService = {
   async updateStatus(id: number, status: UpdateStatusRequest): Promise<AppointmentDto> {
     const response = await apiClient.put<AppointmentDto>(
       `/api/appointments/${id}/status`,
-      status
+      status,
     );
     return response.data;
   },

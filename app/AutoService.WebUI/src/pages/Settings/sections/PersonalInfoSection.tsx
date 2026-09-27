@@ -9,9 +9,8 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
-import { buttonClass, cardClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
+import { buttonClass, cardClass, defaultIconClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
-import { defaultIconClass } from '../../../utils/formStyles';
 
 /** Props for the PersonalInfoSection component. */
 interface PersonalInfoSectionProps {

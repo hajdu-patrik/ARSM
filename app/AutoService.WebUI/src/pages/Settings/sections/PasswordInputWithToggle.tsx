@@ -4,8 +4,7 @@
  */
 
 import { Eye, EyeOff } from 'lucide-react';
-import { inputClass, inputGroupContainerClass, labelClass, mutedMetaTextClass, passwordToggleButtonClass } from '../constants';
-import { largeIconClass } from '../../../utils/formStyles';
+import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../utils/formStyles';
 
 interface PasswordInputWithToggleProps {
   readonly id: string;

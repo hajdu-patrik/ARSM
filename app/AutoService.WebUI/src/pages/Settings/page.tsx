@@ -16,7 +16,7 @@ import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 import { DeleteProfileSection } from './sections/DeleteProfileSection';
 import { SettingsActionModals } from './SettingsActionModals';
-import { loadingSpinnerClass, pageHeaderClass, pageShellClass, pageShellNarrowClass, pageTitleClass, sectionStackClass } from './constants';
+import { loadingSpinnerClass, pageHeaderClass, pageShellClass, pageShellNarrowClass, pageTitleClass, sectionStackClass } from '../../utils/formStyles';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
 import { useDeleteProfileSettings } from './hooks/useDeleteProfileSettings';
 import { usePasswordChangeSettings } from './hooks/usePasswordChangeSettings';

@@ -118,7 +118,7 @@ async function fetchTodayAppointments(
 
   return queryClient.fetchQuery({
     gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-    queryFn: appointmentService.getToday,
+    queryFn: () => appointmentService.getToday({ skipErrorRedirect: forceRefresh }),
     queryKey,
     staleTime: SCHEDULER_TODAY_STALE_TIME_MS,
   });
@@ -146,7 +146,7 @@ async function fetchMonthAppointments(
 
   return queryClient.fetchQuery({
     gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-    queryFn: () => appointmentService.getByMonth(view.year, view.month),
+    queryFn: () => appointmentService.getByMonth(view.year, view.month, { skipErrorRedirect: forceRefresh }),
     queryKey,
     staleTime: SCHEDULER_MONTH_STALE_TIME_MS,
   });

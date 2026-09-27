@@ -57,11 +57,7 @@ export const profileService = {
   async uploadProfilePicture(file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
-    await apiClient.put('/api/profile/picture', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    await apiClient.put('/api/profile/picture', formData);
   },
 
   /**

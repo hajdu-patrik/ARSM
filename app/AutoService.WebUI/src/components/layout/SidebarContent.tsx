@@ -82,6 +82,7 @@ function isSidebarNavItemActive(item: NavItem, pathname: string, isActiveRoute: 
     || (item.key === 'scheduler' && (pathname === '/' || pathname === '/scheduler' || pathname === '/dashboard'));
 }
 
+/** Resolves the nav link className for the active/idle visual state. */
 function getSidebarNavLinkClassName(item: NavItem, pathname: string, isActiveRoute: boolean): string {
   const stateClass = isSidebarNavItemActive(item, pathname, isActiveRoute)
     ? NAV_LINK_ACTIVE_CLASS
@@ -179,7 +180,13 @@ const SidebarContentComponent = memo(function SidebarContent({
     <div className="flex h-full flex-col">
       <div className="arsm-sidebar-top-sheen flex min-w-0 h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
         <span className={sidebarIconSlotClass}>
-          <img src={logoSrc} alt={translate('login.logoAlt')} className="h-8 w-8 select-none object-contain pointer-events-none" />
+          <img
+            src={logoSrc}
+            alt={translate('login.logoAlt')}
+            width={789}
+            height={662}
+            className="h-8 w-8 select-none object-contain pointer-events-none"
+          />
         </span>
         <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-lg font-bold text-arsm-primary dark:text-arsm-primary-dark`}>ARSM</span>
       </div>

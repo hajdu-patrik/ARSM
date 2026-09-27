@@ -149,11 +149,19 @@ const LoginComponent = memo(function Login() {
 							<Image
 								src="/AppLogoFrameBlack.webp"
 								alt={translate('login.logoAlt')}
+								width={789}
+								height={662}
+								fetchPriority="high"
+								decoding="async"
 								className="block h-20 w-auto select-none opacity-75 dark:hidden sm:h-24"
 							/>
 							<Image
 								src="/AppLogoFrameWhite.webp"
 								alt={translate('login.logoAlt')}
+								width={789}
+								height={662}
+								fetchPriority="high"
+								decoding="async"
 								className="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24"
 							/>
 						</div>

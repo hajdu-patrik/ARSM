@@ -23,6 +23,7 @@ const SPLASH_ENABLED_PATHS = new Set([
   '/dashboard',
 ]);
 
+/** Strips trailing slashes so pathname variants match one canonical form. */
 function normalizePathname(pathname: string): string {
   if (pathname.length <= 1) {
     return '/';
@@ -31,101 +32,12 @@ function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
 }
 
+/** Decides whether the loading splash should render for the given route. */
 function shouldShowSplashForPathname(pathname: string): boolean {
   const normalizedPathname = normalizePathname(pathname.toLowerCase());
   return SPLASH_ENABLED_PATHS.has(normalizedPathname);
 }
 type LoadingRectangleColors = readonly [string, string, string];
-
-const LOADING_PAGE_ANIMATION_CSS = `
-@keyframes logo-spin-variable {
-  0% { transform: rotate(0deg); }
-  40% { transform: rotate(85deg); }
-  70% { transform: rotate(290deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes shape-left-in {
-  0% { transform: translate(calc(-70vw), calc(0vh)) rotate(12deg); opacity: 0; }
-  100% { transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg); opacity: 1; }
-}
-
-@keyframes shape-bottom-right-in {
-  0% { transform: translate(calc(50vw), calc(60vh)) rotate(-8deg); opacity: 0; }
-  100% { transform: translate(calc(10vw), calc(15vh)) rotate(-8deg); opacity: 1; }
-}
-
-@keyframes shape-top-right-in {
-  0% { transform: translate(calc(51.04vw), calc(-100vh)) rotate(-12deg); opacity: 0; }
-  100% { transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg); opacity: 1; }
-}
-
-@keyframes mobile-orb-float {
-  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.2; }
-  50% { transform: translate(-50%, -55%) scale(1.02); opacity: 0.34; }
-  100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.2; }
-}
-
-@keyframes mobile-logo-pulse-spin {
-  0% { transform: rotate(0deg) scale(0.96); }
-  50% { transform: rotate(180deg) scale(1.03); }
-  100% { transform: rotate(360deg) scale(0.96); }
-}
-
-.logo-spin {
-  animation: logo-spin-variable 1.5s linear infinite;
-  transform-origin: center;
-}
-
-.shape-base {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  border-radius: 9999px;
-  transform-origin: center;
-  animation-duration: 3s;
-  animation-fill-mode: forwards;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.shape-left {
-  transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg);
-  opacity: 1;
-  animation-name: shape-left-in;
-}
-
-.shape-bottom-right {
-  transform: translate(calc(10vw), calc(15vh)) rotate(-8deg);
-  opacity: 1;
-  animation-name: shape-bottom-right-in;
-}
-
-.shape-top-right {
-  transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg);
-  opacity: 1;
-  animation-name: shape-top-right-in;
-}
-
-.mobile-orb {
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  border-radius: 9999px;
-  transform: translate(-50%, -50%) scale(0.92);
-  opacity: 0.2;
-  animation: mobile-orb-float 2.2s ease-in-out infinite;
-}
-
-.mobile-logo {
-  animation: mobile-logo-pulse-spin 1.8s linear infinite;
-  transform-origin: center;
-}
-
-@media (max-width: 320px) {
-  .logo-spin {
-    animation: mobile-logo-pulse-spin 1.8s linear infinite;
-  }
-}`;
 
 /** Resolves loading splash accent colors from semantic CSS tokens. */
 function getLoadingRectangleColors(isDark: boolean): LoadingRectangleColors {
@@ -213,6 +125,8 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
         <Image
           src={logoSrc}
           alt={logoAlt}
+          width={789}
+          height={662}
           draggable={false}
           loading="eager"
           decoding="async"
@@ -258,7 +172,6 @@ const LoadingPageComponent = memo(function LoadingPage() {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
-      <style>{LOADING_PAGE_ANIMATION_CSS}</style>
       <LoadingDesktopShapes rectangleColors={rectangleColors} />
       <LoadingMobileOrb />
       <LoadingCenterLogo logoSrc={logoSrc} logoAlt={logoAlt} />

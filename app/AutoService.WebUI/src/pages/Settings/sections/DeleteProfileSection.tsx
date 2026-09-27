@@ -5,8 +5,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
-import { defaultIconClass, toneFeedbackClasses } from '../../../utils/formStyles';
-import { dangerButtonClass, relativeOverflowBorderLayoutClass } from '../constants';
+import { dangerButtonClass, defaultIconClass, relativeOverflowBorderLayoutClass, toneFeedbackClasses } from '../../../utils/formStyles';
 
 interface DeleteProfileSectionProps {
 	readonly onDeleteRequest: () => void;

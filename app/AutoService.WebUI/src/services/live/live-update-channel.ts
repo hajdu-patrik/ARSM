@@ -113,7 +113,7 @@ export function createLiveUpdateChannel<TDetail>(
     }
 
     try {
-      await apiClient.post('/api/auth/refresh');
+      await apiClient.post('/api/auth/refresh', undefined, { skipErrorRedirect: true });
       return shouldKeepLiveUpdates(tokenAtRequest);
     } catch (error) {
       const refreshStatus = axios.isAxiosError(error) ? error.response?.status : undefined;

@@ -13,6 +13,17 @@ import type { AxiosError, AxiosInstance } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
 import { clearAuthSessionHint } from '../auth/session-hint';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * Opts a background/silent request (session restore, live-update reconnect, polling
+     * refresh) out of the global {@code 500 -> /500} redirect; the error still propagates
+     * normally so the caller's own handling still runs.
+     */
+    skipErrorRedirect?: boolean;
+  }
+}
+
 /** Base API URL read from environment configuration. */
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -120,7 +131,11 @@ apiClient.interceptors.response.use(
     const requestUrl = originalRequest?.url ?? '';
     const responseStatus = error.response?.status;
 
-    if (responseStatus === 500 && globalThis.location.pathname !== SERVER_ERROR_PATH) {
+    if (
+      responseStatus === 500 &&
+      !originalRequest?.skipErrorRedirect &&
+      globalThis.location.pathname !== SERVER_ERROR_PATH
+    ) {
       const returnTo = `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`;
       const target = `${SERVER_ERROR_PATH}?returnTo=${encodeURIComponent(returnTo)}`;
       globalThis.location.assign(target);

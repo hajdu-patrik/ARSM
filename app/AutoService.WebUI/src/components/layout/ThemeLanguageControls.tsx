@@ -32,6 +32,7 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
 
 	const isDark = theme === 'dark';
 	const languageButtonTitle = isHungarian ? t('theme.switchToEnglish') : t('theme.switchToHungarian');
+	const languageButtonLabel = `${visibleLanguageLabel}: ${languageButtonTitle}`;
 	const themeButtonTitle = isDark ? t('theme.switchToLight') : t('theme.switchToDark');
 
 	return (
@@ -42,7 +43,7 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
 				type="button"
 				className={`${compactUtilityButtonClass} select-none`}
 				title={languageButtonTitle}
-				aria-label={languageButtonTitle}
+				aria-label={languageButtonLabel}
 			>
 				{visibleLanguageLabel}
 			</button>

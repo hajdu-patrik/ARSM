@@ -9,13 +9,14 @@ import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 import {
   dangerButtonClass,
+  defaultIconClass,
   inputClass,
   inputGroupContainerClass,
+  largeIconClass,
   mutedBodyTextClass,
   passwordToggleButtonClass,
   secondaryButtonClass,
-} from './constants';
-import { defaultIconClass, largeIconClass } from '../../utils/formStyles';
+} from '../../utils/formStyles';
 
 interface DeleteProfileConfirmModalProps {
   readonly isOpen: boolean;

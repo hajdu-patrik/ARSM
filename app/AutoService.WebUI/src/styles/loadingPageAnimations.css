@@ -1,0 +1,94 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Loading page splash animations
+   Extracted from pages/LoadingPage.tsx to avoid an inline <style> element
+   (required for a strict `style-src 'self'` Content-Security-Policy).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes logo-spin-variable {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(85deg); }
+  70% { transform: rotate(290deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes shape-left-in {
+  0% { transform: translate(calc(-70vw), calc(0vh)) rotate(12deg); opacity: 0; }
+  100% { transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg); opacity: 1; }
+}
+
+@keyframes shape-bottom-right-in {
+  0% { transform: translate(calc(50vw), calc(60vh)) rotate(-8deg); opacity: 0; }
+  100% { transform: translate(calc(10vw), calc(15vh)) rotate(-8deg); opacity: 1; }
+}
+
+@keyframes shape-top-right-in {
+  0% { transform: translate(calc(51.04vw), calc(-100vh)) rotate(-12deg); opacity: 0; }
+  100% { transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg); opacity: 1; }
+}
+
+@keyframes mobile-orb-float {
+  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.2; }
+  50% { transform: translate(-50%, -55%) scale(1.02); opacity: 0.34; }
+  100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.2; }
+}
+
+@keyframes mobile-logo-pulse-spin {
+  0% { transform: rotate(0deg) scale(0.96); }
+  50% { transform: rotate(180deg) scale(1.03); }
+  100% { transform: rotate(360deg) scale(0.96); }
+}
+
+.logo-spin {
+  animation: logo-spin-variable 1.5s linear infinite;
+  transform-origin: center;
+}
+
+.shape-base {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 9999px;
+  transform-origin: center;
+  animation-duration: 3s;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shape-left {
+  transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg);
+  opacity: 1;
+  animation-name: shape-left-in;
+}
+
+.shape-bottom-right {
+  transform: translate(calc(10vw), calc(15vh)) rotate(-8deg);
+  opacity: 1;
+  animation-name: shape-bottom-right-in;
+}
+
+.shape-top-right {
+  transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg);
+  opacity: 1;
+  animation-name: shape-top-right-in;
+}
+
+.mobile-orb {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0.2;
+  animation: mobile-orb-float 2.2s ease-in-out infinite;
+}
+
+.mobile-logo {
+  animation: mobile-logo-pulse-spin 1.8s linear infinite;
+  transform-origin: center;
+}
+
+@media (max-width: 320px) {
+  .logo-spin {
+    animation: mobile-logo-pulse-spin 1.8s linear infinite;
+  }
+}

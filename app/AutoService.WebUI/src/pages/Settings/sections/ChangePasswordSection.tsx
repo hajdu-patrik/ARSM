@@ -9,11 +9,10 @@
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound } from 'lucide-react';
-import { buttonClass, cardClass, mutedMetaTextClass, sectionTitleClass } from '../constants';
+import { buttonClass, cardClass, defaultIconClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
 import { getCredentialsDisabledReasonKey } from '../passwordFormPolicy';
 import { useClearAutofilledCredentials, useLockFieldWhenEmpty } from '../hooks/usePasswordFieldProtection';
 import { PasswordInputWithToggle } from './PasswordInputWithToggle';
-import { defaultIconClass } from '../../../utils/formStyles';
 
 /** Props for the ChangePasswordSection component. */
 interface ChangePasswordSectionProps {
@@ -174,7 +173,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   );
 });
 
-ChangePasswordSectionComponent.displayName = ChangePasswordSectionComponent.name;
+ChangePasswordSectionComponent.displayName = 'ChangePasswordSection';
 
 /** Password update section rendered on the settings page. */
 export const ChangePasswordSection = ChangePasswordSectionComponent;
