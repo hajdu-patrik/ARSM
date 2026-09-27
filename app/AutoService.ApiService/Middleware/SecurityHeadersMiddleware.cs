@@ -1,5 +1,11 @@
 namespace AutoService.ApiService.Middleware;
 
+/**
+ * Appends a fixed set of security-related response headers (nosniff, frame-deny,
+ * referrer policy, permissions policy, cross-origin isolation and, outside the
+ * Development OpenAPI/Scalar routes, a restrictive Content-Security-Policy) to every
+ * response, without overwriting a header a downstream component already set.
+ */
 public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvironment environment)
 {
     private const string ContentTypeOptions = "nosniff";
@@ -7,7 +13,16 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
     private const string ReferrerPolicy = "strict-origin-when-cross-origin";
     private const string PermissionsPolicy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()";
     private const string ApiContentSecurityPolicy = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
+    private const string CrossOriginOpenerPolicy = "same-origin";
+    private const string CrossOriginResourcePolicy = "same-site";
 
+    /**
+     * Registers the security-header injection on response start and forwards the
+     * request to the next middleware in the pipeline.
+     *
+     * @param context The current request's HTTP context.
+     * @return A task that completes once the downstream pipeline has run.
+     */
     public async Task InvokeAsync(HttpContext context)
     {
         context.Response.OnStarting(static state =>
@@ -19,6 +34,8 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
             AppendIfMissing(headers, "X-Frame-Options", FrameOptions);
             AppendIfMissing(headers, "Referrer-Policy", ReferrerPolicy);
             AppendIfMissing(headers, "Permissions-Policy", PermissionsPolicy);
+            AppendIfMissing(headers, "Cross-Origin-Opener-Policy", CrossOriginOpenerPolicy);
+            AppendIfMissing(headers, "Cross-Origin-Resource-Policy", CrossOriginResourcePolicy);
 
             var path = httpContext.Request.Path;
             var shouldSkipCspForDevTools = isDevelopmentEnvironment &&
@@ -36,6 +53,13 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
         await next(context);
     }
 
+    /**
+     * Appends a response header only if it has not already been set.
+     *
+     * @param headers The response header dictionary to mutate.
+     * @param name The header name.
+     * @param value The header value.
+     */
     private static void AppendIfMissing(IHeaderDictionary headers, string name, string value)
     {
         if (!headers.ContainsKey(name))

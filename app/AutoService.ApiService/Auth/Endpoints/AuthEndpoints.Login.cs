@@ -16,6 +16,12 @@ namespace AutoService.ApiService.Auth.Endpoints;
  */
 public static partial class AuthEndpoints
 {
+    // Fixed dummy hash used to give the user-not-found login path a password verification cost
+    // comparable to the found-but-wrong-password path (which runs CheckPasswordSignInAsync).
+    // Without this, response timing would leak whether an email/phone is registered.
+    private static readonly Lazy<string> DummyPasswordHash = new(() =>
+        new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
+
     /**
      * Handles POST /api/auth/login by validating the identifier/password pair
      * and issuing access/refresh cookies for linked mechanic identities.
@@ -108,6 +114,9 @@ public static partial class AuthEndpoints
 
         if (identityUser is null)
         {
+            // Dummy verification to keep this path's cost comparable to CheckPasswordSignInAsync below.
+            _ = new PasswordHasher<IdentityUser>().VerifyHashedPassword(new IdentityUser(), DummyPasswordHash.Value, request.Password);
+
             logger.LogInformation("Login failed: no identity user found for provided identifier. ClientIp: {ClientIp}.", clientIp);
             return Results.Problem(
                 title: "invalid_credentials",
@@ -208,6 +217,10 @@ public static partial class AuthEndpoints
         {
             errors["login"] = ["Either Email or PhoneNumber is required."];
         }
+
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.Email), request.Email, FieldLengthValidator.EmailMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.PhoneNumber), request.PhoneNumber, FieldLengthValidator.PhoneNumberMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.Password), request.Password, FieldLengthValidator.PasswordMaxLength);
 
         return errors;
     }

@@ -9,7 +9,7 @@ var postgresPort = GetRequiredPort(builder.Configuration, "Ports:Postgres");
 var minioApiPort = GetRequiredPort(builder.Configuration, "Ports:MinioApi");
 var minioConsolePort = GetRequiredPort(builder.Configuration, "Ports:MinioConsole");
 var webUiPort = GetRequiredPort(builder.Configuration, "Ports:WebUi");
-var configuredWebUiSiteUrl = builder.Configuration["WebUi:SiteUrl"];
+var configuredWebUiSiteUrl = GetRequiredConfigValue(builder.Configuration, "WebUi:SiteUrl");
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
@@ -40,7 +40,8 @@ var minio = builder.AddContainer("minio", "minio/minio")
                    .WithHttpEndpoint(port: minioApiPort, targetPort: 9000, name: "api", isProxied: false)
                    .WithHttpEndpoint(port: minioConsolePort, targetPort: 9001, name: "console", isProxied: false)
                    .WithVolume("autoservice-minio-data", "/data")
-                   .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent);
+                   .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent)
+                   .WithHttpHealthCheck(path: "/minio/health/ready", endpointName: "api");
 
 var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/AutoService.ApiService.csproj")
                         .WithReference(postgresDb)
@@ -51,18 +52,16 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("ObjectStorage__AccessKeyId", minioUser)
                         .WithEnvironment("ObjectStorage__SecretAccessKey", minioPassword)
                         .WithEnvironment("ObjectStorage__AutoCreateBucket", "true")
-                        .WithEnvironment("PGGSSENCMODE", "disable");
+                        .WithEnvironment("PGGSSENCMODE", "disable")
+                        .WithHttpHealthCheck("/health");
 
 var webUi = builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
                    .WithReference(apiService)
+                   .WaitFor(apiService)
                    .WithEnvironment("VITE_API_URL", apiService.GetEndpoint("https"))
+                   .WithEnvironment("VITE_SITE_URL", configuredWebUiSiteUrl)
                    .WithHttpsEndpoint(targetPort: webUiPort, port: webUiPort, env: "PORT", isProxied: false)
                    .WithExternalHttpEndpoints();
-
-if (!string.IsNullOrWhiteSpace(configuredWebUiSiteUrl))
-{
-    webUi.WithEnvironment("VITE_SITE_URL", configuredWebUiSiteUrl);
-}
 
 builder.Build().Run();
 
@@ -78,4 +77,18 @@ static int GetRequiredPort(IConfiguration configuration, string configurationKey
     }
 
     return configuredPort;
+}
+
+/**
+ * Reads a required non-blank string from AppHost configuration and fails fast when it is missing or blank.
+ */
+static string GetRequiredConfigValue(IConfiguration configuration, string configurationKey)
+{
+    var value = configuration[configurationKey];
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException($"Missing or invalid AppHost config key: '{configurationKey}'.");
+    }
+
+    return value;
 }

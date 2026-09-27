@@ -21,15 +21,20 @@ using AutoService.ApiService.Security;
 using AutoService.ApiService.Storage;
 using AutoService.ApiService.Vehicles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
+using System.IO.Compression;
 using System.Net;
 using System.Globalization;
 using System.Text;
 using System.Threading.RateLimiting;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 
 /**
@@ -50,12 +55,33 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+/**
+ * Database readiness health check, registered here rather than in ServiceDefaults so
+ * the shared defaults stay Npgsql-free. AddHealthChecks() composes with ServiceDefaults'
+ * own "self"/"live" registration instead of replacing it. It intentionally carries no
+ * "live" tag, so /health (all checks) reflects real DB connectivity while /alive (only
+ * "live"-tagged checks) stays process-only.
+ */
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AutoServiceDbContext>();
+
+/**
+ * EF Core/Npgsql command spans in OpenTelemetry traces. Registered here (not in
+ * ServiceDefaults) to keep the shared defaults generic and free of a Postgres-specific
+ * dependency.
+ */
+builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddNpgsql());
+
 // Optional local overrides for running EF CLI/API outside AppHost.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // Service registration section.
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
+
+// Backs the global exception handler registered below in the middleware pipeline.
+builder.Services.AddProblemDetails();
+
 var connectionString = ConnectionStringResolver.Resolve(builder.Configuration);
 
 /**
@@ -121,6 +147,15 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 // Identity and authentication configuration.
 var jwtSecret = JwtSettingsResolver.ResolveSecret(builder.Configuration);
+
+/**
+ * JwtSettings:ExpirationMinutes drives both the access-token cookie lifetime and the
+ * JWT exp claim. It is set exactly once here, before any request is served; every call
+ * site in the auth and profile endpoints reads the read-only AuthEndpoints.AccessTokenTtl.
+ */
+var jwtExpirationMinutes = JwtSettingsResolver.ResolveExpirationMinutes(builder.Configuration);
+AuthEndpoints.ConfigureAccessTokenTtl(jwtExpirationMinutes);
+
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "AutoService.ApiService";
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "AutoService.WebUI";
 var webUiOriginPolicy = WebUiOriginPolicy.Create(builder.Configuration, builder.Environment);
@@ -248,11 +283,12 @@ builder.Services.AddRateLimiter(options =>
      * tracking) rather than pooled into one global bucket. A global bucket lets a single
      * noisy client exhaust the shared quota and lock every other user out of logging in.
      * The permit limit is raised only under IsDevelopment(): the canonical local test
-     * suite logs in from one machine dozens of times per run and would otherwise trip
-     * the shared production ceiling and the 3-minute ban; production keeps the original
+     * suite logs in from one machine well over a hundred times per run (every .http file
+     * provisions its own session, because httpyac's file order is not stable) and would
+     * otherwise trip the ceiling and the 3-minute ban; production keeps the original
      * 10-per-minute-per-client limit.
      */
-    var authLoginPermitLimit = builder.Environment.IsDevelopment() ? 100 : 10;
+    var authLoginPermitLimit = builder.Environment.IsDevelopment() ? 300 : 10;
 
     options.AddPolicy("AuthLoginAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
         LoginBanMiddleware.ResolveClientKey(context),
@@ -264,14 +300,40 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0
         }));
 
-    options.AddFixedWindowLimiter("AuthRefreshAttempts", limiterOptions =>
-    {
-        limiterOptions.PermitLimit = 20;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        limiterOptions.QueueLimit = 0;
-    });
+    /**
+     * AuthRefreshAttempts partitioning rationale: same as AuthLoginAttempts above,
+     * partitioned per client so one noisy client cannot exhaust the shared refresh quota
+     * for every other signed-in user.
+     */
+    options.AddPolicy("AuthRefreshAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
+        LoginBanMiddleware.ResolveClientKey(context),
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        }));
 });
+
+/**
+ * Response compression (Brotli then Gzip, HTTPS included, "Fastest" level). BREACH
+ * mitigation rationale: BREACH needs attacker-controlled input and a secret reflected
+ * together in the same compressed body. This API never puts secrets in a response body -
+ * access/refresh tokens travel exclusively as HttpOnly cookies in request/response
+ * headers, never in JSON payloads - so compressing bodies does not create a BREACH
+ * oracle here. text/event-stream (the SSE live-update endpoints) is not in the default
+ * MIME-type allow list, so those responses stay uncompressed and unbuffered.
+ */
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
 
 builder.Services.AddCors(options =>
 {
@@ -350,8 +412,10 @@ await app.EnsureSeededAsync();
  * Middleware ordering is security-sensitive.
  *
  * Effective order:
+ * - global exception handling (wraps everything below; returns generic problem+json)
  * - forwarded headers
  * - https redirection / hsts
+ * - response compression
  * - security headers
  * - login ban middleware
  * - rate limiter
@@ -360,7 +424,34 @@ await app.EnsureSeededAsync();
  * - audit access denied middleware (wraps auth pipeline to log 401/403)
  * - authentication
  * - authorization
+ *
+ * Global exception handling: every unhandled exception, in every environment including
+ * Development, is converted into a generic RFC 7807 problem+json response with no
+ * exception details. This also suppresses the framework's automatic Developer Exception
+ * Page, which would otherwise leak a stack trace in Development. A BadHttpRequestException
+ * (for example a malformed JSON request body) keeps its own status code (usually 400)
+ * instead of falling back to the generic 500.
  */
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        var statusCode = exceptionFeature?.Error is BadHttpRequestException badHttpRequestException
+            ? badHttpRequestException.StatusCode
+            : StatusCodes.Status500InternalServerError;
+
+        context.Response.StatusCode = statusCode;
+
+        await problemDetailsService.WriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = context,
+            ProblemDetails = { Status = statusCode }
+        });
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -373,6 +464,7 @@ else
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseResponseCompression();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();

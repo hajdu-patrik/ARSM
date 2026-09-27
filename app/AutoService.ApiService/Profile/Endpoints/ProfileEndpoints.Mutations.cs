@@ -1,22 +1,27 @@
-using AutoService.ApiService.Auth.Session;
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Identity;
+using AutoService.ApiService.Normalization;
+using AutoService.ApiService.Validation;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
+    /**
+     * Handles PUT profile updates by validating and applying changed contact/name
+     * fields to the current person and, when email/phone changed, the linked
+     * identity user, inside a single transaction.
+     *
+     * @param request Partial profile update payload (only provided fields are validated/applied).
+     * @param httpContext Current request context used to resolve the caller's person record.
+     * @param userManager Identity user manager.
+     * @param db Database context.
+     * @param cancellationToken Request cancellation token.
+     * @return 200 OK with the updated profile, 404 if the person is not linked, or a validation problem.
+     */
     private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,
@@ -45,7 +50,11 @@ public static partial class ProfileEndpoints
         // Email update.
         if (request.Email is not null)
         {
-            if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
+            if (request.Email.Length > FieldLengthValidator.EmailMaxLength)
+            {
+                errors["Email"] = [$"Email must be at most {FieldLengthValidator.EmailMaxLength} characters."];
+            }
+            else if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
             {
                 errors["Email"] = [ValidationMessages.InvalidEmail];
             }
@@ -69,34 +78,41 @@ public static partial class ProfileEndpoints
         // Phone update.
         if (request.PhoneNumber is not null)
         {
-            var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-            if (normalizedOptionalPhone is null)
+            if (request.PhoneNumber.Length > FieldLengthValidator.PhoneNumberMaxLength)
             {
-                if (person.PhoneNumber is not null)
-                {
-                    updatedPhoneNumber = null;
-                    phoneChanged = true;
-                }
+                errors["PhoneNumber"] = [$"PhoneNumber must be at most {FieldLengthValidator.PhoneNumberMaxLength} characters."];
             }
             else
             {
-                if (!ContactNormalization.TryNormalizeEuPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
+                var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
+                if (normalizedOptionalPhone is null)
                 {
-                    errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
+                    if (person.PhoneNumber is not null)
+                    {
+                        updatedPhoneNumber = null;
+                        phoneChanged = true;
+                    }
                 }
                 else
                 {
-                    var phoneInUse = await db.People
-                        .AnyAsync(p => p.PhoneNumber != null && p.PhoneNumber == normalizedPhone && p.Id != person.Id, cancellationToken);
-
-                    if (phoneInUse)
+                    if (!ContactNormalization.TryNormalizeEuPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
                     {
-                        errors["PhoneNumber"] = ["An account already exists with this phone number."];
+                        errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
                     }
-                    else if (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal))
+                    else
                     {
-                        updatedPhoneNumber = normalizedPhone;
-                        phoneChanged = true;
+                        var phoneInUse = await db.People
+                            .AnyAsync(p => p.PhoneNumber != null && p.PhoneNumber == normalizedPhone && p.Id != person.Id, cancellationToken);
+
+                        if (phoneInUse)
+                        {
+                            errors["PhoneNumber"] = ["An account already exists with this phone number."];
+                        }
+                        else if (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal))
+                        {
+                            updatedPhoneNumber = normalizedPhone;
+                            phoneChanged = true;
+                        }
                     }
                 }
             }
@@ -109,6 +125,10 @@ public static partial class ProfileEndpoints
             if (string.IsNullOrWhiteSpace(request.FirstName))
             {
                 errors["FirstName"] = [ValidationMessages.FirstNameRequired];
+            }
+            else if (request.FirstName.Trim().Length > FieldLengthValidator.NameMaxLength)
+            {
+                errors["FirstName"] = [$"FirstName must be at most {FieldLengthValidator.NameMaxLength} characters."];
             }
             else
             {
@@ -125,6 +145,10 @@ public static partial class ProfileEndpoints
             {
                 errors["LastName"] = [ValidationMessages.LastNameRequired];
             }
+            else if (request.LastName.Trim().Length > FieldLengthValidator.NameMaxLength)
+            {
+                errors["LastName"] = [$"LastName must be at most {FieldLengthValidator.NameMaxLength} characters."];
+            }
             else
             {
                 var nameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
@@ -140,6 +164,10 @@ public static partial class ProfileEndpoints
             if (string.IsNullOrWhiteSpace(trimmed))
             {
                 middleName = null;
+            }
+            else if (trimmed.Length > FieldLengthValidator.NameMaxLength)
+            {
+                errors["MiddleName"] = [$"MiddleName must be at most {FieldLengthValidator.NameMaxLength} characters."];
             }
             else
             {
@@ -193,176 +221,5 @@ public static partial class ProfileEndpoints
             person.Email,
             person.PhoneNumber,
             person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
-    }
-
-    private static async Task<IResult> ChangePasswordAsync(
-        ChangePasswordRequest request,
-        HttpContext httpContext,
-        UserManager<IdentityUser> userManager,
-        AutoServiceDbContext db,
-        CancellationToken cancellationToken)
-    {
-        var errors = new Dictionary<string, string[]>();
-
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
-        {
-            errors["CurrentPassword"] = ["Current password is required."];
-        }
-
-        if (string.IsNullOrWhiteSpace(request.NewPassword))
-        {
-            errors["NewPassword"] = ["New password is required."];
-        }
-
-        if (string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
-        {
-            errors["ConfirmNewPassword"] = ["Password confirmation is required."];
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.NewPassword) &&
-            !string.IsNullOrWhiteSpace(request.ConfirmNewPassword) &&
-            !string.Equals(request.NewPassword, request.ConfirmNewPassword, StringComparison.Ordinal))
-        {
-            errors["ConfirmNewPassword"] = ["Passwords do not match."];
-        }
-
-        if (errors.Count > 0)
-        {
-            return Results.ValidationProblem(errors);
-        }
-
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person?.IdentityUserId is null)
-        {
-            return Results.Problem(
-                detail: "Linked identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var identityUser = await userManager.FindByIdAsync(person.IdentityUserId);
-        if (identityUser is null)
-        {
-            return Results.Problem(
-                detail: "Identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var changeResult = await userManager.ChangePasswordAsync(
-            identityUser,
-            request.CurrentPassword,
-            request.NewPassword);
-
-        if (!changeResult.Succeeded)
-        {
-            var identityErrors = changeResult.Errors
-                .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "password" : e.Code)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
-
-            if (identityErrors.Remove("PasswordMismatch", out var mismatchMessages))
-            {
-                identityErrors["CurrentPassword"] = mismatchMessages;
-            }
-
-            return Results.ValidationProblem(identityErrors);
-        }
-
-        return Results.Ok(new { message = "Password changed successfully." });
-    }
-
-    private static async Task<IResult> DeleteProfileAsync(
-        [FromBody] DeleteProfileRequest request,
-        HttpContext httpContext,
-        UserManager<IdentityUser> userManager,
-        AutoServiceDbContext db,
-        ITokenDenylistService tokenDenylistService,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["CurrentPassword"] = ["Current password is required."]
-            });
-        }
-
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person?.IdentityUserId is null)
-        {
-            return Results.Problem(
-                detail: "Linked identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var identityUser = await userManager.FindByIdAsync(person.IdentityUserId);
-        if (identityUser is null)
-        {
-            return Results.Problem(
-                detail: "Identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var isAdmin = await userManager.IsInRoleAsync(identityUser, "Admin");
-        if (isAdmin)
-        {
-            return Results.Problem(
-                detail: "Administrator accounts cannot be deleted.",
-                statusCode: StatusCodes.Status403Forbidden);
-        }
-
-        var validPassword = await userManager.CheckPasswordAsync(identityUser, request.CurrentPassword);
-        if (!validPassword)
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["CurrentPassword"] = ["Current password is invalid."]
-            });
-        }
-
-        var nowUtc = DateTime.UtcNow;
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        if (httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) &&
-            !string.IsNullOrWhiteSpace(refreshTokenValue))
-        {
-            var refreshTokenHash = TokenSecurity.HashSha256(refreshTokenValue);
-            var refreshToken = await db.RefreshTokens
-                .FirstOrDefaultAsync(x => x.TokenHash == refreshTokenHash, cancellationToken);
-
-            if (refreshToken is not null && refreshToken.RevokedAtUtc is null)
-            {
-                refreshToken.Revoke(nowUtc);
-                await db.SaveChangesAsync(cancellationToken);
-            }
-        }
-
-        db.People.Remove(person);
-        await db.SaveChangesAsync(cancellationToken);
-
-        var deleteIdentityResult = await userManager.DeleteAsync(identityUser);
-        if (!deleteIdentityResult.Succeeded)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-
-            var identityErrors = deleteIdentityResult.Errors
-                .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "identity" : e.Code)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
-
-            return Results.ValidationProblem(identityErrors);
-        }
-
-        var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-        var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
-
-        if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
-        {
-            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
-        }
-
-        await transaction.CommitAsync(cancellationToken);
-
-        httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
-        httpContext.Response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });
-
-        return Results.Ok(new { message = "Profile deleted successfully." });
     }
 }

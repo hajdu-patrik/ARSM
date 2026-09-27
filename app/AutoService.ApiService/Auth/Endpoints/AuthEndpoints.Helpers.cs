@@ -13,8 +13,40 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    private static readonly TimeSpan AccessTokenTtl = TimeSpan.FromMinutes(10);
-    private static readonly TimeSpan RefreshTokenTtl = TimeSpan.FromDays(7);
+    private static readonly Lock AccessTokenTtlLock = new();
+    private static bool isAccessTokenTtlConfigured;
+
+    /**
+     * Access-token lifetime, used for both the JWT exp claim and the access-token cookie
+     * MaxAge. Starts at a 10-minute fallback and is set once at startup through
+     * ConfigureAccessTokenTtl from the resolved 'JwtSettings:ExpirationMinutes' value.
+     */
+    internal static TimeSpan AccessTokenTtl { get; private set; } = TimeSpan.FromMinutes(10);
+
+    internal static readonly TimeSpan RefreshTokenTtl = TimeSpan.FromDays(7);
+
+    /**
+     * Sets the access-token lifetime from configuration. The composition root calls it once,
+     * before any request is served; a second call fails fast so no code path can change the
+     * lifetime at runtime.
+     *
+     * @param expirationMinutes Positive access-token lifetime in minutes.
+     */
+    internal static void ConfigureAccessTokenTtl(int expirationMinutes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(expirationMinutes);
+
+        lock (AccessTokenTtlLock)
+        {
+            if (isAccessTokenTtlConfigured)
+            {
+                throw new InvalidOperationException("The access-token lifetime is already configured.");
+            }
+
+            AccessTokenTtl = TimeSpan.FromMinutes(expirationMinutes);
+            isAccessTokenTtlConfigured = true;
+        }
+    }
     /**
      * Converts an Identity error result into the RFC 7807 validation problem format
      * used by Results.ValidationProblem().
@@ -57,15 +89,27 @@ public static partial class AuthEndpoints
     private static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
         => ContactNormalization.TryNormalizeEmail(rawValue, out normalizedEmail);
 
-        private static string GenerateRefreshTokenValue()
+    /**
+     * Generates a cryptographically random refresh-token value.
+     *
+     * @return A base64-encoded 64-byte random token.
+     */
+    internal static string GenerateRefreshTokenValue()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
     }
 
-    private static string HashRefreshToken(string token)
+    internal static string HashRefreshToken(string token)
         => TokenSecurity.HashSha256(token);
 
+    /**
+     * Builds the shared HttpOnly/Secure/Strict cookie options used for both the
+     * access-token and refresh-token cookies.
+     *
+     * @param ttl Cookie lifetime, mapped to MaxAge.
+     * @return Cookie options ready to attach to a response.
+     */
     private static CookieOptions BuildAuthCookieOptions(TimeSpan ttl) => new()
     {
         HttpOnly = true,
@@ -76,14 +120,21 @@ public static partial class AuthEndpoints
         MaxAge = ttl
     };
 
-    private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+    internal static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
 
-    private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+    internal static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
 
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);
 
-    private static string? ResolveClientIpAddress(HttpContext httpContext)
+    /**
+     * Resolves a privacy-preserving identifier for the caller's IP address by hashing
+     * it with SHA-256, so raw client IPs never appear in logs.
+     *
+     * @param httpContext The current request's HTTP context.
+     * @return A truncated "sha256:" prefixed hash, or null when no remote IP is available.
+     */
+    internal static string? ResolveClientIpAddress(HttpContext httpContext)
     {
         var ip = httpContext.Connection.RemoteIpAddress?.ToString();
         if (string.IsNullOrWhiteSpace(ip)) return null;

@@ -212,6 +212,13 @@ public static partial class AuthEndpoints
             }
         }
 
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.FirstName), request.FirstName?.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.MiddleName), request.MiddleName?.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.LastName), request.LastName?.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.Email), request.Email, FieldLengthValidator.EmailMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.Password), request.Password, FieldLengthValidator.PasswordMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(request.PhoneNumber), request.PhoneNumber, FieldLengthValidator.PhoneNumberMaxLength);
+
         return errors;
     }
 
