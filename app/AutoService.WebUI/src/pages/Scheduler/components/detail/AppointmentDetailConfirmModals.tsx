@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Save, UserPlus } from 'lucide-react';
+import { LogOut, Save, Trash2, UserPlus } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import {
@@ -28,6 +28,10 @@ interface AppointmentDetailConfirmModalsProps {
   readonly isSaving: boolean;
   readonly onCloseSaveConfirm: () => void;
   readonly onConfirmSave: () => void;
+  readonly isDeleteConfirmOpen: boolean;
+  readonly isDeleting: boolean;
+  readonly onCloseDeleteConfirm: () => void;
+  readonly onConfirmDelete: () => void;
 }
 
 const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailConfirmModals({
@@ -47,6 +51,10 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
   isSaving,
   onCloseSaveConfirm,
   onConfirmSave,
+  isDeleteConfirmOpen,
+  isDeleting,
+  onCloseDeleteConfirm,
+  onConfirmDelete,
 }: AppointmentDetailConfirmModalsProps) {
   const { t } = useTranslation();
 
@@ -178,6 +186,38 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
         )}
       >
         <p className={mutedBodyTextClass}>{t('scheduler.detail.saveConfirmMessage')}</p>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteConfirmOpen}
+        onClose={onCloseDeleteConfirm}
+        title={t('scheduler.detail.deleteConfirmTitle')}
+        variant="confirm"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={onCloseDeleteConfirm}
+              disabled={isDeleting}
+              className={secondaryButtonClass}
+            >
+              {t('common.actions.cancel')}
+            </button>
+            <button
+              type="button"
+              data-testid="appointment-detail-delete-confirm"
+              onClick={onConfirmDelete}
+              disabled={isDeleting}
+              aria-busy={isDeleting}
+              className={dangerButtonClass}
+            >
+              <Trash2 className={defaultIconClass} />
+              <span>{isDeleting ? t('common.actions.deleting') : t('scheduler.detail.delete')}</span>
+            </button>
+          </>
+        )}
+      >
+        <p className={mutedBodyTextClass}>{t('scheduler.detail.deleteConfirmMessage')}</p>
       </Modal>
     </>
   );

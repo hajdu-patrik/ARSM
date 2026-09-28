@@ -281,6 +281,11 @@ export const huCore = {
       unassignCancelledError: 'Lemondott szerelésről nem lehet lejelentkezni.',
       unassignRaceError: 'Ez az időpont hozzárendelése időközben megváltozott. Frissítsen, majd próbálja újra.',
       adminUnassignError: 'Nem sikerült eltávolítani a szerelőt!',
+      delete: 'Időpont törlése',
+      deleteConfirmTitle: 'Időpont törlésének megerősítése',
+      deleteConfirmMessage: 'Időpont törlése? Az időpont véglegesen törlődik. A hozzá kapcsolt ajánlat megőrzi az adatait, de a kapcsolat megszűnik.',
+      deleteSuccess: 'Az időpont sikeresen törölve.',
+      deleteError: 'Nem sikerült törölni az időpontot!',
     },
   },
 } as const;

@@ -1,16 +1,17 @@
 /**
  * Footer component for appointment detail modal.
- * Handles global edit and status controls.
+ * Handles global edit, status, and (admin-only) delete controls.
  * @module AppointmentDetailModal.footer
  */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Save } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import {
   compactSelectFullClass,
   defaultIconClass,
   equalWidthControlGroupClass,
+  mediumContextDangerButtonClass,
   mediumContextPrimaryButtonClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
@@ -30,10 +31,16 @@ interface AppointmentDetailFooterProps {
   readonly isSaveEnabled: boolean;
   readonly canChangeStatus: boolean;
   readonly isUpdating: boolean;
+  /** Whether the current user is an admin; only admins can delete an appointment. */
+  readonly isAdmin: boolean;
+  /** Whether the delete request is in flight. */
+  readonly isDeleting: boolean;
   readonly t: TFunction;
   readonly onStartEdit: () => void;
   readonly onSave: () => void;
   readonly onStatusChange: (status: AppointmentStatus) => void;
+  /** Opens the delete confirmation modal. */
+  readonly onDeleteClick: () => void;
 }
 
 export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
@@ -44,12 +51,15 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   isSaveEnabled,
   canChangeStatus,
   isUpdating,
+  isAdmin,
+  isDeleting,
   t,
   onStartEdit,
   onSave,
   onStatusChange,
+  onDeleteClick,
 }: AppointmentDetailFooterProps) {
-  const shouldRenderGlobalControls = isEditing || showEdit || canChangeStatus;
+  const shouldRenderGlobalControls = isEditing || showEdit || canChangeStatus || isAdmin;
 
   if (!shouldRenderGlobalControls) {
     return null;
@@ -88,6 +98,19 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           className={mediumContextPrimaryButtonClass}
         >
           {t('scheduler.detail.edit')}
+        </button>
+      )}
+
+      {isAdmin && !isEditing && (
+        <button
+          type="button"
+          data-testid="appointment-detail-delete"
+          onClick={onDeleteClick}
+          disabled={isDeleting}
+          className={mediumContextDangerButtonClass}
+        >
+          <Trash2 className={defaultIconClass} />
+          <span>{t('scheduler.detail.delete')}</span>
         </button>
       )}
 

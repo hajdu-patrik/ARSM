@@ -78,6 +78,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const setSelectedDay = useSchedulerStore((state) => state.setSelectedDay);
   const setCalendarMonth = useSchedulerStore((state) => state.setCalendarMonth);
   const upsertAppointment = useSchedulerStore((state) => state.upsertAppointment);
+  const removeAppointment = useSchedulerStore((state) => state.removeAppointment);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDto | null>(null);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const isRouteFocusAppliedRef = useRef(false);
@@ -111,8 +112,10 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     handleAdminUnassign,
     handleCreateIntake,
     handleUpdateAppointment,
+    handleDelete,
   } = useSchedulerActions({
     upsertAppointment,
+    removeAppointment,
     setSelectedAppointment,
     showSuccessToast,
     showErrorToast,
@@ -267,6 +270,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         onAdminAssign={handleAdminAssign}
         onAdminUnassign={handleAdminUnassign}
         onUpdate={handleUpdateAppointment}
+        onDelete={handleDelete}
       />
 
       {selectedDate && (

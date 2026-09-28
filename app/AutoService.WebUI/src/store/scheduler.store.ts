@@ -44,6 +44,8 @@ interface SchedulerState {
   setSelectedDay: (day: number | null) => void;
   /** Inserts or updates an appointment in both today and month lists as appropriate. */
   upsertAppointment: (updated: AppointmentDto) => void;
+  /** Removes a hard-deleted appointment from the today, month, and calendar-grid lists. */
+  removeAppointment: (id: number) => void;
   /** Updates the today loading state. */
   setIsLoadingToday: (isLoadingToday: boolean) => void;
   /** Updates the month loading state. */
@@ -133,6 +135,16 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
   };
 
   /**
+   * Removes an appointment by id, returning the original array when the id is absent so
+   * untouched buckets keep referential equality and do not re-render.
+   */
+  const omitById = (appointments: AppointmentDto[], id: number): AppointmentDto[] => {
+    return appointments.some((appointment) => appointment.id === id)
+      ? appointments.filter((appointment) => appointment.id !== id)
+      : appointments;
+  };
+
+  /**
    * Inserts, replaces, or removes an appointment by id so a bucket never keeps a stale copy.
    *
    * Rescheduling can move an appointment out of a bucket, so membership has to be re-evaluated
@@ -144,14 +156,11 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
     updated: AppointmentDto,
     belongsHere: boolean,
   ): AppointmentDto[] => {
-    const existingIndex = appointments.findIndex((appointment) => appointment.id === updated.id);
-
     if (!belongsHere) {
-      return existingIndex === -1
-        ? appointments
-        : appointments.filter((appointment) => appointment.id !== updated.id);
+      return omitById(appointments, updated.id);
     }
 
+    const existingIndex = appointments.findIndex((appointment) => appointment.id === updated.id);
     if (existingIndex === -1) {
       return [...appointments, updated];
     }
@@ -227,6 +236,12 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
           ),
         };
       }),
+    removeAppointment: (id) =>
+      set((state) => ({
+        todayAppointments: omitById(state.todayAppointments, id),
+        monthAppointments: omitById(state.monthAppointments, id),
+        calendarAppointments: omitById(state.calendarAppointments, id),
+      })),
     setIsLoadingToday: (isLoadingToday) => set({ isLoadingToday }),
     setIsLoadingMonth: (isLoadingMonth) => set({ isLoadingMonth }),
     setError: (error) => set({ error }),

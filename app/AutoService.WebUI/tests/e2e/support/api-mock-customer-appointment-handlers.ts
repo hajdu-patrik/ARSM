@@ -4,8 +4,8 @@ import type { CreateVehicleRequest } from '../../../src/types/customers/customer
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
-import { createAppointment, createVehicle, getLookupName } from './api-mock-data';
-import { fulfillJson } from './api-mock-response';
+import { createAppointment, createVehicle, deleteAppointment, getLookupName } from './api-mock-data';
+import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 export async function tryHandleCustomerRoute(
   route: Route,
@@ -191,6 +191,19 @@ export async function tryHandleAppointmentRoute(
     const updated = { ...state.appointments[appointmentIndex], status };
     state.appointments[appointmentIndex] = updated;
     await fulfillJson(route, updated);
+    return true;
+  }
+
+  const appointmentByIdMatch = /^\/api\/appointments\/(\d+)$/.exec(path);
+  if (appointmentByIdMatch && method === 'DELETE') {
+    const appointmentId = Number(appointmentByIdMatch[1]);
+
+    if (!deleteAppointment(state, appointmentId)) {
+      await fulfillJson(route, { code: 'appointment_not_found' }, 404);
+      return true;
+    }
+
+    await fulfillNoContent(route);
     return true;
   }
 

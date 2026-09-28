@@ -62,3 +62,20 @@ export function createAppointment(state: MockApiState, request: SchedulerCreateI
 export function getLookupName(customer: { firstName: string; middleName: string | null; lastName: string }): string {
   return [customer.firstName, customer.middleName, customer.lastName].filter(Boolean).join(' ');
 }
+
+/**
+ * Removes an appointment from the mock state by id, mirroring the real
+ * hard-delete endpoint.
+ * @param state - Mutable mock API state.
+ * @param id - Appointment id to remove.
+ * @returns {@code true} when an appointment was found and removed, {@code false} otherwise.
+ */
+export function deleteAppointment(state: MockApiState, id: number): boolean {
+  const index = state.appointments.findIndex((appointment) => appointment.id === id);
+  if (index < 0) {
+    return false;
+  }
+
+  state.appointments.splice(index, 1);
+  return true;
+}

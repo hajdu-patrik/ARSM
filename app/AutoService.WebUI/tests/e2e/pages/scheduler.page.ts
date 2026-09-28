@@ -12,6 +12,22 @@ export class SchedulerPage {
     return this.page.getByRole('dialog', { name: /New intake|Új felvétel/ });
   }
 
+  detailDialog(): Locator {
+    return this.page.getByRole('dialog', { name: /Appointment details/i });
+  }
+
+  deleteButton(): Locator {
+    return this.detailDialog().getByTestId('appointment-detail-delete');
+  }
+
+  async openFirstAppointmentDetail(): Promise<Locator> {
+    await this.page.getByRole('button', { name: 'Appointment details' }).first().click();
+
+    const dialog = this.detailDialog();
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+
   async openIntakeForCurrentDay(): Promise<Locator> {
     const openButton = this.page.getByTestId('scheduler-intake-open');
 

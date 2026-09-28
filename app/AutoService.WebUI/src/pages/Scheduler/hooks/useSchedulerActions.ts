@@ -2,9 +2,9 @@
  * Hook that encapsulates all scheduler appointment mutation callbacks.
  *
  * Provides stable, memoized handlers for claim, unclaim, status change,
- * admin assign/unassign, intake creation, and appointment update. Each
- * handler calls the appointment service, applies store and query-cache updates,
- * and shows success/error toasts.
+ * admin assign/unassign, intake creation, appointment update, and appointment
+ * deletion. Each handler calls the appointment service, applies store and
+ * query-cache updates, and shows success/error toasts.
  *
  * @module useSchedulerActions
  */
@@ -19,6 +19,7 @@ import {
 } from '../../../services/cache/appointmentQueryCache';
 import { getAuthQueryScope } from '../../../services/cache/queryKeys';
 import { useAuthStore } from '../../../store/auth.store';
+import { useSchedulerStore } from '../../../store/scheduler.store';
 import type {
   AppointmentDto,
   AppointmentStatus,
@@ -31,6 +32,8 @@ import type {
 interface UseSchedulerActionsArgs {
   /** Optimistic store upsert for the mutated appointment. */
   readonly upsertAppointment: (appointment: AppointmentDto) => void;
+  /** Store removal that drops a deleted appointment from every scheduler view list. */
+  readonly removeAppointment: (id: number) => void;
   /** State setter to keep the detail modal synchronized after mutations. */
   readonly setSelectedAppointment: Dispatch<SetStateAction<AppointmentDto | null>>;
   /** Displays a success toast by i18n key. */
@@ -47,6 +50,7 @@ interface UseSchedulerActionsArgs {
  */
 export function useSchedulerActions({
   upsertAppointment,
+  removeAppointment,
   setSelectedAppointment,
   showSuccessToast,
   showErrorToast,
@@ -172,6 +176,50 @@ export function useSchedulerActions({
     showSuccessToast('scheduler.detail.updateSuccess');
   }, [applyAppointmentMutationResult, showSuccessToast, setSelectedAppointment]);
 
+  /**
+   * Looks up an appointment's current cached snapshot across the scheduler's visible view buckets.
+   * Reads the store imperatively so the lookup does not subscribe this hook to every list change.
+   */
+  const findVisibleAppointment = useCallback((id: number): AppointmentDto | undefined => {
+    const schedulerState = useSchedulerStore.getState();
+    return (
+      schedulerState.monthAppointments.find((item) => item.id === id)
+      ?? schedulerState.todayAppointments.find((item) => item.id === id)
+      ?? schedulerState.calendarAppointments.find((item) => item.id === id)
+    );
+  }, []);
+
+  /**
+   * Hard-deletes an appointment, drops it from every scheduler view, and invalidates the
+   * read caches it belonged to. The snapshot is captured before the request because the
+   * cache invalidation needs the appointment's dates and it is gone from the store afterwards.
+   */
+  const handleDelete = useCallback(async (id: number) => {
+    const target = findVisibleAppointment(id);
+
+    try {
+      await appointmentService.deleteAppointment(id);
+      removeAppointment(id);
+
+      if (authScope && target) {
+        invalidateAppointmentReadCaches(queryClient, authScope, target);
+      }
+
+      setSelectedAppointment(null);
+      showSuccessToast('scheduler.detail.deleteSuccess');
+    } catch {
+      showErrorToast('scheduler.detail.deleteError');
+    }
+  }, [
+    authScope,
+    findVisibleAppointment,
+    queryClient,
+    removeAppointment,
+    setSelectedAppointment,
+    showErrorToast,
+    showSuccessToast,
+  ]);
+
   return {
     handleClaim,
     handleStatusChange,
@@ -180,5 +228,6 @@ export function useSchedulerActions({
     handleAdminUnassign,
     handleCreateIntake,
     handleUpdateAppointment,
+    handleDelete,
   };
 }

@@ -281,6 +281,11 @@ export const enCore = {
       unassignCancelledError: 'You cannot unassign from a cancelled appointment.',
       unassignRaceError: 'This appointment assignment changed in the meantime. Refresh and try again.',
       adminUnassignError: 'Failed to remove mechanic!',
+      delete: 'Delete appointment',
+      deleteConfirmTitle: 'Confirm appointment deletion',
+      deleteConfirmMessage: 'Delete this appointment? It is removed permanently. A linked quote keeps its data but is no longer linked to it.',
+      deleteSuccess: 'Appointment deleted successfully.',
+      deleteError: 'Failed to delete appointment!',
     },
   },
 } as const;

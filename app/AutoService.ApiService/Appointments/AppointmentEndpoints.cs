@@ -43,6 +43,13 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapDelete("/{id}", DeleteAppointmentAsync)
+            .RequireAuthorization("AdminOnly")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces<object>(StatusCodes.Status404NotFound);
+
         group.MapPut("/{id}/vehicle", UpdateAppointmentVehicleAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)

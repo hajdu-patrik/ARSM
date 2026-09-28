@@ -14,6 +14,7 @@ import { useAdminMechanics } from '../../hooks/useAdminMechanics';
 import { AppointmentDetailBody } from './AppointmentDetailModal.sections';
 import { AppointmentDetailFooter } from './AppointmentDetailModal.footer';
 import { AppointmentDetailConfirmModals } from './AppointmentDetailConfirmModals';
+import { useAppointmentDelete } from './AppointmentDetailModal.delete';
 import {
   type EditFormState,
   buildEditForm,
@@ -38,6 +39,7 @@ interface AppointmentDetailModalProps {
     request: UpdateAppointmentRequest,
     vehicleRequest?: UpdateAppointmentVehicleRequest,
   ) => Promise<void>;
+  readonly onDelete: (id: number) => Promise<void>;
 }
 
 function hasAppointmentEditChanges(
@@ -70,6 +72,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   onAdminAssign,
   onAdminUnassign,
   onUpdate,
+  onDelete,
 }: AppointmentDetailModalProps) {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
@@ -91,6 +94,14 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   const initializedAppointmentIdRef = useRef<number | null>(null);
   const { allMechanics } = useAdminMechanics(isAdmin, isOpen);
+  const {
+    isDeleteConfirmOpen,
+    isDeleting,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    confirmDelete,
+    resetDeleteConfirm,
+  } = useAppointmentDelete({ appointmentId: appointment?.id, onDelete });
 
   useEffect(() => {
     if (!isOpen || !appointment) {
@@ -101,6 +112,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       setIsClaimConfirmOpen(false);
       setIsUnclaimConfirmOpen(false);
       setIsSaveConfirmOpen(false);
+      resetDeleteConfirm();
       return;
     }
 
@@ -115,7 +127,8 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
     setIsClaimConfirmOpen(false);
     setIsUnclaimConfirmOpen(false);
     setIsSaveConfirmOpen(false);
-  }, [appointment, isOpen]);
+    resetDeleteConfirm();
+  }, [appointment, isOpen, resetDeleteConfirm]);
 
   const handleClaim = useCallback(async () => {
     if (!appointment) {
@@ -292,6 +305,9 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
       isSaveEnabled={isSaveEnabled}
       canChangeStatus={canChangeStatus}
       isUpdating={isUpdating}
+      isAdmin={isAdmin}
+      isDeleting={isDeleting}
+      onDeleteClick={openDeleteConfirm}
       t={t}
       onStartEdit={() => {
         setEditForm(buildEditForm(appointment));
@@ -399,6 +415,12 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         }}
         onConfirmSave={() => {
           void handleSaveConfirmed();
+        }}
+        isDeleteConfirmOpen={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onCloseDeleteConfirm={closeDeleteConfirm}
+        onConfirmDelete={() => {
+          void confirmDelete();
         }}
       />
     </>

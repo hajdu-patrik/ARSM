@@ -123,6 +123,14 @@ export const appointmentService = {
   },
 
   /**
+   * Deletes an appointment via {@code DELETE /api/appointments/{id}}.
+   * @param id - The appointment ID to delete.
+   */
+  async deleteAppointment(id: number): Promise<void> {
+    await apiClient.delete(`/api/appointments/${id}`);
+  },
+
+  /**
    * Fetches appointments for a given month via {@code GET /api/appointments}.
    * @param year - Calendar year.
    * @param month - Calendar month (1–12).
