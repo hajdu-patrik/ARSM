@@ -45,9 +45,10 @@
        applies the `ui-ux-style-profile` policy itself while implementing. Changes a package needs outside
        its paths are handed off and applied by one agent per area once every package is done.
     3. Review, per package as soon as it finishes and on its changed files only: `coding-principles`
-       (naming, SOLID/OOP, JSDoc) and, for UI changes, `ui-ux-style-profile` as a report-only audit whose
-       findings go straight back to that package. `docs-sync` (documentation only) runs once, beside the
-       gate.
+       (naming, SOLID/OOP, the 2-line comment rule) and, for UI changes, `ui-ux-style-profile` as a report-only audit whose
+       findings go straight back to that package. `docs-sync` (documentation only) and the cleanup pass
+       run once, beside the gate: the cleanup deletes the untracked files the run itself left behind (never
+       pre-existing or tracked ones) and only lists tracked files the change left unused, for approval.
     4. Gate: `python scripts/validate.py` once; each failure goes back to the package owning the path it
        names (unowned paths to one agent per area) for at most two fix rounds.
     5. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
@@ -103,6 +104,15 @@
   - method/function target <= 60 lines where practical
 - `scripts/validate.py` enforces the file limits (and the C# type limit) on the changed files; `--all`
   checks the whole repository.
+
+## Comments and Temporary Files
+
+- Every comment is at most 2 lines, doc comments included: a JSDoc-style `/** */` block carries one
+  short summary and no `@param`/`@returns` lists (user decision, 2026-09-28). This applies to every
+  language in the repository; longer explanations belong in the area `CLAUDE.md` or `docs/`.
+- Temporary files (throwaway specs and scripts, screenshots, dumps, logs, scratch worktrees) live only
+  in the session scratchpad or the OS temp directory, never in the repository tree, are deleted when
+  the work is done, and are never staged or committed.
 
 ## Core Invariants
 

@@ -5,7 +5,7 @@ export const meta = {
   phases: [
     { title: 'Plan', detail: 'orchestrator splits the task into work packages with disjoint file ownership (skipped for difficulty-1 single-area tasks)' },
     { title: 'Implement', detail: 'packages run in parallel on sonnet (max effort), capped by the max(router, orchestrator) difficulty' },
-    { title: 'Review', detail: 'each package is reviewed as soon as it finishes; docs-sync runs beside the gate' },
+    { title: 'Review', detail: 'each package is reviewed as soon as it finishes; docs-sync and the cleanup run beside the gate' },
     { title: 'Gate', detail: 'scripts/validate.py, failures go back to the owning package, max two rounds' },
     { title: 'Test', detail: 'heavy suites only when their gate matches; E2E targeted to the diff' },
   ],
@@ -33,6 +33,11 @@ const thinkerFor = () => ({ model: 'opus', effort: 'high' })
 const IMPLEMENTER = { model: 'sonnet', effort: 'max' }
 const RUNNER = { model: 'sonnet', effort: 'low' }
 const TESTER = { model: 'sonnet', effort: 'medium' }
+// House rules for every implementing and fixing agent (user decisions 2026-09-28).
+const HOUSE_RULES =
+  'House rules: every comment is at most 2 lines, doc comments included (one short summary, no @param/@returns lists). ' +
+  'Temporary files (scratch specs, scripts, screenshots, dumps, logs) go only to your scratchpad or the OS temp directory, ' +
+  'never into the repository; delete them when done and never stage or commit them.'
 
 const STR_LIST = { type: 'array', items: { type: 'string' } }
 const PACKAGE_SCHEMA = {
@@ -67,6 +72,12 @@ const IMPL_SCHEMA = {
     handoffs: { ...STR_LIST, description: 'Changes needed outside your own paths, each naming the file and the exact change; the chain applies them after every package finishes.' },
   },
   required: ['summary', 'filesChanged', 'openQuestions', 'handoffs'],
+}
+const UNTRACKED_SCHEMA = { type: 'object', properties: { untracked: STR_LIST }, required: ['untracked'] }
+const CLEANUP_SCHEMA = {
+  type: 'object',
+  properties: { summary: { type: 'string' }, deleted: STR_LIST, unusedCandidates: STR_LIST },
+  required: ['summary', 'deleted', 'unusedCandidates'],
 }
 const REVIEW_SCHEMA = {
   type: 'object',
@@ -173,6 +184,11 @@ const changed = new Set()
 const track = (result) => { if (result) result.filesChanged.forEach((f) => changed.add(normPath(f))) }
 
 // ---------------------------------------------------------------- implement + per-package review
+// Untracked files that exist before any package runs belong to the user; the cleanup never touches them.
+const baseline = await agent('Run `git status --porcelain --untracked-files=all` from the repository root and return the paths of ' +
+  'the untracked (`??`) entries verbatim. Change nothing.', { ...RUNNER, phase: 'Plan', label: 'baseline', schema: UNTRACKED_SCHEMA })
+const preexisting = (baseline?.untracked ?? []).map(normPath)
+
 phase('Implement')
 const scopeNote = (p) =>
   `Work package \`${p.id}\`. You own ONLY these paths:\n${p.owns.join('\n')}\n` +
@@ -183,11 +199,12 @@ const packagePrompt = (p) =>
   (plan.contract ? `Shared contract (fixed, do not change it):\n${plan.contract}\n\n` : '') +
   (p.area === 'frontend' ? 'Apply the UI/UX policy in `.claude/agents/ui-ux-style-profile.md` yourself while implementing; it is reviewed on the diff afterwards.\n\n' : '') +
   `Original task for context:\n${task}\n\n` +
-  'Do not run validation, tests, repro scripts or dev servers, even if asked above; the chain does that. Report every file you changed.'
+  'Do not run validation, tests, repro scripts or dev servers, even if asked above; the chain does that. Report every file you changed.\n\n' +
+  HOUSE_RULES
 const fixPrompt = (failures, p, busy) =>
   `Fix these validation/review failures in your scope, nothing else:\n${JSON.stringify(failures, null, 2)}\n\n` +
   (p ? scopeNote(p) : `Other agents are fixing these paths at the same time; do not edit them:\n${busy.join('\n') || '(none)'}\n\n`) +
-  `Changed files so far:\n${[...changed].join('\n')}`
+  `Changed files so far:\n${[...changed].join('\n')}\n\n${HOUSE_RULES}`
 const reviewPrompt = (what, files) =>
   `${what}\nReview ONLY these changed files (diff against ${baseRef}); do not sweep the repository:\n${files.join('\n')}`
 
@@ -198,7 +215,8 @@ const runPackage = async (p) => {
   const source = impl.filesChanged.filter((f) => /\.(cs|ts|tsx)$/.test(f))
   const ui = impl.filesChanged.filter((f) => normPath(f).startsWith(WEBUI_PREFIX))
   const [principles, audit] = await parallel([
-    () => source.length ? agent(reviewPrompt('Apply naming, SOLID/OOP and JSDoc rules; size limits are checked by scripts/validate.py, not by you.', source),
+    () => source.length ? agent(reviewPrompt('Apply naming, SOLID/OOP and the comment rule (every comment at most 2 lines, doc comments included); ' +
+      'size limits are checked by scripts/validate.py, not by you.', source),
       { agentType: 'coding-principles', phase: 'Review', label: `principles:${p.id}`, ...reviewer, schema: REVIEW_SCHEMA }) : null,
     () => plan.uiChange && ui.length ? agent(reviewPrompt('Audit against the UI/UX policy. REPORT ONLY: list findings, do not edit (a fix follows).', ui),
       { agentType: 'ui-ux-style-profile', phase: 'Review', label: `ui-ux:${p.id}`, ...reviewer, schema: REVIEW_SCHEMA }) : null,
@@ -242,7 +260,7 @@ if (handoffs.length) {
     `Apply these changes that work packages requested outside their own paths, nothing else:\n` +
     handoffs.filter((h) => h.area === area).map((h) => `- (${h.from}) ${h.change}`).join('\n') + '\n\n' +
     (plan.contract ? `Shared contract (fixed, do not change it):\n${plan.contract}\n\n` : '') +
-    'Do not run validation or tests; the chain does that. Report every file you changed.',
+    `Do not run validation or tests; the chain does that. Report every file you changed.\n\n${HOUSE_RULES}`,
     { agentType: area, phase: 'Implement', label: `handoff:${area}`, ...IMPLEMENTER, schema: IMPL_SCHEMA }))))).filter(Boolean))
   applied.forEach(track)
 }
@@ -319,6 +337,19 @@ const assignFailures = (failures) => {
   return [...groups.values()]
 }
 
+// The cleanup deletes only what this run left behind that is no deliverable; tracked files are only reported.
+const cleanupPass = (label) => agent(
+  'Clean the working tree after this run of the ARSM agent chain. List untracked entries with ' +
+  '`git status --porcelain --untracked-files=all` and delete every untracked file or directory that is neither a deliverable ' +
+  '(the changed files below) nor present before the run (the pre-existing list below): scratch specs and scripts, screenshots, ' +
+  'dumps, logs, temporary configs, leftover worktrees. Also delete app/AutoService.WebUI/test-results and ' +
+  'app/AutoService.WebUI/playwright-report if present. Never delete tracked files, pre-existing untracked files or anything ' +
+  'else that git ignores. In `unusedCandidates` list tracked files this run left unused (no longer referenced after the ' +
+  'change) for the user to approve; do not delete them.\n' +
+  `Changed files (deliverables):\n${[...changed].join('\n') || '(none)'}\n` +
+  `Pre-existing untracked files:\n${preexisting.join('\n') || '(none)'}`,
+  { ...RUNNER, phase: 'Review', label, schema: CLEANUP_SCHEMA })
+
 let gate = await runGate()
 for (let round = 1; round <= 2 && gate?.passed === false; round++) {
   const groups = assignFailures(gate.failures)
@@ -332,9 +363,9 @@ for (let round = 1; round <= 2 && gate?.passed === false; round++) {
   fixes.forEach(track)
   gate = await runGate()
 }
-const docs = await docsSync
+const [docs, cleanup] = await Promise.all([docsSync, cleanupPass('cleanup')])
 track(docs)
-if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, tokensSpent: budget.spent() }
+if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, cleanup, tokensSpent: budget.spent() }
 
 // ---------------------------------------------------------------- test
 phase('Test')
@@ -349,10 +380,11 @@ if (plan.gates.http) tests.push(await agent(`Run the HTTP endpoint gate for thes
   { agentType: 'http-endpoint-test', phase: 'Test', ...TESTER }))
 if (plan.gates.sql) tests.push(await agent(`Run the SQL gate for these changes:\n${files.join('\n')}`,
   { agentType: 'sql-database-test', phase: 'Test', ...TESTER }))
+const finalCleanup = tests.length ? await cleanupPass('cleanup:after-tests') : null
 
 return {
   status: 'done',
   difficulty: { router: routerDifficulty, orchestrator: planDifficulty, effective, parallel: cap },
-  plan, models: { plan: thinkerFor(routerDifficulty), implement: IMPLEMENTER, review: reviewer, gate: RUNNER, test: TESTER }, packages, unfinished, applied, docs, gate, tests, changed: files,
+  plan, models: { plan: thinkerFor(routerDifficulty), implement: IMPLEMENTER, review: reviewer, gate: RUNNER, test: TESTER }, packages, unfinished, applied, docs, cleanup, finalCleanup, gate, tests, changed: files,
   tokensSpent: budget.spent(),
 }

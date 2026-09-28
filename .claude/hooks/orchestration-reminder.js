@@ -45,6 +45,9 @@ const REMINDER = [
   'sonnet. Aliases sonnet/opus only: never Haiku, and no fable in this repo (a fable-worker-*',
   'router suggestion runs on the opus-worker-* agent of the same effort).',
   '',
+  'Comments: at most 2 lines each, doc comments included. Temporary files only in the scratchpad or',
+  'OS temp, never in the repository and never committed; arsm-chain cleans up beside docs-sync.',
+  '',
   'Version control: the repository owner is the only commit author. Never add Co-Authored-By,',
   'Claude-Session, or any "generated with" attribution to a commit, PR, or merge message.',
 ].join('\n');

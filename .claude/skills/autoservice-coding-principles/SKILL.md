@@ -1,6 +1,6 @@
 ---
 name: autoservice-coding-principles
-description: 'Enforce ARSM source-quality rules for changed `.cs`, `.ts`, and `.tsx` files. Use when source changes require SOLID/OOP/GoF review, JSDoc-style comments, naming cleanup, anti-god-file splits, or coding-principles remediation.'
+description: 'Enforce ARSM source-quality rules for changed `.cs`, `.ts`, and `.tsx` files. Use when source changes require SOLID/OOP/GoF review, 2-line JSDoc-style comments, naming cleanup, anti-god-file splits, or coding-principles remediation.'
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,8 @@ Use this skill whenever changed source includes `.cs`, `.ts`, or `.tsx`.
 
 - Auto-remediate; do not report-only.
 - Enforce SOLID/OOP boundaries and pragmatic GoF usage.
-- Require JSDoc-style comments for non-trivial changed/new declarations.
+- Require a JSDoc-style summary comment for non-trivial changed/new declarations.
+- Every comment is at most 2 lines, doc comments included (JSDoc-style `/** */` blocks carry one short summary, no `@param`/`@returns` lists; the types live in the signature). Shorten or drop longer comments in the files you touch.
 - Remove XML-doc style comments.
 - Improve naming/structure while preserving behavior.
 - Document rationale for non-trivial structural remediations.
