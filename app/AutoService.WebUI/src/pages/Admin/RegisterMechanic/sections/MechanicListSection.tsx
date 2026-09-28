@@ -58,7 +58,6 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 	const firstRowRef = useCallback((node: HTMLDivElement | null) => {
 		setFirstRowNode(node);
 	}, []);
-	const [listMaxHeight, setListMaxHeight] = useState<number | undefined>(undefined);
 	const hasVisibleRows = visibleMechanics.length > 0;
 
 	useEffect(() => {
@@ -68,10 +67,13 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 			return;
 		}
 
+		// Written through the CSSOM rather than a React `style` attribute: the built app's CSP
+		// allows no inline style attributes (style-src-attr), and CSSOM writes are not subject to it.
 		const updateListMaxHeight = () => {
 			const rowHeight = firstRowNode.getBoundingClientRect().height;
 			const rowGap = Number.parseFloat(getComputedStyle(containerElement).rowGap || '0');
-			setListMaxHeight((rowHeight * MECHANIC_LIST_VISIBLE_ROW_COUNT) + (rowGap * (MECHANIC_LIST_VISIBLE_ROW_COUNT - 1)));
+			const maxHeight = (rowHeight * MECHANIC_LIST_VISIBLE_ROW_COUNT) + (rowGap * (MECHANIC_LIST_VISIBLE_ROW_COUNT - 1));
+			containerElement.style.maxHeight = `${maxHeight}px`;
 		};
 
 		updateListMaxHeight();
@@ -114,7 +116,6 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 						<div
 							ref={listContainerRef}
 							className="flex flex-col gap-3 overflow-y-auto"
-							style={listMaxHeight === undefined ? undefined : { maxHeight: `${listMaxHeight}px` }}
 						>
 							{visibleMechanics.map((mechanic, index) => {
 								const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;

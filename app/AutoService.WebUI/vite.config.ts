@@ -73,12 +73,10 @@ function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
   const directives: Record<string, string> = {
     'default-src': "'self'",
     'script-src': ["'self'", ...inlineScriptHashes].join(' '),
-    // No inline <style> element remains (LoadingPage's spinner keyframes moved to
-    // src/styles/loadingPageAnimations.css), so style-src/style-src-elem stay 'self'.
-    // LoadingPage still sets a handful of React inline `style={...}` attributes, which
-    // style-src-attr (not style-src) governs, so that one directive needs 'unsafe-inline'.
+    // No inline <style> element or style attribute remains (LoadingPage's keyframes and
+    // styles live in src/styles/loadingPageAnimations.css; MechanicListSection writes its
+    // dynamic max-height through the CSSOM), so style-src covers elements and attributes alike.
     'style-src': "'self'",
-    'style-src-attr': "'unsafe-inline'",
     'font-src': "'self'",
     // blob: covers the quote PDF download and the error-illustration cache; data:
     // covers the profile-picture crop preview (FileReader data URL source). The API

@@ -35,6 +35,68 @@
     <title>ARSM | Auto Service Tool</title>
   </head>
   <body>
+    <!--
+      Static pre-React copy of the first frame a full load of /login paints (mobile
+      LCP), so the browser can paint it before any script runs. React paints two
+      layers there: the Login page (src/pages/Login/page.tsx) and, on top of it, the
+      loading splash (src/pages/LoadingPage.tsx). This copies both: the Login logo
+      with its wrapper chain underneath (covered, but it is what LCP measures, being
+      the larger logo), and the splash overlay (<=320px orb, halo, logo held in the
+      0% keyframe pose, see src/styles/loadingPageAnimations.css) on top, which is
+      what the visitor sees. Hidden by default; the inline script below reveals it
+      only on /login, and not when the splash is skipped after a /500 recovery.
+      LoadingPage removes it in a layout effect on its first commit, before the
+      browser paints, so the handoff is a single frame (src/utils/loginShell.ts).
+      Keep both copies in step with those components.
+    -->
+    <div id="login-shell" aria-hidden="true" class="hidden">
+      <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
+        <div class="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"></div>
+        <div class="arsm-auth-sheen pointer-events-none absolute inset-0 z-0"></div>
+        <div class="relative z-10 w-full max-w-[28rem] max-[320px]:max-w-[19.5rem]">
+          <div class="relative overflow-hidden rounded-3xl border border-arsm-border bg-arsm-card/95 p-5 backdrop-blur-md dark:border-arsm-border-dark dark:bg-arsm-card-dark/95 max-[320px]:p-4 sm:p-8">
+            <div class="mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
+              <div class="mt-1 flex items-center justify-center">
+                <img src="/AppLogoFrameBlack.webp" alt="" width="789" height="662" fetchpriority="high" decoding="async" class="block h-20 w-auto select-none opacity-75 dark:hidden sm:h-24" />
+                <img src="/AppLogoFrameWhite.webp" alt="" width="789" height="662" fetchpriority="high" decoding="async" class="hidden h-20 w-auto select-none opacity-75 dark:block sm:h-24" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <div class="fixed inset-0 z-50 overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+        <div class="absolute inset-0 pointer-events-none hidden max-[320px]:block">
+          <div class="arsm-loading-mobile-orb mobile-orb"></div>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="arsm-loading-logo-halo relative z-10 flex items-center justify-center rounded-full">
+            <img src="/AppLogoFrameBlack.webp" alt="" width="789" height="662" draggable="false" fetchpriority="high" decoding="async" class="logo-spin opacity-70 select-none dark:hidden" />
+            <img src="/AppLogoFrameWhite.webp" alt="" width="789" height="662" draggable="false" fetchpriority="high" decoding="async" class="logo-spin opacity-70 select-none hidden dark:block" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        if (window.location.pathname !== '/login') {
+          return;
+        }
+        const shell = document.getElementById('login-shell');
+        if (!shell) {
+          return;
+        }
+        try {
+          if (sessionStorage.getItem('autoservice-skip-loading-splash-on-next-boot') === '1') {
+            return;
+          }
+          const savedTheme = localStorage.getItem('preferred-theme');
+          document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        } catch {
+          // Storage unavailable: keep the light default, exactly like the theme store.
+        }
+        shell.classList.remove('hidden');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

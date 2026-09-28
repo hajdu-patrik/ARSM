@@ -1,7 +1,9 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    Loading page splash animations
-   Extracted from pages/LoadingPage.tsx to avoid an inline <style> element
-   (required for a strict `style-src 'self'` Content-Security-Policy).
+   Extracted from pages/LoadingPage.tsx to avoid an inline <style> element and
+   React inline `style={...}` attributes (required for a strict `style-src` /
+   `style-src-attr` Content-Security-Policy). Theme-dependent colors are
+   expressed with `.dark` descendant selectors instead of runtime style objects.
    ───────────────────────────────────────────────────────────────────────────── */
 
 @keyframes logo-spin-variable {
@@ -39,8 +41,17 @@
 }
 
 .logo-spin {
+  width: clamp(64px, 20vw, 136px);
+  height: clamp(64px, 20vw, 136px);
+  object-fit: contain;
+  will-change: transform;
   animation: logo-spin-variable 1.5s linear infinite;
   transform-origin: center;
+}
+
+.arsm-loading-logo-halo {
+  width: clamp(124px, 40vw, 250px);
+  height: clamp(124px, 40vw, 250px);
 }
 
 .shape-base {
@@ -55,27 +66,52 @@
 }
 
 .shape-left {
+  width: min(51.04vw, 700px);
+  aspect-ratio: 980 / 380;
+  background-color: color-mix(in srgb, var(--color-arsm-accent) 18%, transparent);
   transform: translate(calc(-52vw), calc(-10vh)) rotate(12deg);
   opacity: 1;
   animation-name: shape-left-in;
 }
 
 .shape-bottom-right {
+  width: min(72.92vw, 920px);
+  aspect-ratio: 1400 / 430;
+  background-color: color-mix(in srgb, var(--color-arsm-accent) 24%, transparent);
   transform: translate(calc(10vw), calc(15vh)) rotate(-8deg);
   opacity: 1;
   animation-name: shape-bottom-right-in;
 }
 
 .shape-top-right {
+  width: min(42.71vw, 620px);
+  aspect-ratio: 820 / 360;
+  background-color: color-mix(in srgb, var(--color-arsm-accent) 12%, transparent);
   transform: translate(calc(0vw), calc(-60vh)) rotate(-12deg);
   opacity: 1;
   animation-name: shape-top-right-in;
+}
+
+.dark .shape-left {
+  background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 20%, transparent);
+}
+
+.dark .shape-bottom-right {
+  background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 24%, transparent);
+}
+
+.dark .shape-top-right {
+  background-color: color-mix(in srgb, var(--color-arsm-accent-dark) 16%, transparent);
 }
 
 .mobile-orb {
   position: absolute;
   left: 50%;
   top: 52%;
+  width: 84vw;
+  height: 84vw;
+  max-width: 250px;
+  max-height: 250px;
   border-radius: 9999px;
   transform: translate(-50%, -50%) scale(0.92);
   opacity: 0.2;
@@ -90,5 +126,17 @@
 @media (max-width: 320px) {
   .logo-spin {
     animation: mobile-logo-pulse-spin 1.8s linear infinite;
+  }
+}
+
+/* index.html's static pre-React copy of the first splash frame (#login-shell): the logo holds
+   the 0% keyframe pose until LoadingPage mounts and starts the spin from that same pose. */
+#login-shell .logo-spin {
+  animation: none;
+}
+
+@media (max-width: 320px) {
+  #login-shell .logo-spin {
+    transform: scale(0.96);
   }
 }
