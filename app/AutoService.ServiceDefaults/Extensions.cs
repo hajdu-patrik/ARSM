@@ -11,21 +11,13 @@ using OpenTelemetry.Trace;
 namespace Microsoft.Extensions.Hosting;
 
 // Adds common Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
-// This project should be referenced by each service project in your solution.
-// To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
+// Reference from each service project; see https://aka.ms/dotnet/aspire/service-defaults for details.
 public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
 
-    /**
-     * Registers the full set of Aspire service defaults: OpenTelemetry, health checks,
-     * service discovery, and standard HTTP resilience for outgoing requests.
-     * Call this once from each service project's Program.cs.
-     *
-     * @param builder The host application builder to configure.
-     * @return The same builder so calls can be chained.
-     */
+    /** Registers the full set of Aspire service defaults: OpenTelemetry, health checks, service discovery, and standard HTTP resilience for outgoing requests. Call this once from each service project's Program.cs. */
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();
@@ -43,22 +35,12 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
-        // Uncomment the following to restrict the allowed schemes for service discovery.
-        // builder.Services.Configure<ServiceDiscoveryOptions>(options =>
-        // {
-        //     options.AllowedSchemes = ["https"];
-        // });
+        // Uncomment to restrict the allowed schemes for service discovery (see ServiceDiscoveryOptions).
 
         return builder;
     }
 
-    /**
-     * Configures OpenTelemetry logging, metrics and distributed tracing.
-     * Health-check requests are excluded from traces to avoid noise.
-     *
-     * @param builder The host application builder to configure.
-     * @return The same builder so calls can be chained.
-     */
+    /** Configures OpenTelemetry logging, metrics and distributed tracing. Health-check requests are excluded from traces to avoid noise. */
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Logging.AddOpenTelemetry(logging =>
@@ -93,13 +75,7 @@ public static class Extensions
         return builder;
     }
 
-    /**
-     * Adds an OTLP exporter when the OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set.
-     * This enables shipping telemetry to the Aspire dashboard and external collectors.
-     *
-     * @param builder The host application builder to configure.
-     * @return The same builder so calls can be chained.
-     */
+    /** Adds an OTLP exporter when the OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set. This enables shipping telemetry to the Aspire dashboard and external collectors. */
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
@@ -109,23 +85,12 @@ public static class Extensions
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
 
-        // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
-        //if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-        //{
-        //    builder.Services.AddOpenTelemetry()
-        //       .UseAzureMonitor();
-        //}
+        // Uncomment to enable the Azure Monitor exporter (requires Azure.Monitor.OpenTelemetry.AspNetCore).
 
         return builder;
     }
 
-    /**
-     * Adds a default liveness health check that returns Healthy as long as the
-     * process is responsive. Used by Aspire and container orchestrators.
-     *
-     * @param builder The host application builder to configure.
-     * @return The same builder so calls can be chained.
-     */
+    /** Adds a default liveness health check that returns Healthy as long as the process is responsive. Used by Aspire and container orchestrators. */
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
@@ -135,27 +100,22 @@ public static class Extensions
         return builder;
     }
 
-    /**
-     * Maps /health (all checks) and /alive (liveness-only checks) endpoints.
-     * Only exposed in Development to avoid unintended information disclosure in production.
-     *
-     * @param app The configured WebApplication.
-     * @return The same app so calls can be chained.
-     */
+    /** Maps /alive (self-check only) in every environment and /health (all checks) in Development
+        only, to avoid disclosing dependency details; see docs/deployment-security-checklist.md. */
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
+        // Only health checks tagged with the "live" tag must pass for app to be considered alive
+        app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
+
+        // Adding dependency health checks to non-development environments has security implications.
+        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling /health outside Development.
         if (app.Environment.IsDevelopment())
         {
             // All health checks must pass for app to be considered ready to accept traffic after starting
             app.MapHealthChecks(HealthEndpointPath);
-
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            });
         }
 
         return app;
