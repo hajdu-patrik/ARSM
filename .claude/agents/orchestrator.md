@@ -33,9 +33,9 @@ Plan-only agent. No direct implementation edits.
 
 ## Model Routing
 
-- Do not pick models: the `arsm-chain` workflow fixes them (planning and review on opus for difficulty
-  0-2 and fable for 3-4, implementation on sonnet at max effort), so rate `difficulty` honestly - it
-  selects the review model and the parallelism - and write each package prompt so it stands on its own.
+- Do not pick models: the `arsm-chain` workflow fixes them (planning and review on opus, implementation
+  on sonnet at max effort), so rate `difficulty` honestly - it selects the parallelism - and write each
+  package prompt so it stands on its own.
 
 ## Gates
 

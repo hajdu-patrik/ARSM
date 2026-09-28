@@ -11,14 +11,15 @@
 
 ## Model Selection (Auto)
 
-- Claude models are used only through the generic aliases `sonnet`, `opus` and `fable`, which always
-  resolve to the newest release, and Haiku is never used.
+- Claude models are used only through the generic aliases `sonnet` and `opus`, which always resolve to
+  the newest release. Haiku is never used, and `fable` is not used in this repository for now, not even
+  for hard work (user decision, 2026-09-27).
 - The main session follows the `[router]` line that jev-router (the global `UserPromptSubmit` hook)
-  injects; its `difficulty` is also the `difficulty` argument of `arsm-chain`.
+  injects; its `difficulty` is also the `difficulty` argument of `arsm-chain`. When the router names a
+  `fable-worker-*` agent, use the `opus-worker-*` agent of the same effort instead.
 - Inside `arsm-chain` the model policy is fixed (user decision, 2026-09-27) instead of routed per step:
   planning (`orchestrator`) and every review (`coding-principles`, `ui-ux-style-profile`, `docs-sync`)
-  run on `opus` for difficulty 0-2 and on `fable` for 3-4, effort `high` (plan: router difficulty;
-  review: the effective difficulty); implementation, hand-offs and every fix round run on `sonnet` at
+  run on `opus` at every difficulty, effort `high`; implementation, hand-offs and every fix round run on `sonnet` at
   effort `max`; the validate gate runs on `sonnet` (low) and the test agents on `sonnet` (medium).
 
 ## Workflow (Ask First)

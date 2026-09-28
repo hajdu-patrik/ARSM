@@ -9,6 +9,63 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Flat item surfaces, test suites in GitHub Actions, codebase cleanup, no fable (2026-09-28).
+  - WebUI: item-level gradient overlays are gone, so every card, panel, modal and sidebar section
+    shows its own solid background token (scheduler intake selected-day box and customer lookup
+    panel, shared Modal, sidebar header/footer, Login card and its static `#login-shell` copy,
+    Settings delete-profile section); the seven `arsm-*-sheen` CSS rules were deleted. Page-level
+    backdrops (body, auth, shell, error page, splash) and the calendar scroll fade stay.
+  - WebUI overflow fixes: the Customers toolbar actions no longer clip at 768 px (`sm:shrink-0` on
+    the actions wrapper), and the quote editor totals wrap instead of ellipsizing a large amount.
+  - CI: new `.github/workflows/tests.yml`. `e2e-playwright` runs the whole Playwright suite on the
+    Vite dev server with the mocked API (mkcert from apt); `api-http-sql` starts PostgreSQL 18.3
+    and MinIO containers plus the API (Development, demo seed) with per-run generated, masked
+    credentials, creates the read-only `ai_agent_test_user`, then runs
+    `run-local-test-suite.py http sql`. No repository secret is needed.
+  - Cleanup: deleted the unused `tailwind.config.js` (Tailwind v4, no `@config`), the empty
+    `public/sitemap.xml`, the historical Dashboard-UI-UX design notes with their `.pen` file and
+    its white logo, and three unreferenced symbols (`hasRequiredQuoteLineFields`,
+    `CompanyResultsState`, `RefreshToken.IsActive`).
+  - AI workflow: fable is not used in this repository for now; `arsm-chain` plans and reviews on
+    opus at every difficulty (CLAUDE.md, orchestrator agent, reminder hook, READMEs updated).
+  - Docs: `docs/PROJECT-OVERVIEW.md` (gitignored) brought up to date as of 2026-09-27.
+  - Verification: validate gate passed; E2E 72/72 in CI mode (serial, own dev server, as on the
+    runner); before/after screenshots of login, scheduler, intake, customers and settings at 390,
+    768 and 1440 px in both themes differ only in the removed overlays and the toolbar fix.
+    `tests.yml` has not run on GitHub yet (local YAML check only).
+
+_Dev time: ~1h23m wall-clock. Cost: ~$27.49-$54.99 (1 `arsm-chain` run, 2,749,482 output tokens,
+sonnet-opus range; output-token-only estimate - excludes input tokens and cache writes/reads, so a
+lower bound, not a bill)._
+
+- Remaining MEDIUM/LOW/INFO audit items closed (2026-09-27).
+  - API: CSRF double-submit token. Login, refresh and password change issue an `autoservice_csrf`
+    cookie; every unsafe cookie-bearing `/api` request except login must echo it in `X-CSRF-Token`
+    (`CsrfDoubleSubmitMiddleware`, constant-time compare, `403 csrf_token_invalid`). The WebUI API
+    client adds the header automatically.
+  - Appointments: admin-only `DELETE /api/appointments/{id}` (publishes the live update; linked
+    quotes keep existing, their FK is `SET NULL`), plus a delete action with a confirmation modal in
+    the scheduler detail view, visible to admins only.
+  - WebUI: /login paints a static pre-React copy of its first frame (the splash on top, the Login
+    logo beneath), so mobile LCP no longer waits for the JS; LoadingPage removes it on its first
+    commit. Throttled mobile profile: LCP ~2.27 s -> ~1.05 s, CLS 0, and the handoff frame matches
+    the splash pixel for pixel apart from logo-edge anti-aliasing.
+  - CSP: `style-src-attr 'unsafe-inline'` is gone; LoadingPage styles live in a stylesheet and the
+    mechanic list writes its max-height through the CSSOM.
+  - Styles: dark-mode "today" marker text token in the calendar, 44 px phone chips below 640 px,
+    10/11 px text raised to 12 px (`text-xs`).
+  - Tests: HTTP files capture the CSRF token in a post-response script (a request-less
+    `@CsrfToken` region is re-evaluated as a global for every request and kept stale tokens), and
+    401 checks run with `# @no-cookie-jar`; profile-picture 304 ETag revalidation check; new
+    appointment-delete HTTP and E2E coverage.
+  - Verification: validate gate passed; HTTP suite 872/872 plus all 4 Python checks; E2E 72/72
+    (the new delete spec's two locator bugs fixed and re-run twice); live browser check of the CSRF
+    header on logout and of the built app's CSP (no violations).
+
+_Dev time: ~2h18m wall-clock. Cost: ~$22.00-$109.99 (1 `arsm-chain` run, 2,199,878 output tokens,
+sonnet-fable range; output-token-only estimate - excludes input tokens and cache writes/reads, so a
+lower bound, not a bill)._
+
 - HTTP test suite now actually verifies status codes and provisions its own data (2026-09-27).
   - Every request block in `tests/API/**/*.http` carries a real httpyac assertion (`?? status == N`,
     plus body-code checks) instead of a status written only in a comment; before this the runner

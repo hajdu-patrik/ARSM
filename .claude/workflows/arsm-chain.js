@@ -1,6 +1,6 @@
 export const meta = {
   name: 'arsm-chain',
-  description: 'ARSM chain: opus/fable plan by difficulty, parallel sonnet-max work packages, opus/fable review, sonnet validate.py gate and targeted tests',
+  description: 'ARSM chain: opus plan, parallel sonnet-max work packages, opus review, sonnet validate.py gate and targeted tests',
   whenToUse: 'The user asked for the agent workflow on an ARSM task. Pass args {task, difficulty?, area?, baseRef?}.',
   phases: [
     { title: 'Plan', detail: 'orchestrator splits the task into work packages with disjoint file ownership (skipped for difficulty-1 single-area tasks)' },
@@ -27,10 +27,9 @@ const AREA_ROOTS = {
 const WEBUI_PREFIX = 'app/AutoService.WebUI/'
 // Implementing agents that may run at once, indexed by the effective 0-4 difficulty.
 const PARALLEL_CAP = [2, 2, 4, 6, 8]
-// Model policy (user decision 2026-09-27; never Haiku): planning and review run on opus for difficulty 0-2 and
-// on fable for 3-4, implementation and every fix round on sonnet at max effort, the gate and tests on sonnet.
-const THINKER_FABLE_FROM = 3
-const thinkerFor = (difficulty) => ({ model: (difficulty ?? 0) >= THINKER_FABLE_FROM ? 'fable' : 'opus', effort: 'high' })
+// Model policy (user decisions 2026-09-27; never Haiku, no fable for now): planning and review run on opus at
+// every difficulty, implementation and every fix round on sonnet at max effort, the gate and tests on sonnet.
+const thinkerFor = () => ({ model: 'opus', effort: 'high' })
 const IMPLEMENTER = { model: 'sonnet', effort: 'max' }
 const RUNNER = { model: 'sonnet', effort: 'low' }
 const TESTER = { model: 'sonnet', effort: 'medium' }

@@ -206,7 +206,8 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 
 - The agent workflow is the saved `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): an orchestrator
   plan that splits the task into work packages with disjoint owned paths (skipped for trivial single-area
-  tasks), jev-router model and effort per package, packages implemented in parallel (up to 8 at once, scaled
+  tasks), a fixed model policy (opus plans and reviews, sonnet at max effort implements and fixes, sonnet runs
+  the gate and tests; no Haiku and, for now, no fable), packages implemented in parallel (up to 8 at once, scaled
   by difficulty), each package reviewed as soon as it finishes (coding principles, UI/UX audit), docs sync
   beside one deterministic gate, then targeted tests.
 - `frontend` applies the `ui-ux-style-profile` policy itself; the profile audits the diff afterwards.

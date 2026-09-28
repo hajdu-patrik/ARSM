@@ -204,7 +204,8 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 
 - Az agent workflow a mentett `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): orchestrator terv,
   amely a feladatot diszjunkt fájltulajdonú munkacsomagokra bontja (triviális, egyterületes feladatnál
-  kimarad), jev-router modell- és effortválasztás csomagonként, párhuzamos implementáció (nehézségtől függően
+  kimarad), rögzített modellszabály (opus tervez és reviewz, sonnet max efforttal implementál és javít, sonnet
+  futtatja a kaput és a teszteket; Haiku nincs, fable egyelőre nincs), párhuzamos implementáció (nehézségtől függően
   egyszerre legfeljebb 8 csomag), minden csomag reviewja rögtön a befejezése után (kódolási elvek, UI/UX
   audit), dokumentáció-szinkron az egyetlen determinisztikus kapu mellett, végül célzott tesztek.
 - A `frontend` maga alkalmazza a `ui-ux-style-profile` szabályait; a profil utána a diffet auditálja.
