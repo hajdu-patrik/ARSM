@@ -26,7 +26,7 @@ public static partial class AuthEndpoints
      * @param tokenIssuer JWT issuer service.
      * @param loggerFactory Logger factory used to create endpoint logger.
      * @param cancellationToken Request cancellation token.
-      * @return 204 No Content when refresh succeeds, or 401 when refresh cannot proceed.
+     * @return 204 No Content when refresh succeeds, or 401 when refresh cannot proceed.
      */
     private static async Task<IResult> RefreshAsync(
         HttpContext httpContext,
@@ -120,15 +120,7 @@ public static partial class AuthEndpoints
 
         await db.SaveChangesAsync(cancellationToken);
 
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.AccessToken,
-            newAccessToken,
-            BuildAccessTokenCookieOptions(AccessTokenTtl));
-
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.RefreshToken,
-            newRefreshTokenValue,
-            BuildRefreshTokenCookieOptions(RefreshTokenTtl));
+        IssueSessionCookies(httpContext.Response, newAccessToken, newRefreshTokenValue);
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Refresh succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, currentIpAddress);

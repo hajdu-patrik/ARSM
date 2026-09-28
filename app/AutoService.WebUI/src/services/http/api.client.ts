@@ -2,16 +2,18 @@
  * Configured Axios HTTP client for API communication.
  *
  * Reads the base URL from {@code VITE_API_URL} (no hardcoded fallback).
- * Includes request interceptor for {@code FormData} content-type handling
- * and response interceptor for automatic {@code 401} token refresh with
- * single-flight deduplication and login password redaction.
+ * Includes request interceptors for {@code FormData} content-type handling and for attaching the CSRF
+ * double-submit header ({@code X-CSRF-Token}, see {@link readCsrfCookie}) to unsafe requests, and a
+ * response interceptor for automatic {@code 401} token refresh with single-flight deduplication and
+ * login password redaction.
  * @module services/http/api.client
  */
 
 import axios from 'axios';
-import type { AxiosError, AxiosInstance } from 'axios';
+import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
 import { clearAuthSessionHint } from '../auth/session-hint';
+import { readCsrfCookie } from './csrf-token';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -33,6 +35,16 @@ const REFRESH_PATH = '/api/auth/refresh';
 const LOGOUT_PATH = '/api/auth/logout';
 const VALIDATE_PATH = '/api/auth/validate';
 const SERVER_ERROR_PATH = '/500';
+
+/** Request header that must echo the {@code autoservice_csrf} cookie on unsafe requests. */
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+/**
+ * HTTP methods the CSRF double-submit header is attached to. GET/HEAD/OPTIONS never receive it: they
+ * are safe methods the API does not require it on, and adding a custom header to every cross-origin
+ * GET would force an otherwise-unnecessary CORS preflight.
+ */
+const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
 if (!API_URL) {
   throw new Error('VITE_API_URL is not configured. Set it via AppHost or .env.development.');
@@ -101,6 +113,35 @@ function redactLoginPassword(error: AxiosError): void {
 }
 
 /**
+ * Attaches the CSRF double-submit header ({@code X-CSRF-Token}) to unsafe requests, or removes a stale
+ * one when the cookie is absent. Safe methods are left untouched (see {@link CSRF_PROTECTED_METHODS}).
+ *
+ * This is an explicit interceptor rather than Axios's built-in {@code xsrfCookieName} /
+ * {@code withXSRFToken} support, because that support also attaches the header to safe methods and its
+ * exact behavior differs across Axios versions. Because it runs on every dispatch through the shared
+ * {@link apiClient}, it also runs on the 401 -> refresh -> retry flow: once for the refresh POST itself
+ * and again when the original request is retried, so the retry always carries the freshly rotated token
+ * rather than the one read before refresh.
+ * @param config - The outgoing request configuration to decorate.
+ * @returns The same configuration, with the CSRF header set or cleared.
+ */
+function attachCsrfHeader(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
+  const method = config.method?.toLowerCase();
+  if (!method || !CSRF_PROTECTED_METHODS.has(method)) {
+    return config;
+  }
+
+  const csrfToken = readCsrfCookie();
+  if (csrfToken !== null) {
+    config.headers.set(CSRF_HEADER_NAME, csrfToken);
+  } else {
+    config.headers.delete(CSRF_HEADER_NAME);
+  }
+
+  return config;
+}
+
+/**
  * Pre-configured Axios instance used by all service modules.
  * Sends credentials (cookies) with every request.
  */
@@ -120,6 +161,9 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+// Interceptor: attach the CSRF double-submit header to unsafe requests (see attachCsrfHeader).
+apiClient.interceptors.request.use(attachCsrfHeader);
 
 // Interceptor: redact login password from Axios error config data before propagation/logging.
 apiClient.interceptors.response.use(

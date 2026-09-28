@@ -1,3 +1,4 @@
+using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Data;
@@ -116,8 +117,7 @@ public static partial class ProfileEndpoints
 
         await transaction.CommitAsync(cancellationToken);
 
-        httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
-        httpContext.Response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });
+        AuthEndpoints.ClearSessionCookies(httpContext.Response);
 
         return Results.Ok(new { message = "Profile deleted successfully." });
     }

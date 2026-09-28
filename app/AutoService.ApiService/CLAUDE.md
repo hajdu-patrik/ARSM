@@ -27,8 +27,8 @@
 
 ## Auth and Runtime Anchors
 
-- Cookies: `autoservice_at` (10 min), `autoservice_rt` (7 days).
-- Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header.
+- Cookies: `autoservice_at` (10 min), `autoservice_rt` (7 days), `autoservice_csrf` (double-submit CSRF token, `HttpOnly=false` so script can read it, same 7-day lifetime as `autoservice_rt`) - `Auth/Session/CsrfTokenCookie` issues/rotates it on successful login, refresh and password change, and clears it on logout and profile deletion, alongside `autoservice_at`/`autoservice_rt`.
+- Unsafe cookie-bearing API mutations require an allowed WebUI `Origin` header (`UnsafeCookieRequestOriginMiddleware`) and, running immediately after it, a matching `X-CSRF-Token` header equal to the `autoservice_csrf` cookie (`Middleware/CsrfDoubleSubmitMiddleware`, compared with `CryptographicOperations.FixedTimeEquals`) on every unsafe `/api` request except `POST /api/auth/login`; a missing or mismatched header is `403 csrf_token_invalid`. Both middlewares share request classification via `Middleware/UnsafeCookieRequestClassifier`.
 - Rate limits: login `10/min` (Development `300/min` for the local test suite), refresh `20/min`; lockout after 5 failed attempts for 15 min.
 - In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
 - Profile picture GET responses keep private browser caching with ETag revalidation and auth/cookie-aware `Vary` headers; SSE update behavior remains intact.

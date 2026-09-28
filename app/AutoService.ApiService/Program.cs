@@ -343,7 +343,7 @@ builder.Services.AddCors(options =>
             .WithOrigins(webUiOrigins)
             .AllowCredentials()
             .WithMethods("GET", "POST", "PUT", "DELETE")
-            .WithHeaders("Content-Type");
+            .WithHeaders("Content-Type", AuthCookieNames.CsrfHeaderName);
     });
 });
 
@@ -421,6 +421,7 @@ await app.EnsureSeededAsync();
  * - rate limiter
  * - cors
  * - unsafe cookie request origin validation
+ * - CSRF double-submit validation
  * - audit access denied middleware (wraps auth pipeline to log 401/403)
  * - authentication
  * - authorization
@@ -470,6 +471,7 @@ app.UseMiddleware<LoginBanMiddleware>();
 app.UseRateLimiter();
 app.UseCors("WebUIPolicy");
 app.UseMiddleware<UnsafeCookieRequestOriginMiddleware>();
+app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 app.UseMiddleware<AuditAccessDeniedMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();

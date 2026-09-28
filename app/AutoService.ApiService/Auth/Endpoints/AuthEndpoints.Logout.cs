@@ -55,8 +55,7 @@ public static partial class AuthEndpoints
             logger.LogInformation("Logout added current access token JTI to denylist.");
         }
 
-        httpContext.Response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
-        httpContext.Response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });
+        ClearSessionCookies(httpContext.Response);
 
         logger.LogInformation("Logout completed and auth cookies cleared.");
 

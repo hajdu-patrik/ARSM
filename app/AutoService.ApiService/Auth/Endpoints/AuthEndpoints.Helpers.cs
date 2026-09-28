@@ -1,3 +1,4 @@
+using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
@@ -120,9 +121,39 @@ public static partial class AuthEndpoints
         MaxAge = ttl
     };
 
-    internal static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+    private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
 
-    internal static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+    private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
+
+    /**
+     * Issues the complete session cookie set - access token, refresh token and the CSRF
+     * double-submit token - from one place, so no handler can rotate the auth cookies
+     * without rotating the CSRF cookie alongside them with the refresh cookie's lifetime.
+     * Login, refresh and change-password all go through here.
+     *
+     * @param response Response to append the cookies to.
+     * @param accessToken Signed JWT for the access-token cookie.
+     * @param refreshTokenValue Raw (unhashed) refresh-token value for the refresh-token cookie.
+     */
+    internal static void IssueSessionCookies(HttpResponse response, string accessToken, string refreshTokenValue)
+    {
+        response.Cookies.Append(AuthCookieNames.AccessToken, accessToken, BuildAccessTokenCookieOptions(AccessTokenTtl));
+        response.Cookies.Append(AuthCookieNames.RefreshToken, refreshTokenValue, BuildRefreshTokenCookieOptions(RefreshTokenTtl));
+        CsrfTokenCookie.Issue(response, RefreshTokenTtl);
+    }
+
+    /**
+     * Clears the complete session cookie set; the counterpart of IssueSessionCookies.
+     * Logout and profile deletion both go through here.
+     *
+     * @param response Response to clear the cookies from.
+     */
+    internal static void ClearSessionCookies(HttpResponse response)
+    {
+        response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
+        response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });
+        CsrfTokenCookie.Clear(response);
+    }
 
     private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
         => TokenSecurity.ParseJwtExpiry(user);

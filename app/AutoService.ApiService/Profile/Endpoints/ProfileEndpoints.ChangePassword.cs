@@ -1,6 +1,5 @@
 using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Auth.Security;
-using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Validation;
@@ -152,15 +151,7 @@ public static partial class ProfileEndpoints
 
         await db.SaveChangesAsync(cancellationToken);
 
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.AccessToken,
-            newAccessToken,
-            AuthEndpoints.BuildAccessTokenCookieOptions(AuthEndpoints.AccessTokenTtl));
-
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.RefreshToken,
-            newRefreshTokenValue,
-            AuthEndpoints.BuildRefreshTokenCookieOptions(AuthEndpoints.RefreshTokenTtl));
+        AuthEndpoints.IssueSessionCookies(httpContext.Response, newAccessToken, newRefreshTokenValue);
 
         return Results.Ok(new { message = "Password changed successfully." });
     }

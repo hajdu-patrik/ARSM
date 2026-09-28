@@ -1,6 +1,5 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Auth.Security;
-using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
@@ -183,15 +182,7 @@ public static partial class AuthEndpoints
 
         await db.SaveChangesAsync(cancellationToken);
 
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.AccessToken,
-            accessToken,
-            BuildAccessTokenCookieOptions(AccessTokenTtl));
-
-        httpContext.Response.Cookies.Append(
-            AuthCookieNames.RefreshToken,
-            refreshTokenValue,
-            BuildRefreshTokenCookieOptions(RefreshTokenTtl));
+        IssueSessionCookies(httpContext.Response, accessToken, refreshTokenValue);
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, clientIp);

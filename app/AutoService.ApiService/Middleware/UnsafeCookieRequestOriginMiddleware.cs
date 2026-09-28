@@ -1,4 +1,3 @@
-using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Configuration;
 
 namespace AutoService.ApiService.Middleware;
@@ -9,7 +8,7 @@ public sealed class UnsafeCookieRequestOriginMiddleware(RequestDelegate next, We
     /** Validates unsafe cookie-bearing API requests before the auth pipeline consumes cookies. */
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!RequiresOriginProof(context))
+        if (!UnsafeCookieRequestClassifier.IsUnsafeCookieBearingApiRequest(context))
         {
             await next(context);
             return;
@@ -30,26 +29,5 @@ public sealed class UnsafeCookieRequestOriginMiddleware(RequestDelegate next, We
             status = StatusCodes.Status403Forbidden,
             detail = "Unsafe authenticated API requests require an allowed Origin header."
         });
-    }
-
-    private static bool RequiresOriginProof(HttpContext context)
-    {
-        return context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-            && IsUnsafeMethod(context.Request.Method)
-            && HasAuthCookie(context);
-    }
-
-    private static bool IsUnsafeMethod(string method)
-    {
-        return HttpMethods.IsPost(method)
-            || HttpMethods.IsPut(method)
-            || HttpMethods.IsPatch(method)
-            || HttpMethods.IsDelete(method);
-    }
-
-    private static bool HasAuthCookie(HttpContext context)
-    {
-        return context.Request.Cookies.ContainsKey(AuthCookieNames.AccessToken)
-            || context.Request.Cookies.ContainsKey(AuthCookieNames.RefreshToken);
     }
 }
