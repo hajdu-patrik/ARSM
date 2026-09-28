@@ -61,6 +61,11 @@ jobs:
     defaults:
       run:
         working-directory: app/AutoService.WebUI
+    # The production build requires the API origin (it goes into the CSP connect-src); CI only
+    # checks that the bundle builds, so any valid https origin will do.
+    env:
+      VITE_API_URL: https://api.ci.invalid
+      VITE_SITE_URL: https://app.ci.invalid
 
     steps:
     - uses: actions/checkout@v7
