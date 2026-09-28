@@ -99,12 +99,16 @@ jobs:
       run: |
         # Upper, lower, digit and symbol so every value passes the Identity password policy.
         gen() { echo "Ci$(openssl rand -hex 12)Aa1!"; }
-        for name in POSTGRES_PASSWORD S3_SECRET_KEY JWT_SECRET DEMO_PASSWORD \
+        for name in POSTGRES_PASSWORD S3_SECRET_KEY DEMO_PASSWORD \
                     MECHANIC_PASSWORD MECHANIC_NEW_PASSWORD TEST_PASSWORD WRONG_PASSWORD SQL_READER_PASSWORD; do
           value="$(gen)"
           echo "::add-mask::$value"
           echo "$name=$value" >> "$GITHUB_ENV"
         done
+        # The API rejects a JWT signing secret shorter than 32 bytes (HMAC-SHA256 minimum).
+        jwt="$(openssl rand -hex 32)"
+        echo "::add-mask::$jwt"
+        echo "JWT_SECRET=$jwt" >> "$GITHUB_ENV"
         echo "S3_ACCESS_KEY=ci$(openssl rand -hex 6)" >> "$GITHUB_ENV"
 
     - name: Start PostgreSQL and RustFS
