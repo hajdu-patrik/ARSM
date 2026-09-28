@@ -1,11 +1,4 @@
-/**
- * Inventory page helper utilities.
- *
- * Provides search normalization, validation-message mapping, form-state
- * types, and the one permitted client-side gross-amount computation (the
- * live create/edit preview) shared by the Parts and Labor types tabs.
- * @module pages/Inventory/helpers
- */
+/** Inventory page helpers: search normalization, validation mapping, form-state types, and the one permitted gross preview. */
 
 import { DEFAULT_VAT_RATE_PERCENT } from '../../types/catalog/catalog.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
@@ -56,11 +49,7 @@ export const EMPTY_LABOR_TYPE_FORM: LaborTypeFormState = {
   vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
 };
 
-/**
- * Removes accents and lowercases input to support accent-insensitive search.
- * @param value Raw input value.
- * @returns Normalized value suitable for contains matching.
- */
+/** Removes accents and lowercases input to support accent-insensitive search. */
 export function normalizeCatalogSearchValue(value: string): string {
   return value
     .normalize('NFD')
@@ -68,20 +57,12 @@ export function normalizeCatalogSearchValue(value: string): string {
     .toLowerCase();
 }
 
-/**
- * Returns true when the server field-error dictionary has at least one non-empty entry.
- * @param errors Server field errors dictionary.
- * @returns True if any field has validation errors.
- */
+/** Returns true when the server field-error dictionary has at least one non-empty entry. */
 export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
 }
 
-/**
- * Maps part/labor-type validation messages to i18n keys.
- * @param message Backend error detail (see `Catalog/*.Mutations.cs` and `Validation/PricingValidation.cs`).
- * @returns Inventory page i18n key.
- */
+/** Maps part/labor-type validation messages (from `Catalog/*.Mutations.cs`, `Validation/PricingValidation.cs`) to i18n keys. */
 export function mapCatalogValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -128,20 +109,7 @@ export function mapCatalogValidationMessageToKey(message: string): string {
   return 'inventory.errors.saveFailed';
 }
 
-/**
- * Computes the live gross-amount preview shown in the create/edit form
- * before the server-authoritative row exists. This mirrors the server
- * formula exactly (plan F1, `Pricing/PricingCalculator.GrossUnitPrice`):
- * `round(net * (1 + vat / 100), 2)`.
- *
- * This is the ONE explicitly allowed client-side gross computation in the
- * whole pricing vertical (plan F2). Every gross value shown anywhere else
- * in the UI (list rows, both tabs) always comes straight from the server
- * DTO (`grossUnitPrice` / `grossHourlyRate`) — never from this helper.
- * @param netAmount Net unit price or net hourly rate currently typed in the form.
- * @param vatRatePercent Selected VAT rate percentage.
- * @returns The previewed gross amount, rounded to 2 decimals like the server.
- */
+/** Mirrors `Pricing/PricingCalculator.GrossUnitPrice` exactly: round(net * (1 + vat/100), 2); the only allowed client-side gross computation (CLAUDE.md). */
 export function computeLiveGrossPreview(netAmount: number, vatRatePercent: number): number {
   if (Number.isNaN(netAmount)) {
     return 0;

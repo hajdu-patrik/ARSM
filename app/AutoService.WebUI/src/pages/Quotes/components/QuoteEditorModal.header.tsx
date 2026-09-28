@@ -1,13 +1,4 @@
-/**
- * Quote editor header section: the quote's own metadata tiles, the title and
- * notes fields, the validity deadline with its own save action, and the
- * optional appointment link.
- *
- * Fields are disabled rather than hidden once the quote leaves Draft, and the
- * section says why. Validity is the single exception: it keeps its own action
- * because the API extends it through a separate endpoint (D23).
- * @module pages/Quotes/components/QuoteEditorModal.header
- */
+/** Quote editor header: metadata, title/notes, validity (own save action), and appointment link; fields disable rather than hide past Draft, except validity, which extends via its own endpoint (D23, see CLAUDE.md). */
 import { memo, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { CalendarClock } from 'lucide-react';
@@ -49,12 +40,7 @@ interface QuoteEditorHeaderSectionProps {
   readonly onSaveValidity: () => void;
 }
 
-/**
- * Builds the option label for one appointment: the scheduled day plus the task.
- * @param appointment Appointment offered as a quote link.
- * @param locale Current i18n locale.
- * @returns Option label text.
- */
+/** Builds the option label for one appointment: the scheduled day plus the task. */
 function buildAppointmentOptionLabel(appointment: AppointmentDto, locale: string): string {
   return `${formatQuoteDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
 }

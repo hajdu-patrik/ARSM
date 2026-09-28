@@ -1,9 +1,4 @@
-/**
- * Summary strip component displayed at the top of the scheduler page.
- * Shows the context date label and a count of scheduled appointments
- * for the selected day (or today when no day is selected).
- * @module SchedulerSummaryStrip
- */
+/** Summary strip: context date label and appointment count for the selected day (or today by default). */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {

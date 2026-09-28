@@ -1,6 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# PROFILE - FIELD LENGTH VALIDATION (update & change-password)
-# ─────────────────────────────────────────────────────────────
 # FieldLengthValidator caps: Email 150, FirstName/MiddleName/LastName 50, PhoneNumber 20
 # (UpdateProfileAsync); CurrentPassword/NewPassword/ConfirmNewPassword 128 (ChangePasswordAsync).
 
@@ -12,9 +9,6 @@
 @Over150LocalPart = lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
 @Over20Phone = +491511234567890123456
 @Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

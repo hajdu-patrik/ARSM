@@ -5,15 +5,7 @@ namespace AutoService.ApiService.Data;
 
 public sealed partial class AutoServiceDbContext
 {
-    /**
-     * Configures the quote entities (Quote, QuoteLine): table names, column
-     * types and precisions, string-enum conversions, FK delete behaviours,
-     * check constraints, indexes, and the xmin optimistic-concurrency
-     * mapping. Kept separate from AutoServiceDbContext.PricingModel.cs,
-     * whose doc comment scopes it to the Part/LaborType catalog only.
-     *
-     * @param modelBuilder Model builder passed in from OnModelCreating.
-     */
+    /** Configures the quote entities (Quote, QuoteLine): mappings, constraints, indexes, and the xmin concurrency mapping; kept separate from PricingModel.cs (Part/LaborType catalog only). */
     private void ConfigureQuotesModel(ModelBuilder modelBuilder)
     {
         // Quote mapping.
@@ -41,10 +33,8 @@ public sealed partial class AutoServiceDbContext
             entity.Property(x => x.TotalVat).HasPrecision(18, 2).IsRequired();
             entity.Property(x => x.TotalGross).HasPrecision(18, 2).IsRequired();
 
-            // The xmin system column exists on every Postgres row already
-            // and changes on every UPDATE; mapping it as a rowversion
-            // concurrency token adds no new column and needs no migration
-            // data, only this model-level mapping (D30).
+            // xmin exists on every Postgres row and changes on every UPDATE; mapping it
+            // as a rowversion token adds no column and needs no migration (D30).
             entity.Property(x => x.Version).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
 
             entity.HasOne(x => x.Vehicle)

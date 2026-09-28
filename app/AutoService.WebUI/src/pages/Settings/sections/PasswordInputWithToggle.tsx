@@ -1,7 +1,4 @@
-/**
- * Password input with a visibility toggle used by Settings forms.
- * @module pages/Settings/sections/PasswordInputWithToggle
- */
+/** Password input with a visibility toggle used by Settings forms. */
 
 import { Eye, EyeOff } from 'lucide-react';
 import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../utils/formStyles';

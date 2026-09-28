@@ -1,11 +1,8 @@
 /* Dark mode activated by a `.dark` class on any ancestor */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ARSM Design Tokens
-   All brand colors are defined here as Tailwind v4 @theme variables.
-   Usage: bg-arsm-surface, text-arsm-primary, border-arsm-border, etc.
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ARSM Design Tokens: brand colors as Tailwind v4 @theme variables.
+   Usage: bg-arsm-surface, text-arsm-primary, border-arsm-border, etc. */
 @theme {
 
   /* ── Purple palette (base scale, used for accent derivation) ──────────────── */

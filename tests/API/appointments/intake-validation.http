@@ -1,13 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - INTAKE VALIDATION
-# ─────────────────────────────────────────────────────────────
-# POST /api/appointments/intake sits under plain RequireAuthorization() (any mechanic session works, see
-# AppointmentEndpoints.cs), so this file no longer assumes a session left over from a previous file —
-# it logs in as the non-admin test mechanic itself. CustomerVehicleId is resolved from the known
-# customer's own vehicle instead of a literal id. New-customer/new-vehicle intake validation coverage
-# lives in the sibling file intake-validation-new-customer.http (split out to stay under the 250-line
-# file limit). The one appointment this file persists (PastDateApptId) is deleted at the end by an
-# admin session via DELETE /api/appointments/{id} (AdminOnly).
+# Intake sits under plain RequireAuthorization(), so this file logs in as the non-admin test mechanic itself;
+# CustomerVehicleId resolves from the known customer. New-customer coverage is the sibling intake-validation-new-customer.http; PastDateApptId is deleted at the end via admin.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -19,8 +11,6 @@
 @RunId = {{$timestamp}}
 @BothVehiclePathsVin = TST{{RunId.toString().slice(-10)}}0501
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

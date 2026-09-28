@@ -1,15 +1,9 @@
 namespace AutoService.ApiService.Configuration;
 
-/**
- * Resolves the database connection string, preferring the environment variable
- * 'ConnectionStrings__AutoServiceDb' over appsettings to support Aspire injection
- * and Docker / CI environment overrides without touching committed config files.
- */
+/** Resolves the database connection string, preferring the environment variable 'ConnectionStrings__AutoServiceDb' over appsettings to support Aspire injection and Docker / CI environment overrides without touching committed config files. */
 public static class ConnectionStringResolver
 {
-    /**
-     * Resolves the AutoServiceDb connection string and rejects template placeholders before startup.
-     */
+    /** Resolves the AutoServiceDb connection string and rejects template placeholders before startup. */
     public static string Resolve(IConfiguration configuration)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable("ConnectionStrings__AutoServiceDb");

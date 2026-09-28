@@ -1,8 +1,4 @@
-/**
- * Monthly breakdown of the accepted revenue. Every month of the period is
- * listed, empty ones included, so the months visibly add up to the year.
- * @module pages/CompanyResults/components/CompanyResultMonthList
- */
+/** Monthly breakdown of accepted revenue; every month is listed, even empty ones, so it sums to the year. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';

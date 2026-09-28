@@ -1,7 +1,5 @@
-/* -------------------------------------------------------------------------
-   ARSM Design System Primitives
-   Shared structural/layout/button classes for consistent UI composition.
-   ------------------------------------------------------------------------- */
+/* ARSM Design System Primitives: shared structural/layout/button classes
+   for consistent UI composition. */
 @layer components {
   .arsm-page-shell {
     margin-inline: auto;

@@ -1,10 +1,4 @@
-/**
- * Repair history list component.
- *
- * Renders a compact, read-only list of appointment history records
- * for a customer or vehicle.
- * @module pages/Customers/components/RepairHistoryList
- */
+/** Repair history list: compact, read-only appointment history for a customer or vehicle. */
 import { memo } from 'react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
@@ -25,11 +19,7 @@ interface RepairHistoryListProps {
 	readonly onOpenAppointment?: (appointment: AppointmentDto) => void;
 }
 
-/**
- * Renders a compact repair-history list.
- * Displays each appointment with scheduled date, task description, and status badge.
- * Shows an empty state message when no appointments are present.
- */
+/** Renders each appointment with scheduled date, task, and status badge, or an empty-state message. */
 export const RepairHistoryList = memo(function RepairHistoryList({
 	appointments,
 	locale,

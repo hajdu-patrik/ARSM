@@ -11,11 +11,7 @@ import type {
   UpdateQuoteRequest,
 } from '../../types/quotes/quotes.types';
 
-/**
- * Reads the file name out of a Content-Disposition header.
- * @param disposition Raw header value, when the response carried one.
- * @returns The file name, or null when the header is absent or has none.
- */
+/** Reads the file name out of a Content-Disposition header, or null when absent/unparsable. */
 function parseContentDispositionFileName(disposition: unknown): string | null {
   if (typeof disposition !== 'string') {
     return null;
@@ -25,20 +21,10 @@ function parseContentDispositionFileName(disposition: unknown): string | null {
   return match ? decodeURIComponent(match[1].trim()) : null;
 }
 
-/**
- * Quote API service.
- *
- * Thin axios wrapper for {@code /api/quotes} and the vehicle-nested quote
- * routes; the UI never calls HTTP directly. Every write takes the version
- * the client last saw, and the two delete routes carry it as a query
- * parameter because a DELETE has no body.
- */
+/** Thin axios wrapper for {@code /api/quotes}; every write carries the version the client last saw, as a
+ * query param on the two DELETE routes since a DELETE has no body. */
 export const quoteService = {
-  /**
-   * Returns every quote, newest first. Status and expiry filtering stays on
-   * the client: `isExpired` is a computed response flag rather than a stored
-   * status, so one list read serves every filter chip without a round trip.
-   */
+  /** Returns every quote, newest first; status/expiry filtering stays client-side (`isExpired` is computed, see WebUI CLAUDE.md). */
   async listQuotes(): Promise<QuoteListItemDto[]> {
     const response = await apiClient.get<QuoteListItemDto[]>('/api/quotes');
     return response.data;
@@ -93,11 +79,7 @@ export const quoteService = {
     return response.data;
   },
 
-  /**
-   * Downloads the quote as a PDF. The response is binary, so it is requested
-   * as a blob; the file name comes from the Content-Disposition header the API
-   * sets, and is null when the header is missing or unparsable.
-   */
+  /** Downloads the quote as a PDF blob; the file name comes from Content-Disposition, or null if unparsable. */
   async downloadPdf(id: number): Promise<{ blob: Blob; fileName: string | null }> {
     const response = await apiClient.get<Blob>(`/api/quotes/${id}/pdf`, { responseType: 'blob' });
     const disposition = response.headers['content-disposition'];

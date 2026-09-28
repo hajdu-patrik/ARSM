@@ -1,9 +1,4 @@
-/**
- * Period selector: a year, and optionally one month of it. Picking "whole
- * year" is the default, because the yearly figure is what the report is for;
- * the monthly view narrows it.
- * @module pages/CompanyResults/components/PeriodPicker
- */
+/** Period selector: year plus optional month; whole year is the default since that is what the report is for. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
@@ -28,12 +23,7 @@ const SELECTABLE_YEARS = 6;
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-/**
- * Builds the month labels in the current locale, so the list reads naturally
- * in both languages without a translated month key per name.
- * @param locale Current i18n locale.
- * @returns Month names indexed from January.
- */
+/** Builds month labels in the current locale, so the list reads naturally without a translated key per name. */
 function buildMonthNames(locale: string): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { month: 'long' });
   return MONTHS.map((month) => formatter.format(new Date(Date.UTC(2000, month - 1, 1))));

@@ -9,13 +9,8 @@ namespace AutoService.ApiService.Vehicles;
 
 public static partial class VehicleEndpoints
 {
-    /**
-     * Server-side projection of a vehicle into its detail DTO.
-     *
-     * Mirrors {@code ToVehicleDetailDto} field for field so query and mutation responses serialize
-     * identically, but fetches only the mapped vehicle and owner-name columns. The drivetrain name is
-     * formatted by a static helper that EF Core evaluates on the client in the top-level projection.
-     */
+    /** Server-side projection of a vehicle into its detail DTO; mirrors ToVehicleDetailDto field for
+     * field so query/mutation responses serialize identically, fetching only the mapped columns. */
     private static readonly Expression<Func<Vehicle, VehicleDetailDto>> VehicleDetailProjection = v => new VehicleDetailDto(
         v.Id,
         v.LicensePlate,
@@ -32,15 +27,7 @@ public static partial class VehicleEndpoints
             v.Customer.Name.MiddleName,
             v.Customer.Name.LastName));
 
-    /**
-     * Returns the vehicles owned by a customer, capped at the shared list limit.
-     *
-     * @param customerId Owning customer identifier.
-     * @param limit Optional maximum row count, normalized by {@code ListQueryLimits.Normalize}.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Vehicle list ordered by brand, model and id, or 404 if the customer does not exist.
-     */
+    /** Returns the vehicles owned by a customer, capped at the shared list limit. */
     private static async Task<IResult> ListCustomerVehiclesAsync(
         int customerId,
         int? limit,
@@ -70,14 +57,7 @@ public static partial class VehicleEndpoints
         return Results.Ok(vehicles);
     }
 
-    /**
-     * Returns a single vehicle with its owner summary.
-     *
-     * @param id Vehicle identifier.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns The vehicle detail or 404 if it does not exist.
-     */
+    /** Returns a single vehicle with its owner summary. */
     private static async Task<IResult> GetVehicleAsync(
         int id,
         AutoServiceDbContext db,
@@ -99,23 +79,10 @@ public static partial class VehicleEndpoints
         return Results.Ok(vehicle);
     }
 
-    /**
-     * Returns the drivetrain enum member name exactly like {@code Enum.ToString()}; EF Core evaluates it client-side.
-     *
-     * @param drivetrainType Materialized drivetrain value.
-     * @returns The drivetrain member name.
-     */
+    /** Returns the drivetrain enum member name exactly like Enum.ToString(); EF Core evaluates it client-side. */
     private static string FormatDrivetrainType(DrivetrainType drivetrainType) => drivetrainType.ToString();
 
-    /**
-     * Maps a tracked/loaded {@code Vehicle} entity into its detail DTO for mutation responses.
-     *
-     * Mirrors {@code VehicleDetailProjection} field for field so query and mutation responses
-     * serialize identically.
-     *
-     * @param vehicle Loaded vehicle entity with its owning customer included.
-     * @returns The vehicle detail DTO.
-     */
+    /** Maps a tracked/loaded Vehicle entity into its detail DTO for mutation responses; mirrors VehicleDetailProjection field for field. */
     private static VehicleDetailDto ToVehicleDetailDto(Vehicle vehicle) => new(
             vehicle.Id,
             vehicle.LicensePlate,

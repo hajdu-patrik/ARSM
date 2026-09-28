@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Profile-picture fixtures for the profile endpoint checks.
-
-The HTTP client, credentials, and assertion helpers live in ``http_check_support`` and are
-re-exported here so existing profile checks keep importing them from this module.
-"""
+"""Profile-picture fixtures for the profile endpoint checks (re-exports shared helpers from http_check_support)."""
 
 from __future__ import annotations
 
@@ -50,11 +46,7 @@ INVALID_TEXT_BYTES = b"not-an-image-payload"
 
 
 def build_png(width: int, height: int) -> bytes:
-    """Build a structurally valid RGBA PNG with correct chunk CRCs.
-
-    The upload path decodes and re-encodes every image, so fixtures must be real PNGs; a payload
-    with only the right magic bytes is rejected with 422.
-    """
+    """Build a structurally valid RGBA PNG with correct chunk CRCs, since the upload path decodes and re-encodes every image."""
 
     def chunk(tag: bytes, data: bytes) -> bytes:
         body = tag + data

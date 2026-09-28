@@ -1,7 +1,4 @@
-/**
- * Appointment card action confirmation modals.
- * @module pages/Scheduler/components/shared/AppointmentCardActionModals
- */
+/** Appointment card action confirmation modals. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

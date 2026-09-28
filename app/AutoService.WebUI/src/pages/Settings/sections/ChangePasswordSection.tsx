@@ -1,10 +1,4 @@
-/**
- * Settings change-password form section.
- *
- * Provides current/new/confirm password inputs with visibility toggles
- * and inline validation message rendering.
- * @module pages/Settings/sections/ChangePasswordSection
- */
+/** Settings change-password form: current/new/confirm inputs with visibility toggles and inline validation. */
 
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,9 +20,7 @@ interface ChangePasswordSectionProps {
   readonly onSubmit: (event: React.SyntheticEvent) => void;
 }
 
-/**
- * Renders the settings password-change form with accessibility-aware inputs.
- */
+/** Renders the settings password-change form with accessibility-aware inputs. */
 const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   currentPassword,
   newPassword,

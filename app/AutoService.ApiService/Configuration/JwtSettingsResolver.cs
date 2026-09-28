@@ -3,22 +3,12 @@ using System.Text;
 
 namespace AutoService.ApiService.Configuration;
 
-/**
- * Resolves the JWT signing secret, preferring the environment variable
- * 'JwtSettings__Secret' over appsettings. Throws at startup if the secret is
- * missing, set to a placeholder, or shorter than 32 bytes (HMAC-SHA256 minimum).
- */
+/** Resolves the JWT signing secret, preferring the environment variable 'JwtSettings__Secret' over appsettings. Throws at startup if the secret is missing, set to a placeholder, or shorter than 32 bytes (HMAC-SHA256 minimum). */
 public static class JwtSettingsResolver
 {
     private const int DefaultExpirationMinutes = 10;
 
-    /**
-     * Resolves the JWT signing secret, preferring the 'JwtSettings__Secret' environment
-     * variable over the 'JwtSettings:Secret' configuration key.
-     *
-     * @param configuration The application configuration to read from.
-     * @return The validated JWT signing secret.
-     */
+    /** Resolves the JWT signing secret, preferring the 'JwtSettings__Secret' environment variable over the 'JwtSettings:Secret' configuration key. */
     public static string ResolveSecret(IConfiguration configuration)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable("JwtSettings__Secret");
@@ -49,11 +39,7 @@ public static class JwtSettingsResolver
         return secret;
     }
 
-    /**
-     * Resolves the JWT access-token lifetime in minutes from 'JwtSettings:ExpirationMinutes'.
-     * Defaults to 10 minutes when the key is missing or blank. Throws at startup if the
-     * key is present but is not a positive integer.
-     */
+    /** Resolves the JWT access-token lifetime in minutes from 'JwtSettings:ExpirationMinutes'. Defaults to 10 minutes when the key is missing or blank. Throws at startup if the key is present but is not a positive integer. */
     public static int ResolveExpirationMinutes(IConfiguration configuration)
     {
         var rawValue = configuration["JwtSettings:ExpirationMinutes"];

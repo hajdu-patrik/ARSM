@@ -1,8 +1,4 @@
-/**
- * List-state hook for the admin mechanic roster: data loading, delete flow,
- * client-side name search, and locale-aware name sorting.
- * @module pages/Admin/RegisterMechanic/useMechanicListState
- */
+/** List-state hook for the admin mechanic roster: data loading, delete flow, search, and sorting. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { adminService, type MechanicListItem } from '../../../services/admin/admin.service';
@@ -19,12 +15,7 @@ interface UseMechanicListStateParams {
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
 }
 
-/**
- * Manages the admin mechanic roster: loading, delete flow, client-side name search,
- * and locale-aware name sorting for the mechanic list section.
- * @param params Hook dependencies for data refresh, locale-aware sorting, and toasts.
- * @returns Stateful values and actions consumed by the mechanic list section.
- */
+/** Manages the admin mechanic roster: loading, delete flow, name search, and locale-aware sorting. */
 export function useMechanicListState({
   refreshKey,
   language,

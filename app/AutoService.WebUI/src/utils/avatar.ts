@@ -1,11 +1,5 @@
-/**
- * Deterministic avatar fallback utilities.
- *
- * Provides consistent color selection and initials generation for users
- * without profile pictures. Color is determined by a hash of the seed value,
- * selecting from a fixed ARSM token palette.
- * @module utils/avatar
- */
+/** Deterministic avatar fallback utilities: consistent color and initials for users
+ * without profile pictures, color chosen by hashing the seed into a fixed palette. */
 
 /** Fixed palette of theme-invariant ARSM token class pairs for fallback avatar surfaces. */
 const AVATAR_COLOR_CLASSES = [
@@ -21,11 +15,7 @@ const AVATAR_COLOR_CLASSES = [
   'bg-arsm-error-softest text-arsm-error-text',
 ] as const;
 
-/**
- * Computes a deterministic hash from a string seed using djb2 XOR variant.
- * @param seed - The string to hash.
- * @returns A positive integer hash value.
- */
+/** Computes a deterministic hash from a string seed using a djb2 XOR variant. */
 function hashSeed(seed: string): number {
   let hash = 5381;
 
@@ -36,26 +26,15 @@ function hashSeed(seed: string): number {
   return Math.abs(hash);
 }
 
-/**
- * Returns a deterministic Tailwind color class pair for an avatar based on a seed value.
- * The same seed always produces the same color.
- * @param seedValue - A unique identifier (e.g., person ID or email) to derive the color from.
- * @returns A Tailwind CSS class string for background and text color.
- */
+/** Returns a deterministic Tailwind color class pair for an avatar based on a seed value; the same seed always produces the same color. */
 export function getDeterministicAvatarColor(seedValue: string | number | null | undefined): string {
   const seed = String(seedValue ?? 'anonymous');
   const hash = hashSeed(seed);
   return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length];
 }
 
-/**
- * Generates avatar initials from a user's name or email.
- * Prefers first+last name initials, falls back to the first two characters of the email.
- * @param firstName - User's first name.
- * @param lastName - User's last name.
- * @param email - User's email address (fallback).
- * @returns One or two uppercase characters for the avatar, or {@code "??"} if no data is available.
- */
+/** Generates avatar initials from a user's name or email: prefers first+last initials,
+ * falls back to the first two characters of the email, or `"??"` if neither is available. */
 export function getAvatarInitials(firstName?: string | null, lastName?: string | null, email?: string | null): string {
   const fromName = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.trim().toUpperCase();
   if (fromName.length > 0) {

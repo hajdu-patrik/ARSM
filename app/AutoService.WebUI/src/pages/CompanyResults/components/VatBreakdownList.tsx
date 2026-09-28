@@ -1,8 +1,4 @@
-/**
- * VAT breakdown of the accepted revenue: the tax base and the tax charged per
- * rate, the pair an accountant reconciles first.
- * @module pages/CompanyResults/components/VatBreakdownList
- */
+/** VAT breakdown of the accepted revenue: tax base and tax charged per rate, the pair an accountant reconciles first. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';

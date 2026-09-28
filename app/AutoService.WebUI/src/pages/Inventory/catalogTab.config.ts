@@ -1,10 +1,4 @@
-/**
- * Catalog tab configuration: the i18n keys, labels, and DTO field
- * accessors that differ between the Parts and Labor types tabs. The
- * generic `CatalogTab` component is instantiated once per entity with one
- * of these configs instead of duplicating the tab markup per entity.
- * @module pages/Inventory/catalogTab.config
- */
+/** Per-entity i18n keys, labels, and DTO accessors consumed by the generic `CatalogTab` component. */
 import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
 
 /** Per-entity configuration consumed by the generic `CatalogTab` component. */

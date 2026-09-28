@@ -2,13 +2,7 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    /**
-     * Handles GET /api/auth/validate.
-     * Returns token-derived profile claims if the JWT is valid and authorized.
-     *
-     * @param httpContext Current request context with authenticated user claims.
-     * @return 200 OK with person linkage claims.
-     */
+    /** Handles GET /api/auth/validate. Returns token-derived profile claims if the JWT is valid and authorized. */
     private static IResult ValidateTokenAsync(HttpContext httpContext)
     {
         var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;

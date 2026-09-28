@@ -1,9 +1,4 @@
-/**
- * Colored status pill for a quote, following the appointment StatusBadge
- * pattern. Expired is a badge state but never a stored status: it comes from
- * the server's computed flag via `resolveQuoteDisplayStatus`.
- * @module pages/Quotes/components/QuoteStatusBadge
- */
+/** Colored status pill for a quote (StatusBadge pattern); Expired is a badge state only, resolved from the server flag via resolveQuoteDisplayStatus. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatusPillBadge } from '../../../components/common/StatusPillBadge';

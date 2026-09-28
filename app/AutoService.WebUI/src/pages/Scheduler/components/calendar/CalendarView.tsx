@@ -1,8 +1,4 @@
-/**
- * Monthly calendar view component with appointment indicators.
- * Displays a 6-week grid, navigation controls, and appointment status dots.
- * @module CalendarView
- */
+/** Monthly calendar view: 6-week grid, navigation controls, and appointment status dots. */
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -40,20 +36,14 @@ interface CalendarDayCellProps {
   readonly onDayClick?: (day: number) => void;
 }
 
-/**
- * Formats a Date into local YYYY-MM-DD for scheduler day bucketing.
- * This avoids UTC conversion drift from Date#toISOString.
- */
+/** Formats a Date into local YYYY-MM-DD; avoids UTC drift from Date#toISOString. */
 function formatLocalDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate(),
   ).padStart(2, '0')}`;
 }
 
-/**
- * Builds the 42-cell (6-week, Monday-first) grid for a month, bucketing the
- * appointments by local calendar day and flagging today and current-month cells.
- */
+/** Builds the 42-cell (6-week, Monday-first) grid for a month, bucketed by local day. */
 function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[]): CalendarDay[] {
   const firstDay = new Date(year, month - 1, 1);
   const dayOfWeek = firstDay.getDay();
@@ -132,11 +122,7 @@ function trimTrailingNextMonthOnlyWeeks(weeks: CalendarDay[][]): CalendarDay[][]
   return trimmedWeeks;
 }
 
-/**
- * Renders one calendar day: the day number (highlighted for today), the earliest
- * appointment's status dot with an overflow count, and, for current-month days
- * with a day handler, a focusable button instead of a static cell.
- */
+/** Renders one calendar day: day number, earliest appointment's status dot with overflow count, and a focusable button for clickable current-month days. */
 const CalendarDayCell = memo(function CalendarDayCell({
   day,
   year,
@@ -218,9 +204,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
 
 CalendarDayCell.displayName = 'CalendarDayCell';
 
-/**
- * Month grid with previous/next navigation bounded to six months around today.
- */
+/** Month grid with previous/next navigation bounded to six months around today. */
 const CalendarViewComponent = memo(function CalendarView({
   appointments,
   year,

@@ -1,7 +1,4 @@
-/**
- * Settings page helper functions for server validation integration.
- * @module pages/Settings/helpers
- */
+/** Settings page helper functions for server validation integration. */
 
 import type { FieldErrors } from './types';
 import { extractServerFieldErrors, getServerFieldError } from '../../utils/serverValidation';

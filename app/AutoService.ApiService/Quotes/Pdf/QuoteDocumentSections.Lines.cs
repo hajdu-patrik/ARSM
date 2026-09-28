@@ -5,13 +5,7 @@ namespace AutoService.ApiService.Quotes.Pdf;
 
 internal static partial class QuoteDocumentSections
 {
-    /**
-     * Draws the parts block: pieces at a net unit price, with the part number
-     * next to the description.
-     *
-     * @param container Section container.
-     * @param lines Part lines of the quote.
-     */
+    /** Draws the parts block: pieces at a net unit price, with the part number next to the description. */
     private static void ComposePartLines(IContainer container, IReadOnlyList<QuoteDocumentLine> lines)
     {
         ComposeLineSection(
@@ -24,14 +18,8 @@ internal static partial class QuoteDocumentSections
             isLabor: false);
     }
 
-    /**
-     * Draws the labor block. Its column headers deliberately differ from the
-     * parts block: hours at an hourly rate is the figure the customer asked to
-     * see, not a generic quantity at a generic unit price.
-     *
-     * @param container Section container.
-     * @param lines Labor lines of the quote.
-     */
+    /** Draws the labor block; column headers deliberately differ from the parts block (hours at an
+     * hourly rate, not a generic quantity at a unit price). */
     private static void ComposeLaborLines(IContainer container, IReadOnlyList<QuoteDocumentLine> lines)
     {
         ComposeLineSection(
@@ -44,17 +32,7 @@ internal static partial class QuoteDocumentSections
             isLabor: true);
     }
 
-    /**
-     * Renders one line block with the column labels its kind needs.
-     *
-     * @param container Section container.
-     * @param title Block heading.
-     * @param identifierHeader Label of the catalog identifier column.
-     * @param quantityHeader Label of the quantity column.
-     * @param unitPriceHeader Label of the unit price column.
-     * @param lines Lines to print.
-     * @param isLabor Whether the quantities are hours.
-     */
+    /** Renders one line block with the column labels its kind needs. */
     private static void ComposeLineSection(
         IContainer container,
         string title,
@@ -70,9 +48,8 @@ internal static partial class QuoteDocumentSections
 
             column.Item().Table(table =>
             {
-                // Widths follow the widest header each column has to carry: the
-                // description gets the slack, the price columns need room for
-                // "Nettó egységár" plus a thousand-separated amount.
+                // Widths follow the widest header per column: description gets the slack, price
+                // columns need room for "Nettó egységár" plus a thousand-separated amount.
                 table.ColumnsDefinition(columns =>
                 {
                     columns.RelativeColumn(4.6f);
@@ -109,13 +86,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Draws the VAT breakdown: the tax base and the tax charged per rate, the
-     * figures an accountant checks first.
-     *
-     * @param container Section container.
-     * @param rows VAT rows of the quote.
-     */
+    /** Draws the VAT breakdown: tax base and tax charged per rate, the figures an accountant checks first. */
     private static void ComposeVatBreakdown(IContainer container, IReadOnlyList<QuoteDocumentVatRow> rows)
     {
         container.Column(column =>
@@ -148,13 +119,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Draws the totals block, with the gross total carrying the emphasis: it
-     * is the number the customer decides on.
-     *
-     * @param container Section container.
-     * @param model The quote being printed.
-     */
+    /** Draws the totals block; the gross total carries the emphasis, since it's the number the customer decides on. */
     private static void ComposeTotals(IContainer container, QuoteDocumentModel model)
     {
         container.AlignRight().Width(240).Column(column =>

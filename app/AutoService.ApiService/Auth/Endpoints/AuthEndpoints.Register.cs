@@ -10,25 +10,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Partial class containing the registration endpoint handler and its supporting helpers.
- */
+/** Partial class containing the registration endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
     private const string GenericRegistrationFailureMessage = "Registration failed. Please check your information, or the account may already exist.";
 
-    /**
-     * Handles POST /api/auth/register and creates a mechanic account.
-     * Identity and domain records are persisted in one transaction.
-     *
-     * @param request Incoming registration payload.
-     * @param httpContext Current request context used for client metadata.
-     * @param userManager Identity user manager.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return 200 OK with IDs on success, or validation/conflict result when registration fails.
-     */
+    /** Handles POST /api/auth/register and creates a mechanic account. Identity and domain records are persisted in one transaction. */
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         HttpContext httpContext,
@@ -158,12 +145,7 @@ public static partial class AuthEndpoints
         return Results.Ok(new RegisterResponse(person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 
-    /**
-     * Validates required and mechanic-specific registration fields.
-     *
-     * @param request Incoming registration payload.
-     * @return Field-level validation errors keyed by request property name.
-     */
+    /** Validates required and mechanic-specific registration fields. */
     private static Dictionary<string, string[]> ValidateRegisterRequest(RegisterRequest request)
     {
         var errors = new Dictionary<string, string[]>();
@@ -222,16 +204,7 @@ public static partial class AuthEndpoints
         return errors;
     }
 
-    /**
-     * Creates a domain entity from the registration payload.
-     * Only mechanics are allowed for public registration.
-     *
-     * @param request Validated registration payload.
-     * @param identityUserId Linked identity user ID.
-     * @param email Normalized email address.
-     * @param phoneNumber Normalized optional phone number.
-     * @return A mechanic domain entity linked to the identity user.
-     */
+    /** Creates a domain entity from the registration payload. Only mechanics are allowed for public registration. */
     private static People CreatePerson(RegisterRequest request, string identityUserId, string email, string? phoneNumber)
     {
         var fullName = new FullName(request.FirstName.Trim(), NormalizeOptional(request.MiddleName), request.LastName.Trim());
@@ -254,12 +227,7 @@ public static partial class AuthEndpoints
         };
     }
 
-    /**
-     * Parses expertise strings to ExpertiseType values.
-     *
-     * @param expertiseValues Raw expertise values from request payload.
-     * @return Parsed expertise enum list.
-     */
+    /** Parses expertise strings to ExpertiseType values. */
     private static List<ExpertiseType> ParseExpertise(IReadOnlyCollection<string> expertiseValues)
     {
         var expertise = new List<ExpertiseType>();

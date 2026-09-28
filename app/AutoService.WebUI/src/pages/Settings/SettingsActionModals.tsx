@@ -1,7 +1,4 @@
-/**
- * Settings confirmation and delete modals.
- * @module pages/Settings/SettingsActionModals
- */
+/** Settings confirmation and delete modals. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

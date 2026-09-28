@@ -1,12 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - INTAKE NEW CUSTOMER AND MECHANIC-LINKED HAPPY
-# ─────────────────────────────────────────────────────────────
-# Split out of list-and-intake-happy.http to stay under the 250-line file limit. Both appointments this
-# file creates are deleted at the end by an admin session via DELETE /api/appointments/{id} (AdminOnly).
-# The "new customer" case's customer is deleted too (cascades its vehicle, per customers/delete.http).
-# The "mechanic email linked" case's vehicle is deleted directly — its owning customer is the shared,
-# reused mechanic-owned identity (Linking/CustomerOwnerLinking.cs), not a row this file created, so it
-# is left alone.
+# Split out of list-and-intake-happy.http (file-size limit). Both appointments are deleted via admin at
+# the end; the "new customer" case also deletes its customer (cascades the vehicle), but the mechanic-linked case deletes only the vehicle - its customer is the shared mechanic-owned identity, left alone.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -22,8 +15,6 @@
 @MechanicEmailFlowPlate = MEC-{{RunId}}
 @MechanicEmailFlowVin = TST{{RunId.toString().slice(-10)}}0403
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

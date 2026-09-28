@@ -1,11 +1,4 @@
-/**
- * Inventory (parts and labor types) master-data management page.
- *
- * Two tabs, Parts and Labor types, share the create/edit and delete modals.
- * The Parts tab loads by default and the active tab is reflected in the URL
- * (`?tab=parts` / `?tab=labor-types`).
- * @module pages/Inventory/page
- */
+/** Inventory page: Parts and Labor types tabs sharing create/edit/delete modals; active tab reflected in the URL. */
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';

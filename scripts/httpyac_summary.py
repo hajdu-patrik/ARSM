@@ -122,11 +122,7 @@ def _extract_json_payload(output: str) -> dict[str, object] | None:
     return None
 
 def extract_failed_http_requests(output: str, limit: int = 400) -> list[dict[str, object]]:
-    """Return the failed or errored HTTPYAC requests (file, line, title, status, failing test messages).
-
-    Only identifying metadata leaves this function - never request/response bodies or headers - so
-    the sanitized summary can name which case broke without carrying cookies or payloads.
-    """
+    """Return failed/errored HTTPYAC requests (file, line, title, status only - see scripts/CLAUDE.md)."""
     payload = _extract_httpyac_payload(output)
     requests = payload.get("requests") if isinstance(payload, dict) else None
     if not isinstance(requests, list):
@@ -161,13 +157,8 @@ SEGMENT_BROKEN_TEST = re.compile(r'"message"\s*:\s*"(?P<message>(?:[^"\\]|\\.)*)
 
 
 def _extract_failed_http_requests_with_regex(output: str, limit: int) -> list[dict[str, object]]:
-    """Fallback for output whose JSON the secret sanitizer broke.
-
-    The runner asks HTTPYAC to list only failed requests (``--filter only-failed``), so every request
-    entry found here is a failure. The output is cut into one segment per request entry (each starts
-    at its ``"fileName"`` key) and every field is read inside its own segment, so a missing field can
-    never be borrowed from the next request.
-    """
+    """Regex fallback for sanitizer-mangled JSON; each "fileName"-starting segment parses independently
+    so no field is borrowed from a neighboring request."""
     starts = [match.start() for match in REQUEST_SEGMENT_START.finditer(output)]
     failed: list[dict[str, object]] = []
     for index, start in enumerate(starts):

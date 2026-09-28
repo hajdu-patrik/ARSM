@@ -1,9 +1,4 @@
-/**
- * Quick intake action section for the scheduler page.
- * Displays the selected day label and a button to open the intake modal.
- * The button is disabled when no day is selected.
- * @module SchedulerQuickIntakeSection
- */
+/** Quick intake section: selected-day label and a button to open the intake modal, disabled when no day is selected. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {

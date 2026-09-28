@@ -1,7 +1,4 @@
-/**
- * Expandable customer card with vehicle and detail panels.
- * @module pages/Customers/components/CustomerCard
- */
+/** Expandable customer card with vehicle and detail panels. */
 
 import { memo } from 'react';
 import type { TFunction } from 'i18next';

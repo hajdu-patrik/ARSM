@@ -7,18 +7,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * Edits a quote header (Title, Notes). Draft only (D7): the lock is a
-     * single unconditional Status != Draft check, because the ValidUntil
-     * extension has its own endpoint and its own Sent-state exception
-     * (D23).
-     *
-     * @param id Quote identifier.
-     * @param request Header edit payload with the expected concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Edits a quote header (Title, Notes); Draft only (D7), a plain Status != Draft check, since
+     * ValidUntil extension has its own endpoint and its own Sent-state exception (D23). */
     private static async Task<IResult> UpdateQuoteAsync(
         int id,
         UpdateQuoteRequest request,
@@ -62,18 +52,8 @@ public static partial class QuoteEndpoints
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
     }
 
-    /**
-     * Extends a quote's validity deadline (D22, D23): any future date while
-     * Draft, only a strictly later date while Sent, and a 409 once the
-     * quote is Accepted or Rejected. This is the sole exception to the
-     * Draft-only lock elsewhere on the resource.
-     *
-     * @param id Quote identifier.
-     * @param request New ValidUntil with the expected concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Extends a quote's validity (D22/D23): any future date while Draft, only a strictly later
+     * date while Sent, 409 once Accepted/Rejected; the sole exception to the Draft-only lock elsewhere. */
     private static async Task<IResult> ExtendQuoteValidityAsync(
         int id,
         ExtendQuoteValidityRequest request,
@@ -107,10 +87,8 @@ public static partial class QuoteEndpoints
         var newValidUntil = NormalizeToUtc(request.ValidUntil);
         var nowUtc = DateTime.UtcNow;
 
-        // A past date is rejected for every supplied value (D22), regardless
-        // of status. This matters on an already-expired Sent quote, where a
-        // date later than the current ValidUntil can still be in the past
-        // and would otherwise pass the extension check below.
+        // A past date is rejected regardless of status (D22): matters on an already-expired Sent
+        // quote, where a date later than the current ValidUntil can still itself be in the past.
         var validUntilError = QuoteValidation.GetValidUntilValidationError(newValidUntil, nowUtc);
         if (validUntilError is not null)
         {

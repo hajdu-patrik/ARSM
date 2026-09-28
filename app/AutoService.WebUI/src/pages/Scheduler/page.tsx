@@ -1,14 +1,4 @@
-/**
- * Scheduler page — the main data-fetching orchestrator for the workshop calendar.
- *
- * Composes the summary strip, calendar view, quick-intake section, month
- * appointment list, appointment detail modal, and intake modal into a
- * stacked layout. Manages selected-appointment and selected-day state,
- * keeps the modal appointment synchronized with store updates, and runs
- * background refresh for near-realtime claim/status updates.
- *
- * @module SchedulerPage
- */
+/** Scheduler page: composes the calendar/intake sections and keeps the selected appointment synced with store updates. */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -58,10 +48,7 @@ function parseSchedulerFocusState(value: unknown): SchedulerFocusState | null {
   };
 }
 
-/**
- * Composes and coordinates the scheduler page sections and modal flows.
- * Keeps selected appointment content synchronized with store updates.
- */
+/** Coordinates the scheduler page sections and modal flows. */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
   const location = useLocation();

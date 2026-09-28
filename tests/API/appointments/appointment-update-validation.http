@@ -1,13 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - APPOINTMENT UPDATE FIELD VALIDATION
-# ─────────────────────────────────────────────────────────────
-# Tests for PUT /api/appointments/{id} field-level validation.
-# ApptId is an appointment this file creates via the AdminOnly create endpoint so field validation is
-# reached instead of a 404; AdminMechanicId is the admin's own person_id. SeedVehicleVin is a
-# well-formed but otherwise made-up VIN used only where the request must merely pass VIN *format*
-# validation (drivetrain-type parsing runs before the VIN uniqueness check in
-# AppointmentEndpoints.Update.cs, so it never needs to belong to the fixture's actual vehicle). ApptId
-# is deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
+# ApptId is created here so field validation is reached instead of 404; AdminMechanicId is the admin's
+# own person_id. SeedVehicleVin only needs to pass VIN format (drivetrain parsing runs before the uniqueness check); ApptId is deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -15,8 +7,6 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @SeedVehicleVin = WVWZZZAUZJW123456
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

@@ -3,11 +3,7 @@
 import { apiClient } from '../http/api.client';
 import type { CreatePartRequest, PartDto, UpdatePartRequest } from '../../types/catalog/catalog.types';
 
-/**
- * Part-catalog API service.
- *
- * Thin axios wrapper for {@code /api/parts}; the UI never calls HTTP directly.
- */
+/** Part-catalog API service; a thin axios wrapper for {@code /api/parts}. */
 export const partService = {
   /** Returns all parts. */
   async listParts(): Promise<PartDto[]> {

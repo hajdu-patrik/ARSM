@@ -1,9 +1,5 @@
-/**
- * Root application component. Configures routing, lazy-loaded pages,
- * auth session restoration, error boundaries, SEO management, and the
- * global toast viewport.
- * @module App
- */
+/** Root application component: routing, lazy-loaded pages, auth restoration,
+ * error boundaries, SEO, and the global toast viewport. */
 import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';

@@ -1,27 +1,12 @@
 namespace AutoService.ApiService.Pricing;
 
-/**
- * Net, VAT, and gross amount for a single quote line.
- */
+/** Net, VAT, and gross amount for a single quote line. */
 internal readonly record struct QuoteLineAmounts(decimal NetAmount, decimal VatAmount, decimal GrossAmount);
 
-/**
- * Computes line-level net, VAT, and gross amounts for a single quote line.
- * Consumed by Quotes/QuoteEndpoints.Helpers.cs and the demo quote seed, the
- * single owner of quote-line pricing math.
- */
+/** Computes line-level net/VAT/gross amounts; the single owner of quote-line pricing math (consumed by QuoteEndpoints.Helpers.cs and the demo seed). */
 internal static class QuoteLineCalculator
 {
-    /**
-     * Calculates the net, VAT, and gross amount for one quote line.
-     * Gross always comes from netAmount + vatAmount, never from multiplying
-     * quantity by a gross unit price, so it never drifts from the sum of its parts.
-     *
-     * @param quantity Line quantity.
-     * @param netUnitPrice Net unit price.
-     * @param vatRatePercent VAT rate percentage applied to the line.
-     * @return The computed line amounts.
-     */
+    /** Calculates net/VAT/gross for one quote line; gross = net + vat, never a multiplication (root CLAUDE.md Core Invariants). */
     internal static QuoteLineAmounts Calculate(decimal quantity, decimal netUnitPrice, int vatRatePercent)
     {
         var netAmount = MoneyRounding.RoundMoney(quantity * netUnitPrice);

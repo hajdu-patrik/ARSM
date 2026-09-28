@@ -1,11 +1,4 @@
-/**
- * Quote list-state hook.
- *
- * Loads the quote list into the authenticated query cache, then applies the
- * toolbar search and status filter on the client: expiry is a computed
- * response flag rather than a stored status, so one read serves every chip.
- * @module pages/Quotes/hooks/useQuotesListState
- */
+/** Quote list-state hook: loads into the query cache, then filters client-side; expiry is a computed flag, so one read serves every chip. */
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
@@ -38,11 +31,7 @@ export interface QuotesListState {
   readonly load: (force?: boolean) => Promise<void>;
 }
 
-/**
- * Loads and filters the quote list.
- * @param params Localized error toast handler.
- * @returns Quote list state, search/filter controls, and the loader.
- */
+/** Loads and filters the quote list. */
 export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams): QuotesListState {
   const queryClient = useQueryClient();
   const authUser = useAuthStore((state) => state.user);

@@ -1,10 +1,5 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   Loading page splash animations
-   Extracted from pages/LoadingPage.tsx to avoid an inline <style> element and
-   React inline `style={...}` attributes (required for a strict `style-src` /
-   `style-src-attr` Content-Security-Policy). Theme-dependent colors are
-   expressed with `.dark` descendant selectors instead of runtime style objects.
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Loading page splash animations, extracted from LoadingPage.tsx to avoid inline
+   styles (CSP style-src). See app/AutoService.WebUI/CLAUDE.md. */
 
 @keyframes logo-spin-variable {
   0% { transform: rotate(0deg); }

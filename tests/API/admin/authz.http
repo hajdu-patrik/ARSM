@@ -1,20 +1,11 @@
-# ─────────────────────────────────────────────────────────────
-# ADMIN - AUTHZ
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @UnknownMechanicId = 999999
 
-# UnknownMechanicId does not need to resolve to a real mechanic: RequireAuthorization("AdminOnly")
-# runs before DeleteMechanicAsync ever loads the target (AdminEndpoints.cs), so every check below
-# rejects on the policy gate, never on a 404. Using the shared non-existent-id sentinel means this
-# file never needs its own fixture or cleanup.
-
-
-# ─────────────────────────────────────────────────────────────
+# UnknownMechanicId never needs to resolve to a real mechanic: RequireAuthorization("AdminOnly") gates
+# before the 404 lookup (AdminEndpoints.cs), so every check below rejects on policy, not existence.
 
 ### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

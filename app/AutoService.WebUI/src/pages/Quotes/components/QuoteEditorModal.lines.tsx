@@ -1,10 +1,4 @@
-/**
- * Quote editor lines section: the saved lines, the inline editor for the row
- * being changed, and the add-line action. Lines are only editable while the
- * quote is a draft; afterwards the same rows render read-only and the
- * actions column disappears entirely, from the header down.
- * @module pages/Quotes/components/QuoteEditorModal.lines
- */
+/** Quote editor lines: saved lines, inline row editor, add-line action; editable only while Draft, then read-only with the actions column removed entirely. */
 import { memo, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { Plus } from 'lucide-react';
@@ -46,12 +40,7 @@ interface QuoteEditorLinesSectionProps {
   readonly onCancelLineEditing: () => void;
 }
 
-/**
- * Reports whether a saved line is the one currently open in the inline editor.
- * @param target Row the editor is targeting.
- * @param line Saved line being rendered.
- * @returns True when this row should render as the editor.
- */
+/** Reports whether a saved line is the one currently open in the inline editor. */
 function isLineBeingEdited(target: QuoteLineEditingTarget, line: QuoteLineDto): boolean {
   return target?.kind === 'existing' && target.lineId === line.id;
 }

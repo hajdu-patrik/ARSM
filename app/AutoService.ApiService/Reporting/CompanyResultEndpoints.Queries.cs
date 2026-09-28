@@ -9,20 +9,8 @@ public static partial class CompanyResultEndpoints
     private const int MinimumYear = 2000;
     private const int MaximumYear = 2100;
 
-    /**
-     * Returns the revenue report for a year, or for one month of it.
-     *
-     * The period is cut in UTC, the same way the monthly appointment query
-     * cuts one (D28), and a quote is placed by its creation instant (D17). An
-     * empty period answers 200 with zeros rather than 404, so the page has a
-     * single rendering path.
-     *
-     * @param year Requested year; defaults to the current UTC year.
-     * @param month Optional month of that year.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns The report, or 400 when the period is out of range.
-     */
+    /** Returns the revenue report for a year or one month; period cut in UTC (D28), and an
+     * empty period answers 200 with zeros rather than 404 (CLAUDE.md Company Result Anchors). */
     private static async Task<IResult> GetCompanyResultsAsync(
         int? year,
         int? month,
@@ -77,18 +65,8 @@ public static partial class CompanyResultEndpoints
         CompanyResultStatusRowDto Rejected,
         int DraftQuoteCount);
 
-    /**
-     * Sums the four status rows from the stored quote totals. The pending and
-     * expired split is decided here, at query time, from the same
-     * `ValidUntil < now` comparison the detail DTO uses for its expiry flag:
-     * there is no stored Expired status, so the report ages with the calendar
-     * on its own, without a background job.
-     *
-     * @param periodQuotes Quotes created inside the requested period.
-     * @param nowUtc Current UTC instant used for the validity comparison.
-     * @param cancellationToken Request cancellation token.
-     * @returns The four status rows and the draft count.
-     */
+    /** Sums the four status rows from stored totals; pending/expired split at query time via
+     * ValidUntil < now (no stored Expired status), so the report ages with the calendar. */
     private static async Task<CompanyResultStatusTotals> LoadStatusTotalsAsync(
         IQueryable<Domain.Quote> periodQuotes,
         DateTime nowUtc,
@@ -128,17 +106,8 @@ public static partial class CompanyResultEndpoints
             totals.DraftCount);
     }
 
-    /**
-     * Builds the monthly breakdown of the accepted quotes. Every month of the
-     * period is present, empty ones with zeros, so the frontend renders one
-     * list instead of branching on gaps.
-     *
-     * @param periodQuotes Quotes created inside the requested period.
-     * @param year Resolved year of the period.
-     * @param month Requested month, when the period is a single month.
-     * @param cancellationToken Request cancellation token.
-     * @returns One row per month of the period, in calendar order.
-     */
+    /** Builds the monthly breakdown of accepted quotes; every month is present (zeros if empty),
+     * so the frontend renders one list without branching on gaps. */
     private static async Task<List<CompanyResultMonthDto>> LoadMonthsAsync(
         IQueryable<Domain.Quote> periodQuotes,
         int year,
@@ -172,13 +141,7 @@ public static partial class CompanyResultEndpoints
             .ToList();
     }
 
-    /**
-     * Splits the accepted revenue into parts and labor, from the stored line amounts.
-     *
-     * @param acceptedLines Lines of the accepted quotes in the period.
-     * @param cancellationToken Request cancellation token.
-     * @returns One row per line kind present, parts first.
-     */
+    /** Splits the accepted revenue into parts and labor, from the stored line amounts. */
     private static async Task<List<CompanyResultLineKindRowDto>> LoadLineKindRowsAsync(
         IQueryable<Domain.QuoteLine> acceptedLines,
         CancellationToken cancellationToken)
@@ -199,13 +162,7 @@ public static partial class CompanyResultEndpoints
             .ToList();
     }
 
-    /**
-     * Groups the accepted revenue per VAT rate.
-     *
-     * @param acceptedLines Lines of the accepted quotes in the period.
-     * @param cancellationToken Request cancellation token.
-     * @returns One row per VAT rate present, lowest rate first.
-     */
+    /** Groups the accepted revenue per VAT rate. */
     private static async Task<List<CompanyResultVatRowDto>> LoadVatRowsAsync(
         IQueryable<Domain.QuoteLine> acceptedLines,
         CancellationToken cancellationToken)

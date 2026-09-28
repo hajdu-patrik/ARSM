@@ -1,12 +1,5 @@
-# ── Admin Assign / Unassign — Completed/Cancelled Lockout ────────────────────
-# Split out of admin-assign-unassign.http to stay under the 250-line file limit.
-# AdminAssignAsync/AdminUnassignAsync (AppointmentEndpoints.Mutations.cs) reject any assign/unassign
-# once an appointment is Completed or Cancelled, before even checking whether the target mechanic is
-# already assigned. CompletedApptId/CancelledApptId are created with two mechanics so the disposable
-# secondary mechanic is never the sole assignee on either — it stays deletable at the end even though
-# neither appointment's mechanic list can ever change again once locked. Both fixture appointments are
-# deleted at the end via DELETE /api/appointments/{id} (AdminOnly), which has no such lock: it hard-
-# deletes regardless of status.
+# Split out of admin-assign-unassign.http to stay under the file-size limit: AdminAssignAsync/AdminUnassignAsync
+# reject any change once Completed/Cancelled; fixtures use two mechanics so the disposable secondary is never the sole assignee and stays deletable via DELETE (AdminOnly, no such lock).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -16,8 +9,6 @@
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.assign.locked.{{RunId}}@example.test
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -155,7 +146,6 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
-# Expected error code: appointment_completed.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -165,7 +155,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin unassign mechanic from completed appointment (422 expected)
-# Expected error code: appointment_completed.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -175,7 +164,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
-# Expected error code: appointment_cancelled.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -185,7 +173,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
-# Expected error code: appointment_cancelled.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

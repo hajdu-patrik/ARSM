@@ -10,31 +10,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Partial class containing the login endpoint handler and its supporting helpers.
- */
+/** Partial class containing the login endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
-    // Fixed dummy hash used to give the user-not-found login path a password verification cost
-    // comparable to the found-but-wrong-password path (which runs CheckPasswordSignInAsync).
-    // Without this, response timing would leak whether an email/phone is registered.
+    // Fixed dummy hash gives the user-not-found path a verification cost comparable to
+    // found-but-wrong-password (CheckPasswordSignInAsync), so timing can't leak registration status.
     private static readonly Lazy<string> DummyPasswordHash = new(() =>
         new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
 
-    /**
-     * Handles POST /api/auth/login by validating the identifier/password pair
-     * and issuing access/refresh cookies for linked mechanic identities.
-     *
-     * @param request Login payload (email or phone number plus password).
-     * @param httpContext Current request context used for cookies/client metadata.
-     * @param userManager Identity user manager.
-     * @param signInManager Identity sign-in manager.
-     * @param db Database context.
-     * @param tokenIssuer JWT issuer service.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return 200 OK on success, 401 on invalid credentials, or 429 when lockout is active.
-     */
+    /** Handles POST /api/auth/login by validating the identifier/password pair and issuing access/refresh cookies for linked mechanic identities. */
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         HttpContext httpContext,
@@ -189,12 +173,7 @@ public static partial class AuthEndpoints
         return Results.Ok(new LoginResponse(mechanic.Id, isAdmin));
     }
 
-    /**
-     * Validates presence of required login fields.
-     *
-     * @param request Incoming login payload.
-     * @return Field-level validation errors keyed by request property name.
-     */
+    /** Validates presence of required login fields. */
     private static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
     {
         var errors = new Dictionary<string, string[]>();

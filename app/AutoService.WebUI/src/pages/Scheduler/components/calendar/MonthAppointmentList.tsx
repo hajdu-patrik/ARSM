@@ -1,7 +1,4 @@
-/**
- * Filterable monthly appointment list for the Scheduler calendar section.
- * @module pages/Scheduler/components/calendar/MonthAppointmentList
- */
+/** Filterable monthly appointment list for the Scheduler calendar section. */
 import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';

@@ -4,15 +4,8 @@ using AutoService.ApiService.Auth.Session;
 
 namespace AutoService.ApiService.Middleware;
 
-/**
- * Enforces the CSRF double-submit check on unsafe, cookie-authenticated API
- * requests: the X-CSRF-Token header must equal the autoservice_csrf cookie.
- * This is an additional, independent layer alongside SameSite=Strict cookies
- * and the Origin check in UnsafeCookieRequestOriginMiddleware, which this
- * middleware runs directly after. POST /api/auth/login is always exempt,
- * since no autoservice_csrf cookie can exist yet for a caller who is not
- * already authenticated.
- */
+/** Enforces the CSRF double-submit check (X-CSRF-Token header must equal the autoservice_csrf
+    cookie) on unsafe API requests, right after the Origin check; login is exempt (see ApiService/CLAUDE.md). */
 public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
 {
     private const string LoginPath = "/api/auth/login";
@@ -46,28 +39,14 @@ public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
         });
     }
 
-    /**
-     * True when the request is unsafe, cookie-bearing and API-targeted (per
-     * UnsafeCookieRequestClassifier), and is not the login route, which is
-     * always exempt from the CSRF check.
-     *
-     * @param context Current request context.
-     * @return Whether the CSRF header/cookie pair must be validated.
-     */
+    /** True when the request is unsafe, cookie-bearing and API-targeted (per UnsafeCookieRequestClassifier), and is not the login route, which is always exempt from the CSRF check. */
     private static bool RequiresCsrfProof(HttpContext context)
     {
         return UnsafeCookieRequestClassifier.IsUnsafeCookieBearingApiRequest(context)
             && !context.Request.Path.Equals(LoginPath, StringComparison.OrdinalIgnoreCase);
     }
 
-    /**
-     * Compares the header and cookie values in fixed time over their UTF-8
-     * bytes, after rejecting a missing/empty header or cookie outright.
-     *
-     * @param headerValue Raw X-CSRF-Token header value (empty when absent).
-     * @param cookieValue Raw autoservice_csrf cookie value, or null when absent.
-     * @return Whether the header proves knowledge of the CSRF cookie value.
-     */
+    /** Compares the header and cookie values in fixed time over their UTF-8 bytes, after rejecting a missing/empty header or cookie outright. */
     private static bool IsValidCsrfToken(string headerValue, string? cookieValue)
     {
         if (string.IsNullOrEmpty(headerValue) || string.IsNullOrEmpty(cookieValue))

@@ -1,13 +1,4 @@
-/**
- * Quote list row.
- *
- * Renders through `DataListRow` so the header and every row share one column
- * model: quote number/title, vehicle, status, validity and the net and gross
- * totals side by side above the list's own `@4xl` container width,
- * collapsing to labeled value tiles below it. Every amount comes from the
- * server DTO; the row never computes one.
- * @module pages/Quotes/components/QuoteCard
- */
+/** Quote list row via DataListRow (shared column model, `@4xl` tile collapse); every amount comes from the server DTO, never computed here. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Download, Eye, Trash2 } from 'lucide-react';
@@ -61,9 +52,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       >
         <Eye className={smallIconClass} />
       </button>
-      {/* Printing is neither info, edit nor delete, so it keeps the accent tone
-          the new-quote action uses rather than borrowing one of the three
-          semantics. */}
+      {/* Printing isn't info/edit/delete, so it keeps the accent tone the new-quote action uses. */}
       <button
         data-testid="quote-download-button"
         type="button"

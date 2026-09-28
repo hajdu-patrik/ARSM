@@ -1,16 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - REGISTER ADMIN SETUP AND POSITIVE
-# ─────────────────────────────────────────────────────────────
-# Verified against AuthEndpoints.Register.cs / AuthEndpoints.cs before writing this file:
-# - /api/auth/register requires the "AdminOnly" policy: unauthenticated -> 401 before the handler
-#   runs, authenticated non-admin -> 403 (see register-validation-and-nonadmin-authz.http), admin -> 200
-#   with {personId, personType, email} (RegisterResponse).
-# - This file is self-contained: it registers its own matrix users with a unique {{$timestamp}}
-#   suffix and deletes every mechanic it created (DELETE /api/admin/mechanics/{id}) at the end, so no
-#   other file may depend on these accounts surviving past this run.
-# - The extended phone-input-format matrix (local/Budapest/EU/whitespace) split out to the sibling
-#   register-admin-positive-phone-matrix.http (same disposable-mechanic naming convention) to stay
-#   <= 250 lines, the same way login-positive-matrix.http/login-positive-phone-matrix.http split.
+# Verified against AuthEndpoints.Register.cs: AdminOnly policy answers 401 unauthenticated, 403 non-admin
+# (see register-validation-and-nonadmin-authz.http), 200 for admin. Self-contained: registers/deletes its own matrix users; extended phone matrix is the sibling register-admin-positive-phone-matrix.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -18,8 +7,6 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 # Dedicated matrix users
 @MatrixRunSuffix = {{$timestamp}}

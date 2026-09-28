@@ -1,13 +1,4 @@
-/**
- * Hook that manages the intake modal form state, live customer lookup,
- * vehicle mode switching, and intake creation submission.
- *
- * Resets all fields when the modal opens, performs live name/license-plate
- * lookup, derives vehicle create/existing mode, validates the form
- * before submission, and maps backend errors to i18n keys.
- *
- * @module useSchedulerIntakeForm
- */
+/** Manages intake modal form state: live customer lookup, vehicle mode switching, validation, and submission. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SchedulerCreateIntakeRequest, SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
 import {
@@ -39,14 +30,7 @@ interface UseSchedulerIntakeFormArgs {
   readonly onSubmit: (request: SchedulerCreateIntakeRequest) => Promise<void>;
 }
 
-/**
- * Manages the full lifecycle of the scheduler intake form: field state,
- * customer lookup, vehicle field handling, validation, and submission.
- *
- * @returns `state` (all field values and loading flags), `derived`
- *          (computed booleans for conditional UI), and `actions`
- *          (memoized callbacks for field changes and form operations).
- */
+/** Manages the full lifecycle of the scheduler intake form: field state, lookup, validation, and submission. */
 export function useSchedulerIntakeForm({
   isOpen,
   selectedDate,

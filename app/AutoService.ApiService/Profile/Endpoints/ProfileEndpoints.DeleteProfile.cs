@@ -12,20 +12,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /**
-     * Handles the delete-profile mutation: verifies the current password,
-     * rejects administrator accounts, revokes the active refresh token,
-     * removes the person record and the linked identity user in a single
-     * transaction, and clears the auth cookies.
-     *
-     * @param request Password confirmation payload.
-     * @param httpContext Current request context used for cookies and token revocation.
-     * @param userManager Identity user manager.
-     * @param db Database context.
-     * @param tokenDenylistService Service used to revoke the caller's current access token.
-     * @param cancellationToken Request cancellation token.
-     * @return 200 OK on success, 403 for administrator accounts, 404 if the identity is missing, or a validation problem.
-     */
+    /** Handles the delete-profile mutation: verifies the current password, rejects administrator accounts, revokes the active refresh token, removes the person record and the linked identity user in a single transaction, and clears the auth cookies. */
     private static async Task<IResult> DeleteProfileAsync(
         [FromBody] DeleteProfileRequest request,
         HttpContext httpContext,

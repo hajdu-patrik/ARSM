@@ -24,19 +24,8 @@ public static partial class DemoDataInitializer
         DateTime? DecidedAt,
         IReadOnlyList<DemoQuoteLineSeed> Lines);
 
-    /**
-     * Inserts the demo quotes from CreateQuoteSeeds() that are missing by
-     * QuoteNumber (D12, D13). Needs already-persisted Vehicle, Mechanic,
-     * Part, and LaborType rows, which is why this seed step lives in its
-     * own DemoDataInitializer partial instead of the DB-access-free
-     * DemoDataPricingSeedFactory, whose doc comment scopes it to pure data
-     * with no database access. Never overwrites or duplicates an
-     * already-seeded quote on a later restart.
-     *
-     * @param db Database context used to look up catalog/vehicle/mechanic rows and insert the missing quotes.
-     * @param cancellationToken Token used to cancel the seeding I/O.
-     * @return A task that completes when the quote seed has converged.
-     */
+    /** Inserts demo quotes missing by QuoteNumber (D12/D13); needs already-persisted Vehicle/Mechanic/
+     * Part/LaborType rows, hence its own partial (unlike DB-access-free DemoDataPricingSeedFactory); idempotent. */
     private static async Task EnsureQuotesSeededAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         var existingQuoteNumbers = await db.Quotes
@@ -62,11 +51,8 @@ public static partial class DemoDataInitializer
         var laborTypesByCode = await db.LaborTypes.AsNoTracking()
             .ToDictionaryAsync(l => l.Code, l => l, cancellationToken);
 
-        // A developer database can drift from the canonical demo roster - a
-        // mechanic removed by earlier test activity, for example. Demo quotes
-        // are a convenience, not a runtime invariant, so an unresolvable
-        // reference skips that one quote instead of throwing
-        // KeyNotFoundException and taking application startup down with it.
+        // A dev database can drift from the demo roster (e.g. a removed mechanic); an
+        // unresolvable reference skips that one quote instead of throwing and crashing startup.
         var resolvableSeeds = missingSeeds
             .Where(seed => CanResolveSeed(seed, vehicleIdsByPlate, mechanicIdsByEmail, partsByCode, laborTypesByCode))
             .ToList();
@@ -84,18 +70,7 @@ public static partial class DemoDataInitializer
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /**
-     * Checks that every natural-key reference a demo quote seed depends on is
-     * actually present, so the dictionary lookups in BuildQuote and
-     * BuildQuoteLine cannot throw.
-     *
-     * @param seed The demo quote seed to check.
-     * @param vehicleIdsByPlate Already-seeded vehicle ids keyed by LicensePlate.
-     * @param mechanicIdsByEmail Already-seeded mechanic ids keyed by Email.
-     * @param partsByCode Already-seeded parts keyed by PartNumber.
-     * @param laborTypesByCode Already-seeded labor types keyed by Code.
-     * @return Whether the seed can be built from the rows currently present.
-     */
+    /** Checks that every natural-key reference a demo quote seed depends on is present, so BuildQuote/BuildQuoteLine's lookups cannot throw. */
     private static bool CanResolveSeed(
         DemoQuoteSeed seed,
         IReadOnlyDictionary<string, int> vehicleIdsByPlate,
@@ -108,19 +83,8 @@ public static partial class DemoDataInitializer
                 ? partsByCode.ContainsKey(line.CatalogCode)
                 : laborTypesByCode.ContainsKey(line.CatalogCode));
 
-    /**
-     * Pure data for the 3 demo quotes required by D12: one Accepted quote
-     * (the F6 revenue base, D8), one Sent quote still inside its validity
-     * window, and one Sent quote whose ValidUntil has already passed,
-     * which is what exercises the pending-vs-expired split in the F6
-     * report (D25). A Draft is left out: it is the least useful status for
-     * F5/F6, and 3 quotes already cover Accepted/Sent-valid/Sent-expired.
-     * CreatedAt values land in three different 2026 months so the F6
-     * monthly breakdown has more than one month to show (D17, D28).
-     * QuoteNumbers are fixed literals, not derived from the current date,
-     * so they stay stable across reseeds and never collide with
-     * Quotes/QuoteNumberGenerator's own year-scoped sequence.
-     */
+    /** Pure data for 3 demo quotes (D12): Accepted + Sent-valid + Sent-expired, covering the
+     * F6 pending-vs-expired split (D25); fixed QuoteNumbers avoid colliding with QuoteNumberGenerator's sequence. */
     private static List<DemoQuoteSeed> CreateQuoteSeeds() =>
     [
         new(
@@ -170,20 +134,8 @@ public static partial class DemoDataInitializer
             ])
     ];
 
-    /**
-     * Builds one Quote with its lines, computing every amount through
-     * Pricing/QuoteLineCalculator and Pricing/QuoteTotalsCalculator (never
-     * a hand-typed literal) so AutoServiceDbContext.ValidateQuoteTotals
-     * accepts the row on save. SortOrder is server-assigned per line,
-     * starting at 1 (D41).
-     *
-     * @param seed Pure quote data with natural-key catalog/vehicle/mechanic references.
-     * @param vehicleIdsByPlate Already-seeded vehicle ids keyed by LicensePlate.
-     * @param mechanicIdsByEmail Already-seeded mechanic ids keyed by Email.
-     * @param partsByCode Already-seeded parts keyed by PartNumber.
-     * @param laborTypesByCode Already-seeded labor types keyed by Code.
-     * @return The fully assembled, not-yet-tracked Quote entity.
-     */
+    /** Builds one Quote with its lines; amounts always come from Pricing/QuoteLineCalculator and
+     * QuoteTotalsCalculator (never hand-typed) so ValidateQuoteTotals accepts the row; SortOrder starts at 1 (D41). */
     private static Quote BuildQuote(
         DemoQuoteSeed seed,
         IReadOnlyDictionary<string, int> vehicleIdsByPlate,
@@ -223,16 +175,7 @@ public static partial class DemoDataInitializer
         return quote;
     }
 
-    /**
-     * Builds one QuoteLine, snapshotting Description/NetUnitPrice/
-     * VatRatePercent from the seeded Part or LaborType catalog entry
-     * (D4, D5) and computing amounts via QuoteLineCalculator.
-     *
-     * @param lineSeed Line kind, catalog natural key, and quantity.
-     * @param partsByCode Already-seeded parts keyed by PartNumber.
-     * @param laborTypesByCode Already-seeded labor types keyed by Code.
-     * @return The fully assembled, not-yet-tracked QuoteLine entity.
-     */
+    /** Builds one QuoteLine, snapshotting Description/NetUnitPrice/VatRatePercent from the catalog entry (D4, D5) and computing amounts via QuoteLineCalculator. */
     private static QuoteLine BuildQuoteLine(
         DemoQuoteLineSeed lineSeed,
         IReadOnlyDictionary<string, Part> partsByCode,

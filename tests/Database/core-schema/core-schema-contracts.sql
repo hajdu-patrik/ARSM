@@ -1,18 +1,12 @@
--- ============================================================
 -- AutoService DB — Migration and schema contract checks
 -- Read-only validation queries only.
--- ============================================================
 
--- ------------------------------------------------------------
 -- 12. APPLIED MIGRATIONS
--- ------------------------------------------------------------
 SELECT "MigrationId", "ProductVersion"
 FROM "__EFMigrationsHistory"
 ORDER BY "MigrationId";
 
--- ------------------------------------------------------------
 -- 13. COLUMN-LEVEL SCHEMA — all public tables
--- ------------------------------------------------------------
 SELECT table_name,
        column_name,
        data_type,
@@ -22,13 +16,8 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
 
--- ------------------------------------------------------------
--- 14. PLACEHOLDER MARKER CHECK — people.Email and people.PhoneNumber
---     Startup fails fast if secrets still contain template markers
---     (CHANGE_ME, SET_UNIQUE_LOCAL, or punctuation-separated variants).
---     Seeded demo data must never carry unconfigured placeholder values.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 14. PLACEHOLDER MARKER CHECK — people.Email/PhoneNumber must not carry template markers
+--     (see docs/deployment-security-checklist.md); expected 0 rows.
 SELECT "Id", "Email", "PhoneNumber"
 FROM people
 WHERE "Email"       ILIKE '%CHANGE_ME%'
@@ -37,10 +26,8 @@ WHERE "Email"       ILIKE '%CHANGE_ME%'
    OR "PhoneNumber" ILIKE '%SET_UNIQUE_LOCAL%'
 ORDER BY "Id";
 
--- ------------------------------------------------------------
 -- 15. CRITICAL SCHEMA CONTRACTS (INDEXES + CHECK CONSTRAINTS)
 --     Confirms persistence contracts from AutoServiceDbContext and migrations.
--- ------------------------------------------------------------
 SELECT contract_type,
        contract_name,
        source_table,
@@ -78,15 +65,8 @@ FROM (
 ) contracts
 ORDER BY contract_type, source_table, contract_name;
 
--- ------------------------------------------------------------
--- 16. PROFILE PICTURE STORAGE COLUMNS
---     Object-storage contract from AddProfilePictureObjectStorageColumns, after
---     DropProfilePictureBytes removed the transitional bytea column.
---     Expected rows:
---       ProfilePictureContentType | character varying |  50  | YES
---       ProfilePictureETag        | character varying |  80  | YES
---       ProfilePictureObjectKey   | character varying | 256  | YES
--- ------------------------------------------------------------
+-- 16. PROFILE PICTURE STORAGE COLUMNS — object-storage contract from AddProfilePictureObjectStorageColumns
+--     (after DropProfilePictureBytes removed the bytea column); expect ContentType/ETag/ObjectKey varchars.
 SELECT column_name,
        data_type,
        character_maximum_length,
@@ -97,14 +77,8 @@ WHERE table_schema = 'public'
   AND column_name LIKE 'ProfilePicture%'
 ORDER BY column_name;
 
--- ------------------------------------------------------------
--- 17. LEGACY PICTURE COLUMN REMOVAL
---     Post-condition of DropProfilePictureBytes. Until that migration ran, this slot
---     held the backfill gate (rows carrying picture bytes without an object key), which
---     had to reach zero before the column could be dropped. The column is now gone, so
---     the gate is no longer expressible; what stays checkable is that it did not return.
---     Expected: legacy_profile_picture_columns = 0.
--- ------------------------------------------------------------
+-- 17. LEGACY PICTURE COLUMN REMOVAL — post-condition of the DropProfilePictureBytes migration.
+--     Expected: legacy_profile_picture_columns = 0 (the ProfilePicture bytea column must not return).
 SELECT COUNT(*) AS legacy_profile_picture_columns
 FROM information_schema.columns
 WHERE table_schema = 'public'

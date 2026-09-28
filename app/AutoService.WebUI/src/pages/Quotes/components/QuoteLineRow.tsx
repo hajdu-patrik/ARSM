@@ -1,14 +1,4 @@
-/**
- * Saved quote line row.
- *
- * Renders through `DataListRow` so the header and every row share one column
- * model: description/kind, quantity, unit price, VAT percent, and the net
- * and gross amounts side by side above the list's own `@3xl` container
- * width, collapsing to labeled value tiles below it. The actions cell is
- * present only while the quote can still be edited. Every amount comes from
- * the server DTO; the row never computes one.
- * @module pages/Quotes/components/QuoteLineRow
- */
+/** Saved quote line row via DataListRow (shared column model, `@3xl` tile collapse); actions only while editable, amounts always from the server DTO. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Pencil, Trash2 } from 'lucide-react';

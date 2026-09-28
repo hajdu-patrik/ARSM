@@ -1,9 +1,5 @@
-/**
- * Mocked quote line routes: add, update, and remove a line on a draft quote.
- * The snapshot rule is mirrored from the API (D40): a catalog reference fills
- * the description, net price and VAT rate, and any field the request still
- * carries overrides that snapshot.
- */
+/** Mocked quote line routes (add/update/remove on a draft): mirrors the API snapshot rule (D40) -
+ * a catalog reference fills description/net price/VAT rate, and any field the request still carries overrides it. */
 import type { Route } from '@playwright/test';
 import type { QuoteDetailDto, QuoteLineDto, QuoteLineRequest } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';

@@ -1,17 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTHZ - PROFILE PICTURE IDOR (GET /api/profile/picture/{personId})
-# ─────────────────────────────────────────────────────────────
-# Verified against ProfileEndpoints.ProfilePicture.cs (GetMechanicProfilePictureAsync): the caller
-# is allowed only when httpContext.User.IsInRole("Admin") is true, or the requested personId
-# equals the caller's own resolved person id; every other combination returns Results.Forbid()
-# (403) before the picture lookup ever runs.
-#
-# tests/API/profile/profile-picture.http already proves the "someone else's id -> 403 for a
-# non-admin" and "admin -> 200/404" branches with a hardcoded @MechanicPersonIdForPicture. This
-# file adds the one branch that file does not exercise - a plain mechanic fetching their OWN
-# picture through the id-parameterized route (not the parameterless /picture shortcut) - and
-# resolves every person id dynamically from the login responses (LoginResponse.PersonId) instead
-# of a hardcoded seed id, so it keeps working if the demo seed's numeric ids ever change.
+# Verified against ProfileEndpoints.ProfilePicture.cs: only Admin or the caller's own personId may fetch
+# (else 403 before lookup). Complements profile-picture.http's 403/200/404 branches with the missing case - own picture via the id route - using ids resolved from login responses, not hardcoded.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -20,8 +8,6 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

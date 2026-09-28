@@ -3,11 +3,7 @@
 import { apiClient } from '../http/api.client';
 import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } from '../../types/catalog/catalog.types';
 
-/**
- * Labor-type-catalog API service.
- *
- * Thin axios wrapper for {@code /api/labor-types}; the UI never calls HTTP directly.
- */
+/** Labor-type-catalog API service; a thin axios wrapper for {@code /api/labor-types}. */
 export const laborTypeService = {
   /** Returns all labor types. */
   async listLaborTypes(): Promise<LaborTypeDto[]> {

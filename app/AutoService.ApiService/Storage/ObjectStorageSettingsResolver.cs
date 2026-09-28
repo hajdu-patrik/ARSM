@@ -2,22 +2,13 @@ using AutoService.ApiService.Configuration;
 
 namespace AutoService.ApiService.Storage;
 
-/**
- * Resolves object-storage settings, preferring 'ObjectStorage__*' environment
- * variables over appsettings so AppHost and CI can inject endpoint and credential
- * values without touching committed config files. Throws at startup when a value
- * is missing, still contains a template placeholder, or cannot be parsed.
- */
+/** Resolves object-storage settings, preferring 'ObjectStorage__*' environment variables over
+    appsettings (AppHost/CI injection); throws at startup on a missing, placeholder, or unparsable value. */
 public static class ObjectStorageSettingsResolver
 {
     private const string ConfigurationSection = "ObjectStorage";
 
-    /**
-     * Resolves the complete object-storage settings set and fails fast on invalid configuration.
-     *
-     * @param configuration Application configuration root.
-     * @return Fully populated object storage settings.
-     */
+    /** Resolves the complete object-storage settings set and fails fast on invalid configuration. */
     public static ObjectStorageSettings Resolve(IConfiguration configuration)
     {
         return new ObjectStorageSettings(
@@ -32,9 +23,7 @@ public static class ObjectStorageSettingsResolver
             DisableDefaultChecksumValidation: ResolveRequiredFlag(configuration, "DisableDefaultChecksumValidation"));
     }
 
-    /**
-     * Reads a required string setting and rejects blank values and template placeholders.
-     */
+    /** Reads a required string setting and rejects blank values and template placeholders. */
     private static string ResolveRequiredValue(IConfiguration configuration, string key)
     {
         var value = ResolveRawValue(configuration, key);
@@ -54,9 +43,7 @@ public static class ObjectStorageSettingsResolver
         return value;
     }
 
-    /**
-     * Reads a required boolean setting and rejects blank or unparsable values.
-     */
+    /** Reads a required boolean setting and rejects blank or unparsable values. */
     private static bool ResolveRequiredFlag(IConfiguration configuration, string key)
     {
         var value = ResolveRawValue(configuration, key);
@@ -76,9 +63,7 @@ public static class ObjectStorageSettingsResolver
         return parsed;
     }
 
-    /**
-     * Reads the raw setting value, letting the environment variable win over configuration.
-     */
+    /** Reads the raw setting value, letting the environment variable win over configuration. */
     private static string? ResolveRawValue(IConfiguration configuration, string key)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable($"{ConfigurationSection}__{key}");

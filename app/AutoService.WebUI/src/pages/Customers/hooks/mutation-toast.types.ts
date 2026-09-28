@@ -1,7 +1,4 @@
-/**
- * Shared toast handler typings for Customers mutation hooks.
- * @module pages/Customers/hooks/mutation-toast.types
- */
+/** Shared toast handler typings for Customers mutation hooks. */
 
 /** Minimal toast callback shape used by Customers mutation flows. */
 export type CustomerMutationToastHandler = (messageKey: string) => void;

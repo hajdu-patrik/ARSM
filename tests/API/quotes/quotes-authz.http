@@ -1,36 +1,11 @@
-# ─────────────────────────────────────────────────────────────
-# QUOTES - AUTHZ (ALL 11 ROUTES, MechanicOnly POLICY)
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @SomeVersion = 1
 
-# COVERAGE GAP (do not fill with a fabricated token):
-# The F3 brief asks every route below to also prove that a request carrying a
-# valid CUSTOMER token gets 403 (authenticated but not authorized), not 401.
-# That case cannot be produced against the live API today, for exactly the
-# reason already recorded in catalog-authz.http: Customer person records never
-# receive an IdentityUserId (DemoDataInitializer.cs: "Customers are passive
-# data records - no login account, no IdentityUserId") and
-# POST /api/auth/register only accepts personType "Mechanic"
-# (AuthEndpoints.Register.cs: "Registration is only available for
-# mechanics."). No endpoint issues a session for a person whose person_type
-# claim resolves to "customer", so MechanicOnly (Program.cs:
-# RequireClaim("person_type","mechanic")) can only currently be observed
-# distinguishing "authenticated" from "unauthenticated" below, never
-# "authenticated non-mechanic" from "authenticated mechanic".
-#
-# The path ids below are resolved from the seeded quotes (like every other
-# file in this folder) before logging out, purely so this file carries no
-# magic numbers; an unauthenticated request is rejected by the policy before
-# any handler resolves them, so whether the row exists is irrelevant to the
-# 401 outcome itself.
-
-
-# ─────────────────────────────────────────────────────────────
+# COVERAGE GAP: a MechanicOnly 403 for an authenticated-but-not-mechanic caller cannot be produced
+# against the live API today (no fabricated token) - see tests/CLAUDE.md Coverage Anchors.
 
 ### [Setup][QuotesAuthz] Login as admin to resolve real ids for the checks below (200 expected)
 # @name csrfSource1

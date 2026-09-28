@@ -2,18 +2,10 @@ using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Customers;
 
-/**
- * Registers customer routes under /api/customers.
- * Handler logic is split into dedicated partial files.
- */
+/** Registers customer routes under /api/customers; handler logic is split into dedicated partial files. */
 public static partial class CustomerEndpoints
 {
-    /**
-     * Maps customer endpoints to the route builder.
-     *
-     * @param endpoints Endpoint route builder.
-     * @returns Route builder with customer endpoints registered.
-     */
+    /** Maps customer endpoints to the route builder. */
     public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();

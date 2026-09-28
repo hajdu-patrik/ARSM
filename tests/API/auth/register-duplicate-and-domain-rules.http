@@ -1,14 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - REGISTER DUPLICATE AND DOMAIN RULES
-# ─────────────────────────────────────────────────────────────
-# Verified against AuthEndpoints.Register.cs before writing this file:
-# - /api/auth/register is AdminOnly, so every case here runs with an admin session already
-#   established, or the authorization check would answer 401 before RegisterAsync ever runs.
-# - Every conflict path (duplicate email in Identity/People, duplicate phone in Identity/People)
-#   answers the same generic ValidationProblem (key "register", GenericRegistrationFailureMessage) -
-#   an anti-enumeration response, so the API never tells a caller *which* field collided.
-# - This file provisions its own "duplicate phone" target mechanic instead of depending on another
-#   file's fixture staying alive across the whole suite run, and deletes it again at the end.
+# Verified against AuthEndpoints.Register.cs: AdminOnly needs an admin session first; every duplicate
+# (email or phone) answers the same generic anti-enumeration ValidationProblem (key "register"). This file self-provisions and deletes its own duplicate-target mechanic.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -24,8 +15,6 @@
 @DuplicateTargetEmail = duplicate.rules.target.{{RunId}}@example.test
 @DuplicateTargetPhone = +36 30 5{{PhoneTail}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Admin Session] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

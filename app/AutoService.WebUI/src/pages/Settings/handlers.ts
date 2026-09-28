@@ -1,10 +1,4 @@
-/**
- * Settings page handler utilities.
- *
- * Provides password validation, error mapping, and failure-handling helpers
- * for the settings page workflows.
- * @module pages/Settings/handlers
- */
+/** Settings page handler utilities: password validation, error mapping, and failure handling for page workflows. */
 
 import { isAxiosError } from 'axios';
 import type { FieldErrors } from './types';
@@ -22,11 +16,7 @@ function mapSettingsMessageToToastKey(message: string, fallbackKey: string): str
   return mappedMessage === message ? fallbackKey : mappedMessage;
 }
 
-/**
- * Returns true when the field-error dictionary has at least one non-empty entry.
- * @param errors Field errors dictionary.
- * @returns True if any field has validation errors.
- */
+/** Returns true when the field-error dictionary has at least one non-empty entry. */
 export function hasFieldErrors(errors: FieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
 }
@@ -62,13 +52,7 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
   return null;
 }
 
-/**
- * Normalizes password-related server field errors into a consistent shape.
- * Maps CurrentPassword, ConfirmNewPassword, and NewPassword keys,
- * routing unknown keys to NewPassword.
- * @param errors Raw server field errors from the password change response.
- * @returns Normalized field errors with translated message keys.
- */
+/** Normalizes password-related server field errors, routing unknown keys to NewPassword. */
 export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
   const mapped: FieldErrors = {};
 
@@ -89,12 +73,7 @@ export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
   return mapped;
 }
 
-/**
- * Handles API errors from a password change request.
- * Returns normalized field errors for 422/400 responses; returns null otherwise.
- * @param err The error thrown during the password change call.
- * @returns Normalized field errors if validation failed, null otherwise.
- */
+/** Maps a password-change error to normalized field errors for 422/400 responses, else null. */
 export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
   if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
     return null;
@@ -116,12 +95,7 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
   return null;
 }
 
-/**
- * Handles API errors from a profile deletion request.
- * Returns the error message key if a 403 or 401 response is detected; returns null otherwise.
- * @param err The error thrown during the profile deletion call.
- * @returns Error message key for auth/permission failures, null otherwise.
- */
+/** Maps a profile-deletion error to a message key: 403/401 to a password-invalid key, else field/detail mapping, or null. */
 export function extractDeleteProfileErrorKey(err: unknown): string | null {
   if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
     return null;

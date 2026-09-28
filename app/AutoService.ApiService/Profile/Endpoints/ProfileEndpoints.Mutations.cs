@@ -10,18 +10,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /**
-     * Handles PUT profile updates by validating and applying changed contact/name
-     * fields to the current person and, when email/phone changed, the linked
-     * identity user, inside a single transaction.
-     *
-     * @param request Partial profile update payload (only provided fields are validated/applied).
-     * @param httpContext Current request context used to resolve the caller's person record.
-     * @param userManager Identity user manager.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return 200 OK with the updated profile, 404 if the person is not linked, or a validation problem.
-     */
+    /** Handles PUT profile updates by validating and applying changed contact/name fields to the current person and, when email/phone changed, the linked identity user, inside a single transaction. */
     private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,

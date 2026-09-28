@@ -1,9 +1,7 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
+/** See https://playwright.dev/docs/test-configuration. */
 const nodeEnv = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) ?? {};
 const isCi = typeof nodeEnv.CI === 'string' && nodeEnv.CI.length > 0;
 const baseURL = nodeEnv.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173';
@@ -47,36 +45,6 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
   /* Run the WebUI dev server before starting the tests. */

@@ -1,10 +1,8 @@
 -- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
 -- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
 
--- 1. APPOINTMENT CLAIMS VERIFICATION
---    Shows which mechanic is assigned to which appointment.
---    Note: claim timestamp is not persisted; use ScheduledDate + inspected_at_utc.
--- ------------------------------------------------------------
+-- 1. APPOINTMENT CLAIMS VERIFICATION — which mechanic is assigned to which appointment.
+--    Claim timestamp is not persisted; use ScheduledDate + inspected_at_utc instead.
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate" AS scheduled_at_utc,
        am."MechanicId" AS claimed_by_mechanic_id,
@@ -17,14 +15,8 @@ LEFT JOIN people m ON m."Id" = am."MechanicId"
 ORDER BY a."Id", am."MechanicId";
 
 
--- ------------------------------------------------------------
--- 2. PROFILE UPDATE AUDIT (mechanics)
---    Verifies profile fields changed by /api/profile endpoints.
---    Includes firstName and lastName (updatable via PUT /api/profile).
---    has_profile_picture mirrors the DTO projection the API computes
---    (Profile/Endpoints/ProfileEndpoints.Queries.cs), which reads object-storage
---    metadata since DropProfilePictureBytes removed the "ProfilePicture" bytea column.
--- ------------------------------------------------------------
+-- 2. PROFILE UPDATE AUDIT (mechanics) — profile fields changed by /api/profile (incl. name).
+--    has_profile_picture mirrors ProfileEndpoints.Queries.cs, reading object-storage metadata post-DropProfilePictureBytes.
 SELECT "Id" AS mechanic_id,
        "Email",
        "PhoneNumber",
@@ -38,15 +30,8 @@ WHERE "PersonType" = 'Mechanic'
 ORDER BY "Id";
 
 
--- ------------------------------------------------------------
--- 3. APPOINTMENT STATUS TIMESTAMP AUDIT
---    Verifies completedAt / canceledAt are set correctly after status updates.
---    Valid statuses: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
---    Expected invariants:
---      Completed  -> CompletedAt IS NOT NULL, CanceledAt IS NULL
---      Cancelled  -> CanceledAt IS NOT NULL,  CompletedAt IS NULL
---      InProgress -> both IS NULL
--- ------------------------------------------------------------
+-- 3. APPOINTMENT STATUS TIMESTAMP AUDIT — CompletedAt/CanceledAt exclusivity per status
+--    (see CASE below); valid statuses are InProgress/Completed/Cancelled, no more "Scheduled".
 SELECT a."Id" AS appointment_id,
        a."Status",
        a."CompletedAt",
@@ -63,11 +48,8 @@ FROM appointments a
 ORDER BY a."Id";
 
 
--- ------------------------------------------------------------
--- 4. APPOINTMENT ASSIGNMENT INVARIANT (NO ZERO-MECHANIC APPOINTMENTS)
---    Verifies no appointment exists without at least one assigned mechanic.
+-- 4. APPOINTMENT ASSIGNMENT INVARIANT — no appointment without at least one assigned mechanic.
 --    Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."Status",
@@ -79,12 +61,8 @@ HAVING COUNT(am."MechanicId") = 0
 ORDER BY a."Id";
 
 
--- ------------------------------------------------------------
--- 5. PROFILE PICTURE STORAGE CHECK
---    Counts mechanics with and without stored profile pictures. Since
---    DropProfilePictureBytes the picture itself lives in object storage, so the row
---    only carries the key that points at it.
--- ------------------------------------------------------------
+-- 5. PROFILE PICTURE STORAGE CHECK — counts mechanics with/without stored pictures.
+--    Since DropProfilePictureBytes the picture lives in object storage; the row only carries the key.
 SELECT COUNT(*) FILTER (WHERE "ProfilePictureObjectKey" IS NOT NULL) AS mechanics_with_profile_picture,
        COUNT(*) FILTER (WHERE "ProfilePictureObjectKey" IS NULL) AS mechanics_without_profile_picture,
        COUNT(*) AS total_mechanics
@@ -92,11 +70,8 @@ FROM people
 WHERE "PersonType" = 'Mechanic';
 
 
--- ------------------------------------------------------------
--- 6. MECHANIC DELETION INTEGRITY
---    Verifies there are no orphaned rows after mechanic deletion.
+-- 6. MECHANIC DELETION INTEGRITY — no orphaned rows after mechanic deletion.
 --    Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT 'appointmentmechanics' AS source_table,
        am."MechanicId"::text AS dangling_reference
 FROM appointmentmechanics am
@@ -120,10 +95,8 @@ LEFT JOIN people p ON p."IdentityUserId" = u."Id" AND p."PersonType" = 'Mechanic
 WHERE p."Id" IS NULL;
 
 
--- ------------------------------------------------------------
 -- 7. ADMIN MECHANIC LIST CONSISTENCY
 --    Cross-checks mechanics against Identity admin role membership and picture flag projection.
--- ------------------------------------------------------------
 SELECT p."Id" AS mechanic_id,
        p."Email" AS mechanic_email,
        p."IdentityUserId" AS identity_user_id,

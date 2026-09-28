@@ -1,22 +1,9 @@
--- ============================================================
--- AutoService DB — Validation Queries
--- Run these inside psql after seeding demo data.
--- Usage: connect with the dedicated read-only ai_agent_test_user account,
---        then run this file against AutoServiceDb.
---------------------------OR-----------------------------------
--- Download "SQLTools" extension for VS Code, add a PostgreSQL connection for ai_agent_test_user,
--- and run this file directly in the editor.
--- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
--- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
--- ============================================================
+-- AutoService DB — Validation Queries: run after seeding demo data.
+-- AI SQL policy (ai_agent_test_user, SELECT-only) — see tests/CLAUDE.md.
 
 
--- ------------------------------------------------------------
--- 1. ROW COUNTS — quick seed sanity check
---    Expected after fresh seed:
---      people=8, vehicles=5, appointments>=35,
---      AspNetUsers=3, AspNetRoles=1, AspNetUserRoles=1, refreshtokens=0
--- ------------------------------------------------------------
+-- 1. ROW COUNTS — quick seed sanity check (fresh seed: people=8, vehicles=5, appointments>=35,
+--    AspNetUsers=3, AspNetRoles=1, AspNetUserRoles=1, refreshtokens=0).
 SELECT 'people' AS tbl, COUNT(*) AS cnt FROM people
 UNION ALL
 SELECT 'vehicles', COUNT(*) FROM vehicles
@@ -34,9 +21,7 @@ UNION ALL
 SELECT 'refreshtokens', COUNT(*) FROM refreshtokens;
 
 
--- ------------------------------------------------------------
 -- 2. PEOPLE — all rows, raw
--- ------------------------------------------------------------
 SELECT
   "Id",
   "FirstName",
@@ -52,9 +37,7 @@ FROM people
 ORDER BY "Id";
 
 
--- ------------------------------------------------------------
 -- 3. MECHANICS — with specialization and expertise
--- ------------------------------------------------------------
 SELECT "Id", "FirstName", "LastName", "Email", "PhoneNumber",
        "Specialization", "Expertise"
 FROM people
@@ -62,9 +45,7 @@ WHERE "PersonType" = 'Mechanic'
 ORDER BY "Id";
 
 
--- ------------------------------------------------------------
 -- 4. CUSTOMERS — passive records, no IdentityUserId
--- ------------------------------------------------------------
 SELECT "Id", "FirstName", "LastName", "Email", "PhoneNumber",
        "IdentityUserId"
 FROM people
@@ -72,10 +53,8 @@ WHERE "PersonType" = 'Customer'
 ORDER BY "Id";
 
 
--- ------------------------------------------------------------
 -- 5. IDENTITY ACCOUNTS — mechanics only
 --    Every mechanic must have a matching row in AspNetUsers.
--- ------------------------------------------------------------
 SELECT p."Id"   AS person_id,
        p."FirstName" || ' ' || p."LastName" AS full_name,
        p."Email" AS domain_email,
@@ -87,19 +66,15 @@ WHERE p."PersonType" = 'Mechanic'
 ORDER BY p."Id";
 
 
--- ------------------------------------------------------------
 -- 6. IDENTITY INTEGRITY — customers must have NULL IdentityUserId
 --    Expected: 5
--- ------------------------------------------------------------
 SELECT COUNT(*) AS customers_without_account
 FROM people
 WHERE "PersonType" = 'Customer'
   AND "IdentityUserId" IS NULL;
 
 
--- ------------------------------------------------------------
 -- 7. VEHICLES — with owner name
--- ------------------------------------------------------------
 SELECT v."Id",
        v."LicensePlate",
   v."Vin",
@@ -115,10 +90,8 @@ JOIN people p ON p."Id" = v."CustomerId"
 ORDER BY v."Id";
 
 
--- ------------------------------------------------------------
 -- 8. APPOINTMENTS — with vehicle and customer
 --    Includes intake and due timestamps.
--- ------------------------------------------------------------
 SELECT a."Id"           AS appt_id,
        a."ScheduledDate",
   a."IntakeCreatedAt",
@@ -133,6 +106,4 @@ JOIN vehicles v ON v."Id" = a."VehicleId"
 JOIN people   p ON p."Id" = v."CustomerId"
 ORDER BY a."ScheduledDate";
 
--- Remaining sections were split to keep this suite chunked and maintainable:
--- - core-schema-appointments.sql
--- - core-schema-contracts.sql
+-- Remaining sections: core-schema-appointments.sql, core-schema-contracts.sql (kept chunked for size).

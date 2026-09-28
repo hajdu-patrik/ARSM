@@ -1,7 +1,4 @@
-/**
- * Settings delete-profile danger zone section.
- * @module pages/Settings/sections/DeleteProfileSection
- */
+/** Settings delete-profile danger zone section. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';

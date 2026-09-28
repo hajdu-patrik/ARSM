@@ -1,7 +1,4 @@
-/**
- * Basic identity/contact fields for mechanic registration.
- * @module pages/Admin/RegisterMechanic/sections/BasicInfoSection
- */
+/** Basic identity/contact fields for mechanic registration. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

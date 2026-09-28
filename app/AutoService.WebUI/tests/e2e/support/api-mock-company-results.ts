@@ -1,13 +1,5 @@
-/**
- * Mocked company result route (plan F6).
- *
- * The report is derived from the same mock quotes the rest of the suite
- * mutates, so accepting a quote in one step really moves money into the
- * accepted row in the next. It keeps the rules the page depends on: a quote
- * counts in the month it was created in, Sent splits into pending and expired
- * by its validity, a draft appears only as a count, and an empty period
- * answers with zeros rather than 404.
- */
+/** Mocked company result route: derives the report from the mock quotes the suite mutates, so
+ * accepting a quote moves money between rows (tests/CLAUDE.md Coverage Anchors keeps the rules). */
 import type { Route } from '@playwright/test';
 import type { QuoteDetailDto } from '../../../src/types/quotes/quotes.types';
 import type {

@@ -1,16 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - LOGIN POSITIVE MATRIX (identifier variety)
-# ─────────────────────────────────────────────────────────────
-# Verified against AuthEndpoints.Login.cs before writing this file: email lookup is
-# case/whitespace-insensitive (TryNormalizeEmail trims + lowercases before FindByEmailAsync), an
-# unknown identifier and a wrong password both answer the same generic 401 "invalid_credentials" by
-# design (anti-enumeration/timing-attack resistance - see the DummyPasswordHash comment in
-# AuthEndpoints.Login.cs), and a Customer record is never linked to a mechanic, so any of its
-# credentials also answer 401.
-# The phone-format matrix (same account family, every accepted input shape for one phone number) lives
-# in the sibling file login-positive-phone-matrix.http to keep both files under the size limit.
-# This file provisions its own throwaway mechanics (own {{$timestamp}} suffix) instead of depending on
-# another file's fixtures surviving, and deletes them again at the end.
+# Verified against AuthEndpoints.Login.cs: email lookup trims+lowercases, and an unknown identifier, wrong
+# password, or a Customer's credentials all answer the same generic 401 (anti-enumeration); the phone-format matrix is the sibling login-positive-phone-matrix.http. This file self-provisions and deletes its own mechanics.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -27,8 +16,6 @@
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

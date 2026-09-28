@@ -14,9 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Playwright E2E against the Vite dev server. Every /api/** call is answered by
-  # tests/e2e/support/api-mocks.ts, so no backend, database or secret is needed; the API
-  # URL below only has to be a valid config value, it is never contacted.
+  # Playwright E2E on the Vite dev server; tests/e2e/support/api-mocks.ts answers every /api/** call,
+  # so no backend or secret is needed and the API URL below is never contacted.
   e2e-playwright:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -63,10 +62,8 @@ jobs:
           app/AutoService.WebUI/test-results
         retention-days: 7
 
-  # HTTP (httpyac + Python checks) and SQL suites against a real stack: PostgreSQL and RustFS (S3)
-  # containers plus the API in Development, seeded with the demo dataset. Every credential is
-  # generated per run and masked, so the workflow needs no repository secret and nothing is
-  # hardcoded; the stack is thrown away with the runner.
+  # HTTP and SQL suites against PostgreSQL + RustFS containers and the demo-seeded API (Development);
+  # every credential is generated per run and masked, so no repository secret is needed.
   api-http-sql:
     runs-on: ubuntu-latest
     timeout-minutes: 30

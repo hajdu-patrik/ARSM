@@ -1,12 +1,4 @@
-/**
- * Quote editor state hook.
- *
- * Owns what the editor modal is currently showing: which quote (or which
- * vehicle, for a new draft), the loaded detail, the header form, and the
- * line form with the row currently being edited. Server calls that change a
- * quote live in `useQuoteMutations`; this hook only reads and holds state.
- * @module pages/Quotes/hooks/useQuoteEditor
- */
+/** Quote editor state hook: which quote/vehicle, loaded detail, header/line forms; mutations live in useQuoteMutations. */
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import type { QuoteDetailDto, QuoteLineDto } from '../../../types/quotes/quotes.types';
@@ -30,11 +22,7 @@ interface UseQuoteEditorParams {
   showErrorToast: (key: string) => void;
 }
 
-/**
- * Manages quote editor modal state, detail loading, and the two forms.
- * @param params Localized error toast handler.
- * @returns Editor state and the actions that open, close, and retarget it.
- */
+/** Manages quote editor modal state, detail loading, and the two forms. */
 export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<QuoteEditorMode>('create');
@@ -95,11 +83,7 @@ export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
     }
   }, [showErrorToast]);
 
-  /**
-   * Adopts the quote a mutation returned. Every write endpoint answers with
-   * the full detail, including the new version, so the editor never has to
-   * refetch to stay writable.
-   */
+  /** Adopts the quote a mutation returned; every write endpoint answers with the full detail (incl. version), so no refetch is needed. */
   const applyQuote = useCallback((detail: QuoteDetailDto) => {
     setMode('edit');
     setQuote(detail);

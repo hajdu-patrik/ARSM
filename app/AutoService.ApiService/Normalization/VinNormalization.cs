@@ -2,21 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace AutoService.ApiService.Normalization;
 
-/**
- * Provides conservative structural VIN normalization and validation.
- */
+/** Provides conservative structural VIN normalization and validation. */
 internal static partial class VinNormalization
 {
     internal const int VinLength = 17;
 
-    /**
-     * Normalizes a VIN to uppercase and validates the structural 17-character form.
-     *
-     * @param rawVin Raw VIN supplied by the client.
-     * @param normalizedVin Uppercase VIN when validation succeeds.
-     * @param validationError Validation detail when validation fails.
-     * @return True when the VIN is structurally valid.
-     */
+    /** Normalizes a VIN to uppercase and validates the structural 17-character form. */
     internal static bool TryNormalizeVin(string? rawVin, out string normalizedVin, out string validationError)
     {
         normalizedVin = string.Empty;

@@ -1,19 +1,5 @@
-/**
- * Column-alignment assertions for `DataList`/`DataListRow`
- * (`src/components/common/DataList.tsx`): the header row and every data row
- * share one CSS grid via `grid-cols-subgrid`, so a column's left edge can
- * never drift with text/number length or icon count. These helpers
- * re-measure that contract from the rendered DOM instead of trusting the
- * class names, because a broken subgrid template still renders something
- * plausible-looking without them.
- *
- * Every measurement for one list (or one set of rows) is read in a single
- * `locator.evaluate`/`evaluateAll` call, after awaiting `document.fonts.ready`
- * inside the page: a web-font swap or the sidebar's own layout transition can
- * otherwise land between two sequential `boundingBox()` round trips, which
- * neither call alone would ever see.
- * @module tests/e2e/support/list-alignment
- */
+/** Column-alignment assertions for `DataList`/`DataListRow`: reads every rectangle atomically
+ * after `document.fonts.ready`, 1px tolerance (tests/CLAUDE.md Coverage Anchors). */
 import { expect, type Locator } from '@playwright/test';
 
 /** Plain, structured-clone-safe rectangle: only what the alignment checks need. */
@@ -27,11 +13,8 @@ interface ListMeasurement {
   readonly rows: RectLike[][];
 }
 
-/**
- * Reads every header cell's and every row's cell rectangles for one
- * `DataList` section in a single page round trip.
- * @param list The `DataList`'s own root `<section>` locator (see `listSection`).
- */
+/** Reads every header cell's and every row's cell rectangles for one `DataList` section
+ * in a single page round trip. */
 async function measureList(list: Locator): Promise<ListMeasurement> {
   return list.evaluate(async (section) => {
     await document.fonts.ready;
@@ -50,38 +33,22 @@ async function measureList(list: Locator): Promise<ListMeasurement> {
   });
 }
 
-/**
- * Tolerance for float rounding of the reported rectangles only. Measurements
- * are taken atomically (see the module doc), so this does not need to absorb
- * a layout change landing mid-measurement - only the sub-pixel rounding
- * `getBoundingClientRect` itself can report.
- */
+/** Tolerance for float rounding only: measurements are atomic (module doc), so this only needs to
+ * absorb `getBoundingClientRect`'s own sub-pixel rounding, not a layout change landing mid-measurement. */
 const DEFAULT_TOLERANCE_PX = 1;
 
 export interface ColumnAlignmentOptions {
   /** Maximum allowed pixel drift between two cells that should align (float rounding). */
   readonly tolerancePx?: number;
-  /**
-   * Column indexes exempt from the width check, kept to their `x` position
-   * only. A cell that intentionally does not stretch to fill its column -
-   * `QuoteCard`'s status badge (`justify-self-start`) is the one case in this
-   * codebase - legitimately renders narrower than the header on a short
-   * status like "Draft".
-   */
+  /** Column indexes exempt from the width check, kept to `x` only: `QuoteCard`'s status badge
+   * (`justify-self-start`) legitimately renders narrower than the header on a short status. */
   readonly skipWidthColumns?: readonly number[];
   /** Exact number of columns the header (and therefore every row) must expose. */
   readonly expectedColumnCount?: number;
 }
 
-/**
- * Asserts that a `DataList` section's header and every data row expose the
- * same number of desktop cells, and that every column's `x` (and, unless
- * exempted, `width`) match across the header, the first row and every other
- * row. Only meaningful while the list renders its table variant; callers own
- * the viewport/container width that puts it there.
- * @param list The `DataList`'s own root `<section>` locator (see `listSection`).
- * @param options Tolerance, an exact column-count check, and per-column width exemptions.
- */
+/** Asserts a `DataList` section's header and every row share the same column count and `x`/`width`
+ * per column. Only meaningful in table mode; callers own the viewport/container width for that. */
 export async function expectColumnsAligned(list: Locator, options: ColumnAlignmentOptions = {}): Promise<void> {
   const { tolerancePx = DEFAULT_TOLERANCE_PX, skipWidthColumns = [], expectedColumnCount } = options;
 
@@ -89,9 +56,8 @@ export async function expectColumnsAligned(list: Locator, options: ColumnAlignme
   const headerCount = headerBoxes.length;
   expect(headerCount, 'header has no columns').toBeGreaterThan(0);
 
-  // `getBoundingClientRect` never returns null, only an all-zero rect for a
-  // `display: none` subtree, so a list measured while it is still rendering
-  // its tile variant would otherwise report a false "0 equals 0" match.
+  // `getBoundingClientRect` never returns null, only an all-zero rect for `display: none`, so a
+  // list still rendering its tile variant would otherwise report a false "0 equals 0" match.
   expect(headerBoxes.every((box) => box.width > 0), 'header is not visible: list is not in table mode').toBe(true);
 
   if (expectedColumnCount !== undefined) {
@@ -129,15 +95,8 @@ interface RowActionMeasurement {
   readonly actionX: Record<string, number | null>;
 }
 
-/**
- * Asserts that every row exposes exactly `actionTestIds.length` visible
- * action buttons, and that each named action sits at the same `x` position
- * in every row. Catches the "+1 icon" regression: an action rendered in one
- * row only would shift every action after it in that row alone.
- * @param rows Every row locator (for example `page.getByTestId('quote-row')`).
- * @param actionTestIds Test ids of the actions expected in every row.
- * @param tolerancePx Maximum allowed pixel drift from float rounding.
- */
+/** Asserts every row exposes exactly `actionTestIds.length` visible action buttons at the same `x`;
+ * catches the "+1 icon" regression where an action rendered in one row shifts everything after it. */
 export async function expectRowActionsAligned(
   rows: Locator,
   actionTestIds: readonly string[],
@@ -149,7 +108,8 @@ export async function expectRowActionsAligned(
   const measurements: RowActionMeasurement[] = await rows.evaluateAll(async (rowElements, testIds) => {
     await document.fonts.ready;
 
-    // True when the element (and every ancestor) actually generates a box; the table/tiles copy switch hides one via `display: none`.
+    // True when the element (and every ancestor) generates a box; the table/tiles copy switch
+    // hides one copy via `display: none`.
     const isRendered = (el: Element): boolean => el.getClientRects().length > 0;
 
     return rowElements.map((row) => {

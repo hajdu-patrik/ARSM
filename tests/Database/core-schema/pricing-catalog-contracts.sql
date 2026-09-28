@@ -1,19 +1,8 @@
--- ============================================================
--- AutoService DB — Pricing catalog schema contract checks
--- Verifies persistence contracts from the AddPricingCatalog migration
--- (parts, labortypes). Read-only validation queries only.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ============================================================
+-- AutoService DB — Pricing catalog schema contracts (AddPricingCatalog migration: parts, labortypes).
+-- AI SQL policy: ai_agent_test_user, SELECT-only — see tests/CLAUDE.md.
 
--- ------------------------------------------------------------
--- 18. PRICING CATALOG NUMERIC PRECISION CONTRACT
---     parts.NetUnitPrice and labortypes.HourlyNetRate must be genuinely
---     numeric(18,2) — precision 18, scale 2 — not a bare numeric and not
---     a double precision. AddPricingCatalog is the first migration with
---     decimal columns in the repo; a missing precision/scale would
---     silently break rounding.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 18. PRICING CATALOG NUMERIC PRECISION CONTRACT — NetUnitPrice/HourlyNetRate must be numeric(18,2)
+--     exactly, not bare numeric/double precision, or rounding on money breaks silently. Expected: 0 rows.
 WITH expected_money_columns (table_name, column_name) AS (
     VALUES
         ('parts', 'NetUnitPrice'),
@@ -36,15 +25,8 @@ WHERE c.column_name IS NULL
 ORDER BY e.table_name, e.column_name;
 
 
--- ------------------------------------------------------------
--- 19. PRICING CATALOG CHECK CONSTRAINT CONTRACT
---     All four named check constraints must exist, and their definitions
---     must carry both fragments checked below. A constraint that only
---     rejects negative values, or only asserts VAT membership without the
---     full 0/5/18/27 set, would pass a naive existence check while
---     leaving the upper-bound / typo protection missing.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 19. PRICING CATALOG CHECK CONSTRAINT CONTRACT — the 4 constraints must carry both required
+--     fragments (bound + full 0/5/18/27 VAT set), not just exist. Expected: 0 rows.
 WITH expected_constraints (table_name, constraint_name, required_fragment_1, required_fragment_2) AS (
     VALUES
         ('parts',      'CK_Parts_NetUnitPrice',       '>= (0)',  '<= (100000000)'),
@@ -68,12 +50,8 @@ WHERE t.relname IS NULL
 ORDER BY e.table_name, e.constraint_name;
 
 
--- ------------------------------------------------------------
--- 20. PRICING CATALOG UNIQUE INDEX CONTRACT
---     IX_parts_PartNumber and IX_labortypes_Code must exist on their
---     tables and be declared unique.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 20. PRICING CATALOG UNIQUE INDEX CONTRACT — IX_parts_PartNumber and IX_labortypes_Code must
+--     exist and be declared unique. Expected: 0 rows.
 WITH expected_indexes (table_name, index_name) AS (
     VALUES
         ('parts', 'IX_parts_PartNumber'),
@@ -91,12 +69,8 @@ WHERE t.relname IS NULL
 ORDER BY e.table_name, e.index_name;
 
 
--- ------------------------------------------------------------
--- 21. PRICING CATALOG STRING LENGTH CONTRACT
---     parts.PartNumber and labortypes.Code carry maxlength 40; parts.Name
---     and labortypes.Name carry maxlength 120.
+-- 21. PRICING CATALOG STRING LENGTH CONTRACT — PartNumber/Code maxlength 40; Name maxlength 120.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 WITH expected_lengths (table_name, column_name, expected_max_length) AS (
     VALUES
         ('parts', 'PartNumber', 40),

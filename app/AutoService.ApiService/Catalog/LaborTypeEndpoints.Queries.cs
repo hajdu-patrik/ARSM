@@ -8,14 +8,7 @@ namespace AutoService.ApiService.Catalog;
 
 public static partial class LaborTypeEndpoints
 {
-    /**
-     * Lists labor types ordered by code.
-     *
-     * @param limit Optional row cap (1..500, default 500).
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Labor type list.
-     */
+    /** Lists labor types ordered by code. */
     private static async Task<IResult> ListLaborTypesAsync(
         int? limit,
         AutoServiceDbContext db,
@@ -32,14 +25,7 @@ public static partial class LaborTypeEndpoints
         return Results.Ok(laborTypes.Select(ToLaborTypeDto).ToList());
     }
 
-    /**
-     * Returns a single labor type by id.
-     *
-     * @param id Labor type identifier.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Labor type detail, or 404 when it does not exist.
-     */
+    /** Returns a single labor type by id. */
     private static async Task<IResult> GetLaborTypeAsync(
         int id,
         AutoServiceDbContext db,

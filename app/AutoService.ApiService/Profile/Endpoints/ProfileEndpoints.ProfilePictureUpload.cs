@@ -10,25 +10,8 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /**
-     * Handles profile-picture uploads: metadata validation, byte-level image validation,
-     * re-encoding, object-storage upload, and tracked persistence.
-     *
-     * Ordering is deliberate. The new object is written first, the row second, and the replaced
-     * object last, so a failed save never leaves the row pointing at a missing object. If the save
-     * fails, the just-uploaded object is deleted; if the trailing delete fails, the orphan is only
-     * logged because the user-visible operation already succeeded.
-     *
-     * @param file - Uploaded multipart file.
-     * @param httpContext - Current HTTP context.
-     * @param db - Database context.
-     * @param processor - Profile picture normaliser.
-     * @param storage - Profile picture object storage.
-     * @param broadcaster - Profile picture update broadcaster service.
-     * @param loggerFactory - Logger factory.
-     * @param cancellationToken - Cancellation token.
-     * @return 200 on success, 400 on invalid metadata, 422 on invalid content, or 404 when unlinked.
-     */
+    /** Handles profile-picture uploads (validate, re-encode, store, persist). Ordering is deliberate:
+        object first, row second, replaced object last, so a failed save never leaves a dangling reference. */
     private static async Task<IResult> UploadProfilePictureAsync(
         [FromForm] IFormFile file,
         HttpContext httpContext,
@@ -83,9 +66,7 @@ public static partial class ProfileEndpoints
             cancellationToken);
     }
 
-    /**
-     * Writes the processed picture to object storage and the person row, then drops the replaced object.
-     */
+    /** Writes the processed picture to object storage and the person row, then drops the replaced object. */
     private static async Task<IResult> StoreProfilePictureAsync(
         ProfilePictureStoreContext context,
         People person,
@@ -127,19 +108,14 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile picture updated." });
     }
 
-    /**
-     * Collaborators shared by the profile-picture write paths, kept together to stay under the
-     * parameter counts the surrounding endpoint code uses.
-     */
+    /** Collaborators shared by the profile-picture write paths, kept together to stay under the parameter counts the surrounding endpoint code uses. */
     private sealed record ProfilePictureStoreContext(
         AutoServiceDbContext Db,
         IProfilePictureStorage Storage,
         IProfilePictureUpdateBroadcaster Broadcaster,
         ILogger Logger);
 
-    /**
-     * Validates upload metadata before reading the profile-picture file into memory.
-     */
+    /** Validates upload metadata before reading the profile-picture file into memory. */
     private static IResult? ValidateProfilePictureUploadMetadata(IFormFile file)
     {
         if (file.Length == 0)
@@ -170,9 +146,7 @@ public static partial class ProfileEndpoints
         return null;
     }
 
-    /**
-     * Reads the already size-validated profile-picture file bytes for content inspection and processing.
-     */
+    /** Reads the already size-validated profile-picture file bytes for content inspection and processing. */
     private static async Task<byte[]> ReadProfilePictureFileBytesAsync(
         IFormFile file,
         CancellationToken cancellationToken)
@@ -182,9 +156,7 @@ public static partial class ProfileEndpoints
         return memoryStream.ToArray();
     }
 
-    /**
-     * Validates the uploaded image bytes against the declared profile-picture content type.
-     */
+    /** Validates the uploaded image bytes against the declared profile-picture content type. */
     private static IResult? ValidateProfilePictureBytes(byte[] fileBytes, string normalizedContentType)
     {
         if (!ImageContentTypeDetector.TryDetect(fileBytes, out var detectedContentType))
@@ -210,17 +182,7 @@ public static partial class ProfileEndpoints
         return null;
     }
 
-    /**
-     * Removes the tracked user's profile picture and publishes the realtime state change after persistence.
-     *
-     * @param httpContext - Current HTTP context.
-     * @param db - Database context.
-     * @param storage - Profile picture object storage.
-     * @param broadcaster - Profile picture update broadcaster service.
-     * @param loggerFactory - Logger factory.
-     * @param cancellationToken - Cancellation token.
-     * @return 200 on success, or 404 when the caller is not linked to a person record.
-     */
+    /** Removes the tracked user's profile picture and publishes the realtime state change after persistence. */
     private static async Task<IResult> DeleteProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -261,13 +223,8 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile picture removed." });
     }
 
-    /**
-     * Deletes a stored object without failing the caller.
-     *
-     * Cleanup runs with an uncancellable token on purpose: it is also used on the rollback path,
-     * where the request token may already be cancelled, and leaving the object behind there would
-     * be worse than the extra call.
-     */
+    /** Deletes a stored object without failing the caller, using an uncancellable token because this
+        also runs on the rollback path, where leaving the object orphaned would be worse than one extra call. */
     private static async Task TryDeleteProfilePictureObjectAsync(
         IProfilePictureStorage storage,
         string objectKey,

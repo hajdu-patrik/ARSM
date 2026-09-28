@@ -5,18 +5,8 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /**
-     * Handles {@code GET /api/appointments/updates} and streams appointment changes as server-sent events.
-     *
-     * Clients use this to reflect other people's changes without polling. The event payload is
-     * intentionally minimal; subscribers refresh the view they are showing rather than patching
-     * local state from the event.
-     *
-     * @param httpContext - Current HTTP context.
-     * @param broadcaster - Appointment update fan-out.
-     * @param cancellationToken - Cancelled when the client disconnects.
-     * @return An open event stream, or 503 when the subscription limit is reached.
-     */
+    /** Handles {@code GET /api/appointments/updates}, streaming changes as SSE so clients reflect
+        others' edits without polling; the minimal payload makes subscribers refresh, not patch state. */
     private static async Task<IResult> StreamAppointmentUpdatesAsync(
         HttpContext httpContext,
         IAppointmentUpdateBroadcaster broadcaster,
@@ -55,15 +45,7 @@ public static partial class AppointmentEndpoints
         return Results.Empty;
     }
 
-    /**
-     * Publishes an appointment change to every live subscriber.
-     *
-     * Called from each mutation handler after its {@code SaveChangesAsync}, so a failed write never
-     * produces an event.
-     *
-     * @param broadcaster - Appointment update fan-out.
-     * @param appointmentId - Appointment that changed.
-     */
+    /** Publishes an appointment change to every live subscriber. Called from each mutation handler after its {@code SaveChangesAsync}, so a failed write never produces an event. */
     private static void PublishAppointmentChanged(IAppointmentUpdateBroadcaster broadcaster, int appointmentId)
         => broadcaster.Publish(new AppointmentUpdatedEvent(
             appointmentId,

@@ -1,8 +1,4 @@
-/**
- * App-wide toast notification viewport.
- * Renders top-center auto-dismissing success/error/warning toasts with i18n keys.
- * @module ToastViewport
- */
+/** App-wide toast notification viewport: auto-dismissing success/error/warning toasts with i18n keys. */
 import { memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
@@ -15,11 +11,8 @@ interface ToastItemProps {
   readonly toast: ToastMessage;
 }
 
-/**
- * Resolves the feedback tone classes for a toast: success and warning map to
- * their tone, a system (5xx) error gets an extra emphasis ring, and every other
- * error uses the plain error tone.
- */
+/** Resolves the feedback tone classes for a toast: success/warning map to their tone,
+ * a system (5xx) error adds an emphasis ring, other errors use the plain error tone. */
 function resolveToastVariantClass(
   variant: ToastMessage['variant'],
   isWarningToast: boolean,
@@ -40,9 +33,7 @@ function resolveToastVariantClass(
   return toneFeedbackClasses.error;
 }
 
-/**
- * Renders a single toast row and owns its auto-dismiss lifecycle timer.
- */
+/** Renders a single toast row and owns its auto-dismiss lifecycle timer. */
 const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
   const { t: translate } = useTranslation();
   const removeToast = useToastStore((state) => state.removeToast);
@@ -102,9 +93,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
 ToastItem.displayName = 'ToastItem';
 
-/**
- * Hosts the global top-center toast stack with pointer-safe overlay behavior.
- */
+/** Hosts the global top-center toast stack with pointer-safe overlay behavior. */
 const ToastViewportComponent = memo(function ToastViewport() {
   const toasts = useToastStore((state) => state.toasts);
 

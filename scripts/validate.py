@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic validation gate for ARSM changes (replaces the LLM `validate` agent).
-
-Runs, scoped to the changed files by default:
-  frontend  - `tsc -b --noEmit` and eslint on the changed WebUI files (when WebUI changed)
-  backend   - `dotnet build` of the solution (when a backend project changed)
-  size      - file size guardrails: source > 500 lines, test > 250 lines, C# type > 300 lines
-  shadows   - the WebUI clean-design invariant: no `shadow-*`, `box-shadow`, `transition-shadow`
-  security  - `npm audit fix` + `npm audit`, and `dotnet list package --vulnerable`, only when a
-              package manifest or lockfile changed (or with --security)
-
-Usage: python scripts/validate.py [--all] [--base REF] [--security] [--skip-build] [--json]
-Exit codes: 0 every stage passed or skipped, 1 a stage failed, 2 usage or git error.
-Report: tests/.artifacts/validate-summary.json (stage status and short failure tails, no secrets).
-"""
+"""Deterministic validation gate for ARSM changes; see scripts/CLAUDE.md for stages/usage/exit codes."""
 
 from __future__ import annotations
 
@@ -35,6 +22,7 @@ BACKEND_PREFIXES = ("app/AutoService.ApiService/", "app/AutoService.AppHost/", "
 BACKEND_ROOT_FILES = ("app/AutoService.slnx", "app/Directory.Build.props", "app/nuget.config")
 REPORT = ROOT / "tests" / ".artifacts" / "validate-summary.json"
 TIMEOUT = int(os.environ.get("ARSM_VALIDATE_TIMEOUT_SECONDS", "300"))
+ESLINT_BATCH_SIZE = 60
 
 SOURCE_SUFFIXES = (".cs", ".ts", ".tsx", ".js", ".mjs", ".py")
 SOURCE_LIMIT, TEST_LIMIT, CSHARP_TYPE_LIMIT = 500, 250, 300
@@ -91,7 +79,11 @@ def stage_frontend(files: list[str], full: bool, skip_build: bool) -> StageResul
         return result
     ok_tsc, tsc_out = run_command(["npx", "tsc", "-b", "--noEmit"], WEBUI)
     lint_targets = ["."] if full else [path[len(WEBUI_PREFIX):] for path in webui_files if path.endswith((".ts", ".tsx"))]
-    ok_lint, lint_out = (True, []) if not lint_targets else run_command(["npx", "eslint", *lint_targets], WEBUI)
+    # Batches keep the command line under the Windows limit on large diffs.
+    ok_lint, lint_out = True, []
+    for start in range(0, len(lint_targets), ESLINT_BATCH_SIZE):
+        ok_batch, batch_out = run_command(["npx", "eslint", *lint_targets[start:start + ESLINT_BATCH_SIZE]], WEBUI)
+        ok_lint, lint_out = ok_lint and ok_batch, lint_out + ([] if ok_batch else batch_out)
     result.status = "PASS" if ok_tsc and ok_lint else "FAIL"
     result.detail = ([] if ok_tsc else ["tsc:", *tsc_out]) + ([] if ok_lint else ["eslint:", *lint_out])
     return result

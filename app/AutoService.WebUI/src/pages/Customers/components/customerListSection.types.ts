@@ -1,7 +1,4 @@
-/**
- * Grouped customer-list props shared by the list and card components.
- * @module pages/Customers/components/customerListSection.types
- */
+/** Grouped customer-list props shared by the list and card components. */
 
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';

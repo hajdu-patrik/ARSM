@@ -1,8 +1,4 @@
-/**
- * Labor type create/update/delete mutation hook.
- * Coordinates modal state, payload validation, server calls, and local list updates.
- * @module pages/Inventory/hooks/useLaborTypeMutations
- */
+/** Labor type create/update/delete mutation hook: modal state, payload validation, server calls, list updates. */
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import { isAxiosError } from 'axios';
 import {
@@ -41,11 +37,7 @@ interface UseLaborTypeMutationsParams extends CatalogMutationToastHandlers {
   reloadLaborTypes: (force?: boolean) => Promise<void>;
 }
 
-/**
- * Manages the labor type form/delete modal state and create/update/delete mutations.
- * @param params Shared list setter, list reloader, and localized toast handlers.
- * @returns Labor type form and delete modal state plus mutation actions.
- */
+/** Manages the labor type form/delete modal state and create/update/delete mutations. */
 export function useLaborTypeMutations({
   showSuccessToast,
   showErrorToast,

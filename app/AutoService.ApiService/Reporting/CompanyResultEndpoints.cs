@@ -1,19 +1,10 @@
 namespace AutoService.ApiService.Reporting;
 
-/**
- * Registers the company result report route. The first aggregating endpoint in
- * the project, so it follows the closest existing pattern: hand-written LINQ
- * projected straight into a DTO, without a service layer, the way
- * AdminEndpoints lists mechanics.
- */
+/** Registers the company result report route: hand-written LINQ straight into a DTO,
+ * no service layer, the way AdminEndpoints lists mechanics (CLAUDE.md Company Result Anchors). */
 public static partial class CompanyResultEndpoints
 {
-    /**
-     * Maps the company result endpoint to the route builder.
-     *
-     * @param endpoints Endpoint route builder.
-     * @returns Route builder with the company result endpoint registered.
-     */
+    /** Maps the company result endpoint to the route builder. */
     public static IEndpointRouteBuilder MapCompanyResultEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/company-results")

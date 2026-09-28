@@ -1,8 +1,4 @@
-/**
- * Settings profile-picture section.
- * Handles upload trigger, current picture preview, fallback avatar, and removal action.
- * @module pages/Settings/sections/ProfilePictureSection
- */
+/** Settings profile-picture section: upload trigger, preview, fallback avatar, and removal action. */
 import { memo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Upload } from 'lucide-react';

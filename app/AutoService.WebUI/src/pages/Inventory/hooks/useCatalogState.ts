@@ -1,13 +1,4 @@
-/**
- * Catalog (parts and labor types) list-state hook.
- *
- * Loads both catalog lists, applies the name/identifier search and
- * identifier sort shared by both tabs, and keeps the authenticated query
- * cache in sync. Fetch/cache/search/sort is identical in shape for both
- * entities, so it is written once as an internal generic helper and
- * instantiated twice instead of duplicated per tab.
- * @module pages/Inventory/hooks/useCatalogState
- */
+/** Catalog list-state hook: loads/searches/sorts parts and labor types via one generic helper instantiated per entity. */
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
@@ -47,22 +38,12 @@ interface UseCatalogEntityListParams<TDto> {
   showErrorToast: (key: string) => void;
 }
 
-/**
- * Resolves React set-state payloads so cache synchronization can mirror state updates exactly.
- * @param update Direct state value or updater callback.
- * @param previous Previous state value supplied by React.
- * @returns The next state value.
- */
+/** Resolves a React set-state payload (value or updater) so cache sync can mirror the update exactly. */
 function resolveStateUpdate<T>(update: SetStateAction<T>, previous: T): T {
   return typeof update === 'function' ? (update as (previousValue: T) => T)(previous) : update;
 }
 
-/**
- * Loads, caches, searches, and sorts a single catalog entity list (parts or labor types).
- * Internal generic implementation instantiated twice by {@link useCatalogState}.
- * @param params Fetch/query-key/identifier accessors and the toast handler for one entity.
- * @returns List state, search/sort controls, and the loader for one catalog entity.
- */
+/** Loads, caches, searches, and sorts one catalog entity list; instantiated twice by {@link useCatalogState}. */
 function useCatalogEntityList<TDto>({
   authScope,
   queryKey,
@@ -172,12 +153,7 @@ interface UseCatalogStateParams {
   showErrorToast: (key: string) => void;
 }
 
-/**
- * Manages Inventory page read-side state: parts and labor-type list loading,
- * per-tab search/sort, and query-cache synchronization.
- * @param params Locale for identifier collation and the error toast handler.
- * @returns Independent list state for the Parts and Labor types tabs.
- */
+/** Manages Inventory page read-side state: parts/labor-type loading, per-tab search/sort, and cache sync. */
 export function useCatalogState({ language, showErrorToast }: UseCatalogStateParams) {
   const authUser = useAuthStore((state) => state.user);
   const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);

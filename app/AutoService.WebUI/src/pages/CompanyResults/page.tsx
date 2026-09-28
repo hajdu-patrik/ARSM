@@ -1,12 +1,4 @@
-/**
- * Company results page.
- *
- * Shows what the accepted quotes of a period are worth, with the pending,
- * expired and rejected amounts beside them, a monthly breakdown and a VAT
- * breakdown. A quote counts in the month it was created in, so the months add
- * up to the year and a past month never changes retroactively.
- * @module pages/CompanyResults/page
- */
+/** Company results page: accepted quotes for a period with pending/expired/rejected, a monthly and VAT breakdown; a quote counts in its creation month, so past months never change retroactively. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToastStore } from '../../store/toast.store';

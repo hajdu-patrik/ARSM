@@ -1,15 +1,5 @@
-/**
- * Real-time appointment update service.
- *
- * Subscribes to {@code /api/appointments/updates} and re-dispatches
- * {@code autoservice:appointment-updated} DOM events. This is what makes another user's scheduler
- * change appear without waiting for the periodic background refresh.
- *
- * The payload is deliberately minimal: consumers refresh the view they are currently showing rather
- * than patching local state, because an appointment can move between months and patching would have
- * to reason about both the old and the new bucket to stay correct.
- * @module services/scheduler/appointment-live.service
- */
+/** Subscribes to appointment SSE updates and re-dispatches a DOM event; consumers refresh their view
+ * rather than patch state, since an appointment can move between months (see WebUI CLAUDE.md). */
 
 import { appointmentService } from './appointment.service';
 import { createLiveUpdateChannel } from '../live/live-update-channel';
@@ -25,11 +15,7 @@ export interface AppointmentUpdatedDetail {
   occurredAt: number;
 }
 
-/**
- * Parses a raw SSE data string into a typed appointment update detail.
- * @param data - The raw JSON string from the SSE message.
- * @returns Parsed detail, or {@code null} if the data is invalid.
- */
+/** Parses a raw SSE data string into a typed appointment update detail, or null if invalid. */
 function parseAppointmentUpdate(data: string): AppointmentUpdatedDetail | null {
   try {
     const parsed = JSON.parse(data) as Partial<AppointmentUpdatedDetail>;
@@ -50,11 +36,7 @@ const channel = createLiveUpdateChannel<AppointmentUpdatedDetail>({
   parse: parseAppointmentUpdate,
 });
 
-/**
- * Subscribes to real-time appointment updates. Starts the SSE connection on the first subscriber
- * and tears it down when the last subscriber unsubscribes.
- * @returns An unsubscribe function that decrements the subscriber count.
- */
+/** Subscribes to real-time appointment updates; tears down the SSE connection when the last subscriber leaves. */
 export function startAppointmentLiveUpdates(): () => void {
   return channel.start();
 }

@@ -1,12 +1,4 @@
-/**
- * Inline add/edit form for a single quote line.
- *
- * The same component serves part and labor lines; only the labels change,
- * because what the PDF prints as "hourly rate" has to read as an hourly rate
- * here too. While typing, the form shows a preview computed with the
- * server formula; the saved amounts always come from the server DTO.
- * @module pages/Quotes/components/QuoteLineForm
- */
+/** Inline add/edit quote line form; part and labor share it, only labels differ. Live preview mirrors the server formula (see CLAUDE.md); saved amounts come from the DTO. */
 import { memo, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, X } from 'lucide-react';

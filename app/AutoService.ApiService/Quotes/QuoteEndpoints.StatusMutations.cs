@@ -7,15 +7,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * The quote status state machine (D7), enforced in this one place:
-     * Draft to Sent; Sent to Accepted or Rejected; Accepted and Rejected
-     * are terminal. Every other transition is rejected by the caller.
-     *
-     * @param from Current quote status.
-     * @param to Requested new quote status.
-     * @return Whether the transition is allowed.
-     */
+    /** The quote status state machine (D7): Draft->Sent; Sent->Accepted or Rejected; Accepted/Rejected
+     * are terminal (CLAUDE.md Quote Anchors). */
     private static bool IsAllowedQuoteStatusTransition(QuoteStatus from, QuoteStatus to) => (from, to) switch
     {
         (QuoteStatus.Draft, QuoteStatus.Sent) => true,
@@ -24,17 +17,8 @@ public static partial class QuoteEndpoints
         _ => false
     };
 
-    /**
-     * Transitions a quote to a new status. Draft to Sent requires at least
-     * one line (D21); SentAt/DecidedAt are stamped the same way
-     * Appointment stamps CompletedAt/CanceledAt.
-     *
-     * @param id Quote identifier.
-     * @param request New status with the expected concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Transitions a quote to a new status; Draft->Sent requires at least one line (D21), and
+     * SentAt/DecidedAt are stamped the same way Appointment stamps CompletedAt/CanceledAt. */
     private static async Task<IResult> ChangeQuoteStatusAsync(
         int id,
         ChangeQuoteStatusRequest request,
@@ -95,13 +79,7 @@ public static partial class QuoteEndpoints
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
     }
 
-    /**
-     * Applies a validated status transition and stamps SentAt/DecidedAt,
-     * the same way Appointment stamps CompletedAt/CanceledAt.
-     *
-     * @param quote The quote being transitioned.
-     * @param newStatus The already-validated new status.
-     */
+    /** Applies a validated status transition and stamps SentAt/DecidedAt, the same way Appointment stamps CompletedAt/CanceledAt. */
     private static void ApplyQuoteStatusTransition(Quote quote, QuoteStatus newStatus)
     {
         quote.Status = newStatus;

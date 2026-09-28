@@ -11,20 +11,14 @@ const vendorChunks: ReadonlyArray<readonly [name: string, packages: readonly str
   ['vendor-ui', ['lucide-react', 'zustand', 'axios']],
 ]
 
-/**
- * Builds a module-id matcher for a set of npm packages (Windows and POSIX separators).
- * @param packages Package names whose modules belong to the group.
- * @returns A RegExp matching any module under one of those packages in `node_modules`.
- */
+/** Builds a module-id matcher for a set of npm packages (Windows and POSIX separators). */
 function packageTest(packages: readonly string[]): RegExp {
   const names = packages.map((name) => name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('|')
   return new RegExp(`[\\\\/]node_modules[\\\\/](?:${names})[\\\\/]`)
 }
 
-/**
- * Rolldown code-splitting groups for the vendor chunks. Explicit priorities keep every
- * shared dependency (React pulled in through react-i18next) in the React chunk.
- */
+/** Rolldown code-splitting groups for the vendor chunks; explicit priorities keep shared
+ * deps (React via react-i18next) in the React chunk. See app/AutoService.WebUI/CLAUDE.md. */
 const codeSplitting = {
   groups: vendorChunks.map(([name, packages], index) => ({
     name,
@@ -33,37 +27,21 @@ const codeSplitting = {
   })),
 }
 
-/**
- * Rolldown places its CommonJS interop helpers in a shared app chunk that itself imports
- * the vendor chunks. Without strict execution order the vendor chunks call a helper that
- * is not initialised yet, and the built app crashes at start-up with "t is not a function"
- * (a blank page; broken since the Vite 8 upgrade). Strict order runs module bodies in
- * source order across chunks, at the cost of a few hundred bytes of init wrappers.
- */
+/** Without strict execution order, Rolldown's shared CommonJS interop chunk crashes at
+ * start-up ("t is not a function"); keep true. See app/AutoService.WebUI/CLAUDE.md. */
 const strictExecutionOrder = true
 
 /** Matches inline `<script>` elements (no `src` attribute) in built HTML markup. */
 const INLINE_SCRIPT_PATTERN = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi
 
-/**
- * Computes the CSP `sha256-<base64>` source expression for an inline script body.
- * @param scriptContent Raw text content between an inline script's tags.
- * @returns A CSP hash source expression allowing that exact script content.
- */
+/** Computes the CSP `sha256-<base64>` source expression for an inline script body. */
 function toScriptHashSource(scriptContent: string): string {
   const digest = createHash('sha256').update(scriptContent, 'utf8').digest('base64')
   return `'sha256-${digest}'`
 }
 
-/**
- * Builds the Content-Security-Policy directive string for the built app.
- * Any inline `<script>` found in the built HTML is allow-listed by hash instead of
- * relying on `'unsafe-inline'`, so an unexpected future inline script still needs an
- * explicit hash to run.
- * @param apiOrigin Origin of the configured API (from `VITE_API_URL`), added to `connect-src`.
- * @param html Final built `index.html` markup, scanned for inline scripts to hash.
- * @returns The CSP value to place in the `Content-Security-Policy` meta tag.
- */
+/** Builds the CSP directive string for the built app: inline scripts are allow-listed by
+ * sha256 hash instead of `'unsafe-inline'`. See app/AutoService.WebUI/CLAUDE.md. */
 function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
   const inlineScriptHashes = [...html.matchAll(INLINE_SCRIPT_PATTERN)]
     .map(([, scriptContent]) => scriptContent)
@@ -73,15 +51,12 @@ function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
   const directives: Record<string, string> = {
     'default-src': "'self'",
     'script-src': ["'self'", ...inlineScriptHashes].join(' '),
-    // No inline <style> element or style attribute remains (LoadingPage's keyframes and
-    // styles live in src/styles/loadingPageAnimations.css; MechanicListSection writes its
-    // dynamic max-height through the CSSOM), so style-src covers elements and attributes alike.
+    // No inline <style>/style attribute remains (see app/AutoService.WebUI/CLAUDE.md);
+    // style-src covers elements and attributes alike.
     'style-src': "'self'",
     'font-src': "'self'",
-    // blob: covers the quote PDF download and the error-illustration cache; data:
-    // covers the profile-picture crop preview (FileReader data URL source). The API
-    // origin covers profile pictures, which <img> elements load straight from
-    // /api/profile/picture on the API host (profile.service.ts).
+    // blob: covers PDF download and error-illustration cache; data: covers the crop
+    // preview; the API origin covers profile pictures (<img> loads them directly).
     'img-src': `'self' data: blob: ${apiOrigin}`,
     'connect-src': `'self' ${apiOrigin}`,
     'object-src': "'none'",
@@ -94,13 +69,8 @@ function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
     .join('; ')
 }
 
-/**
- * Vite plugin injecting a strict Content-Security-Policy `<meta>` tag into the BUILT
- * `index.html` only (`apply: 'build'`), so the dev server's HMR websocket and the
- * React Refresh inline preamble keep working unchanged under `npm run dev`/AppHost.
- * @param apiOrigin Origin of the configured API (from `VITE_API_URL`), added to `connect-src`.
- * @returns The Vite plugin instance.
- */
+/** Vite plugin injecting a strict CSP `<meta>` tag into the BUILT `index.html` only
+ * (`apply: 'build'`), so dev-server HMR and React Refresh keep working. */
 function contentSecurityPolicyPlugin(apiOrigin: string): Plugin {
   return {
     name: 'arsm-csp-meta',
@@ -125,12 +95,8 @@ function contentSecurityPolicyPlugin(apiOrigin: string): Plugin {
   }
 }
 
-/**
- * Resolves the API origin used in the built app's Content-Security-Policy `connect-src`.
- * Config-first: fails fast instead of falling back to a hardcoded host.
- * @param apiUrl Raw `VITE_API_URL` value read via {@link loadEnv}.
- * @returns The origin (scheme + host + port) of the configured API URL.
- */
+/** Resolves the API origin for the CSP `connect-src`; config-first, no localhost fallback
+ * (see app/AutoService.WebUI/CLAUDE.md). */
 function resolveApiOrigin(apiUrl: string | undefined): string {
   if (!apiUrl) {
     throw new Error('Missing VITE_API_URL in environment configuration.')

@@ -1,12 +1,4 @@
-/**
- * Shared part/labor-type list row.
- * Renders through `DataListRow` so the header and every row share one
- * column model: name, identifier, net amount, VAT%, and gross amount side
- * by side above the list's own `@3xl` container width, collapsing to
- * labeled value tiles below it. Fully generic over the caller-supplied
- * labels so the same row serves both the Parts and Labor types tabs.
- * @module pages/Inventory/components/CatalogItemRow
- */
+/** Shared part/labor-type list row: renders through `DataListRow`, generic over caller-supplied labels for both tabs. */
 import { memo } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { DataListRow } from '../../../components/common/DataList';

@@ -1,7 +1,4 @@
-/**
- * Delete-profile workflow state for Settings.
- * @module pages/Settings/hooks/useDeleteProfileSettings
- */
+/** Delete-profile workflow state for Settings. */
 
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

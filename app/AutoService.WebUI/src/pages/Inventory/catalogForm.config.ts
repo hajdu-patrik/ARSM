@@ -1,10 +1,4 @@
-/**
- * Catalog create/edit modal configuration: the element ids, i18n keys, and
- * field get/set accessors that differ between the part and labor-type
- * forms. The generic `CatalogFormModal` component renders identically for
- * both entities using one of these configs.
- * @module pages/Inventory/catalogForm.config
- */
+/** Per-entity element ids, i18n keys, and field accessors consumed by the generic `CatalogFormModal`. */
 import type { LaborTypeFormState, PartFormState } from './helpers';
 
 /** A single identifier/rate field: element id, i18n keys, and form get/set accessors. */

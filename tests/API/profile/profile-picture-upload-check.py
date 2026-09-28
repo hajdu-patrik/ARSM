@@ -72,9 +72,7 @@ def run_stored_format_check(client: HttpClient, results: list[StepResult]) -> No
 
 
 def run_etag_conditional_checks(client: HttpClient, headers: dict[str, str], results: list[StepResult]) -> None:
-    """RespondWithProfilePictureAsync short-circuits to 304 on the stored ETag and still answers 200
-    for any other If-None-Match value (ProfileEndpoints.ProfilePicture.cs IsNotModified).
-    """
+    """Answers 304 only on the stored ETag; any other If-None-Match value still gets 200 (IsNotModified)."""
     etag = headers.get("ETag", "")
     assert_condition("get-picture-has-etag", bool(etag), "expected an ETag header on the stored picture", results)
 
@@ -88,12 +86,7 @@ def run_etag_conditional_checks(client: HttpClient, headers: dict[str, str], res
 
 
 def run_size_limit_checks(client: HttpClient, results: list[StepResult]) -> None:
-    """Reject payloads over the 4 MB cap.
-
-    A body just over the cap still fits inside the transport allowance, so it reaches the handler
-    and comes back as a validation problem. A grossly oversized body trips the transport limit
-    instead, which Kestrel answers with 413 or by aborting the connection.
-    """
+    """Reject payloads over the 4 MB cap (just-over hits the handler; way over trips Kestrel's transport limit)."""
     just_over = build_png(600, 600).ljust(MAX_UPLOAD_BYTES + 1024, b"\x00")
     status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", "just-over.png", "image/png", just_over)
     assert_status("upload-just-over-limit", status, {400}, results)

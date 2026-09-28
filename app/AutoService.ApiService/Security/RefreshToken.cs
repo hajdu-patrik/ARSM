@@ -1,10 +1,7 @@
 using AutoService.ApiService.Domain;
 namespace AutoService.ApiService.Security;
 
-/**
- * Persisted refresh token session for cookie-based authentication.
- * Only hashed token values are stored.
- */
+/** Persisted refresh token session for cookie-based authentication. Only hashed token values are stored. */
 public sealed class RefreshToken
 {
     public int Id { get; private set; }

@@ -1,13 +1,4 @@
-/**
- * Hook that encapsulates all scheduler appointment mutation callbacks.
- *
- * Provides stable, memoized handlers for claim, unclaim, status change,
- * admin assign/unassign, intake creation, appointment update, and appointment
- * deletion. Each handler calls the appointment service, applies store and
- * query-cache updates, and shows success/error toasts.
- *
- * @module useSchedulerActions
- */
+/** Memoized scheduler mutation handlers: call the service, update store/query caches, and toast the result. */
 import { useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,12 +33,7 @@ interface UseSchedulerActionsArgs {
   readonly showErrorToast: (key: string) => void;
 }
 
-/**
- * Returns memoized scheduler action handlers for appointment mutations.
- *
- * Each handler calls the backend, upserts the result into the store,
- * updates the selected-appointment state, and triggers a toast.
- */
+/** Returns memoized scheduler action handlers for appointment mutations. */
 export function useSchedulerActions({
   upsertAppointment,
   removeAppointment,
@@ -176,10 +162,7 @@ export function useSchedulerActions({
     showSuccessToast('scheduler.detail.updateSuccess');
   }, [applyAppointmentMutationResult, showSuccessToast, setSelectedAppointment]);
 
-  /**
-   * Looks up an appointment's current cached snapshot across the scheduler's visible view buckets.
-   * Reads the store imperatively so the lookup does not subscribe this hook to every list change.
-   */
+  /** Looks up an appointment's cached snapshot across view buckets; reads the store imperatively to avoid subscribing to every list change. */
   const findVisibleAppointment = useCallback((id: number): AppointmentDto | undefined => {
     const schedulerState = useSchedulerStore.getState();
     return (
@@ -189,11 +172,7 @@ export function useSchedulerActions({
     );
   }, []);
 
-  /**
-   * Hard-deletes an appointment, drops it from every scheduler view, and invalidates the
-   * read caches it belonged to. The snapshot is captured before the request because the
-   * cache invalidation needs the appointment's dates and it is gone from the store afterwards.
-   */
+  /** Hard-deletes an appointment and invalidates its read caches; the snapshot is captured before the request because cache invalidation needs dates no longer in the store afterward. */
   const handleDelete = useCallback(async (id: number) => {
     const target = findVisibleAppointment(id);
 

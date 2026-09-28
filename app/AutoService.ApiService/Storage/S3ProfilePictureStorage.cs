@@ -3,13 +3,8 @@ using Amazon.S3.Model;
 
 namespace AutoService.ApiService.Storage;
 
-/**
- * S3-compatible profile-picture storage backed by the AWS SDK.
- *
- * Every save writes a new GUID-suffixed key instead of overwriting the previous one,
- * so readers never race a concurrent replacement and browser/CDN caches cannot serve
- * a stale body under an unchanged URL.
- */
+/** S3-compatible profile-picture storage backed by the AWS SDK; every save writes a new GUID-suffixed
+    key, so readers never race a replacement and caches cannot serve a stale body under an unchanged URL. */
 internal sealed class S3ProfilePictureStorage(
     IAmazonS3 s3Client,
     ObjectStorageSettings settings,
@@ -18,9 +13,7 @@ internal sealed class S3ProfilePictureStorage(
     private const string ObjectKeyPrefix = "profile-pictures";
     private const string ObjectKeyExtension = ".webp";
 
-    /**
-     * Uploads the processed picture under a new key and returns that key for persistence.
-     */
+    /** Uploads the processed picture under a new key and returns that key for persistence. */
     public async Task<string> SaveAsync(
         int personId,
         byte[] content,
@@ -38,9 +31,8 @@ internal sealed class S3ProfilePictureStorage(
                 Key = objectKey,
                 InputStream = contentStream,
                 ContentType = contentType,
-                // Provider quirks, not preferences: Cloudflare R2 rejects the streaming SigV4 payload
-                // signing and the CRC32 checksum that AWSSDK.S3 v4 sends by default, while MinIO wants
-                // the defaults. Both stay configuration so switching providers needs no code change.
+                // Provider compatibility switches, not preferences (R2 vs MinIO/RustFS defaults);
+                // see ApiService/CLAUDE.md, Profile Picture Storage Anchors.
                 DisablePayloadSigning = settings.DisablePayloadSigning,
                 DisableDefaultChecksumValidation = settings.DisableDefaultChecksumValidation
             },
@@ -49,9 +41,7 @@ internal sealed class S3ProfilePictureStorage(
         return objectKey;
     }
 
-    /**
-     * Opens the stored object for streaming, mapping a missing object to null.
-     */
+    /** Opens the stored object for streaming, mapping a missing object to null. */
     public async Task<Stream?> OpenReadAsync(string objectKey, CancellationToken cancellationToken)
     {
         try
@@ -76,9 +66,7 @@ internal sealed class S3ProfilePictureStorage(
         }
     }
 
-    /**
-     * Deletes the stored object; S3 delete is idempotent, so a missing object is not an error.
-     */
+    /** Deletes the stored object; S3 delete is idempotent, so a missing object is not an error. */
     public async Task DeleteAsync(string objectKey, CancellationToken cancellationToken)
     {
         await s3Client.DeleteObjectAsync(
@@ -90,9 +78,7 @@ internal sealed class S3ProfilePictureStorage(
             cancellationToken);
     }
 
-    /**
-     * Reads object metadata only, so verification never transfers picture bodies.
-     */
+    /** Reads object metadata only, so verification never transfers picture bodies. */
     public async Task<long?> GetObjectSizeAsync(string objectKey, CancellationToken cancellationToken)
     {
         try
@@ -113,15 +99,11 @@ internal sealed class S3ProfilePictureStorage(
         }
     }
 
-    /**
-     * Builds a collision-free object key scoped to the owning person.
-     */
+    /** Builds a collision-free object key scoped to the owning person. */
     private static string BuildObjectKey(int personId)
         => $"{ObjectKeyPrefix}/{personId}/{Guid.NewGuid():N}{ObjectKeyExtension}";
 
-    /**
-     * Detects the S3 error shapes that mean the requested object does not exist.
-     */
+    /** Detects the S3 error shapes that mean the requested object does not exist. */
     private static bool IsMissingObject(AmazonS3Exception exception)
         => exception.StatusCode == System.Net.HttpStatusCode.NotFound
            || string.Equals(exception.ErrorCode, "NoSuchKey", StringComparison.Ordinal);

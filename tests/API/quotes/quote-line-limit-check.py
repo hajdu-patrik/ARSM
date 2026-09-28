@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""Checks the 200-line-per-quote cap (D24) on POST /api/quotes/{id}/lines.
-
-httpyac cannot express this: proving the cap needs 200 successful line additions before
-the assertion, and 200 request blocks would blow the suite's per-file size preference.
-The cap is a handler-level check (QuoteValidation.GetLineCountValidationError), not a
-database check constraint, because a per-row CHECK cannot see how many sibling rows
-already exist on the same quote - so nothing below the API layer enforces it and nothing
-else in the suite covers it.
-
-The check builds its own draft quote, fills it to exactly the cap, asserts the next add
-is refused with 422, and deletes the fixture afterwards so the demo seed the SQL
-integrity suite asserts against is left untouched.
-
-Prints a sanitized JSON report and never echoes credentials.
-"""
+"""Checks the 200-line-per-quote cap (D24) on POST /api/quotes/{id}/lines - not expressible in httpyac."""
 
 from __future__ import annotations
 
@@ -128,9 +114,8 @@ def run_checks(client: HttpClient, results: list[StepResult]) -> None:
         )
         version = int(reread["version"])
     except Exception:
-        # Best-effort cleanup only: asserting here would replace the real failure
-        # with whatever the delete happened to return, and the version in hand may
-        # already be stale at this point.
+        # Best-effort cleanup only: asserting here would mask the real failure with whatever
+        # the delete returns, and the version in hand may already be stale.
         client.request_json("DELETE", f"{QUOTES_PATH}/{quote_id}?version={version}")
         raise
 

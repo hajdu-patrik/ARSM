@@ -1,11 +1,4 @@
-/**
- * Company result page state: the selected period and the report behind it.
- *
- * The report is cached per period through the authenticated query cache, so
- * stepping back to a period already looked at is instant, and a month that
- * holds no quotes still renders — the API answers with zeros rather than 404.
- * @module pages/CompanyResults/hooks/useCompanyResults
- */
+/** Company result page state: period plus its report, cached per period; a quote-less month still renders since the API returns zeros, not 404. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { CompanyResultDto } from '../../../types/reporting/company-results.types';
@@ -19,11 +12,7 @@ interface UseCompanyResultsParams {
   showErrorToast: (key: string) => void;
 }
 
-/**
- * Loads the revenue report for the selected period.
- * @param params Localized error toast handler.
- * @returns The report, the loading flag, and the period selection.
- */
+/** Loads the revenue report for the selected period. */
 export function useCompanyResults({ showErrorToast }: UseCompanyResultsParams) {
   const queryClient = useQueryClient();
   const authUser = useAuthStore((state) => state.user);

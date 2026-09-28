@@ -1,11 +1,4 @@
-/**
- * Due-date state utilities for scheduler appointment cards and detail modal.
- *
- * Computes whether an appointment is overdue, due today, or has days
- * remaining, and provides the matching Tailwind tone class and i18n label.
- *
- * @module due-date
- */
+/** Due-date state utilities: overdue/remaining duration plus matching tone class and i18n label. */
 
 import { toneTextClasses } from '../../../utils/formStyles';
 
@@ -36,12 +29,7 @@ function splitDuration(absDiffMs: number): { days: number; hours: number; minute
   return { days, hours, minutes };
 }
 
-/**
- * Computes the due state for an appointment given its due datetime string.
- *
- * Returns overdue duration when past, remaining duration when future,
- * and an amber tone when less than one day remains.
- */
+/** Computes due state from a due datetime: overdue/remaining duration, amber tone under one day left. */
 export function getDueState(dueDateTime: string): DueState {
   const dueDate = new Date(dueDateTime);
   const dueTimestamp = dueDate.getTime();
@@ -79,10 +67,7 @@ export function getDueState(dueDateTime: string): DueState {
   };
 }
 
-/**
- * Converts a datetime string to the `YYYY-MM-DDThh:mm` format
- * expected by `<input type="datetime-local">`.
- */
+/** Converts a datetime string to the YYYY-MM-DDThh:mm format for `<input type="datetime-local">`. */
 export function toDatetimeLocalValue(isoValue: string): string {
   const date = new Date(isoValue);
   if (Number.isNaN(date.getTime())) {
@@ -97,15 +82,7 @@ export function toDatetimeLocalValue(isoValue: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-/**
- * Builds a UTC timestamp string for a specific calendar day and time.
- *
- * @param year   - Full calendar year (e.g. 2026).
- * @param month  - 1-based month (1 = January).
- * @param day    - Day of the month.
- * @param hour   - Hour (0-23).
- * @param minute - Minute (defaults to 0).
- */
+/** Builds a UTC timestamp string for a specific calendar day and time. */
 export function buildSelectedDayIso(year: number, month: number, day: number, hour: number, minute = 0): string {
   const date = new Date(year, month - 1, day, hour, minute, 0, 0);
   return date.toISOString();

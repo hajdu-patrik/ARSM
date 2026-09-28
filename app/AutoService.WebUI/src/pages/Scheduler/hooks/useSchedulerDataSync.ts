@@ -1,12 +1,4 @@
-/**
- * Scheduler data synchronization backed by the private browser query cache.
- *
- * The hook keeps the existing Zustand store as the UI projection layer while
- * fetching today's appointments and month windows through TanStack Query. It
- * hydrates from persisted session cache immediately, revalidates stale data in
- * the background, and refreshes only while the browser tab is visible.
- * @module useSchedulerDataSync
- */
+/** Scheduler data sync: Zustand as the UI projection layer over TanStack Query's cache; stale-time/visible-tab refresh policy per CLAUDE.md. */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -40,11 +32,7 @@ interface CalendarMonthView {
   readonly month: number;
 }
 
-/**
- * Checks whether an error represents an expired or forbidden auth session.
- * @param error Unknown error caught from an appointment request.
- * @returns {@code true} for Axios 401/403 responses.
- */
+/** True when an error represents an expired/forbidden auth session (Axios 401/403). */
 function isAuthExpiredError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) {
     return false;
@@ -53,20 +41,12 @@ function isAuthExpiredError(error: unknown): boolean {
   return error.response?.status === 401 || error.response?.status === 403;
 }
 
-/**
- * Checks whether background refresh work should run for the current document state.
- * @returns {@code true} outside the browser or when the active document is visible.
- */
+/** True when background refresh should run: outside the browser, or the document tab is visible. */
 function isDocumentVisible(): boolean {
   return typeof document === 'undefined' || document.visibilityState === 'visible';
 }
 
-/**
- * Builds the previous-current-next month window used to hydrate the scheduler calendar grid.
- * @param year Current calendar year.
- * @param month Current 1-based calendar month.
- * @returns Adjacent month views in previous, current, next order.
- */
+/** Builds the previous-current-next month window used to hydrate the scheduler calendar grid. */
 function getAdjacentMonthViews(year: number, month: number): readonly [CalendarMonthView, CalendarMonthView, CalendarMonthView] {
   const currentDate = new Date(year, month - 1, 1);
   const previousDate = new Date(year, month - 2, 1);
@@ -79,11 +59,7 @@ function getAdjacentMonthViews(year: number, month: number): readonly [CalendarM
   ];
 }
 
-/**
- * Merges appointment groups while preserving the first occurrence of each appointment id.
- * @param appointmentGroups Appointment collections from adjacent scheduler windows.
- * @returns A de-duplicated appointment collection.
- */
+/** Merges appointment groups, keeping the first occurrence of each appointment id. */
 function mergeUniqueAppointments(...appointmentGroups: readonly AppointmentDto[][]): AppointmentDto[] {
   const merged = new Map<number, AppointmentDto>();
 
@@ -98,13 +74,7 @@ function mergeUniqueAppointments(...appointmentGroups: readonly AppointmentDto[]
   return Array.from(merged.values());
 }
 
-/**
- * Fetches today's appointments through TanStack Query using the shared scheduler cache policy.
- * @param queryClient Shared query client that owns the browser cache.
- * @param authScope Authenticated query scope for the current user.
- * @param forceRefresh Whether to invalidate the existing today query before fetching.
- * @returns Today's appointment read model.
- */
+/** Fetches today's appointments through TanStack Query using the shared scheduler cache policy. */
 async function fetchTodayAppointments(
   queryClient: QueryClient,
   authScope: AuthQueryScope,
@@ -124,14 +94,7 @@ async function fetchTodayAppointments(
   });
 }
 
-/**
- * Fetches one scheduler month through TanStack Query using the shared month cache policy.
- * @param queryClient Shared query client that owns the browser cache.
- * @param authScope Authenticated query scope for the current user.
- * @param view Month view to fetch.
- * @param forceRefresh Whether to invalidate the existing month query before fetching.
- * @returns Appointment read model for the requested month.
- */
+/** Fetches one scheduler month through TanStack Query using the shared month cache policy. */
 async function fetchMonthAppointments(
   queryClient: QueryClient,
   authScope: AuthQueryScope,
@@ -152,13 +115,7 @@ async function fetchMonthAppointments(
   });
 }
 
-/**
- * Reads a cached scheduler month without triggering a network request.
- * @param queryClient Shared query client that owns the browser cache.
- * @param authScope Authenticated query scope for the current user.
- * @param view Month view to read.
- * @returns Cached appointment data when present.
- */
+/** Reads a cached scheduler month without triggering a network request. */
 function readCachedMonthAppointments(
   queryClient: QueryClient,
   authScope: AuthQueryScope,
@@ -167,10 +124,7 @@ function readCachedMonthAppointments(
   return queryClient.getQueryData<AppointmentDto[]>(queryKeys.scheduler.month(authScope, view.year, view.month));
 }
 
-/**
- * Synchronizes scheduler store projections from private query-cache reads and background refreshes.
- * @param args Calendar view and toast dependencies for scheduler data loading.
- */
+/** Synchronizes scheduler store projections from private query-cache reads and background refreshes. */
 export function useSchedulerDataSync({
   calendarYear,
   calendarMonth,
@@ -357,12 +311,7 @@ export function useSchedulerDataSync({
   ]);
 
   useEffect(() => {
-    /**
-     * Fetches and applies one refresh pass. A live-update trigger that arrives while a pass is
-     * already running only sets {@link refreshRequestedWhileRunningRef} (see below) instead of
-     * running concurrently, so its data is never dropped - the outer loop runs one more pass
-     * once the current one finishes.
-     */
+    /** Runs one refresh pass; a trigger that arrives mid-pass only flags a rerun (see below) instead of overlapping, so no live update is dropped. */
     const runRefreshPass = async (currentAuthScope: AuthQueryScope) => {
       const requestedView = currentMonthViewRef.current;
       const todayRequestId = nextTodayDataRequestId();

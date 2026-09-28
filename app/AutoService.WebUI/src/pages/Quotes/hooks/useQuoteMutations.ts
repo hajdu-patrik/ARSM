@@ -1,12 +1,4 @@
-/**
- * Quote mutation hook.
- *
- * Every write goes through here: draft creation, header edit, line add/edit/
- * remove, status change, validity extension, and deletion. Each server call
- * answers with the full quote, so the editor adopts the response instead of
- * refetching, and the list is reloaded whenever a row could have changed.
- * @module pages/Quotes/hooks/useQuoteMutations
- */
+/** Quote mutation hook: every write (create/edit/status/delete) lands here; each call returns the full quote so the editor adopts it instead of refetching. */
 import { useCallback, useState } from 'react';
 import { isAxiosError } from 'axios';
 import {
@@ -52,11 +44,7 @@ interface UseQuoteMutationsParams {
   reloadQuotes: (force?: boolean) => Promise<void>;
 }
 
-/**
- * Wires the quote write operations to the editor state and the list reload.
- * @param params Toast handlers, the editor state, and the list reloader.
- * @returns Mutation actions, busy flags, and delete-confirmation state.
- */
+/** Wires the quote write operations to the editor state and the list reload. */
 export function useQuoteMutations({
   showSuccessToast,
   showErrorToast,
@@ -72,10 +60,7 @@ export function useQuoteMutations({
 
   const { applyQuote, cancelLineEditing, close: closeEditor } = editor;
 
-  /**
-   * Reloads the open quote after a stale-version conflict, so the next
-   * attempt carries the version the server actually holds.
-   */
+  /** Reloads the open quote after a stale-version conflict, so the next attempt carries the current server version. */
   const refreshOpenQuote = useCallback(async (quoteId: number) => {
     try {
       applyQuote(await quoteService.getQuote(quoteId));
@@ -276,11 +261,7 @@ export function useQuoteMutations({
     }
   }, [adoptMutationResult, editor.quote, handleMutationError]);
 
-  /**
-   * Downloads the quote PDF. Every status is printable, so this is offered on
-   * a draft too; the error branch is a single toast because a failed binary
-   * response carries a blob body, not a validation detail to map.
-   */
+  /** Downloads the quote PDF (every status is printable); errors are a single toast since a failed binary response has no validation detail to map. */
   const handleDownloadPdf = useCallback(async (quote: { id: number; quoteNumber: string }) => {
     setIsDownloadingPdf(true);
 

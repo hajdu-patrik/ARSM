@@ -15,10 +15,7 @@ interface QueryCacheProviderProps {
   readonly children: ReactNode;
 }
 
-/**
- * Safely resolves session storage for browsers that block storage access in privacy modes.
- * @returns Session storage when available, otherwise {@code null}.
- */
+/** Safely resolves session storage for browsers that block storage access in privacy modes. */
 function getSessionStorage(): Storage | null {
   try {
     return globalThis.sessionStorage ?? null;
@@ -27,12 +24,7 @@ function getSessionStorage(): Storage | null {
   }
 }
 
-/**
- * Creates a TanStack Query persister backed by the provided browser storage bucket.
- * @param storage Storage implementation used for persisted query data.
- * @param key Storage key for the serialized persisted client.
- * @returns A best-effort persister that never blocks live API reads on storage failures.
- */
+/** Creates a TanStack Query persister that never blocks live API reads on storage failures. */
 function createStoragePersister(storage: Storage, key: string): Persister {
   return {
     persistClient: (persistedClient: PersistedClient) => {
@@ -84,11 +76,7 @@ const sessionStoragePersister = (() => {
   return createStoragePersister(storage, PERSISTED_QUERY_CACHE_KEY);
 })();
 
-/**
- * Provides the shared query client and enables persisted private query data when session storage is usable.
- * @param props Provider props containing the React subtree.
- * @returns The query-provider wrapper for the app root.
- */
+/** Provides the shared query client, and persists private query data when session storage is usable. */
 export function QueryCacheProvider({ children }: QueryCacheProviderProps) {
   if (!sessionStoragePersister) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

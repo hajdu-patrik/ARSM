@@ -1,11 +1,5 @@
-/**
- * Shared quote helpers for the mock API: amount math, response projections,
- * list ordering, and the optimistic-concurrency check.
- *
- * The mock recomputes line amounts and quote totals the way the server does,
- * and bumps the version on every write, so a total read off the screen in a
- * test is a server-shaped number rather than something the UI derived.
- */
+/** Shared quote mock helpers: amount math, response projections, list ordering, concurrency check;
+ * every write recomputes totals and bumps the version (tests/CLAUDE.md Coverage Anchors). */
 import type { Route } from '@playwright/test';
 import type {
   QuoteDetailDto,
@@ -80,12 +74,8 @@ export function sortedQuotes(state: MockApiState): QuoteDetailDto[] {
   );
 }
 
-/**
- * Answers a missing or stale concurrency version the way the API does: 422
- * for a missing one, and the machine-readable 409 conflict body for a stale
- * one.
- * @returns True when the request was answered and the caller must stop.
- */
+/** Answers a missing or stale concurrency version the way the API does: 422 for missing,
+ * 409 (machine-readable conflict body) for stale. */
 export async function rejectQuoteVersion(route: Route, quote: QuoteDetailDto, version: number): Promise<boolean> {
   if (!version) {
     await fulfillJson(route, { detail: 'Version is required.' }, 422);

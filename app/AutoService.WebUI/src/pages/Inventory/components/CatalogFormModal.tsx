@@ -1,11 +1,4 @@
-/**
- * Generic part/labor-type create/edit modal: the identifier is the
- * uppercase code/number, the rate is the net input, and the gross
- * amount is a read-only live preview mirroring the server formula.
- * Driven by a `CatalogFormModalConfig` so the Parts and Labor types
- * forms share one component instead of two near-identical ones.
- * @module pages/Inventory/components/CatalogFormModal
- */
+/** Generic part/labor-type create/edit modal (uppercase identifier, net rate, live gross preview) driven by a `CatalogFormModalConfig`. */
 import type { Dispatch, SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';

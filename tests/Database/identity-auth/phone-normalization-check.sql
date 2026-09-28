@@ -1,8 +1,5 @@
--- 5. PHONE NORMALIZATION CHECK (mechanics)
---    Expected: 0 rows.
---    Canonical format: E.164 (+{countryCode}{nationalNumber})
---    Allowed country codes: European set aligned with backend ContactNormalization.
--- ------------------------------------------------------------
+-- 5. PHONE NORMALIZATION CHECK (mechanics) — Expected: 0 rows. Canonical format: E.164
+--    (+{countryCode}{nationalNumber}); allowed codes match the backend ContactNormalization European set.
 SELECT p."Id" AS mechanic_id,
        p."PhoneNumber"
 FROM people p

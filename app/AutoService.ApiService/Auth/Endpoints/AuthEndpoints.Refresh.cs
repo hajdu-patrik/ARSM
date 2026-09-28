@@ -11,23 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/**
- * Partial class containing the token-refresh endpoint handler and its supporting helpers.
- */
+/** Partial class containing the token-refresh endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
-    /**
-     * Handles POST /api/auth/refresh.
-     * Validates refresh token state, rotates token, and reissues auth cookies.
-     *
-     * @param httpContext Current request context used to read/write cookies.
-     * @param db Database context.
-     * @param userManager Identity user manager.
-     * @param tokenIssuer JWT issuer service.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return 204 No Content when refresh succeeds, or 401 when refresh cannot proceed.
-     */
+    /** Handles POST /api/auth/refresh. Validates refresh token state, rotates token, and reissues auth cookies. */
     private static async Task<IResult> RefreshAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -127,14 +114,7 @@ public static partial class AuthEndpoints
         return Results.NoContent();
     }
 
-    /**
-     * Revokes descendant refresh tokens that were issued by token replacement chain.
-     *
-     * @param rootToken Starting token in rotation chain.
-     * @param nowUtc Revocation timestamp.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     */
+    /** Revokes descendant refresh tokens that were issued by token replacement chain. */
     private static async Task RevokeRefreshTokenDescendantsAsync(
         RefreshToken rootToken,
         DateTime nowUtc,

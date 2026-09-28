@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# CUSTOMERS - LIST AND LOOKUP
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
@@ -15,9 +11,6 @@
 @UnknownCustomerPlate = ZZZ-{{RunId}}
 @KnownCustomerName = Anna
 @FixtureCustomerEmail = list.lookup.{{RunId}}@example.test
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -38,10 +31,6 @@ Content-Type: application/json
 ?? status == 200
 
 ###
-
-# ─────────────────────────────────────────────────────────────
-#  LIST CUSTOMERS
-# ─────────────────────────────────────────────────────────────
 
 ### [Positive][Customers] List all customers (200 expected, includes vehicleLicensePlates)
 GET {{AutoService_ApiService_HostAddress}}/api/customers
@@ -72,9 +61,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers
 ###
 
 ### [Positive][Customers] Lookup customer by email for scheduler flow (200 expected)
-# Expected success semantics:
-# - 200 OK with scheduler lookup payload fields: id, firstName, middleName, lastName, email, phoneNumber, vehicles.
-# - For real customer emails, email should be the normalized customer email and vehicles should list the customers vehicles.
+# 200 OK with scheduler lookup fields (id, firstName, middleName, lastName, email, phoneNumber, vehicles);
+# for a real customer email, email is normalized and vehicles lists that customer's vehicles.
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
 
 ?? status == 200
@@ -89,10 +77,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20{{Kno
 ###
 
 ### [Positive][Customers] Lookup customer by mechanic email when linked customer may not exist yet (200 expected)
-# Expected success semantics:
-# - 200 OK (mechanic email is a valid scheduler lookup target).
-# - If no linked customer exists yet, response resolves to mechanic identity (email={{NonAdminEmail}}) with empty vehicles.
-# - If linked customer exists, response resolves to linked customer payload (typically mechanic-owner-{id}@customers.arsm.local) with linked vehicles.
+# 200 OK: a mechanic email is a valid lookup target too, resolving to the mechanic identity with empty
+# vehicles, or to the linked customer payload (mechanic-owner-{id}@customers.arsm.local) if one exists.
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{NonAdminEmail}}
 
 ?? status == 200
@@ -114,9 +100,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=unknown.
 ###
 
 ### [Positive][Customers] Lookup customer by vehicle license plate for scheduler flow (200 expected)
-# Expected success semantics:
-# - 200 OK with scheduler lookup payload fields and matchedVehicleId.
-# - vehicles should include vin, enginePowerKw, and drivetrainType for the matched customer.
+# 200 OK with scheduler lookup fields plus matchedVehicleId; vehicles include vin, enginePowerKw, and
+# drivetrainType for the matched customer.
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate={{KnownCustomerPlate}}
 
 ?? status == 200
@@ -175,10 +160,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers
 ?? status == 401
 
 ###
-
-# ─────────────────────────────────────────────────────────────
-#  GET CUSTOMER BY ID
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Customers] Login as admin for single-customer queries (200 expected)
 # @name adminLogin

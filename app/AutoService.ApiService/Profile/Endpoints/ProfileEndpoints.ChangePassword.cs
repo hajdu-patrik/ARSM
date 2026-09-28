@@ -11,20 +11,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /**
-     * Handles the change-password mutation: validates the new password pair,
-     * verifies the current password, revokes the caller's existing refresh
-     * tokens and access token, and issues a fresh token pair.
-     *
-     * @param request Current/new/confirm password payload.
-     * @param httpContext Current request context used for cookies and token revocation.
-     * @param userManager Identity user manager.
-     * @param db Database context.
-     * @param tokenIssuer JWT issuer service used to mint the replacement access token.
-     * @param tokenDenylistService Service used to revoke the caller's current access token.
-     * @param cancellationToken Request cancellation token.
-     * @return 200 OK on success, 404 if the linked identity/mechanic is missing, or a validation problem.
-     */
+    /** Handles the change-password mutation: validates the new password pair, verifies the current password, revokes the caller's existing refresh tokens and access token, and issues a fresh token pair. */
     private static async Task<IResult> ChangePasswordAsync(
         ChangePasswordRequest request,
         HttpContext httpContext,

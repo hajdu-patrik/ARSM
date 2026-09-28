@@ -1,9 +1,4 @@
-/**
- * Combined Parts and Labor types mutation hook for the Inventory page.
- * Composes the independent part and labor-type mutation hooks, mirroring
- * how `useVehicleMutations` composes its form/delete sub-hooks.
- * @module pages/Inventory/hooks/useCatalogMutations
- */
+/** Combined Parts/Labor types mutation hook: composes the independent sub-hooks, like `useVehicleMutations`. */
 import type { Dispatch, SetStateAction } from 'react';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import type { CatalogMutationToastHandlers } from './mutation-toast.types';
@@ -18,11 +13,7 @@ interface UseCatalogMutationsParams extends CatalogMutationToastHandlers {
   reloadLaborTypes: (force?: boolean) => Promise<void>;
 }
 
-/**
- * Encapsulates part and labor-type create/update/delete modal state and mutation side effects.
- * @param params Shared list setters, list reloaders, and localized toast handlers.
- * @returns Combined modal state and actions for both catalog entities.
- */
+/** Encapsulates part and labor-type create/update/delete modal state and mutation side effects. */
 export function useCatalogMutations({
   showSuccessToast,
   showErrorToast,

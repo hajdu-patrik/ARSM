@@ -1,9 +1,4 @@
-/**
- * Shared mechanic avatar renderer used across scheduler components.
- * Shows a profile picture when available (with live SSE update support)
- * or falls back to a deterministic initials avatar colored by mechanic ID.
- * @module MechanicAvatar
- */
+/** Mechanic avatar: profile picture with live SSE updates, falling back to a deterministic initials avatar. */
 import { memo, useEffect, useMemo, useState } from 'react';
 import { profileService } from '../../../../services/profile/profile.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';

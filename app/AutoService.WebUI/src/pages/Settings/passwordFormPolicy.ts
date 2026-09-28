@@ -1,7 +1,4 @@
-/**
- * Settings password form policy helpers.
- * @module pages/Settings/passwordFormPolicy
- */
+/** Settings password form policy helpers. */
 
 const CREDENTIALS_DISABLED_REASON_KEYS = {
   submitting: 'settings.changingCredentials',

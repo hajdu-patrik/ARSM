@@ -4,19 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Quotes;
 
-/**
- * Generates unique, year-scoped quote numbers (ARSM-{yyyy}-{0000}, D13) and
- * persists a new quote under that number, retrying if a concurrent insert
- * wins the same candidate number first.
- */
+/** Generates unique, year-scoped quote numbers (ARSM-{yyyy}-{0000}, D13), retrying on a concurrent-insert collision (CLAUDE.md Quote Anchors). */
 internal sealed class QuoteNumberGenerator
 {
-    // A unique index on Quote.QuoteNumber is the source of truth: the
-    // sequence lookup in BuildCandidateNumberAsync only reduces collisions,
-    // it cannot prevent a genuine race between two concurrent inserts that
-    // compute the same next sequence value at the same time. Five attempts
-    // absorbs that race without silently retrying forever if the repeated
-    // failure is actually something else.
+    // The unique index on QuoteNumber is the real source of truth; this sequence lookup
+    // only reduces collisions. Five attempts bounds the race without retrying forever.
     private const int MaxAttempts = 5;
 
     private readonly AutoServiceDbContext dbContext;
@@ -26,16 +18,8 @@ internal sealed class QuoteNumberGenerator
         this.dbContext = dbContext;
     }
 
-    /**
-     * Assigns a freshly generated quote number to the given quote, adds it
-     * to the context, and saves it. Retries with a new candidate number, up
-     * to MaxAttempts times, if a concurrent insert already claimed the
-     * previous candidate.
-     *
-     * @param quote The quote to persist; its QuoteNumber is overwritten by this method.
-     * @param cancellationToken Cancellation token for the async database operations.
-     * @return The same quote instance, with QuoteNumber assigned and persisted.
-     */
+    /** Assigns a freshly generated quote number, adds it to the context, and saves it; retries
+     * with a new candidate up to MaxAttempts times if a concurrent insert claimed the previous one. */
     internal async Task<Quote> CreateAsync(Quote quote, CancellationToken cancellationToken)
     {
         dbContext.Quotes.Add(quote);
@@ -51,37 +35,23 @@ internal sealed class QuoteNumberGenerator
             }
             catch (DbUpdateException ex) when (UniqueConstraintDetection.IsUniqueConstraintViolation(ex) && attempt < MaxAttempts)
             {
-                // Another concurrent insert claimed this candidate number
-                // first; loop again and compute a fresh one. The quote
-                // entity stays tracked as Added, so the next SaveChangesAsync
-                // call re-attempts the insert with the new QuoteNumber.
+                // Another insert claimed this candidate; the quote stays tracked as Added, so the
+                // next SaveChangesAsync retry re-attempts the insert with a fresh QuoteNumber.
             }
         }
 
-        // Unreachable: the loop above always either returns on success or
-        // rethrows the DbUpdateException once attempt reaches MaxAttempts
-        // (the exception filter above stops catching at that point). This
-        // satisfies the compiler's need for a return on every code path.
+        // Unreachable: the loop always returns on success or rethrows once attempt reaches
+        // MaxAttempts; this only satisfies the compiler's need for a return on every path.
         throw new InvalidOperationException($"Failed to generate a unique quote number after {MaxAttempts} attempts.");
     }
 
-    /**
-     * Computes the next sequence number for the current UTC year and
-     * formats it as ARSM-{yyyy}-{0000}. The sequence restarts every year.
-     *
-     * @param cancellationToken Cancellation token for the async database query.
-     * @return The candidate quote number.
-     */
+    /** Computes the next sequence number for the current UTC year and formats it as ARSM-{yyyy}-{0000}; the sequence restarts every year. */
     private async Task<string> BuildCandidateNumberAsync(CancellationToken cancellationToken)
     {
         var yearPrefix = $"ARSM-{DateTime.UtcNow.Year}-";
 
-        // Zero-padded to 4 digits, so lexicographic order equals numeric
-        // order: ordering by QuoteNumber descending and taking the first
-        // row is the same answer as loading every number and taking the
-        // max in C#, in a single row instead of the whole year. The unique
-        // index on QuoteNumber remains the real source of truth against
-        // races; this only reduces how often two concurrent inserts collide.
+        // Zero-padded to 4 digits so lexicographic order equals numeric order: ordering by
+        // QuoteNumber desc and taking the first row is the max, in one row instead of the whole year.
         var highestQuoteNumber = await dbContext.Quotes
             .AsNoTracking()
             .Where(q => q.QuoteNumber.StartsWith(yearPrefix))

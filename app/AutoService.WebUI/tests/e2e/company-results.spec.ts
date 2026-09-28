@@ -39,9 +39,8 @@ test.describe('Company results', () => {
     await gotoReport(page);
     await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
 
-    // Nothing is accepted yet. The live sent quote is pending (22,860 gross),
-    // the one past its validity is expired (7,620), and the draft is in
-    // neither row - only in the count line at the bottom.
+    // Nothing is accepted yet: the live sent quote is pending (22,860), the expired one is 7,620,
+    // and the draft counts only at the bottom, not in any money row.
     await expect(page.getByTestId('company-results-accepted-gross')).toHaveText('HUF 0');
     await expect(page.getByTestId('company-results-pending')).toContainText(/22,860/);
     await expect(page.getByTestId('company-results-expired')).toContainText(/7,620/);

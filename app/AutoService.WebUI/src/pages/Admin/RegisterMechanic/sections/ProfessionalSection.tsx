@@ -1,9 +1,4 @@
-/**
- * Professional details section for mechanic registration.
- *
- * Collects specialization and expertise selections.
- * @module pages/Admin/RegisterMechanic/sections/ProfessionalSection
- */
+/** Professional details section for mechanic registration: specialization and expertise selections. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

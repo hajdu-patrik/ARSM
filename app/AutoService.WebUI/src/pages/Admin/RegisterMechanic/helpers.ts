@@ -1,7 +1,4 @@
-/**
- * Request-builder and form helper utilities for mechanic registration.
- * @module pages/Admin/RegisterMechanic/helpers
- */
+/** Request-builder and form helper utilities for mechanic registration. */
 
 import type { MechanicListItem, RegisterMechanicRequest } from '../../../services/admin/admin.service';
 import type { FieldErrors, RegisterMechanicFormValues } from './types';

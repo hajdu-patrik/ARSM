@@ -1,11 +1,5 @@
-/**
- * Fixture data for the Quotes page.
- *
- * Kept in its own file next to `test-data.catalog.fixtures.ts`, for the same
- * reason: `test-data.fixtures.ts` is already at the split limit, and the
- * quote vertical has its own state (quotes plus their id sequences) that
- * `test-data.ts` merges in.
- */
+/** Fixture data for the Quotes page; kept in its own file next to `test-data.catalog.fixtures.ts`
+ * for the same reason (`test-data.fixtures.ts` is at the split limit) - `test-data.ts` merges it in. */
 import type { QuoteDetailDto } from '../../../src/types/quotes/quotes.types';
 import {
   MOCK_LABOR_TYPE_IDS,
@@ -27,18 +21,14 @@ export interface QuoteFixtureState {
 /** Far-future deadline, so a sent fixture never expires while the suite runs. */
 const FUTURE_VALID_UNTIL = '2099-12-31T23:59:59.000Z';
 
-/**
- * Past deadline, so the expired fixture always exercises the computed expiry
- * flag. It stays inside the reporting year picker's range on purpose: a
- * quote the report cannot reach is a quote the report cannot be tested on.
- */
+/** Past deadline, so the expired fixture always exercises the computed expiry flag; stays inside
+ * the reporting year picker's range on purpose, since a quote the report can't reach can't be tested. */
 const PAST_VALID_UNTIL = '2026-02-20T23:59:59.000Z';
 
 const gaborMechanic = { id: MOCK_MECHANIC_IDS.gabor, fullName: 'Gabor Kovacs' };
 
-// Amounts follow the server formula exactly (net rounds to 2 decimals, VAT is
-// taken from the net amount, gross is their sum), so a test can tell a
-// server-rendered figure from a locally recomputed one.
+// Amounts follow the server formula exactly (net rounds to 2 decimals, VAT from net, gross is their
+// sum), so a test can tell a server-rendered figure from a locally recomputed one.
 const draftQuote: QuoteDetailDto = {
   id: MOCK_QUOTE_IDS.draftTimingBelt,
   quoteNumber: 'ARSM-2026-0001',

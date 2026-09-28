@@ -1,7 +1,4 @@
-/**
- * Password field autofill and lock protection hooks for Settings forms.
- * @module pages/Settings/hooks/usePasswordFieldProtection
- */
+/** Password field autofill and lock protection hooks for Settings forms. */
 
 import { useEffect, type Dispatch, type SetStateAction } from 'react';
 

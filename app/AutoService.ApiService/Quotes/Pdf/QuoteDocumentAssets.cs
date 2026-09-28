@@ -3,16 +3,8 @@ using QuestPDF.Drawing;
 
 namespace AutoService.ApiService.Quotes.Pdf;
 
-/**
- * The fonts and the logo the quote PDF draws with, loaded from the assembly
- * rather than from disk.
- *
- * Both are embedded resources on purpose. A slim Linux container usually ships
- * no fonts and no fontconfig, and QuestPDF would then either substitute a face
- * without the Hungarian letters or throw; the docs folder that holds the logo
- * is not part of a published image either. Embedding removes both failure
- * modes at build time.
- */
+/** Fonts and logo the quote PDF draws with, loaded from the assembly (embedded resources), not disk:
+ * a slim container ships no fonts/fontconfig and the logo folder isn't in a published image either. */
 internal static class QuoteDocumentAssets
 {
     /** Font family every text style in the document names. */
@@ -27,21 +19,14 @@ internal static class QuoteDocumentAssets
     /** The black logo variant, because the document always prints on white. */
     internal static byte[] Logo => LazyLogo.Value;
 
-    /**
-     * Registers the embedded font faces with QuestPDF. Called once from the
-     * composition root, next to the license registration.
-     */
+    /** Registers the embedded font faces with QuestPDF; called once from the composition root, next to the license registration. */
     internal static void RegisterFonts()
     {
         FontManager.RegisterFontFromEmbeddedResource(RegularFontResource);
         FontManager.RegisterFontFromEmbeddedResource(BoldFontResource);
     }
 
-    /**
-     * Reads the embedded logo bytes.
-     *
-     * @return The logo image content.
-     */
+    /** Reads the embedded logo bytes. */
     private static byte[] LoadLogo()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(LogoResource)

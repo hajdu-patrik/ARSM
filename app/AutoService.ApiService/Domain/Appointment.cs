@@ -4,11 +4,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Service appointment entity linked to a vehicle and one or more mechanics.
- * The many-to-many relationship with Mechanic is persisted via the
- * `appointmentmechanics` join table managed by EF Core.
- */
+/** Service appointment linked to a vehicle and mechanics; the many-to-many with Mechanic persists via EF Core's `appointmentmechanics` join table. */
 public class Appointment
 {
     [Key]

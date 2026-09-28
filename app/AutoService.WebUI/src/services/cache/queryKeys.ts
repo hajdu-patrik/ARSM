@@ -17,11 +17,7 @@ export type AuthQueryScope = readonly [
   'admin' | 'staff',
 ];
 
-/**
- * Builds the authenticated query scope for the current user.
- * @param user Current auth user from the auth store.
- * @returns A private query scope, or {@code null} when no user is authenticated.
- */
+/** Builds the authenticated query scope for the current user, or null when unauthenticated. */
 export function getAuthQueryScope(user: AuthUser | null): AuthQueryScope | null {
   if (!user) {
     return null;
@@ -30,11 +26,7 @@ export function getAuthQueryScope(user: AuthUser | null): AuthQueryScope | null 
   return [QUERY_KEY_ROOT, QUERY_KEY_SCOPE, QUERY_KEY_VERSION, 'person', user.personId, user.isAdmin ? 'admin' : 'staff'];
 }
 
-/**
- * Checks whether a query key belongs to the persisted private ARSM namespace.
- * @param queryKey TanStack Query key to inspect before dehydration.
- * @returns {@code true} when the query is safe to persist in the private cache.
- */
+/** Checks whether a query key belongs to the persisted private ARSM namespace. */
 export function isPrivateArsmQueryKey(queryKey: QueryKey): boolean {
   return queryKey[0] === QUERY_KEY_ROOT
     && queryKey[1] === QUERY_KEY_SCOPE

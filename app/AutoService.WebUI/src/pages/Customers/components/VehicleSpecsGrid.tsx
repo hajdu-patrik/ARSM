@@ -1,7 +1,4 @@
-/**
- * Shared vehicle specification grid for Customers vehicle rows and details panels.
- * @module pages/Customers/components/VehicleSpecsGrid
- */
+/** Shared vehicle specification grid for Customers vehicle rows and details panels. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';

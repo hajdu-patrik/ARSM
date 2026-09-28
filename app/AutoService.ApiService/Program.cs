@@ -37,39 +37,18 @@ using System.Threading.RateLimiting;
 using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 
-/**
- * API service entrypoint.
- *
- * This top-level program configures the full backend runtime:
- * - configuration resolution (database/JWT/CORS/forwarded headers)
- * - service registrations (EF Core, Identity, auth, rate limits, CORS, SSE broadcaster)
- * - middleware pipeline ordering
- * - endpoint mapping for all API areas
- *
- * Operational notes:
- * - appsettings.Local.json is optional and intended for local overrides only.
- * - startup fails fast when critical security configuration is missing or invalid.
- * - demo data seeding/migrations are executed during startup via EnsureSeededAsync().
- */
+/** API service entrypoint: resolves config, registers services, orders middleware, and maps
+    endpoints; fails fast on invalid security config (appsettings.Local.json is local-only). */
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-/**
- * Database readiness health check, registered here rather than in ServiceDefaults so
- * the shared defaults stay Npgsql-free. AddHealthChecks() composes with ServiceDefaults'
- * own "self"/"live" registration instead of replacing it. It intentionally carries no
- * "live" tag, so /health (all checks) reflects real DB connectivity while /alive (only
- * "live"-tagged checks) stays process-only.
- */
+/** DB readiness check, added here (not ServiceDefaults) to keep those Npgsql-free; carries no
+    "live" tag, so /alive stays process-only while /health also reflects DB connectivity. */
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AutoServiceDbContext>();
 
-/**
- * EF Core/Npgsql command spans in OpenTelemetry traces. Registered here (not in
- * ServiceDefaults) to keep the shared defaults generic and free of a Postgres-specific
- * dependency.
- */
+/** EF Core/Npgsql command spans in OpenTelemetry traces. Registered here (not in ServiceDefaults) to keep the shared defaults generic and free of a Postgres-specific dependency. */
 builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddNpgsql());
 
 // Optional local overrides for running EF CLI/API outside AppHost.
@@ -84,14 +63,8 @@ builder.Services.AddProblemDetails();
 
 var connectionString = ConnectionStringResolver.Resolve(builder.Configuration);
 
-/**
- * Quote PDF runtime setup, resolved in the composition root rather than in the
- * handler. The company profile fails fast when a field is missing (D26), the
- * QuestPDF license has to be registered before the first render or every call
- * throws, and the embedded fonts are registered once: system fonts are turned
- * off so a missing Hungarian glyph surfaces as a startup-time font error
- * instead of an empty box on a customer's paper.
- */
+/** Quote PDF runtime setup, resolved here (not the handler); see Quote Anchors in
+    ApiService/CLAUDE.md (QuestPDF license, fonts, fail-fast fields). */
 var companyProfile = CompanyProfileResolver.Resolve(builder.Configuration);
 builder.Services.AddSingleton(companyProfile);
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -103,12 +76,7 @@ builder.Services.AddDbContext<AutoServiceDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
-/**
- * Forwarded headers trust policy configuration.
- *
- * @param options Mutable forwarded headers options instance.
- * @return Configuration side effects are applied directly to options.
- */
+/** Forwarded headers trust policy configuration. */
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -148,11 +116,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // Identity and authentication configuration.
 var jwtSecret = JwtSettingsResolver.ResolveSecret(builder.Configuration);
 
-/**
- * JwtSettings:ExpirationMinutes drives both the access-token cookie lifetime and the
- * JWT exp claim. It is set exactly once here, before any request is served; every call
- * site in the auth and profile endpoints reads the read-only AuthEndpoints.AccessTokenTtl.
- */
+/** JwtSettings:ExpirationMinutes drives both the access-token cookie lifetime and the JWT exp claim. It is set exactly once here, before any request is served; every call site in the auth and profile endpoints reads the read-only AuthEndpoints.AccessTokenTtl. */
 var jwtExpirationMinutes = JwtSettingsResolver.ResolveExpirationMinutes(builder.Configuration);
 AuthEndpoints.ConfigureAccessTokenTtl(jwtExpirationMinutes);
 
@@ -185,15 +149,8 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        /**
-         * JWT bearer event hooks.
-         *
-         * OnMessageReceived:
-         * - reads access token from HttpOnly cookie when Authorization header is missing.
-         *
-         * OnTokenValidated:
-         * - checks denylist for JTI revocation and fails auth if token is revoked.
-         */
+        /** JWT bearer events: reads the access token from the cookie when the Authorization header is
+            missing, and fails auth when the token's JTI is denylisted (revocation; see docs/PROJECT-OVERVIEW.md). */
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -244,14 +201,8 @@ builder.Services
 
 builder.Services.AddRateLimiter(options =>
 {
-    /**
-     * Rate-limit rejection behavior.
-     *
-     * For login route only, this callback additionally:
-     * - activates temporary login-ban window,
-     * - sets Retry-After response header,
-     * - returns stable JSON error payload.
-     */
+    /** Rate-limit rejection: for the login route only, this also bans the client, sets
+        Retry-After, and returns a stable JSON error payload. */
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.OnRejected = async (context, cancellationToken) =>
@@ -276,18 +227,8 @@ builder.Services.AddRateLimiter(options =>
             cancellationToken);
     };
 
-    /**
-     * AuthLoginAttempts partitioning rationale.
-     *
-     * Login attempts are partitioned per client (same key as LoginBanMiddleware's ban
-     * tracking) rather than pooled into one global bucket. A global bucket lets a single
-     * noisy client exhaust the shared quota and lock every other user out of logging in.
-     * The permit limit is raised only under IsDevelopment(): the canonical local test
-     * suite logs in from one machine well over a hundred times per run (every .http file
-     * provisions its own session, because httpyac's file order is not stable) and would
-     * otherwise trip the ceiling and the 3-minute ban; production keeps the original
-     * 10-per-minute-per-client limit.
-     */
+    /** Partitioned per client (not a global bucket) so one noisy client cannot lock out every other
+        user; the Development-only higher limit is for the local test suite (rate limits: ApiService/CLAUDE.md). */
     var authLoginPermitLimit = builder.Environment.IsDevelopment() ? 300 : 10;
 
     options.AddPolicy("AuthLoginAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
@@ -300,11 +241,7 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0
         }));
 
-    /**
-     * AuthRefreshAttempts partitioning rationale: same as AuthLoginAttempts above,
-     * partitioned per client so one noisy client cannot exhaust the shared refresh quota
-     * for every other signed-in user.
-     */
+    /** AuthRefreshAttempts partitioning rationale: same as AuthLoginAttempts above, partitioned per client so one noisy client cannot exhaust the shared refresh quota for every other signed-in user. */
     options.AddPolicy("AuthRefreshAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
         LoginBanMiddleware.ResolveClientKey(context),
         _ => new FixedWindowRateLimiterOptions
@@ -316,15 +253,8 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 
-/**
- * Response compression (Brotli then Gzip, HTTPS included, "Fastest" level). BREACH
- * mitigation rationale: BREACH needs attacker-controlled input and a secret reflected
- * together in the same compressed body. This API never puts secrets in a response body -
- * access/refresh tokens travel exclusively as HttpOnly cookies in request/response
- * headers, never in JSON payloads - so compressing bodies does not create a BREACH
- * oracle here. text/event-stream (the SSE live-update endpoints) is not in the default
- * MIME-type allow list, so those responses stay uncompressed and unbuffered.
- */
+/** Brotli/Gzip response compression (HTTPS included); safe from BREACH because tokens travel only
+    as HttpOnly cookies, never in JSON bodies (see docs/PROJECT-OVERVIEW.md). SSE stays uncompressed. */
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -370,16 +300,8 @@ if (ProfilePictureStorageMigrator.IsRequested(args))
     return await ProfilePictureStorageMigrator.RunAsync(app.Services, CancellationToken.None);
 }
 
-/**
- * AllowedHosts validation for production safety.
- *
- * Outside Development, verifies that AllowedHosts configuration is:
- * - explicitly set (not null or empty),
- * - does not contain wildcard (*),
- * - does not contain localhost.
- *
- * Fails fast at startup to prevent host-header injection attacks in production.
- */
+/** Outside Development, AllowedHosts must be explicit (no wildcard/localhost) or startup fails fast
+    to block host-header injection attacks; see docs/deployment-security-checklist.md. */
 if (!app.Environment.IsDevelopment())
 {
     var allowedHosts = app.Configuration["AllowedHosts"];
@@ -405,34 +327,8 @@ if (!app.Environment.IsDevelopment())
 // Ensure the database is created and seeded with demo data at startup.
 await app.EnsureSeededAsync();
 
-// -------------------------
-// Middleware pipeline
-// -------------------------
-/**
- * Middleware ordering is security-sensitive.
- *
- * Effective order:
- * - global exception handling (wraps everything below; returns generic problem+json)
- * - forwarded headers
- * - https redirection / hsts
- * - response compression
- * - security headers
- * - login ban middleware
- * - rate limiter
- * - cors
- * - unsafe cookie request origin validation
- * - CSRF double-submit validation
- * - audit access denied middleware (wraps auth pipeline to log 401/403)
- * - authentication
- * - authorization
- *
- * Global exception handling: every unhandled exception, in every environment including
- * Development, is converted into a generic RFC 7807 problem+json response with no
- * exception details. This also suppresses the framework's automatic Developer Exception
- * Page, which would otherwise leak a stack trace in Development. A BadHttpRequestException
- * (for example a malformed JSON request body) keeps its own status code (usually 400)
- * instead of falling back to the generic 500.
- */
+/** Middleware order below is a security contract (exception handling wraps everything; origin/CSRF
+    checks precede auth); full order and rationale: docs/PROJECT-OVERVIEW.md. */
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -476,12 +372,7 @@ app.UseMiddleware<AuditAccessDeniedMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Endpoint mapping.
-/**
- * Endpoint map groups by domain module.
- *
- * @return The app starts with all endpoint groups and default health endpoints mapped.
- */
+/** Endpoint map groups by domain module. */
 app.MapAuthEndpoints();
 app.MapAppointmentEndpoints();
 app.MapProfileEndpoints();

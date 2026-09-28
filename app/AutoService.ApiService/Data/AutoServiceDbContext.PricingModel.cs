@@ -5,12 +5,7 @@ namespace AutoService.ApiService.Data;
 
 public sealed partial class AutoServiceDbContext
 {
-    /**
-     * Configures the pricing catalog entities (Part, LaborType): table names,
-     * money-column precision, VAT-rate/amount check constraints, and unique indexes.
-     *
-     * @param modelBuilder Model builder passed in from OnModelCreating.
-     */
+    /** Configures the pricing catalog entities (Part, LaborType): table names, money-column precision, VAT/amount check constraints, and unique indexes. */
     private void ConfigurePricingModel(ModelBuilder modelBuilder)
     {
         // Part mapping.

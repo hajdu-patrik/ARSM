@@ -1,12 +1,4 @@
-/**
- * Quote editor footer actions.
- *
- * Which buttons exist is decided by the quote's status, the same state
- * machine the API enforces: a draft is saved, deleted or sent; a sent quote
- * is accepted or rejected; a decided quote only closes. Sending stays
- * disabled while the quote has no lines, and the button says why.
- * @module pages/Quotes/components/QuoteEditorModal.footer
- */
+/** Footer actions gated by quote status (same state machine the API enforces; see CLAUDE.md): draft save/delete/send, sent accept/reject, decided close-only. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, Download, Save, Send, Trash2, X } from 'lucide-react';

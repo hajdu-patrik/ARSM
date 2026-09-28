@@ -10,18 +10,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * Returns the quote as a PDF file. Every status is printable (D29): a
-     * mechanic needs the paper for review and for handing it over before the
-     * quote is sent, and the document names its own status so nobody is
-     * misled.
-     *
-     * @param id Quote identifier.
-     * @param company Configured workshop identity resolved at startup (D18, D26).
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The PDF file, or 404 when the quote does not exist.
-     */
+    /** Returns the quote as a PDF file; every status is printable (D29) so a mechanic can hand over
+     * the paper before it's sent, and the document names its own status so nobody is misled. */
     private static async Task<IResult> GetQuotePdfAsync(
         int id,
         CompanyProfile company,
@@ -47,16 +37,8 @@ public static partial class QuoteEndpoints
         return Results.File(pdfBytes, "application/pdf", $"{quote.QuoteNumber}.pdf");
     }
 
-    /**
-     * Loads the part numbers and labor codes for the referenced catalog
-     * entries. These are not part of the line snapshot, so they come from the
-     * live catalog and stay absent for a hand-written line or a deleted entry.
-     *
-     * @param quote The quote whose lines are printed.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return Catalog identifiers keyed by line kind and catalog id.
-     */
+    /** Loads part numbers/labor codes for referenced catalog entries; not part of the line snapshot,
+     * so they come from the live catalog and stay absent for a hand-written or deleted entry. */
     private static async Task<Dictionary<(QuoteLineKind Kind, int CatalogId), string>> LoadCatalogIdentifiersAsync(
         Quote quote,
         AutoServiceDbContext db,
@@ -97,16 +79,8 @@ public static partial class QuoteEndpoints
         return identifiers;
     }
 
-    /**
-     * Flattens the quote into the render model. Amounts are taken as stored,
-     * never recomputed here: the PDF has to show the same figures as the
-     * screen and the revenue report.
-     *
-     * @param quote The quote being printed.
-     * @param identifiers Catalog identifiers resolved for the referenced lines.
-     * @param nowUtc Current UTC instant used for the expiry flag.
-     * @return The render model.
-     */
+    /** Flattens the quote into the render model; amounts are taken as stored, never recomputed
+     * here, so the PDF matches the screen and the revenue report. */
     private static QuoteDocumentModel ToQuoteDocumentModel(
         Quote quote,
         IReadOnlyDictionary<(QuoteLineKind Kind, int CatalogId), string> identifiers,
@@ -142,14 +116,7 @@ public static partial class QuoteEndpoints
             quote.TotalGross);
     }
 
-    /**
-     * Projects the lines of one kind, keeping their stored order.
-     *
-     * @param lines Ordered quote lines.
-     * @param lineKind Kind to project.
-     * @param identifiers Catalog identifiers resolved for the referenced lines.
-     * @return Printable lines of that kind.
-     */
+    /** Projects the lines of one kind, keeping their stored order. */
     private static List<QuoteDocumentLine> ToDocumentLines(
         IEnumerable<QuoteLine> lines,
         QuoteLineKind lineKind,
@@ -177,12 +144,7 @@ public static partial class QuoteEndpoints
             .ToList();
     }
 
-    /**
-     * Groups the stored line amounts per VAT rate.
-     *
-     * @param lines Ordered quote lines.
-     * @return One row per VAT rate present on the quote, lowest rate first.
-     */
+    /** Groups the stored line amounts per VAT rate. */
     private static List<QuoteDocumentVatRow> ToVatBreakdown(IEnumerable<QuoteLine> lines)
     {
         return lines

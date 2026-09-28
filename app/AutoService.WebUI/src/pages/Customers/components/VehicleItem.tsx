@@ -1,8 +1,4 @@
-/**
- * Vehicle item component displaying specs, history, and actions.
- * Renders vehicle details, repair history toggle, edit/delete controls.
- * @module VehicleItem
- */
+/** Vehicle item: specs, history toggle, and edit/delete controls. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Eye, EyeOff, FilePlus, Pencil, Trash2 } from 'lucide-react';

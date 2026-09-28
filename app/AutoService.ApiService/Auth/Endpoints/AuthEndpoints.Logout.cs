@@ -8,18 +8,7 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    /**
-     * Handles POST /api/auth/logout.
-     * Revokes active refresh token session, deny-lists current access token JTI,
-     * and clears authentication cookies.
-     *
-     * @param httpContext Current request context.
-     * @param db Database context.
-     * @param tokenDenylistService Deny-list service for JWT JTIs.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return 204 No Content when logout operations complete.
-     */
+    /** Handles POST /api/auth/logout. Revokes active refresh token session, deny-lists current access token JTI, and clears authentication cookies. */
     private static async Task<IResult> LogoutAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,

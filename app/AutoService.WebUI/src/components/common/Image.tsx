@@ -1,8 +1,4 @@
-/**
- * Reusable image wrapper that enforces a required `alt` attribute
- * for accessibility compliance.
- * @module Image
- */
+/** Reusable image wrapper that enforces a required `alt` attribute for accessibility. */
 import type { ImgHTMLAttributes } from 'react';
 
 /** Props for the {@link Image} component. Requires `alt` to be explicitly provided. */

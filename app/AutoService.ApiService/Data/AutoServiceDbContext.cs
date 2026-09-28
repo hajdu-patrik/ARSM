@@ -9,9 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Data;
 
-/**
- * Entity Framework Core DbContext for the AutoService domain.
- */
+/** Entity Framework Core DbContext for the AutoService domain. */
 public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
     // Entity sets.
@@ -208,12 +206,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         ConfigureQuotesModel(modelBuilder);
     }
 
-    /**
-     * Validates mechanic expertise constraints and quote totals before persisting changes.
-     *
-     * @param acceptAllChangesOnSuccess Indicates whether ChangeTracker.AcceptAllChanges() is called after save.
-     * @return The number of state entries written to the database.
-     */
+    /** Validates mechanic expertise constraints and quote totals before persisting changes. */
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ValidateMechanicExpertise();
@@ -221,13 +214,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
-    /**
-     * Async variant of SaveChanges with mechanic expertise and quote totals validation.
-     *
-     * @param acceptAllChangesOnSuccess Indicates whether ChangeTracker.AcceptAllChanges() is called after save.
-     * @param cancellationToken A token to cancel the async operation.
-     * @return A task containing the number of state entries written to the database.
-     */
+    /** Async variant of SaveChanges with mechanic expertise and quote totals validation. */
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         ValidateMechanicExpertise();
@@ -235,11 +222,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
-    /**
-     * Ensures each modified mechanic has 1..10 unique expertise values.
-     *
-     * @return No return value.
-     */
+    /** Ensures each modified mechanic has 1..10 unique expertise values. */
     private void ValidateMechanicExpertise()
     {
         var mechanics = ChangeTracker
@@ -263,17 +246,8 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         }
     }
 
-    /**
-     * Ensures each modified quote's stored TotalNet/TotalVat/TotalGross
-     * match the sum of its line amounts, computed via
-     * Pricing/QuoteTotalsCalculator so rounding never drifts from the
-     * handler that set them. Validates the sum whenever Lines is loaded.
-     * When Lines is not loaded (a handler that only touched the header or
-     * status), there is nothing to recompute against, so instead this
-     * requires that TotalNet/TotalVat/TotalGross were left untouched; a
-     * handler that changes totals without loading Lines is exactly the bug
-     * this second branch is meant to catch.
-     */
+    /** Throws if a modified quote's stored totals disagree with its loaded Lines,
+     * or if totals changed without loading Lines (see CLAUDE.md Quote Anchors). */
     private void ValidateQuoteTotals()
     {
         var quoteEntries = ChangeTracker

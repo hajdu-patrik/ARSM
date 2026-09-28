@@ -1,13 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - MECHANIC CLAIM & UNCLAIM
-# ─────────────────────────────────────────────────────────────
-# ClaimAsync only accepts an appointment the caller is not already assigned to (see
-# AppointmentEndpoints.Mutations.cs), so ApptId is created by admin with only the admin's own mechanic
-# id assigned, leaving room for the non-admin test mechanic to claim it below.
-# Cancelled/not-assigned/last-mechanic claim-unclaim coverage lives in the sibling files
-# mechanic-claim-unclaim-edge-cases.http and mechanic-claim-unclaim-not-assigned.http (split out to stay
-# under the 250-line file limit). ApptId is deleted at the end by an admin session via
-# DELETE /api/appointments/{id} (AdminOnly).
+# ClaimAsync only accepts an unassigned appointment, so ApptId is created with only the admin as assignee,
+# leaving room for the test mechanic to claim it. Cancelled/not-assigned/last-mechanic coverage is the sibling mechanic-claim-unclaim-edge-cases.http/-not-assigned.http (file-size limit); ApptId is deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -17,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -116,7 +106,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Duplicate claim conflict when already assigned (409 expected)
-# Expected error code: already_claimed.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -141,7 +130,6 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Claim now returns explicit completed-state validation.
-# Expected error code: appointment_completed.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -152,7 +140,6 @@ X-CSRF-Token: {{CsrfToken}}
 
 ### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
 # Self-unclaim is blocked when status is Completed.
-# Expected error code: appointment_completed.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

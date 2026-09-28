@@ -3,28 +3,16 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Mechanic entity derived from People.
- */
+/** Mechanic entity derived from People. */
 public class Mechanic : People
 {
     public SpecializationType Specialization { get; set; }
     public List<ExpertiseType> Expertise { get; private set; } = new();
 
-    /**
-     * Parameterless constructor required by EF Core.
-     */
+    /** Parameterless constructor required by EF Core. */
     public Mechanic() {}
 
-    /**
-     * Creates a mechanic with specialization and expertise values.
-     *
-     * @param name Full name value object.
-     * @param email Mechanic email address.
-     * @param phoneNumber Optional phone number.
-     * @param specialization Specialization group.
-     * @param expertise Expertise values (1..10 unique entries).
-     */
+    /** Creates a mechanic with specialization and expertise values. */
     [SetsRequiredMembers]
     public Mechanic(FullName name, string email, string? phoneNumber, SpecializationType specialization, List<ExpertiseType> expertise)
         : base(name, email, phoneNumber)

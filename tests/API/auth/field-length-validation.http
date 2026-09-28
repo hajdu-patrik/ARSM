@@ -1,6 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - FIELD LENGTH VALIDATION (register & login)
-# ─────────────────────────────────────────────────────────────
 # FieldLengthValidator caps: Email 150, FirstName/MiddleName/LastName 50, PhoneNumber 20,
 # Password 128. Applied before any hashing work in ValidateRegisterRequest/ValidateLoginRequest.
 
@@ -15,12 +12,8 @@
 @Over20Phone = +491511234567890123456
 @Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-# Every block below fails FieldLengthValidator (register/login) before any account is created or any
-# password hash is computed, so none of these requests leaves a row behind - no cleanup needed.
-# /api/auth/register is AdminOnly, so every register case here needs an admin session first, or the
-# AdminOnly authorization check would answer 401 before ValidateRegisterRequest ever runs.
-
-# ─────────────────────────────────────────────────────────────
+# Every block below fails validation before any account/hash is created, so none leaves a row behind.
+# /api/auth/register is AdminOnly, so register cases need an admin session first or a 401 would preempt ValidateRegisterRequest.
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

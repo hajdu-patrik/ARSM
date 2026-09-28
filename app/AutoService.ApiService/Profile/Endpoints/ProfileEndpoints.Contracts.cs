@@ -13,12 +13,8 @@ public static partial class ProfileEndpoints
         string? PhoneNumber,
         bool HasProfilePicture);
 
-    /**
-     * PUT /api/profile request body. All fields optional; only provided (non-null) fields are updated.
-     * Max lengths mirror the People DB column caps: Email 150 chars, PhoneNumber 20 chars,
-     * FirstName/MiddleName/LastName 50 chars each. Enforced by FieldLengthValidator in
-     * UpdateProfileAsync.
-     */
+    /** PUT /api/profile request body: all fields optional (only non-null ones are updated); length
+        limits mirror the People columns and are enforced by FieldLengthValidator in UpdateProfileAsync. */
     internal sealed record UpdateProfileRequest(
         string? Email,
         string? PhoneNumber,
@@ -26,11 +22,7 @@ public static partial class ProfileEndpoints
         string? FirstName,
         string? LastName);
 
-    /**
-     * POST /api/profile/change-password request body. All three password fields are capped at
-     * 128 chars by product decision, not a DB column limit. Enforced by FieldLengthValidator in
-     * ChangePasswordAsync before any password-hashing work runs.
-     */
+    /** POST /api/profile/change-password request body. All three password fields are capped at 128 chars by product decision, not a DB column limit. Enforced by FieldLengthValidator in ChangePasswordAsync before any password-hashing work runs. */
     internal sealed record ChangePasswordRequest(
         string CurrentPassword,
         string NewPassword,

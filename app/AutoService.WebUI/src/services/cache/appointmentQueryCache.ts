@@ -9,37 +9,21 @@ interface AppointmentMutationCacheOptions {
   readonly invalidateCustomerRegistry?: boolean;
 }
 
-/**
- * Sorts appointments by scheduled date while preserving immutable cache updates.
- * @param appointments Appointments to sort.
- * @returns A new appointment array ordered by scheduled date.
- */
+/** Sorts appointments by scheduled date while preserving immutable cache updates. */
 function sortAppointments(appointments: AppointmentDto[]): AppointmentDto[] {
   return [...appointments].sort((left, right) => (
     new Date(left.scheduledDate).getTime() - new Date(right.scheduledDate).getTime()
   ));
 }
 
-/**
- * Replaces or inserts one appointment inside a cached appointment collection.
- * @param appointments Current cached appointment collection.
- * @param updated Appointment returned by the latest mutation.
- * @returns A date-sorted collection containing the latest appointment data.
- */
+/** Replaces or inserts one appointment inside a cached appointment collection, date-sorted. */
 function upsertAppointment(appointments: AppointmentDto[], updated: AppointmentDto): AppointmentDto[] {
   const withoutUpdated = appointments.filter((appointment) => appointment.id !== updated.id);
   return sortAppointments([...withoutUpdated, updated]);
 }
 
-/**
- * Resolves the local month bucket used by cached scheduler month queries.
- *
- * Uses local time to match {@link getAdjacentMonthViews} (which keys the underlying month
- * queries) and the scheduler store's own day/month matching - a UTC bucket here would silently
- * drop or misplace an updated appointment whenever its local and UTC calendar day differ.
- * @param appointment Appointment whose scheduled date determines the bucket.
- * @returns Calendar year and 1-based month for the scheduled date.
- */
+/** Resolves the local-time month bucket for a scheduled date; a UTC bucket could misplace it when the
+ * local and UTC calendar day differ (must match {@link getAdjacentMonthViews} and the scheduler store). */
 function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; month: number } {
   const scheduledDate = new Date(appointment.scheduledDate);
   return {
@@ -48,11 +32,7 @@ function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; 
   };
 }
 
-/**
- * Checks whether an appointment belongs in the cached today query.
- * @param appointment Appointment to compare with the current local date.
- * @returns {@code true} when the appointment is scheduled today in local time.
- */
+/** Checks whether an appointment is scheduled today in local time (for the cached today query). */
 function isScheduledToday(appointment: AppointmentDto): boolean {
   const scheduledDate = new Date(appointment.scheduledDate);
   const now = new Date();
@@ -62,13 +42,7 @@ function isScheduledToday(appointment: AppointmentDto): boolean {
     && scheduledDate.getDate() === now.getDate();
 }
 
-/**
- * Checks whether a scheduler month query key targets a given year-month bucket.
- * @param queryKey TanStack Query key for a cached scheduler month query.
- * @param year Calendar year expected in the key.
- * @param month 1-based calendar month expected in the key.
- * @returns {@code true} when the key points to the requested month bucket.
- */
+/** Checks whether a scheduler month query key targets a given year-month bucket. */
 function queryKeyMonthMatches(queryKey: QueryKey, year: number, month: number): boolean {
   const keyYear = queryKey.at(-2);
   const keyMonth = queryKey.at(-1);
@@ -76,12 +50,7 @@ function queryKeyMonthMatches(queryKey: QueryKey, year: number, month: number): 
   return keyYear === year && keyMonth === month;
 }
 
-/**
- * Writes a mutation result into currently materialized scheduler caches without changing fetch policy.
- * @param queryClient Shared query client that owns the browser cache.
- * @param authScope Authenticated query scope for the current user.
- * @param appointment Appointment returned by a scheduler mutation.
- */
+/** Writes a mutation result into currently materialized scheduler caches without changing fetch policy. */
 export function writeAppointmentToSchedulerCache(
   queryClient: QueryClient,
   authScope: AuthQueryScope,
@@ -118,13 +87,7 @@ export function writeAppointmentToSchedulerCache(
   }
 }
 
-/**
- * Invalidates scheduler and appointment-history reads affected by an appointment mutation.
- * @param queryClient Shared query client that owns the browser cache.
- * @param authScope Authenticated query scope for the current user.
- * @param appointment Appointment returned by a scheduler mutation.
- * @param options Optional related-cache invalidation switches.
- */
+/** Invalidates scheduler and appointment-history reads affected by an appointment mutation. */
 export function invalidateAppointmentReadCaches(
   queryClient: QueryClient,
   authScope: AuthQueryScope,

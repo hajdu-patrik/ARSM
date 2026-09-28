@@ -1,9 +1,4 @@
-/**
- * Shared toast message keys and key classifiers.
- *
- * Centralizes toast-key reuse so mutation hooks and rendering logic stay in sync.
- * @module store/toast.keys
- */
+/** Shared toast message keys and classifiers, so mutation hooks and rendering logic stay in sync. */
 
 /** Toast key used when an edit submit has no effective payload changes. */
 export const TOAST_KEY_NO_CHANGES = 'toast.noChanges';

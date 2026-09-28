@@ -2,18 +2,10 @@ using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Catalog;
 
-/**
- * Registers part catalog routes under /api/parts.
- * Handler logic is split into dedicated partial files.
- */
+/** Registers part catalog routes under /api/parts; handler logic is split into dedicated partial files. */
 public static partial class PartEndpoints
 {
-    /**
-     * Maps part endpoints to the route builder.
-     *
-     * @param endpoints Endpoint route builder.
-     * @returns Route builder with part endpoints registered.
-     */
+    /** Maps part endpoints to the route builder. */
     public static IEndpointRouteBuilder MapPartEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/parts").WithTags("Parts").RequireAuthorization("MechanicOnly");

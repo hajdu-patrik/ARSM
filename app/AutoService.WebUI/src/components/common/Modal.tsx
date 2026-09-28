@@ -1,8 +1,4 @@
-/**
- * Reusable modal dialog shell rendered via a portal.
- * Supports overlay click and Escape-key dismissal.
- * @module Modal
- */
+/** Reusable modal dialog shell rendered via a portal; supports overlay click and Escape-key dismissal. */
 import { memo, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';

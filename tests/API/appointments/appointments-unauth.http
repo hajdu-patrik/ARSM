@@ -1,10 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - UNAUTHENTICATED ACCESS (401 checks)
-# ─────────────────────────────────────────────────────────────
-# Every route below sits under RequireAuthorization() (see AppointmentEndpoints.cs), so the 401
-# is returned by the auth middleware before any handler touches the URL path ids or the request
-# body — the literal appointment/customer/vehicle ids below never reach the database and are safe
-# sentinels, not seed-row references.
+# Every route below is under RequireAuthorization(), so 401 is returned before any handler touches the
+# URL ids or body - the literal appointment/customer/vehicle ids here are safe sentinels, not seed-row references.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -12,8 +7,6 @@
 @UnauthIntakeVin = TST{{RunId.toString().slice(-10)}}0601
 @UnauthUpdateVin = TST{{RunId.toString().slice(-10)}}0602
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

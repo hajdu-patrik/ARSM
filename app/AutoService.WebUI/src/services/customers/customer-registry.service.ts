@@ -11,12 +11,7 @@ import type {
   VehicleDetailDto,
 } from '../../types/customers/customers.types';
 
-/**
- * Customer-registry API service.
- *
- * Aggregates customer CRUD, vehicle CRUD, and customer/vehicle history queries
- * used by the customers page.
- */
+/** Customer-registry API service: customer CRUD, vehicle CRUD, and customer/vehicle history queries. */
 export const customerRegistryService = {
   /** Returns all customers. */
   async listCustomers(): Promise<CustomerListItem[]> {

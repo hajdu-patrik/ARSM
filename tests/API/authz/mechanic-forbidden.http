@@ -1,23 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTHZ - PLAIN MECHANIC FORBIDDEN FROM ADMIN-ONLY ROUTES
-# ─────────────────────────────────────────────────────────────
-# Verified against the source before writing this file:
-# - AdminEndpoints.cs: the whole "/api/admin" group carries RequireAuthorization("AdminOnly").
-#   Only two routes exist under that prefix: GET /mechanics and DELETE /mechanics/{id}. There is
-#   no admin-only "create mechanic" route under /api/admin/*; mechanic creation is a separate
-#   route, POST /api/auth/register (also AdminOnly, not under /api/admin/*).
-# - AppointmentEndpoints.cs: PUT/DELETE /api/appointments/{id}/assign/{mechanicId} both carry
-#   RequireAuthorization("AdminOnly") too.
-# - DemoDataInitializer.cs: EnsureAdminRoleAsync grants the "Admin" role only to
-#   gabor.kovacs@example.com, so ARSM_TEST_ADMIN_EMAIL must resolve to that account and
-#   ARSM_TEST_MECHANIC_EMAIL to one of the other two seeded mechanics, which never receive it.
-#
-# Not duplicated here: PUT/DELETE /api/appointments/{id}/assign/{mechanicId} 403-for-non-admin is
-# already fully covered by tests/API/appointments/admin-assign-unassign.http's trailing non-admin
-# checks, and POST /api/auth/register 403-for-non-admin is already covered by
-# tests/API/auth/register-validation-and-nonadmin-authz.http. Both /api/admin/* routes are
-# repeated below (they already have partial coverage in tests/API/admin/authz.http, list.http and
-# delete-invariants.http) so this dedicated authz suite keeps every /api/admin/* outcome together.
+# Verified against source: /api/admin/* (mechanics list/delete) is AdminOnly; only gabor.kovacs@example.com has
+# the Admin role (DemoDataInitializer), so ARSM_TEST_ADMIN_EMAIL/ARSM_TEST_MECHANIC_EMAIL must map accordingly. Assign/unassign and register 403-for-non-admin are covered elsewhere (not duplicated); /api/admin/* is repeated here to keep this authz suite complete.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -27,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @UnknownMechanicId = 999999
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

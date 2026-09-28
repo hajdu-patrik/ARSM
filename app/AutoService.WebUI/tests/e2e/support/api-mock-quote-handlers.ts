@@ -1,9 +1,5 @@
-/**
- * Mocked quote routes (plan F4): the `/api/quotes` group plus the two
- * vehicle-nested routes. This file is the router; the writes live in
- * `api-mock-quote-mutations.ts` and `api-mock-quote-lines.ts`, and the shared
- * math, projections and version check in `api-mock-quote-support.ts`.
- */
+/** Mocked quote routes (`/api/quotes` plus its two vehicle-nested routes): this is the router; writes
+ * live in `api-mock-quote-mutations.ts`/`api-mock-quote-lines.ts`, shared math in `api-mock-quote-support.ts`. */
 import type { Route } from '@playwright/test';
 import type { UpdateQuoteRequest } from '../../../src/types/quotes/quotes.types';
 import type { InstallApiMockOptions } from './api-mocks';

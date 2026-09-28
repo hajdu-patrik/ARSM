@@ -1,9 +1,5 @@
-/**
- * Labeled value tile: a small bordered surface pairing a muted label with a
- * primary value, used by mobile-tile list rows (Inventory, Quotes,
- * Company results) so every tab does not hand-write the same markup.
- * @module components/common/LabeledValueTile
- */
+/** Labeled value tile: bordered surface pairing a muted label with a primary value,
+ * shared by mobile-tile list rows so features don't hand-write the same markup. */
 import { memo, type ReactNode } from 'react';
 import {
   compactDataSurfaceClass,

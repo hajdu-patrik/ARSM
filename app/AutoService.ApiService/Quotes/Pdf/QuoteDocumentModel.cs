@@ -1,15 +1,7 @@
 namespace AutoService.ApiService.Quotes.Pdf;
 
-/**
- * One printed quote line. Flat on purpose: the document layer never touches an
- * EF entity, so a lazy-loading surprise cannot happen while a page is being
- * rendered, and the model can be built once and reused for every page.
- *
- * Identifier is the part number for a part line and the labor code for a labor
- * line. It comes from the live catalog rather than the line snapshot, because
- * the snapshot keeps the description, the price and the VAT rate only; it is
- * null once the catalog entry is gone or the line was written by hand.
- */
+/** One printed quote line; flat so the document never touches an EF entity (no lazy-loading during
+ * render). Identifier comes from the live catalog, not the snapshot (CLAUDE.md Quote Anchors); null when orphaned/hand-written. */
 internal sealed record QuoteDocumentLine(
     string Description,
     string? Identifier,
@@ -40,12 +32,8 @@ internal sealed record QuoteDocumentVehicle(
     string Model,
     int Year);
 
-/**
- * Everything the quote PDF prints, resolved ahead of rendering.
- *
- * Part and labor lines are kept apart because the two blocks print different
- * column headers: pieces at a unit price against hours at an hourly rate.
- */
+/** Everything the quote PDF prints, resolved ahead of rendering; part/labor lines are kept
+ * apart because the two blocks print different column headers (unit price vs hourly rate). */
 internal sealed record QuoteDocumentModel(
     string QuoteNumber,
     string Title,

@@ -1,12 +1,5 @@
-/**
- * Column-alignment regression coverage for the shared `DataList` component
- * across every list it renders: the Quotes list, the quote-line lists inside
- * the editor (editable and read-only), the Inventory parts and labor types
- * lists, and the Company results month and VAT lists. Stresses the
- * worst-case content the shared grid has to hold without ever drifting a
- * column, in both languages and both themes, and exercises the
- * container-query breakpoint the collapsible sidebar can push a list across.
- */
+/** Column-alignment regression coverage for every `DataList` list, both languages and themes;
+ * tests/CLAUDE.md (Coverage Anchors) keeps the exact lists and checks. */
 import { expect, test, type Page } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
@@ -22,12 +15,8 @@ type Theme = 'light' | 'dark';
 const VIEWPORT = { width: 1440, height: 900 };
 const FRACTIONAL_QUANTITY_TEXT: Record<Lang, string> = { en: '1.5', hu: '1,5' };
 
-/**
- * Combos exercised for the full (a)+(b)+(d) sweep. Restricted to the two the
- * plan calls mandatory: the existing suite already runs close to the
- * canonical runner's default command budget end to end, and every extra
- * login-and-sweep combo here adds a meaningful slice on top of that.
- */
+/** Restricted to the two mandatory combos (en/light, hu/dark): the full 2x2 sweep already
+ * pushes past the runner's 300s default (tests/CLAUDE.md Coverage Anchors). */
 const COMBOS: ReadonlyArray<{ lang: Lang; theme: Theme }> = [
   { lang: 'en', theme: 'light' },
   { lang: 'hu', theme: 'dark' },
@@ -44,13 +33,8 @@ async function bootListAlignment(page: Page, lang: Lang, theme: Theme): Promise<
   await new AuthPage(page).loginAsMechanic(env, lang);
 }
 
-/**
- * Forces the sidebar's collapsed state from the next navigation on. Must run
- * after `loginAsMechanic`: `AuthPage` registers its own init script that
- * resets `preferred-sidebar-collapsed` to `'false'` on every navigation, and
- * init scripts run in registration order, so this one has to be added later
- * to win.
- */
+/** Forces the sidebar collapsed from here on; must run after `loginAsMechanic`, because init
+ * scripts apply in registration order and its own would otherwise reset this back to `'false'`. */
 async function forceSidebarCollapsed(page: Page, collapsed: boolean): Promise<void> {
   await page.addInitScript((value) => localStorage.setItem('preferred-sidebar-collapsed', value), collapsed ? 'true' : 'false');
 }

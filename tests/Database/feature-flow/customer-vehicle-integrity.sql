@@ -1,9 +1,6 @@
 
--- ------------------------------------------------------------
--- 9. CUSTOMER RECORD AUDIT
---    Lists all customer records with vehicle counts.
+-- 9. CUSTOMER RECORD AUDIT — all customer records with vehicle counts.
 --    Use after POST/PUT/DELETE /api/customers to verify persistence.
--- ------------------------------------------------------------
 SELECT c."Id" AS customer_id,
        c."FirstName",
        c."MiddleName",
@@ -18,11 +15,8 @@ GROUP BY c."Id", c."FirstName", c."MiddleName", c."LastName", c."Email", c."Phon
 ORDER BY c."Id";
 
 
--- ------------------------------------------------------------
--- 10. VEHICLE RECORD AUDIT
---     Lists all vehicles with their owning customer.
+-- 10. VEHICLE RECORD AUDIT — all vehicles with their owning customer.
 --     Use after POST/PUT/DELETE /api/.../vehicles to verify persistence.
--- ------------------------------------------------------------
 SELECT v."Id" AS vehicle_id,
        v."LicensePlate",
        v."Vin",
@@ -40,11 +34,8 @@ WHERE c."PersonType" = 'Customer'
 ORDER BY v."Id";
 
 
--- ------------------------------------------------------------
--- 11. CUSTOMER DELETION INTEGRITY
---     Verifies no orphaned vehicles remain after customer deletion.
+-- 11. CUSTOMER DELETION INTEGRITY — no orphaned vehicles after customer deletion.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT v."Id" AS orphaned_vehicle_id,
        v."LicensePlate"
 FROM vehicles v
@@ -52,11 +43,8 @@ LEFT JOIN people c ON c."Id" = v."CustomerId" AND c."PersonType" = 'Customer'
 WHERE c."Id" IS NULL;
 
 
--- ------------------------------------------------------------
--- 12. VEHICLE DELETION INTEGRITY
---     Verifies no orphaned appointments remain after vehicle deletion.
+-- 12. VEHICLE DELETION INTEGRITY — no orphaned appointments after vehicle deletion.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS orphaned_appointment_id,
        a."ScheduledDate"
 FROM appointments a
@@ -64,11 +52,8 @@ LEFT JOIN vehicles v ON v."Id" = a."VehicleId"
 WHERE v."Id" IS NULL;
 
 
--- ------------------------------------------------------------
--- 13. CUSTOMER APPOINTMENT CREATION COVERAGE
---     Use after POST /api/customers/{customerId}/appointments to verify created rows.
+-- 13. CUSTOMER APPOINTMENT CREATION COVERAGE — use after POST /api/customers/{customerId}/appointments.
 --     The taskDescription filter matches the tests/API/appointments/ intake payload.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."IntakeCreatedAt",
@@ -95,10 +80,8 @@ GROUP BY a."Id", a."ScheduledDate", a."IntakeCreatedAt", a."DueDateTime", a."Sta
 ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
 
 
--- ------------------------------------------------------------
 -- 15. INTAKE PAST-DATE ALLOWED CHECK
 --     Confirms intake payload with past scheduledDate is now persisted.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."DueDateTime",
@@ -112,10 +95,8 @@ FROM appointments a
 WHERE a."TaskDescription" = 'Scheduler intake with past date allowed';
 
 
--- ------------------------------------------------------------
 -- 16. APPOINTMENT UPDATE COVERAGE
 --     Use after PUT /api/appointments/{id} to verify appointment and vehicle edits.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."DueDateTime",
@@ -146,10 +127,8 @@ WHERE a."TaskDescription" ILIKE '%Frissitett feladat leiras az admin szerkesztes
 ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
 
 
--- ------------------------------------------------------------
 -- 24. TEST-CREATED CUSTOMERS (example.test domain)
 --     Quick CRUD smoke query for API-created synthetic records.
--- ------------------------------------------------------------
 SELECT c."Id" AS customer_id,
              c."Email",
              c."FirstName",
@@ -162,10 +141,8 @@ ORDER BY c."Id" DESC
 LIMIT 30;
 
 
--- ------------------------------------------------------------
 -- 25. TEST-CREATED VEHICLES (runtime plate patterns)
 --     Quick CRUD smoke query for API-created synthetic vehicles.
--- ------------------------------------------------------------
 SELECT v."Id" AS vehicle_id,
        v."LicensePlate",
        v."Brand",

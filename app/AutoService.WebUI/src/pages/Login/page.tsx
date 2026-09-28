@@ -1,8 +1,4 @@
-/**
- * Login page.
- * Supports email or phone identifier login modes and localized feedback.
- * @module pages/Login/page
- */
+/** Login page: email or phone identifier login modes with localized feedback. */
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

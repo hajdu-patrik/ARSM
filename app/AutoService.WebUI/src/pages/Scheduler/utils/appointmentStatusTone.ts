@@ -1,9 +1,4 @@
-/**
- * Appointment status to semantic tone mapping.
- * The single place that decides how a status is colored; badges, calendar dots and status filter
- * chips resolve their classes from the shared tone recipes through it.
- * @module pages/Scheduler/utils/appointmentStatusTone
- */
+/** Maps each appointment status to its semantic tone; badges, calendar dots, and filter chips all resolve color through this (see CLAUDE.md). */
 import type { AppointmentStatus } from '../../../types/scheduler/scheduler.types';
 import type { SignalTone } from '../../../utils/formStyles';
 

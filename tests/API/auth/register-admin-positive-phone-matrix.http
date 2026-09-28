@@ -1,15 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - REGISTER ADMIN POSITIVE PHONE MATRIX
-# ─────────────────────────────────────────────────────────────
-# Split out of register-admin-setup-and-positive.http (admin setup, email-only and spaced-06 phone
-# registration) to keep both files under the size limit, the same way login-positive-matrix.http/
-# login-positive-phone-matrix.http split. Verified against AuthEndpoints.Register.cs: every phone
-# shape below is a differently formatted, still-valid registration input (local Hungarian, Budapest
-# landline, EU (+49), and leading/trailing whitespace around both email and phone) - each accepted
-# with 200 and its own disposable mechanic, deleted again at the end.
-# This file provisions its own phone-format matrix with a unique {{$timestamp}} suffix and deletes
-# every mechanic it created (DELETE /api/admin/mechanics/{id}) at the end, so no other file may
-# depend on these accounts surviving past this run.
+# Split out of register-admin-setup-and-positive.http to keep both files under the size limit. Every
+# phone shape is a differently formatted valid input (local HU, Budapest, EU, whitespace); this file self-provisions and deletes its own mechanics.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -24,8 +14,6 @@
 @MatrixBudapestEmail = matrix.budapest.user.{{MatrixRunSuffix}}@example.test
 @MatrixEuEmail = matrix.eu.phone.{{MatrixRunSuffix}}@example.test
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

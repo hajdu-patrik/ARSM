@@ -1,13 +1,4 @@
-/**
- * The headline of the report: accepted net and gross, with the pending,
- * expired and rejected amounts beside it at a lower weight.
- *
- * Sent is split in two, because a quote past its validity is not something to
- * count on any more; a draft never reached the customer, so it appears as a
- * count only. Every amount comes from the server DTO and prints as whole
- * forints.
- * @module pages/CompanyResults/components/CompanyResultSummary
- */
+/** Report headline: accepted net/gross, with pending/expired/rejected at lower weight; amounts are DTO-only, never derived (CLAUDE.md). */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type {

@@ -1,11 +1,5 @@
-/**
- * i18next internationalization configuration.
- *
- * Initializes {@code i18next} with English and Hungarian translations,
- * browser language detection via {@code localStorage} key {@code 'preferred-language'},
- * and the React i18next integration. Default/fallback language is Hungarian.
- * @module utils/i18n
- */
+/** i18next config: English/Hungarian translations, `localStorage` language detection
+ * (`preferred-language` key) via React i18next; fallback language is Hungarian. */
 
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';

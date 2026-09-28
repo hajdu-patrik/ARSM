@@ -1,24 +1,11 @@
-# ─────────────────────────────────────────────────────────────
-# AUTHZ - LIST LIMIT QUERY-PARAMETER EDGES: CUSTOMER LISTS
-# ─────────────────────────────────────────────────────────────
-# limit=0, -1, 501, 100000 are clamped with Math.Clamp (Pagination/ListQueryLimits.Normalize, 1..500,
-# default 500; CustomerEndpoints.Lookup NormalizeCustomerLookupLimit, 1..25, default 10, for
-# GET /api/customers/by-name only) and answer 200. A non-numeric limit=abc fails ASP.NET Core model
-# binding for the nullable int parameter and answers 400. Neither path may ever answer 500.
-# Any mechanic session reaches every endpoint here (this file signs in with the admin account). GET /api/admin/mechanics uses the same
-# Normalize call but is AdminOnly, so it 403s before the clamp runs and is excluded.
-# Full 5-value matrix, one per distinct clamp rule; the shared-clamp consumers live in list-limit-edges-nested.http.
-
-# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
-# passes MechanicOnly, and nothing in this file depends on the Admin role.
+# limit clamps via ListQueryLimits.Normalize (1..500, default 500) or, for by-name only, NormalizeCustomerLookupLimit
+# (1..25, default 10); limit=abc fails model binding (400, never 500). Signs in as admin (also a mechanic, so MechanicOnly passes); /api/admin/mechanics shares the clamp but is AdminOnly, so it 403s first and is excluded here.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

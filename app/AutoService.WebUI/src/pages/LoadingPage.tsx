@@ -1,10 +1,4 @@
-/**
- * Full-page-load loading splash screen.
- *
- * Displays an animated branded intro for roughly 3 seconds on browser reload
- * (for example F5 / Ctrl+F5), then renders nothing.
- * @module pages/LoadingPage
- */
+/** Full-page-load splash: an animated branded intro for ~3s on browser reload (F5/Ctrl+F5), then nothing. */
 
 import { memo, useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -48,11 +42,7 @@ const DESKTOP_SHAPE_CLASS_NAMES = [
   'shape-base shape-top-right',
 ] as const;
 
-/**
- * Decorative desktop background shapes. Size, aspect ratio and the
- * light/dark accent background all live on the shape classes themselves
- * in `loadingPageAnimations.css`, so no per-instance style is needed here.
- */
+/** Decorative desktop shapes; size/aspect/accent live on the CSS shape classes, since CSP forbids inline style (CLAUDE.md). */
 function LoadingDesktopShapes() {
   return (
     <div className="absolute inset-0 pointer-events-none max-[320px]:hidden" aria-hidden="true">

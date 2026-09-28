@@ -1,9 +1,6 @@
 namespace AutoService.ApiService.Domain.UniqueTypes;
 
-/**
- * Defines the service areas a mechanic can be skilled in.
- * A mechanic must hold 1..10 unique expertise values; duplicates are rejected on save.
- */
+/** Service areas a mechanic can be skilled in; must hold 1..10 unique values, duplicates rejected on save. */
 public enum ExpertiseType
 {
     Engine,           // Internal combustion engine repair and maintenance.

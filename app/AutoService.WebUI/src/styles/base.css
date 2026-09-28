@@ -1,6 +1,4 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   Typography — Inter with a system-font fallback for reduced CLS
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Typography: Inter with a system-font fallback for reduced CLS */
 @font-face {
   font-family: 'Inter fallback';
   src: local('Segoe UI'), local('system-ui'), local('Arial');
@@ -10,9 +8,7 @@
   line-gap-override: 0%;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Base layer — global element resets and theming
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Base layer: global element resets and theming */
 @layer base {
   html {
     height: 100%;

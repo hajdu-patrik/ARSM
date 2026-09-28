@@ -1,7 +1,5 @@
--- ------------------------------------------------------------
 -- 14. SCHEDULER INTAKE COVERAGE
 --     Use after POST /api/appointments/intake to verify customer/vehicle intake writes.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."IntakeCreatedAt",
@@ -26,11 +24,8 @@ GROUP BY a."Id", a."ScheduledDate", a."IntakeCreatedAt", a."DueDateTime", a."Sta
 ORDER BY a."ScheduledDate" DESC, a."Id" DESC;
 
 
--- ------------------------------------------------------------
--- 17. PAST APPOINTMENT SCHEDULED-DATE UPDATE REJECTION CHECK
---     The negative PUT /api/appointments/{id} payload with this task description must not persist.
+-- 17. PAST APPOINTMENT SCHEDULED-DATE UPDATE REJECTION CHECK — this negative PUT payload must not persist.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS unexpectedly_updated_appointment_id,
        a."ScheduledDate",
        a."TaskDescription"
@@ -38,11 +33,8 @@ FROM appointments a
 WHERE a."TaskDescription" = 'Past appointment scheduled date change should be rejected';
 
 
--- ------------------------------------------------------------
--- 18. CUSTOMER APPOINTMENT CREATE PAST-DATE ALLOWED CHECK
---     Confirms POST /api/customers/{customerId}/appointments with past
---     scheduledDate is now persisted.
--- ------------------------------------------------------------
+-- 18. CUSTOMER APPOINTMENT CREATE PAST-DATE ALLOWED CHECK — POST .../appointments with a past
+--     scheduledDate must now persist.
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."DueDateTime",
@@ -56,10 +48,8 @@ FROM appointments a
 WHERE a."TaskDescription" = 'Admin create with past date allowed';
 
 
--- ------------------------------------------------------------
 -- 19. MECHANIC-EMAIL INTAKE LINKED CUSTOMER CHECK
 --     Confirms intake with mechanic email persisted under linked customer identity.
--- ------------------------------------------------------------
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."TaskDescription",
@@ -75,11 +65,8 @@ WHERE a."TaskDescription" = 'Scheduler intake mechanic email linked flow'
 ORDER BY a."Id" DESC;
 
 
--- ------------------------------------------------------------
--- 20. INTAKE VEHICLE NUMERIC-MAX REJECTION CHECK
---     The negative intake payload with this task description must not persist.
+-- 20. INTAKE VEHICLE NUMERIC-MAX REJECTION CHECK — this negative intake payload must not persist.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS unexpected_persisted_appointment_id,
        a."ScheduledDate",
        a."TaskDescription"
@@ -87,11 +74,8 @@ FROM appointments a
 WHERE a."TaskDescription" = 'Scheduler intake vehicle numeric max should be rejected';
 
 
--- ------------------------------------------------------------
--- 21. APPOINTMENT UPDATE NUMERIC-MAX REJECTION CHECK
---     The negative update payload with this task description must not persist.
+-- 21. APPOINTMENT UPDATE NUMERIC-MAX REJECTION CHECK — this negative update payload must not persist.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS unexpectedly_updated_appointment_id,
        a."ScheduledDate",
        a."TaskDescription"
@@ -99,11 +83,8 @@ FROM appointments a
 WHERE a."TaskDescription" = 'Admin update vehicle numeric max should be rejected';
 
 
--- ------------------------------------------------------------
--- 22. PAST APPOINTMENT PARTIAL UPDATE ALLOWED CHECK
---     Confirms dueDateTime/taskDescription edits are persisted for past appointments
---     when ScheduledDate remains unchanged.
--- ------------------------------------------------------------
+-- 22. PAST APPOINTMENT PARTIAL UPDATE ALLOWED CHECK — dueDateTime/taskDescription edits persist for
+--     past appointments when ScheduledDate is unchanged.
 SELECT a."Id" AS appointment_id,
        a."ScheduledDate",
        a."DueDateTime",
@@ -117,11 +98,8 @@ WHERE a."TaskDescription" = 'Past appointment due and task update allowed'
 ORDER BY a."Id" DESC;
 
 
--- ------------------------------------------------------------
--- 23. SCHEDULER CUSTOMER BY-EMAIL SUCCESS SEMANTICS (MECHANIC EMAIL)
---     Documents expected 200 behavior for GET /api/customers/by-email when
---     queried with mechanic email and linked customer may or may not exist.
--- ------------------------------------------------------------
+-- 23. SCHEDULER CUSTOMER BY-EMAIL SUCCESS SEMANTICS (MECHANIC EMAIL) — expected 200 for GET
+--     /api/customers/by-email whether or not a linked customer exists.
 SELECT m."Id" AS mechanic_id,
        m."Email" AS mechanic_email,
        c."Id" AS linked_customer_id,
@@ -140,11 +118,8 @@ GROUP BY m."Id", m."Email", c."Id", c."Email"
 ORDER BY m."Id";
 
 
--- ------------------------------------------------------------
--- 24. APPOINTMENT ASSIGNMENT INTEGRITY (ORPHAN GUARD)
---     No appointment may exist without at least one assigned mechanic.
+-- 24. APPOINTMENT ASSIGNMENT INTEGRITY (ORPHAN GUARD) — no appointment without an assigned mechanic.
 --     Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT a."Id" AS orphaned_appointment_id,
        a."ScheduledDate",
        a."Status",

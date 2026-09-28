@@ -1,6 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# QUOTES - VALIDUNTIL STATUS MATRIX (SENT/ACCEPTED LOCK BEHAVIOR)
-# ─────────────────────────────────────────────────────────────
 # Split out of quotes-validation.http to keep both files under the 250-line
 # limit once real status assertions were added to every block.
 
@@ -9,8 +6,6 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuotesValidityMatrix] Login as admin (MechanicOnly prerequisite)
 # @name csrfSource1
@@ -32,9 +27,8 @@ Content-Type: application/json
 ###
 
 ### [Setup][QuotesValidityMatrix] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
-# Vehicle identity ids depend on the local database's insert history, so a literal
-# id is right on one machine and 404 on the next. The three demo quotes (D12) are
-# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# Vehicle ids depend on the local DB's insert history, so this resolves the demo vehicle anchor via the
+# seeded quote's stable QuoteNumber (D13) instead of a literal id that would 404 on another machine.
 # @name seedQuotes
 GET {{AutoService_ApiService_HostAddress}}/api/quotes
 

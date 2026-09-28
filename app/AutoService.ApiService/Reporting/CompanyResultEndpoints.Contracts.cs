@@ -27,17 +27,8 @@ public static partial class CompanyResultEndpoints
         decimal Net,
         decimal Gross);
 
-    /**
-     * Revenue report for one period.
-     *
-     * A quote belongs to the month it was created in, whatever its status is
-     * today (D17): the monthly figures then add up to the yearly one, and a
-     * past month's number never changes because an old quote was accepted now.
-     *
-     * Sent is split in two (D25): a quote still inside its validity is pending
-     * and may yet arrive, while an expired one will not. Draft is in no row at
-     * all, because it never reached the customer; only its count is reported.
-     */
+    /** Revenue report for one period; a quote counts by its creation month (D17), and Sent
+     * splits into pending/expired by validity (D25). See CLAUDE.md Company Result Anchors. */
     internal sealed record CompanyResultDto(
         int Year,
         int? Month,

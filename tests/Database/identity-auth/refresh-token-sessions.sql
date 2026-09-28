@@ -3,7 +3,6 @@
 
 -- 1. REFRESH TOKEN SESSIONS — list with mechanic owner
 --    Expected after fresh seed: 0 rows (until first login)
--- ------------------------------------------------------------
 SELECT rt."Id",
        rt."MechanicId",
        p."Email" AS mechanic_email,

@@ -2,19 +2,10 @@ using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Vehicles;
 
-/**
- * Registers vehicle routes under nested /api/customers/{customerId}/vehicles
- * and flat /api/vehicles.
- * Handler logic is split into dedicated partial files.
- */
+/** Registers vehicle routes under nested /api/customers/{customerId}/vehicles and flat /api/vehicles; handler logic split into partial files. */
 public static partial class VehicleEndpoints
 {
-    /**
-     * Maps vehicle endpoints to the route builder.
-     *
-     * @param endpoints Endpoint route builder.
-     * @returns Route builder with vehicle endpoints registered.
-     */
+    /** Maps vehicle endpoints to the route builder. */
     public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
     {
         // Nested routes scoped to a customer.

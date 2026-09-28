@@ -1,9 +1,5 @@
-/**
- * Route-aware SEO manager. Updates document title, meta description,
- * robots directives, Open Graph, Twitter Card tags, canonical URL,
- * structured JSON-LD data, and `html[lang]` attribute on every route/language change.
- * @module SeoManager
- */
+/** Route-aware SEO manager: updates title, meta description, robots, Open Graph,
+ * Twitter Card, canonical URL, JSON-LD and `html[lang]` on every route/language change. */
 import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

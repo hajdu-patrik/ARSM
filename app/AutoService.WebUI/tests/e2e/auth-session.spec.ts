@@ -35,9 +35,8 @@ test.describe('Auth session security flows', () => {
 
     await page.goto('/customers');
     await expect(page.getByRole('heading', { name: 'Customers' })).toBeVisible();
-    // The heading belongs to the page shell and renders before the customer request settles,
-    // so the refresh and retry are still in flight at that point. Wait for a rendered card,
-    // which only appears once the retried request has succeeded.
+    // The heading renders from the shell before the retry settles; wait on the customer card
+    // instead, which only appears once the retried request has succeeded.
     await expect(new CustomersPage(page).customerCard(MOCK_CUSTOMER_IDS.anna)).toBeVisible();
 
     expect(routeCallLog.filter((routeKey) => routeKey === 'POST /api/auth/refresh').length).toBeGreaterThanOrEqual(1);

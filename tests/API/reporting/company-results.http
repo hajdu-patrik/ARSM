@@ -1,9 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# REPORTING - COMPANY RESULTS (MechanicOnly POLICY)
-# ─────────────────────────────────────────────────────────────
-# The report places a quote by its CreatedAt month whatever its status is,
-# splits Sent into pending and expired, and answers an empty period with
-# zeros rather than 404, so the page has one rendering path.
+# The report buckets a quote by its CreatedAt month regardless of status, splits Sent into pending and
+# expired, and answers an empty period with zeros instead of 404 so the page has one rendering path.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -14,14 +10,8 @@
 @InvalidMonth = 13
 @OutOfRangeYear = 1999
 
-# COVERAGE GAP (do not fill with a fabricated token):
-# The customer-token 403 case cannot be produced against the live API, for the
-# same reason the catalog and quote authz files record: a Customer person never
-# receives an IdentityUserId, and registration only accepts mechanics. The 401
-# path below is the observable half of the MechanicOnly policy.
-
-
-# ─────────────────────────────────────────────────────────────
+# COVERAGE GAP: a MechanicOnly 403 for an authenticated-but-not-mechanic caller cannot be produced
+# against the live API today (no fabricated token) - see tests/CLAUDE.md Coverage Anchors.
 
 ### [Setup][Reporting] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

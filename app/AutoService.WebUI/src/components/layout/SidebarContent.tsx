@@ -1,7 +1,4 @@
-/**
- * Sidebar chrome and navigation content for authenticated layouts.
- * @module components/layout/SidebarContent
- */
+/** Sidebar chrome and navigation content for authenticated layouts. */
 import { memo, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';

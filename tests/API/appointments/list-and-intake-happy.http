@@ -1,12 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - LIST AND INTAKE HAPPY
-# ─────────────────────────────────────────────────────────────
-# CustomerVehicleId is resolved from the known customer's own vehicle instead of a literal id.
-# New-customer and mechanic-email-linked intake coverage lives in the sibling file
-# intake-new-customer-and-linked-happy.http (split out to stay under the 250-line file limit). The one
-# appointment this file creates is deleted at the end by an admin session via DELETE
-# /api/appointments/{id} (AdminOnly); the known customer/vehicle it uses are pre-existing seed rows and
-# are never touched.
+# CustomerVehicleId resolves from the known customer; the appointment created here is deleted at the end
+# via admin, but the seed customer/vehicle are never touched. New-customer/mechanic-linked coverage is the sibling intake-new-customer-and-linked-happy.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -16,8 +9,6 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

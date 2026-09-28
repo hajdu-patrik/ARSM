@@ -1,19 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# ADMIN - DELETE INVARIANTS
-# ─────────────────────────────────────────────────────────────
-# Verified against AdminEndpoints.Handlers.cs (DeleteMechanicAsync / ValidateMechanicDeletionInvariantsAsync):
-# 403 self-delete (caller person_id claim == target id), 403 when the target carries the Admin role,
-# 404 unknown id, 422 when it is the last mechanic OR would leave an appointment without any
-# assignee, 409 only on a DbUpdateConcurrencyException/Postgres serialization-failure/deadlock, 200
-# with body { message } (not 204) on success.
-#
-# No id here is hardcoded: an earlier version of this file hardcoded
-# CurrentAdminMechanicId/AnotherAdminMechanicId/MechanicIdWithSoleAssignments/MechanicIdCandidateForDeletion
-# as literals 6/9/7/8 and deleted id 8 on every run; as other suites created and deleted fixtures, the
-# auto-increment counter drifted until id 8 pointed at the real ARSM_TEST_MECHANIC_EMAIL account,
-# deleting it on every run and turning that login into a permanent 401. Every id below is either
-# resolved from a same-run response or a disposable mechanic this file registers and disposes of
-# itself.
+# Every id here is resolved at runtime or created as a disposable fixture, never hardcoded: literal
+# mechanic ids drifted with the seed counter and once deleted the real ARSM_TEST_MECHANIC_EMAIL account.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -22,9 +8,6 @@
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
 @UnknownMechanicId = 999999
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -52,9 +35,8 @@ Content-Type: application/json
 ###
 
 ### [Negative][Admin] Admin cannot delete own account (403 expected)
-# CurrentAdminMechanicId is resolved from the login response personId field (AuthEndpoints.Contracts.cs
-# LoginResponse), never hardcoded, because DeleteMechanicAsync compares the caller person_id claim to
-# the route id, so it must be this session own id, whichever mechanic happens to be admin.
+# adminLogin.personId comes from the login response (AuthEndpoints.Contracts.cs), never hardcoded:
+# DeleteMechanicAsync compares the caller's person_id claim to the route id.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -63,20 +45,11 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-# COVERAGE GAP (do not fill by mutating shared seed):
-# DeleteMechanicAsync also 403s when the target mechanic carries the Admin role ("Cannot delete an
-# administrator account."). The demo seed (Data/DemoDataInitializer.cs) grants the Admin role to
-# exactly one mechanic, gabor.kovacs@example.com, and no API endpoint promotes another account to
-# Admin - only DemoDataInitializer does that at startup. Provisioning a second admin to exercise this
-# branch would require permanently mutating the shared demo seed every other suite depends on, so
-# this case is documented here instead of executed (same convention as the coverage-gap comment in
-# tests/API/catalog/catalog-authz.http).
+# COVERAGE GAP: DeleteMechanicAsync's 403-on-admin-target branch needs a second seeded admin, which
+# would require mutating the shared demo seed (only gabor.kovacs@example.com is Admin); not executed.
 
-# COVERAGE GAP (do not fill by mutating shared seed):
-# ValidateMechanicDeletionInvariantsAsync also 422s when db.Mechanics.CountAsync() <= 1 ("Cannot
-# delete the last remaining mechanic."). Reaching that state would require deleting every other
-# mechanic in the shared demo database down to exactly one, which every other suite that logs in as
-# a seeded mechanic depends on staying intact, so this case is documented here instead of executed.
+# COVERAGE GAP: the "last remaining mechanic" 422 needs the shared demo DB down to one mechanic, which
+# every other suite's login depends on staying intact; not executed.
 
 
 ### [Setup][Admin] Resolve a seeded customer that owns a vehicle (200 expected)
@@ -119,9 +92,8 @@ Content-Type: application/json
 ###
 
 ### [Setup][Admin] Create an appointment where the disposable mechanic is the sole assignee (201 expected)
-# No DELETE /api/appointments/{id} route exists (AppointmentEndpoints.cs), so this fixture
-# appointment stays on the calendar after this file runs - an accepted gap, the same as the two
-# coverage gaps documented above, because the API offers no way to remove it.
+# This fixture appointment is not deleted by this file and stays on the calendar after the run
+# (appointment-delete.http covers the AdminOnly DELETE /api/appointments/{id} route).
 # @name soleAssignmentAppt
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
@@ -197,19 +169,14 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Manual][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
-# Not automated: IsMechanicDeleteConcurrencyConflict only matches a DbUpdateConcurrencyException or a
-# Postgres serialization-failure/deadlock raised while the Serializable transaction in
-# DeleteMechanicAsync is in flight, which cannot be forced deterministically over plain sequential
-# HTTP calls. To reproduce by hand: register a disposable mechanic, then fire two concurrent
-# DELETE /api/admin/mechanics/{id} requests against it from separate admin sessions at the same time.
+# Not automated: needs a DbUpdateConcurrencyException/Postgres serialization failure mid-transaction,
+# which sequential HTTP calls cannot force; reproduce by hand with two concurrent deletes of one mechanic.
 
 ###
 
 ### [Manual][Admin] Linked identity delete failure returns server error (500 expected)
-# Not automated: reaching this branch requires UserManager.DeleteAsync to fail for a mechanic whose
-# IdentityUserId still resolves to a user, which normally cannot happen through the public API
-# surface (fault-inject the Identity store, or delete the IdentityUser row directly, to reproduce by
-# hand).
+# Not automated: needs UserManager.DeleteAsync to fail for a mechanic with a resolvable IdentityUserId,
+# unreachable via the public API; reproduce by fault-injecting the Identity store or deleting the row.
 
 ###
 

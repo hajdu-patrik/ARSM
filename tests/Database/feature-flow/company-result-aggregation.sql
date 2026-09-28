@@ -1,16 +1,5 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - COMPANY RESULT AGGREGATION INTEGRITY
--- ------------------------------------------------------------
--- Verifies the three rules the revenue report rests on
--- (Reporting/CompanyResultEndpoints.Queries.cs):
---   1. the accepted totals equal the SUM over the quotes table itself,
---   2. the monthly figures add up to the yearly one, which is what breaks
---      first if the period classification ever drifts off CreatedAt,
---   3. no Sent quote can fall into both the pending and the expired row.
--- The report reads stored quote totals, so this is a data-level check.
--- Expected result: 0 rows.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ------------------------------------------------------------
+-- FEATURE FLOW - COMPANY RESULT AGGREGATION INTEGRITY — see tests/CLAUDE.md Coverage Anchors
+--     for the three rules checked; AI SQL policy: ai_agent_test_user, SELECT-only. Expected: 0 rows.
 WITH accepted AS (
     SELECT date_part('year', q."CreatedAt")::int AS quote_year,
            date_part('month', q."CreatedAt")::int AS quote_month,

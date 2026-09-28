@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-"""Checks GET /api/quotes/{id}/pdf, the one quote route that answers with a binary body.
-
-httpyac cannot express this: it reads responses as text, so it can neither assert the
-%PDF- signature nor look inside the document. The endpoint is also where the embedded
-font either works or silently ruins a customer-facing paper, so the check extracts the
-text and asserts the accented word "Árajánlat" is in it.
-
-The API is configured with ThrowOnMissingTextGlyphs, so a font without the Hungarian
-letters fails the request outright rather than drawing empty boxes; the text assertion
-is the second net under that, and it is reported as skipped when pypdf is unavailable
-rather than failing a machine that simply lacks the package.
-
-Prints a sanitized JSON report and never echoes credentials.
-"""
+"""Checks GET /api/quotes/{id}/pdf: the one quote route with a binary body, unreachable from httpyac."""
 
 from __future__ import annotations
 

@@ -1,6 +1,5 @@
 -- 4. PERSON/IDENTITY EMAIL CONSISTENCY (mechanics)
 --    Expected: 0 rows.
--- ------------------------------------------------------------
 SELECT p."Id" AS mechanic_id,
        p."Email" AS person_email,
        u."Email" AS identity_email

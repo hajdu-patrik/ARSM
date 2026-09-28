@@ -23,9 +23,7 @@ export function normalizeEditFieldValue(_field: keyof EditFormState, value: stri
   return value;
 }
 
-/**
- * Validates edit-form values and builds the appointment update payload.
- */
+/** Validates edit-form values and builds the appointment update payload. */
 export function buildUpdateRequestFromEditForm(
   appointment: AppointmentDto,
   editForm: EditFormState,
@@ -66,10 +64,7 @@ export function buildUpdateRequestFromEditForm(
   };
 }
 
-/**
- * Applies a successful edit result to the local appointment snapshot so the
- * modal can reflect saved values without a full list refetch.
- */
+/** Applies a successful edit result to the local snapshot, avoiding a full list refetch. */
 export function buildUpdatedAppointmentSnapshot(
   appointment: AppointmentDto,
   request: UpdateEditFormResult,

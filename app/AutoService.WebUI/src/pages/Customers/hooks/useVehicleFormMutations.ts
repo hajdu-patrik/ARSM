@@ -1,8 +1,4 @@
-/**
- * Vehicle create/update mutation hook.
- * Coordinates modal state, payload validation, server calls, and local cache updates.
- * @module pages/Customers/hooks/useVehicleFormMutations
- */
+/** Vehicle create/update mutation hook: modal state, payload validation, server calls, and cache updates. */
 import { useCallback, useState } from 'react';
 import { isAxiosError } from 'axios';
 import type { ServerFieldErrors } from '../../../utils/serverValidation';
@@ -91,11 +87,7 @@ interface UseVehicleFormMutationsParams extends CustomerMutationToastHandlersWit
   loadVehicleHistory: (vehicleId: number, force?: boolean) => Promise<void>;
 }
 
-/**
- * Manages vehicle form modal state and create/update mutations.
- * @param params Shared list-state setters, loaders, and localized toast handlers.
- * @returns Vehicle form modal state and actions.
- */
+/** Manages vehicle form modal state and create/update mutations. */
 export function useVehicleFormMutations({
   showSuccessToast,
   showErrorToast,

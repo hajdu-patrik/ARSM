@@ -22,25 +22,14 @@ interface UseCustomersListStateParams {
   showErrorToast: (message: string) => void;
 }
 
-/**
- * Resolves React set-state payloads so cache synchronization can mirror state updates exactly.
- * @param update Direct state value or updater callback.
- * @param previous Previous state value supplied by React.
- * @returns The next state value.
- */
+/** Resolves a React set-state payload (value or updater) so cache sync can mirror the update exactly. */
 function resolveStateUpdate<T>(update: SetStateAction<T>, previous: T): T {
   return typeof update === 'function'
     ? (update as (previousValue: T) => T)(previous)
     : update;
 }
 
-/**
- * Mirrors record-shaped React state into per-entity query-cache entries and removes stale entries.
- * @param queryClient Shared query client that owns the browser cache.
- * @param previous Previous record state before the React update.
- * @param next Next record state after the React update.
- * @param keyFactory Query-key factory for each numeric record id.
- */
+/** Mirrors record-shaped React state into per-entity query-cache entries and removes stale entries. */
 function syncRecordCache<TValue>(
   queryClient: QueryClient,
   previous: Record<number, TValue>,
@@ -58,12 +47,7 @@ function syncRecordCache<TValue>(
   }
 }
 
-/**
- * Manages Customers page read-side state: list loading, search/sort, expansion,
- * and on-demand repair history loading for customers and vehicles.
- * @param params Hook dependencies for locale-aware sorting and error surfacing.
- * @returns Stateful values and actions consumed by the Customers page container.
- */
+/** Manages Customers page read-side state: list loading, search/sort, expansion, and on-demand history loading. */
 export function useCustomersListState({ language, showErrorToast }: UseCustomersListStateParams) {
   const queryClient = useQueryClient();
   const authUser = useAuthStore((state) => state.user);

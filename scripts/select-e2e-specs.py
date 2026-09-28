@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""Select the Playwright specs affected by the current WebUI changes.
-
-Maps changed files to the E2E specs that cover them, so the canonical runner can run a targeted
-subset instead of the full suite. The mapping is deliberately conservative: a changed file that is
-not covered by a feature rule below (shared components, utils, services, store, styles, config,
-test support) selects the FULL suite, so a targeted run never silently skips coverage.
-
-Usage:
-  python scripts/select-e2e-specs.py [--base REF]          print the selection
-  python scripts/select-e2e-specs.py [--base REF] --run    run it via run-local-test-suite.py playwright
-Output: nothing (no WebUI change), `ALL`, or space-separated spec paths relative to the WebUI.
-Exit codes: 0 success, 2 git error; with --run, the runner's exit code.
-"""
+"""Select the Playwright specs affected by the WebUI diff; see scripts/CLAUDE.md for the mapping rules and usage."""
 
 from __future__ import annotations
 

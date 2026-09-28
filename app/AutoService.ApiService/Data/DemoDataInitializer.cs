@@ -5,16 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.DataInitialization;
 
-/**
- * Seeds deterministic demo data for local development and manual testing.
- *
- * Only mechanics receive login accounts — customers are passive data records
- * (vehicle owners, notification targets) and cannot log in to the dashboard.
- *
- * Demo password policy:
- * - DemoData:MechanicPassword is always required.
- * - Outside Development: also requires explicit DemoData:EnableSeeding=true.
- */
+/** Seeds deterministic demo data (mechanics get login accounts, customers don't); requires
+ * DemoData:MechanicPassword always, and DemoData:EnableSeeding=true outside Development. */
 public static partial class DemoDataInitializer
 {
     private static readonly string[] DemoMechanicEmails =
@@ -24,13 +16,7 @@ public static partial class DemoDataInitializer
         "mate.szabo@example.com"
     ];
 
-    /**
-     * Applies pending migrations and inserts demo data when the database is empty.
-     *
-     * @param app The web application used to resolve scoped services.
-     * @param cancellationToken Token used to cancel migration and EF seeding I/O.
-     * @return A task that completes when migration and conditional seeding are finished.
-     */
+    /** Applies pending migrations and inserts demo data when the database is empty. */
     public static async Task EnsureSeededAsync(this WebApplication app, CancellationToken cancellationToken = default)
     {
         using var scope = app.Services.CreateScope();
@@ -125,11 +111,8 @@ public static partial class DemoDataInitializer
         await EnsureQuotesSeededAsync(db, cancellationToken);
     }
 
-    /**
-     * Ensures the "Admin" Identity role exists and is assigned to the first mechanic
-     * (Gabor Kovacs). Runs on every startup and is idempotent — safe to call when the
-     * role and assignment already exist.
-     */
+    /** Ensures the "Admin" Identity role exists and is assigned to the first mechanic
+     * (Gabor Kovacs); runs on every startup, idempotent. */
     private static async Task EnsureAdminRoleAsync(
         UserManager<IdentityUser> userManager,
         RoleManager<IdentityRole> roleManager)
@@ -146,15 +129,7 @@ public static partial class DemoDataInitializer
         }
     }
 
-    /**
-     * Creates an ASP.NET Core Identity user with the given credentials.
-     *
-     * @param userManager The Identity UserManager used to persist the account.
-     * @param email Email address used as both username and email.
-     * @param phone Optional phone number stored on the Identity account.
-     * @param password Plain-text password that Identity will hash before storing.
-     * @return The generated Identity user ID (GUID string) to link to the domain entity.
-     */
+    /** Creates an ASP.NET Core Identity user with the given credentials. */
     private static async Task<string> CreateIdentityUserAsync(
         UserManager<IdentityUser> userManager,
         string email,

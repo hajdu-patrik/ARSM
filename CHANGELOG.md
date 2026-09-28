@@ -9,6 +9,32 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Two-line comment rule applied repo-wide, cleanup pass in the agent chain, CI green again (2026-09-28).
+  - Rules (user decisions): every comment is at most 2 lines, doc comments and Python docstrings
+    included; temporary files live only in the scratchpad/OS temp and are never committed. Baked into
+    CLAUDE.md, the coding-principles agent and skill, the reminder hook and every arsm-chain
+    implement/fix/hand-off prompt; arsm-chain snapshots pre-existing untracked files and runs a cleanup
+    pass beside docs-sync (and after tests) that deletes only what the run left behind and lists
+    tracked files the change left unused, for approval.
+  - Refactor: ~430 files across API, AppHost, ServiceDefaults, WebUI, tests, scripts, workflows and
+    the deploy files condensed to 1-2 line comments (about 5,600 comment lines removed); code verified
+    unchanged by comparing comment-stripped sources against HEAD. The dead commented-out browser
+    projects in `playwright.config.ts` went too, and a stale "no appointment DELETE route" comment was
+    corrected.
+  - `scripts/validate.py` lints in batches (a large diff exceeded the Windows command-line limit), and
+    `QuoteEndpoints.Helpers.cs` was split (line-snapshot helpers moved to `QuoteEndpoints.LineSnapshots.cs`)
+    to meet the 300-line type limit it had exceeded since before the gate existed.
+  - CI: the `.NET` frontend build gets its Vite origins, the HTTP/SQL job generates a JWT secret long
+    enough for the API, trusts the HTTPS dev certificate for the Python checks, annotates failed
+    requests, and the runner provisions test accounts (`_setup`) before the suite; both workflows are
+    green on GitHub.
+  - Verification: validate gate passed; full suites on the AppHost: Playwright 72/72, HTTP 872/872
+    (setup included) plus the 4 Python checks, SQL 24/24.
+
+_Dev time: ~1h45m wall-clock. Cost: ~$16.66-$33.33 (2 `arsm-chain` runs, 1,666,412 output tokens,
+sonnet-opus range; output-token-only estimate - excludes input tokens and cache writes/reads, so a
+lower bound, not a bill)._
+
 - Flat item surfaces, test suites in GitHub Actions, codebase cleanup, no fable (2026-09-28).
   - WebUI: item-level gradient overlays are gone, so every card, panel, modal and sidebar section
     shows its own solid background token (scheduler intake selected-day box and customer lookup

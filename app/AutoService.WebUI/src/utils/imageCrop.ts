@@ -1,10 +1,5 @@
-/**
- * Image loading and canvas crop-to-blob utilities.
- *
- * Used by the profile picture crop workflow to load an image file,
- * crop it to a square region, and produce a {@code Blob} for upload.
- * @module utils/imageCrop
- */
+/** Image loading and canvas crop-to-blob utilities for the profile picture crop workflow:
+ * load a file, crop to a square region, produce a `Blob` for upload. */
 
 /** Expected prefix for data URL strings from {@code FileReader}. */
 const FILE_READER_DATA_URL_PREFIX = 'data:';
@@ -12,11 +7,7 @@ const FILE_READER_DATA_URL_PREFIX = 'data:';
 /** Encoder quality for the cropped output blob. */
 const CROP_OUTPUT_QUALITY = 0.9;
 
-/**
- * Loads an image from a source URL and resolves when fully loaded.
- * @param src - The image source URL or data URL.
- * @returns A loaded {@code HTMLImageElement}.
- */
+/** Loads an image from a source URL and resolves when fully loaded. */
 function createImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -27,11 +18,7 @@ function createImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/**
- * Reads a {@code File} as a data URL string using {@code FileReader}.
- * @param file - The file to read.
- * @returns A data URL representation of the file contents.
- */
+/** Reads a `File` as a data URL string using `FileReader`. */
 async function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -49,23 +36,13 @@ async function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-/**
- * Converts a {@code File} to a data URL suitable for use as an image source.
- * @param file - The image file to convert.
- * @returns A data URL string.
- */
+/** Converts a `File` to a data URL suitable for use as an image source. */
 export async function fileToImageSource(file: File): Promise<string> {
   return readFileAsDataUrl(file);
 }
 
-/**
- * Crops an image to a square region and returns the result as a {@code Blob}.
- * Draws the cropped area onto an off-screen canvas.
- * @param imageSrc - Source URL or data URL of the image to crop.
- * @param cropPixels - Pixel-based crop region (x, y, width, height).
- * @param outputType - Output MIME type (defaults to {@code 'image/webp'}).
- * @returns A {@code Blob} of the cropped image in the specified format.
- */
+/** Crops an image to a square region and returns the result as a `Blob`,
+ * drawing the cropped area onto an off-screen canvas. */
 export async function cropImageToBlob(
   imageSrc: string,
   cropPixels: { x: number; y: number; width: number; height: number },

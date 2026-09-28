@@ -1,8 +1,4 @@
-/**
- * Quote list section: renders through `DataList` so the header and every row
- * share one column model, table from `@4xl` up, labeled tiles below it.
- * @module pages/Quotes/components/QuoteList
- */
+/** Quote list via DataList (shared column model): table from `@4xl` up, labeled tiles below it. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DataList, type DataListColumn } from '../../../components/common/DataList';

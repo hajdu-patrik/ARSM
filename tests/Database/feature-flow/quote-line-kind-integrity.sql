@@ -1,17 +1,5 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - QUOTE LINE KIND INTEGRITY
--- ------------------------------------------------------------
--- Verifies every persisted quotelines row obeys the Part/Labor exclusivity
--- rule from CK_QuoteLines_LineKindIntegrity
--- (AutoServiceDbContext.QuotesModel.cs): a Part-kind line may not carry a
--- LaborTypeId, and a Labor-kind line may not carry a PartId. PartId and
--- LaborTypeId are each individually optional (QuoteLine.cs: a manually
--- entered line needs no catalog reference on its own matching side), so
--- only a reference on the wrong side is a violation, not a missing
--- reference on the matching side.
--- Expected result: 0 rows.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ------------------------------------------------------------
+-- FEATURE FLOW - QUOTE LINE KIND INTEGRITY — CK_QuoteLines_LineKindIntegrity: Part lines can't carry
+--     LaborTypeId, Labor lines can't carry PartId; a missing (not wrong-side) reference is fine. Expected: 0 rows.
 SELECT l."Id" AS quote_line_id,
        l."QuoteId",
        l."LineKind",

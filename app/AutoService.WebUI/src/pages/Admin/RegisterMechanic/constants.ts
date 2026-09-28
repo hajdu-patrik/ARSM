@@ -1,7 +1,4 @@
-/**
- * Specialization and expertise option arrays for mechanic registration.
- * @module pages/Admin/RegisterMechanic/constants
- */
+/** Specialization and expertise option arrays for mechanic registration. */
 
 import type { OptionItem } from './types';
 

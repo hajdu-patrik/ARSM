@@ -20,10 +20,8 @@ from test_suite_secrets import POSTGRES_URI_PATTERN, EnvironmentLoader, OutputSa
 
 TARGET_ORDER = ("playwright", "http", "sql")
 
-# Behaviour that HTTPYAC cannot express: multipart upload contracts, a streaming SSE round
-# trip, a per-quote line cap that only shows up after 200 successful additions, and a
-# binary PDF response whose text has to be read back.
-# (report key, command label, script path, human-readable name)
+# Behaviour HTTPYAC cannot express (see tests/CLAUDE.md Coverage Anchors); each tuple is
+# (report key, command label, script path, human-readable name).
 PYTHON_HTTP_CHECKS = (
     (
         "profilePictureUploadCheck",

@@ -1,13 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - STATUS TRANSITIONS
-# ─────────────────────────────────────────────────────────────
-# UpdateStatusAsync (AppointmentEndpoints.StatusMutations.cs) requires the caller to be one of the
-# appointment's assigned mechanics — there is no admin bypass — so ApptId and PastCancelledApptId are
-# created via the mechanic-facing intake endpoint, which auto-assigns the calling (non-admin) mechanic.
-# Non-assigned-mechanic 403 coverage lives in the sibling file mechanic-status-transitions-authz.http
-# (split out to stay under the 250-line file limit; it needs a short admin detour to create a fixture
-# this mechanic is deliberately not assigned to). Both appointments are deleted at the end by an admin
-# session via DELETE /api/appointments/{id} (AdminOnly).
+# UpdateStatusAsync has no admin bypass - the caller must be an assigned mechanic - so fixtures are
+# created via intake (auto-assigns the caller). Non-assigned 403 coverage is the sibling mechanic-status-transitions-authz.http (file-size limit); both are deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -17,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -128,7 +118,6 @@ Content-Type: application/json
 
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Self-claim is only allowed for InProgress appointments.
-# Expected error code: appointment_completed.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

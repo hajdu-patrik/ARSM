@@ -25,11 +25,7 @@ interface UseVehicleMutationsParams extends CustomerMutationToastHandlersWithWar
   loadVehicleHistory: (vehicleId: number, force?: boolean) => Promise<void>;
 }
 
-/**
- * Encapsulates vehicle create/update/delete modal state and mutation side effects.
- * @param params Shared page state, loaders, and notification handlers.
- * @returns Modal state plus mutation actions for vehicle operations.
- */
+/** Encapsulates vehicle create/update/delete modal state and mutation side effects. */
 export function useVehicleMutations({
   showSuccessToast,
   showErrorToast,

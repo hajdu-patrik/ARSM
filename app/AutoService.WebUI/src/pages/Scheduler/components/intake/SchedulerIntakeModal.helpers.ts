@@ -82,17 +82,7 @@ export function getDefaultDueDate(selectedDate: Date): string {
   );
 }
 
-/**
- * Maps a known backend intake error to a localized frontend message key.
- *
- * Checks are evaluated in priority order: duplicate license plate is tested
- * before the generic license plate pattern to ensure the correct i18n key is
- * returned when both strings would otherwise match.
- *
- * @param error - The caught error value from an intake API call.
- * @returns A dot-separated i18n key string for the matching error condition,
- *   falling back to `'scheduler.intake.errors.createFailed'` for unknown errors.
- */
+/** Maps a known backend intake error to a localized i18n key; the duplicate-plate check runs before the generic plate pattern so it wins when both would match. */
 export function mapIntakeErrorToKey(error: unknown): string {
   const detail = getIntakeErrorDetail(error);
 
@@ -162,9 +152,7 @@ export function hasRequiredVehicleTextValues(vehicle: VehicleFormState): boolean
     && (DRIVETRAIN_TYPES as readonly string[]).includes(vehicle.drivetrainType);
 }
 
-/**
- * Validates intake form state before constructing the API request payload.
- */
+/** Validates intake form state before constructing the API request payload. */
 export function getCreateValidationError(params: {
   lookupState: LookupState;
   normalizedEmail: string;
@@ -206,9 +194,7 @@ export function getCreateValidationError(params: {
   return null;
 }
 
-/**
- * Enriches the base intake payload with lookup-dependent customer/vehicle data.
- */
+/** Enriches the base intake payload with lookup-dependent customer/vehicle data. */
 export function enrichPayloadByLookupState(params: {
   basePayload: SchedulerCreateIntakeRequest;
   lookupState: LookupState;

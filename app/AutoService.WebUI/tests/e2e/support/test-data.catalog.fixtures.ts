@@ -1,12 +1,5 @@
-/**
- * Fixture data for the Inventory (parts / labor types) catalog.
- *
- * Split from `test-data.fixtures.ts` (already at the 250-line hard split
- * limit) rather than appended to it; `test-data.ts` merges this state in
- * alongside the customer/appointment fixtures, the same way
- * `api-mock-catalog-handlers.ts` sits next to
- * `api-mock-customer-appointment-handlers.ts`.
- */
+/** Fixture data for the Inventory catalog; split out of `test-data.fixtures.ts` (already at the
+ * 250-line split limit) - `test-data.ts` merges it in alongside the customer/appointment fixtures. */
 import type { LaborTypeDto, PartDto } from '../../../src/types/catalog/catalog.types';
 import { MOCK_LABOR_TYPE_IDS, MOCK_PART_IDS } from './test-data.constants';
 
@@ -16,9 +9,8 @@ export interface CatalogFixtureState {
   readonly laborTypes: LaborTypeDto[];
 }
 
-// Net * (1 + vat/100) at the fixed demo VAT rate of 27%, matching the
-// backend's display-only gross formula (plan F1) exactly, so the initial
-// list renders realistic numbers before any test overrides the mock.
+// Net * (1 + vat/100) at the fixed demo VAT rate of 27%, matching the backend's display-only gross
+// formula (plan F1) exactly, so the initial list renders realistic numbers before any override.
 const timingBeltPart: PartDto = {
   id: MOCK_PART_IDS.timingBelt,
   partNumber: 'ALT-1001',

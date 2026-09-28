@@ -5,11 +5,7 @@ import {
 } from '../helpers';
 import type { CreateVehicleRequest, UpdateVehicleRequest } from '../../../types/customers/customers.types';
 
-/**
- * Builds a validated vehicle payload from modal form state.
- * @param form Vehicle form state with string-based numeric inputs.
- * @returns Payload and optional field error key when numeric parsing fails.
- */
+/** Builds a validated vehicle payload from modal form state, or a field error if numeric parsing fails. */
 export function buildVehiclePayload(form: VehicleFormState): {
   payload: CreateVehicleRequest | UpdateVehicleRequest;
   fieldError: string | null;

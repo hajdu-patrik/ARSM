@@ -1,8 +1,4 @@
-/**
- * Part create/update/delete mutation hook.
- * Coordinates modal state, payload validation, server calls, and local list updates.
- * @module pages/Inventory/hooks/usePartMutations
- */
+/** Part create/update/delete mutation hook: modal state, payload validation, server calls, list updates. */
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import { isAxiosError } from 'axios';
 import {
@@ -41,11 +37,7 @@ interface UsePartMutationsParams extends CatalogMutationToastHandlers {
   reloadParts: (force?: boolean) => Promise<void>;
 }
 
-/**
- * Manages the part form/delete modal state and create/update/delete mutations.
- * @param params Shared list setter, list reloader, and localized toast handlers.
- * @returns Part form and delete modal state plus mutation actions.
- */
+/** Manages the part form/delete modal state and create/update/delete mutations. */
 export function usePartMutations({
   showSuccessToast,
   showErrorToast,

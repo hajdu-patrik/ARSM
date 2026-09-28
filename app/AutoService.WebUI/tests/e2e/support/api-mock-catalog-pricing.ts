@@ -5,13 +5,8 @@ export function computeGrossAmount(netAmount: number, vatRatePercent: number): n
   return Math.round(netAmount * (1 + vatRatePercent / 100) * 100) / 100;
 }
 
-/**
- * Resolves the gross amount a create/update response carries, consuming a
- * test's one-shot `state.catalogGrossOverride` when set. This is how a spec
- * proves the list row renders the server DTO's gross value rather than
- * recomputing it locally: the override deliberately does not match the
- * formula result.
- */
+/** Resolves the gross for a create/update response, consuming a one-shot `state.catalogGrossOverride`
+ * so a spec can prove the row renders the server's gross value instead of recomputing it locally. */
 export function resolveGrossAmount(state: MockApiState, netAmount: number, vatRatePercent: number): number {
   if (state.catalogGrossOverride !== null) {
     const override = state.catalogGrossOverride;

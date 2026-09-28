@@ -2,10 +2,7 @@ using AutoService.ApiService.Domain;
 
 namespace AutoService.ApiService.DataInitialization;
 
-/**
- * Pure-data factory for demo parts and labor types. No database access —
- * mirrors DemoDataSeedFactory's role for the pricing catalog.
- */
+/** Pure-data factory for demo parts and labor types; no DB access, mirrors DemoDataSeedFactory for the pricing catalog. */
 internal static class DemoDataPricingSeedFactory
 {
     private const int StandardVatRatePercent = 27;

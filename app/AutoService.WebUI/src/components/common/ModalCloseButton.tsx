@@ -1,8 +1,4 @@
-/**
- * Modal close button component.
- *
- * @module components/common/ModalCloseButton
- */
+/** Modal close button component. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

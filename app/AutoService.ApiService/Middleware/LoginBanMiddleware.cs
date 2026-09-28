@@ -3,10 +3,7 @@ using System.Globalization;
 
 namespace AutoService.ApiService.Middleware;
 
-/**
- * Middleware that enforces a temporary 3-minute ban on login attempts
- * after the fixed-window rate limiter rejects a client.
- */
+/** Middleware that enforces a temporary 3-minute ban on login attempts after the fixed-window rate limiter rejects a client. */
 public sealed class LoginBanMiddleware(RequestDelegate next)
 {
     private static readonly ConcurrentDictionary<string, DateTimeOffset> BannedClients = new();

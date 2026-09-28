@@ -59,9 +59,7 @@ export function useProfilePictureSettings({
       return;
     }
 
-    // Cropping re-encodes the image, so the size that actually travels to the server is the
-    // cropped blob, not the file the user picked. Checking only the source would let an upload
-    // through that the server then rejects.
+    // Cropping re-encodes the image, so the cropped blob is size-checked too, not just the source file (CLAUDE.md).
     if (blob.size > MAX_PROFILE_PICTURE_BYTES) {
       showErrorToast('toast.pictureTooLarge', { maxMb: MAX_PROFILE_PICTURE_MB });
       return;

@@ -8,20 +8,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * Creates a new draft quote anchored to a vehicle (D1). ValidUntil
-     * defaults to now + 30 days when omitted (D22); the quote number is
-     * assigned by QuoteNumberGenerator (D13); the creating mechanic is
-     * resolved from the person_id claim (D15), the same way appointment
-     * endpoints do.
-     *
-     * @param vehicleId Vehicle the quote is anchored to.
-     * @param request Draft creation payload.
-     * @param user Authenticated user principal.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The created quote, or a validation/not-found result.
-     */
+    /** Creates a draft quote anchored to a vehicle (D1): ValidUntil defaults to +30 days (D22), the
+     * number comes from QuoteNumberGenerator (D13), and the mechanic is resolved from the person_id claim (D15). */
     private static async Task<IResult> CreateQuoteAsync(
         int vehicleId,
         CreateQuoteRequest request,
@@ -111,17 +99,7 @@ public static partial class QuoteEndpoints
         return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
     }
 
-    /**
-     * Deletes a draft quote (D7: only Draft is deletable) under optimistic
-     * concurrency (D30, D38, D39: version arrives as a query parameter on
-     * DELETE).
-     *
-     * @param id Quote identifier.
-     * @param version Client-submitted concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return 204 on success, or a validation/conflict/not-found result.
-     */
+    /** Deletes a draft quote (D7: only Draft is deletable) under optimistic concurrency (D30/D38/D39: version arrives as a query parameter on DELETE). */
     private static async Task<IResult> DeleteQuoteAsync(
         int id,
         uint version,

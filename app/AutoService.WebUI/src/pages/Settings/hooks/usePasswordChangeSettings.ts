@@ -1,7 +1,4 @@
-/**
- * Password-change workflow state for Settings.
- * @module pages/Settings/hooks/usePasswordChangeSettings
- */
+/** Password-change workflow state for Settings. */
 
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { profileService } from '../../../services/profile/profile.service';

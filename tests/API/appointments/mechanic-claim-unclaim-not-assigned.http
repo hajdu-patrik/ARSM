@@ -1,11 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - UNCLAIM WHEN NOT ASSIGNED
-# ─────────────────────────────────────────────────────────────
-# Split out of mechanic-claim-unclaim-edge-cases.http to stay under the 250-line file limit.
-# NonAssignedApptId deliberately excludes the non-admin test mechanic, so it is created via a short
-# admin detour (POST /api/customers/{id}/appointments with the admin's own mechanic id as the sole
-# assignee) before switching to the non-admin session used for the unclaim check. The admin logs back in
-# at the end to delete the fixture via DELETE /api/appointments/{id} (AdminOnly).
+# Split out of mechanic-claim-unclaim-edge-cases.http (file-size limit). NonAssignedApptId excludes the
+# test mechanic by design: created via a short admin detour, then the non-admin session runs the unclaim check; admin logs back in to delete it.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -15,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -107,7 +99,6 @@ Content-Type: application/json
 # CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
 ### [Negative][Appointments] Unclaim when not assigned to appointment (409 expected)
-# Expected error code: not_assigned.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

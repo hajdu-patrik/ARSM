@@ -1,8 +1,4 @@
-/**
- * Vehicle delete mutation hook.
- * Coordinates delete confirmation state, server deletion, and local cache cleanup.
- * @module pages/Customers/hooks/useVehicleDeleteMutations
- */
+/** Vehicle delete mutation hook: coordinates confirmation state, server deletion, and cache cleanup. */
 import { useCallback, useState } from 'react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
@@ -17,11 +13,7 @@ interface UseVehicleDeleteMutationsParams extends CustomerMutationToastHandlers 
   loadCustomerHistory: (customerId: number, force?: boolean) => Promise<void>;
 }
 
-/**
- * Manages vehicle delete confirmation state and mutation side effects.
- * @param params Shared list-state setters, history loaders, and localized toast handlers.
- * @returns Delete modal state and actions.
- */
+/** Manages vehicle delete confirmation state and mutation side effects. */
 export function useVehicleDeleteMutations({
   showSuccessToast,
   showErrorToast,

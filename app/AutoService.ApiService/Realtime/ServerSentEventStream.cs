@@ -3,19 +3,10 @@ using System.Threading.Channels;
 
 namespace AutoService.ApiService.Realtime;
 
-/**
- * Shared server-sent event writer for the live update endpoints.
- *
- * Keeping this in one place means a second live channel does not mean a second copy of the
- * keep-alive, idle-timeout and flush handling, which are easy to get subtly wrong.
- */
+/** Shared server-sent event writer for the live update endpoints. Keeping this in one place means a second live channel does not mean a second copy of the keep-alive, idle-timeout and flush handling, which are easy to get subtly wrong. */
 internal static class ServerSentEventStream
 {
-    /**
-     * camelCase matches what the browser clients parse. The static JsonSerializer call does not pick
-     * up the ASP.NET Core JSON options, so without this every frame would arrive PascalCased and the
-     * client-side parsers would drop it.
-     */
+    /** camelCase matches what the browser clients parse. The static JsonSerializer call does not pick up the ASP.NET Core JSON options, so without this every frame would arrive PascalCased and the client-side parsers would drop it. */
     private static readonly JsonSerializerOptions PayloadJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -35,11 +26,7 @@ internal static class ServerSentEventStream
         Closed
     }
 
-    /**
-     * Applies the response headers an SSE stream needs before the first write.
-     *
-     * @param response Response that will carry the stream.
-     */
+    /** Applies the response headers an SSE stream needs before the first write. */
     public static void ConfigureResponse(HttpResponse response)
     {
         response.Headers.CacheControl = "no-cache";
@@ -47,15 +34,7 @@ internal static class ServerSentEventStream
         response.ContentType = "text/event-stream";
     }
 
-    /**
-     * Streams events until the channel closes, the client disconnects, or the idle timeout expires.
-     *
-     * @param response Response to write frames into.
-     * @param reader Reader drained for events.
-     * @param eventName SSE event name clients subscribe to.
-     * @param readyComment Comment frame written once the stream is established.
-     * @param cancellationToken Token cancelled when the client disconnects.
-     */
+    /** Streams events until the channel closes, the client disconnects, or the idle timeout expires. */
     public static async Task WriteAsync<TEvent>(
         HttpResponse response,
         ChannelReader<TEvent> reader,
@@ -91,9 +70,7 @@ internal static class ServerSentEventStream
         }
     }
 
-    /**
-     * Waits for the next event while distinguishing channel closure from a keep-alive tick.
-     */
+    /** Waits for the next event while distinguishing channel closure from a keep-alive tick. */
     private static async Task<ReadState> WaitForNextAsync<TEvent>(
         ChannelReader<TEvent> reader,
         CancellationToken cancellationToken)
@@ -112,9 +89,7 @@ internal static class ServerSentEventStream
         }
     }
 
-    /**
-     * Writes every queued event and extends the idle deadline after each delivery.
-     */
+    /** Writes every queued event and extends the idle deadline after each delivery. */
     private static async Task<DateTime> DrainAsync<TEvent>(
         HttpResponse response,
         ChannelReader<TEvent> reader,
@@ -133,9 +108,7 @@ internal static class ServerSentEventStream
         return idleDeadlineUtc;
     }
 
-    /**
-     * Writes an SSE comment frame, used for readiness and keep-alive signalling.
-     */
+    /** Writes an SSE comment frame, used for readiness and keep-alive signalling. */
     private static async Task WriteCommentAsync(
         HttpResponse response,
         string comment,

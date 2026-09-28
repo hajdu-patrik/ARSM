@@ -73,11 +73,7 @@ interface UseCustomerMutationsParams extends CustomerMutationToastHandlersWithWa
   applyCustomerDeleted: (customerId: number) => void;
 }
 
-/**
- * Encapsulates customer create/update/delete modal state and server mutations.
- * @param params State setters and notification handlers required by mutation flows.
- * @returns Modal state plus mutation actions for customer operations.
- */
+/** Encapsulates customer create/update/delete modal state and server mutations. */
 export function useCustomerMutations({
   showSuccessToast,
   showErrorToast,

@@ -1,8 +1,4 @@
-/**
- * ContactNormalization.cs
- *
- * Centralizes contact-info normalization: email, EU phone numbers, and name validation.
- */
+/** Centralizes contact-info normalization: email, EU phone numbers, and name validation. */
 
 using System.Net.Mail;
 using System.Text.RegularExpressions;
@@ -10,17 +6,12 @@ using PhoneNumbers;
 
 namespace AutoService.ApiService.Normalization;
 
-/**
- * Provides normalization and validation helpers for contact information fields.
- */
+/** Provides normalization and validation helpers for contact information fields. */
 internal static partial class ContactNormalization
 {
     private static readonly PhoneNumberUtil PhoneUtil = PhoneNumberUtil.GetInstance();
 
-    /**
-     * Country calling codes accepted as valid European numbers.
-     * Covers EU member states, EEA, and broader European region.
-     */
+    /** Country calling codes accepted as valid European numbers (EU, EEA, broader Europe). */
     private static readonly HashSet<int> EuCountryCodes =
     [
         43, 32, 359, 385, 357, 420, 45, 372, 358, 33, 49, 30, 36, 354, 353, 39,
@@ -65,14 +56,7 @@ internal static partial class ContactNormalization
         return true;
     }
 
-    /**
-     * Parses and validates a phone number using libphonenumber, ensuring
-     * the country code belongs to an accepted European region.
-     * @param rawValue Raw user input (any format).
-     * @param e164Number E.164 formatted output including '+' prefix.
-     * @param defaultRegion ISO 3166-1 alpha-2 default region when input has no country code.
-     * @returns {@code true} when the number is a valid European phone number.
-     */
+    /** Parses and validates a phone number using libphonenumber, ensuring the country code belongs to an accepted European region. */
     internal static bool TryNormalizeEuPhoneNumber(string? rawValue, out string e164Number, string defaultRegion = "HU")
     {
         e164Number = string.Empty;
@@ -106,11 +90,7 @@ internal static partial class ContactNormalization
         }
     }
 
-    /**
-     * Returns lookup candidates for backward-compatible phone matching:
-     * E.164 with '+' prefix and legacy no-plus format.
-     * @param e164Number E.164 formatted number (e.g. "+36301234567").
-     */
+    /** Returns lookup candidates for backward-compatible phone matching: E.164 with '+' prefix and legacy no-plus format. */
     internal static IReadOnlyCollection<string> BuildPhoneLookupCandidates(string e164Number)
     {
         // e164Number already includes the '+' prefix.

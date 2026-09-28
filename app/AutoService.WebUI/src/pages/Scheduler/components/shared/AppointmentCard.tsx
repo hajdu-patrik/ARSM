@@ -1,7 +1,4 @@
-/**
- * Appointment card component for scheduler grid/list views.
- * @module AppointmentCard
- */
+/** Appointment card component for scheduler grid/list views. */
 import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Clock3, LogOut, UserPlus } from 'lucide-react';

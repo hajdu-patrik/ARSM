@@ -1,13 +1,4 @@
-/**
- * Reference data the quote editor picks from: the part and labor-type
- * catalog behind the line editor, and the anchored vehicle's appointments
- * behind the optional appointment link.
- *
- * Every read goes through the same query keys the Inventory and Customers
- * pages use, so opening the editor reuses whatever those pages already
- * cached instead of refetching it.
- * @module pages/Quotes/hooks/useQuoteReferenceData
- */
+/** Quote editor reference data: catalog for the line editor, vehicle appointments for the link; reuses Inventory/Customers' query keys/cache. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
@@ -38,11 +29,7 @@ export interface QuoteReferenceData {
   readonly isLoadingCatalog: boolean;
 }
 
-/**
- * Loads the catalog and the anchored vehicle's appointments while the editor is open.
- * @param params Editor open state, the anchored vehicle, and the error toast handler.
- * @returns Catalog entries, appointment options, and the catalog loading flag.
- */
+/** Loads the catalog and the anchored vehicle's appointments while the editor is open. */
 export function useQuoteReferenceData({
   isOpen,
   vehicleId,

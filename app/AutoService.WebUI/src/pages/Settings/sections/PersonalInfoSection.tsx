@@ -1,10 +1,4 @@
-/**
- * Settings personal-information form section.
- *
- * Renders editable name, email, and phone fields with inline
- * server-validation message display.
- * @module pages/Settings/sections/PersonalInfoSection
- */
+/** Settings personal-information form: editable name/email/phone fields with inline server-validation display. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

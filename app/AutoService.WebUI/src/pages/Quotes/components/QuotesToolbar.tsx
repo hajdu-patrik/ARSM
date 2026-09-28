@@ -1,10 +1,4 @@
-/**
- * Quotes toolbar: search by quote number, title, or license plate, plus the
- * status filter. Expired is offered next to the four stored statuses because
- * it is what a mechanic actually looks for, even though the server never
- * stores it.
- * @module pages/Quotes/components/QuotesToolbar
- */
+/** Quotes toolbar: search plus status filter; Expired sits beside the four stored statuses since that's what a mechanic looks for. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Search, X } from 'lucide-react';

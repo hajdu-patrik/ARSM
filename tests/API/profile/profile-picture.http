@@ -1,16 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# PROFILE - PROFILE PICTURE
-# ─────────────────────────────────────────────────────────────
-# Verified against ProfileEndpoints.ProfilePicture.cs: GetProfilePictureAsync/GetMechanicProfilePictureAsync
-# return 404 immediately when the target has no ProfilePictureObjectKey, without ever inspecting
-# If-None-Match - so a conditional GET against an account with no stored picture never answers 304,
-# regardless of the If-None-Match value sent. This file never uploads a picture (multipart upload,
-# ETag/re-encode and the stored-format contract live in profile-picture-upload-check.py, run by the
-# local test runner after HTTPYAC per the [Note] block below), so a genuine ETag-match 304 round trip
-# is not covered here - profile-picture-upload-check.py covers it right after its own PNG upload.
-# GetMechanicProfilePictureAsync forbids a non-admin from any personId other than their own
-# (httpContext.User.IsInRole("Admin") or currentPerson.Id == personId), so both person-id targets
-# below are resolved from login responses instead of a hardcoded seed id.
+# No picture ever gets uploaded here, so every check proves the no-picture-yet / never-304 paths only;
+# the genuine ETag-match round trip is covered by profile-picture-upload-check.py - see tests/CLAUDE.md.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -19,9 +8,6 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonExistentPersonId = 99999
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -161,24 +147,14 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPers
 ###
 
 ### [Manual][Profile] Open realtime profile picture updates stream (authorized SSE)
-# SSE streams never complete a normal HTTP response, so this is not run automatically.
-# Verify manually: GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/updates while
-# authenticated, then trigger a picture upload/delete from another session and confirm a
-# "profile-picture-updated" event arrives.
+# SSE streams never complete a normal HTTP response, so this is not automated; verify manually by
+# opening GET .../profile/picture/updates and confirming a "profile-picture-updated" event on change.
 
 ###
 
 ### [Note][Profile] Multipart upload edge checks are automated by the local test runner
-# Canonical command:
-# python scripts/run-local-test-suite.py http
-#
-# The runner executes tests/API/profile/profile-picture-upload-check.py after HTTPYAC,
-# covering:
-# - valid PNG upload (200/204)
-# - MIME/content mismatch (422)
-# - invalid magic bytes (422)
-# - conditional GET: 304 on the stored ETag, 200 on a mismatched one
-# - cleanup delete and logout
+# python scripts/run-local-test-suite.py http runs profile-picture-upload-check.py after HTTPYAC for
+# the multipart upload, magic-byte and stored-ETag checks this file skips - see tests/CLAUDE.md.
 
 ###
 

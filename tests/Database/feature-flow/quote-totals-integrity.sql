@@ -1,22 +1,8 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - QUOTE TOTALS INTEGRITY
--- ------------------------------------------------------------
--- Verifies every persisted quote's stored totals agree with its lines and
--- with each other, guarding the invariant that Quote.cs/QuoteLine.cs and
--- Pricing/QuoteTotalsCalculator keep in sync on every save, and that
--- CK_Quotes_Totals enforces at the database level.
--- Expected result: 0 rows from both queries below.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ------------------------------------------------------------
+-- FEATURE FLOW - QUOTE TOTALS INTEGRITY — stored totals must agree with lines and with each other
+--     (root CLAUDE.md: gross = net + vat, never a rate multiply; CK_Quotes_Totals). Expected: 0 rows from both queries.
 
--- ------------------------------------------------------------
--- 27. QUOTE NET TOTAL VS. LINE SUM
---     quotes.TotalNet must equal the sum of its quotelines.NetAmount
---     (0 for a quote with no lines). A stale TotalNet left behind by a
---     line insert/update/delete that skipped QuoteTotalsCalculator shows
---     up here.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 27. QUOTE NET TOTAL VS. LINE SUM — TotalNet must equal SUM(quotelines.NetAmount), 0 with no lines.
+--     Catches a stale TotalNet left by a save that skipped QuoteTotalsCalculator. Expected: 0 rows.
 SELECT q."Id" AS quote_id,
        q."QuoteNumber",
        q."TotalNet",
@@ -28,14 +14,8 @@ HAVING q."TotalNet" <> COALESCE(SUM(l."NetAmount"), 0)
 ORDER BY q."Id";
 
 
--- ------------------------------------------------------------
--- 28. QUOTE GROSS TOTAL VS. NET + VAT
---     quotes.TotalGross must equal TotalNet + TotalVat. Enforced by
---     CK_Quotes_Totals at the database level (see
---     core-schema/quote-schema-contracts.sql, section 24); this query
---     re-checks the same rule directly against the persisted rows.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 28. QUOTE GROSS TOTAL VS. NET + VAT — TotalGross must equal TotalNet + TotalVat, already enforced
+--     by CK_Quotes_Totals (quote-schema-contracts.sql #24); this re-checks it against live rows. Expected: 0 rows.
 SELECT q."Id" AS quote_id,
        q."QuoteNumber",
        q."TotalGross",

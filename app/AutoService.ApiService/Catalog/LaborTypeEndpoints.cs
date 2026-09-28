@@ -2,18 +2,10 @@ using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Catalog;
 
-/**
- * Registers labor type catalog routes under /api/labor-types.
- * Handler logic is split into dedicated partial files.
- */
+/** Registers labor type catalog routes under /api/labor-types; handler logic is split into dedicated partial files. */
 public static partial class LaborTypeEndpoints
 {
-    /**
-     * Maps labor type endpoints to the route builder.
-     *
-     * @param endpoints Endpoint route builder.
-     * @returns Route builder with labor type endpoints registered.
-     */
+    /** Maps labor type endpoints to the route builder. */
     public static IEndpointRouteBuilder MapLaborTypeEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/labor-types").WithTags("LaborTypes").RequireAuthorization("MechanicOnly");

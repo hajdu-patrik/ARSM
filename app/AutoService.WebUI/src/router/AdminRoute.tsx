@@ -1,8 +1,4 @@
-/**
- * Route guard for admin-only pages. Redirects unauthenticated users
- * to `/login` and non-admin users to `/`. Renders nothing while loading.
- * @module AdminRoute
- */
+/** Route guard for admin-only pages: redirects unauthenticated users to `/login`, non-admin to `/`. */
 import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';

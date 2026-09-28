@@ -1,9 +1,4 @@
-/**
- * Quote editor totals: net, VAT, and gross, straight from the server DTO.
- * The editor never sums lines itself, so the figure shown here is the same
- * one the PDF and the revenue report will use.
- * @module pages/Quotes/components/QuoteEditorModal.totals
- */
+/** Quote editor totals: net/VAT/gross straight from the server DTO, matching the PDF and revenue report exactly. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import type { QuoteDetailDto } from '../../../types/quotes/quotes.types';
@@ -21,10 +16,7 @@ interface QuoteEditorTotalsSectionProps {
 }
 
 const totalRowClass = 'flex min-w-0 items-baseline justify-between gap-3';
-// Net/VAT/gross are financial figures, so they wrap instead of ellipsizing
-// (the codebase's `[overflow-wrap:anywhere]` convention, also used by
-// CompanyResultSummary) rather than reusing `numericValueTextClass`'s
-// `truncate`, which would otherwise hide digits of an unusually large total.
+// Financial figures wrap instead of truncating (shared [overflow-wrap:anywhere] convention, also used by CompanyResultSummary), so a large total's digits are never hidden.
 const totalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 const grandTotalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-base font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 

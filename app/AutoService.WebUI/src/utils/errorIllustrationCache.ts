@@ -1,7 +1,4 @@
-/**
- * Client-side cache helpers for 404/500 error-page illustrations.
- * @module utils/errorIllustrationCache
- */
+/** Client-side cache helpers for 404/500 error-page illustrations. */
 
 const ERROR_ILLUSTRATION_CACHE_NAME = 'arsm-error-illustrations-v1';
 const ERROR_ILLUSTRATION_PATHS = ['/Error-404.webp', '/Error-500.webp'] as const;
@@ -101,10 +98,7 @@ export function warmErrorIllustrationCache(): void {
   })();
 }
 
-/**
- * Resolves an error illustration from client cache as an object URL.
- * Falls back to the original source path when cache is unavailable.
- */
+/** Resolves an error illustration from client cache as an object URL, falling back to the source path. */
 export async function getCachedErrorIllustrationSource(imagePath: string): Promise<CachedImageSource> {
   if (!canUseCacheStorage()) {
     return { src: imagePath };

@@ -5,31 +5,15 @@ using QuestPDF.Infrastructure;
 
 namespace AutoService.ApiService.Quotes.Pdf;
 
-/**
- * Section composition for the quote PDF: the repeating header, the identity
- * blocks, the notes and the footer. The line tables, the VAT breakdown and the
- * totals live in the Lines partial, because a document this size outgrows one
- * file long before it is finished.
- *
- * Every user-visible string here is Hungarian: the document is the paper the
- * customer receives, and the API has no localization layer to route it
- * through.
- */
+/** Section composition for the quote PDF (header/identity/notes/footer); line tables/VAT/totals
+ * live in the Lines partial (file size). Every visible string is Hungarian; the API has no localization layer. */
 internal static partial class QuoteDocumentSections
 {
     private static readonly Color SectionTitleColor = Colors.Grey.Darken3;
     private static readonly Color MutedColor = Colors.Grey.Darken1;
     private static readonly Color BorderColor = Colors.Grey.Lighten2;
 
-    /**
-     * Draws the letterhead: logo and company identity on the left, the
-     * document name and the quote number on the right. It repeats on every
-     * page, so a multi-page quote never loses its number.
-     *
-     * @param container Header container.
-     * @param company Configured workshop identity (D18).
-     * @param model The quote being printed.
-     */
+    /** Draws the letterhead (logo/identity left, document name/quote number right); repeats on every page so a multi-page quote never loses its number. */
     internal static void ComposeHeader(IContainer container, CompanyProfile company, QuoteDocumentModel model)
     {
         container.PaddingBottom(10).Column(column =>
@@ -57,13 +41,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Draws the page footer: the workshop name and the page counter, so a
-     * customer can tell that a page is missing.
-     *
-     * @param container Footer container.
-     * @param company Configured workshop identity.
-     */
+    /** Draws the page footer: workshop name and page counter, so a customer can tell a page is missing. */
     internal static void ComposeFooter(IContainer container, CompanyProfile company)
     {
         container.PaddingTop(8).Row(row =>
@@ -80,12 +58,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Composes the document body in printing order.
-     *
-     * @param container Content container.
-     * @param model The quote being printed.
-     */
+    /** Composes the document body in printing order. */
     internal static void ComposeContent(IContainer container, QuoteDocumentModel model)
     {
         container.Column(column =>
@@ -117,13 +90,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Draws the quote's own data, the status included: a draft says so on
-     * paper, and an expired quote admits it (D29).
-     *
-     * @param container Section container.
-     * @param model The quote being printed.
-     */
+    /** Draws the quote's own data, status included: a draft says so on paper, and an expired quote admits it (D29). */
     private static void ComposeBasics(IContainer container, QuoteDocumentModel model)
     {
         container.Column(column =>
@@ -138,12 +105,7 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /**
-     * Draws the customer and the vehicle side by side.
-     *
-     * @param container Section container.
-     * @param model The quote being printed.
-     */
+    /** Draws the customer and the vehicle side by side. */
     private static void ComposeParties(IContainer container, QuoteDocumentModel model)
     {
         container.Row(row =>

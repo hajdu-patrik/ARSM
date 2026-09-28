@@ -1,7 +1,4 @@
-/**
- * Mocked quote-level writes: creating a draft under a vehicle, moving a
- * quote through the status flow, and extending its validity.
- */
+/** Mocked quote-level writes: creating a draft under a vehicle, moving it through the status flow, and extending its validity. */
 import type { Route } from '@playwright/test';
 import type {
   ChangeQuoteStatusRequest,

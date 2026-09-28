@@ -49,10 +49,7 @@ interface MechanicsSectionProps {
   readonly onAdminUnassign: (mechanicId: number) => void;
 }
 
-/**
- * Renders mechanic assignment controls and keeps all mechanic mutations mutually exclusive.
- * This prevents overlapping requests from creating stale or conflicting modal state.
- */
+/** Renders mechanic assignment controls; keeps mutations mutually exclusive to avoid conflicting modal state. */
 export const MechanicsSection = memo(function MechanicsSection({
   appointment,
   isAdmin,

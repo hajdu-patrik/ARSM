@@ -1,16 +1,5 @@
-/**
- * HUF currency formatting helpers.
- *
- * Two formatters split by field kind (plan F2 / D19), because the display
- * rounding differs per field and a single parameterized formatter would turn
- * "which rounding applies here" into a decision made anew at every call
- * site. The function name states the rule instead.
- *
- * Both formatters only format numbers the server already computed
- * (`netUnitPrice`, `grossUnitPrice`, `hourlyNetRate`, `grossHourlyRate`,
- * line/total amounts) — neither one ever derives a value.
- * @module utils/currency
- */
+/** HUF currency formatters: two, split by field kind, formatting only server-computed values.
+ * See app/AutoService.WebUI/CLAUDE.md. */
 
 /** Formats a whole-forint amount: line/total amounts and report totals. */
 export function formatHuf(amount: number, locale: string): string {

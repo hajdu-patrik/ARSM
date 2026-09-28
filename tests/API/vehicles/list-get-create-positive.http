@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# VEHICLES - LIST GET CREATE POSITIVE
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
@@ -14,9 +10,6 @@
 @LatinPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0002
 @CyrillicPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0003
 @FixtureCustomerEmail = vehicles.list.get.create.{{RunId}}@example.test
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -84,10 +77,6 @@ Content-Type: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-#  LIST VEHICLES FOR CUSTOMER
-# ─────────────────────────────────────────────────────────────
-
 ### [Positive][Vehicles] List vehicles for the fixture customer (200 expected, includes vin/enginePowerKw/drivetrainType)
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 
@@ -101,9 +90,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId
 ?? status == 404
 
 ###
-# ─────────────────────────────────────────────────────────────
-#  GET VEHICLE BY ID
-# ─────────────────────────────────────────────────────────────
 
 ### [Positive][Vehicles] Get vehicle by id (200 expected, includes vin/enginePowerKw/drivetrainType and customer summary)
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
@@ -118,10 +104,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 ?? status == 404
 
 ###
-
-# ─────────────────────────────────────────────────────────────
-#  CREATE VEHICLE
-# ─────────────────────────────────────────────────────────────
 
 ### [Positive][Vehicles] Admin creates vehicle for customer (201 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles

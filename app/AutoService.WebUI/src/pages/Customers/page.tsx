@@ -1,10 +1,4 @@
-/**
- * Customers registry page.
- *
- * Provides customer and vehicle CRUD operations together with customer-level
- * and vehicle-level repair history panels.
- * @module pages/Customers/page
- */
+/** Customers registry page: customer/vehicle CRUD plus customer- and vehicle-level repair history panels. */
 
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,10 +26,7 @@ import {
   pageTitleClass,
 } from '../../utils/formStyles';
 
-/**
- * Customers registry page container that coordinates customer and vehicle CRUD,
- * search/sort state, and repair-history panels.
- */
+/** Customers registry page container: coordinates customer/vehicle CRUD, search/sort state, and history panels. */
 const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();

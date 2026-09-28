@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Shared HTTP client, credentials, and assertions for the API endpoint checks.
-
-Kept separate from any one feature's fixtures so a new check does not have to import
-from a module named after an unrelated feature.
-"""
+"""Shared HTTP client, credentials, and assertions for the API endpoint checks."""
 
 from __future__ import annotations
 
@@ -91,11 +87,7 @@ class HttpClient:
     def request_headers(
         self, method: str, path: str, headers: dict[str, str] | None = None,
     ) -> tuple[int, dict[str, str]]:
-        """Issue a request and return only the status and response headers.
-
-        ``headers`` adds to (or overrides) the default ``Accept: */*``, for example a conditional
-        ``If-None-Match`` probe; omit it for the original unconditional-GET behaviour.
-        """
+        """Issue a request and return only the status and response headers."""
         request_headers = {"Accept": "*/*"}
         if headers:
             request_headers.update(headers)
@@ -126,9 +118,8 @@ class HttpClient:
         request_headers = dict(headers)
         if method.upper() in UNSAFE_HTTP_METHODS:
             request_headers["Origin"] = self.allowed_origin
-            # Double-submit CSRF proof (CsrfDoubleSubmitMiddleware): echo the cookie already in the
-            # jar - set by a prior login/refresh/password-change - back as the header. Missing before
-            # the first login, and login itself is exempt, so there is nothing to add yet either way.
+            # Double-submit CSRF proof: echo the cookie already in the jar (set by a prior
+            # login/refresh/password-change) back as the header; missing before the first login is fine.
             csrf_token = self._csrf_token()
             if csrf_token and CSRF_HEADER_NAME not in request_headers:
                 request_headers[CSRF_HEADER_NAME] = csrf_token

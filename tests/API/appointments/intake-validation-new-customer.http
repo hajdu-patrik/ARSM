@@ -1,11 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - INTAKE VALIDATION (NEW CUSTOMER / NEW VEHICLE)
-# ─────────────────────────────────────────────────────────────
-# Split out of intake-validation.http to stay under the 250-line file limit. Every case below supplies
-# a brand-new customerEmail plus an inline vehicle payload, so none of them need the known-customer
-# setup the sibling file uses. None of the cases persist a row: the numeric/drivetrain vehicle
-# validation and the missing-name-fields check (AppointmentEndpoints.Intake.cs) all run before the
-# transaction that would add the customer/vehicle/appointment, so there is nothing to clean up.
+# Split out of intake-validation.http (file-size limit): every case supplies a brand-new customerEmail
+# plus inline vehicle, so no known-customer setup is needed. All validation runs before the transaction, so nothing persists and there is nothing to clean up.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -15,8 +9,6 @@
 @MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
 @MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

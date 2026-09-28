@@ -1,11 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - CLAIM/UNCLAIM EDGE CASES (CANCELLED, LAST MECHANIC)
-# ─────────────────────────────────────────────────────────────
-# Split out of mechanic-claim-unclaim.http; the not-assigned-to-me case lives in the sibling file
-# mechanic-claim-unclaim-not-assigned.http (both split to stay under the 250-line file limit).
-# PastCancelledApptId/SingleAssignedApptId are created via the mechanic-facing intake endpoint, which
-# auto-assigns the calling (non-admin) mechanic as the sole mechanic; both are deleted at the end by an
-# admin session via DELETE /api/appointments/{id} (AdminOnly).
+# Split out of mechanic-claim-unclaim.http; not-assigned-to-me coverage is the sibling
+# mechanic-claim-unclaim-not-assigned.http (file-size limit). Fixtures are created via intake (auto-assigns the caller as sole mechanic) and deleted at the end via admin.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -15,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -110,7 +102,6 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Unclaim cancelled appointment is rejected (422 expected)
-# Expected error code: appointment_cancelled.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -120,7 +111,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Claim cancelled appointment is rejected (422 expected)
-# Expected error code: appointment_cancelled.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -139,7 +129,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Unclaim non-existent appointment (404 expected)
-# Expected error code: appointment_not_found.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -149,7 +138,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
-# Expected error code: last_assigned_mechanic.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

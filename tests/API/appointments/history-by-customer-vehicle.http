@@ -1,10 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - HISTORY BY CUSTOMER AND VEHICLE
-# ─────────────────────────────────────────────────────────────
-# GET /api/customers/{id}/appointments and GET /api/vehicles/{id}/appointments both sit under plain
-# RequireAuthorization() (AppointmentEndpoints.cs), so any authenticated mechanic session reaches them.
-# SeedCustomerId/SeedVehicleId are resolved at run time from a customer that actually owns a vehicle,
-# never a literal id, because earlier suites may have deleted lower-numbered demo rows.
+# Both history routes sit under plain RequireAuthorization(), so any authenticated mechanic reaches them.
+# SeedCustomerId/SeedVehicleId resolve from a real customer at run time, never a literal id, since earlier suites may delete lower-numbered demo rows.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -13,8 +8,6 @@
 @NonExistentCustomerId = 99999
 @NonExistentVehicleId = 99999
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

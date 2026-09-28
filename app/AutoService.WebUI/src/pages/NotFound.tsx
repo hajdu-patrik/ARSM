@@ -1,11 +1,4 @@
-/**
- * Not Found page with timed redirect.
- *
- * Displays a branded 404 experience and redirects users to either
- * the scheduler or login route after a short countdown.
- * Uses the shared {@link ErrorPage} component for layout.
- * @module pages/NotFound
- */
+/** Not Found (404) page: branded experience with a countdown redirect to scheduler or login, via the shared ErrorPage. */
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

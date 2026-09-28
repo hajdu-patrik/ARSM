@@ -1,11 +1,5 @@
-# ── Admin Assign / Unassign ──────────────────────────────────────────────────
-# Every id below is resolved or created at run time; nothing depends on a specific seeded row.
-# AdminMechanicId is the admin's own person_id (the admin is a mechanic too), SecondaryMechanicId is
-# a disposable mechanic registered here and deleted at the end.
-# Completed/Cancelled-state assign/unassign lockout coverage lives in the sibling file
-# admin-assign-unassign-locked-state.http; the non-admin 403 authz coverage lives in
-# admin-assign-unassign-authz.http (both split out to stay under the 250-line file limit).
-# SingleAssignedApptId is deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
+# Every id is resolved/created at run time. Locked-state and non-admin authz coverage split into the
+# sibling admin-assign-unassign-locked-state.http/admin-assign-unassign-authz.http files (file-size limit).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -15,8 +9,6 @@
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.assign.secondary.{{RunId}}@example.test
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -124,7 +116,7 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin cannot unassign last mechanic from appointment (422 expected)
-# Expected error code: last_assigned_mechanic. SingleAssignedApptId's sole mechanic is AdminMechanicId.
+# SingleAssignedApptId's sole mechanic is AdminMechanicId, hence last_assigned_mechanic.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -134,7 +126,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin assign to non-existent appointment (404 expected)
-# Expected error code: appointment_not_found.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -144,7 +135,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin assign non-existent mechanic (404 expected)
-# Expected error code: mechanic_not_found.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/99999
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -154,7 +144,7 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin assign mechanic already assigned (409 expected)
-# Expected error code: already_assigned. AdminMechanicId is still SingleAssignedApptId's sole mechanic.
+# AdminMechanicId is still SingleAssignedApptId's sole mechanic, hence already_assigned.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -164,7 +154,6 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin unassign from non-existent appointment (404 expected)
-# Expected error code: appointment_not_found.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -174,7 +163,7 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Negative][Appointments] Admin unassign mechanic not assigned to appointment (409 expected)
-# Expected error code: not_assigned. SecondaryMechanicId was unassigned from SingleAssignedApptId above.
+# SecondaryMechanicId was unassigned from SingleAssignedApptId above, hence not_assigned.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

@@ -9,9 +9,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /**
-     * Retrieves the authenticated user's profile without tracking because this read path does not mutate the person record.
-     */
+    /** Retrieves the authenticated user's profile without tracking because this read path does not mutate the person record. */
     private static async Task<IResult> GetProfileAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,

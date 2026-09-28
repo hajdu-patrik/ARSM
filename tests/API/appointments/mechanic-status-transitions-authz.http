@@ -1,12 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - STATUS/UPDATE AUTHZ FOR A NON-ASSIGNED MECHANIC
-# ─────────────────────────────────────────────────────────────
-# Split out of mechanic-status-transitions.http to stay under the 250-line file limit.
-# UpdateStatusAsync/UpdateAppointmentAsync (AppointmentEndpoints.StatusMutations.cs/.Update.cs) 403 a
-# non-admin mechanic who is not assigned to the target appointment. NonAssignedApptId is created via a
-# short admin detour (POST /api/customers/{id}/appointments with the admin's own mechanic id as the
-# sole assignee) so the non-admin test mechanic is deliberately excluded from it. The admin logs back in
-# at the end to delete the fixture appointment via DELETE /api/appointments/{id} (AdminOnly).
+# Split out of mechanic-status-transitions.http (file-size limit): a non-assigned non-admin mechanic gets
+# 403 on status/update. NonAssignedApptId is created via a short admin detour excluding the test mechanic; admin logs back in to delete it.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -16,8 +9,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

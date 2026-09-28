@@ -1,12 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - REGISTER VALIDATION AND NONADMIN AUTHZ
-# ─────────────────────────────────────────────────────────────
-# Verified against AuthEndpoints.Register.cs / AuthEndpoints.cs before writing this file:
-# - /api/auth/register requires the "AdminOnly" policy, so every validation case below needs an
-#   admin session first; without one, the authorization check answers 401 before ValidateRegisterRequest
-#   ever inspects personType/expertise/name fields (moved the admin login ahead of those cases).
-# - None of the cases below create a row: the Customer personType is rejected before CreatePerson runs,
-#   and every name/expertise case fails ValidateRegisterRequest before any account is created.
+# Verified against AuthEndpoints.Register.cs: AdminOnly needs an admin session first (else 401 preempts
+# ValidateRegisterRequest); every case below is rejected before any account/row is created.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -17,8 +10,6 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @RunId = {{$timestamp}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Admin Session] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -217,9 +208,8 @@ Content-Type: application/json
 
 ###
 
-# CSRF double-submit token for the request below (see tests/CLAUDE.md Core Rules). Required even
-# though the request is expected to fail: without it, CsrfDoubleSubmitMiddleware would answer 403
-# before AdminOnly ever runs, which happens to share the same status code but proves the wrong thing.
+# CSRF token required even though this call should fail 403: without it, CsrfDoubleSubmitMiddleware would
+# produce the same status before AdminOnly runs, for the wrong reason (see tests/CLAUDE.md Core Rules).
 
 ### [Negative][Register] Non-admin mechanic cannot register mechanics (403 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register

@@ -7,18 +7,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * Lists quotes, optionally filtered by vehicle and/or status (D43: only
-     * the four real enum values are accepted; Expired is a DTO-level flag,
-     * never a filter value), ordered by CreatedAt descending.
-     *
-     * @param vehicleId Optional vehicle filter.
-     * @param status Optional status filter (Draft/Sent/Accepted/Rejected).
-     * @param limit Optional row cap (1..500, default 500).
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Quote list, or 422 when status is not a recognized value.
-     */
+    /** Lists quotes, optionally filtered by vehicle and/or status (D43: only the four real enum
+     * values; Expired is a DTO-level flag, never a filter value), ordered by CreatedAt descending. */
     private static async Task<IResult> ListQuotesAsync(
         int? vehicleId,
         string? status,
@@ -67,15 +57,7 @@ public static partial class QuoteEndpoints
         return Results.Ok(quotes.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList());
     }
 
-    /**
-     * Lists a vehicle's quotes, ordered by CreatedAt descending.
-     *
-     * @param vehicleId Target vehicle identifier.
-     * @param limit Optional row cap (1..500, default 500).
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Quote list, or 404 when the vehicle does not exist.
-     */
+    /** Lists a vehicle's quotes, ordered by CreatedAt descending. */
     private static async Task<IResult> GetByVehicleAsync(
         int vehicleId,
         int? limit,
@@ -104,14 +86,7 @@ public static partial class QuoteEndpoints
         return Results.Ok(quotes.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList());
     }
 
-    /**
-     * Returns a single quote with its lines and totals.
-     *
-     * @param id Quote identifier.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @returns Quote detail, or 404 when it does not exist.
-     */
+    /** Returns a single quote with its lines and totals. */
     private static async Task<IResult> GetQuoteAsync(
         int id,
         AutoServiceDbContext db,

@@ -8,17 +8,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /**
-     * Creates an appointment for an existing customer/vehicle pair.
-     * Endpoint: POST /api/customers/{customerId}/appointments (AdminOnly).
-     *
-     * @param customerId Target customer ID.
-     * @param request Appointment creation payload.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Created appointment DTO or validation/conflict result.
-     */
+    /** Creates an appointment for an existing customer/vehicle pair. Endpoint: POST /api/customers/{customerId}/appointments (AdminOnly). */
     private static async Task<IResult> CreateForCustomerAsync(
         int customerId,
         CreateCustomerAppointmentRequest request,
@@ -83,14 +73,7 @@ public static partial class AppointmentEndpoints
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
 
-    /**
-     * Validates an admin-created customer appointment payload before entity loading.
-     *
-     * @param request Appointment creation payload.
-     * @param taskDescription Trimmed task description when validation succeeds.
-     * @param uniqueMechanicIds Distinct mechanic IDs when validation succeeds.
-     * @return Problem result when validation fails; otherwise {@code null}.
-     */
+    /** Validates an admin-created customer appointment payload before entity loading. */
     private static IResult? ValidateCreateForCustomerRequest(
         CreateCustomerAppointmentRequest request,
         out string taskDescription,
@@ -142,12 +125,7 @@ public static partial class AppointmentEndpoints
         detail: detail,
         statusCode: statusCode);
 
-    /**
-     * Normalizes request dates to UTC while preserving prior unspecified-kind semantics.
-     *
-     * @param scheduledDate Requested scheduled date.
-     * @return UTC scheduled date used for persistence.
-     */
+    /** Normalizes request dates to UTC while preserving prior unspecified-kind semantics. */
     private static DateTime NormalizeScheduledDateUtc(DateTime scheduledDate) => scheduledDate.Kind switch
     {
         DateTimeKind.Utc => scheduledDate,
@@ -155,15 +133,7 @@ public static partial class AppointmentEndpoints
         _ => DateTime.SpecifyKind(scheduledDate, DateTimeKind.Utc)
     };
 
-    /**
-     * Creates the appointment aggregate for the validated customer/vehicle/mechanic inputs.
-     *
-     * @param vehicle Vehicle selected for the appointment.
-     * @param mechanics Mechanics assigned to the appointment.
-     * @param taskDescription Validated task description.
-     * @param scheduledDateUtc Normalized UTC scheduled date.
-     * @return Appointment ready to be persisted.
-     */
+    /** Creates the appointment aggregate for the validated customer/vehicle/mechanic inputs. */
     private static Appointment CreateCustomerAppointment(
         Vehicle vehicle,
         List<Mechanic> mechanics,

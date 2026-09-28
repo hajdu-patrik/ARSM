@@ -5,15 +5,8 @@ namespace AutoService.ApiService.DataInitialization;
 
 public static partial class DemoDataInitializer
 {
-    /**
-     * Inserts demo parts and labor types that are missing by PartNumber/Code.
-     * Runs on every startup and never overwrites an existing row, so a price a
-     * developer edited by hand survives a restart.
-     *
-     * @param db Database context used to check existence and insert missing rows.
-     * @param cancellationToken Token used to cancel the seeding I/O.
-     * @return A task that completes when the pricing catalog seed has converged.
-     */
+    /** Inserts demo parts/labor types missing by PartNumber/Code; runs every startup and
+     * never overwrites an existing row, so a hand-edited price survives a restart. */
     private static async Task EnsurePricingCatalogSeededAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         var existingPartNumbers = await db.Parts

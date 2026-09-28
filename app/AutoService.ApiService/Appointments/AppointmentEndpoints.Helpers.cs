@@ -4,11 +4,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /**
-     * Maps an {@code Appointment} domain entity to its DTO representation.
-     * @param appointment - The appointment entity to map.
-     * @return The mapped DTO with the nested vehicle (including its owner's customer id) and mechanic summaries.
-     */
+    /** Maps an {@code Appointment} domain entity to its DTO representation. */
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
         appointment.ScheduledDate,

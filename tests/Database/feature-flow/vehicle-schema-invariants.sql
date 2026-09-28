@@ -1,11 +1,5 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - VEHICLE SCHEMA INVARIANTS
--- ------------------------------------------------------------
--- Verifies persisted vehicle rows match the technical-field contracts from
--- AutoServiceDbContext and the VehicleSchemaRefactor migration.
--- Expected result: 0 rows.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ------------------------------------------------------------
+-- FEATURE FLOW - VEHICLE SCHEMA INVARIANTS — persisted rows must match the technical-field contracts
+--     from AutoServiceDbContext / VehicleSchemaRefactor migration. Expected: 0 rows.
 SELECT v."Id" AS vehicle_id,
        v."LicensePlate",
        v."Vin",

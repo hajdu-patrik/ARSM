@@ -5,38 +5,21 @@ using QuestPDF.Infrastructure;
 
 namespace AutoService.ApiService.Quotes.Pdf;
 
-/**
- * The printable quote: A4 portrait, 2 cm margins, a letterhead that repeats on
- * every page and a footer that counts the pages, so a customer can tell when a
- * sheet is missing.
- *
- * Every text style names the embedded font family. QuestPDF would otherwise
- * fall back to a system face, which in a slim container either does not exist
- * or lacks the Hungarian letters, and the accents would silently turn into
- * empty boxes.
- */
+/** Printable quote: A4 portrait, 2cm margins, repeating letterhead, page-counting footer. Every
+ * style names the embedded font (Noto Sans) so a slim container never falls back to a face missing Hungarian accents. */
 internal sealed class QuoteDocument : IDocument
 {
     private readonly QuoteDocumentModel model;
     private readonly CompanyProfile company;
 
-    /**
-     * Creates the document for one quote.
-     *
-     * @param model Resolved render model of the quote.
-     * @param company Configured workshop identity printed on the letterhead.
-     */
+    /** Creates the document for one quote. */
     internal QuoteDocument(QuoteDocumentModel model, CompanyProfile company)
     {
         this.model = model;
         this.company = company;
     }
 
-    /**
-     * Builds the page layout.
-     *
-     * @param container Document container supplied by QuestPDF.
-     */
+    /** Builds the page layout. */
     public void Compose(IDocumentContainer container)
     {
         container.Page(page =>

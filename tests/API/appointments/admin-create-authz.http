@@ -1,22 +1,11 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - ADMIN CREATE AUTHORIZATION CHECKS
-# ─────────────────────────────────────────────────────────────
-# Tests that non-admin mechanics cannot use POST /api/customers/{id}/appointments.
-# Unauthenticated 401 coverage for this endpoint is maintained in appointments-unauth.http.
-# The AdminOnly policy on this route rejects the request before the handler ever reads CustomerId/
-# VehicleId from the URL, so a non-existent pair would 403 identically — CustomerId/VehicleId are
-# still resolved from a real customer/vehicle at run time to keep the fixture honest and reusable if
-# this file ever grows a positive case. The X-CSRF-Token header below is required even though the
-# request is expected to fail: without it, CsrfDoubleSubmitMiddleware would answer 403 before the
-# AdminOnly policy ever runs, which happens to share the same status code but proves the wrong thing.
+# Non-admin mechanics get 403 on POST /api/customers/{id}/appointments (401 coverage in appointments-unauth.http);
+# AdminOnly rejects before reading ids, but real ones are resolved to keep the fixture reusable. CSRF token is still required: without it, CsrfDoubleSubmitMiddleware would 403 for the wrong reason.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

@@ -1,8 +1,4 @@
-/**
- * Footer component for appointment detail modal.
- * Handles global edit, status, and (admin-only) delete controls.
- * @module AppointmentDetailModal.footer
- */
+/** Footer for the appointment detail modal: edit, status, and admin-only delete controls. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Save, Trash2 } from 'lucide-react';

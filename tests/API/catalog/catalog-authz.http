@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# CATALOG - AUTHZ (PARTS + LABOR TYPES, MechanicOnly POLICY)
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
@@ -9,27 +5,8 @@
 @RunId = {{$timestamp}}
 @AuthzPartNumber = ZZU{{RunId}}A
 
-# COVERAGE GAP (do not fill with a fabricated token):
-# The F1 brief asks every route below to also prove that a request carrying a
-# valid CUSTOMER token gets 403 (authenticated but not authorized), not 401.
-# That case cannot be produced against the live API today: Customer person
-# records never receive an IdentityUserId (DemoDataInitializer.cs: "Customers
-# are passive data records - no login account, no IdentityUserId") and
-# POST /api/auth/register only accepts personType "Mechanic"
-# (AuthEndpoints.Register.cs: "Registration is only available for
-# mechanics."). No endpoint issues a session for a person whose person_type
-# claim resolves to "customer", so MechanicOnly (Program.cs:
-# RequireClaim("person_type","mechanic")) can only currently be observed
-# distinguishing "authenticated" from "unauthenticated" below, never
-# "authenticated non-mechanic" from "authenticated mechanic". See the test
-# agent's report for the full discrepancy writeup instead of a fake token.
-#
-# The part/labor-type ids used below are created by this file (not a hardcoded seed id like
-# @SomePartId=1), so the checks keep working if the demo seed's numeric ids ever change; both
-# fixtures are deleted at the end.
-
-
-# ─────────────────────────────────────────────────────────────
+# COVERAGE GAP: a MechanicOnly 403 for an authenticated-but-not-mechanic caller cannot be produced
+# against the live API today (no fabricated token) - see tests/CLAUDE.md Coverage Anchors.
 
 ### [Setup][Catalog] Login as admin to create disposable authz fixtures
 # @name csrfSource1

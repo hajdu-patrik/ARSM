@@ -1,9 +1,4 @@
-/**
- * Generic part/labor-type tab: toolbar (search, sort, create) plus the
- * catalog list. Driven by a `CatalogTabConfig` so the Parts and Labor
- * types tabs share one component instead of two near-identical ones.
- * @module pages/Inventory/components/CatalogTab
- */
+/** Generic part/labor-type tab (toolbar plus list) driven by a `CatalogTabConfig`, shared by Parts and Labor types. */
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
 import { DataList, type DataListColumn } from '../../../components/common/DataList';

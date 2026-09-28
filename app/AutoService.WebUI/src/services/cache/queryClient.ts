@@ -18,10 +18,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-/**
- * Removes persisted query data from one browser storage bucket when that bucket is available.
- * @param storage Storage bucket to clear, or {@code null} when unavailable.
- */
+/** Removes persisted query data from one browser storage bucket when that bucket is available. */
 function removePersistedCacheFromStorage(storage: Storage | null): void {
   if (!storage) {
     return;
@@ -34,11 +31,7 @@ function removePersistedCacheFromStorage(storage: Storage | null): void {
   }
 }
 
-/**
- * Safely resolves browser storage because privacy modes can throw on storage access.
- * @param kind Browser storage kind to resolve.
- * @returns The requested storage bucket, or {@code null} when unavailable.
- */
+/** Safely resolves browser storage because privacy modes can throw on storage access. */
 function getBrowserStorage(kind: 'localStorage' | 'sessionStorage'): Storage | null {
   try {
     return globalThis[kind] ?? null;

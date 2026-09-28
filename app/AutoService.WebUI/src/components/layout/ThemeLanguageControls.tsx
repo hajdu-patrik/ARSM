@@ -1,7 +1,5 @@
-/**
- * Theme (dark/light) and language (EN/HU) toggle controls.
- * Persists preferences to localStorage and applies them immediately.
- */
+/** Theme (dark/light) and language (EN/HU) toggle controls;
+ * persists preferences to localStorage and applies them immediately. */
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/theme.store';

@@ -1,7 +1,4 @@
-/**
- * Profile form state and save workflow for Settings.
- * @module pages/Settings/hooks/useProfileFormSettings
- */
+/** Profile form state and save workflow for Settings. */
 
 import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { profileService } from '../../../services/profile/profile.service';

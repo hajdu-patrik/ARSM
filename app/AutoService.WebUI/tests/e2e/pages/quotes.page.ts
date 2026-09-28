@@ -34,13 +34,8 @@ export class QuotesPage {
     return this.rows().filter({ hasText: quoteNumber });
   }
 
-  /**
-   * A row renders its controls twice, once in `DataListRow`'s desktop cells
-   * and once in its labeled tiles, switched by a container query on the
-   * list's own width rather than a viewport breakpoint, and exactly one of
-   * the two is visible. Every row-scoped locator therefore picks the visible
-   * copy, so the same page object works at any width.
-   */
+  /** Picks the visible copy: `DataListRow` renders each row's controls twice (cells vs. tiles),
+   * switched by a container query, not viewport width (tests/CLAUDE.md Coverage Anchors). */
   rowAction(quoteNumber: string, testId: string): Locator {
     return this.row(quoteNumber).getByTestId(testId).filter({ visible: true }).first();
   }
@@ -57,11 +52,8 @@ export class QuotesPage {
     return this.page.getByRole('dialog').first();
   }
 
-  /**
-   * The footer close action, anchored per language so it never matches the
-   * modal chrome's "Close modal" control (both buttons share the word
-   * "Close" in English).
-   */
+  /** Anchored per language, so it never also matches the modal chrome's "Close modal" control
+   * (both share the word "Close" in English). */
   closeEditorButton(): Locator {
     return this.page.getByRole('button', { name: /^(Close|Bezárás)$/ });
   }

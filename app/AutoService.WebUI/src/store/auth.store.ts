@@ -1,19 +1,10 @@
-/**
- * Authentication state store.
- *
- * Manages the currently authenticated user, loading states,
- * and error feedback for the auth flow. Session is server-authoritative
- * via HttpOnly cookies; this store reflects the local UI state.
- * @module store/auth.store
- */
+/** Auth state store; session is server-authoritative via HttpOnly cookies, this store mirrors local UI state. */
 
 import { create } from 'zustand';
 import type { AuthUser } from '../types/auth/login.types';
 import { clearArsmQueryCache } from '../services/cache/queryClient';
 
-/**
- * Shape of the authentication Zustand store.
- */
+/** Shape of the authentication Zustand store. */
 interface AuthState {
   /** Currently authenticated user, or {@code null} when logged out. */
   user: AuthUser | null;
@@ -35,10 +26,7 @@ interface AuthState {
   clearAuth: () => void;
 }
 
-/**
- * Zustand store for authentication state.
- * Used throughout the app to check auth status, access the current user, and clear private cache data on logout.
- */
+/** Zustand store for auth status, the current user, and clearing private cache data on logout. */
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,

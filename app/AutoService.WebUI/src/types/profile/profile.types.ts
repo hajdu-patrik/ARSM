@@ -1,15 +1,6 @@
-/**
- * Profile API request and response types.
- *
- * Defines the contracts for profile management operations including
- * viewing, updating, password changes, and account deletion.
- * @module profile/profile.types
- */
+/** Profile API request/response contracts: viewing, updating, password changes, account deletion. */
 
-/**
- * Profile data returned by the profile endpoint ({@code GET /api/profile}).
- * Represents the full profile of the currently authenticated user.
- */
+/** Full profile of the currently authenticated user, returned by {@code GET /api/profile}. */
 export interface ProfileData {
   /** Unique identifier for the person. */
   personId: number;
@@ -29,10 +20,7 @@ export interface ProfileData {
   hasProfilePicture: boolean;
 }
 
-/**
- * Request payload for updating profile information ({@code PUT /api/profile}).
- * All fields are optional — only provided fields are updated.
- */
+/** Request payload for {@code PUT /api/profile}; all fields optional, only provided ones are updated. */
 export interface UpdateProfileRequest {
   /** Updated first name. */
   firstName?: string;
@@ -46,9 +34,7 @@ export interface UpdateProfileRequest {
   middleName?: string;
 }
 
-/**
- * Request payload for changing the user's password ({@code POST /api/profile/change-password}).
- */
+/** Request payload for changing the user's password ({@code POST /api/profile/change-password}). */
 export interface ChangePasswordRequest {
   /** The user's current password for verification. */
   currentPassword: string;
@@ -58,9 +44,7 @@ export interface ChangePasswordRequest {
   confirmNewPassword: string;
 }
 
-/**
- * Request payload for deleting the user's profile ({@code DELETE /api/profile}).
- */
+/** Request payload for deleting the user's profile ({@code DELETE /api/profile}). */
 export interface DeleteProfileRequest {
   /** The user's current password for verification before deletion. */
   currentPassword: string;

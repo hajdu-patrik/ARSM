@@ -1,14 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTH - LOGIN POSITIVE PHONE MATRIX
-# ─────────────────────────────────────────────────────────────
-# Split out of login-positive-matrix.http (identifier variety) to keep both files under the size
-# limit. Verified against AuthEndpoints.Login.cs / ContactNormalization.TryNormalizeEuPhoneNumber
-# before writing this file: every shape below normalizes to the same E.164 number
-# (+36307 plus the run-unique PhoneTail) via libphonenumber with the "HU" default region, and the login handler builds
-# both a "+"-prefixed and a no-plus lookup candidate (BuildPhoneLookupCandidates), so any of these
-# inputs must resolve to the same mechanic.
-# This file provisions its own throwaway mechanic (own {{$timestamp}} suffix) instead of depending
-# on another file's fixtures surviving, and deletes it again at the end.
+# Split out of login-positive-matrix.http to keep both files under the size limit. Verified against
+# AuthEndpoints.Login.cs: every phone shape below normalizes to the same E.164 number, so all must resolve to the same self-provisioned (and deleted) mechanic.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -23,8 +14,6 @@
 @MatrixEmailWithPhone = matrix.phone.formats.{{MatrixRunSuffix}}@example.test
 @MatrixPhoneCanonical = +36307{{PhoneTail}}
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

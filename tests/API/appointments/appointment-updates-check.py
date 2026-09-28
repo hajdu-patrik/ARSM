@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""Checks that an appointment mutation reaches a live server-sent event subscriber.
-
-httpyac cannot hold a streaming response open, so this behaviour needs its own check. It opens
-`GET /api/appointments/updates`, mutates an appointment on a second connection, and asserts the
-event arrives with the agreed payload shape. The camelCase assertion is deliberate: the payload is
-serialized by a static JsonSerializer call that does not pick up the ASP.NET Core JSON options, so
-a PascalCased regression would be silently dropped by the browser clients instead of failing loudly.
-
-Prints a sanitized JSON report and never echoes credentials.
-"""
+"""Checks a live SSE subscriber receives an appointment mutation with camelCase payload keys (see tests/CLAUDE.md Coverage Anchors)."""
 
 from __future__ import annotations
 

@@ -5,20 +5,15 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Price quote for a vehicle, with part and labor lines, a status lifecycle,
- * and stored net/VAT/gross totals kept in sync by
- * AutoServiceDbContext.ValidateQuoteTotals on every save.
- */
+/** Price quote for a vehicle: lines, status lifecycle, and totals kept in sync by AutoServiceDbContext.ValidateQuoteTotals (CLAUDE.md Quote Anchors). */
 public class Quote
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; private set; }
 
-    // Assigned by Quotes/QuoteNumberGenerator after construction, the same
-    // way Id is assigned by the database, so it is not a constructor
-    // parameter and is not marked required.
+    // Assigned by Quotes/QuoteNumberGenerator after construction (like Id by
+    // the database), so it is not a constructor parameter or required.
     [MaxLength(20)]
     public string QuoteNumber { get; set; } = string.Empty;
 
@@ -52,36 +47,22 @@ public class Quote
     public int? CreatedByMechanicId { get; set; }
     public Mechanic? CreatedByMechanic { get; set; }
 
-    // Stored, not computed on read: shared by the C# handler, the PDF, and
-    // the SQL revenue aggregation, all of which must agree on one number.
-    // Recomputed in one place (Pricing/QuoteTotalsCalculator) and guarded by
-    // AutoServiceDbContext.ValidateQuoteTotals on every save.
+    // Stored, not computed on read; recomputed only via
+    // Pricing/QuoteTotalsCalculator (see CLAUDE.md Quote Anchors).
     public decimal TotalNet { get; set; }
     public decimal TotalVat { get; set; }
     public decimal TotalGross { get; set; }
 
-    // Optimistic-concurrency token (D30) mapped to the Postgres xmin system
-    // column in AutoServiceDbContext.QuotesModel.cs; not a real column, and
-    // never assigned by application code.
+    // Optimistic-concurrency token (D30) mapped to Postgres xmin in
+    // AutoServiceDbContext.QuotesModel.cs; not a real column (CLAUDE.md Quote Anchors).
     public uint Version { get; private set; }
 
     public ICollection<QuoteLine> Lines { get; set; } = new List<QuoteLine>();
 
-    /**
-     * Parameterless constructor required by EF Core.
-     */
+    /** Parameterless constructor required by EF Core. */
     public Quote() {}
 
-    /**
-     * Creates a draft quote anchored to a vehicle.
-     *
-     * @param title Short required title (D14).
-     * @param notes Optional free-text notes (D14).
-     * @param validUntil Validity deadline; the +30-day default is computed by the caller (D22).
-     * @param vehicleId Vehicle the quote is anchored to (required, D1).
-     * @param appointmentId Optional appointment link (D1).
-     * @param createdByMechanicId Mechanic who created the quote (D15).
-     */
+    /** Creates a draft quote anchored to a vehicle. */
     [SetsRequiredMembers]
     public Quote(
         string title,

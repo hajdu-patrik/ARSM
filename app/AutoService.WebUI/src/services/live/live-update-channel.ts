@@ -1,12 +1,5 @@
-/**
- * Reusable server-sent event channel with auth-aware reconnect.
- *
- * Every live channel needs the same connection lifecycle: reference-counted subscribers, a
- * lifecycle token so a stale reconnect cannot resurrect a torn-down connection, a session refresh
- * before reconnecting, and teardown on logout. That logic lives here once; a channel only supplies
- * its URL, its SSE event name, the browser event it re-dispatches, and a parser.
- * @module services/live/live-update-channel
- */
+/** Reusable SSE channel: ref-counted subscribers, lifecycle-token reconnect and logout teardown (see
+ * WebUI CLAUDE.md); a channel only supplies its URL, SSE event, DOM event and parser. */
 
 import axios from 'axios';
 import { apiClient } from '../http/api.client';
@@ -35,12 +28,7 @@ export interface LiveUpdateChannel<TDetail> {
   readonly dispatch: (detail: TDetail) => void;
 }
 
-/**
- * Creates an SSE-backed live update channel.
- *
- * @param options - Channel-specific URL, event names, and payload parser.
- * @returns The channel's start and dispatch functions.
- */
+/** Creates an SSE-backed live update channel from its URL, event names and payload parser. */
 export function createLiveUpdateChannel<TDetail>(
   options: LiveUpdateChannelOptions<TDetail>,
 ): LiveUpdateChannel<TDetail> {
@@ -70,10 +58,7 @@ export function createLiveUpdateChannel<TDetail>(
     }
   }
 
-  /**
-   * Tears down the connection and timers.
-   * @param invalidateLifecycle - Whether to invalidate in-flight reconnect attempts.
-   */
+  /** Tears down the connection and timers, optionally invalidating in-flight reconnect attempts. */
   function teardownConnection(invalidateLifecycle: boolean): void {
     clearReconnectTimer();
     closeEventSource();
@@ -102,11 +87,7 @@ export function createLiveUpdateChannel<TDetail>(
     }, RECONNECT_DELAY_MS);
   }
 
-  /**
-   * Refreshes the session before reconnecting, clearing auth on a definitive rejection.
-   * @param tokenAtRequest - Lifecycle token captured before the request.
-   * @returns Whether reconnecting should proceed.
-   */
+  /** Refreshes the session before reconnecting, clearing auth on a definitive rejection. */
   async function refreshSessionIfPossible(tokenAtRequest: number): Promise<boolean> {
     if (!shouldKeepLiveUpdates(tokenAtRequest)) {
       return false;

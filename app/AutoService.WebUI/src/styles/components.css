@@ -1,8 +1,5 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   Component utilities
-   Reusable CSS-only patterns that cannot be expressed cleanly with Tailwind
-   utility classes alone (pseudo-elements, browser-native parts, animations).
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Component utilities: CSS-only patterns Tailwind can't express (pseudo-elements,
+   browser-native parts, animations). */
 @layer components {
   /* Keep scrolling enabled while hiding the visual scrollbar chrome. */
   .arsm-scroll-no-bar {

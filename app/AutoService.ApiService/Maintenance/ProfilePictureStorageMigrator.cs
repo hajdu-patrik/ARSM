@@ -6,16 +6,8 @@ using System.Text.Json;
 
 namespace AutoService.ApiService.Maintenance;
 
-// Integrity check for profile pictures held in object storage.
-//
-// This started as the one-off backfill that copied pre-object-storage pictures out of the
-// database. That copy pass is gone: it read people."ProfilePicture", and the
-// DropProfilePictureBytes migration removed that column once the backfill gate reported zero.
-// What remains is the verification pass, which is still worth running on demand, because it is
-// the only check that every persisted object key resolves to a real, non-empty object.
-//
-// It runs inside the API host rather than as a standalone script so it reuses the production
-// IProfilePictureStorage, and therefore reads the bucket exactly the way the serving path does.
+// Verifies that every persisted profile-picture object key resolves to a real, non-empty object.
+// Runs inside the API host (not a standalone script) to reuse the production IProfilePictureStorage.
 public static class ProfilePictureStorageMigrator
 {
     // Argument that switches the host from serving requests to running the verification pass.
@@ -37,9 +29,8 @@ public static class ProfilePictureStorageMigrator
     public static bool IsRequested(string[] args)
         => args.Contains(CommandArgument, StringComparer.Ordinal);
 
-    // Verifies stored profile pictures and writes a machine-readable report to stdout.
-    // services: root service provider of the built host. cancellationToken: cancellation token.
-    // Returns the process exit code: 0 when every stored object resolves, 1 when any does not.
+    // Verifies stored profile pictures and writes a machine-readable report to stdout;
+    // exit code is 0 when every stored object resolves, 1 when any does not.
     public static async Task<int> RunAsync(
         IServiceProvider services,
         CancellationToken cancellationToken)
@@ -55,10 +46,8 @@ public static class ProfilePictureStorageMigrator
         return report.OverallStatus == "passed" ? 0 : 1;
     }
 
-    // Confirms every persisted object key resolves to a real, non-empty object.
-    //
-    // A row whose object is missing or empty is reported rather than thrown, so one broken row
-    // never hides the state of the others.
+    // Confirms every persisted object key resolves to a real, non-empty object; a missing/empty
+    // object is reported rather than thrown, so one broken row never hides the others' state.
     private static async Task<ProfilePictureMigrationReport> VerifyAsync(
         AutoServiceDbContext db,
         IProfilePictureStorage storage,

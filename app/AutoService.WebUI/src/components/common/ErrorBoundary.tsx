@@ -1,11 +1,4 @@
-/**
- * React Error Boundary that falls back to the server-error page.
- *
- * Catches unhandled errors in the component tree and renders the
- * localized ServerError page. Logs errors to console in development
- * mode only. Wraps the main app router.
- * @module components/common/ErrorBoundary
- */
+/** Error boundary that falls back to the localized server-error page; wraps the app router. */
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { ServerError } from '../../pages/ServerError';
@@ -28,10 +21,7 @@ interface ErrorBoundaryInnerProps extends ErrorBoundaryProps {
   readonly fallback: ReactNode;
 }
 
-/**
- * Internal class component implementing the error boundary lifecycle.
- * Renders the provided fallback UI when an error is caught.
- */
+/** Internal class component implementing the error boundary lifecycle and rendering the fallback UI. */
 class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryInnerProps) {
     super(props);
@@ -59,10 +49,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
   }
 }
 
-/**
- * App-level error boundary that switches to the server-error page
- * when an uncaught render error is captured.
- */
+/** App-level error boundary that switches to the server-error page when an uncaught render error is captured. */
 export function ErrorBoundary({ children }: ErrorBoundaryProps) {
   return (
     <ErrorBoundaryInner fallback={<ServerError />}>

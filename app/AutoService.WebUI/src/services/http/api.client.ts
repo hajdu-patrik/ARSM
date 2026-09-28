@@ -1,13 +1,5 @@
-/**
- * Configured Axios HTTP client for API communication.
- *
- * Reads the base URL from {@code VITE_API_URL} (no hardcoded fallback).
- * Includes request interceptors for {@code FormData} content-type handling and for attaching the CSRF
- * double-submit header ({@code X-CSRF-Token}, see {@link readCsrfCookie}) to unsafe requests, and a
- * response interceptor for automatic {@code 401} token refresh with single-flight deduplication and
- * login password redaction.
- * @module services/http/api.client
- */
+/** Axios client for API calls: base URL from {@code VITE_API_URL} with no fallback (see WebUI CLAUDE.md),
+ * plus CSRF header attachment and single-flight 401 refresh-and-retry. */
 
 import axios from 'axios';
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
@@ -17,11 +9,7 @@ import { readCsrfCookie } from './csrf-token';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
-    /**
-     * Opts a background/silent request (session restore, live-update reconnect, polling
-     * refresh) out of the global {@code 500 -> /500} redirect; the error still propagates
-     * normally so the caller's own handling still runs.
-     */
+    /** Opts a background/silent request out of the global {@code 500 -> /500} redirect; the error still propagates. */
     skipErrorRedirect?: boolean;
   }
 }
@@ -39,11 +27,7 @@ const SERVER_ERROR_PATH = '/500';
 /** Request header that must echo the {@code autoservice_csrf} cookie on unsafe requests. */
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
-/**
- * HTTP methods the CSRF double-submit header is attached to. GET/HEAD/OPTIONS never receive it: they
- * are safe methods the API does not require it on, and adding a custom header to every cross-origin
- * GET would force an otherwise-unnecessary CORS preflight.
- */
+/** HTTP methods the CSRF header attaches to; GET/HEAD/OPTIONS are excluded to avoid a needless CORS preflight. */
 const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
 if (!API_URL) {
@@ -56,30 +40,17 @@ let refreshPromise: Promise<void> | null = null;
 /** Tracks requests that have already been retried after a 401 to prevent infinite loops. */
 const retriedRequests = new WeakSet<object>();
 
-/**
- * Type guard that checks whether a value is a non-null object (record).
- * @param value - The value to check.
- * @returns {@code true} if the value is a plain object.
- */
+/** Type guard that checks whether a value is a non-null object (record). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-/**
- * Type guard that checks whether an object has a {@code delete} method.
- * Used to safely interact with Axios headers objects.
- * @param value - The value to check.
- * @returns {@code true} if the value has a callable {@code delete} property.
- */
+/** Type guard that checks whether an object has a callable {@code delete} method (Axios headers). */
 function hasDeleteMethod(value: unknown): value is { delete: (name: string) => void } {
   return isRecord(value) && typeof value.delete === 'function';
 }
 
-/**
- * Redacts the password field from login request errors before they
- * propagate to error handlers or logging, preventing credential leakage.
- * @param error - The Axios error to sanitize.
- */
+/** Redacts the password field from login request errors before they reach handlers or logs. */
 function redactLoginPassword(error: AxiosError): void {
   const requestUrl = error.config?.url ?? '';
   if (!requestUrl.includes(LOGIN_PATH) || error.config?.data == null) {
@@ -112,19 +83,8 @@ function redactLoginPassword(error: AxiosError): void {
   }
 }
 
-/**
- * Attaches the CSRF double-submit header ({@code X-CSRF-Token}) to unsafe requests, or removes a stale
- * one when the cookie is absent. Safe methods are left untouched (see {@link CSRF_PROTECTED_METHODS}).
- *
- * This is an explicit interceptor rather than Axios's built-in {@code xsrfCookieName} /
- * {@code withXSRFToken} support, because that support also attaches the header to safe methods and its
- * exact behavior differs across Axios versions. Because it runs on every dispatch through the shared
- * {@link apiClient}, it also runs on the 401 -> refresh -> retry flow: once for the refresh POST itself
- * and again when the original request is retried, so the retry always carries the freshly rotated token
- * rather than the one read before refresh.
- * @param config - The outgoing request configuration to decorate.
- * @returns The same configuration, with the CSRF header set or cleared.
- */
+/** Attaches the CSRF double-submit header to unsafe requests (cleared when absent); a custom interceptor,
+ * not Axios's built-in XSRF support, so a post-401 retry carries the freshly rotated token. */
 function attachCsrfHeader(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
   const method = config.method?.toLowerCase();
   if (!method || !CSRF_PROTECTED_METHODS.has(method)) {
@@ -141,10 +101,7 @@ function attachCsrfHeader(config: InternalAxiosRequestConfig): InternalAxiosRequ
   return config;
 }
 
-/**
- * Pre-configured Axios instance used by all service modules.
- * Sends credentials (cookies) with every request.
- */
+/** Pre-configured Axios instance used by all service modules; sends credentials with every request. */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,

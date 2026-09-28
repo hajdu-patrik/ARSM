@@ -35,20 +35,8 @@
     <title>ARSM | Auto Service Tool</title>
   </head>
   <body>
-    <!--
-      Static pre-React copy of the first frame a full load of /login paints (mobile
-      LCP), so the browser can paint it before any script runs. React paints two
-      layers there: the Login page (src/pages/Login/page.tsx) and, on top of it, the
-      loading splash (src/pages/LoadingPage.tsx). This copies both: the Login logo
-      with its wrapper chain underneath (covered, but it is what LCP measures, being
-      the larger logo), and the splash overlay (<=320px orb, halo, logo held in the
-      0% keyframe pose, see src/styles/loadingPageAnimations.css) on top, which is
-      what the visitor sees. Hidden by default; the inline script below reveals it
-      only on /login, and not when the splash is skipped after a /500 recovery.
-      LoadingPage removes it in a layout effect on its first commit, before the
-      browser paints, so the handoff is a single frame (src/utils/loginShell.ts).
-      Keep both copies in step with those components.
-    -->
+    <!-- Static pre-React copy of the /login splash first frame (mobile LCP); kept in
+      step with LoadingPage.tsx / src/utils/loginShell.ts. See app/AutoService.WebUI/CLAUDE.md. -->
     <div id="login-shell" aria-hidden="true" class="hidden">
       <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
         <div class="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"></div>

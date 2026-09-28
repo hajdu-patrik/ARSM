@@ -109,18 +109,8 @@ public static partial class DemoDataInitializer
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /**
-     * Clears the customer/vehicle/appointment rows the 2026-04 BackfillDemoData migration inserts
-     * into every database, a fresh one included, when no mechanic and no Identity account exists.
-     * Such a dataset has no owner, so it cannot be real data; left in place, its mechanic-less
-     * appointments fail the startup integrity check. Runs in every environment, before that check:
-     * a fresh production database then starts empty, and demo seeding (when enabled) refills it.
-     * A database with any mechanic or Identity account is never touched.
-     *
-     * @param db Database context.
-     * @param cancellationToken Token used to cancel the queries and deletes.
-     * @return A task that completes when the check (and any reset) is finished.
-     */
+    /** Clears rows the 2026-04 BackfillDemoData migration inserts into every fresh database
+     * (no owner = not real data); runs before the mechanic-less-appointment integrity check, only when no mechanic/Identity account exists. */
     private static async Task ResetLegacyBackfillDatasetWhenUnownedAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         if (await db.Mechanics.AnyAsync(cancellationToken) || await db.Users.AnyAsync(cancellationToken))

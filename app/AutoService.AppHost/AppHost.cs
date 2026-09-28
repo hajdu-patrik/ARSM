@@ -1,9 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-/**
- * Aspire AppHost entrypoint for local PostgreSQL, S3-compatible object storage (RustFS), ApiService,
- * and WebUI orchestration.
- */
+/** Aspire AppHost entrypoint for local PostgreSQL, S3-compatible object storage (RustFS), ApiService, and WebUI orchestration. */
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgresPort = GetRequiredPort(builder.Configuration, "Ports:Postgres");
@@ -29,12 +26,8 @@ var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
 
 var postgresDb = postgresServer.AddDatabase("AutoServiceDb");
 
-// Local S3-compatible object storage for profile pictures. RustFS replaced MinIO when the MinIO
-// images were withdrawn from Docker Hub and quay.io (2026-09); it speaks the same S3 API and
-// serves /data by default. The resource, parameter and port names keep "minio" so existing
-// user secrets and appsettings stay valid. The data volume and the persistent lifetime keep
-// uploaded objects across AppHost restarts, and the image tag is pinned for the same reason
-// PostgreSQL is: an implicit tag can change the server version underneath an existing volume.
+// RustFS-backed local object storage (replaced MinIO, withdrawn 2026-09); "minio" names kept for
+// config compatibility; image tag pinned like PostgreSQL's (see AppHost/CLAUDE.md, Runtime Anchors).
 var minio = builder.AddContainer("minio", "rustfs/rustfs")
                    .WithImageTag("1.0.0")
                    .WithEnvironment("RUSTFS_ACCESS_KEY", minioUser)
@@ -68,9 +61,7 @@ var webUi = builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
 
 builder.Build().Run();
 
-/**
- * Reads a required integer port from AppHost configuration and fails fast on invalid values.
- */
+/** Reads a required integer port from AppHost configuration and fails fast on invalid values. */
 static int GetRequiredPort(IConfiguration configuration, string configurationKey)
 {
     var rawPort = configuration[configurationKey];
@@ -82,9 +73,7 @@ static int GetRequiredPort(IConfiguration configuration, string configurationKey
     return configuredPort;
 }
 
-/**
- * Reads a required non-blank string from AppHost configuration and fails fast when it is missing or blank.
- */
+/** Reads a required non-blank string from AppHost configuration and fails fast when it is missing or blank. */
 static string GetRequiredConfigValue(IConfiguration configuration, string configurationKey)
 {
     var value = configuration[configurationKey];

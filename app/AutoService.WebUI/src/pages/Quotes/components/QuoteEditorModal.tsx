@@ -1,13 +1,4 @@
-/**
- * Quote editor modal shell.
- *
- * Holds the header, lines, totals and footer sections and decides, from the
- * quote's status, what the editor still allows: a draft is fully editable, a
- * sent quote only takes a validity extension and a decision, and a decided
- * quote is read-only. The sections are separate files because this modal
- * carries a whole document, the same reason AppointmentDetailModal is split.
- * @module pages/Quotes/components/QuoteEditorModal
- */
+/** Quote editor shell: header/lines/totals/footer sections gated by quote status (draft editable, sent validity-only, decided read-only; see CLAUDE.md). */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Modal } from '../../../components/common/Modal';
@@ -23,11 +14,7 @@ import { QuoteEditorLinesSection } from './QuoteEditorModal.lines';
 import { QuoteEditorTotalsSection } from './QuoteEditorModal.totals';
 import { QuoteEditorFooter } from './QuoteEditorModal.footer';
 
-/**
- * The editor carries a whole document, so its body scrolls inside the dialog:
- * without a bounded height the modal grows past the viewport and the footer
- * actions end up off screen with nothing to scroll.
- */
+/** Body scrolls inside the dialog (bounded height); unbounded, the modal outgrows the viewport and pushes footer actions off screen. */
 const editorBodyClass = 'min-w-0 max-h-[60vh] space-y-4 overflow-y-auto';
 
 interface QuoteEditorModalProps {
@@ -38,14 +25,7 @@ interface QuoteEditorModalProps {
   readonly reference: QuoteReferenceData;
 }
 
-/**
- * Builds the vehicle label shown in the editor: the quote's own vehicle once
- * it exists, the looked-up vehicle while the draft is still being written.
- * @param quote Quote open in the editor, or null while creating.
- * @param vehicle Vehicle looked up for a new draft.
- * @param fallback Placeholder text when neither is available yet.
- * @returns Vehicle label text.
- */
+/** Builds the vehicle label: the quote's own vehicle once it exists, else the looked-up vehicle while drafting. */
 function resolveVehicleLabel(
   quote: QuoteDetailDto | null,
   vehicle: VehicleDetailDto | null,

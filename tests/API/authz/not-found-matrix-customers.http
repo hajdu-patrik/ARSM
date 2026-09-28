@@ -1,20 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTHZ - NOT-FOUND MATRIX: CUSTOMERS, VEHICLES, APPOINTMENTS (NON-EXISTENT ROUTE IDS, ADMIN-ACCOUNT SESSION)
-# ─────────────────────────────────────────────────────────────
-# Part of the not-found matrix, split by resource for the 250-line test file limit: customers, vehicles and appointments (catalog and quotes live in not-found-matrix-catalog-quotes.http).
-# Every mutation endpoint that takes a route id, called with a non-existent
-# id (999999). Each must answer 404, never 500. A plain mechanic session is
-# enough for all of them: Customers/Vehicles/Appointments require only an
-# authenticated session (no Customer person ever gets an IdentityUserId, so
-# every session is a mechanic session, see catalog-authz.http), and
-# Parts/LaborTypes/Quotes are MechanicOnly. AdminOnly appointment
-# assign/unassign (PUT and DELETE /api/appointments/{id}/assign/{mechanicId})
-# would 403 under a mechanic session before reaching a not-found check, so
-# they are excluded here; their not-found cases (appointment_not_found,
-# mechanic_not_found) are already covered under an admin session in
-# tests/API/appointments/admin-assign-unassign.http.
-# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
-# passes MechanicOnly, and nothing in this file depends on the Admin role.
+# Not-found matrix, split by resource (catalog/quotes live in not-found-matrix-catalog-quotes.http): every
+# mutation with a non-existent id (999999) must answer 404, never 500. Customers/Vehicles/Appointments need only an authenticated session (no Customer ever gets an IdentityUserId, see catalog-authz.http); AdminOnly assign/unassign is excluded (403 first) and covered in admin-assign-unassign.http. The admin account used here also satisfies MechanicOnly.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -24,8 +9,6 @@
 @NonExistentId = 999999
 @GhostVin = TST{{RunId.toString().slice(-10)}}0401
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

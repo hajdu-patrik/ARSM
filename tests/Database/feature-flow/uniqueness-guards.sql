@@ -1,10 +1,5 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - UNIQUENESS GUARDS
--- ------------------------------------------------------------
--- Verifies that the operational dataset does not contain duplicate values
--- for customer contact fields, vehicle license plates, and vehicle VINs.
--- Expected result: 0 rows.
--- ------------------------------------------------------------
+-- FEATURE FLOW - UNIQUENESS GUARDS — no duplicate customer email/phone, license plate, or VIN.
+--     Expected result: 0 rows.
 SELECT duplicate_type,
        duplicate_key,
        duplicate_count

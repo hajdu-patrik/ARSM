@@ -1,10 +1,4 @@
-/**
- * Customer page helper utilities.
- *
- * Provides data transformation, validation mapping, and formatting helpers
- * for the customer registry page.
- * @module pages/Customers/helpers
- */
+/** Customer page helper utilities: data transformation, validation mapping, and formatting for the registry page. */
 
 import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
@@ -31,24 +25,14 @@ export interface VehicleFormState {
   drivetrainType: DrivetrainType | '';
 }
 
-/**
- * Builds full customer display name from customer row data.
- * Returns last-first-middle name order with whitespace-trimmed parts.
- * @param customer Customer row data.
- * @returns Full name in last-first-middle order.
- */
+/** Builds a customer's full display name in last-first-middle order, trimmed. */
 export function buildCustomerDisplayName(customer: CustomerListItem): string {
   return [customer.lastName, customer.firstName, customer.middleName]
     .filter((value) => value && value.trim().length > 0)
     .join(' ');
 }
 
-/**
- * Formats a timestamp string to locale-aware date-time text.
- * @param value ISO timestamp.
- * @param locale Current i18n locale.
- * @returns Human-readable date-time text.
- */
+/** Formats a timestamp string to locale-aware date-time text. */
 export function formatDateTime(value: string, locale: string): string {
   const date = new Date(value);
 
@@ -65,11 +49,7 @@ export function formatDateTime(value: string, locale: string): string {
   }).format(date);
 }
 
-/**
- * Maps customer-validation messages to i18n keys.
- * @param message Backend error detail.
- * @returns Customer page i18n key.
- */
+/** Maps customer-validation messages to i18n keys. */
 export function mapCustomerValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -104,11 +84,7 @@ export function mapCustomerValidationMessageToKey(message: string): string {
   return 'customers.errors.saveFailed';
 }
 
-/**
- * Maps vehicle-validation messages to i18n keys.
- * @param message Backend error detail.
- * @returns Vehicle-related i18n key.
- */
+/** Maps vehicle-validation messages to i18n keys. */
 export function mapVehicleValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -151,20 +127,12 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   return 'customers.errors.vehicleSaveFailed';
 }
 
-/**
- * Returns true when the server field-error dictionary has at least one non-empty entry.
- * @param errors Server field errors dictionary.
- * @returns True if any field has validation errors.
- */
+/** Returns true when the server field-error dictionary has at least one non-empty entry. */
 export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
 }
 
-/**
- * Parses numeric vehicle form inputs into numbers for payload construction.
- * @param form Vehicle form state with string-typed numeric fields.
- * @returns Parsed numeric values.
- */
+/** Parses numeric vehicle form inputs into numbers for payload construction. */
 export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumericValues {
   return {
     year: Number(form.year),
@@ -177,11 +145,7 @@ export function isDrivetrainType(value: string): value is DrivetrainType {
   return (DRIVETRAIN_TYPES as readonly string[]).includes(value);
 }
 
-/**
- * Builds inline numeric field errors for invalid vehicle number inputs.
- * @param values Parsed numeric values from vehicle form.
- * @returns Server field errors dictionary with NaN detection.
- */
+/** Builds inline numeric field errors for invalid (NaN) vehicle number inputs. */
 export function buildVehicleNumericFieldErrors(values: VehicleNumericValues): ServerFieldErrors {
   const numericFields = [
     ['Year', values.year],
@@ -199,8 +163,4 @@ export function buildVehicleNumericFieldErrors(values: VehicleNumericValues): Se
   return errors;
 }
 
-/**
- * Status badge style mapper for repair history rows.
- * @param status Appointment status string.
- * @returns Tailwind class name for badge appearance.
- */
+/** Status badge style mapper for repair history rows. */

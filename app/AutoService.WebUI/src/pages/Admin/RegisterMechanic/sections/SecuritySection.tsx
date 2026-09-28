@@ -1,7 +1,4 @@
-/**
- * Password input section for mechanic registration.
- * @module pages/Admin/RegisterMechanic/sections/SecuritySection
- */
+/** Password input section for mechanic registration. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

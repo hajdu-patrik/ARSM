@@ -10,17 +10,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /**
-     * Assigns the current mechanic to an in-progress appointment.
-     * Endpoint: PUT /api/appointments/{id}/claim.
-     *
-     * @param id Appointment ID.
-     * @param user Authenticated user principal.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Updated appointment DTO or conflict/validation result.
-     */
+    /** Assigns the current mechanic to an in-progress appointment. Endpoint: PUT /api/appointments/{id}/claim. */
     private static async Task<IResult> ClaimAsync(
         int id,
         ClaimsPrincipal user,
@@ -96,17 +86,7 @@ public static partial class AppointmentEndpoints
         return Results.Ok(ToDto(appointment));
     }
 
-    /**
-     * Removes current mechanic assignment from an appointment.
-     * Endpoint: DELETE /api/appointments/{id}/claim.
-     *
-     * @param id Appointment ID.
-     * @param user Authenticated user principal.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Updated appointment DTO or conflict/validation result.
-     */
+    /** Removes current mechanic assignment from an appointment. Endpoint: DELETE /api/appointments/{id}/claim. */
     private static async Task<IResult> UnclaimAsync(
         int id,
         ClaimsPrincipal user,
@@ -171,17 +151,7 @@ public static partial class AppointmentEndpoints
         return Results.Ok(ToDto(appointment));
     }
 
-    /**
-     * Assigns a mechanic to an appointment as admin.
-     * Endpoint: PUT /api/appointments/{id}/assign/{mechanicId} (AdminOnly).
-     *
-     * @param id Appointment ID.
-     * @param mechanicId Mechanic ID to assign.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Updated appointment DTO or conflict/validation result.
-     */
+    /** Assigns a mechanic to an appointment as admin. Endpoint: PUT /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
     private static async Task<IResult> AdminAssignAsync(
         int id,
         int mechanicId,
@@ -245,17 +215,7 @@ public static partial class AppointmentEndpoints
         return Results.Ok(ToDto(appointment));
     }
 
-    /**
-     * Removes a mechanic from an appointment as admin.
-     * Endpoint: DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly).
-     *
-     * @param id Appointment ID.
-     * @param mechanicId Mechanic ID to unassign.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Updated appointment DTO or conflict/validation result.
-     */
+    /** Removes a mechanic from an appointment as admin. Endpoint: DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
     private static async Task<IResult> AdminUnassignAsync(
         int id,
         int mechanicId,

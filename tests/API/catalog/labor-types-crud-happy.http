@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# LABOR TYPES - CRUD HAPPY PATH
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
@@ -10,9 +6,6 @@
 @NewLaborTypeCode = ZZT{{RunId}}A
 @LowercaseLaborTypeCode = zzt{{RunId}}b
 @RoundingLaborTypeCode = ZZT{{RunId}}C
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

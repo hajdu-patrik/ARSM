@@ -1,10 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - ADMIN CREATE UPDATE HAPPY
-# ─────────────────────────────────────────────────────────────
-# PrimaryMechanicId is the admin's own person_id (the admin is a mechanic too); SecondaryMechanicId is
-# a disposable mechanic registered here and deleted at the end. CustomerId/CustomerVehicleId are
-# resolved from a real customer/vehicle pair instead of a literal id. Both appointments this file
-# creates (ApptId, PastDateApptId) are deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
+# PrimaryMechanicId is the admin's own person_id; SecondaryMechanicId is a disposable mechanic registered
+# and deleted here. CustomerId/CustomerVehicleId resolve from a real customer/vehicle; both appointments created are deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -13,14 +8,11 @@
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.create.happy.{{RunId}}@example.test
-# Freshly generated, never-before-seen plate/VIN: reusing a real seeded plate/VIN here would make the
-# vehicle update below collide with whichever demo vehicle actually owns it (UpdateAppointmentVehicleAsync
-# 409s on a plate or VIN already used by a different vehicle).
+# Freshly generated plate/VIN: a real seeded one could collide with whichever demo vehicle owns it
+# (UpdateAppointmentVehicleAsync 409s on a plate/VIN already used by a different vehicle).
 @UpdatedLicensePlate = UPD-{{RunId}}
 @UpdatedVehicleVin = TST{{RunId.toString().slice(-10)}}0801
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -238,9 +230,8 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
-# Safe: SecondaryMechanicId keeps company with PrimaryMechanicId on ApptId (count 2), so the deletion
-# invariant in AdminEndpoints.Handlers.cs does not block it. The appointments themselves are already
-# gone by this point (deleted above), so the invariant is trivially satisfied either way.
+# Safe either way: SecondaryMechanicId shared ApptId with PrimaryMechanicId (count 2), and both fixture
+# appointments are already deleted above, so AdminEndpoints.Handlers.cs's deletion invariant never blocks it.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

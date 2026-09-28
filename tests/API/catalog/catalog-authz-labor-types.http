@@ -1,20 +1,10 @@
-# ─────────────────────────────────────────────────────────────
-# CATALOG - LABOR TYPES UNAUTHENTICATED AUTHZ (MechanicOnly POLICY)
-# ─────────────────────────────────────────────────────────────
-# Split from catalog-authz.http for the 250-line test file limit: the unauthenticated labor type
-# checks. RequireAuthorization answers 401 before any handler runs, so the non-existent id 999999 is
-# enough and no fixture is needed. The authenticated-customer 403 gap is documented in catalog-authz.http.
-#
-# httpyac shares one cookie jar across files, and logout needs the CSRF token, so this file first signs
-# in and signs out with the token to guarantee that the checks below really run without a session.
+# Split from catalog-authz.http (250-line limit); RequireAuthorization 401s before any handler runs, so
+# id 999999 needs no fixture. Signs in/out first because httpyac shares one cookie jar across files.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Catalog] Login as admin to get a known session to end (200 expected)
 # @name clearLogin

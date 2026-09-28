@@ -1,10 +1,4 @@
-/**
- * Login parsing and error-resolution helpers.
- *
- * Normalizes email/phone identifiers and translates backend/transport
- * failures to stable i18n-friendly login error keys.
- * @module pages/Login/login.helpers
- */
+/** Login parsing and error-resolution helpers: normalizes identifiers, maps backend/transport failures to i18n keys. */
 
 import { isAxiosError, type AxiosError } from 'axios';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';

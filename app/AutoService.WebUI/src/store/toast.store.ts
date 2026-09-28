@@ -1,20 +1,11 @@
-/**
- * Global toast notification store.
- *
- * Manages a queue of toast messages displayed via {@link ToastViewport}.
- * Toast messages store i18n keys (not resolved strings) so that visible
- * toasts update instantly when language or theme changes.
- * @module store/toast.store
- */
+/** Global toast queue for {@link ToastViewport}; messages store i18n keys so toasts update instantly on language change. */
 
 import { create } from 'zustand';
 
 /** Visual style variant for a toast notification. */
 export type ToastVariant = 'success' | 'error' | 'warning';
 
-/**
- * A single toast notification entry in the queue.
- */
+/** A single toast notification entry in the queue. */
 export interface ToastMessage {
   /** Unique identifier for this toast instance. */
   id: string;
@@ -28,9 +19,7 @@ export interface ToastMessage {
   durationMs: number;
 }
 
-/**
- * Shape of the toast Zustand store.
- */
+/** Shape of the toast Zustand store. */
 interface ToastState {
   /** Active toast messages in display order. */
   toasts: ToastMessage[];
@@ -51,11 +40,7 @@ interface ToastState {
 /** Default auto-dismiss duration for toasts (5 seconds). */
 const DEFAULT_TOAST_DURATION_MS = 5000;
 
-/**
- * Generates a unique toast ID using `crypto.randomUUID` when available,
- * falling back to a timestamp-based identifier.
- * @returns A unique string identifier.
- */
+/** Generates a unique toast ID using `crypto.randomUUID` when available, else a timestamp-based one. */
 function createToastId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -64,10 +49,7 @@ function createToastId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/**
- * Zustand store for the global toast notification system.
- * Toasts are auto-dismissed by {@link ToastViewport} based on {@link ToastMessage.durationMs}.
- */
+/** Zustand store for toasts; auto-dismissed by {@link ToastViewport} based on {@link ToastMessage.durationMs}. */
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
   showToast: ({ variant, messageKey, messageValues, durationMs }) => {

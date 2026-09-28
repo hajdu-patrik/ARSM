@@ -5,9 +5,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Abstract base entity for all person-like domain objects.
- */
+/** Abstract base entity for all person-like domain objects. */
 public abstract class People
 {
     [Key]
@@ -34,18 +32,10 @@ public abstract class People
     [MaxLength(50)]
     public string? ProfilePictureContentType { get; set; }
 
-    /**
-     * Parameterless constructor required by EF Core.
-     */
+    /** Parameterless constructor required by EF Core. */
     protected People() { }
 
-    /**
-     * Creates a person with required fields.
-     *
-     * @param name Full name value object.
-     * @param email Person email address.
-     * @param phoneNumber Optional phone number.
-     */
+    /** Creates a person with required fields. */
     [SetsRequiredMembers]
     protected People(FullName name, string email, string? phoneNumber)
     {

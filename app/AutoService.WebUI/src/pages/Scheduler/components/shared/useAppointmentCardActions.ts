@@ -1,7 +1,4 @@
-/**
- * Claim/unclaim action state for scheduler appointment cards.
- * @module pages/Scheduler/components/shared/useAppointmentCardActions
- */
+/** Claim/unclaim action state for scheduler appointment cards. */
 
 import { useCallback, useState } from 'react';
 

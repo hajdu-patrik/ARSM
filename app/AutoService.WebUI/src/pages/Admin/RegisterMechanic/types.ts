@@ -1,11 +1,6 @@
-/**
- * Typed form model and field-error helpers for the mechanic registration page.
- * @module pages/Admin/RegisterMechanic/types
- */
+/** Typed form model and field-error helpers for the mechanic registration page. */
 
-/**
- * Client-side form values for the mechanic registration form.
- */
+/** Client-side form values for the mechanic registration form. */
 export interface RegisterMechanicFormValues {
   firstName: string;
   middleName: string;
@@ -18,9 +13,7 @@ export interface RegisterMechanicFormValues {
   expertise: string[];
 }
 
-/**
- * A selectable option for dropdowns and chip selectors.
- */
+/** A selectable option for dropdowns and chip selectors. */
 export interface OptionItem {
   value: string;
   labelKey: string;

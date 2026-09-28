@@ -1,9 +1,4 @@
-/**
- * Delete confirmation modal shared by the Parts and Labor types tabs.
- * States the effect on quotes: existing quotes keep their snapshotted
- * name, price, and VAT, so deleting master data never changes a past quote.
- * @module pages/Inventory/components/DeleteCatalogItemModal
- */
+/** Delete confirmation shared by Parts/Labor types tabs; past quotes keep their snapshotted name/price/VAT, unaffected. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';

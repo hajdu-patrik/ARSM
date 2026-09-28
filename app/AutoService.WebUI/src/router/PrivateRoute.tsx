@@ -1,8 +1,4 @@
-/**
- * Route guard for authenticated pages. Redirects unauthenticated
- * users to `/login` and renders nothing while auth state is loading.
- * @module PrivateRoute
- */
+/** Route guard for authenticated pages: redirects unauthenticated users to `/login`. */
 import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';

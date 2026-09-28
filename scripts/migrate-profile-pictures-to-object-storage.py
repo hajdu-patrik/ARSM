@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""Verifies that every stored profile picture resolves to a real object in object storage.
-
-This script wrapped the one-off backfill that copied pictures out of the Postgres bytea column.
-The DropProfilePictureBytes migration removed that column, so the copy and dry-run passes are
-gone; what remains is the verification pass. It loads local secrets, invokes the maintenance
-entrypoint in the API project, masks the output, and writes a sanitized report.
-
-Usage from the repository root:
-
-    python scripts/migrate-profile-pictures-to-object-storage.py
-    python scripts/migrate-profile-pictures-to-object-storage.py --verify
-
-Both forms do the same thing; --verify is accepted so existing invocations keep working. The run
-is read-only: it touches neither the database nor the bucket.
-"""
+"""Verifies stored profile pictures resolve to real objects in storage; see scripts/CLAUDE.md for usage."""
 
 from __future__ import annotations
 

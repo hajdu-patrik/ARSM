@@ -2,10 +2,7 @@ using System.Text;
 
 namespace AutoService.ApiService.Configuration;
 
-/**
- * Detects template placeholder markers in configuration values
- * to prevent startup with unconfigured secrets.
- */
+/** Detects template placeholder markers in configuration values to prevent startup with unconfigured secrets. */
 internal static class TemplateMarkerDetector
 {
     internal static bool ContainsTemplateMarker(string value)

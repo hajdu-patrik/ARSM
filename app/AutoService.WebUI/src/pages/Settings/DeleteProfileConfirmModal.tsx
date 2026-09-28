@@ -1,7 +1,4 @@
-/**
- * Delete-profile confirmation modal for Settings.
- * @module pages/Settings/DeleteProfileConfirmModal
- */
+/** Delete-profile confirmation modal for Settings. */
 
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

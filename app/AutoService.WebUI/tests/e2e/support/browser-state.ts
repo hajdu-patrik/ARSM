@@ -10,10 +10,8 @@ interface PrimeBrowserStateOptions {
   readonly sidebarCollapsed?: boolean;
 }
 
-/**
- * Preloads deterministic localStorage state before the app boots.
- * This avoids loading-splash delays and keeps auth-route tests stable.
- */
+/** Preloads deterministic localStorage state before the app boots, avoiding loading-splash
+ * delays and keeping auth-route tests stable. */
 export async function primeBrowserState(page: Page, options: PrimeBrowserStateOptions = {}): Promise<void> {
   const {
     language = 'en',

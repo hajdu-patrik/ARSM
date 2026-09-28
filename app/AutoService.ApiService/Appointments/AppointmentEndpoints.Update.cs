@@ -103,10 +103,7 @@ public static partial class AppointmentEndpoints
         return Results.Ok(ToDto(appointment));
     }
 
-    /**
-     * Updates only the linked vehicle payload for an appointment while preserving
-     * the appointment fields and enforcing the same authorization constraints.
-     */
+    /** Updates only the linked vehicle payload for an appointment while preserving the appointment fields and enforcing the same authorization constraints. */
     private static async Task<IResult> UpdateAppointmentVehicleAsync(
         int id,
         UpdateAppointmentVehicleRequest request,

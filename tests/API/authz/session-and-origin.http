@@ -1,22 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# AUTHZ - STALE SESSION AND CROSS-ORIGIN REJECTION
-# ─────────────────────────────────────────────────────────────
-# Verified against the source before writing this file:
-# - AuthEndpoints.Logout.cs: logout revokes the active refresh token row, denylists the current
-#   access token JTI, and deletes both auth cookies, so a session used after logout is rejected
-#   whether or not the client still holds the old cookie values.
-# - Middleware/UnsafeCookieRequestOriginMiddleware.cs: any unsafe method (POST/PUT/PATCH/DELETE)
-#   under /api/** that carries an auth cookie is rejected with 403 Forbidden when the Origin header
-#   does not match the configured WebUI origin - this runs before the auth pipeline consumes the
-#   cookie, so a rejected request leaves the session untouched.
-#
-# tests/API/auth/session-lifecycle.http already proves "Validate after logout (401 expected)", and
-# tests/API/auth/origin-csrf.http already proves the foreign-Origin-rejected-403 and
-# missing-Origin-rejected-403 cases on /api/auth/refresh and /api/auth/logout. Both scenarios are
-# repeated here, with the admin account and the literal example origin from the audit
-# item, so this dedicated authz suite is self-contained.
-# Signs in with the admin account: the admin is a mechanic person too (person_type mechanic), so it
-# passes MechanicOnly, and nothing in this file depends on the Admin role.
+# Verified against source: logout revokes+denylists the token and clears cookies, so a stale session is
+# rejected either way; UnsafeCookieRequestOriginMiddleware rejects a foreign/missing Origin (403) before touching the cookie, leaving the session intact. Repeats session-lifecycle.http/origin-csrf.http's coverage here to keep this authz suite self-contained.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -24,8 +7,6 @@
 @SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @ForeignOrigin = https://evil.example.com
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

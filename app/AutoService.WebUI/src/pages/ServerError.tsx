@@ -1,13 +1,4 @@
-/**
- * Server Error page with timed reload.
- *
- * Displays a branded 500 experience and reloads the page after a short
- * countdown. Uses window.location for navigation to remain router-independent,
- * allowing it to be rendered as an ErrorBoundary fallback outside the Router
- * context.
- * Uses the shared {@link ErrorPage} component for layout.
- * @module pages/ServerError
- */
+/** Server Error (500) page: reloads via window.location (router-independent, so it works as an ErrorBoundary fallback outside the Router) after a countdown; uses the shared ErrorPage. */
 
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

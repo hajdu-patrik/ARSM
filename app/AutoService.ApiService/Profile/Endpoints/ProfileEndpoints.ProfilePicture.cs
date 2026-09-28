@@ -12,14 +12,7 @@ public static partial class ProfileEndpoints
     private const int ProfilePictureCacheMaxAgeSeconds = 3600;
     private const string DefaultProfilePictureContentType = "image/webp";
 
-    /**
-     * Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture.
-     * @param httpContext - Current HTTP context.
-     * @param db - Database context.
-     * @param storage - Profile picture object storage.
-     * @param cancellationToken - Cancellation token.
-     * @return Profile picture binary with ETag support, or 404 if not found.
-     */
+    /** Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture. */
     private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -37,15 +30,7 @@ public static partial class ProfileEndpoints
         return await RespondWithProfilePictureAsync(httpContext, storage, person, cancellationToken);
     }
 
-    /**
-     * Handles {@code GET /api/profile/picture/{personId}} to retrieve a mechanic's profile picture.
-     * @param personId - Target mechanic's person ID.
-     * @param httpContext - Current HTTP context.
-     * @param db - Database context.
-     * @param storage - Profile picture object storage.
-     * @param cancellationToken - Cancellation token.
-     * @return Profile picture binary with ETag support, 403 if forbidden, or 404 if not found.
-     */
+    /** Handles {@code GET /api/profile/picture/{personId}} to retrieve a mechanic's profile picture. */
     private static async Task<IResult> GetMechanicProfilePictureAsync(
         int personId,
         HttpContext httpContext,
@@ -80,18 +65,7 @@ public static partial class ProfileEndpoints
         return await RespondWithProfilePictureAsync(httpContext, storage, mechanic, cancellationToken);
     }
 
-    /**
-     * Serves a person's profile picture from object storage.
-     *
-     * The ETag is read from the person row, so a conditional request short-circuits to 304 without
-     * ever calling the object store.
-     *
-     * @param httpContext - Current HTTP context.
-     * @param storage - Profile picture object storage.
-     * @param person - Person whose picture is requested.
-     * @param cancellationToken - Cancellation token.
-     * @return Picture stream, 304 when unchanged, or 404 when the person has no picture.
-     */
+    /** Serves a person's profile picture from object storage. The ETag is read from the person row, so a conditional request short-circuits to 304 without ever calling the object store. */
     private static async Task<IResult> RespondWithProfilePictureAsync(
         HttpContext httpContext,
         IProfilePictureStorage storage,
@@ -123,13 +97,7 @@ public static partial class ProfileEndpoints
         return Results.NotFound();
     }
 
-    /**
-     * Handles {@code GET /api/profile/picture/updates} SSE stream for real-time profile picture updates.
-     * @param httpContext - Current HTTP context.
-     * @param broadcaster - Profile picture update broadcaster service.
-     * @param cancellationToken - Cancellation token.
-     * @return SSE stream with {@code profile-picture-updated} events, or 503 if subscription limit reached.
-     */
+    /** Handles {@code GET /api/profile/picture/updates} SSE stream for real-time profile picture updates. */
     private static async Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
@@ -168,9 +136,7 @@ public static partial class ProfileEndpoints
         return Results.Empty;
     }
 
-    /**
-     * Appends private browser-cache headers used by both authenticated profile-picture GET endpoints.
-     */
+    /** Appends private browser-cache headers used by both authenticated profile-picture GET endpoints. */
     private static void AppendProfilePictureCacheHeaders(HttpResponse response, string etag)
     {
         response.Headers.CacheControl = $"private, max-age={ProfilePictureCacheMaxAgeSeconds}";
@@ -178,9 +144,7 @@ public static partial class ProfileEndpoints
         response.Headers.Append("Vary", "Cookie, Authorization");
     }
 
-    /**
-     * Evaluates If-None-Match values and returns true when the current ETag matches.
-     */
+    /** Evaluates If-None-Match values and returns true when the current ETag matches. */
     private static bool IsNotModified(HttpRequest request, string currentEtag)
     {
         if (!request.Headers.TryGetValue("If-None-Match", out var incomingValues))

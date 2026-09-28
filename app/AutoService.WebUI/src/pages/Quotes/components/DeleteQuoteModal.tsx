@@ -1,9 +1,4 @@
-/**
- * Quote delete confirmation. Only a draft can be deleted, so the wording
- * says the quote and its lines go away for good rather than hinting at an
- * archive that does not exist.
- * @module pages/Quotes/components/DeleteQuoteModal
- */
+/** Quote delete confirmation; wording says "gone for good" since only a draft can be deleted and there's no archive. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';

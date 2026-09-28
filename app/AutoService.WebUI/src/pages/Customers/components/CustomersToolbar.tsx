@@ -1,7 +1,4 @@
-/**
- * Customers page toolbar: search input, sort direction toggle, and create-customer action.
- * @module CustomersToolbar
- */
+/** Customers page toolbar: search input, sort direction toggle, and create-customer action. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Plus, Search, X } from 'lucide-react';

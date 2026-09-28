@@ -1,13 +1,5 @@
-/**
- * Shared aligned data list: one column model shared by the header and every
- * row via CSS subgrid, switching from labeled mobile tiles to the column
- * table on a container query (the list's own width), not a viewport
- * breakpoint. See `dataListBreakpointClasses` for the breakpoint tokens.
- * The header row and each row's desktop-cells/mobile-tiles wrappers carry
- * fixed `data-testid`s (`data-list-header`, `data-list-row-cells`,
- * `data-list-row-tiles`) for layout regression tests.
- * @module components/common/DataList
- */
+/** Shared aligned data list: subgrid columns, container-query tile/table switch.
+ * See app/AutoService.WebUI/CLAUDE.md. */
 import { memo, type ReactNode } from 'react';
 import {
   contentCardFrameClass,

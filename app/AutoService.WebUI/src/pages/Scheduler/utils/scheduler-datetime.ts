@@ -1,11 +1,4 @@
-/**
- * Shared scheduler date/time formatting and day-comparison helpers.
- *
- * All formatters use `Intl.DateTimeFormat` for locale-aware output
- * used across calendar views, appointment cards, and summary strips.
- *
- * @module scheduler-datetime
- */
+/** Shared scheduler date/time formatting and day-comparison helpers, using Intl.DateTimeFormat for locale-aware output. */
 
 /** Formats a Date to a long localized date string (e.g. "Monday, April 14, 2026"). */
 export function formatLongDate(date: Date, locale: string): string {

@@ -1,7 +1,4 @@
-/**
- * Section components for the appointment detail modal body (header, due date, vehicle, task).
- * @module pages/Scheduler/components/detail/AppointmentDetailModal.sections
- */
+/** Section components for the appointment detail modal body (header, due date, vehicle, task). */
 import { memo } from 'react';
 import { Clock3 } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -51,10 +48,7 @@ interface AppointmentDetailBodyProps {
   readonly onAdminUnassign: (mechanicId: number) => void;
 }
 
-/**
- * Renders the appointment detail modal body sections and wires section-level callbacks.
- * Handles edit-mode rendering and mechanic mutation controls without owning modal state.
- */
+/** Renders the appointment detail modal body sections and wires section-level callbacks; owns no modal state. */
 export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   appointment,
   isAdmin,

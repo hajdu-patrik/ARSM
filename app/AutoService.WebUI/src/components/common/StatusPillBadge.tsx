@@ -1,10 +1,5 @@
-/**
- * Shared status-pill shell: a small rounded, bordered badge with an optional
- * leading colored dot, used by feature-owned status badges (appointment,
- * quote) so every status family renders the same pill geometry instead of
- * each hand-writing its own markup.
- * @module components/common/StatusPillBadge
- */
+/** Shared status-pill shell for feature status badges (appointment, quote).
+ * See app/AutoService.WebUI/CLAUDE.md. */
 import { memo } from 'react';
 
 /** Props for the {@link StatusPillBadge} component. */

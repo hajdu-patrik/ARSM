@@ -1,10 +1,4 @@
-/**
- * Admin mechanic registration page.
- *
- * Combines mechanic list management and registration form submission
- * with inline validation and toast-based status feedback.
- * @module pages/Admin/RegisterMechanic/page
- */
+/** Admin mechanic registration page: mechanic list management plus registration with inline validation and toast feedback. */
 
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -121,12 +115,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     setShowConfirmPassword(false);
   }, []);
 
-  /**
-   * Handles API errors from the registration submission.
-   * Shows inline field errors for 422/400 responses and falls back to toast messages
-   * for authorization failures or unexpected errors.
-   * @param err - The error thrown during registration request.
-   */
+  /** Maps a registration error to an inline field error, falling back to a toast message. */
   const handleSubmitError = useCallback((err: unknown) => {
     if (!isAxiosError<{ errors?: Record<string, string[]>; detail?: string }>(err)) {
       showErrorToast('admin.genericError');
@@ -154,11 +143,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     showErrorToast('admin.genericError');
   }, [showErrorToast]);
 
-  /**
-   * Handles form submission: validates password confirmation, captures pending email,
-   * and opens the registration confirmation modal.
-   * @param e - The form submit event.
-   */
+  /** Validates password confirmation and opens the registration confirmation modal. */
   const handleSubmit = useCallback(
     (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -174,10 +159,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
     [formValues, showErrorToast],
   );
 
-  /**
-   * Executes the mechanic registration API call after confirmation.
-   * Resets the form and triggers a mechanic list refresh on success.
-   */
+  /** Registers the mechanic, then resets the form and refreshes the list on success. */
   const handleRegisterConfirmed = useCallback(async () => {
     setIsRegisterConfirmOpen(false);
     setIsSubmitting(true);

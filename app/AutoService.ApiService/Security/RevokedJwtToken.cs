@@ -3,9 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AutoService.ApiService.Security;
 
-/**
- * Persisted denylist entry for revoked access-token JWT IDs.
- */
+/** Persisted denylist entry for revoked access-token JWT IDs. */
 public sealed class RevokedJwtToken
 {
     [Key]

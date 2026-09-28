@@ -1,9 +1,4 @@
-/**
- * Colored status pill badge for appointment status display.
- * Colors each {@link AppointmentStatus} through its semantic tone
- * and renders the localized status label.
- * @module StatusBadge
- */
+/** Colored status pill badge: maps {@link AppointmentStatus} to its semantic tone and localized label. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatusPillBadge } from '../../../../components/common/StatusPillBadge';

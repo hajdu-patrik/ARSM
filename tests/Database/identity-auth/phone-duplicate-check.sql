@@ -1,7 +1,5 @@
--- 6. NORMALIZED PHONE DUPLICATE CHECK (identity users)
---    Expected: 0 rows.
+-- 6. NORMALIZED PHONE DUPLICATE CHECK (identity users) — Expected: 0 rows.
 --    Accepts both canonical +E.164 and legacy no-plus values for detection.
--- ------------------------------------------------------------
 WITH normalized_identity_phone AS (
     SELECT u."Id" AS user_id,
            u."PhoneNumber" AS raw_phone,

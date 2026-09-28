@@ -1,9 +1,4 @@
-/**
- * Customer list section with expandable vehicle and history details.
- * Manages customer cards, vehicle lists, repair history, and search highlighting.
- * Handles multi-vehicle visual separation and CRUD operations.
- * @module CustomerListSection
- */
+/** Customer list section: expandable vehicle/history details, search highlighting, and CRUD operations. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {

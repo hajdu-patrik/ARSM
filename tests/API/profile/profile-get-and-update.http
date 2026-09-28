@@ -1,6 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# PROFILE - GET & UPDATE (HAPPY PATH)
-# ─────────────────────────────────────────────────────────────
 # Duplicate-email/phone and invalid-format conflict checks split out to the sibling
 # profile-update-conflicts.http (same disposable-mechanic naming convention) to stay <= 250 lines.
 
@@ -13,9 +10,6 @@
 @ProfileRunId = {{$timestamp}}
 @PhoneTail = {{ProfileRunId.toString().slice(-6)}}
 @PhoneTail7 = {{ProfileRunId.toString().slice(-7)}}
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

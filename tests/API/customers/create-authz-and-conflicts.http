@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# CUSTOMERS - CREATE AUTHZ AND CONFLICTS
-# ─────────────────────────────────────────────────────────────
-
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
@@ -11,9 +7,6 @@
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @KnownCustomerPhone = +36304445566
 @RunId = {{$timestamp}}
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

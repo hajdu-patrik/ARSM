@@ -1,12 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - ADMIN UPDATE VALIDATION
-# ─────────────────────────────────────────────────────────────
-# POST /api/customers/{id}/appointments negative-validation coverage moved to the sibling file
-# admin-create-validation.http (split by concern, both files stay under the 250-line limit).
-# PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId are appointments this
-# file creates itself (admin create allows an arbitrary — including past — ScheduledDate, see
-# admin-create-update-happy.http's "Admin create allows past scheduled date" case) and deletes again at
-# the end via DELETE /api/appointments/{id} (AdminOnly).
+# POST negative-validation coverage moved to the sibling admin-create-validation.http (file-size limit).
+# PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId are created and deleted here (admin create allows any ScheduledDate, including past).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -21,8 +14,6 @@
 # before the handler ever reaches VIN validation, so a real seeded VIN here is harmless.
 @SeedVehicleVin = WVWZZZAUZJW123456
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

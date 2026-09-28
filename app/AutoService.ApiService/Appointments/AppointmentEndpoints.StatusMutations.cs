@@ -8,18 +8,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /**
-     * Updates appointment status for an assigned mechanic.
-     * Endpoint: PUT /api/appointments/{id}/status.
-     *
-     * @param id Appointment ID.
-     * @param request Status update payload.
-     * @param user Authenticated user principal.
-     * @param db Database context.
-     * @param loggerFactory Logger factory used to create endpoint logger.
-     * @param cancellationToken Request cancellation token.
-     * @return Updated appointment DTO or forbidden/validation result.
-     */
+    /** Updates appointment status for an assigned mechanic. Endpoint: PUT /api/appointments/{id}/status. */
     private static async Task<IResult> UpdateStatusAsync(
         int id,
         UpdateStatusRequest request,

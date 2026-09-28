@@ -1,15 +1,9 @@
-/**
- * Delete confirmation state for the appointment detail modal.
- *
- * Mirrors the unassign confirm flow: local open/busy state around a single
- * async action, always releasing the busy flag when it settles.
- * @module AppointmentDetailModal.delete
- */
+/** Delete-confirmation state for the appointment detail modal; mirrors the unassign confirm flow (busy flag always released on settle). */
 import { useCallback, useState } from 'react';
 
 /** Inputs of {@link useAppointmentDelete}. */
 interface UseAppointmentDeleteArgs {
-  /** Id of the currently open appointment, or {@code undefined} when none is open. */
+  /** Id of the currently open appointment, or `undefined` when none is open. */
   readonly appointmentId: number | undefined;
   /** Deletes the appointment by id; never rejects (errors are reported via toast by the caller). */
   readonly onDelete: (id: number) => Promise<void>;
@@ -31,13 +25,7 @@ interface UseAppointmentDeleteResult {
   readonly resetDeleteConfirm: () => void;
 }
 
-/**
- * Encapsulates the delete-confirmation open/busy state for {@link AppointmentDetailModal}.
- * The delete flow is the only admin-gated destructive action in the modal, so it lives in
- * its own hook instead of joining the component's claim/unclaim/save state.
- * @param args - The current appointment id and the delete callback to run.
- * @returns Delete confirmation state and handlers for the footer and confirm modal.
- */
+/** Delete-confirmation state for {@link AppointmentDetailModal}; its own hook because delete is the modal's only admin-gated destructive action. */
 export function useAppointmentDelete({ appointmentId, onDelete }: UseAppointmentDeleteArgs): UseAppointmentDeleteResult {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

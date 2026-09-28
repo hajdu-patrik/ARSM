@@ -1,7 +1,4 @@
-/**
- * Mechanic list toolbar: name search and sort-direction toggle.
- * @module pages/Admin/RegisterMechanic/sections/MechanicListToolbar
- */
+/** Mechanic list toolbar: name search and sort-direction toggle. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { ArrowUpDown, Search, X } from 'lucide-react';

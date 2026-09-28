@@ -1,15 +1,6 @@
 #!/usr/bin/env node
-/**
- * ARSM UserPromptSubmit hook.
- *
- * Re-injects the CLAUDE.md workflow contract on every user prompt so the ask-first rule and
- * the routing chain behind it cannot drift out of attention during a long session.
- * CLAUDE.md itself is only loaded once at session start; this keeps the contract present
- * on every turn instead.
- *
- * Emits the reminder through hookSpecificOutput.additionalContext, which the harness
- * injects into model context. Never blocks the prompt.
- */
+/** ARSM UserPromptSubmit hook: re-injects the CLAUDE.md workflow contract every turn (it loads once
+ * at session start) via hookSpecificOutput.additionalContext; never blocks the prompt. */
 
 const REMINDER = [
   'ARSM WORKFLOW CONTRACT (root CLAUDE.md). This governs every request in this repository.',

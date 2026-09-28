@@ -5,13 +5,8 @@ using System.Security.Cryptography;
 
 namespace AutoService.ApiService.Imaging;
 
-/**
- * ImageSharp-based profile-picture processor producing 512x512-bounded WebP output.
- *
- * Pixel dimensions are inspected before decoding: a small, heavily compressed file can
- * expand to gigabytes of bitmap memory, so the guard has to run on the header rather
- * than on the decoded image.
- */
+/** ImageSharp-based processor producing 512x512-bounded WebP output. Dimensions are checked from
+    the header before decoding, since a small compressed file can decode into gigabytes of bitmap memory. */
 internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcessor
 {
     private const int MaxOutputEdgePixels = 512;
@@ -19,9 +14,7 @@ internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcess
     private const int WebpQuality = 80;
     private const string OutputContentType = "image/webp";
 
-    /**
-     * Decodes the upload, bounds it to 512x512, and re-encodes it as WebP with a content ETag.
-     */
+    /** Decodes the upload, bounds it to 512x512, and re-encodes it as WebP with a content ETag. */
     public async Task<ProcessedProfilePicture> ProcessAsync(Stream source, CancellationToken cancellationToken)
     {
         await GuardSourceDimensionsAsync(source, cancellationToken);
@@ -50,9 +43,7 @@ internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcess
         return new ProcessedProfilePicture(bytes, OutputContentType, BuildETag(bytes));
     }
 
-    /**
-     * Rejects decompression bombs by reading only the image header before any pixel allocation.
-     */
+    /** Rejects decompression bombs by reading only the image header before any pixel allocation. */
     private static async Task GuardSourceDimensionsAsync(Stream source, CancellationToken cancellationToken)
     {
         RewindSource(source);
@@ -74,9 +65,7 @@ internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcess
         }
     }
 
-    /**
-     * Decodes the image and converts decoder failures into caller-facing rejections.
-     */
+    /** Decodes the image and converts decoder failures into caller-facing rejections. */
     private static async Task<Image> LoadImageAsync(Stream source, CancellationToken cancellationToken)
     {
         RewindSource(source);
@@ -91,9 +80,7 @@ internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcess
         }
     }
 
-    /**
-     * Rewinds a seekable source so header inspection and decoding both start at byte zero.
-     */
+    /** Rewinds a seekable source so header inspection and decoding both start at byte zero. */
     private static void RewindSource(Stream source)
     {
         if (source.CanSeek)
@@ -102,9 +89,7 @@ internal sealed class ImageSharpProfilePictureProcessor : IProfilePictureProcess
         }
     }
 
-    /**
-     * Builds the strong ETag persisted with the object key so conditional GETs never touch the bucket.
-     */
+    /** Builds the strong ETag persisted with the object key so conditional GETs never touch the bucket. */
     private static string BuildETag(byte[] content)
         => $"\"{Convert.ToHexString(SHA256.HashData(content))}\"";
 }

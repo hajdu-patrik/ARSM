@@ -1,7 +1,4 @@
-/**
- * Shared toast handler typings for Inventory mutation hooks.
- * @module pages/Inventory/hooks/mutation-toast.types
- */
+/** Shared toast handler typings for Inventory mutation hooks. */
 
 /** Minimal toast callback shape used by Inventory mutation flows. */
 export type CatalogMutationToastHandler = (messageKey: string) => void;

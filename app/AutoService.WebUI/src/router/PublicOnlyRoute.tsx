@@ -1,8 +1,4 @@
-/**
- * Route guard for public-only pages (e.g. login). Redirects already-authenticated
- * users to `/` and renders nothing while auth state is loading.
- * @module PublicOnlyRoute
- */
+/** Route guard for public-only pages (e.g. login): redirects already-authenticated users to `/`. */
 import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';

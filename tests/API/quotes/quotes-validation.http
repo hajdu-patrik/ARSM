@@ -1,18 +1,11 @@
-# ─────────────────────────────────────────────────────────────
-# QUOTES - CREATION VALIDATION AND CONCURRENCY
-# ─────────────────────────────────────────────────────────────
-# The ValidUntil status-matrix scenarios (Sent/Accepted lock behavior) live in
-# the sibling file quotes-validity-matrix.http, split out to keep both files
-# under the 250-line limit once real status assertions were added to every
-# block.
+# ValidUntil status-matrix scenarios (Sent/Accepted lock behavior) live in the sibling
+# quotes-validity-matrix.http, split out to keep both files under the 250-line limit.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuotesValidation] Login as admin (MechanicOnly prerequisite)
 # @name csrfSource1
@@ -34,9 +27,8 @@ Content-Type: application/json
 ###
 
 ### [Setup][QuotesValidation] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
-# Vehicle identity ids depend on the local database's insert history, so a literal
-# id is right on one machine and 404 on the next. The three demo quotes (D12) are
-# addressed here by their stable QuoteNumber (D13), and each one sits on its own vehicle.
+# Vehicle ids depend on the local DB's insert history, so this resolves the demo vehicle anchor via the
+# seeded quote's stable QuoteNumber (D13) instead of a literal id that would 404 on another machine.
 # @name seedQuotes
 GET {{AutoService_ApiService_HostAddress}}/api/quotes
 
@@ -50,9 +42,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
 ###
 
 ### [Setup][QuotesValidation] Resolve an appointment that belongs to the anchor vehicle (200 expected)
-# Used below against a different vehicle, which is exactly the D42 mismatch case.
-# descending is spelled out on purpose: the handler binds it as a non-nullable bool
-# with no default, so omitting it is a binding failure (400), not a default sort.
+# Used below against a different vehicle for the D42 mismatch case; descending is spelled out because
+# the handler binds it as a non-nullable bool with no default, so omitting it would 400, not default-sort.
 # @name anchorAppointments
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/appointments?descending=false
 

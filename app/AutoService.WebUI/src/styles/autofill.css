@@ -1,8 +1,5 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   Autofill overrides — MUST stay outside @layer to be unlayered author-origin
-   styles, guaranteeing they win over the browser's UA autofill sheet and any
-   layered Tailwind utilities (layers always lose to unlayered author rules).
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Autofill overrides: MUST stay outside @layer (unlayered author rules beat
+   layered Tailwind utilities and the UA autofill sheet). */
 
 /* Light mode */
 input:-webkit-autofill,

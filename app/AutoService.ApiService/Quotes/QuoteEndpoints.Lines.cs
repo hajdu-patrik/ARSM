@@ -7,17 +7,8 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /**
-     * Adds a line to a draft quote. Order: load with lines, check the
-     * Draft lock, check the version, check the 200-line cap (D24), resolve
-     * the catalog-or-override snapshot (D40), recompute totals, save.
-     *
-     * @param id Quote identifier.
-     * @param request Line payload with the expected concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Adds a line to a draft quote: load with lines, Draft lock, version, 200-line cap (D24),
+     * catalog-or-override snapshot (D40), recompute totals, save. */
     private static async Task<IResult> AddQuoteLineAsync(
         int id,
         CreateQuoteLineRequest request,
@@ -91,18 +82,8 @@ public static partial class QuoteEndpoints
         return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
     }
 
-    /**
-     * Updates a line on a draft quote. Same order as add: load with lines,
-     * Draft lock, version, resolve snapshot, recompute totals, save. No
-     * 200-line cap here since the line count does not change.
-     *
-     * @param id Quote identifier.
-     * @param lineId Line identifier.
-     * @param request Line payload with the expected concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Updates a line on a draft quote; same order as add (load, Draft lock, version, snapshot,
+     * recompute, save) but no 200-line cap since the line count doesn't change. */
     private static async Task<IResult> UpdateQuoteLineAsync(
         int id,
         int lineId,
@@ -169,19 +150,8 @@ public static partial class QuoteEndpoints
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
     }
 
-    /**
-     * Removes a line from a draft quote (D39: version arrives as a query
-     * parameter on DELETE). The quote itself survives, so the response is
-     * the updated quote, not 204, matching the Appointments unclaim and
-     * unassign precedent for removing a sub-resource.
-     *
-     * @param id Quote identifier.
-     * @param lineId Line identifier.
-     * @param version Client-submitted concurrency version.
-     * @param db Database context.
-     * @param cancellationToken Request cancellation token.
-     * @return The updated quote, or a validation/conflict/not-found result.
-     */
+    /** Removes a line from a draft quote (D39: version as a query param on DELETE); the quote
+     * survives so the response is the updated quote, not 204 (matches the Appointments unclaim/unassign precedent). */
     private static async Task<IResult> DeleteQuoteLineAsync(
         int id,
         int lineId,

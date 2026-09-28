@@ -11,7 +11,7 @@ export const meta = {
   ],
 }
 
-// ---------------------------------------------------------------- inputs
+// inputs
 const task = typeof args === 'string' ? args : args?.task || ''
 const routerDifficulty = typeof args?.difficulty === 'number' ? args.difficulty : null
 const directArea = args?.area || null
@@ -90,7 +90,6 @@ const GATE_SCHEMA = {
   required: ['passed', 'failures'],
 }
 
-// ---------------------------------------------------------------- plan
 phase('Plan')
 let plan
 let planSkipped = false
@@ -183,7 +182,7 @@ const slot = limiter(cap)
 const changed = new Set()
 const track = (result) => { if (result) result.filesChanged.forEach((f) => changed.add(normPath(f))) }
 
-// ---------------------------------------------------------------- implement + per-package review
+// implement + per-package review
 // Untracked files that exist before any package runs belong to the user; the cleanup never touches them.
 const baseline = await agent('Run `git status --porcelain --untracked-files=all` from the repository root and return the paths of ' +
   'the untracked (`??`) entries verbatim. Change nothing.', { ...RUNNER, phase: 'Plan', label: 'baseline', schema: UNTRACKED_SCHEMA })
@@ -267,7 +266,7 @@ if (handoffs.length) {
 const openQuestions = [...finished, ...applied.map((impl) => ({ impl }))].flatMap((r) => r.impl.openQuestions)
 if (openQuestions.length) return { status: 'needs-user', questions: openQuestions, plan, packages, applied, tokensSpent: budget.spent() }
 
-// ---------------------------------------------------------------- gate (docs-sync runs beside it: it edits docs only, which the gate does not check)
+// gate (docs-sync runs beside it: it edits docs only, which the gate does not check)
 phase('Gate')
 const docsSync = agent(reviewPrompt('Sync the Claude instruction layer and READMEs with these changes; edit documentation files only.', [...changed]),
   { agentType: 'docs-sync', phase: 'Review', ...reviewer, schema: REVIEW_SCHEMA })
@@ -367,7 +366,6 @@ const [docs, cleanup] = await Promise.all([docsSync, cleanupPass('cleanup')])
 track(docs)
 if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, cleanup, tokensSpent: budget.spent() }
 
-// ---------------------------------------------------------------- test
 phase('Test')
 const files = [...changed]
 const tests = []

@@ -1,8 +1,4 @@
-/**
- * Modal dialog displaying historical appointment details for a vehicle.
- * Renders appointment status, task description, timestamps, and vehicle info.
- * @module HistoryAppointmentModal
- */
+/** Modal dialog showing a vehicle's historical appointment: status, task, timestamps, and vehicle info. */
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays } from 'lucide-react';

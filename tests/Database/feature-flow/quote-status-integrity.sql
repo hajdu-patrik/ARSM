@@ -1,14 +1,5 @@
--- ------------------------------------------------------------
--- FEATURE FLOW - QUOTE STATUS LIFECYCLE INTEGRITY
--- ------------------------------------------------------------
--- Verifies every quote whose Status has advanced past Sent (Accepted or
--- Rejected, Domain/UniqueTypes/QuoteStatus.cs) has already recorded a
--- SentAt timestamp: a quote cannot be decided before it was sent.
--- SentAt/DecidedAt are set by the Quotes handlers, not by a database
--- constraint, so this is a data-level check, not a schema one.
--- Expected result: 0 rows.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ------------------------------------------------------------
+-- FEATURE FLOW - QUOTE STATUS LIFECYCLE INTEGRITY — an Accepted/Rejected quote (QuoteStatus.cs) must
+--     already have SentAt; set by the Quotes handlers, not a DB constraint. Expected: 0 rows.
 SELECT q."Id" AS quote_id,
        q."QuoteNumber",
        q."Status",

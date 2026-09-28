@@ -1,22 +1,11 @@
-/**
- * Theme state store.
- *
- * Manages dark/light mode preference. The selected theme is persisted
- * in {@code localStorage} under the key {@code 'preferred-theme'} and
- * applied by toggling the {@code 'dark'} class on {@code document.documentElement}.
- * @module store/theme.store
- */
+/** Theme store: dark/light preference persisted in {@code localStorage}, applied via the {@code 'dark'} class. */
 
 import { create } from 'zustand';
 
 /** Supported application themes. */
 type Theme = 'light' | 'dark';
 
-/**
- * Applies the given theme to the DOM by toggling the {@code 'dark'} class
- * on the root {@code <html>} element.
- * @param theme - The theme to apply.
- */
+/** Applies the given theme to the DOM by toggling the {@code 'dark'} class on the root element. */
 function applyThemeToDocument(theme: Theme): void {
   if (typeof document === 'undefined') {
     return;
@@ -25,9 +14,7 @@ function applyThemeToDocument(theme: Theme): void {
   document.documentElement.classList.toggle('dark', theme === 'dark');
 }
 
-/**
- * Shape of the theme Zustand store.
- */
+/** Shape of the theme Zustand store. */
 interface ThemeState {
   /** Currently active theme. */
   theme: Theme;
@@ -39,10 +26,7 @@ interface ThemeState {
   loadTheme: () => void;
 }
 
-/**
- * Zustand store for theme state.
- * Initialized at module load time via {@link loadTheme}.
- */
+/** Zustand store for theme state; initialized at module load time via {@link loadTheme}. */
 export const useThemeStore = create<ThemeState>((set) => ({
   theme: 'light',
 

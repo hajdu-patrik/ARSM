@@ -1,18 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-#  AUTH – Session Lifecycle (cookie-based)
-# ─────────────────────────────────────────────────────────────
-# Verified against AuthEndpoints.Login/Refresh/Logout/Validate.cs before writing this file:
-# - Login sets both auth cookies and returns 200; Validate requires the access-token cookie (401
-#   without it); Refresh rotates both cookies from the refresh-token cookie and returns 204, or 401
-#   when the cookie is missing/unknown/expired; Logout revokes the refresh token, denylists the
-#   current access-token JTI, and clears both cookies, returning 204 - so a stale cookie replayed
-#   after logout is rejected on both Validate and Refresh.
-# - The [Manual] blocks below intentionally stay non-executing: tripping AuthRefreshAttempts (20/min),
-#   AuthLoginAttempts (10/min in production; raised in Development, see Program.cs) or the 5-attempt/
-#   15-minute lockout here would make this file fail its own later blocks and could ban the client
-#   running the rest of the suite.
-# This file provisions its own throwaway mechanic (own {{$timestamp}} suffix) instead of depending on
-# another file's fixtures surviving, and deletes it again at the end.
+# Verified against AuthEndpoints.Login/Refresh/Logout/Validate.cs: a stale cookie replayed after logout is
+# rejected on both Validate and Refresh. [Manual] blocks stay non-executing to avoid tripping rate limits/lockout and banning the suite's client. Self-provisions/deletes its own mechanic.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -23,8 +10,6 @@
 @MatrixRunSuffix = {{$timestamp}}
 @MatrixEmailWithPhone = session.lifecycle.{{MatrixRunSuffix}}@example.test
 
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -124,26 +109,20 @@ X-CSRF-Token: {{CsrfToken}}
 # Refresh rotates the CSRF cookie too, so the logout below needs the new value.
 
 ### [Manual][Session] Refresh rate limiting (expect 429 after >20 refresh calls per minute from same client)
-# Re-run the refresh request rapidly (for example with a loop in terminal) to verify AuthRefreshAttempts policy.
-# Example PowerShell:
+# Manual: re-run rapidly to verify AuthRefreshAttempts (429 after >20/min). PowerShell:
 # 1..25 | % { iwr -Method Post -UseBasicParsing "{{AutoService_ApiService_HostAddress}}/api/auth/refresh" }
 
 ###
 
 ### [Manual][Login] Login rate limiting (expect 429 after >10 login calls per minute from same client)
-# Example PowerShell:
-# 1..12 | % {
-#   $body = @{ email = "{{MatrixEmailWithPhone}}"; password = "{{TestWrongPassword}}" } | ConvertTo-Json
-#   iwr -Method Post -UseBasicParsing -ContentType "application/json" -Body $body "{{AutoService_ApiService_HostAddress}}/api/auth/login"
-# }
+# Manual: re-run rapidly to verify AuthLoginAttempts (429 after >10/min). PowerShell:
+# 1..12 | % { $body = @{ email = "{{MatrixEmailWithPhone}}"; password = "{{TestWrongPassword}}" } | ConvertTo-Json; iwr -Method Post -UseBasicParsing -ContentType "application/json" -Body $body "{{AutoService_ApiService_HostAddress}}/api/auth/login" }
 
 ###
 
 ### [Manual][Login] Lockout after repeated bad password attempts (expect 429, then valid login works after lockout window)
-# Trigger lockout with 5 consecutive wrong-password attempts against the same mechanic account.
-# Then verify:
-# 1) immediate valid-password login returns 429 during lockout window,
-# 2) valid-password login succeeds after lockout expires.
+# Manual: trigger lockout with 5 consecutive wrong-password attempts, then verify a valid-password login
+# returns 429 during the lockout window and succeeds again once it expires.
 
 ###
 

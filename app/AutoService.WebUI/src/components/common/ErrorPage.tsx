@@ -1,10 +1,4 @@
-/**
- * Shared full-page error display component.
- *
- * Renders a branded, responsive error state with a configurable image,
- * background code, title, subtitle, CTA button, and optional countdown.
- * @module components/common/ErrorPage
- */
+/** Shared full-page error display: image, background code, title, subtitle, CTA and optional countdown. */
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -49,9 +43,7 @@ interface ErrorPageCountdownProps {
 
 const errorPageCtaClass = `${buttonClass} mt-5 w-full sm:w-auto`;
 
-/**
- * Displays the optional redirect countdown section in error states.
- */
+/** Displays the optional redirect countdown section in error states. */
 const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft }: ErrorPageCountdownProps) {
 	return (
 		<div className="mt-6 border-t border-arsm-border pt-4 text-center dark:border-arsm-border-dark">
@@ -67,9 +59,7 @@ const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft
 
 ErrorPageCountdown.displayName = 'ErrorPageCountdown';
 
-/**
- * Composes the shared error-page layout with decorative watermark and optional countdown.
- */
+/** Composes the shared error-page layout with decorative watermark and optional countdown. */
 const ErrorPageComponent = memo(function ErrorPage({
 	imageSrc,
 	imageAlt,

@@ -3,12 +3,8 @@ using System.Text;
 
 namespace AutoService.ApiService.Middleware;
 
-/**
- * Middleware that emits a structured audit warning for 401 (unauthenticated) and
- * 403 (forbidden) responses produced by the authentication and authorization pipeline.
- * Must be registered before UseAuthentication() so it wraps the full auth pipeline
- * and can observe the final response status code on the way out.
- */
+/** Emits a structured audit warning on 401/403 responses; must be registered before
+    UseAuthentication() so it wraps the full auth pipeline and sees the final status code. */
 public class AuditAccessDeniedMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, ILoggerFactory loggerFactory)

@@ -1,18 +1,10 @@
-/**
- * Scheduler state store.
- *
- * Manages appointment data (today and month views), calendar navigation
- * (year, month, selected day), and loading/error states. View state
- * is persisted per browser tab via {@code sessionStorage}.
- * @module store/scheduler.store
- */
+/** Scheduler state store: today/month appointments, calendar navigation and loading/error state,
+ * persisted per tab via {@code sessionStorage}. */
 
 import { create } from 'zustand';
 import type { AppointmentDto } from '../types/scheduler/scheduler.types';
 
-/**
- * Shape of the scheduler Zustand store.
- */
+/** Shape of the scheduler Zustand store. */
 interface SchedulerState {
   /** Appointments scheduled for today. */
   todayAppointments: AppointmentDto[];
@@ -57,9 +49,7 @@ interface SchedulerState {
 /** {@code sessionStorage} key for persisting the scheduler view state per tab. */
 const SCHEDULER_SESSION_KEY = 'scheduler-selected-view';
 
-/**
- * Serializable scheduler view state stored in {@code sessionStorage}.
- */
+/** Serializable scheduler view state stored in {@code sessionStorage}. */
 interface SchedulerSessionState {
   /** Calendar year. */
   year: number;
@@ -69,12 +59,7 @@ interface SchedulerSessionState {
   day: number | null;
 }
 
-/**
- * Reads the persisted scheduler view state from {@code sessionStorage}.
- * Falls back to today's date if no valid state is found.
- * @param fallbackDate - Date to use as the default when no session state exists.
- * @returns The restored or fallback view state.
- */
+/** Reads the persisted scheduler view state from {@code sessionStorage}, falling back to today's date. */
 function readSessionState(fallbackDate: Date): SchedulerSessionState {
   const fallbackState: SchedulerSessionState = {
     year: fallbackDate.getFullYear(),
@@ -103,11 +88,7 @@ function readSessionState(fallbackDate: Date): SchedulerSessionState {
   }
 }
 
-/**
- * Persists the current scheduler view state to {@code sessionStorage}.
- * Silently ignores storage failures to keep in-memory state functional.
- * @param state - The view state to persist.
- */
+/** Persists the current scheduler view state to {@code sessionStorage}, ignoring storage failures. */
 function writeSessionState(state: SchedulerSessionState): void {
   if (typeof globalThis === 'undefined' || !('sessionStorage' in globalThis)) {
     return;
@@ -120,11 +101,7 @@ function writeSessionState(state: SchedulerSessionState): void {
   }
 }
 
-/**
- * Zustand store for scheduler state.
- * Initializes calendar view from {@code sessionStorage} (falling back to today)
- * and keeps session state synchronized on every navigation change.
- */
+/** Zustand store for scheduler state; initializes the calendar view from {@code sessionStorage} (falls back to today). */
 export const useSchedulerStore = create<SchedulerState>((set) => {
   const initNow = new Date();
   const initialSessionState = readSessionState(initNow);
@@ -134,23 +111,15 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
     return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
   };
 
-  /**
-   * Removes an appointment by id, returning the original array when the id is absent so
-   * untouched buckets keep referential equality and do not re-render.
-   */
+  /** Removes an appointment by id, returning the original array when absent to keep referential equality. */
   const omitById = (appointments: AppointmentDto[], id: number): AppointmentDto[] => {
     return appointments.some((appointment) => appointment.id === id)
       ? appointments.filter((appointment) => appointment.id !== id)
       : appointments;
   };
 
-  /**
-   * Inserts, replaces, or removes an appointment by id so a bucket never keeps a stale copy.
-   *
-   * Rescheduling can move an appointment out of a bucket, so membership has to be re-evaluated
-   * on every write; returning the original array when nothing changed keeps referential equality
-   * and avoids needless re-renders.
-   */
+  /** Inserts, replaces, or removes an appointment by id; returns the original array when unchanged, since
+   * rescheduling can move it between buckets and referential equality avoids needless re-renders. */
   const placeById = (
     appointments: AppointmentDto[],
     updated: AppointmentDto,
@@ -170,12 +139,8 @@ export const useSchedulerStore = create<SchedulerState>((set) => {
     return copy;
   };
 
-  /**
-   * Checks whether a date falls in the viewed month or either adjacent month.
-   *
-   * The six-week calendar grid spills into the previous and next month, and useSchedulerDataSync
-   * fills calendarAppointments from all three, so that is the membership window here too.
-   */
+  /** Checks whether a date falls in the viewed month or an adjacent one, matching the six-week grid's
+   * spillover into the previous/next month that useSchedulerDataSync fills calendarAppointments from. */
   const isWithinCalendarWindow = (date: Date, viewYear: number, viewMonth: number): boolean => {
     const scheduledMonthIndex = date.getFullYear() * 12 + date.getMonth();
     const viewedMonthIndex = viewYear * 12 + (viewMonth - 1);

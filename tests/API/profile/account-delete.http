@@ -1,13 +1,5 @@
-# ─────────────────────────────────────────────────────────────
-# PROFILE - ACCOUNT DELETE
-# ─────────────────────────────────────────────────────────────
-# Verified against ProfileEndpoints.DeleteProfile.cs (DeleteProfileAsync): the missing-password
-# guard runs first (400 regardless of caller), then the admin-role check runs BEFORE the password
-# is ever verified (403 for any admin, right or wrong password), and only a non-admin caller
-# reaches CheckPasswordAsync (400 on a wrong password). The wrong-password check below therefore
-# runs under the disposable non-admin mechanic, not the admin session, so it actually exercises the
-# password-mismatch branch instead of tripping the admin guard first.
-# POST /api/auth/register answers 200 OK (RegisterAsync -> Results.Ok), never 201.
+# DeleteProfileAsync checks missing-password first (400), then admin-role BEFORE password check (403
+# for any admin), so the wrong-password case below runs as non-admin to hit CheckPasswordAsync instead.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -19,9 +11,6 @@
 @DeleteSelfEmail = profile.delete.self.{{DeleteRunSuffix}}@example.test
 @DeleteSelfPhoneSuffix = {{$randomInt 1000000 9999999}}
 @DeleteSelfPhone = +3630{{DeleteSelfPhoneSuffix}}
-
-
-# ─────────────────────────────────────────────────────────────
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

@@ -4,9 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Part catalog entry. Prices are net; VAT is applied at display and quote time.
- */
+/** Part catalog entry. Prices are net; VAT is applied at display and quote time. */
 public class Part
 {
     [Key]
@@ -21,25 +19,14 @@ public class Part
 
     public required decimal NetUnitPrice { get; set; }
 
-    // VatRatePercent is an int, not an enum: it is a number multiplied into a price,
-    // not a behavioral category, so it would need to be unwrapped before every
-    // calculation if it were an enum. A check constraint restricts it to the
-    // allowed set (0, 5, 18, 27) instead.
+    // Int, not enum (multiplied into a price, not a category); allowed set and
+    // check constraint documented in app/AutoService.ApiService/CLAUDE.md Catalog Anchors.
     public required int VatRatePercent { get; set; }
 
-    /**
-     * Parameterless constructor required by EF Core.
-     */
+    /** Parameterless constructor required by EF Core. */
     public Part() {}
 
-    /**
-     * Creates a part with required catalog fields.
-     *
-     * @param partNumber Unique part number.
-     * @param name Part display name.
-     * @param netUnitPrice Net unit price.
-     * @param vatRatePercent VAT rate percentage applied to this part.
-     */
+    /** Creates a part with required catalog fields. */
     [SetsRequiredMembers]
     public Part(
         string partNumber,

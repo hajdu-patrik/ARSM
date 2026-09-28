@@ -1,7 +1,4 @@
-/**
- * Payload builders for the quote header and quote line forms.
- * @module pages/Quotes/hooks/quoteMutation.helpers
- */
+/** Payload builders for the quote header and quote line forms. */
 import type {
   CreateQuoteRequest,
   QuoteLineRequest,
@@ -15,11 +12,7 @@ interface PayloadResult<TPayload> {
   fieldError: string | null;
 }
 
-/**
- * Parses the optional appointment link from the header form.
- * @param appointmentId Appointment select value; an empty string means no link.
- * @returns Appointment identifier, or null when unlinked.
- */
+/** Parses the optional appointment link from the header form. */
 function parseAppointmentId(appointmentId: string): number | null {
   if (appointmentId.trim().length === 0) {
     return null;
@@ -29,11 +22,7 @@ function parseAppointmentId(appointmentId: string): number | null {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-/**
- * Builds the draft-creation payload from header form state.
- * @param form Header form state.
- * @returns Payload and optional field error key.
- */
+/** Builds the draft-creation payload from header form state. */
 export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResult<CreateQuoteRequest> {
   const title = form.title.trim();
 
@@ -54,13 +43,7 @@ export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResu
   };
 }
 
-/**
- * Builds the header-edit payload from header form state. ValidUntil is absent
- * on purpose: extending validity is its own endpoint and its own action (D23).
- * @param form Header form state.
- * @param version Version the client last saw.
- * @returns Payload and optional field error key.
- */
+/** Builds the header-edit payload; ValidUntil is absent on purpose since extending validity is its own endpoint/action (D23). */
 export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: number): PayloadResult<UpdateQuoteRequest> {
   const title = form.title.trim();
 
@@ -76,14 +59,7 @@ export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: num
   };
 }
 
-/**
- * Builds the unified line payload (D40): the catalog reference carries the
- * snapshot, and any field the form still holds is sent as an override, which
- * the server prefers over the snapshot.
- * @param form Line form state.
- * @param version Version the client last saw.
- * @returns Payload and optional field error key.
- */
+/** Builds the unified line payload (D40): the catalog reference carries the snapshot, any field still filled overrides it server-side. */
 export function buildQuoteLineRequest(form: QuoteLineFormState, version: number): PayloadResult<QuoteLineRequest> {
   const quantity = Number(form.quantity);
 

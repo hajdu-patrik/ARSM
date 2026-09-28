@@ -1,13 +1,4 @@
-/**
- * Quotes page.
- *
- * Lists every quote with search and status filtering, and hosts the editor
- * modal that creates a draft, edits its lines, and moves it through the
- * status flow. A quote is always anchored to a vehicle, so creation starts
- * from a vehicle row on the Customers page and arrives here as
- * `?vehicleId=<id>&new=1`.
- * @module pages/Quotes/page
- */
+/** Quotes page: search/status list plus the editor modal; creation always starts from a vehicle row (`?vehicleId=<id>&new=1`, see CLAUDE.md). */
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';

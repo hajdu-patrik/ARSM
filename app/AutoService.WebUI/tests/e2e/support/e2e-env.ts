@@ -32,11 +32,7 @@ function readRequiredEnvWithFallback(name: string, env: EnvMap, fallback: string
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 }
 
-/**
- * Loads appointment flow credentials from environment variables.
- * Expects variables to be set in .secrets file loaded by the test runner.
- * @throws Error if required variables are missing
- */
+/** Loads appointment flow credentials from environment variables (set in .secrets, loaded by the test runner). */
 export function getAppointmentFlowEnv(): AppointmentFlowEnv {
   const env = getProcessEnv();
 

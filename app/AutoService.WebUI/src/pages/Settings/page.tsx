@@ -1,9 +1,4 @@
-/**
- * Settings page.
- *
- * Composes account settings sections while focused hooks own each mutation flow.
- * @module pages/Settings/page
- */
+/** Settings page: composes account settings sections while focused hooks own each mutation flow. */
 
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

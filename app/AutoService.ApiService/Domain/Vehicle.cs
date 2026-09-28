@@ -5,9 +5,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/**
- * Vehicle entity owned by a customer.
- */
+/** Vehicle entity owned by a customer. */
 public class Vehicle
 {
     [Key]
@@ -41,23 +39,10 @@ public class Vehicle
     // Appointments associated with this vehicle.
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
-    /**
-     * Parameterless constructor required by EF Core.
-     */
+    /** Parameterless constructor required by EF Core. */
     public Vehicle() {}
 
-    /**
-     * Creates a vehicle with required technical fields.
-     *
-     * @param licensePlate Vehicle license plate (unique).
-     * @param vin Vehicle identification number (unique).
-     * @param brand Vehicle brand.
-     * @param model Vehicle model.
-     * @param year Vehicle production year.
-     * @param mileageKm Current mileage in kilometers.
-     * @param enginePowerKw Engine power in kilowatts.
-     * @param drivetrainType Vehicle drivetrain energy category.
-     */
+    /** Creates a vehicle with required technical fields. */
     [SetsRequiredMembers]
     public Vehicle(
         string licensePlate,

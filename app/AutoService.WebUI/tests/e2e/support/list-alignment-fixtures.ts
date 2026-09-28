@@ -1,14 +1,5 @@
-/**
- * Worst-case fixture seeding for the list-alignment regression spec.
- *
- * Mutates the mock API state returned by `installApiMocks` with data sized to
- * stress the shared `DataList` column model: a title at the server's max
- * length, a part number and a labor code at the server's max identifier
- * length, amounts in the tens of millions, every quote status, and both a
- * fractional and a near-6-digit line quantity - the same shapes a column
- * grid silently breaks on long before a screenshot would show it.
- * @module tests/e2e/support/list-alignment-fixtures
- */
+/** Worst-case fixture seeding for the list-alignment spec: max-length title/identifiers, huge
+ * amounts, every status, edge quantities (tests/CLAUDE.md Coverage Anchors). */
 import { MAX_CATALOG_IDENTIFIER_LENGTH } from '../../../src/types/catalog/catalog.types';
 import { MAX_QUOTE_TITLE_LENGTH } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';
@@ -21,13 +12,8 @@ const LONG_TITLE = 'Teljes futomu-felujitas, vezerles- es kuplungcsere, klimatol
 const LONG_PART_NUMBER = 'OEM-1234567890-ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0, MAX_CATALOG_IDENTIFIER_LENGTH);
 const LONG_LABOR_CODE = 'LBR-FULL-SUSPENSION-OVERHAUL-PREMIUM-XL-EXTRA'.slice(0, MAX_CATALOG_IDENTIFIER_LENGTH);
 
-/**
- * Pushes worst-case quotes, parts and labor types into a fresh mock state, so
- * every list under test renders its longest title, its highest amount, every
- * quote status, and both a fractional and a near-6-digit line quantity at
- * once.
- * @param state Mutable mock API state returned by `installApiMocks`.
- */
+/** Pushes worst-case quotes, parts and labor types into a fresh mock state, so every list under
+ * test renders its longest/highest/edge-case values at once. */
 export function seedWorstCaseListData(state: MockApiState): void {
   const [draft, sent] = state.quotes;
 

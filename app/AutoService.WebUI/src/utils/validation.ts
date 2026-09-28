@@ -1,10 +1,5 @@
-/**
- * Shared input validation and filtering utilities.
- *
- * Provides character-level input filters for name and phone fields,
- * and file extension validation for profile picture uploads.
- * @module utils/validation
- */
+/** Shared input validation/filtering: character-level filters for name and phone
+ * fields, and file extension validation for profile picture uploads. */
 
 /** Strip everything except Unicode letters and hyphens from name input. */
 export function filterNameInput(value: string): string {

@@ -1,10 +1,5 @@
-/**
- * Session-scoped helpers for coordinating recovery from the /500 page.
- *
- * Lets the next full app boot skip the branded loading splash once after
- * server-error retry navigation.
- * @module utils/serverErrorRecoverySession
- */
+/** Session-scoped helpers for coordinating recovery from the /500 page: let the next
+ * full app boot skip the branded loading splash once after a server-error retry. */
 
 const SKIP_LOADING_SPLASH_ON_NEXT_BOOT_KEY = 'autoservice-skip-loading-splash-on-next-boot';
 
@@ -26,10 +21,7 @@ export function markSkipLoadingSplashOnNextBoot(): void {
   }
 }
 
-/**
- * Consumes the one-shot splash-suppression marker.
- * @returns `true` when the next splash should be skipped.
- */
+/** Consumes the one-shot splash-suppression marker; returns true when the next splash should be skipped. */
 export function consumeSkipLoadingSplashOnNextBoot(): boolean {
   if (!hasSessionStorage()) {
     return false;

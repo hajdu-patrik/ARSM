@@ -1,7 +1,4 @@
-/**
- * Month appointment list filter controls.
- * @module pages/Scheduler/components/calendar/MonthAppointmentFilters
- */
+/** Month appointment list filter controls. */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';

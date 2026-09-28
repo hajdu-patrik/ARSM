@@ -1,11 +1,4 @@
-/**
- * Quotes page helper utilities.
- *
- * Owns the form-state shapes, the date-input conversions, the search and
- * status filtering rules, the validation-message mapping, and the one
- * permitted client-side amount computation (the live line preview).
- * @module pages/Quotes/helpers
- */
+/** Quotes page helpers: form-state shapes, filtering/validation mapping, and the live line preview (the only client-side amount calc; see CLAUDE.md). */
 
 import { DEFAULT_VAT_RATE_PERCENT, type LaborTypeDto, type PartDto } from '../../types/catalog/catalog.types';
 import {
@@ -57,11 +50,7 @@ export const EMPTY_QUOTE_LINE_FORM: QuoteLineFormState = {
   vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
 };
 
-/**
- * Converts a server timestamp to the `yyyy-MM-dd` value a date input needs.
- * @param isoValue ISO timestamp from the API.
- * @returns Date-input value, or an empty string when the timestamp is unusable.
- */
+/** Converts a server timestamp to the `yyyy-MM-dd` value a date input needs. */
 export function toDateInputValue(isoValue: string): string {
   const date = new Date(isoValue);
 
@@ -72,26 +61,12 @@ export function toDateInputValue(isoValue: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-/**
- * Converts a `yyyy-MM-dd` date input value to the instant the API stores.
- *
- * The deadline lands on the END of the chosen day in UTC, because the field
- * means "valid through this day": midnight would make today's date instantly
- * past and the server would reject it as a past deadline.
- * @param dateInputValue Date-input value in `yyyy-MM-dd` form.
- * @returns ISO timestamp at the end of that day in UTC.
- */
+/** Converts a `yyyy-MM-dd` input to the end of that UTC day (not midnight), since "valid through this day" would otherwise be instantly past. */
 export function toValidUntilIso(dateInputValue: string): string {
   return new Date(`${dateInputValue}T23:59:59.000Z`).toISOString();
 }
 
-/**
- * Formats a quote timestamp as a locale-aware date. Quotes are dated by day
- * (created on, valid until), so the time of day is never shown.
- * @param isoValue ISO timestamp from the API.
- * @param locale Current i18n locale.
- * @returns Human-readable date text, or a dash when the timestamp is unusable.
- */
+/** Formats a quote timestamp as a locale-aware date; quotes are dated by day, so time of day is never shown. */
 export function formatQuoteDate(isoValue: string, locale: string): string {
   const date = new Date(isoValue);
 
@@ -102,10 +77,7 @@ export function formatQuoteDate(isoValue: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
 
-/**
- * Builds the header form for a new draft, with the default validity window (D22).
- * @returns Empty header form with ValidUntil pre-filled to today plus 30 days.
- */
+/** Builds the header form for a new draft, with the default validity window pre-filled (D22). */
 export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   const validUntil = new Date();
   validUntil.setUTCDate(validUntil.getUTCDate() + DEFAULT_QUOTE_VALIDITY_DAYS);
@@ -118,11 +90,7 @@ export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   };
 }
 
-/**
- * Builds the header form from a loaded quote.
- * @param quote Quote currently open in the editor.
- * @returns Header form state mirroring the quote.
- */
+/** Builds the header form from a loaded quote. */
 export function buildQuoteHeaderForm(quote: QuoteDetailDto): QuoteHeaderFormState {
   return {
     title: quote.title,
@@ -132,25 +100,14 @@ export function buildQuoteHeaderForm(quote: QuoteDetailDto): QuoteHeaderFormStat
   };
 }
 
-/**
- * Reports whether the header form differs from the saved quote. The validity
- * deadline is excluded on purpose: it is saved by its own action, so a
- * pending date change must not enable the header save button (D23).
- * @param form Current header form state.
- * @param quote Quote currently open in the editor.
- * @returns True when the title or the notes changed.
- */
+/** Reports whether the header form differs from the saved quote; the validity deadline is excluded on purpose since it saves via its own action (D23). */
 export function hasQuoteHeaderChanges(form: QuoteHeaderFormState, quote: QuoteDetailDto): boolean {
   const notes = form.notes.trim();
 
   return form.title.trim() !== quote.title || (notes.length > 0 ? notes : null) !== quote.notes;
 }
 
-/**
- * Builds the line form from a saved line so the inline editor starts from its stored values.
- * @param line Line being edited.
- * @returns Line form state mirroring the line.
- */
+/** Builds the line form from a saved line so the inline editor starts from its stored values. */
 export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
   const catalogId = line.lineKind === 'Part' ? line.partId : line.laborTypeId;
 
@@ -164,27 +121,14 @@ export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
   };
 }
 
-/**
- * Picks the label set for a line kind: a part is counted in pieces at a unit
- * price, labor in hours at an hourly rate (requirement 4).
- * @param lineKind Kind of the line being rendered.
- * @returns i18n keys for the quantity and unit-price labels.
- */
+/** Picks the label set for a line kind: a part is in pieces at a unit price, labor in hours at an hourly rate (requirement 4). */
 export function resolveLineLabelKeys(lineKind: QuoteLineKind): { quantityKey: string; unitPriceKey: string } {
   return lineKind === 'Labor'
     ? { quantityKey: 'quotes.line.hours', unitPriceKey: 'common.fields.hourlyNetRate' }
     : { quantityKey: 'quotes.line.quantity', unitPriceKey: 'common.fields.netUnitPrice' };
 }
 
-/**
- * Applies a catalog selection to the line form, pre-filling the snapshot
- * fields while leaving them editable, so an override still wins server-side.
- * @param form Current line form state.
- * @param catalogId Selected catalog entry id, or an empty string for a manual line.
- * @param parts Part catalog entries.
- * @param laborTypes Labor type catalog entries.
- * @returns The next line form state.
- */
+/** Applies a catalog selection to the line form, pre-filling snapshot fields while leaving them editable so an override still wins server-side. */
 export function applyCatalogSelection(
   form: QuoteLineFormState,
   catalogId: string,
@@ -222,23 +166,12 @@ export function applyCatalogSelection(
     : { ...form, catalogId };
 }
 
-/**
- * Resolves the badge state of a quote. Expired comes from the server's
- * computed `isExpired` flag, never from a stored status, so the rule stays in
- * exactly one place (D7).
- * @param quote Quote list row or detail.
- * @returns The status the badge should display.
- */
+/** Resolves the badge status; Expired comes from the server's isExpired flag, never a stored status, so the rule stays in one place (D7). */
 export function resolveQuoteDisplayStatus(quote: Pick<QuoteListItemDto, 'status' | 'isExpired'>): QuoteDisplayStatus {
   return quote.isExpired ? 'Expired' : quote.status;
 }
 
-/**
- * Applies the toolbar status filter to one quote.
- * @param quote Quote list row.
- * @param filter Selected status filter.
- * @returns True when the quote passes the filter.
- */
+/** Applies the toolbar status filter to one quote. */
 export function matchesQuoteStatusFilter(quote: QuoteListItemDto, filter: QuoteStatusFilter): boolean {
   if (filter === 'All') {
     return true;
@@ -253,11 +186,7 @@ export function matchesQuoteStatusFilter(quote: QuoteListItemDto, filter: QuoteS
   return quote.status === filter && !quote.isExpired;
 }
 
-/**
- * Removes accents and lowercases input to support accent-insensitive search.
- * @param value Raw input value.
- * @returns Normalized value suitable for contains matching.
- */
+/** Removes accents and lowercases input to support accent-insensitive search. */
 export function normalizeQuoteSearchValue(value: string): string {
   return value
     .normalize('NFD')
@@ -265,12 +194,7 @@ export function normalizeQuoteSearchValue(value: string): string {
     .toLowerCase();
 }
 
-/**
- * Matches a quote against the toolbar search term on quote number, title, and license plate.
- * @param quote Quote list row.
- * @param normalizedTerm Already normalized search term.
- * @returns True when the quote matches.
- */
+/** Matches a quote against the toolbar search term on quote number, title, and license plate. */
 export function matchesQuoteSearch(quote: QuoteListItemDto, normalizedTerm: string): boolean {
   if (normalizedTerm.length === 0) {
     return true;
@@ -281,20 +205,7 @@ export function matchesQuoteSearch(quote: QuoteListItemDto, normalizedTerm: stri
     || normalizeQuoteSearchValue(quote.vehicle.licensePlate).includes(normalizedTerm);
 }
 
-/**
- * Computes the live line-amount preview shown while typing, before a
- * server-authoritative line exists. It mirrors the server formula exactly
- * (`Pricing/QuoteLineCalculator`): the net amount rounds to 2 decimals, the
- * VAT amount rounds the net-based tax to 2 decimals, and gross is their sum
- * rather than a separate multiplication.
- *
- * This is the only client-side amount computation on the page. Every amount
- * shown on a saved line, and every total, comes from the server DTO.
- * @param quantity Quantity currently typed in the form.
- * @param netUnitPrice Net unit price or hourly rate currently typed in the form.
- * @param vatRatePercent Selected VAT rate percentage.
- * @returns The previewed net, VAT, and gross amounts.
- */
+/** Live line-amount preview before the server line exists; mirrors `Pricing/QuoteLineCalculator` exactly (gross = net+vat, never a separate multiplication) — the only client-side amount calc (see CLAUDE.md). */
 export function computeQuoteLineAmountsPreview(
   quantity: number,
   netUnitPrice: number,
@@ -310,14 +221,7 @@ export function computeQuoteLineAmountsPreview(
   return { netAmount, vatAmount, grossAmount: netAmount + vatAmount };
 }
 
-/**
- * Hands a downloaded blob to the browser as a file.
- *
- * The object URL is revoked right after the click, because the blob would
- * otherwise stay in memory for the lifetime of the document.
- * @param blob File content returned by the API.
- * @param fileName Name to save the file under.
- */
+/** Hands a downloaded blob to the browser as a file; the object URL is revoked right after the click to avoid leaking memory for the document's lifetime. */
 export function saveBlobAsFile(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -360,11 +264,7 @@ const QUOTE_VALIDATION_MESSAGE_RULES: ReadonlyArray<readonly [readonly string[],
   [['linekind must be one of'], 'quotes.errors.invalidLineKind'],
 ];
 
-/**
- * Maps quote validation messages to i18n keys.
- * @param message Backend error detail (see `Quotes/QuoteEndpoints.*.cs` and `Validation/QuoteValidation.cs`).
- * @returns Quotes page i18n key.
- */
+/** Maps quote validation messages to i18n keys (backend detail from `Quotes/QuoteEndpoints.*.cs` and `Validation/QuoteValidation.cs`). */
 export function mapQuoteValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
   const matchedRule = QUOTE_VALIDATION_MESSAGE_RULES.find(

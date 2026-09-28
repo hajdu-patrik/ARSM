@@ -1,36 +1,16 @@
--- ============================================================
--- AutoService DB — Expired Token Cleanup Verification
--- Verification-only: read-only SELECT queries. No DML/DDL.
--- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
--- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
---
--- ExpiredTokenCleanupService runs hourly and removes:
---   - revokedjwttokens rows where ExpiresAtUtc <= NOW()
---   - refreshtokens rows where ExpiresAtUtc <= NOW() AND RevokedAtUtc IS NOT NULL
---
--- Use these queries to inspect pre-cleanup state, post-cleanup state,
--- or to verify the cleanup service is running correctly.
--- ============================================================
+-- AutoService DB — Expired Token Cleanup Verification (SELECT-only; ai_agent_test_user).
+--     ExpiredTokenCleanupService (hourly) deletes expired revokedjwttokens, and refreshtokens that are both expired and revoked.
 
 
--- ------------------------------------------------------------
--- 1. EXPIRED JWT DENYLIST ROWS — candidates for next cleanup run
---    These are revokedjwttokens entries whose token lifetime has
---    passed; ExpiredTokenCleanupService will delete them on its
---    next hourly tick. Expected in a well-maintained environment:
---    low count (ideally 0 shortly after a cleanup cycle).
--- ------------------------------------------------------------
+-- 1. EXPIRED JWT DENYLIST ROWS — revokedjwttokens past its lifetime; next hourly cleanup tick removes them.
+--    Expected in a well-maintained environment: low/near 0 shortly after a cleanup cycle.
 SELECT COUNT(*) AS expired_jwt_denylist_rows
 FROM revokedjwttokens
 WHERE "ExpiresAtUtc" <= NOW();
 
 
--- ------------------------------------------------------------
--- 2. EXPIRED AND REVOKED REFRESH TOKENS — cleanup candidates
---    Only rows matching BOTH conditions are removed by the service
---    (expired non-revoked tokens are left until they are also revoked).
---    Expected after a cleanup cycle: 0.
--- ------------------------------------------------------------
+-- 2. EXPIRED AND REVOKED REFRESH TOKENS — cleanup candidates; only rows matching BOTH conditions
+--    are removed (expired-but-not-revoked rows stay). Expected after a cleanup cycle: 0.
 SELECT COUNT(*) AS expired_revoked_refresh_token_rows
 FROM refreshtokens
 WHERE "ExpiresAtUtc" <= NOW()

@@ -1,18 +1,8 @@
--- ============================================================
--- AutoService DB — Quote schema contract checks
--- Verifies persistence contracts from the AddQuotes migration
--- (quotes, quotelines). Read-only validation queries only.
--- AI policy: use ai_agent_test_user and run SELECT queries only.
--- ============================================================
+-- AutoService DB — Quote schema contracts (AddQuotes migration: quotes, quotelines).
+-- AI SQL policy: ai_agent_test_user, SELECT-only — see tests/CLAUDE.md.
 
--- ------------------------------------------------------------
--- 22. QUOTE NUMERIC PRECISION CONTRACT
---     Every money/quantity column on quotes and quotelines must be
---     genuinely numeric(18,2) — precision 18, scale 2 — not a bare
---     numeric and not a double precision. A missing precision/scale would
---     silently break rounding on totals and line amounts.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 22. QUOTE NUMERIC PRECISION CONTRACT — every money/quantity column must be numeric(18,2) exactly,
+--     not bare numeric/double precision, or rounding on totals/line amounts breaks silently. Expected: 0 rows.
 WITH expected_money_columns (table_name, column_name) AS (
     VALUES
         ('quotes',     'TotalNet'),
@@ -41,14 +31,8 @@ WHERE c.column_name IS NULL
 ORDER BY e.table_name, e.column_name;
 
 
--- ------------------------------------------------------------
--- 23. QUOTE ENUM STORAGE CONTRACT
---     quotes.Status and quotelines.LineKind are stored as
---     character varying(16) string-enum conversions
---     (HasConversion<string>), not as integers. A regression back to the
---     EF default int-enum mapping would silently break every existing row.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 23. QUOTE ENUM STORAGE CONTRACT — Status/LineKind must stay varchar(16) string-enum conversions
+--     (HasConversion<string>); a regression to EF's default int-enum mapping would break every row. Expected: 0 rows.
 WITH expected_enum_columns (table_name, column_name, expected_max_length) AS (
     VALUES
         ('quotes',     'Status',   16),
@@ -69,15 +53,8 @@ WHERE c.column_name IS NULL
 ORDER BY e.table_name, e.column_name;
 
 
--- ------------------------------------------------------------
--- 24. QUOTE CHECK CONSTRAINT CONTRACT
---     All five named check constraints must exist, and their definitions
---     must carry both fragments checked below. A constraint that only
---     enforces one bound, or only guards one branch of the Part/Labor
---     line-kind rule, would pass a naive existence check while leaving
---     the other half unprotected.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 24. QUOTE CHECK CONSTRAINT CONTRACT — the 5 named constraints must carry both fragments below,
+--     not just exist, or one bound/branch (e.g. half the Part/Labor rule) could go unprotected. Expected: 0 rows.
 WITH expected_constraints (table_name, constraint_name, required_fragment_1, required_fragment_2) AS (
     VALUES
         ('quotes',     'CK_Quotes_Totals',               '"TotalGross" = (',                             '"TotalNet" + "TotalVat"'),
@@ -102,14 +79,8 @@ WHERE t.relname IS NULL
 ORDER BY e.table_name, e.constraint_name;
 
 
--- ------------------------------------------------------------
--- 25. QUOTE INDEX CONTRACT
---     The five indexes explicitly configured in
---     AutoServiceDbContext.QuotesModel.cs must exist. IX_quotes_QuoteNumber
---     is the natural-key unique index; the other four are non-unique
---     lookup indexes.
---     Expected: 0 rows.
--- ------------------------------------------------------------
+-- 25. QUOTE INDEX CONTRACT — the 5 indexes from AutoServiceDbContext.QuotesModel.cs must exist;
+--     IX_quotes_QuoteNumber is the unique natural key, the rest are non-unique lookups. Expected: 0 rows.
 WITH expected_indexes (table_name, index_name, expected_unique) AS (
     VALUES
         ('quotes',     'IX_quotes_QuoteNumber', TRUE),
@@ -131,16 +102,8 @@ WHERE t.relname IS NULL
 ORDER BY e.table_name, e.index_name;
 
 
--- ------------------------------------------------------------
--- 26. QUOTE OPTIMISTIC-CONCURRENCY MAPPING (NO PHYSICAL XMIN COLUMN)
---     Quote.Version maps onto the Postgres system column xmin
---     (AutoServiceDbContext.QuotesModel.cs: IsRowVersion().HasColumnName("xmin")),
---     which Npgsql adds no migration for and creates no user column for.
---     A future migration that accidentally materializes xmin as a real
---     column on quotes would collide with the system column; this stays
---     at zero as long as it does not.
---     Expected: physical_xmin_columns = 0.
--- ------------------------------------------------------------
+-- 26. QUOTE OPTIMISTIC-CONCURRENCY MAPPING — Quote.Version maps onto Postgres's system column xmin
+--     (no real column, no migration); a future migration must never materialize a physical xmin. Expected: 0.
 SELECT COUNT(*) AS physical_xmin_columns
 FROM information_schema.columns
 WHERE table_schema = 'public'
