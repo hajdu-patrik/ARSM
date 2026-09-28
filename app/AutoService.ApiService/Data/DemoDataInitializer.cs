@@ -39,6 +39,7 @@ public static partial class DemoDataInitializer
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync(cancellationToken);
+        await ResetLegacyBackfillDatasetWhenUnownedAsync(db, cancellationToken);
         await EnsureNoAppointmentsWithoutMechanicsAsync(db, cancellationToken);
 
         // Avoid creating known demo credentials outside development unless explicitly enabled.
@@ -64,16 +65,6 @@ public static partial class DemoDataInitializer
         var hasVehicles = await db.Vehicles.AnyAsync(cancellationToken);
         var hasAppointments = await db.Appointments.AnyAsync(cancellationToken);
         var hasIdentityUsers = await db.Users.AnyAsync(cancellationToken);
-
-        // Older migration backfill can leave a customer-only dataset with no mechanics/identity users.
-        // Reset that inconsistent state so deterministic demo seeding can create full auth-capable data.
-        if (!hasMechanics && !hasIdentityUsers && (hasCustomers || hasVehicles || hasAppointments))
-        {
-            await ResetLegacyBackfillDatasetAsync(db, cancellationToken);
-            hasCustomers = false;
-            hasVehicles = false;
-            hasAppointments = false;
-        }
 
         await NormalizePersistedDataAsync(db, cancellationToken);
 
