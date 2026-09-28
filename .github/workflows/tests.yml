@@ -127,8 +127,15 @@ jobs:
         echo "PostgreSQL or RustFS did not become ready" >&2
         exit 1
 
-    - name: Create HTTPS development certificate
-      run: dotnet dev-certs https
+    # The Python checks verify TLS, so the dev certificate joins the runner's system trust store.
+    - name: Create and trust the HTTPS development certificate
+      shell: bash
+      run: |
+        dotnet dev-certs https
+        dotnet dev-certs https --export-path "$RUNNER_TEMP/aspnet-dev.crt" --format PEM --no-password
+        sudo cp "$RUNNER_TEMP/aspnet-dev.crt" /usr/local/share/ca-certificates/aspnet-dev.crt
+        sudo update-ca-certificates
+        rm -f "$RUNNER_TEMP/aspnet-dev.key"
 
     - name: Start the API (Development, demo seed)
       shell: bash
