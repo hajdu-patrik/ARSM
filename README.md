@@ -202,7 +202,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
 - Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
 - The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
-- The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files are cached for 30 days with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and manifest/sitemap/robots-style files use a shorter one-day cache.
+- The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files (content-hashed) are cached for one year with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and the manifest and `robots.txt` use a shorter one-day cache.
 
 ## Contributor Notes (AI Workflow)
 
