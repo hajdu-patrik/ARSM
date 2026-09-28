@@ -119,7 +119,8 @@ dotnet user-secrets set "Parameters:minio-password" "<local-minio-password>"
 ```
 
 Hosted environments point `ObjectStorage__ServiceUrl` at the real S3-compatible endpoint instead,
-keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket up front.
+keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket up front. Azure Blob
+Storage is supported as well (`ObjectStorage__Provider=AzureBlob` with a connection string).
 
 Cloudflare R2 additionally needs `ObjectStorage:DisablePayloadSigning` and
 `ObjectStorage:DisableDefaultChecksumValidation` set to `true`: R2 does not support the streaming
@@ -137,6 +138,8 @@ without them. RustFS (like MinIO before it) keeps both `false`.
 | Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
 
 NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
+
+GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux, Windows and macOS; `.github/workflows/tests.yml` runs the Playwright suite against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials.
 
 Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest`, `windows-latest`, and `macos-latest` to the Linux act container so `act -j backend-build` and `act -j frontend-build` exercise every matrix row locally. GitHub-hosted runners remain authoritative for real Windows and macOS behavior.
 

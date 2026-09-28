@@ -117,7 +117,8 @@ dotnet user-secrets set "Parameters:minio-password" "<lokalis-minio-jelszo>"
 ```
 
 Hosztolt környezetben az `ObjectStorage__ServiceUrl` a valódi S3-kompatibilis végpontra mutat,
-az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig előre létre kell hozni.
+az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig előre létre kell hozni. Az
+Azure Blob Storage is támogatott (`ObjectStorage__Provider=AzureBlob`, kapcsolati stringgel).
 
 A Cloudflare R2-höz ezen felül az `ObjectStorage:DisablePayloadSigning` és az
 `ObjectStorage:DisableDefaultChecksumValidation` értékét is `true`-ra kell állítani: az R2 nem
@@ -135,6 +136,8 @@ ezek nélkül a feltöltés hibára fut. RustFS (és korábban MinIO) esetén mi
 | Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
 
 A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a locked restore-t, az AppHost Linux és macOS alatt RID-specifikus lock fájlokat használ az Aspire Dashboard/DCP csomagokhoz, a CI pedig `dotnet restore --locked-mode` módban fut.
+
+GitHub Actions: a `.github/workflows/dotnet.yml` Linuxon, Windowson és macOS-en buildeli és ellenőrzi a backendet és a frontendet; a `.github/workflows/tests.yml` a Playwright suite-ot mockolt API-val, a HTTP és SQL suite-okat PostgreSQL és RustFS konténerekkel, futásonként generált titkokkal futtatja.
 
 A lokális GitHub Actions smoke ellenőrzésekhez a [.actrc](.actrc) tartozik: az `ubuntu-latest`, `windows-latest` és `macos-latest` matrix címkéket Linux act konténerre mapeli, így az `act -j backend-build` és az `act -j frontend-build` minden matrix sort lefuttat lokálisan. A valódi Windows és macOS viselkedésben továbbra is a GitHub-hosted runner a mérvadó.
 

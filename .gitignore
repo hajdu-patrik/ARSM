@@ -123,3 +123,6 @@ __pycache__/
 
 # Living local project overview (kept out of version control on purpose)
 docs/PROJECT-OVERVIEW.md
+# Local production deployment kit (images, Caddy, Bicep, publish workflow, plan and docs); kept off GitHub on purpose
+/deploy/
+/.dockerignore

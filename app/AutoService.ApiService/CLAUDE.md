@@ -33,6 +33,8 @@
 - In-process auth rate limits/login bans are single-instance only; non-Development deployments must explicitly confirm `Deployment:RateLimiterTopology=SingleInstance` or use a distributed limiter.
 - Profile picture GET responses keep private browser caching with ETag revalidation and auth/cookie-aware `Vary` headers; SSE update behavior remains intact.
 - Live update channels share `Realtime/`: `UpdateBroadcaster<TEvent>` owns the bounded per-subscriber fan-out and the subscription caps, and `ServerSentEventStream` owns the SSE framing, keep-alive and idle timeout. Payloads serialize as camelCase, because the static `JsonSerializer` call does not pick up the ASP.NET Core JSON options and the browser parsers would drop PascalCased frames.
+- `DELETE /api/appointments/{id}` is `AdminOnly` (404 `appointment_not_found` when missing); linked quotes keep existing because their FK is `SET NULL`.
+- Startup (`Data/DemoDataInitializer.EnsureSeededAsync`) migrates, then, while no mechanic and no Identity account exists, clears the mechanic-less rows the 2026-04 BackfillDemoData migration inserts into every database (fresh ones included) before the appointment integrity check; demo seeding runs only in Development or with `DemoData:EnableSeeding`.
 - Every appointment mutation publishes `AppointmentUpdatedEvent` after its save, so `GET /api/appointments/updates` subscribers see other users' changes without polling. A handler that saves but does not publish is a bug.
 - Read-only profile GET/person lookup paths use `AsNoTracking`; profile mutations keep tracked entities.
 - Preserve middleware and endpoint mapping order in `Program.cs`; `UseForwardedHeaders` runs before `UseHsts` and `UseHttpsRedirection`, so behind a proxy they see the original https scheme.
@@ -42,7 +44,8 @@
 
 ## Profile Picture Storage Anchors
 
-- Profile pictures live exclusively in S3-compatible object storage (`Storage/`: `IProfilePictureStorage`, `S3ProfilePictureStorage` via `AWSSDK.S3`); the `people.ProfilePicture` bytea column was dropped and `People` keeps only `ProfilePictureObjectKey`, `ProfilePictureETag`, `ProfilePictureContentType`.
+- `ObjectStorage:Provider` selects the backend: `S3` (default when unset; local RustFS, Cloudflare R2, AWS S3) or `AzureBlob` (`AzureBlobProfilePictureStorage`, `Azure.Storage.Blobs`; reads `ConnectionString`, `BucketName` as the container, `AutoCreateBucket`). Both share `ProfilePictureObjectKeys` and fail fast at startup when the bucket/container is missing and auto-create is off.
+- Profile pictures live exclusively in object storage (`Storage/`: `IProfilePictureStorage`, `S3ProfilePictureStorage` via `AWSSDK.S3` or the Azure Blob implementation); the `people.ProfilePicture` bytea column was dropped and `People` keeps only `ProfilePictureObjectKey`, `ProfilePictureETag`, `ProfilePictureContentType`.
 - `ObjectStorageSettingsResolver` resolves `ObjectStorage:*` settings, letting `ObjectStorage__*` environment variables win over config; it rejects blank values and template-placeholder markers and fails fast at startup.
 - `ObjectStorageBucketInitializer` (hosted service) verifies the bucket at startup and creates it only when `ObjectStorage:AutoCreateBucket` is true.
 - `ObjectStorage:DisablePayloadSigning` and `ObjectStorage:DisableDefaultChecksumValidation` are provider compatibility switches, not preferences. MinIO and RustFS (the local store since the MinIO images were withdrawn) want the AWSSDK.S3 defaults (`false`); Cloudflare R2 rejects the streaming SigV4 payload signing and the CRC32 checksum that AWSSDK.S3 v4 sends by default, so R2 needs both `true`. Keeping them in config is what makes a provider switch code-free.

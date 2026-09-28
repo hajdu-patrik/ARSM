@@ -9,6 +9,18 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Azure Blob Storage provider for profile pictures (2026-09-28).
+  - API: `ObjectStorage:Provider` selects `S3` (default when unset, so existing configs keep working;
+    local RustFS, Cloudflare R2, AWS S3) or `AzureBlob` (`Azure.Storage.Blobs` 12.29.2; connection
+    string, container from `BucketName`, startup container check like the bucket check). Both share
+    one object-key format (`ProfilePictureObjectKeys`).
+  - Verification: the profile-picture check (upload, WebP read-back, ETag and 304, size limits,
+    delete, 404 after delete) and the quote PDF check pass against Azurite with the Blob provider;
+    full HTTP suite on the RustFS-backed AppHost
+    872/872 plus the 4 Python checks; validate gate (security audit included) passed.
+
+_Dev time: ~25m wall-clock. cost: not measured._
+
 - Two-line comment rule applied repo-wide, cleanup pass in the agent chain, CI green again (2026-09-28).
   - Rules (user decisions): every comment is at most 2 lines, doc comments and Python docstrings
     included; temporary files live only in the scratchpad/OS temp and are never committed. Baked into
@@ -16,8 +28,8 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
     implement/fix/hand-off prompt; arsm-chain snapshots pre-existing untracked files and runs a cleanup
     pass beside docs-sync (and after tests) that deletes only what the run left behind and lists
     tracked files the change left unused, for approval.
-  - Refactor: ~430 files across API, AppHost, ServiceDefaults, WebUI, tests, scripts, workflows and
-    the deploy files condensed to 1-2 line comments (about 5,600 comment lines removed); code verified
+  - Refactor: ~430 files across API, AppHost, ServiceDefaults, WebUI, tests, scripts and workflows
+    condensed to 1-2 line comments (about 5,600 comment lines removed); code verified
     unchanged by comparing comment-stripped sources against HEAD. The dead commented-out browser
     projects in `playwright.config.ts` went too, and a stale "no appointment DELETE route" comment was
     corrected.
@@ -34,6 +46,24 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 _Dev time: ~1h45m wall-clock. Cost: ~$16.66-$33.33 (2 `arsm-chain` runs, 1,666,412 output tokens,
 sonnet-opus range; output-token-only estimate - excludes input tokens and cache writes/reads, so a
 lower bound, not a bill)._
+
+- Fresh-database start, RustFS instead of MinIO, `/alive`, HSTS behind a proxy (2026-09-28).
+  - API: `/alive` (process self-check only, bare `Healthy`) is mapped in every environment for
+    platform probes and uptime monitors; `/health` stays Development-only.
+  - Fixed: `UseHsts()` ran before `UseForwardedHeaders()`, so behind a proxy the API saw plain http
+    and sent no HSTS header; forwarded headers now come first (verified behind the proxy chain).
+  - Fixed: the API never started on an empty database - the BackfillDemoData migration's
+    mechanic-less rows failed the startup integrity check before the legacy reset ran; the reset
+    now runs first while no mechanic and no Identity account exists.
+  - Fixed: the MinIO images were withdrawn from Docker Hub and quay.io; the AppHost and the CI
+    HTTP/SQL job run RustFS 1.0.0 instead (resource, parameter and port names unchanged).
+  - Fixed: the `.NET` workflow's frontend build had failed since the strict CSP because it lacked
+    `VITE_API_URL`.
+  - Verification: the API ran in `Production` on an empty database behind a local reverse-proxy
+    chain (HSTS present, client IP resolved, a forged `X-Forwarded-For` ignored); HTTP suite 872/872
+    and SQL 24/24 on the RustFS-backed AppHost; validate gate passed.
+
+_Dev time: ~45m wall-clock. cost: not measured._
 
 - Flat item surfaces, test suites in GitHub Actions, codebase cleanup, no fable (2026-09-28).
   - WebUI: item-level gradient overlays are gone, so every card, panel, modal and sidebar section

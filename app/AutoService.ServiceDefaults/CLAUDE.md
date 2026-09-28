@@ -13,6 +13,7 @@
 - Keep defaults generic and reusable.
 - Keep behavior config-driven; avoid service-specific hardcoding.
 - Preserve compatibility with AppHost and ApiService startup patterns.
+- `MapDefaultEndpoints`: `/alive` (process self-check only, bare `Healthy`) is mapped in every environment for platform probes and uptime monitors; `/health` (all checks, database included) stays Development-only.
 
 ## Engineering Rules
 
