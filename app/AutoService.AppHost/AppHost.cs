@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
 
 /**
- * Aspire AppHost entrypoint for local PostgreSQL, MinIO, ApiService, and WebUI orchestration.
+ * Aspire AppHost entrypoint for local PostgreSQL, S3-compatible object storage (RustFS), ApiService,
+ * and WebUI orchestration.
  */
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -28,20 +29,22 @@ var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
 
 var postgresDb = postgresServer.AddDatabase("AutoServiceDb");
 
-// Local S3-compatible object storage for profile pictures. The data volume and the
-// persistent lifetime keep uploaded objects across AppHost restarts, and the image tag is
-// pinned for the same reason PostgreSQL is: an implicit tag can change the server major
-// version underneath an existing data volume.
-var minio = builder.AddContainer("minio", "minio/minio")
-                   .WithImageTag("RELEASE.2025-09-07T16-13-09Z")
-                   .WithArgs("server", "/data", "--console-address", ":9001")
-                   .WithEnvironment("MINIO_ROOT_USER", minioUser)
-                   .WithEnvironment("MINIO_ROOT_PASSWORD", minioPassword)
+// Local S3-compatible object storage for profile pictures. RustFS replaced MinIO when the MinIO
+// images were withdrawn from Docker Hub and quay.io (2026-09); it speaks the same S3 API and
+// serves /data by default. The resource, parameter and port names keep "minio" so existing
+// user secrets and appsettings stay valid. The data volume and the persistent lifetime keep
+// uploaded objects across AppHost restarts, and the image tag is pinned for the same reason
+// PostgreSQL is: an implicit tag can change the server version underneath an existing volume.
+var minio = builder.AddContainer("minio", "rustfs/rustfs")
+                   .WithImageTag("1.0.0")
+                   .WithEnvironment("RUSTFS_ACCESS_KEY", minioUser)
+                   .WithEnvironment("RUSTFS_SECRET_KEY", minioPassword)
+                   .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")
                    .WithHttpEndpoint(port: minioApiPort, targetPort: 9000, name: "api", isProxied: false)
                    .WithHttpEndpoint(port: minioConsolePort, targetPort: 9001, name: "console", isProxied: false)
-                   .WithVolume("autoservice-minio-data", "/data")
+                   .WithVolume("autoservice-rustfs-data", "/data")
                    .WithLifetime(Aspire.Hosting.ApplicationModel.ContainerLifetime.Persistent)
-                   .WithHttpHealthCheck(path: "/minio/health/ready", endpointName: "api");
+                   .WithHttpHealthCheck(path: "/health", endpointName: "api");
 
 var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/AutoService.ApiService.csproj")
                         .WithReference(postgresDb)

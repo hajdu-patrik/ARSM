@@ -40,7 +40,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 
 - `app/AutoService.ApiService`: API endpointok, domain modell, EF Core, hitelesítés
 - `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + MinIO + ApiService + WebUI)
+- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + RustFS + ApiService + WebUI)
 - `app/AutoService.ServiceDefaults`: közös service defaultok és resilience beállítások
 - `tests/API`: HTTP endpoint tesztek (`.http`)
 - `tests/Database`: SQL validációs lekérdezések (`.sql`, csak olvasási policy)
@@ -53,7 +53,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 - .NET 10 SDK
 - Node.js 24+ és npm (a CI Node 24-re van rögzítve)
 - Python 3.11+ a lokális tesztfuttatóhoz
-- Futó Docker Desktop (az AppHost PostgreSQL és MinIO konténert indít)
+- Futó Docker Desktop (az AppHost PostgreSQL és RustFS konténert indít)
 
 ### 1) Lokális API beállítás létrehozása
 
@@ -104,11 +104,11 @@ dotnet run --project AutoService.AppHost
 Az AppHost elindítja és összeköti:
 
 - PostgreSQL
-- MinIO, a profilképek lokális S3-kompatibilis objektumtárolója (API a `Ports:MinioApi`, webkonzol a `Ports:MinioConsole` porton)
-- `AutoService.ApiService`, amely a MinIO erőforrástól kapja az `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId` és `ObjectStorage__SecretAccessKey` értékeket
+- RustFS, a profilképek lokális S3-kompatibilis objektumtárolója (a MinIO-t váltotta, amelynek image-eit 2026-09-ben kivonták; az erőforrás neve `minio` maradt) (API a `Ports:MinioApi`, webkonzol a `Ports:MinioConsole` porton)
+- `AutoService.ApiService`, amely a `minio` (RustFS) erőforrástól kapja az `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId` és `ObjectStorage__SecretAccessKey` értékeket
 - `AutoService.WebUI` fejlesztői szerver (`VITE_API_URL` automatikus injektálással)
 
-A MinIO két Aspire secret paramétert igényel. Gépenként egyszer állítsd be:
+Az objektumtároló két Aspire secret paramétert igényel (kompatibilitás miatt `minio-*` névvel). Gépenként egyszer állítsd be:
 
 ```bash
 cd app/AutoService.AppHost
@@ -122,7 +122,7 @@ az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig 
 A Cloudflare R2-höz ezen felül az `ObjectStorage:DisablePayloadSigning` és az
 `ObjectStorage:DisableDefaultChecksumValidation` értékét is `true`-ra kell állítani: az R2 nem
 támogatja az AWSSDK.S3 v4 alapértelmezett streaming SigV4 aláírását és CRC32 ellenőrzőösszegét,
-ezek nélkül a feltöltés hibára fut. MinIO esetén mindkettő `false` marad.
+ezek nélkül a feltöltés hibára fut. RustFS (és korábban MinIO) esetén mindkettő `false` marad.
 
 ## Hasznos parancsok
 

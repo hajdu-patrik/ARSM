@@ -40,7 +40,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 
 - `app/AutoService.ApiService`: API endpoints, domain model, EF Core, authentication
 - `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + MinIO + ApiService + WebUI)
+- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + RustFS + ApiService + WebUI)
 - `app/AutoService.ServiceDefaults`: shared service defaults and resilience setup
 - `tests/API`: HTTP endpoint test suites (`.http`)
 - `tests/Database`: SQL validation suites (`.sql`, read-only policy)
@@ -55,7 +55,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - .NET 10 SDK
 - Node.js 24+ with npm (CI pins Node 24)
 - Python 3.11+ for the local test runner
-- Docker Desktop running locally (required for the PostgreSQL and MinIO containers via AppHost)
+- Docker Desktop running locally (required for the PostgreSQL and RustFS containers via AppHost)
 
 ### 1) Create local API settings
 
@@ -106,11 +106,11 @@ dotnet run --project AutoService.AppHost
 AppHost starts and wires:
 
 - PostgreSQL
-- MinIO, the local S3-compatible object store for profile pictures (API on `Ports:MinioApi`, web console on `Ports:MinioConsole`)
-- `AutoService.ApiService`, which receives `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, and `ObjectStorage__SecretAccessKey` from the MinIO resource
+- RustFS, the local S3-compatible object store for profile pictures (it replaced MinIO, whose images were withdrawn in 2026-09; the resource keeps the `minio` name) (API on `Ports:MinioApi`, web console on `Ports:MinioConsole`)
+- `AutoService.ApiService`, which receives `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, and `ObjectStorage__SecretAccessKey` from the `minio` (RustFS) resource
 - `AutoService.WebUI` development server with `VITE_API_URL` injected from the API endpoint
 
-MinIO needs two Aspire secret parameters. Set them once per machine:
+The object store needs two Aspire secret parameters (named `minio-*` for compatibility). Set them once per machine:
 
 ```bash
 cd app/AutoService.AppHost
@@ -124,7 +124,7 @@ keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket
 Cloudflare R2 additionally needs `ObjectStorage:DisablePayloadSigning` and
 `ObjectStorage:DisableDefaultChecksumValidation` set to `true`: R2 does not support the streaming
 SigV4 implementation or the CRC32 checksum that AWSSDK.S3 v4 sends by default, and uploads fail
-without them. MinIO keeps both `false`.
+without them. RustFS (like MinIO before it) keeps both `false`.
 
 ## Useful Commands
 
