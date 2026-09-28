@@ -139,12 +139,7 @@ const LoginComponent = memo(function Login() {
 
 			<div className="relative z-10 w-full max-w-[28rem] max-[320px]:max-w-[19.5rem]">
 				<div className="relative overflow-hidden rounded-3xl border border-arsm-border bg-arsm-card/95 p-5 backdrop-blur-md dark:border-arsm-border-dark dark:bg-arsm-card-dark/95 max-[320px]:p-4 sm:p-8">
-					<div
-						aria-hidden="true"
-						className="arsm-card-sheen pointer-events-none absolute inset-x-0 top-0 h-20"
-					/>
-
-					<div className="relative mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
+					<div className="mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
 						<div className="mt-1 flex items-center justify-center">
 							<Image
 								src="/AppLogoFrameBlack.webp"

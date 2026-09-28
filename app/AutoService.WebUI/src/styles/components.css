@@ -178,38 +178,6 @@
     background: linear-gradient(120deg, color-mix(in srgb, var(--color-arsm-primary-dark) 6%, transparent) 0%, transparent 45%);
   }
 
-  .arsm-card-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 42%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-card-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 10%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-modal-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 35%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-modal-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 8%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-sidebar-top-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-card) 60%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-sidebar-top-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-primary-dark) 6%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-sidebar-bottom-sheen {
-    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-arsm-card) 42%, transparent) 100%);
-  }
-
-  .dark .arsm-sidebar-bottom-sheen {
-    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-arsm-primary-dark) 3%, transparent) 100%);
-  }
-
   .arsm-shell-ambient {
     background:
       radial-gradient(circle at 10% 8%, color-mix(in srgb, var(--color-arsm-accent-hover) 18%, transparent) 0%, transparent 34%),
@@ -229,30 +197,6 @@
       color-mix(in srgb, var(--color-arsm-deepest) 62%, transparent) 52%,
       color-mix(in srgb, var(--color-arsm-surface-dark) 76%, transparent) 100%
     );
-  }
-
-  .arsm-error-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-error-accent) 6%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-error-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-error-accent) 8%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-intake-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent) 20%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-intake-sheen {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent-dark) 20%, transparent) 0%, transparent 100%);
-  }
-
-  .arsm-intake-sheen-soft {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent) 18%, transparent) 0%, transparent 100%);
-  }
-
-  .dark .arsm-intake-sheen-soft {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--color-arsm-accent-dark) 18%, transparent) 0%, transparent 100%);
   }
 
   .arsm-loading-mobile-orb {

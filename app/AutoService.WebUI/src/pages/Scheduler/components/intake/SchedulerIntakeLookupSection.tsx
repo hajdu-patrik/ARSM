@@ -44,10 +44,6 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 }: SchedulerIntakeLookupProps) {
 	return (
 		<div className={`${insetSurfaceClass} relative space-y-3 overflow-hidden p-3.5`}>
-			<div
-				aria-hidden="true"
-				className="arsm-intake-sheen-soft pointer-events-none absolute inset-x-0 top-0 h-10"
-			/>
 			<h3 className={compactSectionHeadingTextClass}>
 				{translate('scheduler.intake.customerLookup')}
 			</h3>

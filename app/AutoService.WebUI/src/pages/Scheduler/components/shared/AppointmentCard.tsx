@@ -22,6 +22,7 @@ import { getDueState } from '../../utils/due-date';
 import { AppointmentCardActionModals } from './AppointmentCardActionModals';
 import { useAppointmentCardActions } from './useAppointmentCardActions';
 
+/** Props for the {@link AppointmentCard} component. */
 interface AppointmentCardProps {
   readonly appointment: AppointmentDto;
   readonly currentMechanicId: number | undefined;
@@ -117,19 +118,19 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-visible pt-0.5 sm:flex-nowrap">
           <div className="flex h-7 min-w-[4.75rem] max-w-[4.75rem] shrink-0 items-center gap-1.5 overflow-visible pr-1">
-              {visibleMechanics.map((mechanic, index) => (
-                <div key={mechanic.id} className="relative inline-flex shrink-0">
-                  <MechanicAvatar
-                    mechanicId={mechanic.id}
-                    fullName={mechanic.fullName}
-                    hasProfilePicture={mechanic.hasProfilePicture}
-                    sizeClassName="h-7 w-7 text-[10px]"
-                  />
-                  {index === visibleMechanics.length - 1 && overflowCount > 0 && (
-                    <CompactOverflowBadge count={overflowCount} />
-                  )}
-                </div>
-              ))}
+            {visibleMechanics.map((mechanic, index) => (
+              <div key={mechanic.id} className="relative inline-flex shrink-0">
+                <MechanicAvatar
+                  mechanicId={mechanic.id}
+                  fullName={mechanic.fullName}
+                  hasProfilePicture={mechanic.hasProfilePicture}
+                  sizeClassName="h-7 w-7 text-xs"
+                />
+                {index === visibleMechanics.length - 1 && overflowCount > 0 && (
+                  <CompactOverflowBadge count={overflowCount} />
+                )}
+              </div>
+            ))}
           </div>
 
           {showMechanicAction && (
@@ -210,4 +211,6 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 });
 
 AppointmentCardComponent.displayName = 'AppointmentCard';
+
+/** Memoized scheduler appointment card with inline claim/unassign actions and their confirm modals. */
 export const AppointmentCard = AppointmentCardComponent;

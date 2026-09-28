@@ -77,11 +77,6 @@ const ModalComponent = memo(function Modal({
         aria-modal="true"
         className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-arsm-card p-5 text-arsm-primary transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-primary-dark sm:p-6 ${feedbackFrameClass}`}
       >
-        <div
-          aria-hidden="true"
-          className="arsm-modal-sheen pointer-events-none absolute inset-x-0 top-0 h-16"
-        />
-
         <div className={`mb-4 min-w-0 ${isConfirmVariant ? 'relative flex min-h-11 items-center justify-center' : 'flex items-center justify-between gap-3'}`}>
           <h2 className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-xl font-semibold [overflow-wrap:anywhere] sm:text-2xl' : 'truncate text-lg font-semibold'}`}>{title}</h2>
           {shouldShowCloseButton && (

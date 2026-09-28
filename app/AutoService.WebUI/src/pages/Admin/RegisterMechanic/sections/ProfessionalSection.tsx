@@ -91,7 +91,7 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
                   className={`${optionTileCheckboxClass} ${isSelected ? optionTileCheckboxActiveClass : optionTileCheckboxInactiveClass}`}
                 >
                   {isSelected && (
-                    <Check className="h-3 w-3 text-arsm-primary dark:text-arsm-hover" strokeWidth={3} />
+                    <Check className="h-3 w-3 text-arsm-primary dark:text-arsm-on-accent-dark" strokeWidth={3} />
                   )}
                 </span>
                 <span className="min-w-0 whitespace-nowrap leading-tight">

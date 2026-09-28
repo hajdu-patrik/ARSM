@@ -32,9 +32,8 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
   return (
     <div className="space-y-3">
       <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-arsm-input/90 px-4 py-3 dark:bg-arsm-card-dark ${compactPrimaryValueTextClass}`}>
-        <div aria-hidden="true" className="arsm-intake-sheen pointer-events-none absolute inset-x-0 top-0 h-10" />
-        <span className="relative font-medium">{translate('scheduler.intake.selectedDay')}</span>
-        <span className="relative ml-1">{selectedDayLabel}</span>
+        <span className="font-medium">{translate('scheduler.intake.selectedDay')}</span>
+        <span className="ml-1">{selectedDayLabel}</span>
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-3">

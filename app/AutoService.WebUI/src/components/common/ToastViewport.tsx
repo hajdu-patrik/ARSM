@@ -10,8 +10,34 @@ import { SYSTEM_ERROR_TOAST_KEYS, WARNING_TOAST_KEYS } from '../../store/toast.k
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
 import { defaultIconClass, feedbackFrameClass, largeIconClass, toneFeedbackClasses } from '../../utils/formStyles';
 
+/** Props for a single toast row. */
 interface ToastItemProps {
   readonly toast: ToastMessage;
+}
+
+/**
+ * Resolves the feedback tone classes for a toast: success and warning map to
+ * their tone, a system (5xx) error gets an extra emphasis ring, and every other
+ * error uses the plain error tone.
+ */
+function resolveToastVariantClass(
+  variant: ToastMessage['variant'],
+  isWarningToast: boolean,
+  isSystemErrorToast: boolean,
+): string {
+  if (variant === 'success') {
+    return toneFeedbackClasses.success;
+  }
+
+  if (isWarningToast) {
+    return toneFeedbackClasses.warning;
+  }
+
+  if (isSystemErrorToast) {
+    return `${toneFeedbackClasses.error} ring-1 ring-arsm-error-hover/35 dark:ring-arsm-error-dark/45`;
+  }
+
+  return toneFeedbackClasses.error;
 }
 
 /**
@@ -36,15 +62,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
     };
   }, [removeToast, toast.durationMs, toast.id]);
 
-  let toastVariantClass = toneFeedbackClasses.error;
-
-  if (toast.variant === 'success') {
-    toastVariantClass = toneFeedbackClasses.success;
-  } else if (isWarningToast) {
-    toastVariantClass = toneFeedbackClasses.warning;
-  } else if (isSystemErrorToast) {
-    toastVariantClass = `${toneFeedbackClasses.error} ring-1 ring-arsm-error-hover/35 dark:ring-arsm-error-dark/45`;
-  }
+  const toastVariantClass = resolveToastVariantClass(toast.variant, isWarningToast, isSystemErrorToast);
 
   return (
     <output
@@ -65,7 +83,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       <p className="min-w-0 flex-1 truncate whitespace-nowrap leading-5">{translate(toast.messageKey, toast.messageValues)}</p>
 
       {isSystemErrorToast ? (
-        <span className="shrink-0 rounded-md border border-arsm-error-hover/45 bg-arsm-card/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-card-dark/55 dark:text-arsm-error-softest">
+        <span className="shrink-0 rounded-md border border-arsm-error-hover/45 bg-arsm-card/55 px-1.5 py-0.5 text-xs font-bold tracking-wide text-arsm-error-text dark:border-arsm-error-dark dark:bg-arsm-card-dark/55 dark:text-arsm-error-softest">
           500
         </span>
       ) : null}
@@ -73,7 +91,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
       <button
         type="button"
         onClick={() => removeToast(toast.id)}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition-[opacity,transform] duration-150 ease-out hover:scale-105 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 focus-visible:opacity-100 motion-reduce:transform-none dark:focus-visible:ring-arsm-focus-ring/30"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md opacity-80 transition-[opacity,transform] duration-150 ease-out hover:scale-105 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 focus-visible:opacity-100 motion-reduce:hover:scale-100 dark:focus-visible:ring-arsm-focus-ring/30"
         aria-label={translate('toast.dismiss')}
       >
         <X className={defaultIconClass} />
@@ -107,4 +125,5 @@ const ToastViewportComponent = memo(function ToastViewport() {
 
 ToastViewportComponent.displayName = 'ToastViewport';
 
+/** Memoized global toast viewport; renders nothing while the toast store is empty. */
 export const ToastViewport = ToastViewportComponent;

@@ -13,11 +13,12 @@ import {
   insetSurfaceClass,
   loadingSpinnerClass,
   mutedDarkCardToneClass,
-  schedulerNavIconButtonClass,
   toneDotClasses,
 } from '../../../../utils/formStyles';
+import { schedulerNavIconButtonClass } from '../../utils/schedulerButtonStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
+/** Props for the {@link CalendarView} component. */
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
   readonly year: number;
@@ -26,6 +27,17 @@ interface CalendarViewProps {
   readonly onMonthChange: (year: number, month: number) => void;
   readonly onDayClick?: (day: number) => void;
   readonly selectedDay?: number | null;
+}
+
+/** Props for one day cell inside a calendar week row. */
+interface CalendarDayCellProps {
+  readonly day: CalendarDay;
+  readonly year: number;
+  readonly month: number;
+  readonly locale: string;
+  readonly hasAppointmentsInWeek: boolean;
+  readonly selectedDay?: number | null;
+  readonly onDayClick?: (day: number) => void;
 }
 
 /**
@@ -38,6 +50,10 @@ function formatLocalDateKey(date: Date): string {
   ).padStart(2, '0')}`;
 }
 
+/**
+ * Builds the 42-cell (6-week, Monday-first) grid for a month, bucketing the
+ * appointments by local calendar day and flagging today and current-month cells.
+ */
 function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[]): CalendarDay[] {
   const firstDay = new Date(year, month - 1, 1);
   const dayOfWeek = firstDay.getDay();
@@ -80,6 +96,7 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
   return days;
 }
 
+/** Returns the appointment with the earliest valid scheduled time, or null for an empty day. */
 function getEarliestAppointmentForDay(dayAppointments: AppointmentDto[]): AppointmentDto | null {
   if (dayAppointments.length === 0) {
     return null;
@@ -99,6 +116,7 @@ function getEarliestAppointmentForDay(dayAppointments: AppointmentDto[]): Appoin
   return earliestAppointment;
 }
 
+/** Drops trailing weeks that contain only next-month days, keeping at least four rows. */
 function trimTrailingNextMonthOnlyWeeks(weeks: CalendarDay[][]): CalendarDay[][] {
   const trimmedWeeks = [...weeks];
 
@@ -114,6 +132,95 @@ function trimTrailingNextMonthOnlyWeeks(weeks: CalendarDay[][]): CalendarDay[][]
   return trimmedWeeks;
 }
 
+/**
+ * Renders one calendar day: the day number (highlighted for today), the earliest
+ * appointment's status dot with an overflow count, and, for current-month days
+ * with a day handler, a focusable button instead of a static cell.
+ */
+const CalendarDayCell = memo(function CalendarDayCell({
+  day,
+  year,
+  month,
+  locale,
+  hasAppointmentsInWeek,
+  selectedDay,
+  onDayClick,
+}: CalendarDayCellProps) {
+  const earliestAppointment = getEarliestAppointmentForDay(day.appointments);
+  const dayNum = day.date.getDate();
+  const isSelected = day.isCurrentMonth && selectedDay === dayNum;
+  const overflowTone = day.isCurrentMonth ? '' : 'opacity-50 saturate-75';
+  const rowHeight = hasAppointmentsInWeek
+    ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-[2.5rem]'
+    : 'min-h-[2.5rem] max-[320px]:min-h-11';
+
+  const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30 ${
+    day.isCurrentMonth
+      ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover dark:hover:bg-arsm-hover-dark'
+      : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
+  } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${
+    isSelected ? 'ring-2 ring-arsm-accent bg-arsm-accent-wash/65 dark:ring-arsm-accent-dark dark:bg-arsm-hover-dark/75' : ''
+  }`;
+
+  const content = (
+    <>
+      <div className="mb-0.5 flex h-7 items-center justify-center max-[320px]:h-6">
+        {day.isToday ? (
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-arsm-accent text-sm font-semibold text-arsm-primary ring-2 ring-arsm-accent/30 max-[320px]:h-6 max-[320px]:w-6 max-[320px]:text-xs dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:ring-arsm-accent-dark/30">
+            {dayNum}
+          </span>
+        ) : (
+          <span className="text-sm font-medium max-[320px]:text-xs">{dayNum}</span>
+        )}
+      </div>
+
+      <div className="mt-0.5 flex h-5 max-w-full items-center justify-center overflow-hidden leading-none">
+        {earliestAppointment ? (
+          <div className={`relative inline-flex h-5 w-5 items-center justify-center ${overflowTone}`}>
+            <span
+              className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
+              title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
+            />
+            {day.appointments.length > 1 && (
+              <span
+                className={`pointer-events-none absolute right-0 top-0 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none ${mutedDarkCardToneClass}`}
+                aria-hidden="true"
+              >
+                +{day.appointments.length - 1}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="h-2.5 w-2.5" aria-hidden="true" />
+        )}
+      </div>
+    </>
+  );
+
+  if (day.isCurrentMonth && onDayClick) {
+    const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    const dayAriaLabel = new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(day.date);
+    return (
+      <button
+        type="button"
+        data-testid={dayTestId}
+        aria-label={dayAriaLabel}
+        onClick={() => onDayClick(dayNum)}
+        className={`${dayClassName} cursor-pointer text-left`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={dayClassName}>{content}</div>;
+});
+
+CalendarDayCell.displayName = 'CalendarDayCell';
+
+/**
+ * Month grid with previous/next navigation bounded to six months around today.
+ */
 const CalendarViewComponent = memo(function CalendarView({
   appointments,
   year,
@@ -206,7 +313,7 @@ const CalendarViewComponent = memo(function CalendarView({
             {dayHeaders.map((dayLabel) => (
               <div
                 key={dayLabel}
-                className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-arsm-muted max-[320px]:text-[9px] max-[320px]:tracking-[0.04em] dark:text-arsm-muted-dark"
+                className="py-1 text-center text-xs font-semibold uppercase tracking-[0.06em] text-arsm-muted max-[320px]:text-[9px] max-[320px]:tracking-[0.04em] dark:text-arsm-muted-dark"
               >
                 {dayLabel}
               </div>
@@ -220,83 +327,18 @@ const CalendarViewComponent = memo(function CalendarView({
 
               return (
                 <div key={weekKey} className="grid grid-cols-7 gap-px max-[320px]:gap-0">
-                  {week.map((day) => {
-                    const earliestAppointment = getEarliestAppointmentForDay(day.appointments);
-                    const dayNum = day.date.getDate();
-                    const isSelected = day.isCurrentMonth && selectedDay === dayNum;
-                    const overflowTone = day.isCurrentMonth ? '' : 'opacity-50 saturate-75';
-                    const rowHeight = hasAppointmentsInWeek
-                      ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-[2.5rem]'
-                      : 'min-h-[2.5rem] max-[320px]:min-h-11';
-
-                    const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30 ${
-                      day.isCurrentMonth
-                        ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover dark:hover:bg-arsm-hover-dark'
-                        : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
-                    } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${
-                      isSelected ? 'ring-2 ring-arsm-accent bg-arsm-accent-wash/65 dark:ring-arsm-accent-dark dark:bg-arsm-hover-dark/75' : ''
-                    }`;
-
-                    const content = (
-                      <>
-                        <div className="mb-0.5 flex h-7 items-center justify-center max-[320px]:h-6">
-                          {day.isToday ? (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-arsm-accent text-sm font-semibold text-arsm-primary ring-2 ring-arsm-accent/30 max-[320px]:h-6 max-[320px]:w-6 max-[320px]:text-xs dark:bg-arsm-accent-dark dark:text-arsm-hover dark:ring-arsm-accent-dark/30">
-                              {dayNum}
-                            </span>
-                          ) : (
-                            <span className="text-sm font-medium max-[320px]:text-xs">{dayNum}</span>
-                          )}
-                        </div>
-
-                        <div className="mt-0.5 flex h-5 max-w-full items-center justify-center overflow-hidden leading-none">
-                          {earliestAppointment ? (
-                            <div className={`relative inline-flex h-5 w-5 items-center justify-center ${overflowTone}`}>
-                              <span
-                                className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
-                                title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
-                              />
-                              {day.appointments.length > 1 && (
-                                <span
-                                  className={`pointer-events-none absolute right-0 top-0 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none ${mutedDarkCardToneClass}`}
-                                  aria-hidden="true"
-                                >
-                                  +{day.appointments.length - 1}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="h-2.5 w-2.5" aria-hidden="true" />
-                          )}
-                        </div>
-                      </>
-                    );
-
-                    const dayKey = formatLocalDateKey(day.date);
-
-                    if (day.isCurrentMonth && onDayClick) {
-                      const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-                      const dayAriaLabel = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full' }).format(day.date);
-                      return (
-                        <button
-                          type="button"
-                          key={dayKey}
-                          data-testid={dayTestId}
-                          aria-label={dayAriaLabel}
-                          onClick={() => onDayClick(dayNum)}
-                          className={`${dayClassName} cursor-pointer text-left`}
-                        >
-                          {content}
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <div key={dayKey} className={dayClassName}>
-                        {content}
-                      </div>
-                    );
-                  })}
+                  {week.map((day) => (
+                    <CalendarDayCell
+                      key={formatLocalDateKey(day.date)}
+                      day={day}
+                      year={year}
+                      month={month}
+                      locale={i18n.language}
+                      hasAppointmentsInWeek={hasAppointmentsInWeek}
+                      selectedDay={selectedDay}
+                      onDayClick={onDayClick}
+                    />
+                  ))}
                 </div>
               );
             })}
@@ -308,4 +350,6 @@ const CalendarViewComponent = memo(function CalendarView({
 });
 
 CalendarViewComponent.displayName = 'CalendarView';
+
+/** Memoized monthly scheduler calendar with per-day appointment status indicators. */
 export const CalendarView = CalendarViewComponent;

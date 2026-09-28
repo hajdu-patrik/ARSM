@@ -1,13 +1,20 @@
 /** Shared field, placeholder, select, and input-group style primitives. */
 
+/** Text-field surface shared by every input/textarea: border, fill, placeholder, focus lift/border, disabled state. Each field adds its own size, padding, typography and focus-ring strength. */
+const textFieldSurfaceClass = 'rounded-xl border border-arsm-border bg-arsm-input text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent';
+
+/** Focus-ring strengths: standard fields use the stronger ring, compact fields and selects the softer one. */
+const fieldFocusRingClass = 'focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/28';
+const fieldFocusRingSoftClass = 'focus-visible:ring-arsm-focus-ring/35 dark:focus-visible:ring-arsm-focus-ring/24';
+
 /** Default full-width input used by standard forms (auth, settings, customer/admin forms). */
-export const inputClass = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-[15px] text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
+export const inputClass = `min-h-11 w-full px-4 py-2.5 text-[15px] max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm ${textFieldSurfaceClass} ${fieldFocusRingClass}`;
 
 /** Compact input variant used in denser rows and table-like edit surfaces. */
-export const inputClassCompact = 'min-h-11 w-full rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/24';
+export const inputClassCompact = `min-h-11 w-full px-3 py-2 text-sm ${textFieldSurfaceClass} ${fieldFocusRingSoftClass}`;
 
 /** Intake form controls: one shared field body; the input and the textarea each add their own minimum height. */
-const intakeFieldBaseClass = 'min-w-0 max-w-full w-full rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-sm text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/28';
+const intakeFieldBaseClass = `min-w-0 max-w-full w-full px-4 py-2.5 text-sm ${textFieldSurfaceClass} ${fieldFocusRingClass}`;
 
 export const intakeInputClass = `min-h-11 ${intakeFieldBaseClass}`;
 
@@ -17,12 +24,12 @@ export const textareaClass = `min-h-[6.5rem] resize-y ${intakeFieldBaseClass}`;
 export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClass}`;
 
 /** Select primitives for filter rows and compact form dropdowns. */
-export const compactSelectClass = 'h-11 min-h-11 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent dark:focus-visible:ring-arsm-focus-ring/24';
+export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent ${fieldFocusRingSoftClass}`;
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
 /** Compact select dedicated to filter toolbars (kept distinct from form/edit selects). */
-export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-[10px] font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-[350px]:h-11 max-[350px]:min-h-11 max-[350px]:py-2 max-[350px]:text-xs dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:ring-arsm-focus-ring/30';
+export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-sm:h-11 max-sm:min-h-11 max-sm:py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:ring-arsm-focus-ring/30';
 
 /** Width wrapper for compact filter selects in responsive toolbar rows. */
 export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full overflow-hidden basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
@@ -41,7 +48,7 @@ export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 
 
 export const searchInputClass = `${inputClass} pl-10 pr-12 text-sm`;
 
-export const inputGroupOverlayButtonClass = 'absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-arsm-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-arsm-primary motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark';
+export const inputGroupOverlayButtonClass = 'absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-arsm-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-arsm-primary motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark';
 
 export const passwordToggleButtonClass = inputGroupOverlayButtonClass;
 

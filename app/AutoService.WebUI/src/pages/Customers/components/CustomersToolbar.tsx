@@ -66,7 +66,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 					)}
 				</div>
 
-				<div className={toolbarActionsWrapperClass}>
+				<div className={`${toolbarActionsWrapperClass} sm:shrink-0`}>
 					<button
 						data-testid="customers-sort-toggle"
 						type="button"

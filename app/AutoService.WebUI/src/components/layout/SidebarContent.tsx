@@ -178,7 +178,7 @@ const SidebarContentComponent = memo(function SidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="arsm-sidebar-top-sheen flex min-w-0 h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
+      <div className="flex min-w-0 h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
         <span className={sidebarIconSlotClass}>
           <img
             src={logoSrc}
@@ -208,7 +208,7 @@ const SidebarContentComponent = memo(function SidebarContent({
         </button>
       </div>
 
-      <div className="arsm-sidebar-bottom-sheen space-y-1 border-t border-arsm-border px-2 py-3 dark:border-arsm-border-dark">
+      <div className="space-y-1 border-t border-arsm-border px-2 py-3 dark:border-arsm-border-dark">
         <SidebarProfileSummary collapsedText={collapsedText} profile={profile} />
 
         {canShowAdminNav && renderNavLink(ADMIN_NAV_ITEM)}

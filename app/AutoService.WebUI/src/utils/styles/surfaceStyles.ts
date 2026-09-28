@@ -48,7 +48,7 @@ export const compactRowActionsClusterClass = 'flex shrink-0 items-center gap-1 m
 export const centeredLoadingWrapperClass = 'flex min-w-0 items-center justify-center py-12';
 
 /** Shared hover/focus micro-motion for list/nav rows (sidebar nav rows, admin list rows). */
-export const rowHoverMotionClass = 'transition-[background-color,border-color,color,transform] duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-colors';
+export const rowHoverMotionClass = 'transition-[background-color,border-color,color,transform] duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-colors';
 
 /** Inline wrapper for wrapping chip/action clusters without a justify-between split (compare `compactHeaderRowClass`). */
 export const compactInlineClusterClass = 'flex min-w-0 flex-wrap items-center gap-2';
