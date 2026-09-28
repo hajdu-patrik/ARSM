@@ -157,7 +157,7 @@ python scripts/run-local-test-suite.py http sql
 Suite célok:
 
 - `playwright`: futtatja a WebUI Playwright E2E suite-ot (`PORT=5173` alapérték).
-- `http`: futtatja az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
+- `http`: először a `tests/API/_setup` fájlokat futtatja (tesztfiók-létrehozás), utána az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
 - `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
 
 Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:

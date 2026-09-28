@@ -188,6 +188,10 @@ class LocalTestRunner:
         """Execute HTTP endpoint test suite via HTTPYAC plus the streaming/behaviour checks."""
         npx = self._required_executable("npx")
         environment = {**self.environment, "NODE_TLS_REJECT_UNAUTHORIZED": "0"}
+        httpyac_flags = ["--all", "--json", "--output", "short", "--output-failed", "short", "--filter", "only-failed"]
+
+        # httpyac runs files in no stable order, so the test-account provisioning in _setup runs on its own first.
+        setup = self.command_runner.run("http-setup", [npx, "--yes", "httpyac", "tests/API/_setup/*.http", *httpyac_flags], self.root_dir, environment)
 
         script_results = [
             (detail_key, self.command_runner.run(command_name, [sys.executable, script], self.root_dir, environment), label)
@@ -196,17 +200,18 @@ class LocalTestRunner:
 
         result = self.command_runner.run(
             "http",
-            [npx, "--yes", "httpyac", "tests/API/**/*.http", "--all", "--json", "--output", "short", "--output-failed", "short", "--filter", "only-failed"],
+            [npx, "--yes", "httpyac", "tests/API/**/*.http", *httpyac_flags],
             self.root_dir,
             environment,
         )
 
         details = extract_http_summary(result.stdout)
+        details["setupPassed"] = setup.return_code == 0
         failed_requests = extract_failed_http_requests(result.stdout)
         if failed_requests:
             details["failedHttpRequests"] = failed_requests
         checks_passed = True
-        output = result.stdout + result.stderr
+        output = setup.stdout + setup.stderr + result.stdout + result.stderr
 
         for detail_key, script_result, label in script_results:
             script_details = self._extract_json_payload(script_result.stdout) or {
@@ -218,7 +223,7 @@ class LocalTestRunner:
             checks_passed = checks_passed and script_result.return_code == 0 and script_status in {"passed", "skipped"}
             output += script_result.stdout + script_result.stderr
 
-        http_requests_are_clean = result.return_code == 0 and details.get("failedRequests", 0) == 0 and details.get("erroredRequests", 0) == 0
+        http_requests_are_clean = setup.return_code == 0 and result.return_code == 0 and details.get("failedRequests", 0) == 0 and details.get("erroredRequests", 0) == 0
         status = "passed" if http_requests_are_clean and checks_passed else "failed"
 
         return SuiteResult("http", status, 0 if status == "passed" else 1, details, self._tail(output))

@@ -159,7 +159,7 @@ python scripts/run-local-test-suite.py http sql
 Suite targets:
 
 - `playwright`: runs the WebUI Playwright E2E suite (`PORT=5173` default).
-- `http`: runs all `tests/API/**/*.http` suites through HTTPYAC.
+- `http`: runs `tests/API/_setup` first (test-account provisioning), then all `tests/API/**/*.http` suites through HTTPYAC.
 - `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
 
 Before full-suite runs, start Aspire in another terminal:
