@@ -1,0 +1,201 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Playwright E2E against the Vite dev server. Every /api/** call is answered by
+  # tests/e2e/support/api-mocks.ts, so no backend, database or secret is needed; the API
+  # URL below only has to be a valid config value, it is never contacted.
+  e2e-playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app/AutoService.WebUI
+    env:
+      CI: "true"
+      PORT: "5173"
+      VITE_API_URL: https://localhost:5200
+      VITE_SITE_URL: https://localhost:5173
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+        cache-dependency-path: app/AutoService.WebUI/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    # vite-plugin-mkcert uses an mkcert found on PATH instead of downloading one through the
+    # rate-limited GitHub API.
+    - name: Install mkcert
+      run: sudo apt-get update && sudo apt-get install -y mkcert libnss3-tools
+
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+
+    - name: Run E2E suite
+      run: npm run e2e
+
+    - name: Upload Playwright report
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: playwright-report
+        path: |
+          app/AutoService.WebUI/playwright-report
+          app/AutoService.WebUI/test-results
+        retention-days: 7
+
+  # HTTP (httpyac + Python checks) and SQL suites against a real stack: PostgreSQL and MinIO
+  # containers plus the API in Development, seeded with the demo dataset. Every credential is
+  # generated per run and masked, so the workflow needs no repository secret and nothing is
+  # hardcoded; the stack is thrown away with the runner.
+  api-http-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      API_URL: https://localhost:5200
+      WEBUI_ORIGIN: https://localhost:5173
+      POSTGRES_IMAGE: postgres:18.3
+      MINIO_IMAGE: minio/minio:RELEASE.2025-09-07T16-13-09Z
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24
+
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.13'
+
+    - name: Generate throwaway credentials
+      shell: bash
+      run: |
+        # Upper, lower, digit and symbol so every value passes the Identity password policy.
+        gen() { echo "Ci$(openssl rand -hex 12)Aa1!"; }
+        for name in POSTGRES_PASSWORD MINIO_PASSWORD JWT_SECRET DEMO_PASSWORD \
+                    MECHANIC_PASSWORD MECHANIC_NEW_PASSWORD TEST_PASSWORD WRONG_PASSWORD SQL_READER_PASSWORD; do
+          value="$(gen)"
+          echo "::add-mask::$value"
+          echo "$name=$value" >> "$GITHUB_ENV"
+        done
+        echo "MINIO_USER=ci$(openssl rand -hex 6)" >> "$GITHUB_ENV"
+
+    - name: Start PostgreSQL and MinIO
+      shell: bash
+      run: |
+        docker run -d --name arsm-postgres -p 50000:5432 \
+          -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" "$POSTGRES_IMAGE"
+        docker run -d --name arsm-minio -p 9000:9000 \
+          -e MINIO_ROOT_USER="$MINIO_USER" -e MINIO_ROOT_PASSWORD="$MINIO_PASSWORD" \
+          "$MINIO_IMAGE" server /data
+        for i in $(seq 1 60); do
+          docker exec arsm-postgres pg_isready -U postgres >/dev/null 2>&1 \
+            && curl -sf http://localhost:9000/minio/health/ready >/dev/null && exit 0
+          sleep 2
+        done
+        echo "PostgreSQL or MinIO did not become ready" >&2
+        exit 1
+
+    - name: Create HTTPS development certificate
+      run: dotnet dev-certs https
+
+    - name: Start the API (Development, demo seed)
+      shell: bash
+      working-directory: app
+      env:
+        ConnectionStrings__AutoServiceDb: Host=localhost;Port=50000;Database=AutoServiceDb;Username=postgres;Password=${{ env.POSTGRES_PASSWORD }}
+        JwtSettings__Secret: ${{ env.JWT_SECRET }}
+        DemoData__MechanicPassword: ${{ env.DEMO_PASSWORD }}
+        ObjectStorage__ServiceUrl: http://localhost:9000
+        ObjectStorage__AccessKeyId: ${{ env.MINIO_USER }}
+        ObjectStorage__SecretAccessKey: ${{ env.MINIO_PASSWORD }}
+        ObjectStorage__AutoCreateBucket: "true"
+        CompanyProfile__Name: ARSM CI
+        CompanyProfile__AddressLine: Muegyetem rakpart 3
+        CompanyProfile__PostalCode: "1111"
+        CompanyProfile__City: Budapest
+        CompanyProfile__TaxNumber: 00000000-0-00
+        CompanyProfile__PhoneNumber: "+3610000000"
+        CompanyProfile__Email: ci@example.test
+        PGGSSENCMODE: disable
+      run: |
+        dotnet restore --locked-mode
+        nohup dotnet run --project AutoService.ApiService --launch-profile https > "$RUNNER_TEMP/api.log" 2>&1 &
+        for i in $(seq 1 90); do
+          curl -skf "$API_URL/health" >/dev/null && exit 0
+          sleep 2
+        done
+        tail -n 80 "$RUNNER_TEMP/api.log"
+        exit 1
+
+    - name: Create the read-only SQL test account
+      shell: bash
+      run: |
+        docker exec -i arsm-postgres psql -U postgres -d AutoServiceDb -v ON_ERROR_STOP=1 <<SQL
+        CREATE ROLE ai_agent_test_user LOGIN PASSWORD '$SQL_READER_PASSWORD';
+        GRANT CONNECT ON DATABASE "AutoServiceDb" TO ai_agent_test_user;
+        GRANT USAGE ON SCHEMA public TO ai_agent_test_user;
+        GRANT SELECT ON ALL TABLES IN SCHEMA public TO ai_agent_test_user;
+        SQL
+
+    - name: Run HTTP and SQL suites
+      shell: bash
+      env:
+        AutoService_ApiService_HostAddress: ${{ env.API_URL }}
+        ARSM_TEST_WEBUI_ORIGIN: ${{ env.WEBUI_ORIGIN }}
+        # Demo dataset (Data/DemoDataInitializer.cs): gabor.kovacs holds the Admin role.
+        ARSM_TEST_ADMIN_EMAIL: gabor.kovacs@example.com
+        ARSM_TEST_ADMIN_PASSWORD: ${{ env.DEMO_PASSWORD }}
+        ARSM_TEST_CUSTOMER_EMAIL: anna.toth@example.com
+        # Plain mechanic account, provisioned by tests/API/_setup/ensure-test-accounts.http.
+        ARSM_TEST_MECHANIC_EMAIL: ci.mechanic@example.test
+        ARSM_TEST_MECHANIC_PASSWORD: ${{ env.MECHANIC_PASSWORD }}
+        ARSM_TEST_MECHANIC_NEW_PASSWORD: ${{ env.MECHANIC_NEW_PASSWORD }}
+        ARSM_TEST_PASSWORD: ${{ env.TEST_PASSWORD }}
+        ARSM_TEST_WRONG_PASSWORD: ${{ env.WRONG_PASSWORD }}
+        ARSM_SQL_TEST_CONTAINER: arsm-postgres
+        # The whole httpyac run is one child command; local runs already needed more than the 300 s default.
+        ARSM_TEST_COMMAND_TIMEOUT_SECONDS: "900"
+      run: |
+        # psql runs inside the container, so the connection string addresses its own port 5432.
+        export ARSM_MCP_POSTGRES_CONNECTION_STRING="postgresql://ai_agent_test_user:${SQL_READER_PASSWORD}@localhost:5432/AutoServiceDb"
+        python scripts/run-local-test-suite.py http sql
+
+    - name: Show API log on failure
+      if: failure()
+      run: tail -n 120 "$RUNNER_TEMP/api.log"
+
+    - name: Upload sanitized test summary
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-suite-summary
+        path: tests/.artifacts/test-suite-summary.json
+        retention-days: 7
