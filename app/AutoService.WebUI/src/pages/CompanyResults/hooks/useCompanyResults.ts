@@ -72,6 +72,3 @@ export function useCompanyResults({ showErrorToast }: UseCompanyResultsParams) {
 
   return { year, month, setYear, setMonth, result, isLoading };
 }
-
-/** Company result state returned by {@link useCompanyResults}. */
-export type CompanyResultsState = ReturnType<typeof useCompanyResults>;

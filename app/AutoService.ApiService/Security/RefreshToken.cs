@@ -45,9 +45,6 @@ public sealed class RefreshToken
         CreatedByUserAgent = createdByUserAgent;
     }
 
-    public bool IsActive(DateTime nowUtc)
-        => RevokedAtUtc is null && ExpiresAtUtc > nowUtc;
-
     public void Revoke(DateTime revokedAtUtc, string? replacedByTokenHash = null)
     {
         RevokedAtUtc = revokedAtUtc;

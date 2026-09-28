@@ -77,24 +77,6 @@ export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: num
 }
 
 /**
- * Reports whether the line form has everything a payload needs: a quantity,
- * and either a catalog reference to snapshot from or a full manual triplet.
- * @param form Line form state.
- * @returns True when the form can be submitted.
- */
-export function hasRequiredQuoteLineFields(form: QuoteLineFormState): boolean {
-  if (form.quantity.trim().length === 0) {
-    return false;
-  }
-
-  if (form.catalogId.length > 0) {
-    return true;
-  }
-
-  return form.description.trim().length > 0 && form.netUnitPrice.trim().length > 0;
-}
-
-/**
  * Builds the unified line payload (D40): the catalog reference carries the
  * snapshot, and any field the form still holds is sent as an override, which
  * the server prefers over the snapshot.
