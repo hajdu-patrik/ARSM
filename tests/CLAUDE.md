@@ -22,12 +22,50 @@
 - SQL policy: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
 - Test agents own create, update, and delete inside their own scope paths; delete only obsolete or relocated coverage, never to make a run pass.
 - E2E specs are type-checked through `app/AutoService.WebUI/tsconfig.e2e.json` in the `tsc -b` chain; Playwright itself transpiles with esbuild and never type-checks them.
+- CSRF double-submit pattern (httpyac): every login/refresh/password-change request carries a
+  post-response script that exports the `autoservice_csrf` value from that response's `Set-Cookie`
+  header, and every later unsafe request that carries the auth cookie echoes it back as
+  `X-CSRF-Token`. Reference snippet - copy verbatim:
+
+  ```
+  # @name Login
+  POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+  Origin: {{WebUI_Origin}}
+  Content-Type: application/json
+  { "email": "{{SomeEmail}}", "password": "{{SomePassword}}" }
+
+  {{
+    exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+  }}
+
+  ?? status == 200
+
+  ###
+
+  ### [...] some later unsafe request that carries the auth cookie
+  POST {{AutoService_ApiService_HostAddress}}/api/...
+  Origin: {{WebUI_Origin}}
+  X-CSRF-Token: {{CsrfToken}}
+  ```
+
+  Put the script on every refresh and every re-login as another user, because both rotate the cookie;
+  `POST /api/auth/login` itself never sends the header, since login is always CSRF-exempt. Never capture
+  the token with a stand-alone `@CsrfToken = {{ ... }}` region: httpyac evaluates request-less regions
+  as global variables for every request of the file, so a second definition keeps the stale token or
+  fails with a ReferenceError before its source request has run.
+- Unauthenticated (401) checks carry `# @no-cookie-jar`, so they never send a session left behind by
+  an earlier request or file (the cookie jar is shared across files in one run). A file's opening
+  "clear any session cookie left by a previous file" logout cannot know that session's CSRF token, so
+  it answers 403 and clears nothing; it is not asserted, and the file's next login replaces the cookies.
 
 ## Secrets Policy
 
 - Never hardcode credentials, hosts, or connection strings.
 - `.secrets` for Playwright plus the read-only `ARSM_MCP_POSTGRES_CONNECTION_STRING` used by the sql suite; `tests/.env` for HTTP. Templates: `.secrets.example` and `tests/.env.example`.
 - HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
+- The CSRF double-submit token (`autoservice_csrf` cookie / `X-CSRF-Token` header, see Core Rules) is
+  always read back from a named login/refresh/password-change response at run time - never hardcoded
+  as a literal, and never printed or logged.
 - Keep tracked MCP SQL templates (`.claude/.mcp.template.json`, `.vscode/mcp.template.json`, `.env.example`) placeholder-based; local gitignored `.claude/.mcp.json`, `.vscode/mcp.json`, and `.env` must hold the concrete read-only PostgreSQL URI for `ai_agent_test_user` on developer machines.
 
 ## Canonical Runner Contract
@@ -44,8 +82,17 @@
 
 - VIN/kW/drivetrain contract (no HP/torque fields).
 - Customer search/list + scheduler lookup (email/plate/name).
-- Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior.
+- Profile picture GET cache headers, ETag conditional `304`, and auth/cookie `Vary` behavior. The
+  genuine ETag-match round trip (`304` on the stored ETag, `200` on a mismatched one) is covered by
+  `profile-picture-upload-check.py` right after its PNG upload, not by `profile-picture.http` - that
+  file never uploads a picture, so it only proves the no-picture-yet and never-304 paths.
 - Profile picture upload contract: JPEG/PNG/WebP in, always `image/webp` out, 4 MB cap, 422 on magic-byte or decode failure. Image fixtures must be structurally valid (correct chunk CRCs), because the API decodes and re-encodes every upload.
+- CSRF double-submit coverage: `tests/API/auth/csrf-double-submit.http` proves a missing `X-CSRF-Token`
+  and a wrong one both answer `403` with body `code: csrf_token_invalid`, and the correct token (read
+  from the login response's `Set-Cookie`, see Core Rules) passes; every unsafe request across
+  `tests/API/auth/`, `tests/API/_setup/` and `tests/API/profile/` that carries the auth cookie sends the
+  same header. `http_check_support.HttpClient` adds it automatically from the `autoservice_csrf` cookie
+  in its jar on unsafe methods, so the Python checks needed no per-call change.
 - `people` profile-picture column contract and the legacy-column-removal post-condition check in `tests/Database/core-schema/core-schema-contracts.sql`.
 - Every `tests/API/**/*.http` suite asserts status codes in-file with httpyac `?? status == N`, so the
   runner fails the request on a wrong status; none of them rely on a comment-only expected status

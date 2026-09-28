@@ -5,7 +5,8 @@
 # admin-create-validation.http (split by concern, both files stay under the 250-line limit).
 # PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId are appointments this
 # file creates itself (admin create allows an arbitrary — including past — ScheduledDate, see
-# admin-create-update-happy.http's "Admin create allows past scheduled date" case).
+# admin-create-update-happy.http's "Admin create allows past scheduled date" case) and deletes again at
+# the end via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -40,6 +41,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -69,6 +74,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
 # @name pastScheduledApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -88,6 +94,7 @@ Content-Type: application/json
 # @name apptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -107,6 +114,7 @@ Content-Type: application/json
 # Confirms past appointments remain editable.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -121,6 +129,7 @@ Content-Type: application/json
 ### [Positive][Appointments] Admin updates past appointment vehicle details (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -141,6 +150,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin update rejects vehicle numeric values above max limits (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -155,3 +165,20 @@ Content-Type: application/json
 }
 
 ?? status == 422
+
+###
+
+### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastScheduledApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

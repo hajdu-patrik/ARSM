@@ -37,6 +37,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Authz] Login as plain mechanic (non-admin)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -45,6 +46,10 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -60,6 +65,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 ### [Negative][Authz] Plain mechanic cannot delete a mechanic (403 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 403
 
@@ -68,12 +74,14 @@ Origin: {{WebUI_Origin}}
 ### [Setup][Authz] Logout plain mechanic, login as admin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Authz] Login as admin
+# @name csrfSource2
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -82,6 +90,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -97,5 +109,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 ### [Negative][Authz] Admin deleting a non-existent mechanic reaches the handler, not the policy gate (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404

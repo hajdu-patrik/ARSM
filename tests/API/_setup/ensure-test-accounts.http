@@ -61,6 +61,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup] Login as admin to provision the shared plain-mechanic test account (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -69,6 +70,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -92,6 +97,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 # @loop for staleMechanic of (mechanicProbe && mechanicProbe.personId ? [] : allMechanics.filter(m => !m.isAdmin && m.email.toLowerCase() === MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test")))
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{staleMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -106,6 +112,7 @@ Origin: {{WebUI_Origin}}
 # asserts the precise pair of allowed codes rather than a vague range.
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -125,6 +132,7 @@ Content-Type: application/json
 ### [Setup] Logout admin before proving the plain-mechanic account can log in (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 

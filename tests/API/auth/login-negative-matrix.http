@@ -36,6 +36,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Admin Session] Login as admin to provision the phone-format matrix (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -45,6 +46,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -53,6 +58,7 @@ Content-Type: application/json
 # @name regBudapest
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -74,6 +80,7 @@ Content-Type: application/json
 # @name regEuPhone
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -106,6 +113,7 @@ Content-Type: application/json
 ###
 
 ### [Positive][Login Phone Matrix] EU phone (+49) for matrix user (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -115,9 +123,15 @@ Content-Type: application/json
   "password": "{{TestPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
+
+# CSRF double-submit token for the matrix-mechanic logout below (see tests/CLAUDE.md Core Rules).
 
 ### [Negative][Login Phone Matrix] Invalid phone format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -150,12 +164,14 @@ Content-Type: application/json
 ### [Setup][Cleanup] Logout the matrix mechanic session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Cleanup] Login as admin again to delete the throwaway mechanics (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -165,13 +181,20 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
 
+# CSRF double-submit token for the cleanup deletes below (see tests/CLAUDE.md Core Rules).
+
 ### [Setup][Cleanup] Delete the Budapest-landline matrix mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regBudapest.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -180,5 +203,6 @@ Origin: {{WebUI_Origin}}
 ### [Setup][Cleanup] Delete the EU-phone matrix mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEuPhone.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

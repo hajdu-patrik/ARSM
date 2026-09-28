@@ -43,6 +43,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -53,6 +57,7 @@ Content-Type: application/json
 # the route id, so it must be this session own id, whichever mechanic happens to be admin.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 403
 
@@ -96,6 +101,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustome
 # @name soleAssignmentMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -119,6 +125,7 @@ Content-Type: application/json
 # @name soleAssignmentAppt
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -135,6 +142,7 @@ Content-Type: application/json
 ### [Negative][Admin] Cannot delete mechanic that would leave an appointment unassigned (422 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 
@@ -143,6 +151,7 @@ Origin: {{WebUI_Origin}}
 ### [Cleanup][Admin] Assign a second mechanic so the disposable one is no longer the sole assignee (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{soleAssignmentAppt.id}}/assign/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -151,6 +160,7 @@ Origin: {{WebUI_Origin}}
 ### [Cleanup][Admin] Delete the disposable sole-assignment mechanic now that the invariant no longer blocks it (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -160,6 +170,7 @@ Origin: {{WebUI_Origin}}
 # @name deletableMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -179,6 +190,7 @@ Content-Type: application/json
 ### [Positive][Admin] Delete non-admin mechanic when invariants hold (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{deletableMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -204,5 +216,6 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404

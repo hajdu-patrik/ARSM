@@ -20,6 +20,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as admin for update tests (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -29,6 +30,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -37,6 +42,7 @@ Content-Type: application/json
 # @name fixtureCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -54,6 +60,7 @@ Content-Type: application/json
 ### [Positive][Customers] Admin updates existing customer (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -71,6 +78,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update non-existent customer (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -88,6 +96,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update customer with missing required fields (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -106,6 +115,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -124,6 +134,7 @@ Content-Type: application/json
 # "Last name may only contain letters and hyphens."
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -142,6 +153,7 @@ Content-Type: application/json
 # "Middle name may only contain letters and hyphens."
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -159,5 +171,6 @@ Content-Type: application/json
 ### [Cleanup][Customers] Delete the fixture customer created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

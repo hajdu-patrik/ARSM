@@ -11,6 +11,7 @@
 # ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuoteStatus] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -19,6 +20,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -43,6 +48,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
 # @name noLinesQuote
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -56,6 +62,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Sending a quote with no lines is rejected (409 expected, D21)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{noLinesQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -71,6 +78,7 @@ Content-Type: application/json
 # @name mainQuote
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -85,6 +93,7 @@ Content-Type: application/json
 # @name mainQuoteLine
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -103,6 +112,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Draft to Accepted skips Sent and is a forbidden transition (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -117,6 +127,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Unknown status value is rejected (422 expected, quote is still Draft)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -132,6 +143,7 @@ Content-Type: application/json
 # @name mainQuoteSent
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -146,6 +158,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Sent to Draft is a forbidden transition (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -161,6 +174,7 @@ Content-Type: application/json
 # @name mainQuoteAccepted
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -175,6 +189,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Accepted to Draft is a forbidden transition, Accepted is terminal (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -189,6 +204,7 @@ Content-Type: application/json
 ### [Negative][QuoteStatus] Accepted to Draft with a missing version is still 409, not 422 (the transition check runs before the version check)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{mainQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

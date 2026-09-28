@@ -1,13 +1,11 @@
 # ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - MECHANIC CLAIM & UNCLAIM
+# APPOINTMENTS - UNCLAIM WHEN NOT ASSIGNED
 # ─────────────────────────────────────────────────────────────
-# ClaimAsync only accepts an appointment the caller is not already assigned to (see
-# AppointmentEndpoints.Mutations.cs), so ApptId is created by admin with only the admin's own mechanic
-# id assigned, leaving room for the non-admin test mechanic to claim it below.
-# Cancelled/not-assigned/last-mechanic claim-unclaim coverage lives in the sibling files
-# mechanic-claim-unclaim-edge-cases.http and mechanic-claim-unclaim-not-assigned.http (split out to stay
-# under the 250-line file limit). ApptId is deleted at the end by an admin session via
-# DELETE /api/appointments/{id} (AdminOnly).
+# Split out of mechanic-claim-unclaim-edge-cases.http to stay under the 250-line file limit.
+# NonAssignedApptId deliberately excludes the non-admin test mechanic, so it is created via a short
+# admin detour (POST /api/customers/{id}/appointments with the admin's own mechanic id as the sole
+# assignee) before switching to the non-admin session used for the unclaim check. The admin logs back in
+# at the end to delete the fixture via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -26,7 +24,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Appointments] Login as admin to create the claimable fixture (200 expected)
+### [Setup][Appointments] Login as admin to create the not-assigned-to-me fixture (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -59,7 +57,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownC
 @KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
 
 ### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
-# @name apptCreate
+# @name nonAssignedApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{KnownCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -68,7 +66,7 @@ Content-Type: application/json
 {
   "vehicleId": {{KnownCustomerVehicleId}},
   "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Claim/unclaim fixture: claimable appointment",
+  "taskDescription": "Claim/unclaim edge-case fixture: not assigned to the test mechanic",
   "mechanicIds": [{{AdminMechanicId}}]
 }
 
@@ -76,7 +74,7 @@ Content-Type: application/json
 
 ###
 
-@ApptId = {{apptCreate.id}}
+@NonAssignedApptId = {{nonAssignedApptCreate.id}}
 
 ### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -87,7 +85,7 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+### [Setup][Appointments] Login as non-admin mechanic (200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -106,82 +104,16 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Claim appointment by id (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
+# CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
-?? status == 200
-
-###
-
-### [Negative][Appointments] Duplicate claim conflict when already assigned (409 expected)
-# Expected error code: already_claimed.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+### [Negative][Appointments] Unclaim when not assigned to appointment (409 expected)
+# Expected error code: not_assigned.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
-?? js response.parsedBody.code == already_claimed
-###
-
-### [Setup][Appointments] Complete appointment (setup for unclaim-completed check, 200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "Completed"
-}
-
-?? status == 200
-
-###
-
-### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
-# Claim now returns explicit completed-state validation.
-# Expected error code: appointment_completed.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 422
-?? js response.parsedBody.code == appointment_completed
-###
-
-### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
-# Self-unclaim is blocked when status is Completed.
-# Expected error code: appointment_completed.
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 422
-?? js response.parsedBody.code == appointment_completed
-###
-
-### [Setup][Appointments] Reopen completed appointment to InProgress for remaining tests (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "InProgress"
-}
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Unclaim appointment by id (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
+?? js response.parsedBody.code == not_assigned
 ###
 
 ### [Cleanup][Appointments] Login as admin to delete the fixture appointment (200 expected)
@@ -206,7 +138,7 @@ Content-Type: application/json
 # CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
 
 ### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

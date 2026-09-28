@@ -33,6 +33,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Admin Session] Login as admin to provision the phone-format mechanic (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +43,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -50,6 +55,7 @@ Content-Type: application/json
 # @name regPhoneUser
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -70,6 +76,7 @@ Content-Type: application/json
 ### [Setup][Admin Session] Logout admin before the phone-format login matrix (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -180,6 +187,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Cleanup] Login as admin again to delete the throwaway mechanic (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -189,6 +197,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -196,5 +208,6 @@ Content-Type: application/json
 ### [Setup][Cleanup] Delete the phone-format mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regPhoneUser.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

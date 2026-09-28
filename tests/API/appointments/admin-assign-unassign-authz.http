@@ -1,12 +1,9 @@
-# ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - STATUS/UPDATE AUTHZ FOR A NON-ASSIGNED MECHANIC
-# ─────────────────────────────────────────────────────────────
-# Split out of mechanic-status-transitions.http to stay under the 250-line file limit.
-# UpdateStatusAsync/UpdateAppointmentAsync (AppointmentEndpoints.StatusMutations.cs/.Update.cs) 403 a
-# non-admin mechanic who is not assigned to the target appointment. NonAssignedApptId is created via a
-# short admin detour (POST /api/customers/{id}/appointments with the admin's own mechanic id as the
-# sole assignee) so the non-admin test mechanic is deliberately excluded from it. The admin logs back in
-# at the end to delete the fixture appointment via DELETE /api/appointments/{id} (AdminOnly).
+# ── Admin Assign / Unassign — Non-Admin Authz ────────────────────────────────
+# Split out of admin-assign-unassign.http to stay under the 250-line file limit. AdminAssignAsync/
+# AdminUnassignAsync require the "AdminOnly" policy, so a plain mechanic session must 403 on both
+# routes. ApptId is a disposable fixture created and deleted by this file alone; AdminMechanicId is the
+# admin's own person_id, the fixture's sole assignee throughout (never unassigned here), so nothing
+# blocks its own deletion at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -14,7 +11,6 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -25,7 +21,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Appointments] Login as admin to create the not-assigned-to-me fixture (200 expected)
+### [Setup][Appointments] Login as admin to create the fixture appointment (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -46,28 +42,34 @@ Content-Type: application/json
 
 @AdminMechanicId = {{adminLogin.personId}}
 
-### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
-# @name knownCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
 
 ?? status == 200
 
 ###
 
-@KnownCustomerId = {{knownCustomer.id}}
-@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
 
-### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
-# @name nonAssignedApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{KnownCustomerId}}/appointments
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create appointment assigned only to the admin (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{KnownCustomerVehicleId}},
+  "vehicleId": {{seedVehicles[0].id}},
   "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Status-transitions-authz fixture: not assigned to the test mechanic",
+  "taskDescription": "Assign/unassign authz fixture",
   "mechanicIds": [{{AdminMechanicId}}]
 }
 
@@ -75,9 +77,9 @@ Content-Type: application/json
 
 ###
 
-@NonAssignedApptId = {{nonAssignedApptCreate.id}}
+@ApptId = {{apptCreate.id}}
 
-### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
+### [Setup][Appointments] Logout admin, login as non-admin for authz checks (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -105,30 +107,19 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Non-assigned mechanic cannot change appointment status (403 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/status
+### [Negative][Appointments] Non-admin cannot admin-assign mechanic to appointment (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "Completed"
-}
 
 ?? status == 403
 
 ###
 
-### [Negative][Appointments] Non-assigned non-admin mechanic cannot update appointment (403 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
+### [Negative][Appointments] Non-admin cannot admin-unassign mechanic from appointment (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "dueDateTime": "2030-01-03T16:15:00",
-  "taskDescription": "Forbidden update attempt by non-assigned mechanic"
-}
 
 ?? status == 403
 
@@ -155,8 +146,8 @@ Content-Type: application/json
 
 # CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
 
-### [Cleanup][Appointments] Delete the not-assigned-to-me fixture appointment (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}
+### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

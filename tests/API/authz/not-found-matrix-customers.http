@@ -34,6 +34,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Authz] Login with the admin account (200 expected)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +43,10 @@ Content-Type: application/json
   "email": "{{SessionEmail}}",
   "password": "{{SessionPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -53,6 +58,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/customers/{{NonExistentId}} (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "firstName": "Ghost", "middleName": null, "lastName": "Customer", "email": "ghost.customer.{{RunId}}@example.test", "phoneNumber": null }
@@ -64,6 +70,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/customers/{{NonExistentId}} (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -75,6 +82,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] POST /api/customers/{{NonExistentId}}/vehicles (404 expected: GhostVin is a syntactically valid 17-char VIN, so body validation passes and the route-id existence lookup is reached)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentId}}/vehicles
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
@@ -86,6 +94,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/vehicles/{{NonExistentId}} (404 expected: GhostVin is a syntactically valid 17-char VIN, so body validation passes and the route-id existence lookup is reached)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
@@ -97,6 +106,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/vehicles/{{NonExistentId}} (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -108,6 +118,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] PUT /api/appointments/{{NonExistentId}} (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "dueDateTime": "2026-04-25T16:00:00", "taskDescription": "Ghost task" }
@@ -119,6 +130,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/vehicle (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "licensePlate": "GHO-404", "vin": "{{GhostVin}}", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 10000, "enginePowerKw": 100, "drivetrainType": "Petrol" }
@@ -130,6 +142,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/claim (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -138,6 +151,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] DELETE /api/appointments/{{NonExistentId}}/claim (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -146,6 +160,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] PUT /api/appointments/{{NonExistentId}}/status (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonExistentId}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "status": "InProgress" }

@@ -1,0 +1,194 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - DELETE
+# ─────────────────────────────────────────────────────────────
+# DELETE /api/appointments/{id} (AdminOnly, AppointmentEndpoints.cs) hard-deletes the appointment and
+# its mechanic assignments in one SaveChangesAsync; a linked Quote.AppointmentId would go to NULL via
+# DeleteBehavior.SetNull, but no quote is involved here. CustomerId/VehicleId are resolved from a real
+# customer/vehicle pair at run time, the same way admin-assign-unassign.http does, never a literal id.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints, 200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+@AdminMechanicId = {{adminLogin.personId}}
+
+### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
+# @name seedCustomers
+GET {{AutoService_ApiService_HostAddress}}/api/customers
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
+@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+# @name seedVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create a disposable appointment to delete below (201 expected)
+# @name firstApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Appointment-delete fixture: first disposable appointment",
+  "mechanicIds": [{{AdminMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@FirstApptId = {{firstApptCreate.id}}
+
+### [Positive][Appointments] Admin deletes the appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{FirstApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Appointments] Repeat delete on the now-deleted appointment (404 expected)
+# Expected error code: appointment_not_found.
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{FirstApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+###
+
+### [Setup][Appointments] Create a second disposable appointment for the authz/cleanup checks (201 expected)
+# @name secondApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{seedVehicles[0].id}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Appointment-delete fixture: second disposable appointment",
+  "mechanicIds": [{{AdminMechanicId}}]
+}
+
+?? status == 201
+
+###
+
+@SecondApptId = {{secondApptCreate.id}}
+
+### [Setup][Appointments] Logout admin, login as plain mechanic for the authz check (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Appointments] Plain mechanic cannot delete appointment (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+
+###
+
+### [Setup][Appointments] Logout before the unauthenticated delete check (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Appointments] Unauthenticated delete (401 expected)
+# @no-cookie-jar
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+Origin: {{WebUI_Origin}}
+
+?? status == 401
+
+###
+
+### [Setup][Appointments] Login as admin again for cleanup (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+# CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
+
+### [Cleanup][Appointments] Admin deletes the second appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

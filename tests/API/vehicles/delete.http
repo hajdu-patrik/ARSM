@@ -23,6 +23,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Vehicles] Login as admin for delete tests (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,6 +33,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -40,6 +45,7 @@ Content-Type: application/json
 # @name fixtureCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -58,6 +64,7 @@ Content-Type: application/json
 # @name fixtureVehicle
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -78,6 +85,7 @@ Content-Type: application/json
 ### [Negative][Vehicles] Delete non-existent vehicle (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -90,6 +98,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -99,6 +108,10 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -106,12 +119,14 @@ Content-Type: application/json
 ### [Negative][Vehicles] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
 ###
 
 ### [Setup][Vehicles] Login as admin before positive delete
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -121,6 +136,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -128,6 +147,7 @@ Content-Type: application/json
 ### [Positive][Vehicles] Admin deletes the fixture vehicle (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -143,6 +163,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 ### [Negative][Vehicles] Re-delete deleted vehicle returns not found (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -159,5 +180,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/
 ### [Cleanup][Vehicles] Delete the fixture customer created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

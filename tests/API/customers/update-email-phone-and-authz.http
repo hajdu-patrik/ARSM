@@ -23,6 +23,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as admin for update tests (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,6 +33,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -40,6 +45,7 @@ Content-Type: application/json
 # @name fixtureCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -57,6 +63,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update customer with invalid email format (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -74,6 +81,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update customer with invalid European phone format (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -91,6 +99,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update customer with duplicate email conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -108,6 +117,7 @@ Content-Type: application/json
 ### [Negative][Customers] Update customer with duplicate phone conflict (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -129,6 +139,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as non-admin mechanic (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -138,6 +149,10 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -145,6 +160,7 @@ Content-Type: application/json
 ### [Positive][Customers] Non-admin can update customer (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -162,5 +178,6 @@ Content-Type: application/json
 ### [Cleanup][Customers] Non-admin deletes the fixture customer created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

@@ -24,6 +24,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Parts] Login as admin for validation tests
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -33,6 +34,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -40,6 +45,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with missing part number (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -56,6 +62,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with missing name (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -72,6 +79,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with part number over 40 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -88,6 +96,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with name over 120 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -104,6 +113,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with negative net unit price (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -120,6 +130,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with net unit price over 100000000 (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -136,6 +147,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with unsupported VAT rate (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -152,6 +164,7 @@ Content-Type: application/json
 ### [Negative][Parts] Create part with duplicate part number matching seeded key (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -168,6 +181,7 @@ Content-Type: application/json
 ### [Negative][Parts] Lowercase part number normalizes and collides with existing uppercase key (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -184,6 +198,7 @@ Content-Type: application/json
 ### [Negative][Parts] Update non-existent part (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentPartId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -200,5 +215,6 @@ Content-Type: application/json
 ### [Negative][Parts] Delete non-existent part (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentPartId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404

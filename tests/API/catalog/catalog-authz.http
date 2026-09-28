@@ -8,7 +8,6 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
 @AuthzPartNumber = ZZU{{RunId}}A
-@AuthzLaborTypeCode = ZZU{{RunId}}A
 
 # COVERAGE GAP (do not fill with a fabricated token):
 # The F1 brief asks every route below to also prove that a request carrying a
@@ -33,6 +32,7 @@
 # ─────────────────────────────────────────────────────────────
 
 ### [Setup][Catalog] Login as admin to create disposable authz fixtures
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +42,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -50,6 +54,7 @@ Content-Type: application/json
 # @name authzPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -63,32 +68,19 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Catalog] Create disposable labor type used as the authz target id (201 expected)
-# @name authzLaborType
-POST {{AutoService_ApiService_HostAddress}}/api/labor-types
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "code": "{{AuthzLaborTypeCode}}",
-  "name": "Catalog Authz Labor",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
-
-?? status == 201
-
 ###
 
 ### [Setup][Catalog] Logout before unauthenticated checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Negative][Catalog] Unauthenticated list parts (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/parts
 
 ?? status == 401
@@ -96,6 +88,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts
 ###
 
 ### [Negative][Catalog] Unauthenticated get part by id (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
 
 ?? status == 401
@@ -103,8 +96,10 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
 ###
 
 ### [Negative][Catalog] Unauthenticated create part (401 expected)
+# @no-cookie-jar
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -119,8 +114,10 @@ Content-Type: application/json
 ###
 
 ### [Negative][Catalog] Unauthenticated update part (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -135,68 +132,27 @@ Content-Type: application/json
 ###
 
 ### [Negative][Catalog] Unauthenticated delete part (401 expected)
+# @no-cookie-jar
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 401
 
 ###
 
-### [Negative][Catalog] Unauthenticated list labor types (401 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/labor-types
-
-?? status == 401
+###
 
 ###
 
-### [Negative][Catalog] Unauthenticated get labor type by id (401 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{authzLaborType.id}}
-
-?? status == 401
-
 ###
 
-### [Negative][Catalog] Unauthenticated create labor type (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/labor-types
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "code": "UNAUTH-LT",
-  "name": "Unauthenticated",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
-
-?? status == 401
-
 ###
-
-### [Negative][Catalog] Unauthenticated update labor type (401 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{authzLaborType.id}}
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "code": "UNAUTH-LT",
-  "name": "Unauthenticated",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
-
-?? status == 401
-
-###
-
-### [Negative][Catalog] Unauthenticated delete labor type (401 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{authzLaborType.id}}
-Origin: {{WebUI_Origin}}
-
-?? status == 401
 
 ###
 
 ### [Setup][Catalog] Login as admin again to clean up the disposable authz fixtures
+# @name csrfSource2
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -206,6 +162,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -213,21 +173,17 @@ Content-Type: application/json
 ### [Cleanup][Catalog] Delete the disposable authz part fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
-
-### [Cleanup][Catalog] Delete the disposable authz labor type fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{authzLaborType.id}}
-Origin: {{WebUI_Origin}}
-
-?? status == 204
 
 ###
 
 ### [Setup][Catalog] Logout admin after cleanup
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

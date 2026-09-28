@@ -28,6 +28,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Profile] Login as admin to seed profile conflict identity
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -37,6 +38,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -45,6 +50,7 @@ Content-Type: application/json
 # @name profileConflictMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -65,12 +71,14 @@ Content-Type: application/json
 ### [Setup][Profile] Logout admin before mechanic profile checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -80,6 +88,10 @@ Content-Type: application/json
   "password": "{{ProfileCurrentPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -87,6 +99,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with duplicate email validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -100,6 +113,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with duplicate phone validation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -113,6 +127,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with invalid email format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -126,6 +141,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with invalid European phone format (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -139,6 +155,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with empty firstName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -152,6 +169,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update with empty lastName (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -165,12 +183,14 @@ Content-Type: application/json
 ### [Setup][Profile] Logout non-admin mechanic before deleting the conflict fixture
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Profile] Login as admin to clean up the disposable conflict fixture
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -180,6 +200,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -187,6 +211,7 @@ Content-Type: application/json
 ### [Cleanup][Profile] Delete the disposable profile-conflict mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{profileConflictMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -195,5 +220,6 @@ Origin: {{WebUI_Origin}}
 ### [Setup][Profile] Logout admin after cleanup
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

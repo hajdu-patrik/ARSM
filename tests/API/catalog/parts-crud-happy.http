@@ -21,6 +21,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -29,6 +30,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -45,6 +50,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts
 # @name createdPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -69,6 +75,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 # @name lowercasePart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -86,6 +93,7 @@ Content-Type: application/json
 # @name roundingPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -102,6 +110,7 @@ Content-Type: application/json
 ### [Positive][Parts] Admin updates created part (204 expected, grossUnitPrice recomputed to 5000.00 * 1.18 = 5900.00)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -118,6 +127,7 @@ Content-Type: application/json
 ### [Positive][Parts] Admin deletes created part (204 expected, no soft delete/no in-use blocking)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -133,6 +143,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 ### [Negative][Parts] Re-delete deleted part returns not found (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -141,6 +152,7 @@ Origin: {{WebUI_Origin}}
 ### [Cleanup][Parts] Delete lowercase-normalization fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{lowercasePart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -149,5 +161,6 @@ Origin: {{WebUI_Origin}}
 ### [Cleanup][Parts] Delete rounding-demo fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{roundingPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

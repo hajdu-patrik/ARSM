@@ -4,7 +4,9 @@
 # once an appointment is Completed or Cancelled, before even checking whether the target mechanic is
 # already assigned. CompletedApptId/CancelledApptId are created with two mechanics so the disposable
 # secondary mechanic is never the sole assignee on either — it stays deletable at the end even though
-# neither appointment's mechanic list can ever change again once locked.
+# neither appointment's mechanic list can ever change again once locked. Both fixture appointments are
+# deleted at the end via DELETE /api/appointments/{id} (AdminOnly), which has no such lock: it hard-
+# deletes regardless of status.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -34,6 +36,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -61,6 +67,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 # @name secondaryMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -83,6 +90,7 @@ Content-Type: application/json
 # @name completedApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -101,6 +109,7 @@ Content-Type: application/json
 ### [Setup][Appointments] Move the fixture appointment to Completed (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -115,6 +124,7 @@ Content-Type: application/json
 # @name cancelledApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -133,6 +143,7 @@ Content-Type: application/json
 ### [Setup][Appointments] Move the fixture appointment to Cancelled (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -147,6 +158,7 @@ Content-Type: application/json
 # Expected error code: appointment_completed.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
@@ -156,6 +168,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_completed.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
@@ -165,6 +178,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_cancelled.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
@@ -174,16 +188,34 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_cancelled.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
 ###
 
+### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
 ### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
-# Safe: SecondaryMechanicId keeps company with AdminMechanicId on both fixture appointments (count 2
-# each), so the deletion invariant in AdminEndpoints.Handlers.cs never blocks it, even though the
-# appointments themselves are locked forever and cannot have their mechanic list changed again.
+# Safe: both fixture appointments are already deleted above, so the deletion invariant in
+# AdminEndpoints.Handlers.cs (no appointment left with zero mechanics) is trivially satisfied.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

@@ -4,17 +4,20 @@
 # POST /api/appointments/intake sits under plain RequireAuthorization() (any mechanic session works, see
 # AppointmentEndpoints.cs), so this file no longer assumes a session left over from a previous file —
 # it logs in as the non-admin test mechanic itself. CustomerVehicleId is resolved from the known
-# customer's own vehicle instead of a literal id.
+# customer's own vehicle instead of a literal id. New-customer/new-vehicle intake validation coverage
+# lives in the sibling file intake-validation-new-customer.http (split out to stay under the 250-line
+# file limit). The one appointment this file persists (PastDateApptId) is deleted at the end by an
+# admin session via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
 @BothVehiclePathsVin = TST{{RunId.toString().slice(-10)}}0501
-@MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
-@MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
 
 
 # ─────────────────────────────────────────────────────────────
@@ -26,6 +29,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -34,6 +38,10 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -52,6 +60,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownC
 ### [Negative][Appointments] Scheduler intake forbids explicit status input (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -70,6 +79,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Scheduler intake requires exactly one vehicle path (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -97,6 +107,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Scheduler intake rejects dueDateTime earlier than scheduledDate (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -111,70 +122,11 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "customerEmail": "intake.vehicle.max.{{RunId}}@example.test",
-  "customerFirstName": "Intake",
-  "customerMiddleName": null,
-  "customerLastName": "Max",
-  "customerPhoneNumber": "+36305556666",
-  "vehicle": {
-    "licensePlate": "MAX-{{RunId}}",
-    "vin": "{{MaxVehicleVin}}",
-    "brand": "Audi",
-    "model": "A3",
-    "year": 2021,
-    "mileageKm": 1000001,
-    "enginePowerKw": 50001,
-    "drivetrainType": "Diesel"
-  },
-  "scheduledDate": "2026-04-24T10:00:00",
-  "dueDateTime": "2026-04-25T10:00:00",
-  "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
-}
-
-?? status == 422
-
-###
-
-### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "customerEmail": "intake.vehicle.drivetrain.{{RunId}}@example.test",
-  "customerFirstName": "Intake",
-  "customerMiddleName": null,
-  "customerLastName": "Drivetrain",
-  "customerPhoneNumber": "+36305557777",
-  "vehicle": {
-    "licensePlate": "DRV-{{RunId}}",
-    "vin": "TST{{RunId.toString().slice(-10)}}0504",
-    "brand": "Audi",
-    "model": "A3",
-    "year": 2021,
-    "mileageKm": 10000,
-    "enginePowerKw": 110,
-    "drivetrainType": "Hydrogen"
-  },
-  "scheduledDate": "2026-04-24T10:00:00",
-  "dueDateTime": "2026-04-25T10:00:00",
-  "taskDescription": "Scheduler intake vehicle drivetrain should be rejected"
-}
-
-?? status == 422
-
-###
-
 ### [Negative][Appointments] Scheduler intake rejects non-existent vehicleId (404 expected)
 # When vehicleId is provided but does not exist in the database.
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -190,9 +142,10 @@ Content-Type: application/json
 ###
 
 ### [Positive][Appointments] Scheduler intake allows past scheduled date (201 expected)
-# Coverage gap: appointments have no delete endpoint, so this fixture appointment is not cleaned up.
+# @name pastDateApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -207,27 +160,32 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Appointments] Scheduler intake requires customer name fields when email is unknown and not a mechanic email (422 expected)
-# When the email does not match any customer or mechanic, customerFirstName and customerLastName are mandatory.
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+@PastDateApptId = {{pastDateApptCreate.id}}
+
+### [Cleanup][Appointments] Login as admin to delete the fixture appointment (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "customerEmail": "completely.unknown.{{RunId}}@example.test",
-  "vehicle": {
-    "licensePlate": "UNK-{{RunId}}",
-    "vin": "{{MissingNameVehicleVin}}",
-    "brand": "Ford",
-    "model": "Focus",
-    "year": 2018,
-    "mileageKm": 60000,
-    "enginePowerKw": 81,
-    "drivetrainType": "Petrol"
-  },
-  "scheduledDate": "2026-04-30T10:00:00",
-  "dueDateTime": "2026-05-01T10:00:00",
-  "taskDescription": "Intake missing customer name fields"
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
 }
 
-?? status == 422
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+# CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
+
+### [Cleanup][Appointments] Delete the past-date fixture appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastDateApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

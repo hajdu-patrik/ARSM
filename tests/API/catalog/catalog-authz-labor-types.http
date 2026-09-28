@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────
+# CATALOG - LABOR TYPES UNAUTHENTICATED AUTHZ (MechanicOnly POLICY)
+# ─────────────────────────────────────────────────────────────
+# Split from catalog-authz.http for the 250-line test file limit: the unauthenticated labor type
+# checks. RequireAuthorization answers 401 before any handler runs, so the non-existent id 999999 is
+# enough and no fixture is needed. The authenticated-customer 403 gap is documented in catalog-authz.http.
+#
+# httpyac shares one cookie jar across files, and logout needs the CSRF token, so this file first signs
+# in and signs out with the token to guarantee that the checks below really run without a session.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Catalog] Login as admin to get a known session to end (200 expected)
+# @name clearLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Catalog] Logout so the checks below run unauthenticated (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Catalog] Unauthenticated list labor types (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+
+?? status == 401
+
+###
+
+### [Negative][Catalog] Unauthenticated get labor type by id (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/999999
+
+?? status == 401
+
+###
+
+### [Negative][Catalog] Unauthenticated create labor type (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "UNAUTH-LT",
+  "name": "Unauthenticated",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 401
+
+###
+
+### [Negative][Catalog] Unauthenticated update labor type (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/999999
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "code": "UNAUTH-LT",
+  "name": "Unauthenticated",
+  "hourlyNetRate": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 401
+
+###
+
+### [Negative][Catalog] Unauthenticated delete labor type (401 expected)
+# @no-cookie-jar
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/999999
+Origin: {{WebUI_Origin}}
+
+?? status == 401

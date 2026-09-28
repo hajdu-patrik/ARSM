@@ -23,6 +23,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,6 +33,10 @@ Content-Type: application/json
   "password": "{{ProfileCurrentPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -39,6 +44,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update firstName over 50 chars rejected (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -52,6 +58,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update lastName over 50 chars rejected (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -65,6 +72,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update middleName over 50 chars rejected (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -78,6 +86,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update email over 150 chars rejected (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -91,6 +100,7 @@ Content-Type: application/json
 ### [Negative][Profile] Update phoneNumber over 20 chars rejected (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -104,6 +114,7 @@ Content-Type: application/json
 ### [Negative][Profile] Change password with currentPassword over 128 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -119,6 +130,7 @@ Content-Type: application/json
 ### [Negative][Profile] Change password with newPassword over 128 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -134,6 +146,7 @@ Content-Type: application/json
 ### [Negative][Profile] Change password with confirmNewPassword over 128 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -149,6 +162,7 @@ Content-Type: application/json
 ### [Setup][Profile] Logout after field-length validation checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 

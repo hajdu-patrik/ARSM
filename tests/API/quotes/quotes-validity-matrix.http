@@ -13,6 +13,7 @@
 # ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuotesValidityMatrix] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -21,6 +22,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -45,6 +50,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
 # @name sentQuote
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -59,6 +65,7 @@ Content-Type: application/json
 # @name sentQuoteLine
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -78,6 +85,7 @@ Content-Type: application/json
 # @name sentQuoteSent
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -92,6 +100,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidityMatrix] Editing the Title of a Sent quote is rejected (409 expected, Draft-only lock)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -107,6 +116,7 @@ Content-Type: application/json
 # @name sentQuoteExtended
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -121,6 +131,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidityMatrix] Moving a Sent quote's ValidUntil earlier is rejected (422 expected, Sent only allows extension)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -136,6 +147,7 @@ Content-Type: application/json
 # @name sentQuoteAccepted
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -150,6 +162,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidityMatrix] Editing an Accepted quote's ValidUntil is rejected (409 expected, decided quotes are locked)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

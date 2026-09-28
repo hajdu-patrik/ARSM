@@ -6,7 +6,8 @@
 # reached instead of a 404; AdminMechanicId is the admin's own person_id. SeedVehicleVin is a
 # well-formed but otherwise made-up VIN used only where the request must merely pass VIN *format*
 # validation (drivetrain-type parsing runs before the VIN uniqueness check in
-# AppointmentEndpoints.Update.cs, so it never needs to belong to the fixture's actual vehicle).
+# AppointmentEndpoints.Update.cs, so it never needs to belong to the fixture's actual vehicle). ApptId
+# is deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -33,6 +34,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -61,6 +66,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 # @name apptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -79,6 +85,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin update rejects empty taskDescription (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -93,6 +100,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin update rejects taskDescription exceeding 200 characters (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -108,6 +116,7 @@ Content-Type: application/json
 # dueDateTime must be >= scheduledDate for the linked appointment.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -123,6 +132,7 @@ Content-Type: application/json
 # LicensePlate, Vin, Brand, Model, and DrivetrainType are required for /vehicle update payloads.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -136,6 +146,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin vehicle update rejects invalid VIN format (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -156,6 +167,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin vehicle update rejects unsupported drivetrain type (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -170,3 +182,12 @@ Content-Type: application/json
 }
 
 ?? status == 422
+
+###
+
+### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

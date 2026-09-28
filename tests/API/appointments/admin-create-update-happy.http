@@ -3,7 +3,8 @@
 # ─────────────────────────────────────────────────────────────
 # PrimaryMechanicId is the admin's own person_id (the admin is a mechanic too); SecondaryMechanicId is
 # a disposable mechanic registered here and deleted at the end. CustomerId/CustomerVehicleId are
-# resolved from a real customer/vehicle pair instead of a literal id.
+# resolved from a real customer/vehicle pair instead of a literal id. Both appointments this file
+# creates (ApptId, PastDateApptId) are deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -38,6 +39,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -67,6 +72,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
 # @name secondaryMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -90,6 +96,7 @@ Content-Type: application/json
 # @name createdAppt
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -108,6 +115,7 @@ Content-Type: application/json
 ### [Positive][Appointments] Admin updates appointment dueDateTime/taskDescription (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -122,6 +130,7 @@ Content-Type: application/json
 ### [Positive][Appointments] Admin updates appointment vehicle fields (vehicle edits persist, 200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -140,10 +149,10 @@ Content-Type: application/json
 ###
 
 ### [Positive][Appointments] Admin create allows past scheduled date (201 expected)
-# Coverage gap: appointments have no delete endpoint (cancel is the only lifecycle exit), so this
-# fixture appointment is not cleaned up — matching the pre-existing behavior of this same test case.
+# @name pastDateApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -157,9 +166,12 @@ Content-Type: application/json
 
 ###
 
+@PastDateApptId = {{pastDateApptCreate.id}}
+
 ### [Negative][Appointments] Admin update fails when appointment does not exist (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -174,6 +186,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin update cannot change ScheduledDate (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -189,6 +202,7 @@ Content-Type: application/json
 ### [Negative][Appointments] Admin vehicle update fails when appointment does not exist (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/vehicle
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -206,10 +220,29 @@ Content-Type: application/json
 
 ###
 
+### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastDateApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
 ### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
 # Safe: SecondaryMechanicId keeps company with PrimaryMechanicId on ApptId (count 2), so the deletion
-# invariant in AdminEndpoints.Handlers.cs does not block it.
+# invariant in AdminEndpoints.Handlers.cs does not block it. The appointments themselves are already
+# gone by this point (deleted above), so the invariant is trivially satisfied either way.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

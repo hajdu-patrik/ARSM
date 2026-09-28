@@ -1,12 +1,11 @@
 # ─────────────────────────────────────────────────────────────
-# APPOINTMENTS - CLAIM/UNCLAIM EDGE CASES (CANCELLED, NOT ASSIGNED, LAST MECHANIC)
+# APPOINTMENTS - CLAIM/UNCLAIM EDGE CASES (CANCELLED, LAST MECHANIC)
 # ─────────────────────────────────────────────────────────────
-# Split out of mechanic-claim-unclaim.http to stay under the 250-line file limit.
+# Split out of mechanic-claim-unclaim.http; the not-assigned-to-me case lives in the sibling file
+# mechanic-claim-unclaim-not-assigned.http (both split to stay under the 250-line file limit).
 # PastCancelledApptId/SingleAssignedApptId are created via the mechanic-facing intake endpoint, which
-# auto-assigns the calling (non-admin) mechanic as the sole mechanic. NonAssignedApptId deliberately
-# excludes that mechanic, so it is created via a short admin detour (POST
-# /api/customers/{id}/appointments with the admin's own mechanic id as the sole assignee) before
-# switching to the non-admin session used for the rest of the file.
+# auto-assigns the calling (non-admin) mechanic as the sole mechanic; both are deleted at the end by an
+# admin session via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -25,62 +24,8 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Appointments] Login as admin to create the not-assigned-to-me fixture (200 expected)
-# @name adminLogin
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-?? status == 200
-
-###
-
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
-# @name knownCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
-
-?? status == 200
-
-###
-
-@KnownCustomerId = {{knownCustomer.id}}
-@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
-
-### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
-# @name nonAssignedApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{KnownCustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{KnownCustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Claim/unclaim edge-case fixture: not assigned to the test mechanic",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
-
-?? status == 201
-
-###
-
-@NonAssignedApptId = {{nonAssignedApptCreate.id}}
-
-### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-
-?? status == 204
-
-###
-
-### [Setup][Appointments] Login as non-admin mechanic (200 expected)
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -90,14 +35,29 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
+
+### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
+# @name knownCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+
+?? status == 200
+
+###
+
+@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
 
 ### [Setup][Appointments] Create an appointment via intake for the cancel-then-claim/unclaim checks (201 expected)
 # @name pastCancelledApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -118,6 +78,7 @@ Content-Type: application/json
 # @name singleAssignedApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -137,6 +98,7 @@ Content-Type: application/json
 ### [Setup][Appointments] Cancel appointment for unclaim-cancelled/claim-cancelled checks (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -151,6 +113,7 @@ Content-Type: application/json
 # Expected error code: appointment_cancelled.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
@@ -160,6 +123,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_cancelled.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
@@ -168,6 +132,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Appointments] Claim non-existent appointment (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -177,24 +142,54 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_not_found.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == appointment_not_found
-###
-
-### [Negative][Appointments] Unclaim when not assigned to appointment (409 expected)
-# Expected error code: not_assigned.
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{NonAssignedApptId}}/claim
-Origin: {{WebUI_Origin}}
-
-?? status == 409
-?? js response.parsedBody.code == not_assigned
 ###
 
 ### [Negative][Appointments] Mechanic cannot unclaim when appointment would have zero mechanics (422 expected)
 # Expected error code: last_assigned_mechanic.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/claim
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == last_assigned_mechanic
+###
+
+### [Cleanup][Appointments] Login as admin to delete the fixture appointments (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+# CSRF double-submit token for the cleanup deletes below (see tests/CLAUDE.md Core Rules).
+
+### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

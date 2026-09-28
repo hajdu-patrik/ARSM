@@ -19,6 +19,11 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener
 APPLICATION_JSON = "application/json"
 UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
+# CSRF double-submit pair (Middleware/CsrfDoubleSubmitMiddleware): the cookie the client reads and the
+# header it echoes the value into on every unsafe, cookie-authenticated /api request.
+CSRF_COOKIE_NAME = "autoservice_csrf"
+CSRF_HEADER_NAME = "X-CSRF-Token"
+
 # urllib surfaces a server-side connection reset as an OSError rather than a status code.
 CONNECTION_RESET_STATUS = 0
 
@@ -45,6 +50,13 @@ class HttpClient:
         self.allowed_origin = allowed_origin
         self.cookie_jar = CookieJar()
         self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar))
+
+    def _csrf_token(self) -> str | None:
+        """Returns the current `autoservice_csrf` cookie value, or ``None`` before login."""
+        for cookie in self.cookie_jar:
+            if cookie.name == CSRF_COOKIE_NAME:
+                return cookie.value
+        return None
 
     def request_json(self, method: str, path: str, payload: dict[str, Any] | None = None) -> tuple[int, str]:
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
@@ -76,10 +88,19 @@ class HttpClient:
         headers = {"Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": APPLICATION_JSON}
         return self._request(method, path, body, headers)[:2]
 
-    def request_headers(self, method: str, path: str) -> tuple[int, dict[str, str]]:
-        """Issue a request and return only the status and response headers."""
-        status, _, headers = self._request(method, path, None, {"Accept": "*/*"})
-        return status, headers
+    def request_headers(
+        self, method: str, path: str, headers: dict[str, str] | None = None,
+    ) -> tuple[int, dict[str, str]]:
+        """Issue a request and return only the status and response headers.
+
+        ``headers`` adds to (or overrides) the default ``Accept: */*``, for example a conditional
+        ``If-None-Match`` probe; omit it for the original unconditional-GET behaviour.
+        """
+        request_headers = {"Accept": "*/*"}
+        if headers:
+            request_headers.update(headers)
+        status, _, response_headers = self._request(method, path, None, request_headers)
+        return status, response_headers
 
     def request_binary(self, method: str, path: str) -> tuple[int, bytes, dict[str, str]]:
         """Issue a request and return the raw body, for endpoints that answer with a file."""
@@ -105,6 +126,12 @@ class HttpClient:
         request_headers = dict(headers)
         if method.upper() in UNSAFE_HTTP_METHODS:
             request_headers["Origin"] = self.allowed_origin
+            # Double-submit CSRF proof (CsrfDoubleSubmitMiddleware): echo the cookie already in the
+            # jar - set by a prior login/refresh/password-change - back as the header. Missing before
+            # the first login, and login itself is exempt, so there is nothing to add yet either way.
+            csrf_token = self._csrf_token()
+            if csrf_token and CSRF_HEADER_NAME not in request_headers:
+                request_headers[CSRF_HEADER_NAME] = csrf_token
 
         request = Request(url=f"{self.base_url}{path}", data=body, headers=request_headers, method=method)
         try:

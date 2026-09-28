@@ -22,6 +22,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as admin for conflict checks (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -31,6 +32,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -38,6 +43,7 @@ Content-Type: application/json
 ### [Negative][Customers] Create customer with duplicate email conflict (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -55,6 +61,7 @@ Content-Type: application/json
 ### [Negative][Customers] Create customer with duplicate phone conflict (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -76,6 +83,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as non-admin mechanic (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -85,6 +93,10 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -93,6 +105,7 @@ Content-Type: application/json
 # @name createdByNonAdmin
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -110,5 +123,6 @@ Content-Type: application/json
 ### [Cleanup][Customers] Delete the customer created by the non-admin session above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdByNonAdmin.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

@@ -33,6 +33,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Admin Session] Login as admin to provision the session-lifecycle mechanic (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +43,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -50,6 +55,7 @@ Content-Type: application/json
 # @name regSessionMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -69,12 +75,14 @@ Content-Type: application/json
 ### [Setup][Admin Session] Logout admin before the session-lifecycle chain (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Positive][Session] Login before validate/refresh/logout chain (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -83,6 +91,10 @@ Content-Type: application/json
   "email": "{{MatrixEmailWithPhone}}",
   "password": "{{TestPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -96,12 +108,20 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 ###
 
 ### [Positive][Session] Refresh authenticated session (204 expected; requires refresh cookie)
+# @name Refresh
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 204
 
 ###
+
+# Refresh rotates the CSRF cookie too, so the logout below needs the new value.
 
 ### [Manual][Session] Refresh rate limiting (expect 429 after >20 refresh calls per minute from same client)
 # Re-run the refresh request rapidly (for example with a loop in terminal) to verify AuthRefreshAttempts policy.
@@ -130,6 +150,7 @@ Origin: {{WebUI_Origin}}
 ### [Positive][Session] Logout current session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -159,6 +180,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Cleanup] Login as admin again to delete the throwaway mechanic (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -168,6 +190,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -175,5 +201,6 @@ Content-Type: application/json
 ### [Setup][Cleanup] Delete the session-lifecycle mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regSessionMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

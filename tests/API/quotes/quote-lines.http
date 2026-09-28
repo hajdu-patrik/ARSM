@@ -12,6 +12,7 @@
 # ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuoteLines] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -20,6 +21,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -44,6 +49,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes
 # @name createdPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -61,6 +67,7 @@ Content-Type: application/json
 # @name draftQuote
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -75,6 +82,7 @@ Content-Type: application/json
 # @name catalogLine
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -92,6 +100,7 @@ Content-Type: application/json
 # @name overrideLine
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -109,6 +118,7 @@ Content-Type: application/json
 ### [Negative][QuoteLines] Add line with no catalog id and no manual fields (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -124,6 +134,7 @@ Content-Type: application/json
 ### [Negative][QuoteLines] Add line with a non-existent PartId (404 expected; a non-existent LaborTypeId shares the same lookup path)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -140,6 +151,7 @@ Content-Type: application/json
 ### [Negative][QuoteLines] NetUnitPrice over the 100,000,000 cap is rejected (422 expected, D24)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -158,6 +170,7 @@ Content-Type: application/json
 ### [Negative][QuoteLines] Quantity over the 10,000 cap is rejected (422 expected, D24)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -177,6 +190,7 @@ Content-Type: application/json
 # @name sentQuote
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -191,6 +205,7 @@ Content-Type: application/json
 ### [Negative][QuoteLines] Adding a line to a Sent quote is rejected (409 expected, Draft-only lock; update/delete share the same lock, see quotes-validation.http for the Title-edit sibling case)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -209,5 +224,6 @@ Content-Type: application/json
 ### [Cleanup][QuoteLines] Delete the disposable part fixture (204 expected, SetNull on delete leaves the quote's line snapshots intact, D4)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

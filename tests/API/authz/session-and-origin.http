@@ -34,6 +34,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Authz] Login with the admin account
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +43,10 @@ Content-Type: application/json
   "email": "{{SessionEmail}}",
   "password": "{{SessionPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -57,6 +62,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 ### [Setup][Authz] Logout (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -70,6 +76,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 ###
 
 ### [Setup][Authz] Login with the admin account again for the cross-origin check
+# @name csrfSource2
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -79,6 +86,10 @@ Content-Type: application/json
   "password": "{{SessionPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -86,6 +97,7 @@ Content-Type: application/json
 ### [Negative][Authz] Cross-origin unsafe request with a foreign Origin and valid cookies is rejected (403 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{ForeignOrigin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 403
 
@@ -101,5 +113,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 ### [Setup][Authz] Logout with the correct Origin (204 expected, cleanup)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

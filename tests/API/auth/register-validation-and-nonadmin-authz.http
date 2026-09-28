@@ -27,6 +27,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Admin Session] Login as admin before the validation matrix (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -36,6 +37,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -43,6 +48,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Customer personType is rejected - registration is mechanic-only (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -60,6 +66,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Invalid expertise list (duplicate item expected) (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -80,6 +87,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -100,6 +108,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -120,6 +129,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -140,6 +150,7 @@ Content-Type: application/json
 # "Last name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -160,6 +171,7 @@ Content-Type: application/json
 # "Middle name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -180,12 +192,14 @@ Content-Type: application/json
 ### [Setup][Admin Session] Logout admin before non-admin authorization check (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Non-Admin Session] Login as non-admin mechanic (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -195,13 +209,22 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
 
+# CSRF double-submit token for the request below (see tests/CLAUDE.md Core Rules). Required even
+# though the request is expected to fail: without it, CsrfDoubleSubmitMiddleware would answer 403
+# before AdminOnly ever runs, which happens to share the same status code but proves the wrong thing.
+
 ### [Negative][Register] Non-admin mechanic cannot register mechanics (403 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

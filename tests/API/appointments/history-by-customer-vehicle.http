@@ -23,6 +23,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Appointments] Login as non-admin mechanic (history endpoints require authenticated user, 200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,9 +33,15 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
+
+# CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
 ### [Setup][Appointments] Resolve a seeded customer that owns a vehicle (200 expected)
 # @name seedCustomers
@@ -98,12 +105,14 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 ### [Setup][Appointments] Logout to verify unauthenticated behavior (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Negative][Appointments] Unauthenticated customer history returns 401
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 
 ?? status == 401
@@ -111,6 +120,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appo
 ###
 
 ### [Negative][Appointments] Unauthenticated vehicle history returns 401
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles[0].id}}/appointments
 
 ?? status == 401

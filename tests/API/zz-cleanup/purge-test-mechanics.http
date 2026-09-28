@@ -87,6 +87,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Cleanup] Login as admin (200 expected)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -95,6 +96,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -112,6 +117,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 # @loop for leftoverMechanic of mechanics.filter(m => !m.isAdmin && m.email.toLowerCase() !== MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test") && ["matrix.","appt.","delete.mechanic.","login.negmatrix.","duplicate.rules.target.","duplicate.phone.","bad.phone.","bad.expertise.","customer.should.fail.","name.","lastname.","middlename.","firstname.toolong.","phone.toolong.","password.toolong.","blocked.nonadmin.","blocked.unauth.","profile.conflict.","profile.delete.","session.lifecycle."].some(p => m.email.toLowerCase().startsWith(p)))
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{leftoverMechanic.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 # Never a stronger assertion here (see the header comment): DeleteMechanicAsync legitimately answers
 # 403 (self/admin-role), 404 (already gone), 409 (concurrency) or 422 (last-mechanic/sole-assignment)

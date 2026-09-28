@@ -29,6 +29,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Auth] Login as admin before the register field-length cases (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -38,13 +39,20 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
 
+# CSRF double-submit token for the register calls below (see tests/CLAUDE.md Core Rules).
+
 ### [Negative][Register] FirstName over 50 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -64,6 +72,7 @@ Content-Type: application/json
 ### [Negative][Register] LastName over 50 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -83,6 +92,7 @@ Content-Type: application/json
 ### [Negative][Register] MiddleName over 50 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -103,6 +113,7 @@ Content-Type: application/json
 ### [Negative][Register] Email over 150 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -122,6 +133,7 @@ Content-Type: application/json
 ### [Negative][Register] PhoneNumber over 20 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -142,6 +154,7 @@ Content-Type: application/json
 ### [Negative][Register] Password over 128 chars rejected (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

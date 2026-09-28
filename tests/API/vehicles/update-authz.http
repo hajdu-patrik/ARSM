@@ -22,6 +22,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Vehicles] Login as admin for setup (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -31,6 +32,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -39,6 +44,7 @@ Content-Type: application/json
 # @name fixtureCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -57,6 +63,7 @@ Content-Type: application/json
 # @name fixtureVehicle
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -77,6 +84,7 @@ Content-Type: application/json
 ### [Negative][Vehicles] Update vehicle with invalid year (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -101,6 +109,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -110,6 +119,10 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -117,6 +130,7 @@ Content-Type: application/json
 ### [Positive][Vehicles] Non-admin can update vehicle (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -137,5 +151,6 @@ Content-Type: application/json
 ### [Cleanup][Vehicles] Non-admin deletes the fixture customer, cascading its vehicle (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

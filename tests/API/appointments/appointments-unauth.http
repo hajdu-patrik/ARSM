@@ -22,6 +22,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Appointments] Unauthenticated list appointments (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
 
 ?? status == 401
@@ -29,6 +30,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=4
 ###
 
 ### [Negative][Appointments] Unauthenticated list today's appointments (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 
 ?? status == 401
@@ -36,6 +38,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 ###
 
 ### [Negative][Appointments] Unauthenticated intake create (401 expected)
+# @no-cookie-jar
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -64,6 +67,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Unauthenticated appointment update (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -78,6 +82,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Unauthenticated appointment vehicle update (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/vehicle
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -98,6 +103,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Unauthenticated appointment status update (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -111,6 +117,7 @@ Content-Type: application/json
 ###
 
 ### [Negative][Appointments] Unauthenticated claim (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
 Origin: {{WebUI_Origin}}
 
@@ -119,6 +126,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Appointments] Unauthenticated unclaim (401 expected)
+# @no-cookie-jar
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/claim
 Origin: {{WebUI_Origin}}
 
@@ -127,6 +135,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Appointments] Unauthenticated admin assign mechanic to appointment (401 expected)
+# @no-cookie-jar
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
 Origin: {{WebUI_Origin}}
 
@@ -135,6 +144,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Appointments] Unauthenticated admin unassign mechanic from appointment (401 expected)
+# @no-cookie-jar
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/1/assign/2
 Origin: {{WebUI_Origin}}
 
@@ -143,6 +153,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Appointments] Unauthenticated admin create appointment for customer (401 expected)
+# @no-cookie-jar
 POST {{AutoService_ApiService_HostAddress}}/api/customers/1/appointments
 Origin: {{WebUI_Origin}}
 Content-Type: application/json

@@ -15,6 +15,7 @@
 # ─────────────────────────────────────────────────────────────
 
 ### [Setup][QuotesValidation] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -23,6 +24,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -62,6 +67,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/appo
 ### [Negative][QuotesValidation] Create with a past ValidUntil is rejected (422 expected, D22)
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -76,6 +82,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidation] Create with an AppointmentId belonging to a different vehicle is rejected (422 expected, D42)
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{OtherVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -98,6 +105,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Expired
 # @name versionQuote
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -111,6 +119,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidation] Update with a version that does not match is rejected (409 expected, body {"code":"quote_version_conflict"}, D30/D38)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{versionQuote.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -125,6 +134,7 @@ Content-Type: application/json
 ### [Negative][QuotesValidation] Update with no version is rejected (422 expected, "Version is required.", D38)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{versionQuote.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

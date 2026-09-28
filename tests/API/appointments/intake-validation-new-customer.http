@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────
+# APPOINTMENTS - INTAKE VALIDATION (NEW CUSTOMER / NEW VEHICLE)
+# ─────────────────────────────────────────────────────────────
+# Split out of intake-validation.http to stay under the 250-line file limit. Every case below supplies
+# a brand-new customerEmail plus an inline vehicle payload, so none of them need the known-customer
+# setup the sibling file uses. None of the cases persist a row: the numeric/drivetrain vehicle
+# validation and the missing-name-fields check (AppointmentEndpoints.Intake.cs) all run before the
+# transaction that would add the customer/vehicle/appointment, so there is nothing to clean up.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
+@MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.vehicle.max.{{RunId}}@example.test",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "Max",
+  "customerPhoneNumber": "+36305556666",
+  "vehicle": {
+    "licensePlate": "MAX-{{RunId}}",
+    "vin": "{{MaxVehicleVin}}",
+    "brand": "Audi",
+    "model": "A3",
+    "year": 2021,
+    "mileageKm": 1000001,
+    "enginePowerKw": 50001,
+    "drivetrainType": "Diesel"
+  },
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-25T10:00:00",
+  "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
+}
+
+?? status == 422
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.vehicle.drivetrain.{{RunId}}@example.test",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "Drivetrain",
+  "customerPhoneNumber": "+36305557777",
+  "vehicle": {
+    "licensePlate": "DRV-{{RunId}}",
+    "vin": "TST{{RunId.toString().slice(-10)}}0504",
+    "brand": "Audi",
+    "model": "A3",
+    "year": 2021,
+    "mileageKm": 10000,
+    "enginePowerKw": 110,
+    "drivetrainType": "Hydrogen"
+  },
+  "scheduledDate": "2026-04-24T10:00:00",
+  "dueDateTime": "2026-04-25T10:00:00",
+  "taskDescription": "Scheduler intake vehicle drivetrain should be rejected"
+}
+
+?? status == 422
+
+###
+
+### [Negative][Appointments] Scheduler intake requires customer name fields when email is unknown and not a mechanic email (422 expected)
+# When the email does not match any customer or mechanic, customerFirstName and customerLastName are mandatory.
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "customerEmail": "completely.unknown.{{RunId}}@example.test",
+  "vehicle": {
+    "licensePlate": "UNK-{{RunId}}",
+    "vin": "{{MissingNameVehicleVin}}",
+    "brand": "Ford",
+    "model": "Focus",
+    "year": 2018,
+    "mileageKm": 60000,
+    "enginePowerKw": 81,
+    "drivetrainType": "Petrol"
+  },
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Intake missing customer name fields"
+}
+
+?? status == 422

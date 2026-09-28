@@ -3,14 +3,14 @@
 # AdminMechanicId is the admin's own person_id (the admin is a mechanic too), SecondaryMechanicId is
 # a disposable mechanic registered here and deleted at the end.
 # Completed/Cancelled-state assign/unassign lockout coverage lives in the sibling file
-# admin-assign-unassign-locked-state.http (kept separate to stay under the 250-line file limit).
+# admin-assign-unassign-locked-state.http; the non-admin 403 authz coverage lives in
+# admin-assign-unassign-authz.http (both split out to stay under the 250-line file limit).
+# SingleAssignedApptId is deleted at the end via DELETE /api/appointments/{id} (AdminOnly).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.assign.secondary.{{RunId}}@example.test
@@ -34,6 +34,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -62,6 +66,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 # @name secondaryMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -84,6 +89,7 @@ Content-Type: application/json
 # @name singleAssignedApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -102,6 +108,7 @@ Content-Type: application/json
 ### [Positive][Appointments] Admin assign mechanic to appointment (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -110,6 +117,7 @@ Origin: {{WebUI_Origin}}
 ### [Positive][Appointments] Admin unassign mechanic from appointment (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -119,6 +127,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: last_assigned_mechanic. SingleAssignedApptId's sole mechanic is AdminMechanicId.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == last_assigned_mechanic
@@ -128,6 +137,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_not_found.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == appointment_not_found
@@ -137,6 +147,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: mechanic_not_found.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/99999
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == mechanic_not_found
@@ -146,6 +157,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: already_assigned. AdminMechanicId is still SingleAssignedApptId's sole mechanic.
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
 ?? js response.parsedBody.code == already_assigned
@@ -155,6 +167,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: appointment_not_found.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{AdminMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == appointment_not_found
@@ -164,6 +177,7 @@ Origin: {{WebUI_Origin}}
 # Expected error code: not_assigned. SecondaryMechanicId was unassigned from SingleAssignedApptId above.
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
 ?? js response.parsedBody.code == not_assigned
@@ -174,43 +188,15 @@ Origin: {{WebUI_Origin}}
 # invariant in AdminEndpoints.Handlers.cs (no appointment left with zero mechanics) does not block it.
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
 ###
 
-### [Setup][Appointments] Logout admin, login as non-admin for authz checks (204 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-### [Setup][Appointments] Login as non-admin mechanic (200 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
-
-?? status == 200
-
-###
-
-### [Negative][Appointments] Non-admin cannot admin-assign mechanic to appointment (403 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
-Origin: {{WebUI_Origin}}
-
-?? status == 403
-
-###
-
-### [Negative][Appointments] Non-admin cannot admin-unassign mechanic from appointment (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
-Origin: {{WebUI_Origin}}
-
-?? status == 403

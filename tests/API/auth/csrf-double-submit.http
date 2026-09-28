@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────
+# AUTH - CSRF DOUBLE-SUBMIT
+# ─────────────────────────────────────────────────────────────
+# Verified against Middleware/CsrfDoubleSubmitMiddleware.cs before writing this file: it runs
+# directly after UnsafeCookieRequestOriginMiddleware and requires the X-CSRF-Token header to equal
+# the autoservice_csrf cookie on every unsafe (POST/PUT/PATCH/DELETE) /api request that carries the
+# access/refresh-token cookie, except POST /api/auth/login. A missing or a wrong header both answer
+# the same 403 body { code: "csrf_token_invalid" }; the Origin check runs first (see
+# origin-csrf.http), so this file always sends the allowed Origin to isolate the CSRF layer itself.
+# "wrong-csrf-token" below is a deliberately invalid literal, not a credential.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@MechanicPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+
+# ─────────────────────────────────────────────────────────────
+
+### [Setup][Csrf] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Csrf] Login establishes the auth cookies and the autoservice_csrf cookie (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{MechanicEmail}}",
+  "password": "{{MechanicPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+# CSRF double-submit token for the requests below (see tests/CLAUDE.md Core Rules).
+
+### [Negative][Csrf] Unsafe authenticated refresh without X-CSRF-Token (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+
+?? status == 403
+?? js response.parsedBody.code == csrf_token_invalid
+
+###
+
+### [Negative][Csrf] Unsafe authenticated refresh with a wrong X-CSRF-Token (403 expected, same code)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: wrong-csrf-token
+
+?? status == 403
+?? js response.parsedBody.code == csrf_token_invalid
+
+###
+
+### [Positive][Csrf] Unsafe authenticated refresh with the correct X-CSRF-Token (204 expected)
+# @name Refresh
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 204
+
+###
+
+# Refresh rotates the CSRF cookie too, so the logout cleanup below needs the new value.
+
+### [Setup][Cleanup] Logout with the correct, rotated X-CSRF-Token (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

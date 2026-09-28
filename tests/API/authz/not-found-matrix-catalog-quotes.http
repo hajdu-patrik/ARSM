@@ -34,6 +34,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Authz] Login with the admin account (200 expected)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -42,6 +43,10 @@ Content-Type: application/json
   "email": "{{SessionEmail}}",
   "password": "{{SessionPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -53,6 +58,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/parts/{{NonExistentId}} (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "partNumber": "GHOST-PART", "name": "Ghost", "netUnitPrice": 100, "vatRatePercent": 27 }
@@ -64,6 +70,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/parts/{{NonExistentId}} (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -75,6 +82,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] PUT /api/labor-types/{{NonExistentId}} (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "code": "GHOST-LT", "name": "Ghost", "hourlyNetRate": 100, "vatRatePercent": 27 }
@@ -86,6 +94,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/labor-types/{{NonExistentId}} (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -97,6 +106,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] POST /api/vehicles/{{NonExistentId}}/quotes (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentId}}/quotes
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "title": "Ghost Quote" }
@@ -108,6 +118,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/quotes/{{NonExistentId}} (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "title": "Ghost Update", "notes": null, "version": 1 }
@@ -119,6 +130,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/quotes/{{NonExistentId}}?version=1 (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}?version=1
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -127,6 +139,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] POST /api/quotes/{{NonExistentId}}/lines (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "lineKind": "Part", "quantity": 1, "partId": null, "laborTypeId": null, "description": "Ghost line", "netUnitPrice": 10, "vatRatePercent": 27, "version": 1 }
@@ -138,6 +151,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/quotes/{{NonExistentId}}/lines/1 (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines/1
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "lineKind": "Part", "quantity": 1, "partId": null, "laborTypeId": null, "description": "Ghost line", "netUnitPrice": 10, "vatRatePercent": 27, "version": 1 }
@@ -149,6 +163,7 @@ Content-Type: application/json
 ### [Negative][Authz] DELETE /api/quotes/{{NonExistentId}}/lines/1?version=1 (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/lines/1?version=1
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 
@@ -157,6 +172,7 @@ Origin: {{WebUI_Origin}}
 ### [Negative][Authz] POST /api/quotes/{{NonExistentId}}/status (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/status
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "status": "Sent", "version": 1 }
@@ -168,6 +184,7 @@ Content-Type: application/json
 ### [Negative][Authz] PUT /api/quotes/{{NonExistentId}}/valid-until (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{NonExistentId}}/valid-until
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 { "validUntil": "2027-01-01T00:00:00", "version": 1 }

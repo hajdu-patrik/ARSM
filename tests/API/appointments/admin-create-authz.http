@@ -6,7 +6,9 @@
 # The AdminOnly policy on this route rejects the request before the handler ever reads CustomerId/
 # VehicleId from the URL, so a non-existent pair would 403 identically — CustomerId/VehicleId are
 # still resolved from a real customer/vehicle at run time to keep the fixture honest and reusable if
-# this file ever grows a positive case.
+# this file ever grows a positive case. The X-CSRF-Token header below is required even though the
+# request is expected to fail: without it, CsrfDoubleSubmitMiddleware would answer 403 before the
+# AdminOnly policy ever runs, which happens to share the same status code but proves the wrong thing.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -23,6 +25,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Appointments] Login as non-admin mechanic (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,9 +35,15 @@ Content-Type: application/json
   "password": "{{NonAdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
+
+# CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
 ### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected, GET /api/customers is plain-authenticated)
 # @name seedCustomers
@@ -57,6 +66,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
 # POST /api/customers/{customerId}/appointments requires AdminOnly policy.
 POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {

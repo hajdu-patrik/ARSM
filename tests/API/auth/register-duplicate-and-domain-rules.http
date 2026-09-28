@@ -34,6 +34,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -43,6 +44,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -51,6 +56,7 @@ Content-Type: application/json
 # @name duplicateTarget
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -72,6 +78,7 @@ Content-Type: application/json
 # Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -92,6 +99,7 @@ Content-Type: application/json
 # Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -113,6 +121,7 @@ Content-Type: application/json
 # Expected ValidationProblem key: register (generic anti-enumeration response).
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -133,6 +142,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Invalid email format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -152,6 +162,7 @@ Content-Type: application/json
 ### [Negative][Register][Admin] Invalid phone format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -172,5 +183,6 @@ Content-Type: application/json
 ### [Setup][Cleanup] Delete the duplicate-target mechanic created above (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{duplicateTarget.personId}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200

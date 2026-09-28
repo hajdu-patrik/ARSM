@@ -7,7 +7,7 @@
 # regardless of the If-None-Match value sent. This file never uploads a picture (multipart upload,
 # ETag/re-encode and the stored-format contract live in profile-picture-upload-check.py, run by the
 # local test runner after HTTPYAC per the [Note] block below), so a genuine ETag-match 304 round trip
-# is not covered here - see the "Decisions for the user" note in the work summary.
+# is not covered here - profile-picture-upload-check.py covers it right after its own PNG upload.
 # GetMechanicProfilePictureAsync forbids a non-admin from any personId other than their own
 # (httpContext.User.IsInRole("Admin") or currentPerson.Id == personId), so both person-id targets
 # below are resolved from login responses instead of a hardcoded seed id.
@@ -40,6 +40,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -47,6 +51,7 @@ Content-Type: application/json
 ### [Setup][Profile] Logout admin before the non-admin mechanic session
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -62,6 +67,10 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -99,12 +108,14 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{adminPictureLog
 ### [Setup][Profile] Logout non-admin before admin picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Setup][Profile] Login as admin for person-id picture checks
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -113,6 +124,10 @@ Content-Type: application/json
   "email": "{{AdminEmail}}",
   "password": "{{AdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -162,6 +177,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPers
 # - valid PNG upload (200/204)
 # - MIME/content mismatch (422)
 # - invalid magic bytes (422)
+# - conditional GET: 304 on the stored ETag, 200 on a mismatched one
 # - cleanup delete and logout
 
 ###
@@ -169,6 +185,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPers
 ### [Positive][Profile] Remove own (admin) profile picture (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
@@ -177,12 +194,14 @@ Origin: {{WebUI_Origin}}
 ### [Setup][Profile] Logout before unauthenticated picture checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
 ###
 
 ### [Negative][Profile] Unauthenticated get profile picture (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
 ?? status == 401
@@ -190,6 +209,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 ###
 
 ### [Negative][Profile] Unauthenticated get profile picture by person id (401 expected)
+# @no-cookie-jar
 # Any integer id works: the group's RequireAuthorization answers 401 before the handler loads the person,
 # and a fixed id keeps this check independent of whether an earlier login in this file succeeded.
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/999999
@@ -199,6 +219,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/999999
 ###
 
 ### [Negative][Profile] Unauthenticated delete profile picture (401 expected)
+# @no-cookie-jar
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
 

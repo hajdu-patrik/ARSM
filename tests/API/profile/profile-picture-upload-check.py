@@ -68,6 +68,24 @@ def run_stored_format_check(client: HttpClient, results: list[StepResult]) -> No
         results,
     )
 
+    run_etag_conditional_checks(client, headers, results)
+
+
+def run_etag_conditional_checks(client: HttpClient, headers: dict[str, str], results: list[StepResult]) -> None:
+    """RespondWithProfilePictureAsync short-circuits to 304 on the stored ETag and still answers 200
+    for any other If-None-Match value (ProfileEndpoints.ProfilePicture.cs IsNotModified).
+    """
+    etag = headers.get("ETag", "")
+    assert_condition("get-picture-has-etag", bool(etag), "expected an ETag header on the stored picture", results)
+
+    match_status, _ = client.request_headers("GET", PROFILE_PICTURE_PATH, {"If-None-Match": etag})
+    assert_status("get-picture-etag-match", match_status, {304}, results)
+
+    mismatch_status, _ = client.request_headers(
+        "GET", PROFILE_PICTURE_PATH, {"If-None-Match": '"not-the-stored-etag"'},
+    )
+    assert_status("get-picture-etag-mismatch", mismatch_status, {200}, results)
+
 
 def run_size_limit_checks(client: HttpClient, results: list[StepResult]) -> None:
     """Reject payloads over the 4 MB cap.

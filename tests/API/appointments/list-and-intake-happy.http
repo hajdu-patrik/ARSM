@@ -2,19 +2,19 @@
 # APPOINTMENTS - LIST AND INTAKE HAPPY
 # ─────────────────────────────────────────────────────────────
 # CustomerVehicleId is resolved from the known customer's own vehicle instead of a literal id.
+# New-customer and mechanic-email-linked intake coverage lives in the sibling file
+# intake-new-customer-and-linked-happy.http (split out to stay under the 250-line file limit). The one
+# appointment this file creates is deleted at the end by an admin session via DELETE
+# /api/appointments/{id} (AdminOnly); the known customer/vehicle it uses are pre-existing seed rows and
+# are never touched.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
-@RunId = {{$timestamp}}
-@NewSchedulerCustomerEmail = scheduler.intake.new.{{RunId}}@example.test
-@NewSchedulerPlate = SCH-{{RunId}}
-@NewSchedulerVin = TST{{RunId.toString().slice(-10)}}0401
-@DuplicatePlateVin = TST{{RunId.toString().slice(-10)}}0402
-@MechanicEmailFlowPlate = MEC-{{RunId}}
-@MechanicEmailFlowVin = TST{{RunId.toString().slice(-10)}}0403
 
 
 # ─────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -34,6 +35,10 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -88,9 +93,10 @@ GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
 ###
 
 ### [Positive][Appointments] Scheduler intake with existing customer and existing vehicle (mechanic auto-assigned, 201 expected)
-# Coverage gap: appointments have no delete endpoint, so this fixture appointment is not cleaned up.
+# @name existingApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -105,91 +111,30 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found (201 expected)
-# Coverage gap: appointments have no delete endpoint, so the created customer/vehicle/appointment
-# cannot be cleaned up afterward (the vehicle is FK-referenced by the appointment forever).
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+### [Cleanup][Appointments] Login as admin to delete the fixture appointment (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
 {
-  "customerEmail": "{{NewSchedulerCustomerEmail}}",
-  "customerFirstName": "Scheduler",
-  "customerMiddleName": null,
-  "customerLastName": "New",
-  "customerPhoneNumber": "+36301{{RunId.toString().slice(-6)}}",
-  "vehicle": {
-    "licensePlate": "{{NewSchedulerPlate}}",
-    "vin": "{{NewSchedulerVin}}",
-    "brand": "Skoda",
-    "model": "Octavia",
-    "year": 2020,
-    "mileageKm": 98500,
-    "enginePowerKw": 110,
-    "drivetrainType": "Petrol"
-  },
-  "scheduledDate": "2026-04-22T10:00:00",
-  "dueDateTime": "2026-04-25T15:00:00",
-  "taskDescription": "Scheduler intake new customer and vehicle"
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
 }
 
-?? status == 201
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
 
 ###
 
-### [Negative][Appointments] Scheduler intake rejects duplicate license plate for new vehicle (409 expected)
-# Reuses the plate from the previous successful new-vehicle intake case.
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+# CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
+
+### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{existingApptCreate.id}}
 Origin: {{WebUI_Origin}}
-Content-Type: application/json
+X-CSRF-Token: {{CsrfToken}}
 
-{
-  "customerEmail": "scheduler.intake.duplicate.{{RunId}}@example.test",
-  "customerFirstName": "Scheduler",
-  "customerMiddleName": null,
-  "customerLastName": "Duplicate",
-  "customerPhoneNumber": "+36309998877",
-  "vehicle": {
-    "licensePlate": "{{NewSchedulerPlate}}",
-    "vin": "{{DuplicatePlateVin}}",
-    "brand": "Skoda",
-    "model": "Fabia",
-    "year": 2021,
-    "mileageKm": 60500,
-    "enginePowerKw": 81,
-    "drivetrainType": "Hybrid"
-  },
-  "scheduledDate": "2026-04-22T12:00:00",
-  "dueDateTime": "2026-04-25T18:00:00",
-  "taskDescription": "Scheduler intake duplicate plate conflict"
-}
-
-?? status == 409
-
-###
-
-### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow (201 expected)
-# Mechanic email is resolved to linked customer identity (mechanic-owner-{id}@customers.arsm.local) internally.
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "customerEmail": "{{NonAdminEmail}}",
-  "vehicle": {
-    "licensePlate": "{{MechanicEmailFlowPlate}}",
-    "vin": "{{MechanicEmailFlowVin}}",
-    "brand": "Seat",
-    "model": "Leon",
-    "year": 2019,
-    "mileageKm": 151000,
-    "enginePowerKw": 96,
-    "drivetrainType": "PHEV"
-  },
-  "scheduledDate": "2026-04-23T11:00:00",
-  "dueDateTime": "2026-04-24T13:00:00",
-  "taskDescription": "Scheduler intake mechanic email linked flow"
-}
-
-?? status == 201
-
+?? status == 204

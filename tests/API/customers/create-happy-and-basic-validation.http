@@ -18,6 +18,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Customers] Login as admin for create tests (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -27,6 +28,10 @@ Content-Type: application/json
   "password": "{{AdminPassword}}"
 }
 
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
+
 ?? status == 200
 
 ###
@@ -35,6 +40,7 @@ Content-Type: application/json
 # @name createdCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -53,6 +59,7 @@ Content-Type: application/json
 # @name createdMinimalCustomer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -70,6 +77,7 @@ Content-Type: application/json
 ### [Negative][Customers] Create customer with missing required fields (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -88,6 +96,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -106,6 +115,7 @@ Content-Type: application/json
 # "First name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -124,6 +134,7 @@ Content-Type: application/json
 # "Last name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -142,6 +153,7 @@ Content-Type: application/json
 # "Middle name may only contain letters and hyphens."
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -159,6 +171,7 @@ Content-Type: application/json
 ### [Negative][Customers] Create customer with invalid email format (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -176,6 +189,7 @@ Content-Type: application/json
 ### [Negative][Customers] Create customer with invalid European phone format (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -193,6 +207,7 @@ Content-Type: application/json
 ### [Cleanup][Customers] Delete the customer created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
@@ -201,5 +216,6 @@ Origin: {{WebUI_Origin}}
 ### [Cleanup][Customers] Delete the minimal customer created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdMinimalCustomer.id}}
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

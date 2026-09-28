@@ -30,6 +30,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Negative][Reporting] Company results require authentication (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}
 
 ?? status == 401
@@ -37,6 +38,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear
 ###
 
 ### [Setup][Reporting] Login as non-admin mechanic (200 expected)
+# @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -45,6 +47,10 @@ Content-Type: application/json
   "email": "{{NonAdminEmail}}",
   "password": "{{NonAdminPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -102,5 +108,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{OutOfRange
 ### [Setup][Reporting] Logout after the authenticated checks (204 expected, the login above guarantees a live session)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

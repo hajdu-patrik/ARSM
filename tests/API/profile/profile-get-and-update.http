@@ -24,6 +24,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -32,6 +33,10 @@ Content-Type: application/json
   "email": "{{ProfileMechanicEmail}}",
   "password": "{{ProfileCurrentPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -47,6 +52,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile
 ### [Positive][Profile] Update own profile (middle name only) (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -62,6 +68,7 @@ Content-Type: application/json
 ### [Positive][Profile] Update first and last name (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -76,6 +83,7 @@ Content-Type: application/json
 ### [Positive][Profile] Update all name fields together (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -91,6 +99,7 @@ Content-Type: application/json
 ### [Positive][Profile] Update phone with local format (default region normalization) (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
@@ -106,5 +115,6 @@ Content-Type: application/json
 ### [Setup][Profile] Logout after happy-path profile checks
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204

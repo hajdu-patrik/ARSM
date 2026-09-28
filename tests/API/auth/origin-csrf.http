@@ -17,6 +17,7 @@ Origin: {{WebUI_Origin}}
 ###
 
 ### [Setup][Origin] Login establishes auth cookies (200 expected)
+# @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
@@ -25,6 +26,10 @@ Content-Type: application/json
   "email": "{{OriginProofEmail}}",
   "password": "{{OriginProofPassword}}"
 }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
@@ -38,14 +43,24 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 ###
 
 ### [Positive][Origin] Unsafe authenticated refresh accepts configured WebUI Origin (204 expected)
+# @name Refresh
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+}}
 
 ?? status == 204
 
 ###
 
+# Refresh rotates the CSRF cookie too, so the logout cleanup below needs the new value.
+
 ### [Negative][Origin] Unsafe authenticated refresh rejects hostile Origin (403 expected)
+# The Origin check runs before the CSRF check, so a hostile Origin still fails here regardless of
+# X-CSRF-Token - no header needed to prove that.
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: https://evil.example.test
 
@@ -54,6 +69,7 @@ Origin: https://evil.example.test
 ###
 
 ### [Negative][Origin] Unsafe authenticated logout rejects missing Origin (403 expected)
+# Same reasoning: a missing Origin fails before the CSRF check ever runs.
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 
 ?? status == 403
@@ -63,5 +79,6 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 ### [Setup][Origin] Logout with the correct Origin (204 expected, cleanup)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
