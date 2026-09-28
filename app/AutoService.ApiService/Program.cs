@@ -328,7 +328,7 @@ if (!app.Environment.IsDevelopment())
 await app.EnsureSeededAsync();
 
 /** Middleware order below is a security contract (exception handling wraps everything; origin/CSRF
-    checks precede auth); full order and rationale: docs/PROJECT-OVERVIEW.md. */
+    checks precede auth); see app/AutoService.ApiService/CLAUDE.md. */
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -349,6 +349,9 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+// Forwarded headers first: behind a proxy HSTS and HTTPS redirection must see the original https scheme.
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -359,7 +362,6 @@ else
     app.UseHsts();
 }
 
-app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseMiddleware<SecurityHeadersMiddleware>();
