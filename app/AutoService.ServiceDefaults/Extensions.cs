@@ -101,7 +101,7 @@ public static class Extensions
     }
 
     /** Maps /alive (self-check only) in every environment and /health (all checks) in Development
-        only, to avoid disclosing dependency details; see docs/deployment-security-checklist.md. */
+        only, to avoid disclosing dependency details. */
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
         // Only health checks tagged with the "live" tag must pass for app to be considered alive

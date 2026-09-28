@@ -301,7 +301,7 @@ if (ProfilePictureStorageMigrator.IsRequested(args))
 }
 
 /** Outside Development, AllowedHosts must be explicit (no wildcard/localhost) or startup fails fast
-    to block host-header injection attacks; see docs/deployment-security-checklist.md. */
+    to block host-header injection attacks. */
 if (!app.Environment.IsDevelopment())
 {
     var allowedHosts = app.Configuration["AllowedHosts"];

@@ -203,7 +203,6 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
 - The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
 - The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files are cached for 30 days with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and manifest/sitemap/robots-style files use a shorter one-day cache.
-- See [`docs/deployment-security-checklist.md`](docs/deployment-security-checklist.md) for the exact copy-ready header values, required configuration keys, and post-deployment verification commands.
 
 ## Contributor Notes (AI Workflow)
 

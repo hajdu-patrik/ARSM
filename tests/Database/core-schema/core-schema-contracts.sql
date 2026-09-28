@@ -17,7 +17,7 @@ WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
 
 -- 14. PLACEHOLDER MARKER CHECK — people.Email/PhoneNumber must not carry template markers
---     (see docs/deployment-security-checklist.md); expected 0 rows.
+--     expected 0 rows.
 SELECT "Id", "Email", "PhoneNumber"
 FROM people
 WHERE "Email"       ILIKE '%CHANGE_ME%'

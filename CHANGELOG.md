@@ -9,6 +9,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Deployment security checklist kept local (2026-09-28).
+  - Docs: the checklist moved to the gitignored deployment kit with the other deployment docs; the
+    READMEs keep their Deployment Security Notes, and code comments no longer point to the file.
+
+_Dev time: ~15m wall-clock. cost: not measured._
+
 - Azure Blob Storage provider for profile pictures (2026-09-28).
   - API: `ObjectStorage:Provider` selects `S3` (default when unset, so existing configs keep working;
     local RustFS, Cloudflare R2, AWS S3) or `AzureBlob` (`Azure.Storage.Blobs` 12.29.2; connection
@@ -190,9 +196,9 @@ lower bound, not a bill)._
     and-password.http` now restores the original password, so the suite is idempotent.
   - Runner: `run-local-test-suite.py` lists every failed HTTPYAC request (file, line, title, actual
     status) in the sanitized summary; before this, failures were counted but never identified.
-  - Docs: `docs/deployment-security-checklist.md` (static-host headers incl. `frame-ancestors`, cache
-    policy, forwarded-header/proxy trust, rate-limiter topology, required config keys), linked from
-    both READMEs.
+  - Docs: a deployment security checklist (static-host headers incl. `frame-ancestors`, cache
+    policy, forwarded-header/proxy trust, rate-limiter topology, required config keys); kept local
+    with the deployment kit since 2026-09-28.
   - WebUI: logo `width`/`height`, `fetchPriority` and an `index.html` preload (Lighthouse LCP
     discovery), the white logo re-encoded 90 kB -> 25 kB lossless, the language toggle's accessible
     name now starts with its visible text (WCAG 2.5.3), and the LoadingPage keyframes moved to a
