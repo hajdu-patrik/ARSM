@@ -196,6 +196,25 @@ jobs:
       if: failure()
       run: tail -n 120 "$RUNNER_TEMP/api.log"
 
+    # Annotations are readable on the run page without opening the log; the summary is already sanitized.
+    - name: Annotate failed test requests
+      if: failure()
+      shell: python
+      run: |
+        import json, pathlib
+        path = pathlib.Path("tests/.artifacts/test-suite-summary.json")
+        results = json.loads(path.read_text(encoding="utf-8"))["results"] if path.exists() else []
+        for suite in results:
+            details = suite.get("details", {})
+            counts = {k: v for k, v in details.items() if isinstance(v, (int, bool))}
+            print(f"::warning title={suite['name']} {suite['status']}::{counts}")
+            for failure in details.get("failedHttpRequests", [])[:8]:
+                where = str(failure.get("file", "")).split("tests")[-1]
+                print(f"::error title={failure.get('actualStatus')} {where}:{failure.get('line')}::{failure.get('title')} {failure.get('failedTests')}")
+            tail = [line for line in suite.get("output_tail", []) if "error" in line.lower()][-3:]
+            for line in tail:
+                print(f"::warning title={suite['name']} output::{line[:300]}")
+
     - name: Upload sanitized test summary
       if: always()
       uses: actions/upload-artifact@v7
