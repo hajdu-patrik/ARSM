@@ -10,9 +10,6 @@ internal sealed class S3ProfilePictureStorage(
     ObjectStorageSettings settings,
     ILogger<S3ProfilePictureStorage> logger) : IProfilePictureStorage
 {
-    private const string ObjectKeyPrefix = "profile-pictures";
-    private const string ObjectKeyExtension = ".webp";
-
     /** Uploads the processed picture under a new key and returns that key for persistence. */
     public async Task<string> SaveAsync(
         int personId,
@@ -20,7 +17,7 @@ internal sealed class S3ProfilePictureStorage(
         string contentType,
         CancellationToken cancellationToken)
     {
-        var objectKey = BuildObjectKey(personId);
+        var objectKey = ProfilePictureObjectKeys.Create(personId);
 
         using var contentStream = new MemoryStream(content, writable: false);
 
@@ -98,10 +95,6 @@ internal sealed class S3ProfilePictureStorage(
             return null;
         }
     }
-
-    /** Builds a collision-free object key scoped to the owning person. */
-    private static string BuildObjectKey(int personId)
-        => $"{ObjectKeyPrefix}/{personId}/{Guid.NewGuid():N}{ObjectKeyExtension}";
 
     /** Detects the S3 error shapes that mean the requested object does not exist. */
     private static bool IsMissingObject(AmazonS3Exception exception)

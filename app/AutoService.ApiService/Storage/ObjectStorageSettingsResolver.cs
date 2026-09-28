@@ -8,6 +8,30 @@ public static class ObjectStorageSettingsResolver
 {
     private const string ConfigurationSection = "ObjectStorage";
 
+    /** Reads 'ObjectStorage:Provider': S3 (default when unset, so existing configs keep working) or AzureBlob. */
+    public static ObjectStorageProvider ResolveProvider(IConfiguration configuration)
+    {
+        var value = ResolveRawValue(configuration, "Provider");
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return ObjectStorageProvider.S3;
+        }
+
+        return Enum.TryParse<ObjectStorageProvider>(value, ignoreCase: true, out var provider)
+            ? provider
+            : throw new InvalidOperationException($"Object storage setting '{ConfigurationSection}:Provider' must be 'S3' or 'AzureBlob'.");
+    }
+
+    /** Resolves the Azure Blob settings (the container name reuses 'BucketName'), failing fast like the S3 set. */
+    public static AzureBlobStorageSettings ResolveAzureBlob(IConfiguration configuration)
+    {
+        return new AzureBlobStorageSettings(
+            ConnectionString: ResolveRequiredValue(configuration, "ConnectionString"),
+            ContainerName: ResolveRequiredValue(configuration, "BucketName"),
+            AutoCreateContainer: ResolveRequiredFlag(configuration, "AutoCreateBucket"));
+    }
+
     /** Resolves the complete object-storage settings set and fails fast on invalid configuration. */
     public static ObjectStorageSettings Resolve(IConfiguration configuration)
     {

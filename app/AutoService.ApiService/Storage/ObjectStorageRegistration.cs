@@ -1,23 +1,44 @@
 using Amazon.Runtime;
 using Amazon.S3;
+using Azure.Storage.Blobs;
 
 namespace AutoService.ApiService.Storage;
 
-/** DI wiring for S3-compatible profile-picture storage; settings are resolved eagerly here so a
+/** DI wiring for profile-picture storage (S3-compatible or Azure Blob); settings are resolved eagerly so a
     misconfigured environment fails at startup, matching the JWT secret and connection string handling. */
 public static class ObjectStorageRegistration
 {
-    /** Registers object-storage settings, the S3 client, the storage abstraction, and the bucket check. */
+    /** Registers the configured provider's settings, client, storage abstraction and startup check. */
     public static IServiceCollection AddProfilePictureObjectStorage(
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        if (ObjectStorageSettingsResolver.ResolveProvider(configuration) == ObjectStorageProvider.AzureBlob)
+        {
+            return services.AddAzureBlobProfilePictureStorage(configuration);
+        }
+
         var settings = ObjectStorageSettingsResolver.Resolve(configuration);
 
         services.AddSingleton(settings);
         services.AddSingleton<IAmazonS3>(_ => CreateS3Client(settings));
         services.AddSingleton<IProfilePictureStorage, S3ProfilePictureStorage>();
         services.AddHostedService<ObjectStorageBucketInitializer>();
+
+        return services;
+    }
+
+    /** Registers the Azure Blob container client, storage implementation and container check. */
+    private static IServiceCollection AddAzureBlobProfilePictureStorage(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var settings = ObjectStorageSettingsResolver.ResolveAzureBlob(configuration);
+
+        services.AddSingleton(settings);
+        services.AddSingleton(_ => new BlobContainerClient(settings.ConnectionString, settings.ContainerName));
+        services.AddSingleton<IProfilePictureStorage, AzureBlobProfilePictureStorage>();
+        services.AddHostedService<AzureBlobContainerInitializer>();
 
         return services;
     }

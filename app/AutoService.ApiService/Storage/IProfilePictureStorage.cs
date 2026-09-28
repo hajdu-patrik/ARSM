@@ -1,6 +1,6 @@
 namespace AutoService.ApiService.Storage;
 
-/** Abstraction over the object store that holds processed profile pictures. Implementations must never leak provider-specific types so MinIO, Cloudflare R2, and AWS S3 stay interchangeable behind the same contract. */
+/** Abstraction over the object store that holds processed profile pictures. Implementations must never leak provider-specific types so S3-compatible stores (RustFS, Cloudflare R2, AWS S3) and Azure Blob Storage stay interchangeable behind the same contract. */
 public interface IProfilePictureStorage
 {
     /** Uploads processed picture bytes under a freshly generated object key. */
