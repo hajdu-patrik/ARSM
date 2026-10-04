@@ -34,9 +34,10 @@ const strictExecutionOrder = true
 /** Matches inline `<script>` elements (no `src` attribute) in built HTML markup. */
 const INLINE_SCRIPT_PATTERN = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi
 
-/** Computes the CSP `sha256-<base64>` source expression for an inline script body. */
+/** Computes the CSP `sha256-<base64>` source expression for an inline script body; line endings are
+ * normalized to LF first, as the browser does, so a CRLF checkout (Windows) still matches. */
 function toScriptHashSource(scriptContent: string): string {
-  const digest = createHash('sha256').update(scriptContent, 'utf8').digest('base64')
+  const digest = createHash('sha256').update(scriptContent.replace(/\r\n?/g, '\n'), 'utf8').digest('base64')
   return `'sha256-${digest}'`
 }
 
