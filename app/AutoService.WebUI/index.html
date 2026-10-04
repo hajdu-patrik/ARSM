@@ -37,7 +37,7 @@
   <body>
     <!-- Static pre-React copy of the /login splash first frame (mobile LCP); kept in
       step with LoadingPage.tsx / src/utils/loginShell.ts. See app/AutoService.WebUI/CLAUDE.md. -->
-    <div id="login-shell" aria-hidden="true" class="hidden">
+    <div id="login-shell" aria-hidden="true" class="hidden" hidden>
       <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
         <div class="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"></div>
         <div class="arsm-auth-sheen pointer-events-none absolute inset-0 z-0"></div>
@@ -70,7 +70,9 @@
           return;
         }
         const shell = document.getElementById('login-shell');
-        if (!shell) {
+        // The native hidden attribute keeps it out until the stylesheet applies: in dev the CSS
+        // arrives with the JS, and unstyled it painted its logos full size on every route.
+        if (!shell || !getComputedStyle(document.documentElement).getPropertyValue('--color-arsm-surface')) {
           return;
         }
         try {
@@ -82,6 +84,7 @@
         } catch {
           // Storage unavailable: keep the light default, exactly like the theme store.
         }
+        shell.hidden = false;
         shell.classList.remove('hidden');
       })();
     </script>
