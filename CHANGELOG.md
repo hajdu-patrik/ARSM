@@ -9,6 +9,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Aspire 13.6.0 for the AppHost (2026-10-04): `Aspire.AppHost.Sdk`, `Aspire.Hosting.JavaScript` and
+  `Aspire.Hosting.PostgreSQL` 13.5.3 -> 13.6.0, with all four lock files regenerated (win-x64 default
+  plus the linux-x64, osx-arm64 and osx-x64 ones the CI runners restore in locked mode).
+
+_Dev time: ~5m wall-clock. cost: not measured._
+
 - WebUI readability down to 320 px, consistent list UX and SEO fixes (2026-10-04).
   - Audit first (Impeccable skill): 14 scenes at 320/390/768/1440 px, light/dark, HU/EN, with
     mocked worst-case data; truncated text dropped from 239 findings to 23, all of them desktop table
@@ -321,6 +327,15 @@ writes/reads, so a lower bound, not a bill)._
 _Dev time: ~1h26m wall-clock. Cost: not measured (direct session work, no workflow run)._
 
 ### Fixed
+- WebUI: a full load of any route (most visible on the 404 and 500 pages, which show no splash)
+  flashed the logo twice, full size, before the page (2026-10-04). index.html's static `/login`
+  shell was hidden only by the Tailwind `hidden` class, and in dev the CSS arrives with the JS;
+  it now carries the native `hidden` attribute and is revealed only once the stylesheet applies.
+  Verified frame by frame in dev and in a production build (shell still revealed on `/login`, no
+  CSP violation); E2E 72/72.
+
+_Dev time: ~12m wall-clock. cost: not measured._
+
 - Settings: deleting the profile with a wrong current password (401/403) showed the raw i18n key
   `settings.currentPasswordIncorrect`, which never existed, in the error toast. It now shows the
   existing "Current password is invalid." / "A jelenlegi jelszó hibás." message
