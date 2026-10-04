@@ -7,11 +7,13 @@ import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { QuoteLineDto } from '../../../types/quotes/quotes.types';
 import { formatHuf, formatHufUnitPrice } from '../../../utils/currency';
 import {
+  compactItemTitleClampTextClass,
   compactItemTitleTextClass,
   compactRowActionsClusterClass,
   compactRowHeaderClass,
   compactTwoColumnGridClass,
   metadataPillClass,
+  metadataPillWrapClass,
   numericMutedValueTextClass,
   numericValueTextClass,
   rowIconActionDangerClass,
@@ -42,6 +44,11 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
 }: QuoteLineRowProps) {
   const { quantityKey, unitPriceKey } = resolveLineLabelKeys(line.lineKind);
   const kindLabel = line.lineKind === 'Labor' ? t('quotes.line.kindLabor') : t('quotes.line.kindPart');
+  const quantityText = formatQuantity(line.quantity, locale);
+  const unitPriceText = formatHufUnitPrice(line.netUnitPrice, locale);
+  const vatText = `${line.vatRatePercent}%`;
+  const netText = formatHuf(line.netAmount, locale);
+  const grossText = formatHuf(line.grossAmount, locale);
 
   const actions = (
     <div className={compactRowActionsClusterClass}>
@@ -77,14 +84,14 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
       desktop={(
         <>
           <div className="min-w-0">
-            <p className={compactItemTitleTextClass}>{line.description}</p>
-            <p className={`mt-1 ${metadataPillClass}`}>{kindLabel}</p>
+            <p className={compactItemTitleTextClass} title={line.description}>{line.description}</p>
+            <p className={`mt-1 ${metadataPillClass}`} title={kindLabel}>{kindLabel}</p>
           </div>
-          <p className={numericMutedValueTextClass}>{formatQuantity(line.quantity, locale)}</p>
-          <p className={numericMutedValueTextClass}>{formatHufUnitPrice(line.netUnitPrice, locale)}</p>
-          <p className={numericMutedValueTextClass}>{line.vatRatePercent}%</p>
-          <p className={numericValueTextClass}>{formatHuf(line.netAmount, locale)}</p>
-          <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(line.grossAmount, locale)}</p>
+          <p className={numericMutedValueTextClass} title={quantityText}>{quantityText}</p>
+          <p className={numericMutedValueTextClass} title={unitPriceText}>{unitPriceText}</p>
+          <p className={numericMutedValueTextClass} title={vatText}>{vatText}</p>
+          <p className={numericValueTextClass} title={netText}>{netText}</p>
+          <p className={`${numericValueTextClass} font-semibold`} title={grossText}>{grossText}</p>
           {canEdit && actions}
         </>
       )}
@@ -92,18 +99,18 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
         <>
           <div className={compactRowHeaderClass}>
             <div className="min-w-0">
-              <p className={compactItemTitleTextClass}>{line.description}</p>
-              <p className={`mt-1 ${metadataPillClass}`}>{kindLabel}</p>
+              <p className={compactItemTitleClampTextClass}>{line.description}</p>
+              <p className={`mt-1 ${metadataPillWrapClass}`}>{kindLabel}</p>
             </div>
             {canEdit && actions}
           </div>
 
           <div className={compactTwoColumnGridClass}>
-            <LabeledValueTile label={t(quantityKey)} value={formatQuantity(line.quantity, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t(unitPriceKey)} value={formatHufUnitPrice(line.netUnitPrice, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.vatRate')} value={`${line.vatRatePercent}%`} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.net')} value={formatHuf(line.netAmount, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.gross')} value={formatHuf(line.grossAmount, locale)} valueClassName="text-right font-semibold tabular-nums" />
+            <LabeledValueTile label={t(quantityKey)} value={quantityText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t(unitPriceKey)} value={unitPriceText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('common.fields.vatRate')} value={vatText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('common.fields.net')} value={netText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('common.fields.gross')} value={grossText} valueClassName="text-right font-semibold tabular-nums" />
           </div>
         </>
       )}

@@ -7,11 +7,13 @@ import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
 import {
+  compactItemTitleClampTextClass,
   compactItemTitleTextClass,
   compactRowActionsClusterClass,
   compactRowHeaderClass,
-  compactTwoColumnGridClass,
+  compactTwoColumnFixedGridClass,
   monoIdentifierTextClass,
+  monoIdentifierWrapTextClass,
   mutedBodyTextClass,
   numericValueTextClass,
   rowIconActionAccentClass,
@@ -39,6 +41,9 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
   const openLabel = t('quotes.openQuote', { quoteNumber: quote.quoteNumber });
   const downloadLabel = t('quotes.downloadPdfFor', { quoteNumber: quote.quoteNumber });
   const deleteLabel = t('quotes.deleteQuote');
+  const validUntilText = formatQuoteDate(quote.validUntil, locale);
+  const totalNetText = formatHuf(quote.totalNet, locale);
+  const totalGrossText = formatHuf(quote.totalGross, locale);
 
   const actions = (
     <div className={compactRowActionsClusterClass}>
@@ -84,14 +89,14 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       desktop={(
         <>
           <div className="min-w-0">
-            <p className={compactItemTitleTextClass}>{quote.title}</p>
-            <p className={monoIdentifierTextClass}>{quote.quoteNumber}</p>
+            <p className={compactItemTitleTextClass} title={quote.title}>{quote.title}</p>
+            <p className={monoIdentifierTextClass} title={quote.quoteNumber}>{quote.quoteNumber}</p>
           </div>
-          <p className={monoIdentifierTextClass}>{quote.vehicle.licensePlate}</p>
+          <p className={monoIdentifierTextClass} title={quote.vehicle.licensePlate}>{quote.vehicle.licensePlate}</p>
           <QuoteStatusBadge status={displayStatus} className="justify-self-start" />
-          <p className={quoteDateTextClass}>{formatQuoteDate(quote.validUntil, locale)}</p>
-          <p className={numericValueTextClass}>{formatHuf(quote.totalNet, locale)}</p>
-          <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(quote.totalGross, locale)}</p>
+          <p className={quoteDateTextClass} title={validUntilText}>{validUntilText}</p>
+          <p className={numericValueTextClass} title={totalNetText}>{totalNetText}</p>
+          <p className={`${numericValueTextClass} font-semibold`} title={totalGrossText}>{totalGrossText}</p>
           {actions}
         </>
       )}
@@ -99,19 +104,19 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
         <>
           <div className={compactRowHeaderClass}>
             <div className="min-w-0">
-              <p className={compactItemTitleTextClass}>{quote.title}</p>
-              <p className={monoIdentifierTextClass}>{quote.quoteNumber}</p>
+              <p className={compactItemTitleClampTextClass}>{quote.title}</p>
+              <p className={monoIdentifierWrapTextClass}>{quote.quoteNumber}</p>
             </div>
             {actions}
           </div>
 
           <QuoteStatusBadge status={displayStatus} />
 
-          <div className={compactTwoColumnGridClass}>
+          <div className={compactTwoColumnFixedGridClass}>
             <LabeledValueTile label={t('common.fields.vehicle')} value={quote.vehicle.licensePlate} valueClassName="font-mono" />
-            <LabeledValueTile label={t('quotes.validUntil')} value={formatQuoteDate(quote.validUntil, locale)} valueClassName="tabular-nums" />
-            <LabeledValueTile label={t('quotes.columns.totalNet')} value={formatHuf(quote.totalNet, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('quotes.columns.totalGross')} value={formatHuf(quote.totalGross, locale)} valueClassName="text-right font-semibold tabular-nums" />
+            <LabeledValueTile label={t('quotes.validUntil')} value={validUntilText} valueClassName="tabular-nums" />
+            <LabeledValueTile label={t('quotes.columns.totalNet')} value={totalNetText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={t('quotes.columns.totalGross')} value={totalGrossText} valueClassName="text-right font-semibold tabular-nums" />
           </div>
         </>
       )}

@@ -75,7 +75,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   onAdminUnassign,
 }: AppointmentDetailBodyProps) {
   return (
-    <div className="flex min-w-0 max-h-[62vh] flex-col gap-4 overflow-x-hidden overflow-y-auto pb-0.5 pr-1">
+    <div className="flex min-h-0 min-w-0 max-h-[62vh] flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto pb-0.5 pr-1">
       <HeaderSection appointmentStatus={appointment.status} formattedDate={formattedDate} />
       <DueSection
         dueState={dueState}
@@ -131,7 +131,7 @@ const HeaderSection = memo(function HeaderSection({
     <div className={schedulerDetailRowClass}>
       <div className={compactStackedRowClass}>
         <StatusBadge status={appointmentStatus} />
-        <span className={`truncate ${mutedSecondaryTextClass}`}>{formattedDate}</span>
+        <span className={`min-w-0 [overflow-wrap:anywhere] ${mutedSecondaryTextClass}`}>{formattedDate}</span>
       </div>
     </div>
   );
@@ -210,42 +210,42 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
         <VehicleValueRow
           label={t('common.fields.licensePlate')}
           displayValue={vehicle.licensePlate}
-          displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
+          displayClassName={`font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('common.fields.vin')}
           displayValue={vehicle.vin}
-          displayClassName={`truncate font-mono ${compactPrimaryValueTextClass}`}
+          displayClassName={`font-mono ${compactPrimaryValueTextClass}`}
         />
         <VehicleValueRow
           label={t('common.fields.brand')}
           displayValue={vehicle.brand}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.model')}
           displayValue={vehicle.model}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.vehicleYear')}
           displayValue={String(vehicle.year)}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.mileageKm')}
           displayValue={`${vehicle.mileageKm.toLocaleString()} km`}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.enginePowerKw')}
           displayValue={`${vehicle.enginePowerKw} kW`}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.drivetrain')}
           displayValue={t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
-          displayClassName={`truncate ${compactPrimaryValueTextClass}`}
+          displayClassName={compactPrimaryValueTextClass}
         />
       </div>
     </div>
@@ -258,16 +258,17 @@ interface VehicleValueRowProps {
   readonly displayClassName: string;
 }
 
+/** Label/value row whose value wraps under the label when it does not fit beside it, so no value is ever ellipsized. */
 const VehicleValueRow = memo(function VehicleValueRow({
   label,
   displayValue,
   displayClassName,
 }: VehicleValueRowProps) {
-  const valueClassName = ['min-w-0', displayClassName].join(' ');
+  const valueClassName = ['min-w-0 [overflow-wrap:anywhere]', displayClassName].join(' ');
 
   return (
-    <div className={`${schedulerDetailRowClass} flex min-w-0 items-center justify-between gap-3`}>
-      <span className={`shrink-0 ${mutedMetaTextClass}`}>{label}</span>
+    <div className={`${schedulerDetailRowClass} flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5`}>
+      <span className={`min-w-0 ${mutedMetaTextClass}`}>{label}</span>
       <span className={valueClassName}>{displayValue}</span>
     </div>
   );

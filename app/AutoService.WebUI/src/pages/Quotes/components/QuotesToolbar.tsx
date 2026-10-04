@@ -10,8 +10,8 @@ import {
   inputGroupIconClass,
   searchClearButtonClass,
   searchInputClass,
-  selectWrapperClass,
   toolbarRowLayoutClass,
+  toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
 import { QUOTE_STATUS_FILTERS, type QuoteStatusFilter } from '../helpers';
 
@@ -45,7 +45,7 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
   return (
     <section className={cardClass}>
       <div className={toolbarRowLayoutClass}>
-        <div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
+        <div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
           <Search className={inputGroupIconClass} />
           <input
             data-testid="quotes-search-input"
@@ -69,7 +69,7 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
           )}
         </div>
 
-        <div className={`${selectWrapperClass} w-full sm:w-56`}>
+        <div className="min-w-0 max-w-full w-full sm:w-56 sm:shrink-0">
           <select
             data-testid="quotes-status-filter"
             value={statusFilter}

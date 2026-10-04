@@ -7,6 +7,9 @@ import {
   mutedMetaTextClass,
 } from '../../utils/formStyles';
 
+/** Values wrap instead of truncating, so a money amount, number, plate or date is never ellipsized. */
+const valueWrapClass = '[overflow-wrap:anywhere]';
+
 interface LabeledValueTileProps {
   readonly label: string;
   readonly value: ReactNode;
@@ -21,8 +24,8 @@ const LabeledValueTileComponent = memo(function LabeledValueTile({
   testId,
 }: LabeledValueTileProps) {
   const valueClasses = valueClassName
-    ? `truncate ${valueClassName} ${compactPrimaryValueTextClass}`
-    : `truncate ${compactPrimaryValueTextClass}`;
+    ? `${valueWrapClass} ${valueClassName} ${compactPrimaryValueTextClass}`
+    : `${valueWrapClass} ${compactPrimaryValueTextClass}`;
 
   return (
     <div className={compactDataSurfaceClass}>

@@ -17,8 +17,8 @@ import {
   insetSurfaceClass,
   labelClass,
   mutedMetaTextClass,
-  referenceChipNeutralButtonClass,
-  referenceChipPrimaryButtonClass,
+  referenceChipNeutralWrapButtonClass,
+  referenceChipPrimaryWrapButtonClass,
   segmentedControlClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
@@ -169,7 +169,7 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
 
         <div className={compactDataSurfaceClass}>
           <p className={mutedMetaTextClass}>{t('quotes.line.previewLabel')}</p>
-          <p data-testid="quote-line-preview" className={`truncate tabular-nums ${compactPrimaryValueTextClass}`}>
+          <p data-testid="quote-line-preview" className={`[overflow-wrap:anywhere] tabular-nums ${compactPrimaryValueTextClass}`}>
             {t('quotes.line.previewValue', {
               net: formatHuf(preview.netAmount, locale),
               gross: formatHuf(preview.grossAmount, locale),
@@ -179,9 +179,9 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-        <button type="button" onClick={onCancel} disabled={isSaving} className={referenceChipNeutralButtonClass}>
+        <button type="button" onClick={onCancel} disabled={isSaving} className={referenceChipNeutralWrapButtonClass}>
           <X className={defaultIconClass} />
-          <span className="truncate">{t('common.actions.cancel')}</span>
+          <span className="min-w-0 text-center">{t('common.actions.cancel')}</span>
         </button>
         <button
           data-testid="quote-line-save-button"
@@ -189,10 +189,10 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           onClick={onSubmit}
           disabled={isSaving}
           aria-busy={isSaving}
-          className={referenceChipPrimaryButtonClass}
+          className={referenceChipPrimaryWrapButtonClass}
         >
           <Check className={defaultIconClass} />
-          <span className="truncate">{isSaving ? t('common.actions.saving') : t('quotes.line.save')}</span>
+          <span className="min-w-0 text-center">{isSaving ? t('common.actions.saving') : t('quotes.line.save')}</span>
         </button>
       </div>
     </div>

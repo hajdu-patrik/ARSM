@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
@@ -21,6 +21,47 @@ interface SidebarLayoutProps {
 }
 
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
+/** Tablet range (md up to below lg, the Tailwind breakpoint thresholds), where the default is the icon rail. */
+const TABLET_VIEWPORT_QUERY = '(width >= 48rem) and (width < 64rem)';
+
+/** Reads the saved collapse choice; null until the user toggled once, so the viewport default applies. */
+function readSavedCollapsedPreference(): boolean | null {
+  const saved = localStorage.getItem(COLLAPSED_KEY);
+
+  if (saved === 'true' || saved === 'false') {
+    return saved === 'true';
+  }
+
+  return null;
+}
+
+/** Subscribes to the tablet range media query for `useSyncExternalStore`. */
+function subscribeToTabletViewport(onChange: () => void): () => void {
+  const query = globalThis.matchMedia(TABLET_VIEWPORT_QUERY);
+  query.addEventListener('change', onChange);
+
+  return () => query.removeEventListener('change', onChange);
+}
+
+/** Current snapshot of the tablet range media query. */
+function isTabletViewport(): boolean {
+  return globalThis.matchMedia(TABLET_VIEWPORT_QUERY).matches;
+}
+
+/** Collapsed state: a saved preference wins, otherwise the tablet range defaults to the icon rail. */
+function useSidebarCollapsed() {
+  const [savedPreference, setSavedPreference] = useState(readSavedCollapsedPreference);
+  const tabletDefault = useSyncExternalStore(subscribeToTabletViewport, isTabletViewport);
+  const collapsed = savedPreference ?? tabletDefault;
+
+  const toggleCollapse = useCallback(() => {
+    const next = !collapsed;
+    localStorage.setItem(COLLAPSED_KEY, String(next));
+    setSavedPreference(next);
+  }, [collapsed]);
+
+  return { collapsed, toggleCollapse };
+}
 
 const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems }: SidebarLayoutProps) {
   const { t: translate } = useTranslation();
@@ -28,7 +69,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
   const user = useAuthStore((state) => state.user);
   const theme = useThemeStore((state) => state.theme);
 
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true');
+  const { collapsed, toggleCollapse } = useSidebarCollapsed();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profilePersonId, setProfilePersonId] = useState<number | null>(user?.personId ?? null);
   const [profileFirstName, setProfileFirstName] = useState<string | null>(null);
@@ -37,10 +78,6 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
   const [hasProfilePicture, setHasProfilePicture] = useState(false);
   const [avatarCacheBuster, setAvatarCacheBuster] = useState(0);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem(COLLAPSED_KEY, String(collapsed));
-  }, [collapsed]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -131,7 +168,6 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
     void handleLogout();
   }, [handleLogout]);
 
-  const toggleCollapse = useCallback(() => setCollapsed((prev) => !prev), []);
   const toggleMobile = useCallback(() => setMobileOpen((prev) => !prev), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
   const markAvatarLoadFailed = useCallback(() => setAvatarLoadFailed(true), []);
@@ -192,6 +228,8 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
       )}
 
       <aside
+        inert={!mobileOpen}
+        aria-hidden={mobileOpen ? undefined : true}
         className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform motion-reduce:transition-none dark:border-arsm-border-dark dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {sidebarContent}

@@ -93,14 +93,14 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
           <div className="min-w-0">
             <p className={`flex min-w-0 items-center gap-2 ${uppercaseMetaLabelTextClass}`}>
               {target.kind === 'customer' ? <UserRound className={defaultIconClass} /> : <CarFront className={defaultIconClass} />}
-              <span className="min-w-0 truncate">
+              <span className="min-w-0 [overflow-wrap:anywhere]">
                 {target.kind === 'customer' ? t('customers.customerDetailsTitle') : t('common.fields.vehicleDetails')}
               </span>
             </p>
-            <h2 className={`mt-1 truncate ${baseSectionHeadingTextClass}`}>
+            <h2 className={`mt-1 [overflow-wrap:anywhere] ${baseSectionHeadingTextClass}`}>
               {target.kind === 'customer' ? buildCustomerDisplayName(customer) : target.vehicle.licensePlate}
             </h2>
-            <p className={`truncate ${mutedMetaTextClass}`}>
+            <p className={`[overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
               {target.kind === 'customer'
                 ? customer.email
                 : `${target.vehicle.brand} ${target.vehicle.model} (${target.vehicle.year})`}
@@ -135,7 +135,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
           <div className={compactHeaderRowClass}>
             <h3 className={inlineSectionTitleClass}>
               <History className={defaultIconClass} />
-              <span className="truncate">{historySource.title}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{historySource.title}</span>
             </h3>
             <button
               type="button"
@@ -143,7 +143,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
               className={`${compactChipNeutralButtonClass} w-full sm:w-auto`}
             >
               <ArrowUpDown className={smallIconClass} />
-              <span className="truncate">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
+              <span className="min-w-0 whitespace-normal text-center">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
             </button>
           </div>
 

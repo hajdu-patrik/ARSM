@@ -332,6 +332,7 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
         title={t('scheduler.detail.title')}
         widthClassName="max-w-2xl"
         footer={footer}
+        fitViewport
       >
         <AppointmentDetailBody
           appointment={appointment}

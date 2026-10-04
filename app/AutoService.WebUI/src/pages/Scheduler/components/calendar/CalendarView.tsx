@@ -8,9 +8,9 @@ import {
   defaultIconClass,
   insetSurfaceClass,
   loadingSpinnerClass,
-  mutedDarkCardToneClass,
   toneDotClasses,
 } from '../../../../utils/formStyles';
+import { CompactOverflowBadge } from '../shared/CompactOverflowBadge';
 import { schedulerNavIconButtonClass } from '../../utils/schedulerButtonStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
@@ -34,6 +34,13 @@ interface CalendarDayCellProps {
   readonly hasAppointmentsInWeek: boolean;
   readonly selectedDay?: number | null;
   readonly onDayClick?: (day: number) => void;
+}
+
+/** Props for the status dot and overflow count of one calendar day. */
+interface DayStatusIndicatorProps {
+  readonly earliestAppointment: AppointmentDto | null;
+  readonly extraCount: number;
+  readonly overflowTone: string;
 }
 
 /** Formats a Date into local YYYY-MM-DD; avoids UTC drift from Date#toISOString. */
@@ -122,6 +129,29 @@ function trimTrailingNextMonthOnlyWeeks(weeks: CalendarDay[][]): CalendarDay[][]
   return trimmedWeeks;
 }
 
+/** Status dot of a day's earliest appointment; its "+N" badge sits under the dot below md and beside it from md up. */
+function DayStatusIndicator({ earliestAppointment, extraCount, overflowTone }: DayStatusIndicatorProps) {
+  return (
+    <div className="mt-0.5 flex min-h-5 max-w-full items-center justify-center leading-none">
+      {earliestAppointment ? (
+        <div className={`relative flex flex-col items-center ${overflowTone}`}>
+          <span className="inline-flex h-5 w-5 items-center justify-center">
+            <span
+              className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
+              title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
+            />
+          </span>
+          {extraCount > 0 && (
+            <CompactOverflowBadge count={extraCount} size="sm" className="md:absolute md:inset-y-0 md:left-full md:my-auto" />
+          )}
+        </div>
+      ) : (
+        <span className="h-2.5 w-2.5" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
 /** Renders one calendar day: day number, earliest appointment's status dot with overflow count, and a focusable button for clickable current-month days. */
 const CalendarDayCell = memo(function CalendarDayCell({
   day,
@@ -160,26 +190,11 @@ const CalendarDayCell = memo(function CalendarDayCell({
         )}
       </div>
 
-      <div className="mt-0.5 flex h-5 max-w-full items-center justify-center overflow-hidden leading-none">
-        {earliestAppointment ? (
-          <div className={`relative inline-flex h-5 w-5 items-center justify-center ${overflowTone}`}>
-            <span
-              className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
-              title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
-            />
-            {day.appointments.length > 1 && (
-              <span
-                className={`pointer-events-none absolute right-0 top-0 inline-flex h-3 min-w-3 items-center justify-center rounded-full border border-arsm-border bg-arsm-card px-0.5 text-[6px] font-semibold leading-none ${mutedDarkCardToneClass}`}
-                aria-hidden="true"
-              >
-                +{day.appointments.length - 1}
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="h-2.5 w-2.5" aria-hidden="true" />
-        )}
-      </div>
+      <DayStatusIndicator
+        earliestAppointment={earliestAppointment}
+        extraCount={day.appointments.length - 1}
+        overflowTone={overflowTone}
+      />
     </>
   );
 
@@ -271,7 +286,7 @@ const CalendarViewComponent = memo(function CalendarView({
           <ChevronLeft className={defaultIconClass} />
         </button>
 
-        <h3 className="min-w-0 truncate px-1 text-center text-lg font-semibold capitalize text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
+        <h3 className="min-w-0 break-words px-1 text-center text-lg font-semibold capitalize text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
           {monthLabel}
         </h3>
 

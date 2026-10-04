@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next';
 import { Eye, EyeOff, FilePlus, Pencil, Trash2 } from 'lucide-react';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
-	compactItemTitleTextClass,
+	compactItemTitleClampTextClass,
 	compactRowActionsClusterClass,
 	compactRowHeaderClass,
 	mutedMetaTextClass,
@@ -45,8 +45,8 @@ const VehicleItemComponent = memo(function VehicleItem({
 		<div className="min-w-0 px-3 py-3 sm:px-3.5">
 			<div className={compactRowHeaderClass}>
 				<div className="min-w-0">
-					<p className={compactItemTitleTextClass}>{vehicle.licensePlate}</p>
-					<p className={`truncate ${mutedMetaTextClass}`}>
+					<p className={compactItemTitleClampTextClass}>{vehicle.licensePlate}</p>
+					<p className={`[overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
 						{vehicle.brand} {vehicle.model} ({vehicle.year})
 					</p>
 				</div>

@@ -74,6 +74,7 @@ test.describe('Quotes - status flow', () => {
     await page.getByTestId('quote-accept-button').click();
 
     await expect(dialog.getByTestId('quote-status-badge').first()).toHaveText('Accepted');
+    await expect(page.getByTestId('quote-header-locked-notice')).toHaveText(/has been accepted, so it is closed/);
     await expect(page.getByTestId('quote-accept-button')).toHaveCount(0);
     await expect(page.getByTestId('quote-reject-button')).toHaveCount(0);
     await expect(quotesPage.closeEditorButton()).toBeVisible();
@@ -86,6 +87,7 @@ test.describe('Quotes - status flow', () => {
     await quotesPage.openQuote('ARSM-2026-0002');
 
     await page.getByTestId('quote-reject-button').click();
+    await expect(page.getByTestId('quote-header-locked-notice')).toHaveText(/has been rejected, so it is closed/);
     await quotesPage.closeEditorButton().click();
 
     await expect(quotesPage.statusBadge('ARSM-2026-0002')).toHaveText('Rejected');

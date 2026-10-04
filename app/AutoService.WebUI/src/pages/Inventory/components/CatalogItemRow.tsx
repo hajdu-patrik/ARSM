@@ -5,10 +5,11 @@ import { DataListRow } from '../../../components/common/DataList';
 import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import { formatHufUnitPrice } from '../../../utils/currency';
 import {
+  compactItemTitleClampTextClass,
   compactItemTitleTextClass,
   compactRowActionsClusterClass,
   compactRowHeaderClass,
-  compactTwoColumnGridClass,
+  compactTwoColumnFixedGridClass,
   monoIdentifierTextClass,
   numericMutedValueTextClass,
   numericValueTextClass,
@@ -50,6 +51,9 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
   onEdit,
   onDelete,
 }: CatalogItemRowProps) {
+  const netText = formatHufUnitPrice(netAmount, locale);
+  const vatText = `${vatRatePercent}%`;
+  const grossText = formatHufUnitPrice(grossAmount, locale);
   const actions = (
     <div className={compactRowActionsClusterClass}>
       <button type="button" onClick={onEdit} className={rowIconActionWarningClass} title={editLabel} aria-label={editLabel}>
@@ -67,26 +71,26 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       testId="catalog-item-row"
       desktop={(
         <>
-          <p className={compactItemTitleTextClass}>{name}</p>
-          <p className={monoIdentifierTextClass}>{identifier}</p>
-          <p className={numericValueTextClass}>{formatHufUnitPrice(netAmount, locale)}</p>
-          <p className={numericMutedValueTextClass}>{vatRatePercent}%</p>
-          <p className={`${numericValueTextClass} font-semibold`}>{formatHufUnitPrice(grossAmount, locale)}</p>
+          <p className={compactItemTitleTextClass} title={name}>{name}</p>
+          <p className={monoIdentifierTextClass} title={identifier}>{identifier}</p>
+          <p className={numericValueTextClass} title={netText}>{netText}</p>
+          <p className={numericMutedValueTextClass} title={vatText}>{vatText}</p>
+          <p className={`${numericValueTextClass} font-semibold`} title={grossText}>{grossText}</p>
           {actions}
         </>
       )}
       mobile={(
         <>
           <div className={compactRowHeaderClass}>
-            <p className={compactItemTitleTextClass}>{name}</p>
+            <p className={compactItemTitleClampTextClass}>{name}</p>
             {actions}
           </div>
 
-          <div className={compactTwoColumnGridClass}>
+          <div className={compactTwoColumnFixedGridClass}>
             <LabeledValueTile label={identifierLabel} value={identifier} valueClassName="font-mono" />
-            <LabeledValueTile label={netLabel} value={formatHufUnitPrice(netAmount, locale)} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={vatLabel} value={`${vatRatePercent}%`} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={grossLabel} value={formatHufUnitPrice(grossAmount, locale)} valueClassName="text-right tabular-nums font-semibold" />
+            <LabeledValueTile label={netLabel} value={netText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={vatLabel} value={vatText} valueClassName="text-right tabular-nums" />
+            <LabeledValueTile label={grossLabel} value={grossText} valueClassName="text-right tabular-nums font-semibold" />
           </div>
         </>
       )}

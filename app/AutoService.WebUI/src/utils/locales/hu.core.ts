@@ -244,6 +244,7 @@ export const huCore = {
       count: '{{count}} időpont',
       empty: 'Nincs időpont ebben a hónapban',
       emptyFiltered: 'Nincs időpont ezen a napon',
+      emptyNoMatch: 'Nincs a szűrésnek megfelelő időpont',
       clearFilter: 'Összes mutatása',
       sortByDate: 'Rendezés dátum szerint',
       sortAsc: 'Dátum növekvő',

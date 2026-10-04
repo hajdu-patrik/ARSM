@@ -244,6 +244,7 @@ export const enCore = {
       count: '{{count}} appointments',
       empty: 'No appointments this month',
       emptyFiltered: 'No appointments on this day',
+      emptyNoMatch: 'No appointments match the filters',
       clearFilter: 'Show all',
       sortByDate: 'Sort by date',
       sortAsc: 'Date ascending',

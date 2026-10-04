@@ -3,20 +3,21 @@ import { LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
-  compactListPrimaryTextClass,
+  compactPrimaryValueTextClass,
   compactSelectFullClass,
   equalWidthControlGroupClass,
   mediumContextPrimaryButtonClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
-  schedulerAccentTagClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
-  selectWrapperClass,
   smallIconClass,
 } from '../../../../utils/formStyles';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
 import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
+
+/** Specialization tag: the accent pill look, with long words wrapping instead of truncating. */
+const specializationTagClass = 'min-w-0 max-w-full [overflow-wrap:anywhere] rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent';
 
 export interface MechanicOption {
   readonly personId: number;
@@ -114,7 +115,7 @@ export const MechanicsSection = memo(function MechanicsSection({
           className={`${schedulerInlineClaimButtonClass} mt-3`}
         >
           <UserPlus className={smallIconClass} />
-          <span className="min-w-0 truncate">{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
+          <span className="min-w-0 whitespace-normal text-center">{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
         </button>
       )}
 
@@ -125,7 +126,7 @@ export const MechanicsSection = memo(function MechanicsSection({
             {t('scheduler.detail.addMechanic')}
           </h5>
           <div className={equalWidthControlGroupClass}>
-            <div className={selectWrapperClass}>
+            <div className="min-w-0 max-w-full">
               <select
                 value={selectedNewMechanicId}
                 onChange={(event) => onSelectNewMechanic(event.target.value)}
@@ -152,7 +153,7 @@ export const MechanicsSection = memo(function MechanicsSection({
               aria-busy={isAssigning}
               className={mediumContextPrimaryButtonClass}
             >
-              <span className="min-w-0 truncate">{isAssigning ? t('common.actions.saving') : t('scheduler.detail.addMechanic')}</span>
+              <span>{isAssigning ? t('common.actions.saving') : t('scheduler.detail.addMechanic')}</span>
             </button>
           </div>
         </div>
@@ -185,22 +186,24 @@ const MechanicCard = memo(function MechanicCard({
 
   return (
     <div className={`${schedulerDetailRowClass} min-w-0 overflow-hidden`}>
-      <div className="flex min-w-0 items-center gap-3 max-[350px]:flex-col max-[350px]:items-stretch">
-        <MechanicAvatar
-          mechanicId={mechanic.id}
-          fullName={mechanic.fullName}
-          hasProfilePicture={mechanic.hasProfilePicture}
-          sizeClassName="h-8 w-8 shrink-0 text-xs"
-        />
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3 max-[350px]:flex-col max-[350px]:items-stretch">
+          <MechanicAvatar
+            mechanicId={mechanic.id}
+            fullName={mechanic.fullName}
+            hasProfilePicture={mechanic.hasProfilePicture}
+            sizeClassName="h-8 w-8 shrink-0 text-xs"
+          />
 
-        <div className="min-w-0 flex-1 max-[350px]:w-full">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className={`min-w-0 ${compactListPrimaryTextClass}`}>
-              {mechanic.fullName}
-            </span>
-            <span className={`${schedulerAccentTagClass} min-w-0`}>
-              {mechanic.specialization}
-            </span>
+          <div className="min-w-0 flex-1 max-[350px]:w-full">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className={`min-w-0 font-medium [overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>
+                {mechanic.fullName}
+              </span>
+              <span className={specializationTagClass}>
+                {mechanic.specialization}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -209,10 +212,10 @@ const MechanicCard = memo(function MechanicCard({
             type="button"
             onClick={onRemove}
             disabled={isDisabled}
-            className={`${schedulerInlineUnassignButtonClass} max-[350px]:justify-center`}
+            className={schedulerInlineUnassignButtonClass}
           >
             <LogOut className={smallIconClass} />
-            <span className="min-w-0 truncate">{t(removeLabelKey)}</span>
+            <span className="min-w-0 whitespace-normal text-center">{t(removeLabelKey)}</span>
           </button>
         )}
       </div>

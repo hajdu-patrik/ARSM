@@ -1,7 +1,7 @@
 export const huFeature = {
   seo: {
     organizationName: 'ARSM Autoszerviz',
-    socialImageAlt: 'ARSM műhelyütemező felület előnézete',
+    socialImageAlt: 'ARSM logó',
     pages: {
       login: {
         title: 'Biztonságos bejelentkezés',
@@ -14,6 +14,18 @@ export const huFeature = {
       customers: {
         title: 'Ügyfél- és járműkezelés',
         description: 'Ügyféladatok, járműadatok és javítási előzmények kezelése az ARSM rendszerben.',
+      },
+      quotes: {
+        title: 'Árajánlatok',
+        description: 'Járműhöz kötött árajánlatok készítése, követése és PDF-exportja az ARSM-ben.',
+      },
+      inventory: {
+        title: 'Alkatrész- és munkatípus-törzs',
+        description: 'Az árajánlatok árazásához használt alkatrészek és munkatípusok kezelése az ARSM-ben.',
+      },
+      companyResults: {
+        title: 'Cégeredmény',
+        description: 'Elfogadott, függő, lejárt és elutasított ajánlatok összesítése időszakonként az ARSM-ben.',
       },
       settings: {
         title: 'Profil- és biztonsági beállítások',
@@ -34,7 +46,7 @@ export const huFeature = {
   },
   customers: {
     pageDescription: 'Ügyfelek, járművek és javítási előzmények kezelése egy helyen.',
-    searchPlaceholder: 'Keresés ügyfélnév vagy rendszám alapján...',
+    searchPlaceholder: 'Név vagy rendszám...',
     createCustomer: 'Ügyfél létrehozása',
     editCustomer: 'Ügyfél szerkesztése',
     deleteCustomer: 'Ügyfél törlése',
@@ -110,7 +122,7 @@ export const huFeature = {
     mechanicList: 'Kijelölt szerelők',
     noMechanics: 'Még nincs regisztrált szerelő.',
     noMechanicsFound: 'Nincs a keresésnek megfelelő szerelő.',
-    mechanicSearchPlaceholder: 'Keresés szerelőnév alapján...',
+    mechanicSearchPlaceholder: 'Szerelő neve...',
     deleteMechanic: 'Szerelő törlése',
     deleteMechanicModalTitle: 'Szerelő törlésének megerősítése',
     deleteMechanicWarning: 'Biztosan véglegesen törölni szeretné {{name}} ({{email}}) szerelőt? Ez a művelet nem vonható vissza.',

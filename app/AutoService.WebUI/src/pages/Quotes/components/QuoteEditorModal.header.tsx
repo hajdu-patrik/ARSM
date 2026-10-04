@@ -2,16 +2,17 @@
 import { memo, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { CalendarClock } from 'lucide-react';
+import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
   MAX_QUOTE_NOTES_LENGTH,
   MAX_QUOTE_TITLE_LENGTH,
   type QuoteDetailDto,
+  type QuoteStatus,
 } from '../../../types/quotes/quotes.types';
 import {
   compactDataSurfaceClass,
   compactInlineClusterClass,
-  compactPrimaryValueTextClass,
   compactTwoColumnGridClass,
   defaultIconClass,
   formFieldGridClass,
@@ -19,7 +20,7 @@ import {
   inputClass,
   labelClass,
   mutedMetaTextClass,
-  referenceChipNeutralButtonClass,
+  referenceChipNeutralWrapButtonClass,
   textareaClass,
   warningNoticeSurfaceClass,
 } from '../../../utils/formStyles';
@@ -45,6 +46,18 @@ function buildAppointmentOptionLabel(appointment: AppointmentDto, locale: string
   return `${formatQuoteDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
 }
 
+/** Picks the locked-header notice key by status: Accepted and Rejected read as closed, Sent keeps the original text. */
+function resolveLockedNoticeKey(status: QuoteStatus | undefined): string {
+  switch (status) {
+    case 'Accepted':
+      return 'quotes.headerLockedNoticeAccepted';
+    case 'Rejected':
+      return 'quotes.headerLockedNoticeRejected';
+    default:
+      return 'quotes.headerLockedNotice';
+  }
+}
+
 const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection({
   t,
   locale,
@@ -67,10 +80,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
   return (
     <section className="min-w-0 space-y-3">
       <div className={compactTwoColumnGridClass}>
-        <div className={compactDataSurfaceClass}>
-          <p className={mutedMetaTextClass}>{t('common.fields.vehicle')}</p>
-          <p className={`truncate ${compactPrimaryValueTextClass}`}>{vehicleLabel}</p>
-        </div>
+        <LabeledValueTile label={t('common.fields.vehicle')} value={vehicleLabel} />
         {quote && (
           <div className={compactDataSurfaceClass}>
             <p className={mutedMetaTextClass}>{t('quotes.columns.status')}</p>
@@ -78,21 +88,15 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
           </div>
         )}
         {quote && (
-          <div className={compactDataSurfaceClass}>
-            <p className={mutedMetaTextClass}>{t('quotes.columns.createdAt')}</p>
-            <p className={`truncate tabular-nums ${compactPrimaryValueTextClass}`}>{formatQuoteDate(quote.createdAt, locale)}</p>
-          </div>
+          <LabeledValueTile label={t('quotes.columns.createdAt')} value={formatQuoteDate(quote.createdAt, locale)} valueClassName="tabular-nums" />
         )}
         {quote && (
-          <div className={compactDataSurfaceClass}>
-            <p className={mutedMetaTextClass}>{t('quotes.columns.createdBy')}</p>
-            <p className={`truncate ${compactPrimaryValueTextClass}`}>{quote.createdByMechanic?.fullName ?? t('quotes.unknownMechanic')}</p>
-          </div>
+          <LabeledValueTile label={t('quotes.columns.createdBy')} value={quote.createdByMechanic?.fullName ?? t('quotes.unknownMechanic')} />
         )}
       </div>
 
       {isExistingQuote && !canEditHeader && (
-        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t('quotes.headerLockedNotice')}</p>
+        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t(resolveLockedNoticeKey(quote?.status))}</p>
       )}
 
       <div className={formFieldGroupClass}>
@@ -144,10 +148,10 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
                 type="button"
                 onClick={onSaveValidity}
                 disabled={isSaving || !canChangeValidity || form.validUntil.length === 0}
-                className={referenceChipNeutralButtonClass}
+                className={referenceChipNeutralWrapButtonClass}
               >
                 <CalendarClock className={defaultIconClass} />
-                <span className="truncate">{t('quotes.saveValidUntil')}</span>
+                <span className="min-w-0 text-center">{t('quotes.saveValidUntil')}</span>
               </button>
             )}
           </div>

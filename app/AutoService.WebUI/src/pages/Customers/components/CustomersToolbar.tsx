@@ -11,8 +11,10 @@ import {
 	referenceChipPrimaryButtonClass,
 	searchClearButtonClass,
 	searchInputClass,
+	toolbarActionGrowClass,
 	toolbarActionsWrapperClass,
 	toolbarRowLayoutClass,
+	toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
 import { filterNameInput } from '../../../utils/validation';
 import type { SortDirection } from '../page.types';
@@ -39,7 +41,7 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 	return (
 		<section className={cardClass}>
 			<div className={toolbarRowLayoutClass}>
-				<div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
+				<div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
 					<Search className={inputGroupIconClass} />
 					<input
 						data-testid="customers-search-input"
@@ -63,25 +65,25 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 					)}
 				</div>
 
-				<div className={`${toolbarActionsWrapperClass} sm:shrink-0`}>
+				<div className={toolbarActionsWrapperClass}>
 					<button
 						data-testid="customers-sort-toggle"
 						type="button"
 						onClick={onToggleSortDirection}
-						className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
+						className={`${referenceChipNeutralButtonClass} ${toolbarActionGrowClass}`}
 					>
 						<ArrowUpDown className={defaultIconClass} />
-						<span className="truncate">{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
+						<span>{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
 					</button>
 
 					<button
 						data-testid="customers-create-button"
 						type="button"
 						onClick={onOpenCreateCustomerModal}
-						className={`${referenceChipPrimaryButtonClass} flex-1 sm:flex-none`}
+						className={`${referenceChipPrimaryButtonClass} ${toolbarActionGrowClass}`}
 					>
 						<Plus className={defaultIconClass} />
-						<span className="truncate">{t('customers.createCustomer')}</span>
+						<span>{t('customers.createCustomer')}</span>
 					</button>
 				</div>
 			</div>

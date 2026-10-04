@@ -10,8 +10,8 @@ import { MECHANIC_LIST_VISIBLE_ROW_COUNT } from '../constants';
 import { MechanicListToolbar } from './MechanicListToolbar';
 import {
 	compactInputSurfaceClass,
-	compactListPrimaryTextClass,
-	compactListSecondaryTextClass,
+	compactListPrimaryWrapTextClass,
+	compactListSecondaryWrapTextClass,
 	dangerButtonClass,
 	defaultIconClass,
 	emptyStateBoxClass,
@@ -135,10 +135,10 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 										/>
 
 										<div className="min-w-0 flex-1">
-											<p className={compactListPrimaryTextClass}>
+											<p className={compactListPrimaryWrapTextClass}>
 												{displayName}
 											</p>
-											<p className={compactListSecondaryTextClass}>{mechanic.email}</p>
+											<p className={compactListSecondaryWrapTextClass}>{mechanic.email}</p>
 										</div>
 
 										{canRemoveMechanic && (

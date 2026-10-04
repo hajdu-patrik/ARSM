@@ -11,7 +11,7 @@ import {
   dataListBreakpointClasses,
   defaultIconClass,
   mutedMetaTextClass,
-  referenceChipPrimaryButtonClass,
+  referenceChipPrimaryWrapButtonClass,
 } from '../../../utils/formStyles';
 import type { QuoteLineFormState } from '../helpers';
 import type { QuoteLineEditingTarget } from '../hooks/useQuoteEditor';
@@ -86,10 +86,10 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
             onClick={onStartAddLine}
             disabled={isSaving || isAddingLine || hasReachedLineLimit}
             title={hasReachedLineLimit ? t('quotes.errors.lineLimitExceeded') : undefined}
-            className={referenceChipPrimaryButtonClass}
+            className={referenceChipPrimaryWrapButtonClass}
           >
             <Plus className={defaultIconClass} />
-            <span className="truncate">{t('quotes.addLine')}</span>
+            <span className="min-w-0 text-center">{t('quotes.addLine')}</span>
           </button>
         )}
       </div>

@@ -10,7 +10,6 @@ export const equalWidthControlGroupClass = 'arsm-equal-control-group';
 /** Scheduler details surfaces used in appointment side panels and info rows. */
 export const schedulerDetailPanelClass = 'rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65';
 export const schedulerDetailRowClass = 'rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
-export const schedulerAccentTagClass = 'max-w-full truncate rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent';
 
 /** Generic card and border primitives reused by Customers/Admin/Scheduler sections. */
 export const roundedOverflowBorderLayoutClass = 'overflow-hidden rounded-2xl border';
@@ -29,15 +28,24 @@ export const warningNoticeSurfaceClass = `${noticeSurfaceBaseClass} ${toneFeedba
 
 /** Compact list/detail building blocks for Customers history/details presentation. */
 export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2';
+/** Two columns at every width, 320px included, with the same gap as `compactTwoColumnGridClass`. */
+export const compactTwoColumnFixedGridClass = 'grid min-w-0 grid-cols-2 gap-2';
 export const compactHeaderRowClass = 'flex min-w-0 flex-wrap items-center justify-between gap-2';
 export const compactDividerLineClass = 'h-px flex-1 bg-arsm-border dark:bg-arsm-border-dark';
 export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
 export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
+/** Same look as `metadataPillClass`, but long values wrap instead of truncating. */
+export const metadataPillWrapClass = 'inline-block min-w-0 max-w-full [overflow-wrap:anywhere] rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
 
-/** Toolbar row layout shared by Customers/Inventory/Quotes toolbars and the scheduler quick-intake section. */
-export const toolbarRowLayoutClass = 'flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between';
-/** Wrapper for a toolbar's action controls, allowed to wrap on narrow widths before the toolbar itself stacks. */
-export const toolbarActionsWrapperClass = 'flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap';
+/** Wrapping toolbar row: items share a line while there is room, otherwise the next one wraps below. */
+export const toolbarRowLayoutClass = 'flex min-w-0 flex-wrap items-center justify-between gap-3';
+/** Toolbar search group: 18rem is its minimum before it wraps to a full row; grow 999 (against 1) takes a shared line's free space. */
+export const toolbarSearchFieldClass = 'grow-[999] basis-72';
+/** Toolbar action group: buttons keep their full label width and wrap among themselves, right-aligned.
+ * `*:basis-auto` stops a `flex-1` on a button from collapsing its basis to zero. */
+export const toolbarActionsWrapperClass = 'flex min-w-0 max-w-full grow flex-wrap items-center justify-end gap-2 *:basis-auto';
+/** Toolbar button inside `toolbarActionsWrapperClass`: fills its row below sm, keeps its own width from sm up. */
+export const toolbarActionGrowClass = 'grow sm:grow-0';
 
 /** Compact row header layout shared by vehicle, catalog, and quote row/card components. */
 export const compactRowHeaderClass = 'flex min-w-0 items-start justify-between gap-2';
@@ -78,6 +86,7 @@ export const emptyStateBoxClass = `rounded-2xl border border-dashed border-arsm-
 /** Container-query thresholds at which an aligned data list switches from labeled tiles to the column table. */
 export type DataListBreakpoint = 'lg' | '3xl' | '4xl';
 
+/** Container-query class set one breakpoint contributes to the shared data-list grid. */
 export interface DataListBreakpointClasses {
   /** Grid root: the feature adds its own `@…:grid-cols-[…]` template next to this. */
   readonly root: string;
@@ -93,6 +102,7 @@ export interface DataListBreakpointClasses {
   readonly mobileBlock: string;
 }
 
+/** Literal class sets per breakpoint, spelled out so Tailwind can detect every variant. */
 export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreakpointClasses> = {
   lg:    { root: '@lg:grid @lg:gap-x-3',   subgrid: '@lg:col-span-full @lg:grid @lg:grid-cols-subgrid',    rowAlign: '@lg:items-center',  fullSpan: '@lg:col-span-full',  desktopCells: 'hidden @lg:contents',  mobileBlock: '@lg:hidden' },
   '3xl': { root: '@3xl:grid @3xl:gap-x-3', subgrid: '@3xl:col-span-full @3xl:grid @3xl:grid-cols-subgrid', rowAlign: '@3xl:items-center', fullSpan: '@3xl:col-span-full', desktopCells: 'hidden @3xl:contents', mobileBlock: '@3xl:hidden' },

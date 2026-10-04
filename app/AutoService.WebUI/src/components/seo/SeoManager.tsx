@@ -20,6 +20,26 @@ import {
   type SeoConfig,
 } from './seoHead';
 
+/** Translation keys of one route's page title and meta description. */
+type RouteSeoKeys = { readonly title: string; readonly description: string };
+
+/** Known routes by normalized path; their canonical path is the route itself. */
+const ROUTE_SEO_KEYS: ReadonlyMap<string, RouteSeoKeys> = new Map([
+  ['/login', { title: 'seo.pages.login.title', description: 'seo.pages.login.description' }],
+  ['/', { title: 'seo.pages.scheduler.title', description: 'seo.pages.scheduler.description' }],
+  ['/customers', { title: 'seo.pages.customers.title', description: 'seo.pages.customers.description' }],
+  ['/quotes', { title: 'seo.pages.quotes.title', description: 'seo.pages.quotes.description' }],
+  ['/inventory', { title: 'seo.pages.inventory.title', description: 'seo.pages.inventory.description' }],
+  ['/company-results', { title: 'seo.pages.companyResults.title', description: 'seo.pages.companyResults.description' }],
+  ['/settings', { title: 'seo.pages.settings.title', description: 'seo.pages.settings.description' }],
+  ['/admin/register', { title: 'seo.pages.adminRegister.title', description: 'seo.pages.adminRegister.description' }],
+  ['/500', { title: 'serverError.title', description: 'seo.pages.serverError.description' }],
+]);
+
+/** Keys and canonical path of every unknown route. */
+const NOT_FOUND_SEO_KEYS: RouteSeoKeys = { title: 'seo.pages.notFound.title', description: 'seo.pages.notFound.description' };
+const NOT_FOUND_CANONICAL_PATH = '/404';
+
 /** Renderless component that manages all SEO-related `<head>` tags based on the current route and language. */
 export function SeoManager() {
   const location = useLocation();
@@ -27,72 +47,14 @@ export function SeoManager() {
 
   const config = useMemo<SeoConfig>(() => {
     const path = normalizeCanonicalPath(location.pathname);
-
-    if (path === '/login') {
-      return {
-        pageTitle: translate('seo.pages.login.title'),
-        description: translate('seo.pages.login.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/login',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
-
-    if (path === '/') {
-      return {
-        pageTitle: translate('seo.pages.scheduler.title'),
-        description: translate('seo.pages.scheduler.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
-
-    if (path === '/customers') {
-      return {
-        pageTitle: translate('seo.pages.customers.title'),
-        description: translate('seo.pages.customers.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/customers',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
-
-    if (path === '/settings') {
-      return {
-        pageTitle: translate('seo.pages.settings.title'),
-        description: translate('seo.pages.settings.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/settings',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
-
-    if (path === '/admin/register') {
-      return {
-        pageTitle: translate('seo.pages.adminRegister.title'),
-        description: translate('seo.pages.adminRegister.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/admin/register',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
-
-    if (path === '/500') {
-      return {
-        pageTitle: translate('serverError.title'),
-        description: translate('seo.pages.serverError.description'),
-        robots: NOINDEX_ROBOTS,
-        canonicalPath: '/500',
-        socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
-      };
-    }
+    const routeKeys = ROUTE_SEO_KEYS.get(path);
+    const keys = routeKeys ?? NOT_FOUND_SEO_KEYS;
 
     return {
-      pageTitle: translate('seo.pages.notFound.title'),
-      description: translate('seo.pages.notFound.description'),
+      pageTitle: translate(keys.title),
+      description: translate(keys.description),
       robots: NOINDEX_ROBOTS,
-      canonicalPath: '/404',
+      canonicalPath: routeKeys ? path : NOT_FOUND_CANONICAL_PATH,
       socialImagePath: DEFAULT_SOCIAL_IMAGE_PATH,
     };
   }, [location.pathname, translate]);
@@ -113,7 +75,6 @@ export function SeoManager() {
       description: config.description,
       htmlLang,
       organizationName,
-      socialImageUrl,
     });
 
     document.title = fullTitle;

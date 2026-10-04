@@ -64,7 +64,7 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
             aria-label={t('customers.openInScheduler')}
           >
             <CalendarDays className={smallIconClass} />
-            <span className="truncate">{t('customers.checkAppointment')}</span>
+            <span className="min-w-0 whitespace-normal text-center">{t('customers.checkAppointment')}</span>
           </button>
         </div>
 
@@ -76,32 +76,32 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
         <div className="divide-y divide-arsm-border/50 rounded-xl border border-arsm-border bg-arsm-input dark:divide-arsm-border-dark/50 dark:border-arsm-border-dark dark:bg-arsm-input-dark">
           <div className="min-w-0 px-3 py-2">
             <p className={mutedMetaTextClass}>{t('customers.intakeCreatedAt')}</p>
-            <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.intakeCreatedAt, locale)}</p>
+            <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.intakeCreatedAt, locale)}</p>
           </div>
           <div className="min-w-0 px-3 py-2">
             <p className={mutedMetaTextClass}>{t('customers.dueDateTime')}</p>
-            <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.dueDateTime, locale)}</p>
+            <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.dueDateTime, locale)}</p>
           </div>
           {appointment.completedAt && (
             <div className="min-w-0 px-3 py-2">
               <p className={mutedMetaTextClass}>{t('customers.completedAt')}</p>
-              <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.completedAt, locale)}</p>
+              <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.completedAt, locale)}</p>
             </div>
           )}
           {appointment.canceledAt && (
             <div className="min-w-0 px-3 py-2">
               <p className={mutedMetaTextClass}>{t('customers.cancelledAt')}</p>
-              <p className={`truncate ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.canceledAt, locale)}</p>
+              <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatDateTime(appointment.canceledAt, locale)}</p>
             </div>
           )}
         </div>
 
         <div className={compactDataSurfaceClass}>
           <p className={mutedMetaTextClass}>{t('common.fields.vehicle')}</p>
-          <p className={`truncate ${compactPrimaryValueTextClass}`}>
+          <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>
             {appointment.vehicle.brand} {appointment.vehicle.model} ({appointment.vehicle.year})
           </p>
-          <p className={`mt-0.5 truncate ${mutedMetaTextClass}`}>{appointment.vehicle.licensePlate}</p>
+          <p className={`mt-0.5 [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>{appointment.vehicle.licensePlate}</p>
         </div>
       </div>
     </Modal>

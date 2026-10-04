@@ -2,16 +2,19 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';
-import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { CompanyResultMonthDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
 import {
+  compactItemTitleClampTextClass,
   compactItemTitleTextClass,
   compactSectionHeadingTextClass,
-  compactTwoColumnGridClass,
   numericValueTextClass,
+  numericValueWrapTextClass,
 } from '../../../utils/formStyles';
 import { formatQuantity } from '../../../utils/number';
+import { MobileColumnStrip } from './MobileColumnStrip';
+import { MobileStackedValues } from './MobileStackedValues';
+import { mobileColumnsClass } from './mobileColumns';
 
 interface CompanyResultMonthListProps {
   readonly t: TFunction;
@@ -41,6 +44,7 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
       <h2 className={compactSectionHeadingTextClass}>{t('companyResults.monthsTitle')}</h2>
 
       <DataList breakpoint="lg" columnsClassName={monthColumnsClass} columns={columns} isEmpty={false} emptyText="">
+        <MobileColumnStrip columns={columns.slice(1)} />
         {months.map((month) => {
           const monthName = monthFormatter.format(new Date(Date.UTC(2000, month.month - 1, 1)));
 
@@ -53,30 +57,25 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
                 <>
                   <p className={compactItemTitleTextClass}>{monthName}</p>
                   <p className={numericValueTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
-                  <p className={numericValueTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
-                  <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
+                  <p className={numericValueWrapTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
+                  <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
                 </>
               )}
               mobile={(
                 <>
-                  <p className={compactItemTitleTextClass}>{monthName}</p>
-                  <div className={compactTwoColumnGridClass}>
-                    <LabeledValueTile
-                      label={t('nav.quotes')}
-                      value={formatQuantity(month.acceptedQuoteCount, locale)}
-                      valueClassName="text-right tabular-nums"
-                    />
-                    <LabeledValueTile
-                      label={t('common.fields.net')}
-                      value={formatHuf(month.acceptedNet, locale)}
-                      valueClassName="text-right tabular-nums"
-                    />
-                    <LabeledValueTile
-                      label={t('common.fields.gross')}
-                      value={formatHuf(month.acceptedGross, locale)}
-                      valueClassName="text-right tabular-nums font-semibold"
-                    />
+                  <p className={compactItemTitleClampTextClass}>{monthName}</p>
+                  <div className={mobileColumnsClass}>
+                    <p className={numericValueWrapTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
+                    <p className={numericValueWrapTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
+                    <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
                   </div>
+                  <MobileStackedValues
+                    values={[
+                      { label: columns[1].label, value: formatQuantity(month.acceptedQuoteCount, locale) },
+                      { label: columns[2].label, value: formatHuf(month.acceptedNet, locale) },
+                      { label: columns[3].label, value: formatHuf(month.acceptedGross, locale), emphasized: true },
+                    ]}
+                  />
                 </>
               )}
             />

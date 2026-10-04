@@ -4,11 +4,15 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { compactChipNeutralButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
+import { compactFilterChipNeutralButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 import { schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
+/** Sort and clear-day chips share one row; their columns shrink equally (labels wrap) only when the row is too narrow. */
+const schedulerSortControlsRowClass = 'grid min-w-0 max-w-full auto-cols-[minmax(0,max-content)] grid-flow-col gap-2';
+/** Chip label that wraps and centers instead of ellipsizing (the chip base sets `whitespace-nowrap` on the button). */
+const schedulerChipLabelClass = 'min-w-0 whitespace-normal text-center';
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 
@@ -36,15 +40,6 @@ function parseMechanicFilterValue(value: string): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
-function truncateMechanicLabel(fullName: string, maxLength = 16): string {
-  const normalized = fullName.trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
-}
-
 /** Renders month-list sort and day-reset controls for the header row. */
 const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSortControls({
   selectedDay,
@@ -55,16 +50,16 @@ const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSort
   const { t } = useTranslation();
 
   return (
-    <div className={`${schedulerControlRowClass} w-full justify-start sm:w-auto sm:flex-nowrap sm:justify-end`}>
-      <button type="button" onClick={onToggleSort} className={compactChipNeutralButtonClass} title={t('scheduler.monthList.sortByDate')}>
+    <div className={schedulerSortControlsRowClass}>
+      <button type="button" onClick={onToggleSort} className={compactFilterChipNeutralButtonClass} title={t('scheduler.monthList.sortByDate')}>
         <ArrowUpDown className={smallIconClass} />
-        <span className="min-w-0 truncate">{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
+        <span className={schedulerChipLabelClass}>{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
       </button>
 
       {selectedDay !== null && (
         <button type="button" onClick={onClearFilter} className={schedulerMonthClearFilterButtonClass}>
           <X className={smallIconClass} />
-          <span className="min-w-0 truncate">{t('scheduler.monthList.clearFilter')}</span>
+          <span className={schedulerChipLabelClass}>{t('scheduler.monthList.clearFilter')}</span>
         </button>
       )}
     </div>
@@ -112,7 +107,7 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
         >
           <option value="">{t('scheduler.monthList.mechanicAll')}</option>
           {uniqueMechanics.map(([id, name]) => (
-            <option key={id} value={id} title={name}>{truncateMechanicLabel(name)}</option>
+            <option key={id} value={id} title={name}>{name}</option>
           ))}
         </select>
       </div>

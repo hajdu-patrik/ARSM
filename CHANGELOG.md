@@ -9,6 +9,31 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- WebUI readability down to 320 px, consistent list UX and SEO fixes (2026-10-04).
+  - Audit first (Impeccable skill): 14 scenes at 320/390/768/1440 px, light/dark, HU/EN, with
+    mocked worst-case data; truncated text dropped from 239 findings to 23, all of them desktop table
+    cells that keep an ellipsis with a full-text `title` tooltip.
+  - Fixes: customer names no longer cut to 3 letters at 768 px; list toolbars wrap and their buttons
+    never ellipsize or stick out; the appointment detail modal wraps its date, mileage and power and
+    fits short viewports (`Modal` `fitViewport`); '+N' badges no longer cover status dots or
+    initials; long values wrap in customer, vehicle, history, quote line and mechanic list views;
+    44 px filter controls below lg; un-clipped select focus rings; the closed mobile drawer is inert.
+  - UX (user-approved): 2-line titles and a 2-column grid in the quote/catalog mobile tiles; compact
+    month and VAT rows with a header strip in company results on mobile (below 360 px one labelled
+    line per value, so an amount never splits); icon-only customer
+    edit/delete; a denser scheduler filter bar; collapsed sidebar by default at tablet width;
+    status-specific quote lock notice (accepted/rejected quotes no longer claim the validity can be
+    extended); a filter-aware empty month list; shorter search placeholders.
+  - SEO: `/quotes`, `/inventory` and `/company-results` no longer get the not-found title and a
+    `/404` canonical; app name 'ARSM – Appointment and Resource Scheduling Management'; a 1200x630
+    PNG social card with an absolute URL; robots stays noindex (user decision).
+  - Verification: validate gate passed; E2E 72/72; before/after screenshot sweep reviewed.
+
+_Dev time: ~24h43m wall-clock (2026-10-03 12:17 to 2026-10-04 13:01 UTC, including an overnight
+session break). Cost: ~$20.95-$41.91 (1 `arsm-chain` run, 2,095,253 output tokens, sonnet-opus
+range; output-token-only estimate - excludes input tokens, cache writes/reads and the follow-up
+agents run outside the workflow, so a lower bound, not a bill)._
+
 - Deployment security checklist kept local (2026-09-28).
   - Docs: the checklist moved to the gitignored deployment kit with the other deployment docs; the
     READMEs keep their Deployment Security Notes, and code comments no longer point to the file.

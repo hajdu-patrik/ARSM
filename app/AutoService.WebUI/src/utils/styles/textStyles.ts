@@ -15,7 +15,12 @@ export const compactSectionHeadingTextClass = `text-sm ${sectionHeadingToneClass
 /** List item text hierarchy used in compact rows (customers, vehicles, scheduler lists). */
 export const compactListPrimaryTextClass = 'truncate text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark';
 export const compactListSecondaryTextClass = 'truncate text-xs text-arsm-label dark:text-arsm-label-dark';
+/** Same typography and colors as the two list classes above, but long names and emails wrap instead of truncating. */
+export const compactListPrimaryWrapTextClass = 'min-w-0 [overflow-wrap:anywhere] text-sm font-medium text-arsm-primary dark:text-arsm-primary-dark';
+export const compactListSecondaryWrapTextClass = 'min-w-0 [overflow-wrap:anywhere] text-xs text-arsm-label dark:text-arsm-label-dark';
 export const compactItemTitleTextClass = 'min-w-0 truncate text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark';
+/** Same typography and colors as `compactItemTitleTextClass`, but wraps (long words break) and clamps at 2 lines instead of truncating. */
+export const compactItemTitleClampTextClass = 'min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-sm font-semibold text-arsm-primary dark:text-arsm-primary-dark';
 /** Large standalone headline (auth card title, headline figures), one step up on wider screens. */
 export const displayHeadingTextClass = 'text-xl font-semibold text-arsm-primary sm:text-2xl dark:text-arsm-primary-dark';
 export const inlinePrimaryLabelTextClass = 'font-semibold text-arsm-primary dark:text-arsm-primary-dark';
@@ -33,7 +38,11 @@ export const loadingSpinnerClass = 'animate-spin motion-reduce:animate-none roun
 
 /** Monospaced identifier text (plates, codes) shared by catalog and quote row components. */
 export const monoIdentifierTextClass = 'min-w-0 truncate font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
+/** Same look as `monoIdentifierTextClass`, but wraps instead of truncating (mobile tiles). */
+export const monoIdentifierWrapTextClass = 'min-w-0 [overflow-wrap:anywhere] font-mono text-sm text-arsm-label dark:text-arsm-label-dark';
 
 /** Right-aligned tabular figures for money, quantities and percentages in list rows. */
 export const numericValueTextClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+/** Same typography as `numericValueTextClass`, but wraps instead of truncating so a figure is never ellipsized. */
+export const numericValueWrapTextClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
 export const numericMutedValueTextClass = 'min-w-0 truncate text-right text-sm tabular-nums text-arsm-label dark:text-arsm-label-dark';

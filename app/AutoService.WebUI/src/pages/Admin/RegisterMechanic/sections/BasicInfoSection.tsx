@@ -37,7 +37,7 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div>
           <label htmlFor="firstName" className={labelClass}>
             {t('common.fields.firstName')} *

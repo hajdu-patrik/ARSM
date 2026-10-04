@@ -28,16 +28,16 @@ export const VehicleSpecsGrid = memo(function VehicleSpecsGrid({
 
 	return (
 		<div className={classNames}>
-			<p className="min-w-0 truncate">
+			<p className="min-w-0 [overflow-wrap:anywhere]">
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.vin')}:</span> {vehicle.vin}
 			</p>
-			<p className="min-w-0 truncate">
+			<p className="min-w-0 [overflow-wrap:anywhere]">
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.mileageKm')}:</span> {vehicle.mileageKm.toLocaleString(locale)} km
 			</p>
-			<p className="min-w-0 truncate">
+			<p className="min-w-0 [overflow-wrap:anywhere]">
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.enginePowerKw')}:</span> {vehicle.enginePowerKw} kW
 			</p>
-			<p className="min-w-0 truncate">
+			<p className="min-w-0 [overflow-wrap:anywhere]">
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.drivetrain')}:</span> {t(`vehicle.drivetrain.${vehicle.drivetrainType}`)}
 			</p>
 		</div>

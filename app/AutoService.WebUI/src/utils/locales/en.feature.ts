@@ -1,7 +1,7 @@
 export const enFeature = {
   seo: {
     organizationName: 'ARSM Auto Service',
-    socialImageAlt: 'ARSM workshop scheduling interface preview',
+    socialImageAlt: 'ARSM logo',
     pages: {
       login: {
         title: 'Secure login',
@@ -14,6 +14,18 @@ export const enFeature = {
       customers: {
         title: 'Customer and vehicle management',
         description: 'Track customer records, vehicles, and repair histories in ARSM.',
+      },
+      quotes: {
+        title: 'Price quotes',
+        description: 'Create, track and export vehicle price quotes in ARSM.',
+      },
+      inventory: {
+        title: 'Parts and labor catalog',
+        description: 'Manage the parts and labor types used to price quotes in ARSM.',
+      },
+      companyResults: {
+        title: 'Company results',
+        description: 'Accepted, pending, expired and rejected quote totals by period in ARSM.',
       },
       settings: {
         title: 'Profile and security settings',
@@ -34,7 +46,7 @@ export const enFeature = {
   },
   customers: {
     pageDescription: 'Manage customers, vehicles, and repair histories in one place.',
-    searchPlaceholder: 'Search by customer name or license plate...',
+    searchPlaceholder: 'Name or license plate...',
     createCustomer: 'Create customer',
     editCustomer: 'Edit customer',
     deleteCustomer: 'Delete customer',
@@ -110,7 +122,7 @@ export const enFeature = {
     mechanicList: 'Selected mechanics',
     noMechanics: 'No mechanics registered yet.',
     noMechanicsFound: 'No mechanics match your search.',
-    mechanicSearchPlaceholder: 'Search by mechanic name...',
+    mechanicSearchPlaceholder: 'Mechanic name...',
     deleteMechanic: 'Delete mechanic',
     deleteMechanicModalTitle: 'Confirm mechanic deletion',
     deleteMechanicWarning: 'Are you sure you want to permanently delete {{name}} ({{email}})? This action cannot be undone.',

@@ -77,7 +77,7 @@ tools: Read, Edit, Grep, Glob
 - [ ] Dynamic text uses `truncate` or explicit line clamp.
 - [ ] Fixed actions/icons use `shrink-0`.
 - [ ] Dense action rows use wrap or narrow-width fallback before overflow.
-- [ ] Selects are in bounded wrappers (`min-w-0 overflow-hidden`, control `w-full max-w-full min-w-0`).
+- [ ] Selects are in bounded wrappers (`min-w-0`, control `w-full max-w-full min-w-0`); a wrapper whose `overflow-hidden` would clip the focus ring drops it (`filterSelectCompactWrapperClass`, QuotesToolbar, detail mechanics select).
 - [ ] No unintended horizontal page scroll.
 - [ ] Forms collapse to single column when needed at 320px.
 - [ ] Status/tag/calendar rows are bounded (`max-w-full overflow-hidden`).

@@ -28,11 +28,11 @@ export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-arsm-b
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
-/** Compact select dedicated to filter toolbars (kept distinct from form/edit selects). */
-export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-sm:h-11 max-sm:min-h-11 max-sm:py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:ring-arsm-focus-ring/30';
+/** Compact select dedicated to filter toolbars (kept distinct from form/edit selects); reaches the 44px touch height below the lg breakpoint (1024px). */
+export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:ring-arsm-focus-ring/30';
 
 /** Width wrapper for compact filter selects in responsive toolbar rows. */
-export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full overflow-hidden basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
+export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
 
 /** Width wrappers used to keep grouped controls responsive at 320px. */
 export const selectWrapperClass = 'min-w-0 max-w-full overflow-hidden';

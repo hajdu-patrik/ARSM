@@ -5,7 +5,7 @@ import { Clock3, LogOut, UserPlus } from 'lucide-react';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
 import {
   compactHeaderRowClass,
-  compactItemTitleTextClass,
+  compactItemTitleClampTextClass,
   contentCardFrameClass,
   mutedBodyTextClass,
   mutedMetaTextClass,
@@ -92,42 +92,39 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     <div className={cardContentClassName}>
       <div className={`${compactHeaderRowClass} pb-1`}>
         <StatusBadge status={appointment.status} />
-        <span className={`truncate ${mutedMetaTextClass}`}>{scheduleDateLabel}</span>
+        <span className={`min-w-0 [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>{scheduleDateLabel}</span>
       </div>
 
       <div className="min-w-0 space-y-3">
         <div className="min-w-0 space-y-1">
-          <h3 className={compactItemTitleTextClass}>{vehicleTitle}</h3>
+          <h3 className={compactItemTitleClampTextClass}>{vehicleTitle}</h3>
           <p className={`font-mono ${mutedMetaTextClass}`}>{vehicle.licensePlate}</p>
         </div>
 
         <p className={`line-clamp-2 ${mutedBodyTextClass}`}>{appointment.taskDescription}</p>
 
-        <div className="flex min-w-0 items-center gap-2 rounded-lg border border-arsm-border/70 bg-arsm-input/70 px-2.5 py-2 dark:border-arsm-border-dark/70 dark:bg-arsm-input-dark/70">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-arsm-border/70 bg-arsm-input/70 px-2.5 py-2 dark:border-arsm-border-dark/70 dark:bg-arsm-input-dark/70">
           <span className={`inline-flex shrink-0 items-center gap-1 ${mutedMetaTextClass}`}>
             <Clock3 className={smallIconClass} />
             <span>{t('scheduler.due.label')}</span>
           </span>
           {hasValidDueDate && (
-            <p className={`min-w-0 truncate text-xs font-semibold ${dueState.toneClassName}`}>{t(dueState.labelKey, dueState.labelValues)}</p>
+            <p className={`min-w-0 text-xs font-semibold [overflow-wrap:anywhere] ${dueState.toneClassName}`}>{t(dueState.labelKey, dueState.labelValues)}</p>
           )}
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-visible pt-0.5 sm:flex-nowrap">
-          <div className="flex h-7 min-w-[4.75rem] max-w-[4.75rem] shrink-0 items-center gap-1.5 overflow-visible pr-1">
-            {visibleMechanics.map((mechanic, index) => (
-              <div key={mechanic.id} className="relative inline-flex shrink-0">
-                <MechanicAvatar
-                  mechanicId={mechanic.id}
-                  fullName={mechanic.fullName}
-                  hasProfilePicture={mechanic.hasProfilePicture}
-                  sizeClassName="h-7 w-7 text-xs"
-                />
-                {index === visibleMechanics.length - 1 && overflowCount > 0 && (
-                  <CompactOverflowBadge count={overflowCount} />
-                )}
-              </div>
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-visible pt-0.5">
+          <div className="flex h-7 shrink-0 items-center gap-1.5">
+            {visibleMechanics.map((mechanic) => (
+              <MechanicAvatar
+                key={mechanic.id}
+                mechanicId={mechanic.id}
+                fullName={mechanic.fullName}
+                hasProfilePicture={mechanic.hasProfilePicture}
+                sizeClassName="h-7 w-7 text-xs"
+              />
             ))}
+            {overflowCount > 0 && <CompactOverflowBadge count={overflowCount} />}
           </div>
 
           {showMechanicAction && (

@@ -25,12 +25,21 @@ export const sidebarShellIconButtonClass = `inline-flex h-11 w-11 shrink-0 items
 export const modalConfirmCloseButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-arsm-muted hover:bg-arsm-hover hover:text-arsm-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-arsm-muted dark:text-arsm-muted-dark dark:hover:bg-arsm-hover-dark dark:hover:text-arsm-primary-dark dark:disabled:hover:bg-transparent dark:disabled:hover:text-arsm-muted-dark ${iconButtonMicroInteractionClass}`;
 export const iconDangerButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arsm-error-border bg-arsm-error-bg text-arsm-error-text hover:bg-arsm-error-softest hover:text-arsm-error-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-error-hover/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:border-arsm-border disabled:bg-arsm-toggle-bg disabled:text-arsm-muted disabled:hover:bg-arsm-toggle-bg disabled:hover:text-arsm-muted dark:border-arsm-error-dark dark:bg-arsm-error-bg-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/85 dark:hover:text-arsm-error-text-light dark:focus-visible:ring-arsm-error-dark/40 dark:disabled:border-arsm-border-dark dark:disabled:bg-arsm-toggle-bg-dark dark:disabled:text-arsm-muted-dark dark:disabled:hover:bg-arsm-toggle-bg-dark dark:disabled:hover:text-arsm-muted-dark ${iconButtonMicroInteractionClass}`;
 
+/** Compact chip core (geometry, typography, focus, disabled) without the 44px touch sizing, which each chip base adds at its own breakpoint. */
+const compactChipCoreClass = 'inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-xs font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-arsm-focus-ring/30';
+/** Neutral chip tone; it matches the compact filter select surface (bg-card) it sits beside. */
+const compactChipNeutralToneClass = 'border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark';
+
 /** Compact chip button base shared by Customers and Scheduler local chip variants (min-h-7, scales to a 44px target below the sm breakpoint (640px)). */
-export const compactChipActionBaseClass = 'inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-xs font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 max-sm:min-h-11 max-sm:px-3 max-sm:py-2 dark:focus-visible:ring-arsm-focus-ring/30';
+export const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2`;
 /** Compact chip variants; the neutral one matches the compact filter select surface (bg-card) it sits beside. */
-export const compactChipNeutralButtonClass = `${compactChipActionBaseClass} border-arsm-border bg-arsm-card text-arsm-label hover:bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark`;
+export const compactChipNeutralButtonClass = `${compactChipActionBaseClass} ${compactChipNeutralToneClass}`;
 export const compactChipPrimaryButtonClass = `${compactChipActionBaseClass} ${primaryActionToneClass}`;
 export const compactChipDangerButtonClass = `${compactChipActionBaseClass} ${dangerActionToneClass}`;
+
+/** Filter chips: the compact chips with the 44px touch target below lg (1024px) instead of sm, for controls beside the filter select. */
+export const compactFilterChipActionBaseClass = `${compactChipCoreClass} max-lg:min-h-11 max-lg:px-3 max-lg:py-2`;
+export const compactFilterChipNeutralButtonClass = `${compactFilterChipActionBaseClass} ${compactChipNeutralToneClass}`;
 
 /** Row-level 44x44 icon actions (vehicle/quote/catalog rows, card expand toggles): scale + tone-background hover whose icon color never loses contrast (darkest tone text in light, lightest in dark); disabled renders neutral grey with no hover. */
 const rowIconActionBaseClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl disabled:cursor-not-allowed disabled:text-arsm-muted disabled:opacity-60 disabled:hover:bg-transparent disabled:hover:text-arsm-muted dark:disabled:text-arsm-muted-dark dark:disabled:hover:bg-transparent dark:disabled:hover:text-arsm-muted-dark ${iconButtonMicroInteractionClass} ${focusRingGeometryClass} ${focusRingAccentClass}`;
@@ -61,10 +70,16 @@ export const getSegmentedControlOptionClass = (isActive: boolean): string =>
   `${segmentedControlOptionBaseClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
 
 /** Canonical medium button family for contextual panel/card actions. */
-const mediumContextActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal whitespace-nowrap ring-1 ring-transparent disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusRingGeometryClass}`;
+const mediumContextActionShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal ring-1 ring-transparent disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusRingGeometryClass}`;
+const mediumContextActionBaseClass = `${mediumContextActionShapeClass} h-11 min-h-11 whitespace-nowrap`;
+/** Same shape as the medium base, but the label may wrap and the button grows from the 44px minimum height. */
+const mediumContextActionWrapBaseClass = `${mediumContextActionShapeClass} min-h-11 whitespace-normal`;
 
-export const mediumContextNeutralButtonClass = `${mediumContextActionBaseClass} border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/45 hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/45 dark:hover:bg-arsm-hover-dark/90 ${focusRingAccentClass}`;
+const mediumContextNeutralToneClass = `border-arsm-border bg-arsm-toggle-bg text-arsm-label hover:border-arsm-accent/45 hover:bg-arsm-accent-wash dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-label-dark dark:hover:border-arsm-accent-dark/45 dark:hover:bg-arsm-hover-dark/90 ${focusRingAccentClass}`;
+export const mediumContextNeutralButtonClass = `${mediumContextActionBaseClass} ${mediumContextNeutralToneClass}`;
+export const mediumContextNeutralWrapButtonClass = `${mediumContextActionWrapBaseClass} ${mediumContextNeutralToneClass}`;
 export const mediumContextPrimaryButtonClass = `${mediumContextActionBaseClass} ${primaryActionToneClass} ${focusRingAccentClass}`;
+export const mediumContextPrimaryWrapButtonClass = `${mediumContextActionWrapBaseClass} ${primaryActionToneClass} ${focusRingAccentClass}`;
 export const mediumContextDangerButtonClass = `${mediumContextActionBaseClass} ${dangerActionToneClass} ${focusRingDangerClass}`;
 
 /** Canonical main CTA family for save/delete/edit and modal confirmation actions. */
@@ -76,6 +91,9 @@ export const mainCtaDangerButtonClass = `${mainCtaActionBaseClass} border border
 
 /** Reference chips: canonical action sizes for details panels, compact toolbars, and history actions. */
 export const referenceChipNeutralButtonClass = mediumContextNeutralButtonClass;
+/** Neutral reference chip whose label wraps (long localized labels at 320px). */
+export const referenceChipNeutralWrapButtonClass = mediumContextNeutralWrapButtonClass;
+export const referenceChipPrimaryWrapButtonClass = mediumContextPrimaryWrapButtonClass;
 export const referenceChipPrimaryButtonClass = mediumContextPrimaryButtonClass;
 export const referenceChipDangerButtonClass = mediumContextDangerButtonClass;
 

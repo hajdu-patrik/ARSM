@@ -3,7 +3,7 @@ import { memo } from 'react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
 	compactHeaderRowClass,
-	compactItemTitleTextClass,
+	compactItemTitleClampTextClass,
 	mutedBodyTextClass,
 	mutedSecondaryTextClass,
 } from '../../../utils/formStyles';
@@ -46,13 +46,13 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 					disabled={!onOpenAppointment}
 				>
 					<div className={compactHeaderRowClass}>
-						<p className={compactItemTitleTextClass}>
+						<p className={compactItemTitleClampTextClass}>
 							{formatDateTime(appointment.scheduledDate, locale)}
 						</p>
 						<StatusBadge status={appointment.status} className="shrink-0" />
 					</div>
 
-					<p className={`mt-1.5 min-h-[2.25rem] overflow-hidden leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${mutedBodyTextClass}`}>
+					<p className={`mt-1.5 min-h-[2.25rem] [overflow-wrap:anywhere] leading-5 ${mutedBodyTextClass}`}>
 						{appointment.taskDescription}
 					</p>
 				</button>

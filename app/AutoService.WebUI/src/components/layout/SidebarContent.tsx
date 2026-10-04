@@ -63,7 +63,11 @@ const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
 
 const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };
 const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: '/settings' };
-const TEXT_TRANSITION = 'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
+const TEXT_CLIP_TRANSITION = 'overflow-hidden transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
+const TEXT_TRANSITION = `${TEXT_CLIP_TRANSITION} whitespace-nowrap`;
+/** Wrapping label box: its own max width (the 180px of `collapsedText`) keeps line breaks
+ * independent of the animated clip box. */
+const WRAPPING_LABEL_CLASS = 'block w-max max-w-[180px] text-left';
 const SIDEBAR_ICON_MOTION_CLASS = 'transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none motion-reduce:transition-colors';
 const NAV_LINK_BASE_CLASS = `group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium ${rowHoverMotionClass}`;
 const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover';
@@ -201,7 +205,9 @@ const SidebarContentComponent = memo(function SidebarContent({
           <span className={sidebarIconSlotClass}>
             <ChevronsLeft className={`${largeIconClass} transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${collapsed ? 'rotate-180' : ''}`} />
           </span>
-          <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-sm font-medium`}>{translate('sidebar.collapse')}</span>
+          <span className={`${TEXT_CLIP_TRANSITION} ${collapsedText} text-sm font-medium`}>
+            <span className={WRAPPING_LABEL_CLASS}>{translate('sidebar.collapse')}</span>
+          </span>
         </button>
       </div>
 

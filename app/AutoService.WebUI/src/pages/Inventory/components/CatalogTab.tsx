@@ -13,8 +13,10 @@ import {
   referenceChipPrimaryButtonClass,
   searchClearButtonClass,
   searchInputClass,
+  toolbarActionGrowClass,
   toolbarActionsWrapperClass,
   toolbarRowLayoutClass,
+  toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
 import { CatalogItemRow } from './CatalogItemRow';
 
@@ -65,7 +67,7 @@ function CatalogTab<TDto>({
     <div className="flex min-w-0 flex-col gap-4">
       <section className={cardClass}>
         <div className={toolbarRowLayoutClass}>
-          <div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
+          <div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
             <Search className={inputGroupIconClass} />
             <input
               data-testid={`${config.testIdPrefix}-search-input`}
@@ -94,20 +96,20 @@ function CatalogTab<TDto>({
               data-testid={`${config.testIdPrefix}-sort-toggle`}
               type="button"
               onClick={onToggleSortDirection}
-              className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
+              className={`${referenceChipNeutralButtonClass} ${toolbarActionGrowClass}`}
             >
               <ArrowUpDown className={defaultIconClass} />
-              <span className="truncate">{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
+              {sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}
             </button>
 
             <button
               data-testid={`${config.testIdPrefix}-create-button`}
               type="button"
               onClick={onOpenCreateModal}
-              className={`${referenceChipPrimaryButtonClass} flex-1 sm:flex-none`}
+              className={`${referenceChipPrimaryButtonClass} ${toolbarActionGrowClass}`}
             >
               <Plus className={defaultIconClass} />
-              <span className="truncate">{t(config.createLabelKey)}</span>
+              {t(config.createLabelKey)}
             </button>
           </div>
         </div>

@@ -2,15 +2,18 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';
-import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { CompanyResultVatRowDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
 import {
+  compactItemTitleClampTextClass,
   compactItemTitleTextClass,
   compactSectionHeadingTextClass,
-  compactTwoColumnGridClass,
   numericValueTextClass,
+  numericValueWrapTextClass,
 } from '../../../utils/formStyles';
+import { MobileColumnStrip } from './MobileColumnStrip';
+import { MobileStackedValues } from './MobileStackedValues';
+import { mobileColumnsClass } from './mobileColumns';
 
 interface VatBreakdownListProps {
   readonly t: TFunction;
@@ -21,6 +24,7 @@ interface VatBreakdownListProps {
 /** Column grid shared by the header row and every VAT row via CSS subgrid. */
 const vatColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
 const vatRateTextClass = `${compactItemTitleTextClass} tabular-nums`;
+const vatRateWrapTextClass = `${compactItemTitleClampTextClass} tabular-nums`;
 
 const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, rows }: VatBreakdownListProps) {
   const columns: DataListColumn[] = [
@@ -41,6 +45,7 @@ const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, ro
         emptyText={t('companyResults.emptyVat')}
         emptyTestId="company-results-vat-empty"
       >
+        <MobileColumnStrip columns={columns} />
         {rows.map((row) => (
           <DataListRow
             key={row.vatRatePercent}
@@ -55,19 +60,18 @@ const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, ro
             )}
             mobile={(
               <>
-                <p className={vatRateTextClass}>{row.vatRatePercent}%</p>
-                <div className={compactTwoColumnGridClass}>
-                  <LabeledValueTile
-                    label={t('companyResults.taxBase')}
-                    value={formatHuf(row.net, locale)}
-                    valueClassName="text-right tabular-nums"
-                  />
-                  <LabeledValueTile
-                    label={t('companyResults.tax')}
-                    value={formatHuf(row.vat, locale)}
-                    valueClassName="text-right tabular-nums font-semibold"
-                  />
+                <div className={mobileColumnsClass}>
+                  <p className={vatRateWrapTextClass}>{row.vatRatePercent}%</p>
+                  <p className={numericValueWrapTextClass}>{formatHuf(row.net, locale)}</p>
+                  <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(row.vat, locale)}</p>
                 </div>
+                <p className={`${vatRateWrapTextClass} min-[360px]:hidden`}>{row.vatRatePercent}%</p>
+                <MobileStackedValues
+                  values={[
+                    { label: columns[1].label, value: formatHuf(row.net, locale) },
+                    { label: columns[2].label, value: formatHuf(row.vat, locale), emphasized: true },
+                  ]}
+                />
               </>
             )}
           />

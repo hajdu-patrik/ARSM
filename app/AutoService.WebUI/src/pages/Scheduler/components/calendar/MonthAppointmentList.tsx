@@ -33,6 +33,15 @@ function isPlaceholderMechanicName(fullName: string): boolean {
   return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName.trim());
 }
 
+/** Picks the empty-state text: the filter message only when an active status/mechanic filter is what emptied the list. */
+function resolveEmptyMessageKey(selectedDay: number | null, hasActiveFilter: boolean, scopedCount: number): string {
+  if (hasActiveFilter && scopedCount > 0) {
+    return 'scheduler.monthList.emptyNoMatch';
+  }
+
+  return selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
+}
+
 /** Displays the current month's appointments with status, mechanic, day, and date-sort controls. */
 const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   appointments,
@@ -81,12 +90,18 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     return Array.from(mechanicNameById.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [appointments]);
 
-  const filteredAppointments = useMemo(() => {
-    let result = appointments;
-
-    if (selectedDay !== null) {
-      result = result.filter((a) => new Date(a.scheduledDate).getDate() === selectedDay);
+  const dayAppointments = useMemo(() => {
+    if (selectedDay === null) {
+      return appointments;
     }
+
+    return appointments.filter((a) => new Date(a.scheduledDate).getDate() === selectedDay);
+  }, [appointments, selectedDay]);
+
+  const hasActiveFilter = selectedStatuses.size > 0 || selectedMechanicId !== null;
+
+  const filteredAppointments = useMemo(() => {
+    let result = dayAppointments;
 
     if (selectedStatuses.size > 0) {
       result = result.filter((a) => selectedStatuses.has(a.status));
@@ -97,7 +112,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     }
 
     return result;
-  }, [appointments, selectedDay, selectedStatuses, selectedMechanicId]);
+  }, [dayAppointments, selectedStatuses, selectedMechanicId]);
 
   const sortedAppointments = useMemo(() => {
     const sorted = [...filteredAppointments];
@@ -110,7 +125,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   }, [filteredAppointments, sortAsc]);
 
   const shouldSpanSingleCard = sortedAppointments.length === 1;
-  const emptyMessageKey = selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
+  const emptyMessageKey = resolveEmptyMessageKey(selectedDay, hasActiveFilter, dayAppointments.length);
 
   let listContent: ReactNode;
   if (isLoading) {
@@ -146,7 +161,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
   return (
     <section className={`${insetSurfaceClass} p-3 sm:p-4`}>
       <div className="mb-4 flex min-w-0 flex-col gap-3">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col">
             <h3 className={`truncate ${baseSectionHeadingTextClass} sm:text-lg`}>
               {t('scheduler.monthList.title')}

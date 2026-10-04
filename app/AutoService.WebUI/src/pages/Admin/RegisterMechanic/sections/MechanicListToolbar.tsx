@@ -9,8 +9,10 @@ import {
 	referenceChipNeutralButtonClass,
 	searchClearButtonClass,
 	searchInputClass,
+	toolbarActionGrowClass,
 	toolbarActionsWrapperClass,
 	toolbarRowLayoutClass,
+	toolbarSearchFieldClass,
 } from '../../../../utils/formStyles';
 import { filterNameInput } from '../../../../utils/validation';
 import type { SortDirection } from '../types';
@@ -34,7 +36,7 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 }: MechanicListToolbarProps) {
 	return (
 		<div className={toolbarRowLayoutClass}>
-			<div className={`${inputGroupContainerClass} w-full sm:max-w-md`}>
+			<div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
 				<Search className={inputGroupIconClass} />
 				<input
 					data-testid="mechanic-search-input"
@@ -63,10 +65,10 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 					data-testid="mechanic-sort-toggle"
 					type="button"
 					onClick={onToggleSortDirection}
-					className={`${referenceChipNeutralButtonClass} flex-1 sm:flex-none`}
+					className={`${referenceChipNeutralButtonClass} ${toolbarActionGrowClass}`}
 				>
 					<ArrowUpDown className={defaultIconClass} />
-					<span className="truncate">{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
+					<span>{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
 				</button>
 			</div>
 		</div>

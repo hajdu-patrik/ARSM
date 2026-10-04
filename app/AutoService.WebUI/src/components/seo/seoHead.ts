@@ -51,13 +51,16 @@ type JsonLdPayload = {
 export const APP_NAME = 'ARSM';
 
 /** Default social preview image path served from public assets. */
-export const DEFAULT_SOCIAL_IMAGE_PATH = '/AppLogoFrameBlack.webp';
+export const DEFAULT_SOCIAL_IMAGE_PATH = '/og-image.png';
 
 /** Intrinsic size and MIME type of the default social image, declared so unfurlers can
  * render a card without downloading the asset first. Keep in sync with the public file. */
-export const DEFAULT_SOCIAL_IMAGE_TYPE = 'image/webp';
-export const DEFAULT_SOCIAL_IMAGE_WIDTH = '789';
-export const DEFAULT_SOCIAL_IMAGE_HEIGHT = '662';
+export const DEFAULT_SOCIAL_IMAGE_TYPE = 'image/png';
+export const DEFAULT_SOCIAL_IMAGE_WIDTH = '1200';
+export const DEFAULT_SOCIAL_IMAGE_HEIGHT = '630';
+
+/** Organization logo path served from public assets (the square mark, not the social card). */
+export const ORGANIZATION_LOGO_PATH = '/AppLogoFrameBlack.webp';
 
 /** Strict crawler directive used for authenticated application routes. */
 export const NOINDEX_ROBOTS = 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none, max-snippet:0, max-video-preview:0';
@@ -154,9 +157,8 @@ export function buildJsonLdPayload(params: {
   description: string;
   htmlLang: string;
   organizationName: string;
-  socialImageUrl: string;
 }) {
-  const { canonicalUrl, siteUrl, fullTitle, description, htmlLang, organizationName, socialImageUrl } = params;
+  const { canonicalUrl, siteUrl, fullTitle, description, htmlLang, organizationName } = params;
 
   const payload: JsonLdPayload = {
     '@context': 'https://schema.org',
@@ -166,7 +168,7 @@ export function buildJsonLdPayload(params: {
         '@id': `${siteUrl}#organization`,
         name: organizationName,
         url: siteUrl,
-        logo: socialImageUrl,
+        logo: buildAbsoluteUrl(siteUrl, ORGANIZATION_LOGO_PATH),
       },
       {
         '@type': 'WebSite',

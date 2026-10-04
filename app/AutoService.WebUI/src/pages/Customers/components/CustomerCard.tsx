@@ -8,16 +8,17 @@ import {
   baseSectionHeadingTextClass,
   compactChipPrimaryButtonClass,
   compactHeaderRowClass,
+  compactRowActionsClusterClass,
   contentCardFrameClass,
   defaultIconClass,
   inlineSectionTitleClass,
-  metadataPillClass,
+  metadataPillWrapClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
   mutedSectionIconClass,
-  referenceChipDangerButtonClass,
-  referenceChipNeutralButtonClass,
+  rowIconActionDangerClass,
   rowIconActionNeutralClass,
+  rowIconActionWarningClass,
   smallIconClass,
 } from '../../../utils/formStyles';
 import { buildCustomerDisplayName } from '../helpers';
@@ -103,13 +104,15 @@ const CustomerCardComponent = memo(function CustomerCard({
     customer,
   };
   const isVehicleDetailsOpen = activeTarget?.kind === 'vehicle' ? activeTarget.vehicle.id : null;
+  const editCustomerLabel = t('customers.editCustomer');
+  const deleteCustomerLabel = t('customers.deleteCustomer');
 
   return (
     <article
       data-testid={`customer-card-${customer.id}`}
       className={`min-w-0 duration-200 ${contentCardFrameClass}`}
     >
-      <div className="flex min-w-0 flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="flex min-w-0 flex-col gap-3 px-4 py-4 sm:px-5 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <h2 className={`flex min-w-0 items-center gap-2 ${baseSectionHeadingTextClass}`}>
           <button
             data-testid={`customer-expand-${customer.id}`}
@@ -134,26 +137,38 @@ const CustomerCardComponent = memo(function CustomerCard({
               }
               onOpenCustomerDetails(customer.id);
             }}
-            className="inline-flex min-h-11 min-w-11 max-w-full items-center text-left hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/35 dark:hover:text-arsm-accent"
+            className="inline-flex min-h-11 min-w-11 max-w-full items-center text-left hover:text-arsm-accent-vivid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:hover:text-arsm-accent dark:focus-visible:ring-arsm-focus-ring/30"
           >
-            <span className="min-w-0 truncate">{renderHighlightedCustomerName(buildCustomerDisplayName(customer), searchTerm)}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{renderHighlightedCustomerName(buildCustomerDisplayName(customer), searchTerm)}</span>
           </button>
         </h2>
 
         <div className={`flex min-w-0 flex-wrap items-center gap-2 ${mutedMetaTextClass}`}>
-          <span className={metadataPillClass}>{customer.email}</span>
-          {customer.phoneNumber && <span className={metadataPillClass}>{customer.phoneNumber}</span>}
-          <span className={metadataPillClass}>
+          <span className={metadataPillWrapClass}>{customer.email}</span>
+          {customer.phoneNumber && <span className={metadataPillWrapClass}>{customer.phoneNumber}</span>}
+          <span className={metadataPillWrapClass}>
             {t('common.fields.vehicleCount', { count: customer.vehicleCount })}
           </span>
-          <button type="button" onClick={() => onOpenEditCustomerModal(customer)} className={referenceChipNeutralButtonClass}>
-            <Pencil className={defaultIconClass} />
-            <span className="truncate">{t('customers.editCustomer')}</span>
-          </button>
-          <button type="button" onClick={() => onOpenDeleteCustomerModal(customer)} className={referenceChipDangerButtonClass}>
-            <Trash2 className={defaultIconClass} />
-            <span className="truncate">{t('customers.deleteCustomer')}</span>
-          </button>
+          <div className={compactRowActionsClusterClass}>
+            <button
+              type="button"
+              onClick={() => onOpenEditCustomerModal(customer)}
+              className={rowIconActionWarningClass}
+              title={editCustomerLabel}
+              aria-label={editCustomerLabel}
+            >
+              <Pencil className={smallIconClass} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenDeleteCustomerModal(customer)}
+              className={rowIconActionDangerClass}
+              title={deleteCustomerLabel}
+              aria-label={deleteCustomerLabel}
+            >
+              <Trash2 className={smallIconClass} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -164,11 +179,11 @@ const CustomerCardComponent = memo(function CustomerCard({
               <div className={compactHeaderRowClass}>
                 <h3 className={inlineSectionTitleClass}>
                   <CarFront className={defaultIconClass} />
-                  <span className="truncate">{t('customers.vehiclesTitle')}</span>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{t('customers.vehiclesTitle')}</span>
                 </h3>
                 <button type="button" onClick={() => onOpenCreateVehicleModal(customer.id)} className={`${compactChipPrimaryButtonClass} w-full sm:w-auto`}>
                   <Plus className={smallIconClass} />
-                  <span className="truncate">{t('customers.createVehicle')}</span>
+                  <span className="min-w-0 whitespace-normal text-center">{t('customers.createVehicle')}</span>
                 </button>
               </div>
 

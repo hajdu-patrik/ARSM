@@ -35,7 +35,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					<h3 className={`text-base ${sectionHeadingToneClass}`}>
 						{t('scheduler.intake.quickTitle')}
 					</h3>
-					<p className={`truncate ${mutedSecondaryTextClass}`}>
+					<p className={`min-w-0 [overflow-wrap:anywhere] ${mutedSecondaryTextClass}`}>
 						{selectedDateLabel
 							? t('scheduler.intake.quickSelectedDay', { date: selectedDateLabel })
 							: t('scheduler.intake.quickSelectDayHint')}
@@ -47,9 +47,9 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${mediumContextPrimaryButtonClass} w-auto self-start sm:shrink-0`}
+					className={`${mediumContextPrimaryButtonClass} h-auto! self-start sm:shrink-0`}
 				>
-					<span className="truncate">{t('scheduler.intake.open')}</span>
+					<span className="min-w-0 whitespace-normal text-center">{t('scheduler.intake.open')}</span>
 				</button>
 			</div>
 		</section>
