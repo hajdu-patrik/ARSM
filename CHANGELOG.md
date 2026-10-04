@@ -11,7 +11,8 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ### Changed
 - Aspire 13.6.0 for the AppHost (2026-10-04): `Aspire.AppHost.Sdk`, `Aspire.Hosting.JavaScript` and
   `Aspire.Hosting.PostgreSQL` 13.5.3 -> 13.6.0, with all four lock files regenerated (win-x64 default
-  plus the linux-x64, osx-arm64 and osx-x64 ones the CI runners restore in locked mode).
+  plus the linux-x64, osx-arm64 and osx-x64 ones the CI runners restore in locked mode); the local
+  `aspire.cli` tool follows to 13.6.0.
 
 _Dev time: ~5m wall-clock. cost: not measured._
 
@@ -327,6 +328,12 @@ writes/reads, so a lower bound, not a bill)._
 _Dev time: ~1h26m wall-clock. Cost: not measured (direct session work, no workflow run)._
 
 ### Fixed
+- WebUI build: the CSP hash of the inline `/login` script is computed over LF-normalized text, as
+  the browser does; a Windows (CRLF) checkout produced a mismatching hash, so a local production
+  build blocked the script (2026-10-04). CI and Docker builds (LF) were not affected.
+
+_Dev time: ~10m wall-clock. cost: not measured._
+
 - WebUI: a full load of any route (most visible on the 404 and 500 pages, which show no splash)
   flashed the logo twice, full size, before the page (2026-10-04). index.html's static `/login`
   shell was hidden only by the Tailwind `hidden` class, and in dev the CSS arrives with the JS;
