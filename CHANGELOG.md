@@ -9,6 +9,28 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- AI workflow: models are routed, not pinned (user decision, 2026-10-11, replaces the 2026-09-27 policy).
+  Haiku and fable are valid again; the main session follows the `[router]` line whatever it names, and
+  inside `arsm-chain` the `orchestrator` calls the trirouter (`mcp__trirouter__route_prompt`) for every work
+  package (implement, review, fix) and shared step (review, gate, test, fix). The plan schema carries
+  `{model, effort}` for each, the workflow passes them to every `agent()` call (only a proven model/effort start
+  rejection is retried on the fallback; every other error propagates), `args.route` (the `[router]` header's
+  `model=`/`effort=`) gives the planner its own route, and the difficulty-1
+  single-area path makes one routing-only orchestrator call. Only a missing or invalid router field falls
+  back, per field, to the previous values (plan and review opus high, implement and fix sonnet max, gate
+  sonnet low, test sonnet medium); the return value's `models` lists each route with its source and every call's actually used model. CLAUDE.md,
+  the orchestrator agent, the reminder hook and both READMEs are updated.
+- New project skill `dependency-upgrade`: upgrades the WebUI npm packages, NuGet packages and tools, Aspire,
+  the .NET SDK, Node, Docker images, GitHub Actions, Playwright and Python/CLI tooling to the latest
+  stable releases (at least 7 days old, major versions included), web-checks each package for advisories
+  and supply-chain incidents first, and hands breakage to `arsm-chain`.
+  The companion trirouter change (separate repository) allows Haiku, labels Fable as the most expensive
+  deep model, routes trivial work to haiku workers, resolves the in-session tier to `sonnet` for workflow
+  steps and adds `model=`/`effort=` to the `[router]` header.
+
+_Dev time: ~16h19m wall-clock (2026-10-10 23:26 to 2026-10-11 15:45 +02:00, overlapping the overnight WebUI
+workflow runs). cost: not measured._
+
 - WebUI polish from the frontend benchmark report (2026-10-10 to 2026-10-11): its 48 proposals, with no
   new feature, page or system, and the rendered UI unchanged except for the approved items below.
   - Cookies: `__Host-autoservice_at`, `__Host-autoservice_rt` and `__Host-autoservice_csrf` replace the

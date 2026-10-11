@@ -11,16 +11,21 @@
 
 ## Model Selection (Auto)
 
-- Claude models are used only through the generic aliases `sonnet` and `opus`, which always resolve to
-  the newest release. Haiku is never used, and `fable` is not used in this repository for now, not even
-  for hard work (user decision, 2026-09-27).
-- The main session follows the `[router]` line that jev-router (the global `UserPromptSubmit` hook)
-  injects; its `difficulty` is also the `difficulty` argument of `arsm-chain`. When the router names a
-  `fable-worker-*` agent, use the `opus-worker-*` agent of the same effort instead.
-- Inside `arsm-chain` the model policy is fixed (user decision, 2026-09-27) instead of routed per step:
-  planning (`orchestrator`) and every review (`coding-principles`, `ui-ux-style-profile`, `docs-sync`)
-  run on `opus` at every difficulty, effort `high`; implementation, hand-offs and every fix round run on `sonnet` at
-  effort `max`; the validate gate runs on `sonnet` (low) and the test agents on `sonnet` (medium).
+- Claude models are used only through the generic family aliases (`haiku`, `sonnet`, `opus`, `fable`),
+  which always resolve to the newest release. No family is banned or pinned: the router may name any of
+  them (user decision, 2026-10-11, replaces the 2026-09-27 ban on Haiku and fable).
+- The main session follows the `[router]` line that the trirouter (the global `UserPromptSubmit` hook)
+  injects, whatever model it names (`haiku-worker-*`, `sonnet-worker-*`, `opus-worker-*` and
+  `fable-worker-*` are all valid). Its machine-readable header fields give the `arsm-chain` arguments:
+  `difficulty=<n>` is `difficulty`, and `model=<family>` plus `effort=<level>` form `route`
+  (`{model, effort}`; an in-session `main` tier reports `model=sonnet`).
+- Inside `arsm-chain` every step's model and effort also come from the trirouter (user decision,
+  2026-10-11, replaces the fixed 2026-09-27 policy): the `orchestrator` calls the router's
+  `route_prompt` tool for each work package (implement, review, fix) and each shared step (review,
+  gate, test, fix) and returns the choices in its plan; the workflow passes them to the agents. Only
+  when a router result is missing or invalid does a documented per-field fallback apply (plan and
+  review `opus` high, implement and fix `sonnet` max, gate `sonnet` low, test `sonnet` medium), so a
+  router outage never blocks a run.
 
 ## Workflow (Ask First)
 
@@ -28,16 +33,17 @@
   for the answer before acting. Ask once per task, not on every follow-up prompt of the same task.
 - Act on the answer:
     - workflow requested -> run the saved workflow `arsm-chain` (`.claude/workflows/arsm-chain.js`) with
-      `args: {task, difficulty, area?, baseRef?}` (`difficulty` from the `[router]` line; `task` is the
-      request plus every agreed constraint)
+      `args: {task, difficulty, area?, baseRef?, route?}` (`difficulty`, `model=` and `effort=` from the `[router]`
+      header line give `difficulty` and `route: {model, effort}`; `task` is the request plus every agreed constraint)
     - workflow declined -> do the work directly, without `orchestrator` and without the specialist agents
     - partial answer -> run exactly the steps the user named and nothing else
-- `arsm-chain` encodes the chain deterministically (models per the Model Selection section):
+- `arsm-chain` encodes the chain deterministically (models and efforts routed per the Model Selection section):
     1. Plan: `orchestrator` rates the task 0-4, splits it into work packages (one area each, with
        disjoint owned paths in the shared working tree, shared building blocks as their own package that
        consumers depend on), fixes any shared DTO/API contract up front, and returns open decisions as
-       questions instead of choosing. Skipped when the router difficulty is 1 and the task touches a
-       single area.
+       questions instead of choosing, and routes every package and step. Skipped when the router
+       difficulty is 1 and the task touches a single area (a routing-only orchestrator call still picks
+       the models).
     2. Implement: packages run in parallel, at most 2/2/4/6/8 implementing agents at once for the
        effective difficulty 0/1/2/3/4, which is the higher of the router and orchestrator ratings. A
        package starts once its dependencies finished; packages with overlapping paths run one after the
@@ -167,8 +173,8 @@
   - Cost, direct work (no workflow): token spend isn't queryable in a direct session - report
     duration only and write `cost: not measured`.
 - Claude output pricing reference ($ / 1M output tokens) - re-verify before trusting this if it is
-  more than a few months old, Claude model versions and prices change: sonnet $10, opus $20, fable $50
-  (checked 2026-09-25 via the `claude-api` skill's model table, itself cached 2026-06-24).
+  more than a few months old, Claude model versions and prices change: haiku $0.50, sonnet $10, opus $20,
+  fable $50 (checked 2026-10-11 via the `claude-api` skill's model table, itself cached 2026-10-06).
 
 ## UI/UX Policy
 
