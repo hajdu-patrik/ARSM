@@ -33,16 +33,16 @@ STREAM_SETTLE_SECONDS = 2.0
 EVENT_WAIT_SECONDS = 15.0
 
 
-def find_appointment(client: HttpClient) -> dict | None:
-    """Returns any existing appointment, scanning recent months for seeded data."""
+def find_appointment(client: HttpClient, person_id: int | None) -> dict | None:
+    """Returns an appointment the signed-in mechanic is assigned to; only they may change its status."""
     now = time.gmtime()
     for year in (now.tm_year, now.tm_year - 1):
         for month in range(1, 13):
             status, body = client.request_json("GET", f"{APPOINTMENTS_PATH}?year={year}&month={month}")
             if status == 200 and body:
-                appointments = json.loads(body)
-                if appointments:
-                    return appointments[0]
+                for appointment in json.loads(body):
+                    if any(mechanic.get("id") == person_id for mechanic in appointment.get("mechanics", [])):
+                        return appointment
     return None
 
 
@@ -66,13 +66,13 @@ def collect_stream_frames(client: HttpClient, base_url: str, frames: list[str]) 
         frames.append(f"<stream error: {type(error).__name__}>")
 
 
-def run_checks(client: HttpClient, base_url: str, results: list[StepResult]) -> None:
+def run_checks(client: HttpClient, base_url: str, person_id: int | None, results: list[StepResult]) -> None:
     """Runs the live update round trip and records each assertion."""
-    appointment = find_appointment(client)
+    appointment = find_appointment(client, person_id)
     assert_condition(
         "appointment-available",
         appointment is not None,
-        "No appointment exists to mutate; seed demo data first.",
+        "No appointment is assigned to the signed-in mechanic; seed demo data first.",
         results,
     )
     assert appointment is not None
@@ -148,7 +148,7 @@ def main() -> int:
     for credential in read_credentials():
         results.clear()
         client = HttpClient(base_url, read_allowed_origin())
-        login_status, _ = client.request_json(
+        login_status, login_body = client.request_json(
             "POST",
             "/api/auth/login",
             {"email": credential.email, "password": credential.password},
@@ -160,7 +160,8 @@ def main() -> int:
             continue
 
         assert_status("login", login_status, {200}, results)
-        run_checks(client, base_url, results)
+        person_id = json.loads(login_body).get("personId") if login_status == 200 and login_body else None
+        run_checks(client, base_url, person_id, results)
         client.request_json("POST", "/api/auth/logout")
         break
     else:
