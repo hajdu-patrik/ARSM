@@ -73,8 +73,8 @@ jobs:
     env:
       API_URL: https://localhost:5200
       WEBUI_ORIGIN: https://localhost:5173
-      POSTGRES_IMAGE: postgres:18.3
-      S3_IMAGE: rustfs/rustfs:1.0.0
+      POSTGRES_IMAGE: postgres:18.6
+      S3_IMAGE: rustfs/rustfs:1.0.1
 
     steps:
     - uses: actions/checkout@v7
@@ -92,7 +92,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v7
       with:
-        python-version: '3.13'
+        python-version: '3.14'
 
     - name: Generate throwaway credentials
       shell: bash

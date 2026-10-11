@@ -17,7 +17,7 @@ var minioPassword = builder.AddParameter("minio-password", secret: true);
 // Pinned image tag: an implicit tag lets an Aspire package bump change the PostgreSQL major
 // version, which the postgres 18+ image refuses to start against an existing older data volume.
 var postgresServer = builder.AddPostgres("postgres", password: postgresPassword)
-                            .WithImageTag("18.3")
+                            .WithImageTag("18.6")
                             .WithHostPort(postgresPort)
                             .WithEndpoint("tcp", endpoint => endpoint.IsProxied = false)
                             .WithDataVolume("autoservice-postgres-data")
@@ -29,7 +29,7 @@ var postgresDb = postgresServer.AddDatabase("AutoServiceDb");
 // RustFS-backed local object storage (replaced MinIO, withdrawn 2026-09); "minio" names kept for
 // config compatibility; image tag pinned like PostgreSQL's (see AppHost/CLAUDE.md, Runtime Anchors).
 var minio = builder.AddContainer("minio", "rustfs/rustfs")
-                   .WithImageTag("1.0.0")
+                   .WithImageTag("1.0.1")
                    .WithEnvironment("RUSTFS_ACCESS_KEY", minioUser)
                    .WithEnvironment("RUSTFS_SECRET_KEY", minioPassword)
                    .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")

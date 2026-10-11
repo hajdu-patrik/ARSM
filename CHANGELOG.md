@@ -9,6 +9,43 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Dependency upgrade run (2026-10-11, `dependency-upgrade` skill): stable releases at least 7 days old, each
+  web-checked for advisories, supply-chain incidents and breaking changes before it was applied.
+  - WebUI: `lucide-react` 1.51.0 -> 1.52.0.
+  - Backend: `AWSSDK.S3` 4.0.103 -> 4.0.104.1, `Azure.Storage.Blobs` 12.29.2 -> 12.30.0 (adds the transitive
+    `Apache.Arrow` 22.1.0), `libphonenumber-csharp` 9.0.38 -> 9.0.40, `QuestPDF` 2026.9.0 -> 2026.9.1,
+    `Scalar.AspNetCore` 2.17.3 -> 2.17.13; ServiceDefaults OpenTelemetry 1.18.0 -> 1.19.1 (OTLP exporter,
+    hosting) and 1.19.0 (ASP.NET Core, HTTP and runtime instrumentation).
+  - Containers and CI: PostgreSQL 18.3 -> 18.6 (minor: fixes 28 CVEs, no dump/reload; the 18.6 GIN
+    `reltuples` post-update check is clean) and RustFS 1.0.0 -> 1.0.1, in `AppHost.cs` and `tests.yml`;
+    the `api-http-sql` job runs Python 3.14 instead of 3.13.
+  - DB health check: `AutoServiceDbContext` is now `Data/DatabaseHealthCheck` instead of `AddDbContextCheck`.
+    It runs the same `CanConnect` probe but lets cancellation propagate, so a `/health` request aborted by
+    its caller no longer logs `Unhealthy` ("The operation was canceled", seen at AppHost start while a
+    cold connection was still opening); a 5 s registration timeout keeps the check below the AppHost's
+    10 s probe, and a refused, timed-out or hung database still reports `Unhealthy`.
+  - Image processing: `SixLabors.ImageSharp` 3.1.12 (five advisories published 2026-10-07, three high,
+    fixed only in 4.1.2, which needs a paid Six Labors licence for Release builds) is replaced by the MIT
+    `SkiaSharp` 4.153.1 plus `SkiaSharp.NativeAssets.Linux.NoDependencies` 4.153.1 for the Linux container;
+    the five ImageSharp advisories are gone. `Imaging/SkiaProfilePictureProcessor` replaces
+    `ImageSharpProfilePictureProcessor` with the same contract: the 50-megapixel header check before
+    decoding, EXIF orientation, a 512x512 bound without upscaling, lossy WebP at quality 80, the SHA-256
+    ETag and the same 422 messages (plus `Image could not be encoded.` if the native encoder returns
+    nothing). The unused `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore`
+    package is removed.
+  - Waiting (younger than 7 days): Aspire 13.6.1 (AppHost SDK, hosting packages, `aspire.cli`;
+    2026-10-07), Playwright 1.64.0, Python 3.15.0 and a batch of npm/NuGet patches. Deferred: `@babel/core`
+    8 (the React Compiler constraint) and the local Azure Bicep `postgresVersion` 17 (a major version).
+  - Verification: validate gate passes every stage, security included (no ImageSharp advisories left);
+    `dotnet build -c Release` passes; E2E 112/112 (full suite); HTTP suite 876/876 plus the 4 Python checks
+    (re-run after the SkiaSharp swap) and SQL 24/24 on the AppHost with PostgreSQL 18.6 and RustFS 1.0.1; a throwaway harness reproduced the
+    old `Unhealthy` on an aborted probe and showed the new check propagating it instead, while a refused,
+    blackholed or silent database still reports `Unhealthy`.
+
+_Dev time: ~1h08m wall-clock (2026-10-11 20:02 to 21:11 +02:00). Upgrade and health check done directly
+(cost: not measured); the SkiaSharp swap ran through arsm-chain: ~$3.17-$6.34, output-token-only estimate
+(317k output tokens, sonnet to opus; excludes input tokens and cache writes/reads)._
+
 - AI workflow: models are routed, not pinned (user decision, 2026-10-11, replaces the 2026-09-27 policy).
   Haiku and fable are valid again; the main session follows the `[router]` line whatever it names, and
   inside `arsm-chain` the `orchestrator` calls the trirouter (`mcp__trirouter__route_prompt`) for every work

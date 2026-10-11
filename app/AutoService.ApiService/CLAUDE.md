@@ -50,7 +50,7 @@
 - `ObjectStorageBucketInitializer` (hosted service) verifies the bucket at startup and creates it only when `ObjectStorage:AutoCreateBucket` is true.
 - `ObjectStorage:DisablePayloadSigning` and `ObjectStorage:DisableDefaultChecksumValidation` are provider compatibility switches, not preferences. MinIO and RustFS (the local store since the MinIO images were withdrawn) want the AWSSDK.S3 defaults (`false`); Cloudflare R2 rejects the streaming SigV4 payload signing and the CRC32 checksum that AWSSDK.S3 v4 sends by default, so R2 needs both `true`. Keeping them in config is what makes a provider switch code-free.
 - Uploads accept JPEG/PNG/WebP up to 4 MB (`MaxProfilePictureBytes`); the endpoint also enforces `MaxProfilePictureRequestBytes` (upload limit + 64 KB) via `RequestSizeLimitAttribute`/`RequestFormLimitsAttribute` so oversized bodies are rejected before buffering.
-- `ImageSharpProfilePictureProcessor` (`Imaging/`) guards a 50-megapixel decode limit, auto-orients, resizes to fit 512x512 without upscaling, and re-encodes to WebP (quality 80) with a SHA-256 ETag; stored objects are always WebP regardless of the accepted upload type.
+- `SkiaProfilePictureProcessor` (`Imaging/`, SkiaSharp) guards a 50-megapixel decode limit from the image header before decoding, applies the EXIF orientation, resizes to fit 512x512 without upscaling, and re-encodes to lossy WebP (quality 80) with a SHA-256 ETag; stored objects are always WebP regardless of the accepted upload type. `SkiaSharp.NativeAssets.Linux.NoDependencies` supplies the native library for the Linux container (glibc and libstdc++ only, both in the `aspnet` runtime image).
 
 ## Catalog Anchors
 

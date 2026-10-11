@@ -46,9 +46,10 @@ builder.AddServiceDefaults();
 /** DB readiness check, added here (not ServiceDefaults) to keep those Npgsql-free; carries no
     "live" tag, so /alive stays process-only while /health also reflects DB connectivity. */
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AutoServiceDbContext>();
+    .AddCheck<DatabaseHealthCheck>(nameof(AutoServiceDbContext), timeout: DatabaseHealthCheck.RegistrationTimeout);
 
-/** EF Core/Npgsql command spans in OpenTelemetry traces. Registered here (not in ServiceDefaults) to keep the shared defaults generic and free of a Postgres-specific dependency. */
+/** EF Core/Npgsql command spans in OpenTelemetry traces; registered here (not in ServiceDefaults)
+    to keep the shared defaults free of a Postgres dependency. */
 builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddNpgsql());
 
 // Optional local overrides for running EF CLI/API outside AppHost.
@@ -116,7 +117,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // Identity and authentication configuration.
 var jwtSecret = JwtSettingsResolver.ResolveSecret(builder.Configuration);
 
-/** JwtSettings:ExpirationMinutes drives both the access-token cookie lifetime and the JWT exp claim. It is set exactly once here, before any request is served; every call site in the auth and profile endpoints reads the read-only AuthEndpoints.AccessTokenTtl. */
+/** JwtSettings:ExpirationMinutes drives the access-token cookie lifetime and the JWT exp claim; set
+    once here, read-only afterwards via AuthEndpoints.AccessTokenTtl. */
 var jwtExpirationMinutes = JwtSettingsResolver.ResolveExpirationMinutes(builder.Configuration);
 AuthEndpoints.ConfigureAccessTokenTtl(jwtExpirationMinutes);
 
@@ -241,7 +243,7 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0
         }));
 
-    /** AuthRefreshAttempts partitioning rationale: same as AuthLoginAttempts above, partitioned per client so one noisy client cannot exhaust the shared refresh quota for every other signed-in user. */
+    /** Partitioned per client for the same reason as AuthLoginAttempts above. */
     options.AddPolicy("AuthRefreshAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
         LoginBanMiddleware.ResolveClientKey(context),
         _ => new FixedWindowRateLimiterOptions
@@ -286,7 +288,7 @@ builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret
 builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
 builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
 builder.Services.AddSingleton<IAppointmentUpdateBroadcaster, AppointmentUpdateBroadcaster>();
-builder.Services.AddSingleton<IProfilePictureProcessor, ImageSharpProfilePictureProcessor>();
+builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCleanupService>();
 
