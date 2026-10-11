@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorPage } from '../components/common/ErrorPage';
+import { APP_ROUTE_PATHS } from '../router/appRoutes';
 import { markSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 
 const REDIRECT_DURATION_MS = 3000;
@@ -17,7 +18,7 @@ function getReturnTarget(): string | null {
     return null;
   }
 
-  if (rawReturnTo.startsWith('//') || rawReturnTo.startsWith('/500')) {
+  if (rawReturnTo.startsWith('//') || rawReturnTo.startsWith(APP_ROUTE_PATHS.serverError)) {
     return null;
   }
 
@@ -54,7 +55,9 @@ const ServerErrorComponent = memo(function ServerError() {
       }
     }, TIMER_TICK_MS);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [handleRetry]);
 
   const secondsLeft = Math.max(Math.ceil(remainingMs / 1000), 0);

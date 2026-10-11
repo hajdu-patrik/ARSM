@@ -73,7 +73,7 @@ function CatalogTab<TDto>({
               data-testid={`${config.testIdPrefix}-search-input`}
               type="text"
               value={searchTerm}
-              onChange={(event) => onSearchChange(event.target.value)}
+              onChange={(event) => { onSearchChange(event.target.value); }}
               placeholder={t(config.searchPlaceholderKey)}
               className={searchInputClass}
             />
@@ -139,8 +139,8 @@ function CatalogTab<TDto>({
             grossLabel={t(config.grossColumnKey)}
             editLabel={t(config.editLabelKey)}
             deleteLabel={t(config.deleteLabelKey)}
-            onEdit={() => onOpenEditModal(item)}
-            onDelete={() => onOpenDeleteModal(item)}
+            onEdit={() => { onOpenEditModal(item); }}
+            onDelete={() => { onOpenDeleteModal(item); }}
           />
         ))}
       </DataList>

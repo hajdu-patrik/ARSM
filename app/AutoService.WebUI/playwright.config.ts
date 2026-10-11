@@ -1,16 +1,12 @@
-/// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
-/** See https://playwright.dev/docs/test-configuration. */
-const nodeEnv = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) ?? {};
-const isCi = typeof nodeEnv.CI === 'string' && nodeEnv.CI.length > 0;
-const baseURL = nodeEnv.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173';
-const reuseExistingServerOverride = nodeEnv.PLAYWRIGHT_REUSE_EXISTING_SERVER;
-const workersOverride = nodeEnv.PLAYWRIGHT_WORKERS;
-const forceReuseExistingServer = reuseExistingServerOverride === '1' || reuseExistingServerOverride === 'true';
-const parsedWorkers = workersOverride ? Number.parseInt(workersOverride, 10) : Number.NaN;
+const isCi = (process.env.CI ?? '').length > 0;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173';
+const forceReuseExistingServer = ['1', 'true'].includes(process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER ?? '');
+const parsedWorkers = Number.parseInt(process.env.PLAYWRIGHT_WORKERS ?? '', 10);
 const localWorkers = Number.isFinite(parsedWorkers) && parsedWorkers > 0 ? parsedWorkers : 1;
 
+/** See https://playwright.dev/docs/test-configuration. */
 export default defineConfig({
   testDir: './tests/e2e',
   /* Keep browser-driven workflows deterministic while the suite is small. */
@@ -32,6 +28,8 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL,
     ignoreHTTPSErrors: true,
+    /* The app follows prefers-color-scheme until a theme is picked: pin light, which the specs assume. */
+    colorScheme: 'light',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

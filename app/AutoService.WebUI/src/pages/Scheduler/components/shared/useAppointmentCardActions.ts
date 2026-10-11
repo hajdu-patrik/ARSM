@@ -1,7 +1,11 @@
 /** Claim/unclaim action state for scheduler appointment cards. */
 
 import { useCallback, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { logError } from '../../../../utils/devLog';
+import { settle } from '../../hooks/settle';
 
+/** Inputs of {@link useAppointmentCardActions}: the card's appointment, its permissions and the page handlers. */
 interface UseAppointmentCardActionsParams {
   readonly appointmentId: number;
   readonly canClaimAppointment: boolean;
@@ -10,7 +14,7 @@ interface UseAppointmentCardActionsParams {
   readonly onUnclaim: (id: number) => Promise<void>;
 }
 
-/** Owns appointment-card claim/unclaim pending state and confirmation visibility. */
+/** Owns appointment-card claim/unclaim confirmation visibility; each action is a mutation, so its pending flag is derived. */
 export function useAppointmentCardActions({
   appointmentId,
   canClaimAppointment,
@@ -18,40 +22,36 @@ export function useAppointmentCardActions({
   onClaim,
   onUnclaim,
 }: UseAppointmentCardActionsParams) {
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [isUnclaiming, setIsUnclaiming] = useState(false);
   const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
   const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
 
-  const handleClaim = useCallback(async () => {
-    setIsClaiming(true);
-    try {
-      await onClaim(appointmentId);
+  const { isPending: isClaiming, mutateAsync: claimAppointment } = useMutation({
+    mutationFn: () => onClaim(appointmentId),
+    onSuccess: () => {
       setIsClaimConfirmOpen(false);
-    } catch (error) {
-      console.error('Failed to claim appointment card action', error);
-    } finally {
-      setIsClaiming(false);
-    }
-  }, [appointmentId, onClaim]);
+    },
+    onError: (error) => {
+      logError('scheduler.card.claim', error);
+    },
+  });
+  const { isPending: isUnclaiming, mutateAsync: unclaimAppointment } = useMutation({
+    mutationFn: () => onUnclaim(appointmentId),
+    onSuccess: () => {
+      setIsUnclaimConfirmOpen(false);
+    },
+    onError: (error) => {
+      logError('scheduler.card.unclaim', error);
+    },
+  });
+
+  const handleClaim = useCallback(() => settle(claimAppointment()), [claimAppointment]);
+  const handleUnclaim = useCallback(() => settle(unclaimAppointment()), [unclaimAppointment]);
 
   const handleOpenClaimConfirm = useCallback(() => {
     if (canClaimAppointment && !isClaiming) {
       setIsClaimConfirmOpen(true);
     }
   }, [canClaimAppointment, isClaiming]);
-
-  const handleUnclaim = useCallback(async () => {
-    setIsUnclaiming(true);
-    try {
-      await onUnclaim(appointmentId);
-      setIsUnclaimConfirmOpen(false);
-    } catch (error) {
-      console.error('Failed to unclaim appointment card action', error);
-    } finally {
-      setIsUnclaiming(false);
-    }
-  }, [appointmentId, onUnclaim]);
 
   const handleOpenUnclaimConfirm = useCallback(() => {
     if (canUnclaimAppointment && !isUnclaiming) {

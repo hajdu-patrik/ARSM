@@ -2,7 +2,7 @@
  * lives in {@link createLiveUpdateChannel}. */
 
 import { profileService } from './profile.service';
-import { createLiveUpdateChannel } from '../live/live-update-channel';
+import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-channel';
 
 /** Custom event name dispatched on profile picture changes. */
 export const PROFILE_PICTURE_UPDATED_EVENT = 'autoservice:profile-picture-updated';
@@ -19,24 +19,21 @@ export interface ProfilePictureUpdatedDetail {
 
 /** Parses a raw SSE data string into a typed profile picture update detail, or null if invalid. */
 function parseProfilePictureUpdate(data: string): ProfilePictureUpdatedDetail | null {
-  try {
-    const parsed = JSON.parse(data) as Partial<ProfilePictureUpdatedDetail>;
-    if (
-      typeof parsed.personId !== 'number' ||
-      typeof parsed.hasProfilePicture !== 'boolean' ||
-      typeof parsed.cacheBuster !== 'number'
-    ) {
-      return null;
-    }
-
-    return {
-      personId: parsed.personId,
-      hasProfilePicture: parsed.hasProfilePicture,
-      cacheBuster: parsed.cacheBuster,
-    };
-  } catch {
+  const parsed = parseJsonObject(data);
+  if (
+    parsed === null ||
+    typeof parsed.personId !== 'number' ||
+    typeof parsed.hasProfilePicture !== 'boolean' ||
+    typeof parsed.cacheBuster !== 'number'
+  ) {
     return null;
   }
+
+  return {
+    personId: parsed.personId,
+    hasProfilePicture: parsed.hasProfilePicture,
+    cacheBuster: parsed.cacheBuster,
+  };
 }
 
 const channel = createLiveUpdateChannel<ProfilePictureUpdatedDetail>({
@@ -53,7 +50,7 @@ export function startProfilePictureLiveUpdates(): () => void {
 
 /** Manually emits a profile picture updated event (e.g. after a local upload/delete); auto-fills the cache-buster. */
 export function emitProfilePictureUpdated(
-  detail: Omit<ProfilePictureUpdatedDetail, 'cacheBuster'> & { cacheBuster?: number },
+  detail: Omit<ProfilePictureUpdatedDetail, 'cacheBuster'> & { cacheBuster?: number | undefined },
 ): void {
   channel.dispatch({
     ...detail,

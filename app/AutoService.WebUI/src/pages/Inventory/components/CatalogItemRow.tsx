@@ -1,22 +1,16 @@
 /** Shared part/labor-type list row: renders through `DataListRow`, generic over caller-supplied labels for both tabs. */
 import { memo } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { DataListRow } from '../../../components/common/DataList';
-import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
+import { DataListCell, DataListRow, DataListText } from '../../../components/common/DataList';
 import { formatHufUnitPrice } from '../../../utils/currency';
 import {
-  compactItemTitleClampTextClass,
-  compactItemTitleTextClass,
   compactRowActionsClusterClass,
-  compactRowHeaderClass,
   compactTwoColumnFixedGridClass,
-  monoIdentifierTextClass,
-  numericMutedValueTextClass,
-  numericValueTextClass,
   rowIconActionDangerClass,
   rowIconActionWarningClass,
   smallIconClass,
 } from '../../../utils/formStyles';
+import { formatQuantity } from '../../../utils/number';
 
 interface CatalogItemRowProps {
   readonly locale: string;
@@ -33,6 +27,27 @@ interface CatalogItemRowProps {
   readonly deleteLabel: string;
   readonly onEdit: () => void;
   readonly onDelete: () => void;
+}
+
+interface CatalogRowActionsProps {
+  readonly editLabel: string;
+  readonly deleteLabel: string;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
+}
+
+/** Edit and delete icon actions of one catalog row. */
+function CatalogRowActions({ editLabel, deleteLabel, onEdit, onDelete }: CatalogRowActionsProps) {
+  return (
+    <div className={compactRowActionsClusterClass}>
+      <button type="button" onClick={onEdit} className={rowIconActionWarningClass} title={editLabel} aria-label={editLabel}>
+        <Pencil className={smallIconClass} />
+      </button>
+      <button type="button" onClick={onDelete} className={rowIconActionDangerClass} title={deleteLabel} aria-label={deleteLabel}>
+        <Trash2 className={smallIconClass} />
+      </button>
+    </div>
+  );
 }
 
 const CatalogItemRowComponent = memo(function CatalogItemRow({
@@ -52,49 +67,37 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
   onDelete,
 }: CatalogItemRowProps) {
   const netText = formatHufUnitPrice(netAmount, locale);
-  const vatText = `${vatRatePercent}%`;
+  const vatText = `${formatQuantity(vatRatePercent, locale)}%`;
   const grossText = formatHufUnitPrice(grossAmount, locale);
-  const actions = (
-    <div className={compactRowActionsClusterClass}>
-      <button type="button" onClick={onEdit} className={rowIconActionWarningClass} title={editLabel} aria-label={editLabel}>
-        <Pencil className={smallIconClass} />
-      </button>
-      <button type="button" onClick={onDelete} className={rowIconActionDangerClass} title={deleteLabel} aria-label={deleteLabel}>
-        <Trash2 className={smallIconClass} />
-      </button>
-    </div>
-  );
 
   return (
     <DataListRow
-      breakpoint="3xl"
       testId="catalog-item-row"
-      desktop={(
-        <>
-          <p className={compactItemTitleTextClass} title={name}>{name}</p>
-          <p className={monoIdentifierTextClass} title={identifier}>{identifier}</p>
-          <p className={numericValueTextClass} title={netText}>{netText}</p>
-          <p className={numericMutedValueTextClass} title={vatText}>{vatText}</p>
-          <p className={`${numericValueTextClass} font-semibold`} title={grossText}>{grossText}</p>
-          {actions}
-        </>
+      valuesClassName={compactTwoColumnFixedGridClass}
+      lead={(
+        <DataListCell column="name">
+          <DataListText kind="title" title={name}>{name}</DataListText>
+        </DataListCell>
       )}
-      mobile={(
-        <>
-          <div className={compactRowHeaderClass}>
-            <p className={compactItemTitleClampTextClass}>{name}</p>
-            {actions}
-          </div>
-
-          <div className={compactTwoColumnFixedGridClass}>
-            <LabeledValueTile label={identifierLabel} value={identifier} valueClassName="font-mono" />
-            <LabeledValueTile label={netLabel} value={netText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={vatLabel} value={vatText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={grossLabel} value={grossText} valueClassName="text-right tabular-nums font-semibold" />
-          </div>
-        </>
+      actions={(
+        <DataListCell column="actions" headerEnd>
+          <CatalogRowActions editLabel={editLabel} deleteLabel={deleteLabel} onEdit={onEdit} onDelete={onDelete} />
+        </DataListCell>
       )}
-    />
+    >
+      <DataListCell column="identifier" label={identifierLabel} tile>
+        <DataListText kind="identifier" title={identifier}>{identifier}</DataListText>
+      </DataListCell>
+      <DataListCell column="net" label={netLabel} tile>
+        <DataListText kind="amount" title={netText}>{netText}</DataListText>
+      </DataListCell>
+      <DataListCell column="vat" label={vatLabel} tile>
+        <DataListText kind="quantity" title={vatText}>{vatText}</DataListText>
+      </DataListCell>
+      <DataListCell column="gross" label={grossLabel} tile>
+        <DataListText kind="amount" title={grossText} className="font-semibold">{grossText}</DataListText>
+      </DataListCell>
+    </DataListRow>
   );
 });
 

@@ -1,17 +1,19 @@
-/** Quote list-state hook: loads into the query cache, then filters client-side; expiry is a computed flag, so one read serves every chip. */
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+/** Quote list-state hook: the list is one cached read, filtered client-side; expiry is a computed flag, so one read serves every chip. */
+import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { quotesQueries } from '../../../services/queries/quotes.queries';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
-import { quoteService } from '../../../services/quotes/quote.service';
-import { PERSISTED_QUERY_CACHE_MAX_AGE_MS, QUOTES_STALE_TIME_MS } from '../../../services/cache/cache-policy';
-import { getAuthQueryScope, queryKeys } from '../../../services/cache/queryKeys';
-import { useAuthStore } from '../../../store/auth.store';
 import {
   matchesQuoteSearch,
   matchesQuoteStatusFilter,
   normalizeQuoteSearchValue,
   type QuoteStatusFilter,
 } from '../helpers';
+
+/** Rows shown while the list has not loaded; one shared array keeps the filtered memo stable. */
+const NO_QUOTES: QuoteListItemDto[] = [];
 
 /** External dependencies for the quote list-state hook. */
 interface UseQuotesListStateParams {
@@ -28,59 +30,22 @@ export interface QuotesListState {
   readonly clearSearch: () => void;
   readonly statusFilter: QuoteStatusFilter;
   readonly setStatusFilter: Dispatch<SetStateAction<QuoteStatusFilter>>;
-  readonly load: (force?: boolean) => Promise<void>;
 }
 
 /** Loads and filters the quote list. */
 export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams): QuotesListState {
-  const queryClient = useQueryClient();
-  const authUser = useAuthStore((state) => state.user);
-  const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
-  const [quotes, setQuotes] = useState<QuoteListItemDto[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const scope = useAuthQueryScope();
+  const { data, isLoading, isLoadingError, isSuccess, errorUpdatedAt } = useQuery(quotesQueries.list(scope));
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>('All');
+  const quotes = data ?? NO_QUOTES;
 
-  const load = useCallback(async (force = false) => {
-    if (!authScope) {
-      setQuotes([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const key = queryKeys.quotes.list(authScope);
-    const cached = force ? undefined : queryClient.getQueryData<QuoteListItemDto[]>(key);
-
-    if (cached) {
-      setQuotes(cached);
-    }
-
-    setIsLoading(!cached);
-
-    try {
-      if (force) {
-        await queryClient.invalidateQueries({ exact: true, queryKey: key });
-      }
-
-      const data = await queryClient.fetchQuery({
-        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-        queryFn: quoteService.listQuotes,
-        queryKey: key,
-        staleTime: QUOTES_STALE_TIME_MS,
-      });
-      setQuotes(data);
-    } catch {
-      if (!cached) {
-        showErrorToast('quotes.errors.loadQuotesFailed');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [authScope, queryClient, showErrorToast]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useReadFailureToast({
+    failureMessageKey: isLoadingError ? 'quotes.errors.loadQuotesFailed' : null,
+    errorUpdatedAt,
+    isSuccess,
+    showErrorToast,
+  });
 
   const normalizedSearchTerm = useMemo(() => normalizeQuoteSearchValue(searchTerm), [searchTerm]);
 
@@ -93,7 +58,9 @@ export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams)
     [normalizedSearchTerm, quotes, statusFilter],
   );
 
-  const clearSearch = useCallback(() => setSearchTerm(''), []);
+  const clearSearch = useCallback(() => {
+    setSearchTerm('');
+  }, []);
 
   return {
     quotes,
@@ -104,6 +71,5 @@ export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams)
     clearSearch,
     statusFilter,
     setStatusFilter,
-    load,
   };
 }

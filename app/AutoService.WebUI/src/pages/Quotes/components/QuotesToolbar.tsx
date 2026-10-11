@@ -13,7 +13,7 @@ import {
   toolbarRowLayoutClass,
   toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
-import { QUOTE_STATUS_FILTERS, type QuoteStatusFilter } from '../helpers';
+import { isQuoteStatusFilter, QUOTE_STATUS_FILTERS, type QuoteStatusFilter } from '../helpers';
 
 interface QuotesToolbarProps {
   readonly t: TFunction;
@@ -51,7 +51,9 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
             data-testid="quotes-search-input"
             type="text"
             value={searchTerm}
-            onChange={(event) => onSearchChange(event.target.value)}
+            onChange={(event) => {
+              onSearchChange(event.target.value);
+            }}
             placeholder={t('quotes.searchPlaceholder')}
             className={searchInputClass}
           />
@@ -74,7 +76,13 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
             data-testid="quotes-status-filter"
             value={statusFilter}
             aria-label={t('quotes.filters.statusLabel')}
-            onChange={(event) => onStatusFilterChange(event.target.value as QuoteStatusFilter)}
+            onChange={(event) => {
+              const { value } = event.target;
+
+              if (isQuoteStatusFilter(value)) {
+                onStatusFilterChange(value);
+              }
+            }}
             className={compactSelectFullClass}
           >
             {QUOTE_STATUS_FILTERS.map((filter) => (

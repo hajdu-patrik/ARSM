@@ -1,9 +1,12 @@
 /** Basic identity/contact fields for mechanic registration. */
 
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FieldErrorText } from '../../../../components/common/FieldErrorText';
+import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import { inputClass, labelClass } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
+import type { RegisterFieldErrors, RegisterFieldName, RegisterTextFieldName } from '../types';
 
 /** Props for the BasicInfoSection component. */
 interface BasicInfoSectionProps {
@@ -12,12 +15,9 @@ interface BasicInfoSectionProps {
   readonly lastName: string;
   readonly email: string;
   readonly phoneNumber: string;
+  readonly fieldErrors: RegisterFieldErrors;
   readonly isSubmitting: boolean;
-  readonly onFirstNameChange: (value: string) => void;
-  readonly onMiddleNameChange: (value: string) => void;
-  readonly onLastNameChange: (value: string) => void;
-  readonly onEmailChange: (value: string) => void;
-  readonly onPhoneNumberChange: (value: string) => void;
+  readonly onFieldChange: (field: RegisterTextFieldName, value: string) => void;
 }
 
 const BasicInfoSectionComponent = memo(function BasicInfoSection({
@@ -26,14 +26,13 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
   lastName,
   email,
   phoneNumber,
+  fieldErrors,
   isSubmitting,
-  onFirstNameChange,
-  onMiddleNameChange,
-  onLastNameChange,
-  onEmailChange,
-  onPhoneNumberChange,
+  onFieldChange,
 }: BasicInfoSectionProps) {
   const { t } = useTranslation();
+  const idPrefix = useId();
+  const errorId = (field: RegisterFieldName) => `${idPrefix}-${field}-error`;
 
   return (
     <>
@@ -47,12 +46,16 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             type="text"
             autoComplete="given-name"
             value={firstName}
-            onChange={(e) => onFirstNameChange(filterNameInput(e.target.value))}
+            onChange={(event) => {
+              onFieldChange('firstName', filterNameInput(event.target.value));
+            }}
             placeholder={t('admin.firstNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
             required
+            {...fieldErrorA11yProps(errorId('firstName'), fieldErrors.firstName)}
           />
+          <FieldErrorText id={errorId('firstName')} messageKey={fieldErrors.firstName} />
         </div>
 
         <div>
@@ -64,11 +67,15 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             type="text"
             autoComplete="additional-name"
             value={middleName}
-            onChange={(e) => onMiddleNameChange(filterNameInput(e.target.value))}
+            onChange={(event) => {
+              onFieldChange('middleName', filterNameInput(event.target.value));
+            }}
             placeholder={t('admin.middleNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
+            {...fieldErrorA11yProps(errorId('middleName'), fieldErrors.middleName)}
           />
+          <FieldErrorText id={errorId('middleName')} messageKey={fieldErrors.middleName} />
         </div>
 
         <div>
@@ -80,12 +87,16 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
             type="text"
             autoComplete="family-name"
             value={lastName}
-            onChange={(e) => onLastNameChange(filterNameInput(e.target.value))}
+            onChange={(event) => {
+              onFieldChange('lastName', filterNameInput(event.target.value));
+            }}
             placeholder={t('admin.lastNamePlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
             required
+            {...fieldErrorA11yProps(errorId('lastName'), fieldErrors.lastName)}
           />
+          <FieldErrorText id={errorId('lastName')} messageKey={fieldErrors.lastName} />
         </div>
       </div>
 
@@ -98,12 +109,16 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           type="email"
           autoComplete="username"
           value={email}
-          onChange={(e) => onEmailChange(e.target.value)}
+          onChange={(event) => {
+            onFieldChange('email', event.target.value);
+          }}
           placeholder={t('admin.emailPlaceholder')}
           className={inputClass}
           disabled={isSubmitting}
           required
+          {...fieldErrorA11yProps(errorId('email'), fieldErrors.email)}
         />
+        <FieldErrorText id={errorId('email')} messageKey={fieldErrors.email} />
       </div>
 
       <div>
@@ -116,11 +131,15 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
           inputMode="tel"
           autoComplete="tel"
           value={phoneNumber}
-          onChange={(e) => onPhoneNumberChange(filterPhoneInput(e.target.value))}
+          onChange={(event) => {
+            onFieldChange('phoneNumber', filterPhoneInput(event.target.value));
+          }}
           placeholder={t('common.placeholders.phone')}
           className={inputClass}
           disabled={isSubmitting}
+          {...fieldErrorA11yProps(errorId('phoneNumber'), fieldErrors.phoneNumber)}
         />
+        <FieldErrorText id={errorId('phoneNumber')} messageKey={fieldErrors.phoneNumber} />
       </div>
     </>
   );

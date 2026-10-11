@@ -4,6 +4,7 @@ import type { MockApiState } from './test-data';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 import { resolveGrossAmount } from './api-mock-catalog-pricing';
 
+/** Dispatches `/api/parts` mock requests (list, create, update, delete). */
 export async function tryHandlePartRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
   if (path === '/api/parts' && method === 'GET') {
     await fulfillJson(route, state.parts);
@@ -35,25 +36,25 @@ export async function tryHandlePartRoute(route: Route, method: string, path: str
 }
 
 async function handleCreatePart(route: Route, state: MockApiState): Promise<void> {
-  const payload = route.request().postDataJSON() as CreatePartRequest;
+  const { partNumber, name, netUnitPrice, vatRatePercent } = route.request().postDataJSON() as Partial<CreatePartRequest>;
 
-  if (!payload.partNumber?.trim() || !payload.name?.trim()) {
+  if (!partNumber?.trim() || !name?.trim() || netUnitPrice === undefined || vatRatePercent === undefined) {
     await fulfillJson(route, { detail: 'PartNumber and Name are required.' }, 422);
     return;
   }
 
-  if (state.parts.some((part) => part.partNumber === payload.partNumber)) {
+  if (state.parts.some((part) => part.partNumber === partNumber)) {
     await fulfillJson(route, { detail: 'A part with this part number already exists.' }, 409);
     return;
   }
 
   const created: PartDto = {
     id: state.nextPartId++,
-    partNumber: payload.partNumber,
-    name: payload.name,
-    netUnitPrice: payload.netUnitPrice,
-    vatRatePercent: payload.vatRatePercent,
-    grossUnitPrice: resolveGrossAmount(state, payload.netUnitPrice, payload.vatRatePercent),
+    partNumber,
+    name,
+    netUnitPrice,
+    vatRatePercent,
+    grossUnitPrice: resolveGrossAmount(state, netUnitPrice, vatRatePercent),
   };
 
   state.parts.push(created);
@@ -61,8 +62,8 @@ async function handleCreatePart(route: Route, state: MockApiState): Promise<void
 }
 
 async function handleUpdatePart(route: Route, state: MockApiState, id: number): Promise<void> {
-  const index = state.parts.findIndex((part) => part.id === id);
-  if (index < 0) {
+  const existing = state.parts.find((part) => part.id === id);
+  if (!existing) {
     await fulfillJson(route, { detail: 'Part not found.' }, 404);
     return;
   }
@@ -74,8 +75,8 @@ async function handleUpdatePart(route: Route, state: MockApiState, id: number): 
     return;
   }
 
-  state.parts[index] = {
-    ...state.parts[index],
+  state.parts[state.parts.indexOf(existing)] = {
+    ...existing,
     partNumber: payload.partNumber,
     name: payload.name,
     netUnitPrice: payload.netUnitPrice,

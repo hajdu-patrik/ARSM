@@ -1,7 +1,7 @@
-/** Login request payload supporting email or phone number authentication. */
+/** Login request payload supporting email or phone number authentication; an undefined field is simply left out of the JSON. */
 export interface LoginRequest {
-  email?: string;
-  phoneNumber?: string;
+  email?: string | undefined;
+  phoneNumber?: string | undefined;
   password: string;
 }
 

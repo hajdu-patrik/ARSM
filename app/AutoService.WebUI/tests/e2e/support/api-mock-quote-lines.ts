@@ -8,6 +8,7 @@ import {
   applyQuoteWrite,
   recalculateQuoteLine,
   rejectQuoteVersion,
+  replaceQuote,
   toQuoteDetailResponse,
 } from './api-mock-quote-support';
 
@@ -48,17 +49,20 @@ async function rejectNonDraft(route: Route, quote: QuoteDetailDto): Promise<bool
   return false;
 }
 
-/** Replaces one quote in the state with its recalculated version and answers with it. */
-async function saveAndRespond(route: Route, state: MockApiState, index: number, quote: QuoteDetailDto): Promise<void> {
-  const saved = applyQuoteWrite(quote);
-  state.quotes[index] = saved;
+/** Replaces a quote in the state with its recalculated successor and answers with it. */
+async function saveAndRespond(
+  route: Route,
+  state: MockApiState,
+  previous: QuoteDetailDto,
+  successor: QuoteDetailDto,
+): Promise<void> {
+  const saved = applyQuoteWrite(successor);
+  replaceQuote(state, previous, saved);
   await fulfillJson(route, toQuoteDetailResponse(saved));
 }
 
 /** Adds a line to a draft quote. */
-export async function handleAddQuoteLine(route: Route, state: MockApiState, index: number): Promise<void> {
-  const quote = state.quotes[index];
-
+export async function handleAddQuoteLine(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   if (await rejectNonDraft(route, quote)) {
     return;
   }
@@ -101,7 +105,7 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, inde
   });
 
   const saved = applyQuoteWrite({ ...quote, lines: [...quote.lines, line] });
-  state.quotes[index] = saved;
+  replaceQuote(state, quote, saved);
   await fulfillJson(route, toQuoteDetailResponse(saved), 201);
 }
 
@@ -109,11 +113,9 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, inde
 export async function handleUpdateQuoteLine(
   route: Route,
   state: MockApiState,
-  index: number,
+  quote: QuoteDetailDto,
   lineId: number,
 ): Promise<void> {
-  const quote = state.quotes[index];
-
   if (await rejectNonDraft(route, quote)) {
     return;
   }
@@ -124,9 +126,9 @@ export async function handleUpdateQuoteLine(
     return;
   }
 
-  const lineIndex = quote.lines.findIndex((line) => line.id === lineId);
+  const existingLine = quote.lines.find((line) => line.id === lineId);
 
-  if (lineIndex < 0) {
+  if (!existingLine) {
     await fulfillJson(route, { detail: 'Quote line not found.' }, 404);
     return;
   }
@@ -142,9 +144,8 @@ export async function handleUpdateQuoteLine(
     return;
   }
 
-  const lines = [...quote.lines];
-  lines[lineIndex] = recalculateQuoteLine({
-    ...lines[lineIndex],
+  const updatedLine = recalculateQuoteLine({
+    ...existingLine,
     lineKind: payload.lineKind,
     partId: payload.partId,
     laborTypeId: payload.laborTypeId,
@@ -153,20 +154,19 @@ export async function handleUpdateQuoteLine(
     netUnitPrice: snapshot.netUnitPrice,
     vatRatePercent: snapshot.vatRatePercent,
   });
+  const lines = quote.lines.map((line) => (line === existingLine ? updatedLine : line));
 
-  await saveAndRespond(route, state, index, { ...quote, lines });
+  await saveAndRespond(route, state, quote, { ...quote, lines });
 }
 
 /** Removes one line from a draft quote. */
 export async function handleDeleteQuoteLine(
   route: Route,
   state: MockApiState,
-  index: number,
+  quote: QuoteDetailDto,
   lineId: number,
   version: number,
 ): Promise<void> {
-  const quote = state.quotes[index];
-
   if (await rejectNonDraft(route, quote)) {
     return;
   }
@@ -182,5 +182,5 @@ export async function handleDeleteQuoteLine(
     return;
   }
 
-  await saveAndRespond(route, state, index, { ...quote, lines });
+  await saveAndRespond(route, state, quote, { ...quote, lines });
 }

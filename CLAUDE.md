@@ -78,8 +78,9 @@
 
 - Never hardcode credentials, tokens, connection strings, or runtime hosts.
 - Security remediation runs in the `scripts/validate.py` security stage whenever a package manifest or
-  lockfile changes (or with `--security`): `npm audit fix` then `npm audit --audit-level=high` for the
-  WebUI, and `dotnet list package --vulnerable --include-transitive` for the backend, remediated safely.
+  lockfile changes (or with `--security`): `npm audit fix` then `npm audit --audit-level=high`, then
+  `npm audit signatures` for the WebUI, and `dotnet list package --vulnerable --include-transitive` for
+  the backend, remediated safely.
 - AI SQL tooling must use `ai_agent_test_user` with `SELECT`-only policy.
 - Keep tracked MCP SQL templates (`.claude/.mcp.template.json`, `.vscode/mcp.template.json`, `.env.example`)
   placeholder-based; local gitignored `.claude/.mcp.json`, `.vscode/mcp.json`, and `.env` must hold the
@@ -116,7 +117,8 @@
 
 ## Core Invariants
 
-- WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`).
+- WebUI clean-design rule: no shadows (`shadow-*`, `dark:shadow-*`, `ring-*`, `ring-offset-*`, CSS `box-shadow`,
+  `transition-shadow`); Tailwind rings render as `box-shadow`.
 - `People` remains abstract TPH; identity link via `People.IdentityUserId`.
 - DTO-only API boundaries.
 - Config-first runtime addressing; no localhost fallback hardcoding.

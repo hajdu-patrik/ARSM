@@ -1,11 +1,12 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-const vehicleDetailsToggleLabelPattern = /Show vehicle history|Hide vehicle history|Open vehicle details|Jármű előzmények mutatása|Jármű előzmények elrejtése|Jármű részleteinek megnyitása/i;
+const vehicleDetailsToggleLabelPattern = /Show vehicle history|Hide vehicle history|Járműelőzmények megjelenítése|Járműelőzmények elrejtése/i;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
+/** Page object for the Customers page and its vehicle history panel. */
 export class CustomersPage {
   constructor(private readonly page: Page) {}
 
@@ -20,7 +21,7 @@ export class CustomersPage {
   }
 
   customerCard(customerId: number): Locator {
-    return this.page.getByTestId(`customer-card-${customerId}`);
+    return this.page.getByTestId(`customer-card-${String(customerId)}`);
   }
 
   detailsPanel(): Locator {
@@ -40,7 +41,7 @@ export class CustomersPage {
   }
 
   async expandCustomer(customerId: number): Promise<void> {
-    await this.page.getByTestId(`customer-expand-${customerId}`).click();
+    await this.page.getByTestId(`customer-expand-${String(customerId)}`).click();
     await expect(this.customerCard(customerId).getByRole('heading', { name: 'Vehicles', exact: true })).toBeVisible();
   }
 

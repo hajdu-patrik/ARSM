@@ -1,14 +1,28 @@
 import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { extname, resolve } from 'node:path'
+import { constants as zlibConstants, gzipSync } from 'node:zlib'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import mkcert from 'vite-plugin-mkcert'
 
 /** Vendor chunk name mapped to the npm packages bundled into it, highest priority first. */
 const vendorChunks: ReadonlyArray<readonly [name: string, packages: readonly string[]]> = [
   // `scheduler` is react-dom's own runtime dependency, so it belongs with React.
-  ['vendor-react', ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler']],
-  ['vendor-i18n', ['i18next', 'react-i18next', 'i18next-browser-languagedetector']],
+  ['vendor-react', ['react', 'react-dom', 'react-router', 'scheduler']],
+  ['vendor-i18n', ['i18next', 'react-i18next']],
   ['vendor-ui', ['lucide-react', 'zustand', 'axios']],
+  // Each package is listed by name: the matcher requires a path separator right after it.
+  [
+    'vendor-query',
+    [
+      '@tanstack/react-query',
+      '@tanstack/query-core',
+      '@tanstack/react-query-persist-client',
+      '@tanstack/query-persist-client-core',
+    ],
+  ],
 ]
 
 /** Builds a module-id matcher for a set of npm packages (Windows and POSIX separators). */
@@ -61,12 +75,19 @@ function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
     'img-src': `'self' data: blob: ${apiOrigin}`,
     'connect-src': `'self' ${apiOrigin}`,
     'object-src': "'none'",
-    'base-uri': "'self'",
+    // The app never writes a <base> element, so no base URI is allowed (ASVS 3.4.3).
+    'base-uri': "'none'",
     'form-action': "'self'",
+    'manifest-src': "'self'",
+    // Valueless directive: http: subresource requests are upgraded to https:.
+    'upgrade-insecure-requests': '',
+    // Trusted Types: no policy may be created, so every DOM injection sink rejects plain strings.
+    'require-trusted-types-for': "'script'",
+    'trusted-types': "'none'",
   }
 
   return Object.entries(directives)
-    .map(([directive, value]) => `${directive} ${value}`)
+    .map(([directive, value]) => `${directive} ${value}`.trim())
     .join('; ')
 }
 
@@ -96,6 +117,91 @@ function contentSecurityPolicyPlugin(apiOrigin: string): Plugin {
   }
 }
 
+/** Per-chunk gzip budget in bytes (1 kB = 1000 bytes, like Vite's report): the largest chunk
+ * today (vendor-react) rounded up to the next 10 kB. Exceeding it only warns. */
+const CHUNK_GZIP_BUDGET_BYTES = 90_000
+
+/** Text asset extensions that get a precompressed `.gz` sibling; images are already compressed. */
+const PRECOMPRESS_EXTENSIONS: ReadonlySet<string> = new Set([
+  '.js',
+  '.css',
+  '.html',
+  '.svg',
+  '.json',
+  '.webmanifest',
+  '.txt',
+  '.xml',
+])
+
+/** Smaller files are served uncompressed, the same floor as nginx `gzip_min_length`. */
+const PRECOMPRESS_MIN_BYTES = 1024
+
+/** Gzips at the highest level; the build pays the CPU once and nginx `gzip_static` serves the result. */
+function gzipMax(source: string | Buffer): Buffer {
+  return gzipSync(source, { level: zlibConstants.Z_BEST_COMPRESSION })
+}
+
+/** Formats a byte count as kB with one decimal (1 kB = 1000 bytes). */
+function formatKilobytes(bytes: number): string {
+  return `${(bytes / 1000).toFixed(1)} kB`
+}
+
+/** Build-only bundle budget: warns, never fails the build, when a JS chunk's gzip size exceeds
+ * `CHUNK_GZIP_BUDGET_BYTES`. */
+function bundleBudgetPlugin(): Plugin {
+  return {
+    name: 'arsm-bundle-budget',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      for (const output of Object.values(bundle)) {
+        if (output.type !== 'chunk') {
+          continue
+        }
+
+        const gzipBytes = gzipMax(output.code).length
+        if (gzipBytes > CHUNK_GZIP_BUDGET_BYTES) {
+          this.warn(
+            `Chunk ${output.fileName} is ${formatKilobytes(gzipBytes)} gzip, over the ` +
+              `${formatKilobytes(CHUNK_GZIP_BUDGET_BYTES)} per-chunk budget (CHUNK_GZIP_BUDGET_BYTES in vite.config.ts).`,
+          )
+        }
+      }
+    },
+  }
+}
+
+/** Build-only precompression: writes a level-9 `.gz` sibling for every emitted text asset, which
+ * nginx serves through `gzip_static`. No brotli: the nginx image has no ngx_brotli module. */
+function precompressPlugin(): Plugin {
+  return {
+    name: 'arsm-precompress',
+    apply: 'build',
+    writeBundle(options) {
+      if (options.dir === undefined) {
+        return
+      }
+
+      const outDir = resolve(options.dir)
+      for (const relativePath of readdirSync(outDir, { recursive: true, encoding: 'utf8' })) {
+        if (!PRECOMPRESS_EXTENSIONS.has(extname(relativePath).toLowerCase())) {
+          continue
+        }
+
+        const file = resolve(outDir, relativePath)
+        const source = readFileSync(file)
+        if (source.length < PRECOMPRESS_MIN_BYTES) {
+          continue
+        }
+
+        const compressed = gzipMax(source)
+        if (compressed.length < source.length) {
+          writeFileSync(`${file}.gz`, compressed)
+        }
+      }
+    },
+  }
+}
+
 /** Resolves the API origin for the CSP `connect-src`; config-first, no localhost fallback
  * (see app/AutoService.WebUI/CLAUDE.md). */
 function resolveApiOrigin(apiUrl: string | undefined): string {
@@ -106,10 +212,11 @@ function resolveApiOrigin(apiUrl: string | undefined): string {
   return new URL(apiUrl).origin
 }
 
+/** Shared config; builds add the CSP, bundle-budget and precompress plugins, the dev server needs PORT. */
 export default defineConfig(({ mode, command }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env: Record<string, string | undefined> = loadEnv(mode, process.cwd(), '')
   const config = {
-    plugins: [react(), mkcert()],
+    plugins: [react(), babel({ presets: [reactCompilerPreset()] }), mkcert()],
     build: {
       rolldownOptions: {
         output: {
@@ -123,7 +230,12 @@ export default defineConfig(({ mode, command }) => {
   if (command !== 'serve') {
     return {
       ...config,
-      plugins: [...config.plugins, contentSecurityPolicyPlugin(resolveApiOrigin(env.VITE_API_URL))],
+      plugins: [
+        ...config.plugins,
+        contentSecurityPolicyPlugin(resolveApiOrigin(env.VITE_API_URL)),
+        bundleBudgetPlugin(),
+        precompressPlugin(),
+      ],
     }
   }
 

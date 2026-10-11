@@ -1,4 +1,5 @@
-/** In-flow "+N" counter shown after an avatar stack; it takes its own space, so it never covers an avatar. */
+/** "+N" counter shown after an avatar stack; in flow by default, so it takes its own space and never covers an avatar.
+ * The calendar day cell takes it out of the flow, beside the dot, from md up. */
 import { memo } from 'react';
 
 /** Badge sizes: `md` follows avatar stacks, `sm` the calendar day dot. */
@@ -20,7 +21,7 @@ const CompactOverflowBadgeComponent = memo(function CompactOverflowBadge({
 }: CompactOverflowBadgeProps) {
   return (
     <span
-      className={`pointer-events-none inline-flex ${SIZE_CLASSES[size]} shrink-0 items-center justify-center rounded-full border border-arsm-border bg-arsm-card text-[11px] font-semibold leading-none text-arsm-muted dark:border-arsm-border-dark dark:bg-arsm-card-dark dark:text-arsm-muted-dark ${className ?? ''}`}
+      className={`pointer-events-none inline-flex ${SIZE_CLASSES[size]} shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-card text-ui-micro font-semibold leading-none text-ui-muted ${className ?? ''}`}
       aria-hidden="true"
     >
       +{count}
@@ -30,4 +31,5 @@ const CompactOverflowBadgeComponent = memo(function CompactOverflowBadge({
 
 CompactOverflowBadgeComponent.displayName = 'CompactOverflowBadge';
 
+/** Memoized decorative "+N" overflow counter (aria-hidden). */
 export const CompactOverflowBadge = CompactOverflowBadgeComponent;

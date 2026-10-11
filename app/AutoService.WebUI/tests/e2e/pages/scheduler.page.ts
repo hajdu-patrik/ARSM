@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+/** Page object for the scheduler calendar, intake and appointment detail dialogs. */
 export class SchedulerPage {
   constructor(private readonly page: Page) {}
 
@@ -28,6 +29,7 @@ export class SchedulerPage {
     return dialog;
   }
 
+  /** Selects today first when the intake button is disabled, then opens the intake dialog. */
   async openIntakeForCurrentDay(): Promise<Locator> {
     const openButton = this.page.getByTestId('scheduler-intake-open');
 
@@ -63,9 +65,10 @@ export class SchedulerPage {
   }
 }
 
-function currentDayTestId(): string {
+/** The test id of today's cell in the calendar grid. */
+export function currentDayTestId(): string {
   const today = new Date();
-  const year = today.getFullYear();
+  const year = String(today.getFullYear());
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
 

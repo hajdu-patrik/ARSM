@@ -9,6 +9,82 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- WebUI polish from the frontend benchmark report (2026-10-10 to 2026-10-11): its 48 proposals, with no
+  new feature, page or system, and the rendered UI unchanged except for the approved items below.
+  - Cookies: `__Host-autoservice_at`, `__Host-autoservice_rt` and `__Host-autoservice_csrf` replace the
+    unprefixed names, so a browser only keeps them when they are `Secure`, `Path=/` and carry no
+    `Domain`. `SameSite=Strict`, the `HttpOnly` split (the CSRF cookie stays script-readable), the
+    lifetimes, the `X-CSRF-Token` header and the double-submit rule are unchanged. Old-name cookies
+    are not migrated, so everyone logs in once again; no schema change, no migration.
+  - Deletions (logout, profile deletion) now send `Secure`, `Path=/` and `SameSite=Strict` for all
+    three cookies, because a browser ignores the expiry of a `__Host-` cookie without them.
+  - HTTP suite: a new check proves an authenticated `DELETE` without `X-CSRF-Token` is refused with
+    `403 csrf_token_invalid` and removes nothing; every suite file reads the prefixed cookie names.
+  - Toolchain: TypeScript 7 side by side with the TypeScript 6 API that `typescript-eslint` needs
+    (`tsc` 7.0.2 comes from `@typescript/native`), React Router 8 without `react-router-dom`, and a
+    WebUI `.npmrc` (`min-release-age=7`, `ignore-scripts=true`). eslint runs `strictTypeChecked`,
+    `jsx-a11y` and `react-hooks`; the app and E2E projects set `noUncheckedIndexedAccess` and
+    `exactOptionalPropertyTypes`; `validate.py` also rejects `ring-*`. The unused
+    `i18next-browser-languagedetector` dependency is removed.
+  - Shared utilities: `safeStorage` (never throws), `intlFormat` (memoized `Intl` objects, en-GB and
+    24-hour date presets), `devLog` (production logs only the error name), `fieldA11y`, and
+    `filterNameSearchInput` (names may hold spaces and apostrophes in search fields only).
+  - Shared building blocks: one `FieldErrorText` component (`components/common`) renders every inline
+    field error (Login, Settings, Admin registration, Customers, the Inventory catalog form and the
+    Quotes editor), and one `useReadFailureToast` hook (`src/hooks`) toasts a failing read once per
+    failure episode (Customers, Quotes, Scheduler, Settings profile, Admin roster): silent while it
+    keeps failing, re-armed only by a successful load. The unused `monoIdentifierWrapTextClass` is
+    removed.
+  - Tokens and focus: dark mode is a CSS-variable swap (25 `ui-*` colours replace most `dark:` pairs),
+    radius and type scales with an 11 px floor, and keyboard focus is a 2 px outline (#6e53ad, #a98fe0
+    in dark) instead of the box-shadow ring. Form fields get a 3:1 border (#8b7cc0) that turns to the
+    focus colour on focus, the neutral compact chip uses that field border too, the crop zoom slider
+    has a focus outline, the light status badges meet AA contrast, and Inter is self-hosted.
+  - Wording: HU uses one name per concept (Árajánlat, Katalógus, Munkadíjtípus, Időpont, Kiküldött and
+    the adjective statuses, ÁFA) and the polite form; EN follows en-GB spelling (Labour) without word swaps, uses
+    Log in and Log out as verbs and ends sentences with a full stop. Counted texts have
+    `_one`/`_other` plurals, dates read DD/MM/YYYY (EN) or `YYYY. MM. DD.` (HU) on a 24-hour clock,
+    and only the active locale loads at start-up (the language switch is async).
+  - Data: page reads are declarative `useQuery` factories instead of copies in state and request-id
+    guards; only the part and labor-type catalog is persisted in sessionStorage (24 h, per person);
+    logout also clears the scheduler view, the toasts (`clearToasts`) and the error-artwork cache
+    (`clearErrorIllustrationCache`, which is warmed when the browser is idle); quote changes refresh
+    the company results, and deleting a vehicle or customer refreshes the Quotes and Company results
+    reads, because the API deletes their quotes with them. The sidebar profile reads the shared
+    profile query. axios times out after 30 s, 502/503/504 go to the error page like 500, a session
+    check that hits a timeout or a 5xx no longer logs the user out, and the live stream reconnects
+    with exponential backoff and jitter.
+  - Accessibility: the dialog traps Tab, takes the initial focus, hands it back to the opener, closes
+    on Escape (only the topmost one does) and is named by its title; validated fields carry
+    `aria-invalid` and `aria-describedby`; the Inventory tabs are ARIA tabs; the sidebar toggles
+    expose `aria-expanded` and `aria-controls`; `DataList` renders each row once (table semantics in
+    the table layout, list semantics in the tiles); toasts live in one persistent polite live region,
+    and error toasts last 10 s, pause on hover and focus, wrap and are announced as alerts.
+  - Controls: the language button names the language it switches to, the theme toggle shows a sun or
+    a moon, the theme follows the system colour scheme until one is picked (a pre-paint script applies
+    it and preloads the white logo only in the dark theme), and the login submit is always enabled,
+    validates on submit and focuses the first invalid field, with the mode switch above the fields.
+  - Splash: it stays until the session is restored and the translations are ready, for at least 250
+    ms and no longer a fixed 3 s, now also on `/quotes`, `/inventory` and `/company-results`; one
+    route table feeds the router, the guards, the sidebar, SEO and the splash, and the lazy-route
+    fallback is a centered spinner.
+  - Uploads: a profile picture is checked by type, magic bytes and header size (8192 px per side, 25
+    megapixels) before it is decoded.
+  - Build and CSP: `base-uri 'none'`, `manifest-src 'self'`, `upgrade-insecure-requests` and Trusted
+    Types (`require-trusted-types-for 'script'; trusted-types 'none'`); a `vendor-query` chunk, a gzip
+    budget warning per chunk and `.gz` precompression for nginx `gzip_static`; the per-route JSON-LD block
+    is removed, because Trusted Types block its script and every route is noindex; `index.html` and the
+    manifest declare `lang` hu (`og:locale` hu_HU, en_GB in English); the phone number library loads when the phone login is chosen, and
+    the icon shrank from 152 KB to 26 KB.
+  - E2E: the specs follow the single-DOM list hooks, ARIA tabs, wording and toasts. New specs cover
+    the splash (also with reduced motion), Trusted Types on every route (the policy is added as a
+    header, because the dev server sends no CSP) and the Hungarian vocabulary; the Playwright config
+    pins the light colour scheme.
+
+_Dev time: ~17h41m wall-clock (2026-10-10 21:21 to 2026-10-11 15:02 +02:00, including the research and the
+overnight workflow runs). ~$162-$324, output-token-only estimate (16.2M output tokens over five arsm-chain runs,
+sonnet to opus; excludes input tokens, cache writes/reads and the research agents)._
+
 - Aspire 13.6.0 for the AppHost (2026-10-04): `Aspire.AppHost.Sdk`, `Aspire.Hosting.JavaScript` and
   `Aspire.Hosting.PostgreSQL` 13.5.3 -> 13.6.0, with all four lock files regenerated (win-x64 default
   plus the linux-x64, osx-arm64 and osx-x64 ones the CI runners restore in locked mode); the local

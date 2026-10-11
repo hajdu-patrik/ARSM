@@ -1,11 +1,11 @@
 /** Inventory page: Parts and Labor types tabs sharing create/edit/delete modals; active tab reflected in the URL. */
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
 import { useToastStore } from '../../store/toast.store';
 import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
 import { useCatalogState } from './hooks/useCatalogState';
 import { useCatalogMutations } from './hooks/useCatalogMutations';
+import { INVENTORY_TAB_LABEL_KEYS, INVENTORY_TABS, useInventoryTabs } from './hooks/useInventoryTabs';
 import { CatalogTab } from './components/CatalogTab';
 import { CatalogFormModal } from './components/CatalogFormModal';
 import { DeleteCatalogItemModal } from './components/DeleteCatalogItemModal';
@@ -21,12 +21,7 @@ import {
   segmentedControlClass,
 } from '../../utils/formStyles';
 
-type InventoryTab = 'parts' | 'labor-types';
-
-function resolveActiveTab(searchParams: URLSearchParams): InventoryTab {
-  return searchParams.get('tab') === 'labor-types' ? 'labor-types' : 'parts';
-}
-
+/** Maps whichever part or labor type awaits delete confirmation to the shared delete-modal target. */
 function resolveDeleteTarget(
   partTarget: PartDto | null,
   laborTypeTarget: LaborTypeDto | null,
@@ -44,32 +39,13 @@ function resolveDeleteTarget(
 
 const InventoryPageComponent = memo(function InventoryPage() {
   const { t, i18n } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
   const showWarningToast = useToastStore((state) => state.showWarning);
 
-  const activeTab = resolveActiveTab(searchParams);
-
-  const setActiveTab = useCallback((tab: InventoryTab) => {
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous);
-      next.set('tab', tab);
-      return next;
-    }, { replace: true });
-  }, [setSearchParams]);
-
+  const tabs = useInventoryTabs();
   const catalogState = useCatalogState({ language: i18n.language, showErrorToast });
-
-  const catalogMutations = useCatalogMutations({
-    showSuccessToast,
-    showErrorToast,
-    showWarningToast,
-    setParts: catalogState.parts.setItems,
-    reloadParts: catalogState.parts.load,
-    setLaborTypes: catalogState.laborTypes.setItems,
-    reloadLaborTypes: catalogState.laborTypes.load,
-  });
+  const catalogMutations = useCatalogMutations({ showSuccessToast, showErrorToast, showWarningToast });
 
   const deleteTarget = useMemo(
     () => resolveDeleteTarget(catalogMutations.deletePartTarget, catalogMutations.deleteLaborTypeTarget),
@@ -88,74 +64,84 @@ const InventoryPageComponent = memo(function InventoryPage() {
 
   const handleConfirmDelete = useCallback(() => {
     if (catalogMutations.deletePartTarget) {
-      void catalogMutations.handleDeletePart();
+      catalogMutations.handleDeletePart();
       return;
     }
 
     if (catalogMutations.deleteLaborTypeTarget) {
-      void catalogMutations.handleDeleteLaborType();
+      catalogMutations.handleDeleteLaborType();
     }
   }, [catalogMutations]);
 
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
       <header className={pageHeaderWithSubtitleClass}>
-        <h1 className={pageTitleClass}>{t('nav.inventory')}</h1>
+        <h1 id={tabs.headingId} className={pageTitleClass}>{t('nav.inventory')}</h1>
         <p className={pageSubtitleClass}>{t('inventory.pageDescription')}</p>
       </header>
 
-      <div className={`${segmentedControlClass} max-w-md`}>
-        <button
-          type="button"
-          aria-pressed={activeTab === 'parts'}
-          onClick={() => setActiveTab('parts')}
-          className={getSegmentedControlOptionClass(activeTab === 'parts')}
-        >
-          {t('inventory.tabs.parts')}
-        </button>
-        <button
-          type="button"
-          aria-pressed={activeTab === 'labor-types'}
-          onClick={() => setActiveTab('labor-types')}
-          className={getSegmentedControlOptionClass(activeTab === 'labor-types')}
-        >
-          {t('inventory.tabs.laborTypes')}
-        </button>
+      <div role="tablist" aria-labelledby={tabs.headingId} className={`${segmentedControlClass} max-w-md`}>
+        {INVENTORY_TABS.map((tab) => {
+          const isActive = tab === tabs.activeTab;
+
+          return (
+            <button
+              key={tab}
+              id={tabs.getTabId(tab)}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={tabs.panelId}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => {
+                tabs.selectTab(tab);
+              }}
+              onKeyDown={(event) => {
+                tabs.handleTabKeyDown(event, tab);
+              }}
+              className={getSegmentedControlOptionClass(isActive)}
+            >
+              {t(INVENTORY_TAB_LABEL_KEYS[tab])}
+            </button>
+          );
+        })}
       </div>
 
-      {activeTab === 'parts' ? (
-        <CatalogTab
-          t={t}
-          locale={i18n.language}
-          items={catalogState.parts.filteredItems}
-          isLoading={catalogState.parts.isLoading}
-          searchTerm={catalogState.parts.searchTerm}
-          onSearchChange={catalogState.parts.setSearchTerm}
-          onClearSearch={catalogState.parts.clearSearch}
-          sortDirection={catalogState.parts.sortDirection}
-          onToggleSortDirection={catalogState.parts.toggleSortDirection}
-          onOpenCreateModal={catalogMutations.openCreatePartModal}
-          onOpenEditModal={catalogMutations.openEditPartModal}
-          onOpenDeleteModal={catalogMutations.openDeletePartModal}
-          config={partCatalogTabConfig}
-        />
-      ) : (
-        <CatalogTab
-          t={t}
-          locale={i18n.language}
-          items={catalogState.laborTypes.filteredItems}
-          isLoading={catalogState.laborTypes.isLoading}
-          searchTerm={catalogState.laborTypes.searchTerm}
-          onSearchChange={catalogState.laborTypes.setSearchTerm}
-          onClearSearch={catalogState.laborTypes.clearSearch}
-          sortDirection={catalogState.laborTypes.sortDirection}
-          onToggleSortDirection={catalogState.laborTypes.toggleSortDirection}
-          onOpenCreateModal={catalogMutations.openCreateLaborTypeModal}
-          onOpenEditModal={catalogMutations.openEditLaborTypeModal}
-          onOpenDeleteModal={catalogMutations.openDeleteLaborTypeModal}
-          config={laborTypeCatalogTabConfig}
-        />
-      )}
+      <div id={tabs.panelId} role="tabpanel" aria-labelledby={tabs.getTabId(tabs.activeTab)} className="min-w-0">
+        {tabs.activeTab === 'parts' ? (
+          <CatalogTab
+            t={t}
+            locale={i18n.language}
+            items={catalogState.parts.filteredItems}
+            isLoading={catalogState.parts.isLoading}
+            searchTerm={catalogState.parts.searchTerm}
+            onSearchChange={catalogState.parts.setSearchTerm}
+            onClearSearch={catalogState.parts.clearSearch}
+            sortDirection={catalogState.parts.sortDirection}
+            onToggleSortDirection={catalogState.parts.toggleSortDirection}
+            onOpenCreateModal={catalogMutations.openCreatePartModal}
+            onOpenEditModal={catalogMutations.openEditPartModal}
+            onOpenDeleteModal={catalogMutations.openDeletePartModal}
+            config={partCatalogTabConfig}
+          />
+        ) : (
+          <CatalogTab
+            t={t}
+            locale={i18n.language}
+            items={catalogState.laborTypes.filteredItems}
+            isLoading={catalogState.laborTypes.isLoading}
+            searchTerm={catalogState.laborTypes.searchTerm}
+            onSearchChange={catalogState.laborTypes.setSearchTerm}
+            onClearSearch={catalogState.laborTypes.clearSearch}
+            sortDirection={catalogState.laborTypes.sortDirection}
+            onToggleSortDirection={catalogState.laborTypes.toggleSortDirection}
+            onOpenCreateModal={catalogMutations.openCreateLaborTypeModal}
+            onOpenEditModal={catalogMutations.openEditLaborTypeModal}
+            onOpenDeleteModal={catalogMutations.openDeleteLaborTypeModal}
+            config={laborTypeCatalogTabConfig}
+          />
+        )}
+      </div>
 
       <CatalogFormModal
         isOpen={catalogMutations.partModalOpen}
@@ -163,6 +149,7 @@ const InventoryPageComponent = memo(function InventoryPage() {
         isSaving={catalogMutations.isSavingPart}
         isSaveEnabled={catalogMutations.isPartSaveEnabled}
         form={catalogMutations.partForm}
+        fieldErrors={catalogMutations.partFieldErrors}
         locale={i18n.language}
         t={t}
         onClose={catalogMutations.closePartModal}
@@ -177,6 +164,7 @@ const InventoryPageComponent = memo(function InventoryPage() {
         isSaving={catalogMutations.isSavingLaborType}
         isSaveEnabled={catalogMutations.isLaborTypeSaveEnabled}
         form={catalogMutations.laborTypeForm}
+        fieldErrors={catalogMutations.laborTypeFieldErrors}
         locale={i18n.language}
         t={t}
         onClose={catalogMutations.closeLaborTypeModal}

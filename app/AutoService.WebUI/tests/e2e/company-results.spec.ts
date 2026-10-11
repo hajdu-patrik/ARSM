@@ -46,6 +46,11 @@ test.describe('Company results', () => {
     await expect(page.getByTestId('company-results-expired')).toContainText(/7,620/);
     await expect(page.getByTestId('company-results-rejected')).toContainText('HUF 0');
     await expect(page.getByText(/Drafts in this period: 1/)).toBeVisible();
+
+    // The counted texts agree in number: none accepted, one pending quote, none rejected.
+    await expect(page.getByTestId('company-results-accepted')).toContainText(/From 0 accepted quotes$/);
+    await expect(page.getByTestId('company-results-pending')).toContainText(/1 quote$/);
+    await expect(page.getByTestId('company-results-rejected')).toContainText(/0 quotes$/);
   });
 
   test('counts an accepted quote in the month it was created in', async ({ page }) => {
@@ -58,6 +63,7 @@ test.describe('Company results', () => {
     // September, which is the rule the monthly breakdown rests on.
     await expect(page.getByTestId('company-results-accepted-net')).toHaveText(/18,000/);
     await expect(page.getByTestId('company-results-accepted-gross')).toHaveText(/22,860/);
+    await expect(page.getByTestId('company-results-accepted')).toContainText(/From 1 accepted quote$/);
     await expect(page.getByTestId('company-results-pending')).toContainText('HUF 0');
 
     const septemberRow = page.getByTestId('company-results-month-row').nth(8);

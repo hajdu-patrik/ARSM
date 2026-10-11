@@ -1,10 +1,11 @@
-/** Delete-confirmation state for the appointment detail modal; mirrors the unassign confirm flow (busy flag always released on settle). */
+/** Delete-confirmation state for the appointment detail modal; the delete is a mutation, so its pending flag is derived. */
 import { useCallback, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 
 /** Inputs of {@link useAppointmentDelete}. */
 interface UseAppointmentDeleteArgs {
-  /** Id of the currently open appointment, or `undefined` when none is open. */
-  readonly appointmentId: number | undefined;
+  /** Id of the open appointment. */
+  readonly appointmentId: number;
   /** Deletes the appointment by id; never rejects (errors are reported via toast by the caller). */
   readonly onDelete: (id: number) => Promise<void>;
 }
@@ -19,16 +20,20 @@ interface UseAppointmentDeleteResult {
   readonly openDeleteConfirm: () => void;
   /** Closes the delete confirmation modal, ignored while a delete is in flight. */
   readonly closeDeleteConfirm: () => void;
-  /** Runs the delete for the current appointment and closes the confirmation modal. */
-  readonly confirmDelete: () => Promise<void>;
-  /** Resets the confirmation state, for when the detail modal closes or switches appointment. */
-  readonly resetDeleteConfirm: () => void;
+  /** Runs the delete for the open appointment and closes the confirmation modal. */
+  readonly confirmDelete: () => void;
 }
 
-/** Delete-confirmation state for {@link AppointmentDetailModal}; its own hook because delete is the modal's only admin-gated destructive action. */
+/** Delete-confirmation state for the detail dialog; its own hook because delete is the dialog's only admin-gated destructive action. */
 export function useAppointmentDelete({ appointmentId, onDelete }: UseAppointmentDeleteArgs): UseAppointmentDeleteResult {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { isPending: isDeleting, mutate: runDelete } = useMutation({
+    mutationFn: () => onDelete(appointmentId),
+    onSuccess: () => {
+      setIsDeleteConfirmOpen(false);
+    },
+  });
 
   const openDeleteConfirm = useCallback(() => {
     setIsDeleteConfirmOpen(true);
@@ -40,23 +45,9 @@ export function useAppointmentDelete({ appointmentId, onDelete }: UseAppointment
     }
   }, [isDeleting]);
 
-  const resetDeleteConfirm = useCallback(() => {
-    setIsDeleteConfirmOpen(false);
-  }, []);
-
-  const confirmDelete = useCallback(async () => {
-    if (appointmentId === undefined) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      await onDelete(appointmentId);
-      setIsDeleteConfirmOpen(false);
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [appointmentId, onDelete]);
+  const confirmDelete = useCallback(() => {
+    runDelete();
+  }, [runDelete]);
 
   return {
     isDeleteConfirmOpen,
@@ -64,6 +55,5 @@ export function useAppointmentDelete({ appointmentId, onDelete }: UseAppointment
     openDeleteConfirm,
     closeDeleteConfirm,
     confirmDelete,
-    resetDeleteConfirm,
   };
 }

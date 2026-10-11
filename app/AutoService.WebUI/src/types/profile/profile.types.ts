@@ -23,15 +23,15 @@ export interface ProfileData {
 /** Request payload for {@code PUT /api/profile}; all fields optional, only provided ones are updated. */
 export interface UpdateProfileRequest {
   /** Updated first name. */
-  firstName?: string;
+  firstName?: string | undefined;
   /** Updated last name. */
-  lastName?: string;
+  lastName?: string | undefined;
   /** Updated email address. */
-  email?: string;
+  email?: string | undefined;
   /** Updated phone number. */
-  phoneNumber?: string;
+  phoneNumber?: string | undefined;
   /** Updated middle name. */
-  middleName?: string;
+  middleName?: string | undefined;
 }
 
 /** Request payload for changing the user's password ({@code POST /api/profile/change-password}). */

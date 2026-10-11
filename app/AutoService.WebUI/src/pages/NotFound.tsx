@@ -2,9 +2,10 @@
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuthStore } from '../store/auth.store';
 import { ErrorPage } from '../components/common/ErrorPage';
+import { APP_ROUTE_PATHS } from '../router/appRoutes';
 
 const REDIRECT_DURATION_MS = 3000;
 const TIMER_TICK_MS = 50;
@@ -17,7 +18,7 @@ const NotFoundComponent = memo(function NotFound() {
   const [remainingMs, setRemainingMs] = useState(REDIRECT_DURATION_MS);
 
   const redirectTarget = useMemo(
-    () => (isAuthenticated ? '/' : '/login'),
+    () => (isAuthenticated ? APP_ROUTE_PATHS.scheduler : APP_ROUTE_PATHS.login),
     [isAuthenticated],
   );
 
@@ -35,20 +36,22 @@ const NotFoundComponent = memo(function NotFound() {
 
       if (nextRemaining <= 0) {
         clearInterval(timer);
-        navigate(redirectTarget, { replace: true });
+        void navigate(redirectTarget, { replace: true });
       }
     }, TIMER_TICK_MS);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [isAuthLoading, navigate, redirectTarget]);
 
   const secondsLeft = Math.max(Math.ceil(remainingMs / 1000), 0);
   const ctaTextKey = isAuthenticated
-    ? 'notFound.goToDashboard'
+    ? 'notFound.goToScheduler'
     : 'notFound.goToLogin';
 
   const handleCta = useCallback(() => {
-    navigate(redirectTarget, { replace: true });
+    void navigate(redirectTarget, { replace: true });
   }, [navigate, redirectTarget]);
 
   return (

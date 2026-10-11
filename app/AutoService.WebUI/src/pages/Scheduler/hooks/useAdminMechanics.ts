@@ -1,47 +1,43 @@
-/** Loads the full mechanic list for admin flows; refreshes on profile-picture-update SSE events. */
-import { useCallback, useEffect, useState } from 'react';
-import { adminService } from '../../../services/admin/admin.service';
-import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile-picture-live.service';
+/** Loads the full mechanic list for admin flows; refetches when a profile picture changes. */
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MechanicListItem } from '../../../services/admin/admin.service';
+import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile-picture-live.service';
+import { adminQueries } from '../../../services/queries/admin.queries';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
+import { logError } from '../../../utils/devLog';
 
-/** Provides the list of all mechanics for admin assign/unassign flows. */
-export function useAdminMechanics(isAdmin: boolean, isOpen: boolean) {
-  const [allMechanics, setAllMechanics] = useState<MechanicListItem[]>([]);
+/** Shared empty list, so an unloaded roster keeps one stable reference between renders. */
+const NO_MECHANICS: MechanicListItem[] = [];
 
-  const loadAllMechanics = useCallback(async () => {
-    if (!isAdmin || !isOpen) {
-      return;
-    }
-
-    try {
-      const data = await adminService.listMechanics();
-      setAllMechanics(data);
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[useAdminMechanics] Failed to load mechanics:', err);
-    }
-  }, [isAdmin, isOpen]);
+/** Provides the list of all mechanics for admin assign/unassign flows; only admins fetch it. */
+export function useAdminMechanics(isAdmin: boolean) {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
+  const { data, error } = useQuery({ ...adminQueries.mechanics(scope), enabled: isAdmin });
 
   useEffect(() => {
-    if (!isAdmin || !isOpen) {
-      return;
+    if (error) {
+      logError('scheduler.adminMechanics', error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      return undefined;
     }
 
-    const initialLoadTimer = globalThis.setTimeout(() => {
-      void loadAllMechanics();
-    }, 0);
-
-    const handleProfilePictureUpdated = () => {
-      void loadAllMechanics();
+    const refreshMechanics = () => {
+      void queryClient.invalidateQueries({ queryKey: adminQueries.mechanics(scope).queryKey });
     };
 
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, refreshMechanics);
     return () => {
-      globalThis.clearTimeout(initialLoadTimer);
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, handleProfilePictureUpdated);
+      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, refreshMechanics);
     };
-  }, [isAdmin, isOpen, loadAllMechanics]);
+  }, [isAdmin, queryClient, scope]);
 
   return {
-    allMechanics,
+    allMechanics: data ?? NO_MECHANICS,
   };
 }

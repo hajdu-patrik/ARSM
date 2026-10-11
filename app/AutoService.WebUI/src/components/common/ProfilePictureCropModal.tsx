@@ -1,3 +1,5 @@
+/** Profile picture crop modal: a round cropper with zoom that hands the cropped WebP blob to the caller. */
+
 import { memo, useCallback, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +21,7 @@ interface ProfilePictureCropModalProps {
   readonly imageSrc: string | null;
   readonly isSubmitting: boolean;
   readonly onCancel: () => void;
-  readonly onConfirm: (croppedImage: Blob) => Promise<void>;
+  readonly onConfirm: (croppedImage: Blob) => void;
 }
 
 const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
@@ -52,11 +54,7 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
       return;
     }
 
-    try {
-      await onConfirm(croppedBlob);
-    } catch {
-      // Parent handler owns upload-level toasts.
-    }
+    onConfirm(croppedBlob);
   }, [croppedAreaPixels, imageSrc, onConfirm, showErrorToast]);
 
   return (
@@ -122,7 +120,9 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
           max={3}
           step={0.01}
           value={zoom}
-          onChange={(event) => setZoom(Number(event.target.value))}
+          onChange={(event) => {
+            setZoom(Number(event.target.value));
+          }}
           className="crop-zoom-slider w-full rounded-full"
           disabled={isSubmitting}
         />
@@ -132,4 +132,6 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
 });
 
 ProfilePictureCropModalComponent.displayName = 'ProfilePictureCropModal';
+
+/** Crops the picked picture to a square and confirms it; a failed crop shows an error toast. */
 export const ProfilePictureCropModal = ProfilePictureCropModalComponent;

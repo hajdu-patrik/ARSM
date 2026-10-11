@@ -16,6 +16,25 @@ test.describe('Error route edge cases', () => {
     await expect(page).toHaveURL(/\/login$/, { timeout: 7000 });
   });
 
+  test('offers the scheduler as the way back to a signed-in user', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.notfound-user@example.test',
+      isAuthenticated: true,
+    });
+
+    await page.goto('/non-existent-edge-route');
+
+    const backToScheduler = page.getByRole('button', { name: 'Go to scheduler' });
+    await expect(backToScheduler).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go to login' })).toHaveCount(0);
+
+    await backToScheduler.click();
+
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
+  });
+
   test('uses sanitized returnTo target on server error page', async ({ page }) => {
     await primeBrowserState(page, { sessionHint: false, language: 'en' });
     await installApiMocks(page, {

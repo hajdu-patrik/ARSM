@@ -2,10 +2,11 @@ import type { SchedulerCreateIntakeRequest } from '../../../src/types/scheduler/
 import type { CreateVehicleRequest, VehicleDetailDto } from '../../../src/types/customers/customers.types';
 import type { MockApiState } from './test-data';
 
+/** Adds a vehicle to a mock customer and updates the customer's vehicle count and plates. */
 export function createVehicle(state: MockApiState, customerId: number, request: CreateVehicleRequest): VehicleDetailDto {
   const customer = state.customers.find((item) => item.id === customerId);
   if (!customer) {
-    throw new Error(`Unknown mock customer ${customerId}`);
+    throw new Error(`Unknown mock customer ${String(customerId)}`);
   }
 
   const createdVehicle: VehicleDetailDto = {
@@ -27,6 +28,7 @@ export function createVehicle(state: MockApiState, customerId: number, request: 
   return createdVehicle;
 }
 
+/** Creates an InProgress appointment from an intake request, resolving the looked-up vehicle. */
 export function createAppointment(state: MockApiState, request: SchedulerCreateIntakeRequest) {
   const lookup = state.schedulerLookupCustomers.find((customer) => customer.email === request.customerEmail);
   const vehicle = lookup?.vehicles.find((item) => item.id === request.vehicleId) ?? lookup?.vehicles[0];

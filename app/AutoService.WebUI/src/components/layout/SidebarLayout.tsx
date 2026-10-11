@@ -1,23 +1,22 @@
-import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { useNavigate } from 'react-router-dom';
+/** Authenticated app shell: the collapsible sidebar (a drawer below md), the header with the
+ * theme/language controls, and the page. */
+import { memo, useCallback, useId, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 import { authService } from '../../services/auth/auth.service';
-import { profileService } from '../../services/profile/profile.service';
-import {
-  PROFILE_PICTURE_UPDATED_EVENT,
-  startProfilePictureLiveUpdates,
-} from '../../services/profile/profile-picture-live.service';
-import { ThemeLanguageControls } from './ThemeLanguageControls';
-import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
+import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import { largeIconClass, sidebarShellIconButtonClass } from '../../utils/formStyles';
+import { readStorage, writeStorage } from '../../utils/safeStorage';
+import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { SidebarContent, type NavItem } from './SidebarContent';
+import { useSidebarProfile } from './useSidebarProfile';
 
 interface SidebarLayoutProps {
-  readonly children: React.ReactNode;
-  readonly navItems?: readonly NavItem[];
+  readonly children: ReactNode;
+  readonly navItems?: readonly NavItem[] | undefined;
 }
 
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
@@ -26,7 +25,7 @@ const TABLET_VIEWPORT_QUERY = '(width >= 48rem) and (width < 64rem)';
 
 /** Reads the saved collapse choice; null until the user toggled once, so the viewport default applies. */
 function readSavedCollapsedPreference(): boolean | null {
-  const saved = localStorage.getItem(COLLAPSED_KEY);
+  const saved = readStorage('local', COLLAPSED_KEY);
 
   if (saved === 'true' || saved === 'false') {
     return saved === 'true';
@@ -40,7 +39,9 @@ function subscribeToTabletViewport(onChange: () => void): () => void {
   const query = globalThis.matchMedia(TABLET_VIEWPORT_QUERY);
   query.addEventListener('change', onChange);
 
-  return () => query.removeEventListener('change', onChange);
+  return () => {
+    query.removeEventListener('change', onChange);
+  };
 }
 
 /** Current snapshot of the tablet range media query. */
@@ -56,7 +57,7 @@ function useSidebarCollapsed() {
 
   const toggleCollapse = useCallback(() => {
     const next = !collapsed;
-    localStorage.setItem(COLLAPSED_KEY, String(next));
+    writeStorage('local', COLLAPSED_KEY, String(next));
     setSavedPreference(next);
   }, [collapsed]);
 
@@ -68,142 +69,38 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const theme = useThemeStore((state) => state.theme);
+  const profile = useSidebarProfile();
+  const mobileDrawerId = useId();
+  const desktopSidebarId = useId();
 
   const { collapsed, toggleCollapse } = useSidebarCollapsed();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [profilePersonId, setProfilePersonId] = useState<number | null>(user?.personId ?? null);
-  const [profileFirstName, setProfileFirstName] = useState<string | null>(null);
-  const [profileLastName, setProfileLastName] = useState<string | null>(null);
-  const [profileEmail, setProfileEmail] = useState<string | null>(null);
-  const [hasProfilePicture, setHasProfilePicture] = useState(false);
-  const [avatarCacheBuster, setAvatarCacheBuster] = useState(0);
-  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    const loadProfileForAvatar = async () => {
-      await Promise.resolve();
-
-      if (isCancelled) {
-        return;
-      }
-
-      if (!user) {
-        setProfilePersonId(null);
-        setProfileFirstName(null);
-        setProfileLastName(null);
-        setProfileEmail(null);
-        setHasProfilePicture(false);
-        setAvatarCacheBuster(0);
-        setAvatarLoadFailed(false);
-        return;
-      }
-
-      setProfilePersonId(user.personId);
-      setProfileFirstName(null);
-      setProfileLastName(null);
-      setProfileEmail(null);
-      setHasProfilePicture(false);
-      setAvatarLoadFailed(false);
-      setAvatarCacheBuster(Date.now());
-
-      try {
-        const profile = await profileService.getProfile();
-        if (isCancelled) {
-          return;
-        }
-
-        setProfilePersonId(profile.personId);
-        setProfileFirstName(profile.firstName ?? null);
-        setProfileLastName(profile.lastName ?? null);
-        setProfileEmail(profile.email);
-        setHasProfilePicture(profile.hasProfilePicture);
-        setAvatarLoadFailed(false);
-        setAvatarCacheBuster(Date.now());
-      } catch {
-        // Keep prior state on transient profile fetch failures.
-      }
-    };
-
-    void loadProfileForAvatar();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [user]);
-
-  useEffect(() => {
-    const stopLiveUpdates = startProfilePictureLiveUpdates();
-    return () => {
-      stopLiveUpdates();
-    };
-  }, []);
-
-  useEffect(() => {
-    const onProfilePictureUpdated = (event: Event) => {
-      const custom = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
-      const currentPersonId = profilePersonId ?? user?.personId;
-      if (typeof custom.detail?.personId !== 'number' || custom.detail.personId !== currentPersonId) {
-        return;
-      }
-
-      setHasProfilePicture(custom.detail?.hasProfilePicture ?? hasProfilePicture);
-      setAvatarCacheBuster(custom.detail?.cacheBuster ?? Date.now());
-      setAvatarLoadFailed(false);
-    };
-
-    globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, onProfilePictureUpdated);
-    return () => {
-      globalThis.removeEventListener(PROFILE_PICTURE_UPDATED_EVENT, onProfilePictureUpdated);
-    };
-  }, [hasProfilePicture, profilePersonId, user?.personId]);
 
   const handleLogout = useCallback(async () => {
     await authService.logout();
-    navigate('/login');
+    void navigate(APP_ROUTE_PATHS.login);
   }, [navigate]);
 
   const requestLogout = useCallback(() => {
     void handleLogout();
   }, [handleLogout]);
 
-  const toggleMobile = useCallback(() => setMobileOpen((prev) => !prev), []);
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
-  const markAvatarLoadFailed = useCallback(() => setAvatarLoadFailed(true), []);
+  const toggleMobile = useCallback(() => {
+    setMobileOpen((previous) => !previous);
+  }, []);
+  const closeMobile = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
 
-  const initials = getAvatarInitials(profileFirstName, profileLastName, profileEmail);
-  const fallbackAvatarColorClass = getDeterministicAvatarColor(profilePersonId ?? user?.personId ?? profileEmail);
-  const showProfilePicture = hasProfilePicture && !avatarLoadFailed;
-  const profilePictureUrl = `${profileService.getProfilePictureUrl()}?pid=${profilePersonId ?? 'me'}&v=${avatarCacheBuster}`;
   const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
-
-  const profileViewModel = useMemo(() => ({
-    initials,
-    fallbackAvatarColorClass,
-    showProfilePicture,
-    profilePictureUrl,
-    firstName: profileFirstName,
-    lastName: profileLastName,
-    email: profileEmail,
-    onAvatarLoadFailed: markAvatarLoadFailed,
-  }), [
-    fallbackAvatarColorClass,
-    initials,
-    markAvatarLoadFailed,
-    profileEmail,
-    profileFirstName,
-    profileLastName,
-    profilePictureUrl,
-    showProfilePicture,
-  ]);
 
   const sidebarContent = (
     <SidebarContent
       collapsed={collapsed}
+      collapseControlsId={desktopSidebarId}
       logoSrc={logoSrc}
       navItems={navItems}
-      profile={profileViewModel}
+      profile={profile}
       canShowAdminNav={Boolean(user?.isAdmin)}
       onCloseMobile={closeMobile}
       onToggleCollapse={toggleCollapse}
@@ -212,7 +109,7 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
   );
 
   return (
-    <div className="relative flex h-screen h-dvh overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+    <div className="relative flex h-screen h-dvh overflow-hidden bg-ui-surface">
       <div
         aria-hidden="true"
         className="arsm-shell-ambient pointer-events-none absolute inset-0"
@@ -228,26 +125,30 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
       )}
 
       <aside
+        id={mobileDrawerId}
         inert={!mobileOpen}
         aria-hidden={mobileOpen ? undefined : true}
-        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-arsm-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform motion-reduce:transition-none dark:border-arsm-border-dark dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-50 w-[calc(100vw-1rem)] max-w-72 border-r border-ui-border bg-arsm-input transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-transform motion-reduce:transition-none dark:bg-arsm-card-dark md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {sidebarContent}
       </aside>
 
       <aside
-        className={`hidden overflow-hidden border-r border-arsm-border bg-arsm-input transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] motion-reduce:transition-none dark:border-arsm-border-dark dark:bg-arsm-card-dark md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-64'}`}
+        id={desktopSidebarId}
+        className={`hidden overflow-hidden border-r border-ui-border bg-arsm-input transition-[width] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] will-change-[width] motion-reduce:transition-none dark:bg-arsm-card-dark md:fixed md:inset-y-0 md:left-0 md:z-30 md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-64'}`}
       >
         {sidebarContent}
       </aside>
 
       <div className={`flex min-h-0 min-w-0 flex-1 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] motion-reduce:transition-none ${collapsed ? 'md:pl-[68px]' : 'md:pl-64'}`}>
-        <header className="flex h-[73px] shrink-0 items-center justify-between border-b border-arsm-border bg-arsm-input/90 px-4 backdrop-blur-xl dark:border-arsm-border-dark dark:bg-arsm-card-dark/85">
+        <header className="flex h-[73px] shrink-0 items-center justify-between border-b border-ui-border bg-arsm-input/90 px-4 backdrop-blur-xl dark:bg-arsm-card-dark/85">
           <button
             type="button"
             onClick={toggleMobile}
             title={translate('sidebar.openMenu')}
             aria-label={translate('sidebar.openMenu')}
+            aria-expanded={mobileOpen}
+            aria-controls={mobileDrawerId}
             className={`${sidebarShellIconButtonClass} md:hidden`}
           >
             <Menu className={largeIconClass} />
@@ -265,4 +166,6 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
 });
 
 SidebarLayoutComponent.displayName = 'SidebarLayout';
+
+/** Authenticated page shell with the collapsible sidebar, mobile drawer and header controls. */
 export const SidebarLayout = SidebarLayoutComponent;

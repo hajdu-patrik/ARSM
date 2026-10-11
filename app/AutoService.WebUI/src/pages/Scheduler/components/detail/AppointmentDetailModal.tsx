@@ -1,4 +1,5 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+/** Appointment detail modal: view, edit, status, mechanic assignment and delete of one appointment. */
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   AppointmentDto,
@@ -7,22 +8,17 @@ import type {
   UpdateAppointmentVehicleRequest,
 } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
-import { useToastStore } from '../../../../store/toast.store';
 import { getDueState } from '../../utils/due-date';
 import { formatDueExactDateTime, formatLongDateTime } from '../../utils/scheduler-datetime';
 import { useAdminMechanics } from '../../hooks/useAdminMechanics';
 import { AppointmentDetailBody } from './AppointmentDetailModal.sections';
 import { AppointmentDetailFooter } from './AppointmentDetailModal.footer';
 import { AppointmentDetailConfirmModals } from './AppointmentDetailConfirmModals';
+import { useAppointmentDetailActions } from './AppointmentDetailModal.actions';
 import { useAppointmentDelete } from './AppointmentDetailModal.delete';
-import {
-  type EditFormState,
-  buildEditForm,
-  buildUpdateRequestFromEditForm,
-  buildUpdatedAppointmentSnapshot,
-  normalizeEditFieldValue,
-} from './AppointmentDetailModal.edit';
+import { useAppointmentEditing } from './AppointmentDetailModal.editing';
 
+/** The open appointment, the viewer's role and the page-level mutation handlers. */
 interface AppointmentDetailModalProps {
   readonly appointment: AppointmentDto | null;
   readonly isOpen: boolean;
@@ -42,27 +38,13 @@ interface AppointmentDetailModalProps {
   readonly onDelete: (id: number) => Promise<void>;
 }
 
-function hasAppointmentEditChanges(
-  appointment: AppointmentDto,
-  request: UpdateAppointmentRequest,
-): boolean {
-  if (appointment.taskDescription.trim() !== request.taskDescription.trim()) {
-    return true;
-  }
+type AppointmentDetailDialogProps = Omit<AppointmentDetailModalProps, 'appointment' | 'isOpen'> & {
+  readonly appointment: AppointmentDto;
+};
 
-  const currentDueMs = Date.parse(appointment.dueDateTime);
-  const nextDueMs = Date.parse(request.dueDateTime);
-
-  if (Number.isNaN(currentDueMs) || Number.isNaN(nextDueMs)) {
-    return appointment.dueDateTime !== request.dueDateTime;
-  }
-
-  return currentDueMs !== nextDueMs;
-}
-
-const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
+/** The open detail dialog; it owns all per-appointment UI state, which starts fresh for every appointment. */
+function AppointmentDetailDialog({
   appointment,
-  isOpen,
   onClose,
   currentMechanicId,
   isAdmin,
@@ -73,204 +55,33 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   onAdminUnassign,
   onUpdate,
   onDelete,
-}: AppointmentDetailModalProps) {
+}: AppointmentDetailDialogProps) {
   const { t, i18n } = useTranslation();
-  const showErrorToast = useToastStore((state) => state.showError);
-
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isUnclaiming, setIsUnclaiming] = useState(false);
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [selectedNewMechanicId, setSelectedNewMechanicId] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<EditFormState | null>(null);
-
-  const [pendingStatusChange, setPendingStatusChange] = useState<AppointmentStatus | null>(null);
-  const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
-  const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
-  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
-
-  const initializedAppointmentIdRef = useRef<number | null>(null);
-  const { allMechanics } = useAdminMechanics(isAdmin, isOpen);
-  const {
-    isDeleteConfirmOpen,
-    isDeleting,
-    openDeleteConfirm,
-    closeDeleteConfirm,
-    confirmDelete,
-    resetDeleteConfirm,
-  } = useAppointmentDelete({ appointmentId: appointment?.id, onDelete });
-
-  useEffect(() => {
-    if (!isOpen || !appointment) {
-      initializedAppointmentIdRef.current = null;
-      setEditForm(null);
-      setIsEditing(false);
-      setPendingStatusChange(null);
-      setIsClaimConfirmOpen(false);
-      setIsUnclaimConfirmOpen(false);
-      setIsSaveConfirmOpen(false);
-      resetDeleteConfirm();
-      return;
-    }
-
-    if (initializedAppointmentIdRef.current === appointment.id) {
-      return;
-    }
-
-    initializedAppointmentIdRef.current = appointment.id;
-    setEditForm(buildEditForm(appointment));
-    setIsEditing(false);
-    setPendingStatusChange(null);
-    setIsClaimConfirmOpen(false);
-    setIsUnclaimConfirmOpen(false);
-    setIsSaveConfirmOpen(false);
-    resetDeleteConfirm();
-  }, [appointment, isOpen, resetDeleteConfirm]);
-
-  const handleClaim = useCallback(async () => {
-    if (!appointment) {
-      return;
-    }
-
-    setIsClaiming(true);
-    try {
-      await onClaim(appointment.id);
-      setIsClaimConfirmOpen(false);
-    } finally {
-      setIsClaiming(false);
-    }
-  }, [appointment, onClaim]);
-
-  const handleStatusChangeConfirmed = useCallback(async () => {
-    if (!appointment || pendingStatusChange === null) {
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      await onStatusChange(appointment.id, pendingStatusChange);
-      setPendingStatusChange(null);
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [appointment, onStatusChange, pendingStatusChange]);
-
-  const handleUnclaimConfirmed = useCallback(async () => {
-    if (!appointment) {
-      return;
-    }
-
-    setIsUnclaiming(true);
-    try {
-      await onUnclaim(appointment.id);
-      setIsUnclaimConfirmOpen(false);
-    } finally {
-      setIsUnclaiming(false);
-    }
-  }, [appointment, onUnclaim]);
-
-  const handleAdminAssign = useCallback(async () => {
-    if (!appointment || !selectedNewMechanicId) {
-      return;
-    }
-
-    setIsAssigning(true);
-    try {
-      await onAdminAssign(appointment.id, Number(selectedNewMechanicId));
-      setSelectedNewMechanicId('');
-    } finally {
-      setIsAssigning(false);
-    }
-  }, [appointment, onAdminAssign, selectedNewMechanicId]);
-
-  const handleAdminUnassign = useCallback(async (mechanicId: number) => {
-    if (!appointment) {
-      return;
-    }
-
-    setIsAssigning(true);
-    try {
-      await onAdminUnassign(appointment.id, mechanicId);
-    } finally {
-      setIsAssigning(false);
-    }
-  }, [appointment, onAdminUnassign]);
-
-  const handleEditField = useCallback((field: keyof EditFormState, value: string) => {
-    setEditForm((previous) => {
-      if (!previous) {
-        return previous;
-      }
-
-      return {
-        ...previous,
-        [field]: normalizeEditFieldValue(field, value),
-      };
-    });
-  }, []);
-
-  const handleSaveConfirmed = useCallback(async () => {
-    if (!appointment || !editForm) {
-      return;
-    }
-
-    const validationResult = buildUpdateRequestFromEditForm(appointment, editForm);
-    if ('errorKey' in validationResult) {
-      showErrorToast(validationResult.errorKey);
-      return;
-    }
-
-    if (!hasAppointmentEditChanges(appointment, validationResult.request.appointment)) {
-      setEditForm(buildEditForm(appointment));
-      setIsEditing(false);
-      setIsSaveConfirmOpen(false);
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await onUpdate(appointment.id, validationResult.request.appointment);
-      setIsSaveConfirmOpen(false);
-      setIsEditing(false);
-      setEditForm(buildEditForm(buildUpdatedAppointmentSnapshot(appointment, validationResult.request)));
-    } catch {
-      showErrorToast('scheduler.detail.updateError');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [appointment, editForm, onUpdate, showErrorToast]);
-
-  const handleExitEditMode = useCallback(() => {
-    if (!appointment) {
-      return;
-    }
-
-    setEditForm(buildEditForm(appointment));
-    setIsEditing(false);
-  }, [appointment]);
+  const { allMechanics } = useAdminMechanics(isAdmin);
+  const actions = useAppointmentDetailActions({
+    appointmentId: appointment.id,
+    onClaim,
+    onStatusChange,
+    onUnclaim,
+    onAdminAssign,
+    onAdminUnassign,
+  });
+  const editing = useAppointmentEditing({ appointment, onUpdate });
+  const deletion = useAppointmentDelete({ appointmentId: appointment.id, onDelete });
+  const { cancelEditing, isEditing } = editing;
 
   const handleCloseDetailModal = useCallback(() => {
     if (isEditing) {
-      handleExitEditMode();
-      setIsSaveConfirmOpen(false);
+      cancelEditing();
       return;
     }
 
     onClose();
-  }, [handleExitEditMode, isEditing, onClose]);
-
-  if (!appointment) {
-    return null;
-  }
+  }, [cancelEditing, isEditing, onClose]);
 
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
   const isInProgress = appointment.status === 'InProgress';
-  const isClosedForMechanicMutations = !isInProgress;
-
   const showEdit = isAdmin || isAssigned;
   const canClaim = !isAdmin && !isAssigned && isInProgress;
   const canUnclaim = isAssigned && isInProgress && appointment.mechanics.length > 1;
@@ -279,55 +90,29 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
   const availableMechanics = allMechanics.filter((mechanic) => !assignedMechanicIds.has(mechanic.personId));
 
-  const formattedDate = formatLongDateTime(appointment.scheduledDate, i18n.language);
-  const dueDateLabel = formatDueExactDateTime(appointment.dueDateTime, i18n.language);
-
-  const dueState = getDueState(appointment.dueDateTime);
-  const isSaveEnabled = (() => {
-    if (!isEditing || !editForm) {
-      return false;
-    }
-
-    const validationResult = buildUpdateRequestFromEditForm(appointment, editForm);
-    if ('errorKey' in validationResult) {
-      return false;
-    }
-
-    return hasAppointmentEditChanges(appointment, validationResult.request.appointment);
-  })();
-
   const footer = (
     <AppointmentDetailFooter
       appointment={appointment}
       showEdit={showEdit}
       isEditing={isEditing}
-      isSaving={isSaving}
-      isSaveEnabled={isSaveEnabled}
+      isSaving={editing.isSaving}
+      isSaveEnabled={editing.isSaveEnabled}
       canChangeStatus={canChangeStatus}
-      isUpdating={isUpdating}
+      isUpdating={actions.isUpdatingStatus}
       isAdmin={isAdmin}
-      isDeleting={isDeleting}
-      onDeleteClick={openDeleteConfirm}
+      isDeleting={deletion.isDeleting}
+      onDeleteClick={deletion.openDeleteConfirm}
       t={t}
-      onStartEdit={() => {
-        setEditForm(buildEditForm(appointment));
-        setIsEditing(true);
-      }}
-      onSave={() => {
-        if (!isSaving && isSaveEnabled) {
-          setIsSaveConfirmOpen(true);
-        }
-      }}
-      onStatusChange={(status) => {
-        setPendingStatusChange(status);
-      }}
+      onStartEdit={editing.startEditing}
+      onSave={editing.requestSave}
+      onStatusChange={actions.requestStatusChange}
     />
   );
 
   return (
     <>
       <Modal
-        isOpen={isOpen}
+        isOpen
         onClose={handleCloseDetailModal}
         title={t('scheduler.detail.title')}
         widthClassName="max-w-2xl"
@@ -338,94 +123,75 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
           appointment={appointment}
           isAdmin={isAdmin}
           isEditing={isEditing}
-          editForm={editForm}
-          formattedDate={formattedDate}
-          dueDateLabel={dueDateLabel}
-          dueState={dueState}
+          editForm={editing.editForm}
+          formattedDate={formatLongDateTime(appointment.scheduledDate, i18n.language)}
+          dueDateLabel={formatDueExactDateTime(appointment.dueDateTime, i18n.language)}
+          dueState={getDueState(appointment.dueDateTime)}
           availableMechanics={availableMechanics}
-          selectedNewMechanicId={selectedNewMechanicId}
+          selectedNewMechanicId={actions.selectedNewMechanicId}
           canClaim={canClaim}
           canUnclaim={canUnclaim}
-          isClaiming={isClaiming}
-          isAssigning={isAssigning}
-          isClosedForMechanicMutations={isClosedForMechanicMutations}
-          isUnclaiming={isUnclaiming}
+          isClaiming={actions.isClaiming}
+          isAssigning={actions.isAssigning}
+          isClosedForMechanicMutations={!isInProgress}
+          isUnclaiming={actions.isUnclaiming}
           t={t}
-          onEditField={handleEditField}
+          locale={i18n.language}
+          onEditField={editing.changeField}
           onClaim={() => {
             if (canClaim) {
-              setIsClaimConfirmOpen(true);
+              actions.openClaimConfirm();
             }
           }}
           onUnclaim={() => {
             if (canUnclaim) {
-              setIsUnclaimConfirmOpen(true);
+              actions.openUnclaimConfirm();
             }
           }}
-          onSelectNewMechanic={setSelectedNewMechanicId}
-          onAdminAssign={() => {
-            void handleAdminAssign();
-          }}
-          onAdminUnassign={(mechanicId) => {
-            void handleAdminUnassign(mechanicId);
-          }}
+          onSelectNewMechanic={actions.selectNewMechanic}
+          onAdminAssign={actions.assignSelectedMechanic}
+          onAdminUnassign={actions.unassignMechanic}
           currentMechanicId={currentMechanicId}
         />
       </Modal>
 
       <AppointmentDetailConfirmModals
-        pendingStatusChange={pendingStatusChange}
-        isUpdating={isUpdating}
-        onCloseStatusConfirm={() => {
-          if (!isUpdating) {
-            setPendingStatusChange(null);
-          }
-        }}
-        onConfirmStatusChange={() => {
-          void handleStatusChangeConfirmed();
-        }}
-        isClaimConfirmOpen={isClaimConfirmOpen}
-        isClaiming={isClaiming}
-        onCloseClaimConfirm={() => {
-          if (!isClaiming) {
-            setIsClaimConfirmOpen(false);
-          }
-        }}
-        onConfirmClaim={() => {
-          void handleClaim();
-        }}
-        isUnclaimConfirmOpen={isUnclaimConfirmOpen}
-        isUnclaiming={isUnclaiming}
-        onCloseUnclaimConfirm={() => {
-          if (!isUnclaiming) {
-            setIsUnclaimConfirmOpen(false);
-          }
-        }}
-        onConfirmUnclaim={() => {
-          void handleUnclaimConfirmed();
-        }}
-        isSaveConfirmOpen={isSaveConfirmOpen}
-        isSaving={isSaving}
-        onCloseSaveConfirm={() => {
-          if (!isSaving) {
-            setIsSaveConfirmOpen(false);
-            if (isEditing) {
-              handleExitEditMode();
-            }
-          }
-        }}
-        onConfirmSave={() => {
-          void handleSaveConfirmed();
-        }}
-        isDeleteConfirmOpen={isDeleteConfirmOpen}
-        isDeleting={isDeleting}
-        onCloseDeleteConfirm={closeDeleteConfirm}
-        onConfirmDelete={() => {
-          void confirmDelete();
-        }}
+        pendingStatusChange={actions.pendingStatusChange}
+        isUpdating={actions.isUpdatingStatus}
+        onCloseStatusConfirm={actions.closeStatusConfirm}
+        onConfirmStatusChange={actions.confirmStatusChange}
+        isClaimConfirmOpen={actions.isClaimConfirmOpen}
+        isClaiming={actions.isClaiming}
+        onCloseClaimConfirm={actions.closeClaimConfirm}
+        onConfirmClaim={actions.confirmClaim}
+        isUnclaimConfirmOpen={actions.isUnclaimConfirmOpen}
+        isUnclaiming={actions.isUnclaiming}
+        onCloseUnclaimConfirm={actions.closeUnclaimConfirm}
+        onConfirmUnclaim={actions.confirmUnclaim}
+        isSaveConfirmOpen={editing.isSaveConfirmOpen}
+        isSaving={editing.isSaving}
+        onCloseSaveConfirm={editing.closeSaveConfirm}
+        onConfirmSave={editing.confirmSave}
+        isDeleteConfirmOpen={deletion.isDeleteConfirmOpen}
+        isDeleting={deletion.isDeleting}
+        onCloseDeleteConfirm={deletion.closeDeleteConfirm}
+        onConfirmDelete={deletion.confirmDelete}
       />
     </>
   );
+}
+
+/** Detail modal; the dialog mounts only while an appointment is open and is keyed by its id. */
+const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
+  appointment,
+  isOpen,
+  ...dialogProps
+}: AppointmentDetailModalProps) {
+  if (!isOpen || appointment === null) {
+    return null;
+  }
+
+  return <AppointmentDetailDialog key={appointment.id} appointment={appointment} {...dialogProps} />;
 });
 
 AppointmentDetailModalComponent.displayName = 'AppointmentDetailModal';

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="hu">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon.png" />
     <link rel="apple-touch-icon" href="/icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preload" as="image" type="image/webp" href="/AppLogoFrameBlack.webp" fetchpriority="high" />
-    <link rel="preload" as="image" type="image/webp" href="/AppLogoFrameWhite.webp" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f2f0f8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#060914" media="(prefers-color-scheme: dark)" />
@@ -20,7 +20,7 @@
     <meta property="og:title" content="ARSM – Appointment and Resource Scheduling Management" />
     <meta property="og:description" content="ARSM helps auto service teams schedule appointments, manage workload, and keep workshop operations organized." />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content="hu_HU" />
     <meta property="og:site_name" content="ARSM" />
     <meta property="og:image" content="%VITE_SITE_URL%/og-image.png" />
     <meta property="og:image:type" content="image/png" />
@@ -38,11 +38,11 @@
     <!-- Static pre-React copy of the /login splash first frame (mobile LCP); kept in
       step with LoadingPage.tsx / src/utils/loginShell.ts. See app/AutoService.WebUI/CLAUDE.md. -->
     <div id="login-shell" aria-hidden="true" class="hidden" hidden>
-      <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-arsm-primary dark:bg-arsm-deepest dark:text-arsm-primary-dark sm:px-4 sm:pb-8 sm:pt-8">
+      <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-arsm-surface px-3 pb-6 pt-24 text-ui-text dark:bg-arsm-deepest sm:px-4 sm:pb-8 sm:pt-8">
         <div class="arsm-auth-ambient pointer-events-none absolute left-1/2 top-1/2 z-0 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"></div>
         <div class="arsm-auth-sheen pointer-events-none absolute inset-0 z-0"></div>
         <div class="relative z-10 w-full max-w-[28rem] max-[320px]:max-w-[19.5rem]">
-          <div class="relative overflow-hidden rounded-3xl border border-arsm-border bg-arsm-card/95 p-5 backdrop-blur-md dark:border-arsm-border-dark dark:bg-arsm-card-dark/95 max-[320px]:p-4 sm:p-8">
+          <div class="relative overflow-hidden rounded-3xl border border-ui-border bg-ui-card/95 p-5 backdrop-blur-md max-[320px]:p-4 sm:p-8">
             <div class="mb-6 flex flex-col items-center text-center max-[320px]:mb-5 sm:mb-8">
               <div class="mt-1 flex items-center justify-center">
                 <img src="/AppLogoFrameBlack.webp" alt="" width="789" height="662" fetchpriority="high" decoding="async" class="block h-20 w-auto select-none opacity-75 dark:hidden sm:h-24" />
@@ -52,7 +52,7 @@
           </div>
         </div>
       </main>
-      <div class="fixed inset-0 z-50 overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+      <div class="fixed inset-0 z-50 overflow-hidden bg-ui-surface">
         <div class="absolute inset-0 pointer-events-none hidden max-[320px]:block">
           <div class="arsm-loading-mobile-orb mobile-orb"></div>
         </div>
@@ -66,6 +66,25 @@
     </div>
     <script>
       (function () {
+        // The theme store's rule, applied before the first paint: the saved choice, else the system scheme.
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem('preferred-theme');
+        } catch {
+          // Storage unavailable: follow the system color scheme, exactly like the theme store.
+        }
+        const isDark = savedTheme === 'dark'
+          || (savedTheme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', isDark);
+        if (isDark) {
+          // Only the dark theme shows the white logo (the black one is preloaded in the head).
+          const logoPreload = document.createElement('link');
+          logoPreload.rel = 'preload';
+          logoPreload.as = 'image';
+          logoPreload.type = 'image/webp';
+          logoPreload.href = '/AppLogoFrameWhite.webp';
+          document.head.appendChild(logoPreload);
+        }
         if (window.location.pathname !== '/login') {
           return;
         }
@@ -79,10 +98,8 @@
           if (sessionStorage.getItem('autoservice-skip-loading-splash-on-next-boot') === '1') {
             return;
           }
-          const savedTheme = localStorage.getItem('preferred-theme');
-          document.documentElement.classList.toggle('dark', savedTheme === 'dark');
         } catch {
-          // Storage unavailable: keep the light default, exactly like the theme store.
+          // Storage unavailable: show the shell, exactly as the splash will.
         }
         shell.hidden = false;
         shell.classList.remove('hidden');

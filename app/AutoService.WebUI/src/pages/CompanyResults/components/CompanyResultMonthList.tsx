@@ -1,20 +1,15 @@
 /** Monthly breakdown of accepted revenue; every month is listed, even empty ones, so it sums to the year. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';
+import { DataList, DataListCell, DataListRow, DataListText, type DataListColumn } from '../../../components/common/DataList';
 import type { CompanyResultMonthDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
-import {
-  compactItemTitleClampTextClass,
-  compactItemTitleTextClass,
-  compactSectionHeadingTextClass,
-  numericValueTextClass,
-  numericValueWrapTextClass,
-} from '../../../utils/formStyles';
+import { compactSectionHeadingTextClass } from '../../../utils/formStyles';
+import { formatMonthName } from '../../../utils/intlFormat';
 import { formatQuantity } from '../../../utils/number';
 import { MobileColumnStrip } from './MobileColumnStrip';
 import { MobileStackedValues } from './MobileStackedValues';
-import { mobileColumnsClass } from './mobileColumns';
+import { mobileValuesClass } from './mobileColumns';
 
 interface CompanyResultMonthListProps {
   readonly t: TFunction;
@@ -30,55 +25,47 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
   locale,
   months,
 }: CompanyResultMonthListProps) {
-  const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'long' });
-
-  const columns: DataListColumn[] = [
-    { key: 'month', label: t('companyResults.month') },
-    { key: 'quotes', label: t('nav.quotes'), align: 'right' },
-    { key: 'net', label: t('common.fields.net'), align: 'right' },
-    { key: 'gross', label: t('common.fields.gross'), align: 'right' },
-  ];
+  const monthColumn: DataListColumn = { key: 'month', label: t('companyResults.month') };
+  const quotesColumn: DataListColumn = { key: 'quotes', label: t('nav.quotes'), align: 'right' };
+  const netColumn: DataListColumn = { key: 'net', label: t('common.fields.net'), align: 'right' };
+  const grossColumn: DataListColumn = { key: 'gross', label: t('common.fields.gross'), align: 'right' };
+  const valueColumns = [quotesColumn, netColumn, grossColumn];
 
   return (
     <section className="min-w-0 space-y-3">
       <h2 className={compactSectionHeadingTextClass}>{t('companyResults.monthsTitle')}</h2>
 
-      <DataList breakpoint="lg" columnsClassName={monthColumnsClass} columns={columns} isEmpty={false} emptyText="">
-        <MobileColumnStrip columns={columns.slice(1)} />
+      <DataList
+        breakpoint="lg"
+        columnsClassName={monthColumnsClass}
+        columns={[monthColumn, ...valueColumns]}
+        isEmpty={false}
+        emptyText=""
+      >
+        <MobileColumnStrip columns={valueColumns} />
         {months.map((month) => {
-          const monthName = monthFormatter.format(new Date(Date.UTC(2000, month.month - 1, 1)));
+          // A local date, so the month name never shifts with the time zone.
+          const monthName = formatMonthName(new Date(2000, month.month - 1, 1), locale);
 
           return (
             <DataListRow
               key={month.month}
-              breakpoint="lg"
               testId="company-results-month-row"
-              desktop={(
-                <>
-                  <p className={compactItemTitleTextClass}>{monthName}</p>
-                  <p className={numericValueTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
-                  <p className={numericValueWrapTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
-                  <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
-                </>
+              valuesClassName={mobileValuesClass}
+              lead={(
+                <DataListCell column={monthColumn.key}>
+                  <DataListText kind="title" title={monthName}>{monthName}</DataListText>
+                </DataListCell>
               )}
-              mobile={(
-                <>
-                  <p className={compactItemTitleClampTextClass}>{monthName}</p>
-                  <div className={mobileColumnsClass}>
-                    <p className={numericValueWrapTextClass}>{formatQuantity(month.acceptedQuoteCount, locale)}</p>
-                    <p className={numericValueWrapTextClass}>{formatHuf(month.acceptedNet, locale)}</p>
-                    <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(month.acceptedGross, locale)}</p>
-                  </div>
-                  <MobileStackedValues
-                    values={[
-                      { label: columns[1].label, value: formatQuantity(month.acceptedQuoteCount, locale) },
-                      { label: columns[2].label, value: formatHuf(month.acceptedNet, locale) },
-                      { label: columns[3].label, value: formatHuf(month.acceptedGross, locale), emphasized: true },
-                    ]}
-                  />
-                </>
-              )}
-            />
+            >
+              <MobileStackedValues
+                values={[
+                  { column: quotesColumn.key, label: quotesColumn.label, value: formatQuantity(month.acceptedQuoteCount, locale), ellipsis: true },
+                  { column: netColumn.key, label: netColumn.label, value: formatHuf(month.acceptedNet, locale) },
+                  { column: grossColumn.key, label: grossColumn.label, value: formatHuf(month.acceptedGross, locale), emphasized: true },
+                ]}
+              />
+            </DataListRow>
           );
         })}
       </DataList>

@@ -30,7 +30,7 @@ function hashSeed(seed: string): number {
 export function getDeterministicAvatarColor(seedValue: string | number | null | undefined): string {
   const seed = String(seedValue ?? 'anonymous');
   const hash = hashSeed(seed);
-  return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length];
+  return AVATAR_COLOR_CLASSES[hash % AVATAR_COLOR_CLASSES.length] ?? AVATAR_COLOR_CLASSES[0];
 }
 
 /** Generates avatar initials from a user's name or email: prefers first+last initials,

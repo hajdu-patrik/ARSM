@@ -1,9 +1,12 @@
 /** Password input section for mechanic registration. */
 
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
+import { FieldErrorText } from '../../../../components/common/FieldErrorText';
+import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../../utils/formStyles';
+import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
 /** Props for the SecuritySection component. */
 interface SecuritySectionProps {
@@ -11,9 +14,9 @@ interface SecuritySectionProps {
   readonly confirmPassword: string;
   readonly showPassword: boolean;
   readonly showConfirmPassword: boolean;
+  readonly fieldErrors: RegisterFieldErrors;
   readonly isSubmitting: boolean;
-  readonly onPasswordChange: (value: string) => void;
-  readonly onConfirmPasswordChange: (value: string) => void;
+  readonly onFieldChange: (field: RegisterTextFieldName, value: string) => void;
   readonly onToggleShowPassword: () => void;
   readonly onToggleShowConfirmPassword: () => void;
 }
@@ -23,15 +26,24 @@ const SecuritySectionComponent = memo(function SecuritySection({
   confirmPassword,
   showPassword,
   showConfirmPassword,
+  fieldErrors,
   isSubmitting,
-  onPasswordChange,
-  onConfirmPasswordChange,
+  onFieldChange,
   onToggleShowPassword,
   onToggleShowConfirmPassword,
 }: SecuritySectionProps) {
   const { t } = useTranslation();
-  const credentialHintId = 'reg-credential-hint';
-  const isConfirmPasswordInvalid = confirmPassword.length > 0 && password !== confirmPassword;
+  const idPrefix = useId();
+  const credentialHintId = `${idPrefix}-credential-hint`;
+  const passwordErrorId = `${idPrefix}-password-error`;
+  const confirmPasswordErrorId = `${idPrefix}-confirm-password-error`;
+  const isConfirmPasswordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const confirmPasswordErrorKey = fieldErrors.confirmPassword
+    ?? (isConfirmPasswordMismatch ? 'common.validation.passwordMismatch' : undefined);
+  // The always-visible password hint stays linked next to the error text.
+  const passwordDescribedBy = fieldErrors.password === undefined
+    ? credentialHintId
+    : `${credentialHintId} ${passwordErrorId}`;
 
   return (
     <div className="space-y-4">
@@ -44,14 +56,17 @@ const SecuritySectionComponent = memo(function SecuritySection({
             id="reg-password"
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={(event) => onPasswordChange(event.target.value)}
+            onChange={(event) => {
+              onFieldChange('password', event.target.value);
+            }}
             placeholder={t('admin.passwordPlaceholder')}
             className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
             minLength={8}
             autoComplete="new-password"
-            aria-describedby={credentialHintId}
+            {...fieldErrorA11yProps(passwordErrorId, fieldErrors.password)}
+            aria-describedby={passwordDescribedBy}
           />
           <button
             type="button"
@@ -66,6 +81,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
             )}
           </button>
         </div>
+        <FieldErrorText id={passwordErrorId} messageKey={fieldErrors.password} />
         <p id={credentialHintId} className={`mt-1 ${mutedMetaTextClass}`}>{t('common.validation.passwordHint')}</p>
       </div>
 
@@ -78,14 +94,16 @@ const SecuritySectionComponent = memo(function SecuritySection({
             id="reg-confirm-password"
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
-            onChange={(event) => onConfirmPasswordChange(event.target.value)}
+            onChange={(event) => {
+              onFieldChange('confirmPassword', event.target.value);
+            }}
             placeholder={t('admin.confirmPasswordPlaceholder')}
             className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
             minLength={8}
             autoComplete="new-password"
-            aria-invalid={isConfirmPasswordInvalid}
+            {...fieldErrorA11yProps(confirmPasswordErrorId, confirmPasswordErrorKey)}
           />
           <button
             type="button"
@@ -100,6 +118,7 @@ const SecuritySectionComponent = memo(function SecuritySection({
             )}
           </button>
         </div>
+        <FieldErrorText id={confirmPasswordErrorId} messageKey={confirmPasswordErrorKey} />
       </div>
     </div>
   );

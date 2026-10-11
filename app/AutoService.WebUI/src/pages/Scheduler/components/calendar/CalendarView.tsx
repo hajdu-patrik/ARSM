@@ -6,10 +6,12 @@ import type { AppointmentDto, CalendarDay } from '../../../../types/scheduler/sc
 import {
   centeredLoadingWrapperClass,
   defaultIconClass,
+  focusVisibleOutlineClass,
   insetSurfaceClass,
   loadingSpinnerClass,
   toneDotClasses,
 } from '../../../../utils/formStyles';
+import { formatLongDate, formatMonthYear, formatWeekdayShort } from '../../../../utils/intlFormat';
 import { CompactOverflowBadge } from '../shared/CompactOverflowBadge';
 import { schedulerNavIconButtonClass } from '../../utils/schedulerButtonStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
@@ -30,10 +32,10 @@ interface CalendarDayCellProps {
   readonly day: CalendarDay;
   readonly year: number;
   readonly month: number;
-  readonly locale: string;
+  readonly language: string;
   readonly hasAppointmentsInWeek: boolean;
-  readonly selectedDay?: number | null;
-  readonly onDayClick?: (day: number) => void;
+  readonly selectedDay?: number | null | undefined;
+  readonly onDayClick?: ((day: number) => void) | undefined;
 }
 
 /** Props for the status dot and overflow count of one calendar day. */
@@ -45,9 +47,10 @@ interface DayStatusIndicatorProps {
 
 /** Formats a Date into local YYYY-MM-DD; avoids UTC drift from Date#toISOString. */
 function formatLocalDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')}`;
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /** Builds the 42-cell (6-week, Monday-first) grid for a month, bucketed by local day. */
@@ -95,11 +98,7 @@ function buildCalendarDays(year: number, month: number, appointments: Appointmen
 
 /** Returns the appointment with the earliest valid scheduled time, or null for an empty day. */
 function getEarliestAppointmentForDay(dayAppointments: AppointmentDto[]): AppointmentDto | null {
-  if (dayAppointments.length === 0) {
-    return null;
-  }
-
-  let earliestAppointment = dayAppointments[0];
+  let earliestAppointment = dayAppointments[0] ?? null;
   let earliestTimestamp = Number.POSITIVE_INFINITY;
 
   for (const appointment of dayAppointments) {
@@ -137,7 +136,7 @@ function DayStatusIndicator({ earliestAppointment, extraCount, overflowTone }: D
         <div className={`relative flex flex-col items-center ${overflowTone}`}>
           <span className="inline-flex h-5 w-5 items-center justify-center">
             <span
-              className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]] ?? toneDotClasses.neutral}`}
+              className={`h-3.5 w-3.5 shrink-0 rounded-full ${toneDotClasses[APPOINTMENT_STATUS_TONE[earliestAppointment.status]]}`}
               title={`${earliestAppointment.vehicle.brand} - ${earliestAppointment.taskDescription}`}
             />
           </span>
@@ -157,7 +156,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
   day,
   year,
   month,
-  locale,
+  language,
   hasAppointmentsInWeek,
   selectedDay,
   onDayClick,
@@ -170,19 +169,19 @@ const CalendarDayCell = memo(function CalendarDayCell({
     ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-[2.5rem]'
     : 'min-h-[2.5rem] max-[320px]:min-h-11';
 
-  const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/30 ${
+  const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start ${focusVisibleOutlineClass} ${
     day.isCurrentMonth
-      ? 'text-arsm-primary dark:text-arsm-primary-dark hover:bg-arsm-hover dark:hover:bg-arsm-hover-dark'
+      ? 'text-ui-text hover:bg-ui-hover'
       : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
   } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${
-    isSelected ? 'ring-2 ring-arsm-accent bg-arsm-accent-wash/65 dark:ring-arsm-accent-dark dark:bg-arsm-hover-dark/75' : ''
+    isSelected ? 'outline-2 outline-ui-accent bg-arsm-accent-wash/65 dark:bg-arsm-hover-dark/75' : ''
   }`;
 
   const content = (
     <>
       <div className="mb-0.5 flex h-7 items-center justify-center max-[320px]:h-6">
         {day.isToday ? (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-arsm-accent text-sm font-semibold text-arsm-primary ring-2 ring-arsm-accent/30 max-[320px]:h-6 max-[320px]:w-6 max-[320px]:text-xs dark:bg-arsm-accent-dark dark:text-arsm-on-accent-dark dark:ring-arsm-accent-dark/30">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ui-accent text-sm font-semibold text-arsm-primary outline-2 outline-ui-accent/30 max-[320px]:h-6 max-[320px]:w-6 max-[320px]:text-xs dark:text-arsm-on-accent-dark">
             {dayNum}
           </span>
         ) : (
@@ -199,14 +198,16 @@ const CalendarDayCell = memo(function CalendarDayCell({
   );
 
   if (day.isCurrentMonth && onDayClick) {
-    const dayTestId = `calendar-day-${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-    const dayAriaLabel = new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(day.date);
+    const dayTestId = `calendar-day-${String(year)}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    const dayAriaLabel = formatLongDate(day.date, language);
     return (
       <button
         type="button"
         data-testid={dayTestId}
         aria-label={dayAriaLabel}
-        onClick={() => onDayClick(dayNum)}
+        onClick={() => {
+          onDayClick(dayNum);
+        }}
         className={`${dayClassName} cursor-pointer text-left`}
       >
         {content}
@@ -231,14 +232,12 @@ const CalendarViewComponent = memo(function CalendarView({
 }: CalendarViewProps) {
   const { t, i18n } = useTranslation();
 
-  const monthLabel = new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(
-    new Date(year, month - 1),
-  );
+  const monthLabel = formatMonthYear(new Date(year, month - 1), i18n.language);
 
-  const dayHeaders = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(i18n.language, { weekday: 'short' });
-    return Array.from({ length: 7 }, (_, i) => formatter.format(new Date(2024, 0, i + 1)));
-  }, [i18n.language]);
+  const dayHeaders = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => formatWeekdayShort(new Date(2024, 0, i + 1), i18n.language)),
+    [i18n.language],
+  );
 
   const calendarDays = useMemo(() => buildCalendarDays(year, month, appointments), [year, month, appointments]);
   const calendarWeeks = useMemo(() => {
@@ -271,7 +270,7 @@ const CalendarViewComponent = memo(function CalendarView({
     <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:px-0 max-[320px]:py-2.5 sm:p-4`}>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,var(--color-arsm-card)_0%,transparent_100%)] opacity-40 dark:bg-[linear-gradient(180deg,var(--color-arsm-card-dark)_0%,transparent_100%)] dark:opacity-20"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,var(--ui-card)_0%,transparent_100%)] opacity-40 dark:opacity-20"
       />
 
       <div className="mb-3 flex min-w-0 items-center justify-between max-[320px]:mb-2.5">
@@ -286,7 +285,7 @@ const CalendarViewComponent = memo(function CalendarView({
           <ChevronLeft className={defaultIconClass} />
         </button>
 
-        <h3 className="min-w-0 break-words px-1 text-center text-lg font-semibold capitalize text-arsm-primary max-[320px]:text-sm dark:text-arsm-primary-dark">
+        <h3 className="min-w-0 break-words px-1 text-center text-lg font-semibold capitalize text-ui-text max-[320px]:text-sm">
           {monthLabel}
         </h3>
 
@@ -312,7 +311,7 @@ const CalendarViewComponent = memo(function CalendarView({
             {dayHeaders.map((dayLabel) => (
               <div
                 key={dayLabel}
-                className="py-1 text-center text-xs font-semibold uppercase tracking-[0.06em] text-arsm-muted max-[320px]:text-[9px] max-[320px]:tracking-[0.04em] dark:text-arsm-muted-dark"
+                className="py-1 text-center text-xs font-semibold uppercase tracking-[0.06em] text-ui-muted max-[320px]:text-ui-micro max-[320px]:tracking-[0.04em]"
               >
                 {dayLabel}
               </div>
@@ -332,7 +331,7 @@ const CalendarViewComponent = memo(function CalendarView({
                       day={day}
                       year={year}
                       month={month}
-                      locale={i18n.language}
+                      language={i18n.language}
                       hasAppointmentsInWeek={hasAppointmentsInWeek}
                       selectedDay={selectedDay}
                       onDayClick={onDayClick}

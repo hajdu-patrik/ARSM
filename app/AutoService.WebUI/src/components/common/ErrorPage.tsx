@@ -46,11 +46,11 @@ const errorPageCtaClass = `${buttonClass} mt-5 w-full sm:w-auto`;
 /** Displays the optional redirect countdown section in error states. */
 const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft }: ErrorPageCountdownProps) {
 	return (
-		<div className="mt-6 border-t border-arsm-border pt-4 text-center dark:border-arsm-border-dark">
+		<div className="mt-6 border-t border-ui-border pt-4 text-center">
 			<p className={uppercaseMetaLabelTextClass}>
 				{label}
 			</p>
-			<p className="mt-1 text-3xl font-semibold leading-none text-arsm-primary dark:text-arsm-primary-dark">
+			<p className="mt-1 text-3xl font-semibold leading-none text-ui-text">
 				{String(secondsLeft).padStart(2, '0')}
 			</p>
 		</div>
@@ -76,12 +76,14 @@ const ErrorPageComponent = memo(function ErrorPage({
 	const resolvedImageSrc = resolvedImage.imageSrc === imageSrc ? resolvedImage.src : imageSrc;
 
 	useEffect(() => {
-		let isDisposed = false;
+		// The flag is a property, because TypeScript narrows a captured `let` to `false` inside the async body
+		// although the cleanup flips it during the await.
+		const lifecycle = { isDisposed: false };
 		let cleanup: (() => void) | undefined;
 
 		void (async () => {
 			const cachedSource = await getCachedErrorIllustrationSource(imageSrc);
-			if (isDisposed) {
+			if (lifecycle.isDisposed) {
 				cachedSource.dispose?.();
 				return;
 			}
@@ -91,13 +93,13 @@ const ErrorPageComponent = memo(function ErrorPage({
 		})();
 
 		return () => {
-			isDisposed = true;
+			lifecycle.isDisposed = true;
 			cleanup?.();
 		};
 	}, [imageSrc]);
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-arsm-surface text-arsm-primary dark:bg-arsm-surface-dark dark:text-arsm-primary-dark">
+		<div className="relative min-h-screen overflow-hidden bg-ui-surface text-ui-text">
 			<div aria-hidden="true" className={`error-page-ambient ${centeredAmbientOrbLayoutClass}`} />
 			<ThemeLanguageControls />
 			<main className="relative z-10 mx-auto flex min-h-screen min-w-0 w-full max-w-[1920px] items-center justify-center px-3 pt-24 sm:px-6 sm:pt-0">
@@ -109,7 +111,7 @@ const ErrorPageComponent = memo(function ErrorPage({
 				</span>
 				<section className="relative min-w-0 w-full max-w-[74rem]">
 					<div className="grid min-w-0 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
-						<div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} flex min-h-[260px] items-center justify-center bg-arsm-toggle-bg p-4 dark:bg-arsm-toggle-bg-dark max-[320px]:min-h-[210px] sm:min-h-[320px]`}>
+						<div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} flex min-h-[260px] items-center justify-center bg-ui-toggle p-4 max-[320px]:min-h-[210px] sm:min-h-[320px]`}>
 							<div aria-hidden="true" className="error-page-illustration-glow pointer-events-none absolute inset-0" />
 							<Image
 								src={resolvedImageSrc}
@@ -119,8 +121,8 @@ const ErrorPageComponent = memo(function ErrorPage({
 							/>
 						</div>
 
-						<div className="flex min-w-0 flex-col justify-center rounded-2xl border border-arsm-border bg-arsm-input/95 p-5 text-center backdrop-blur-sm dark:border-arsm-border-dark dark:bg-arsm-card-dark/92 max-[320px]:p-4 sm:p-6 lg:p-8">
-							<h1 className="text-2xl font-semibold leading-tight text-arsm-primary dark:text-arsm-primary-dark sm:text-3xl lg:text-4xl">
+						<div className="flex min-w-0 flex-col justify-center rounded-2xl border border-ui-border bg-arsm-input/95 p-5 text-center backdrop-blur-sm dark:bg-arsm-card-dark/92 max-[320px]:p-4 sm:p-6 lg:p-8">
+							<h1 className="text-2xl font-semibold leading-tight text-ui-text sm:text-3xl lg:text-4xl">
 								{translate(titleKey)}
 							</h1>
 							<p className={`mt-3 ${mutedSecondaryTextClass} sm:text-base`}>

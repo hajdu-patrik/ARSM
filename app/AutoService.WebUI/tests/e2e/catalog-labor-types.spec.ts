@@ -13,15 +13,15 @@ async function prepareInventoryPage(page: Page): Promise<MockApiState> {
   return state;
 }
 
-test.describe('Inventory - Labor types tab', () => {
-  test('deep links directly to the Labor types tab via the tab query param', async ({ page }) => {
+test.describe('Inventory - Labour types tab', () => {
+  test('deep links directly to the Labour types tab via the tab query param', async ({ page }) => {
     await prepareInventoryPage(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
-    await expect(catalogPage.tabButton('labor-types')).toHaveAttribute('aria-pressed', 'true');
-    await expect(catalogPage.tabButton('parts')).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByText('Oil change', { exact: true })).toHaveCount(2);
+    await expect(catalogPage.tab('labor-types')).toHaveAttribute('aria-selected', 'true');
+    await expect(catalogPage.tab('parts')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.getByText('Oil change', { exact: true })).toHaveCount(1);
     await expect(catalogPage.searchInput('laborType')).toBeVisible();
   });
 
@@ -30,11 +30,11 @@ test.describe('Inventory - Labor types tab', () => {
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
-    await expect(page.getByText('LBR-DIAG', { exact: true })).toHaveCount(2);
-    await expect(page.getByText(/9,000\.00/)).toHaveCount(2);
-    await expect(page.getByText(/11,430\.00/)).toHaveCount(2);
+    await expect(page.getByText('LBR-DIAG', { exact: true })).toHaveCount(1);
+    await expect(page.getByText(/9,000\.00/)).toHaveCount(1);
+    await expect(page.getByText(/11,430\.00/)).toHaveCount(1);
 
-    // Two fixture labor types, one edit and one delete action per row --
+    // Two fixture labour types, one edit and one delete action per row --
     // no separate detail/"view" action (D32).
     await expect(catalogPage.editButtons('laborType')).toHaveCount(2);
     await expect(catalogPage.deleteButtons('laborType')).toHaveCount(2);
@@ -46,16 +46,16 @@ test.describe('Inventory - Labor types tab', () => {
     await catalogPage.goto('labor-types');
 
     await catalogPage.searchInput('laborType').fill('Diagnostics');
-    await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Oil change', { exact: true })).toHaveCount(0);
 
     await catalogPage.searchClearButton('laborType').click();
     await catalogPage.searchInput('laborType').fill('LBR-OIL');
-    await expect(page.getByText('Oil change', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Oil change', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(0);
   });
 
-  test('creates a labor type and shows the new row using the server-returned gross hourly rate', async ({ page }) => {
+  test('creates a labour type and shows the new row using the server-returned gross hourly rate', async ({ page }) => {
     const state = await prepareInventoryPage(page);
     // Deliberately not what net*vat would compute -- proves the row reads
     // the mocked POST response rather than recomputing the preview formula.
@@ -71,10 +71,10 @@ test.describe('Inventory - Labor types tab', () => {
 
     await dialog.getByRole('button', { name: 'Save' }).click();
 
-    await expect(catalogPage.formDialog('Create labor type')).toHaveCount(0);
-    await expect(page.locator('output[aria-live="polite"]')).toContainText('Labor type created successfully.');
-    await expect(page.getByText('Brake service', { exact: true })).toHaveCount(2);
-    await expect(page.getByText(/6,543\.21/)).toHaveCount(2);
+    await expect(catalogPage.formDialog('Create labour type')).toHaveCount(0);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText('Labour type created successfully.');
+    await expect(page.getByText('Brake service', { exact: true })).toHaveCount(1);
+    await expect(page.getByText(/6,543\.21/)).toHaveCount(1);
   });
 
   test('delete confirmation states the quote-snapshot effect and removes the row', async ({ page }) => {
@@ -84,10 +84,10 @@ test.describe('Inventory - Labor types tab', () => {
 
     const dialog = await catalogPage.openDelete('laborType', 0);
     await expect(dialog).toContainText(/Existing quotes keep this item's saved name, price, and VAT rate/);
-    await dialog.getByRole('button', { name: 'Delete labor type' }).click();
+    await dialog.getByRole('button', { name: 'Delete labour type' }).click();
 
-    await expect(catalogPage.formDialog('Confirm labor type deletion')).toHaveCount(0);
-    await expect(page.locator('output[aria-live="polite"]')).toContainText('Labor type deleted successfully.');
+    await expect(catalogPage.formDialog('Confirm labour type deletion')).toHaveCount(0);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText('Labour type deleted successfully.');
     await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(0);
   });
 });

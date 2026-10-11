@@ -19,6 +19,7 @@ import {
   textareaClass,
   toneFeedbackClasses,
 } from '../../../../utils/formStyles';
+import { formatQuantity } from '../../../../utils/number';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicsSection, type MechanicOption } from './AppointmentDetailModal.mechanics';
 
@@ -26,7 +27,7 @@ interface AppointmentDetailBodyProps {
   readonly appointment: AppointmentDto;
   readonly isAdmin: boolean;
   readonly isEditing: boolean;
-  readonly editForm: EditFormState | null;
+  readonly editForm: EditFormState;
   readonly formattedDate: string;
   readonly dueDateLabel: string;
   readonly dueState: DueState;
@@ -39,6 +40,7 @@ interface AppointmentDetailBodyProps {
   readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly t: TFunction;
+  readonly locale: string;
   readonly currentMechanicId: number | undefined;
   readonly onEditField: (field: keyof EditFormState, value: string) => void;
   readonly onClaim: () => void;
@@ -66,6 +68,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   isClosedForMechanicMutations,
   isUnclaiming,
   t,
+  locale,
   currentMechanicId,
   onEditField,
   onClaim,
@@ -81,17 +84,21 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         dueState={dueState}
         dueDateLabel={dueDateLabel}
         isEditing={isEditing}
-        dueDateTime={editForm?.dueDateTime ?? ''}
+        dueDateTime={editForm.dueDateTime}
         t={t}
-        onDueDateTimeChange={(value) => onEditField('dueDateTime', value)}
+        onDueDateTimeChange={(value) => {
+          onEditField('dueDateTime', value);
+        }}
       />
-      <VehicleSection appointment={appointment} t={t} />
+      <VehicleSection appointment={appointment} t={t} locale={locale} />
       <TaskSection
         isEditing={isEditing}
-        taskDescription={editForm?.taskDescription ?? appointment.taskDescription}
+        taskDescription={editForm.taskDescription}
         displayTask={appointment.taskDescription}
         t={t}
-        onTaskChange={(value) => onEditField('taskDescription', value)}
+        onTaskChange={(value) => {
+          onEditField('taskDescription', value);
+        }}
       />
       {!isEditing && (
         <MechanicsSection
@@ -146,6 +153,7 @@ interface DueSectionProps {
   readonly onDueDateTimeChange: (value: string) => void;
 }
 
+/** Due state of the appointment; in edit mode it also holds the due moment input. */
 const DueSection = memo(function DueSection({
   dueState,
   dueDateLabel,
@@ -159,7 +167,7 @@ const DueSection = memo(function DueSection({
       className={`rounded-2xl border px-4 py-3 ${
         dueState.isOverdue
           ? toneFeedbackClasses.error
-          : 'border-arsm-border bg-arsm-toggle-bg dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark'
+          : 'border-ui-border bg-ui-toggle'
       }`}
     >
       <div className={`flex min-w-0 items-center gap-2 ${mutedSecondaryTextClass}`}>
@@ -169,7 +177,9 @@ const DueSection = memo(function DueSection({
       <p
         className={`mt-1 max-w-full break-words text-base font-bold leading-tight sm:text-lg ${dueState.toneClassName}`}
       >
-        {t(dueState.labelKey, dueState.labelValues)}
+        {dueState.labelValues === undefined
+          ? t(dueState.labelKey)
+          : t(dueState.labelKey, dueState.labelValues)}
       </p>
       <p className={`mt-0.5 ${mutedMetaTextClass}`}>
         {t('scheduler.due.exact', { date: dueDateLabel })}
@@ -183,7 +193,9 @@ const DueSection = memo(function DueSection({
             type="datetime-local"
             data-testid="appointment-detail-due-datetime"
             value={dueDateTime}
-            onChange={(event) => onDueDateTimeChange(event.target.value)}
+            onChange={(event) => {
+              onDueDateTimeChange(event.target.value);
+            }}
             className={inputClassCompact}
           />
         </label>
@@ -195,17 +207,19 @@ const DueSection = memo(function DueSection({
 interface VehicleSectionProps {
   readonly appointment: AppointmentDto;
   readonly t: TFunction;
+  readonly locale: string;
 }
 
-const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleSectionProps) {
+/** Read-only vehicle details of the appointment. */
+const VehicleSection = memo(function VehicleSection({ appointment, t, locale }: VehicleSectionProps) {
   const { vehicle } = appointment;
-  const title = `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
+  const title = `${vehicle.brand} ${vehicle.model} (${String(vehicle.year)})`;
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className={`mb-2 min-w-0 break-words ${baseSectionHeadingTextClass}`}>
+      <h3 className={`mb-2 min-w-0 break-words ${baseSectionHeadingTextClass}`}>
         {title}
-      </h4>
+      </h3>
       <div className={compactTwoColumnGridClass}>
         <VehicleValueRow
           label={t('common.fields.licensePlate')}
@@ -234,12 +248,12 @@ const VehicleSection = memo(function VehicleSection({ appointment, t }: VehicleS
         />
         <VehicleValueRow
           label={t('common.fields.mileageKm')}
-          displayValue={`${vehicle.mileageKm.toLocaleString()} km`}
+          displayValue={`${formatQuantity(vehicle.mileageKm, locale)} km`}
           displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
           label={t('common.fields.enginePowerKw')}
-          displayValue={`${vehicle.enginePowerKw} kW`}
+          displayValue={`${String(vehicle.enginePowerKw)} kW`}
           displayClassName={compactPrimaryValueTextClass}
         />
         <VehicleValueRow
@@ -282,6 +296,7 @@ interface TaskSectionProps {
   readonly onTaskChange: (value: string) => void;
 }
 
+/** Task description, shown as text or, in edit mode, as a textarea. */
 const TaskSection = memo(function TaskSection({
   isEditing,
   taskDescription,
@@ -291,13 +306,15 @@ const TaskSection = memo(function TaskSection({
 }: TaskSectionProps) {
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
+      <h3 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
         {t('scheduler.intake.taskDescription')}
-      </h4>
+      </h3>
       {isEditing ? (
         <textarea
           value={taskDescription}
-          onChange={(event) => onTaskChange(event.target.value)}
+          onChange={(event) => {
+            onTaskChange(event.target.value);
+          }}
           rows={3}
           className={textareaClass}
         />

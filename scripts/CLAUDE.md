@@ -39,9 +39,11 @@
 - `validate.py`: the deterministic validation gate that replaced the LLM `validate` stage. Scoped to the
   diff against `--base` (default `HEAD`, untracked files included) or the whole tree with `--all`; stages:
   size (source > 500, test > 250, C# type > 300 lines; migrations and designer files excluded), shadows
-  (the WebUI no-shadow invariant), frontend (`tsc -b --noEmit` + eslint on the changed files), backend
-  (`dotnet build`), and security (`npm audit fix` + `npm audit --audit-level=high`, `dotnet list package
-  --vulnerable --include-transitive`) only when a manifest or lockfile changed or with `--security`.
+  (the WebUI no-shadow invariant; Tailwind `ring-*` utilities count as shadows because they render as
+  `box-shadow`, bare `ring` only behind a variant prefix such as `focus:ring`), frontend (`tsc -b --noEmit`
+  + eslint on the changed files), backend (`dotnet build`), and security (`npm audit fix` + `npm audit
+  --audit-level=high` + `npm audit signatures`, `dotnet list package --vulnerable --include-transitive`)
+  only when a manifest or lockfile changed or with `--security`.
   Exit 0 pass, 1 fail, 2 git error; report `tests/.artifacts/validate-summary.json`. Timeout per command:
   `ARSM_VALIDATE_TIMEOUT_SECONDS` (default 300).
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,

@@ -1,21 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
-import { SchedulerPage } from './pages/scheduler.page';
+import { currentDayTestId, SchedulerPage } from './pages/scheduler.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
 
 /** Status dot colors the calendar grid paints per appointment status. */
 const IN_PROGRESS_DOT = 'bg-arsm-warning-accent';
 const CANCELLED_DOT = 'bg-arsm-error-accent';
-
-/** Returns the data-testid the calendar grid renders for today's cell. */
-function currentDayTestId(): string {
-  const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `calendar-day-${today.getFullYear()}-${month}-${day}`;
-}
 
 test.describe('Scheduler live status propagation', () => {
   test.beforeEach(async ({ page }) => {
@@ -43,10 +34,8 @@ test.describe('Scheduler live status propagation', () => {
     const statusDot = dayCell.locator('span[title]').first();
     await expect(statusDot).toHaveClass(new RegExp(IN_PROGRESS_DOT));
 
-    // Capture the navigation state so the assertion below cannot be satisfied by a reload.
-    await page.evaluate(() => {
-      (window as unknown as { __arsmNoReload: boolean }).__arsmNoReload = true;
-    });
+    // A reload starts a new document with a new time origin, so this pins the current document.
+    const timeOriginBefore = await page.evaluate(() => performance.timeOrigin);
 
     await page.getByRole('button', { name: 'Appointment details' }).first().click();
     const detailDialog = page.getByRole('dialog', { name: /Appointment details/i });
@@ -62,9 +51,6 @@ test.describe('Scheduler live status propagation', () => {
     await expect(statusDot).toHaveClass(new RegExp(CANCELLED_DOT));
     await expect(statusDot).not.toHaveClass(new RegExp(IN_PROGRESS_DOT));
 
-    const survivedWithoutReload = await page.evaluate(
-      () => (window as unknown as { __arsmNoReload?: boolean }).__arsmNoReload === true,
-    );
-    expect(survivedWithoutReload).toBe(true);
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOriginBefore);
   });
 });

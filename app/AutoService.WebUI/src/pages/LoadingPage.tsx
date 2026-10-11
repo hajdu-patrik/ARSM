@@ -1,38 +1,54 @@
-/** Full-page-load splash: an animated branded intro for ~3s on browser reload (F5/Ctrl+F5), then nothing. */
+/** Full-page-load splash: an animated branded intro that stays until the app is ready (session restored,
+ * translations loaded) and for a short anti-flash minimum, then goes away for good. */
 
 import { memo, useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { Image } from '../components/common/Image';
+import { isSplashRoute } from '../router/appRoutes';
 import { consumeSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 import { removeLoginShell } from '../utils/loginShell';
 
-/** How long the splash stays visible after a full browser reload. */
-const LOADING_PAGE_DURATION_MS = 3000;
-/** Canonical (lower-case, no trailing slash) app routes on which the splash renders. */
-const SPLASH_ENABLED_PATHS = new Set([
-  '/',
-  '/login',
-  '/customers',
-  '/admin/register',
-  '/settings',
-  '/scheduler',
-  '/dashboard',
-]);
+/** Anti-flash minimum: a splash that is up for less than this would only flicker on a fast load. */
+const SPLASH_MIN_VISIBLE_MS = 250;
 
-/** Strips trailing slashes so pathname variants match one canonical form. */
-function normalizePathname(pathname: string): string {
-  if (pathname.length <= 1) {
-    return '/';
+/** Whether this boot shows the splash: not right after a server-error retry, and only on an app route. */
+function shouldShowSplash(): boolean {
+  if (consumeSkipLoadingSplashOnNextBoot()) {
+    return false;
   }
 
-  return pathname.replace(/\/+$/, '') || '/';
+  return isSplashRoute(globalThis.location.pathname);
 }
 
-/** Decides whether the loading splash should render for the given route. */
-function shouldShowSplashForPathname(pathname: string): boolean {
-  const normalizedPathname = normalizePathname(pathname.toLowerCase());
-  return SPLASH_ENABLED_PATHS.has(normalizedPathname);
+/** Splash lifetime: visible from the first render until the app is ready and the minimum has passed.
+ * Once dismissed it never returns, whatever the readiness does later. */
+function useSplashVisible(isAppReady: boolean): boolean {
+  const [isDismissed, setIsDismissed] = useState(() => !shouldShowSplash());
+  const [hasMinimumPassed, setHasMinimumPassed] = useState(false);
+
+  useEffect(() => {
+    if (isDismissed) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setHasMinimumPassed(true);
+    }, SPLASH_MIN_VISIBLE_MS);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isDismissed]);
+
+  const shouldDismiss = hasMinimumPassed && isAppReady;
+
+  if (shouldDismiss && !isDismissed) {
+    setIsDismissed(true);
+  }
+
+  return !isDismissed && !shouldDismiss;
 }
 
 /** Class pairs of the three desktop background shapes, defined in `loadingPageAnimations.css`. */
@@ -89,42 +105,24 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
 }
 
 const LoadingPageComponent = memo(function LoadingPage() {
-  const [isVisible, setIsVisible] = useState(() => {
-    if (consumeSkipLoadingSplashOnNextBoot()) {
-      return false;
-    }
-
-    return shouldShowSplashForPathname(globalThis.location.pathname);
-  });
-  const { t: translate } = useTranslation();
+  const { t: translate, ready: isI18nReady } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
+  const isVisible = useSplashVisible(isI18nReady && !isAuthLoading);
 
   // index.html paints a static copy of this splash's first frame on /login; this first commit
   // has the live splash in the DOM, so dropping the copy before the browser paints is seamless.
   useLayoutEffect(removeLoginShell, []);
 
-  useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-    }, LOADING_PAGE_DURATION_MS);
-
-    return () => clearTimeout(timer);
-  }, [isVisible]);
-
   if (!isVisible) {
     return null;
   }
 
-  const isDark = theme === 'dark';
-  const logoSrc = isDark ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
+  const logoSrc = theme === 'dark' ? '/AppLogoFrameWhite.webp' : '/AppLogoFrameBlack.webp';
   const logoAlt = translate('login.logoAlt');
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-arsm-surface dark:bg-arsm-surface-dark">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-ui-surface">
       <LoadingDesktopShapes />
       <LoadingMobileOrb />
       <LoadingCenterLogo logoSrc={logoSrc} logoAlt={logoAlt} />
@@ -134,5 +132,5 @@ const LoadingPageComponent = memo(function LoadingPage() {
 
 LoadingPageComponent.displayName = 'LoadingPage';
 
-/** Animated loading splash shown once per full browser reload on app routes. */
+/** Animated loading splash shown on a full browser load of an app route, until the app is ready. */
 export const LoadingPage = LoadingPageComponent;

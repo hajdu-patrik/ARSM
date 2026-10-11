@@ -7,6 +7,7 @@ import {
   compactSectionHeadingTextClass,
   insetSurfaceClass,
   mutedMetaTextClass,
+  numericValueWrapTextClass,
 } from '../../../utils/formStyles';
 
 interface QuoteEditorTotalsSectionProps {
@@ -17,8 +18,7 @@ interface QuoteEditorTotalsSectionProps {
 
 const totalRowClass = 'flex min-w-0 items-baseline justify-between gap-3';
 // Financial figures wrap instead of truncating (shared [overflow-wrap:anywhere] convention, also used by CompanyResultSummary), so a large total's digits are never hidden.
-const totalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-sm tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
-const grandTotalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-base font-semibold tabular-nums text-arsm-primary dark:text-arsm-primary-dark';
+const grandTotalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-base font-semibold tabular-nums text-ui-text';
 
 const QuoteEditorTotalsSectionComponent = memo(function QuoteEditorTotalsSection({
   t,
@@ -31,15 +31,15 @@ const QuoteEditorTotalsSectionComponent = memo(function QuoteEditorTotalsSection
 
       <div className={totalRowClass}>
         <span className={mutedMetaTextClass}>{t('quotes.columns.totalNet')}</span>
-        <span data-testid="quote-total-net" className={totalValueClass}>{formatHuf(quote.totalNet, locale)}</span>
+        <span data-testid="quote-total-net" className={numericValueWrapTextClass}>{formatHuf(quote.totalNet, locale)}</span>
       </div>
 
       <div className={totalRowClass}>
         <span className={mutedMetaTextClass}>{t('quotes.columns.totalVat')}</span>
-        <span data-testid="quote-total-vat" className={totalValueClass}>{formatHuf(quote.totalVat, locale)}</span>
+        <span data-testid="quote-total-vat" className={numericValueWrapTextClass}>{formatHuf(quote.totalVat, locale)}</span>
       </div>
 
-      <div className={`${totalRowClass} border-t border-arsm-border pt-2 dark:border-arsm-border-dark`}>
+      <div className={`${totalRowClass} border-t border-ui-border pt-2`}>
         <span className={mutedMetaTextClass}>{t('quotes.columns.totalGross')}</span>
         <span data-testid="quote-total-gross" className={grandTotalValueClass}>{formatHuf(quote.totalGross, locale)}</span>
       </div>

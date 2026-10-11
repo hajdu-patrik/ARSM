@@ -3,6 +3,7 @@ import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { errorToastMessage } from './support/toast';
 import type { MockApiState } from './support/test-data';
 
 /** Installs the catalog mock and logs in as a mechanic; returns the mutable mock state. */
@@ -20,12 +21,12 @@ test.describe('Inventory - Parts tab', () => {
     await catalogPage.goto();
 
     await expect(page).toHaveURL(/\/inventory$/);
-    await expect(catalogPage.tabButton('parts')).toHaveAttribute('aria-pressed', 'true');
-    await expect(catalogPage.tabButton('labor-types')).toHaveAttribute('aria-pressed', 'false');
+    await expect(catalogPage.tab('parts')).toHaveAttribute('aria-selected', 'true');
+    await expect(catalogPage.tab('labor-types')).toHaveAttribute('aria-selected', 'false');
 
-    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(2);
-    await expect(page.getByText(/12,000\.00/)).toHaveCount(2);
-    await expect(page.getByText(/15,240\.00/)).toHaveCount(2);
+    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(1);
+    await expect(page.getByText(/12,000\.00/)).toHaveCount(1);
+    await expect(page.getByText(/15,240\.00/)).toHaveCount(1);
   });
 
   test('reflects the active tab in the URL when switching tabs', async ({ page }) => {
@@ -33,13 +34,26 @@ test.describe('Inventory - Parts tab', () => {
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
-    await catalogPage.tabButton('labor-types').click();
+    await catalogPage.tab('labor-types').click();
     await expect(page).toHaveURL(/\/inventory\?tab=labor-types$/);
-    await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Diagnostics', { exact: true })).toHaveCount(1);
 
-    await catalogPage.tabButton('parts').click();
+    await catalogPage.tab('parts').click();
     await expect(page).toHaveURL(/\/inventory\?tab=parts$/);
-    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(1);
+  });
+
+  test('moves between the tabs with the arrow keys', async ({ page }) => {
+    await prepareInventoryPage(page);
+    const catalogPage = new CatalogPage(page);
+    await catalogPage.goto();
+
+    await catalogPage.tab('parts').focus();
+    await page.keyboard.press('ArrowRight');
+
+    await expect(page).toHaveURL(/\/inventory\?tab=labor-types$/);
+    await expect(catalogPage.tab('labor-types')).toBeFocused();
+    await expect(catalogPage.tab('labor-types')).toHaveAttribute('aria-selected', 'true');
   });
 
   test('shows only edit and delete actions for each part row', async ({ page }) => {
@@ -59,17 +73,17 @@ test.describe('Inventory - Parts tab', () => {
     await catalogPage.goto();
 
     await catalogPage.searchInput('part').fill('Timing');
-    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(0);
 
     await catalogPage.searchClearButton('part').click();
     await catalogPage.searchInput('part').fill('BRK');
-    await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(0);
 
     await catalogPage.searchClearButton('part').click();
-    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(2);
-    await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Timing belt', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(1);
   });
 
   test('toolbar sort toggles ascending/descending part-number order', async ({ page }) => {
@@ -104,8 +118,8 @@ test.describe('Inventory - Parts tab', () => {
 
     await expect(catalogPage.formDialog('Create part')).toHaveCount(0);
     await expect(page.locator('output[aria-live="polite"]')).toContainText('Part created successfully.');
-    await expect(page.getByText('Clutch kit', { exact: true })).toHaveCount(2);
-    await expect(page.getByText(/7,777\.77/)).toHaveCount(2);
+    await expect(page.getByText('Clutch kit', { exact: true })).toHaveCount(1);
+    await expect(page.getByText(/7,777\.77/)).toHaveCount(1);
   });
 
   test('edits a part and reloads the row from the server response after the 204 PUT', async ({ page }) => {
@@ -124,7 +138,7 @@ test.describe('Inventory - Parts tab', () => {
 
     await expect(catalogPage.formDialog('Edit part')).toHaveCount(0);
     await expect(page.locator('output[aria-live="polite"]')).toContainText('Part updated successfully.');
-    await expect(page.getByText(/8,888\.88/)).toHaveCount(2);
+    await expect(page.getByText(/8,888\.88/)).toHaveCount(1);
     await expect(page.getByText(/10,160\.00/)).toHaveCount(0);
   });
 
@@ -153,7 +167,42 @@ test.describe('Inventory - Parts tab', () => {
     await dialog.getByLabel('Net unit price').fill('1000');
     await dialog.getByRole('button', { name: 'Save' }).click();
 
-    await expect(page.locator('output[aria-live="polite"]')).toContainText('A part with this part number already exists.');
+    await expect(errorToastMessage(page, 'A part with this part number already exists.')).toBeVisible();
     await expect(catalogPage.formDialog('Create part')).toBeVisible();
+    // The message is also bound to the field it concerns.
+    const partNumberInput = dialog.getByLabel('Part number');
+    await expect(partNumberInput).toHaveAttribute('aria-invalid', 'true');
+    await expect(partNumberInput).toHaveAccessibleDescription('A part with this part number already exists.');
+  });
+
+  test('keeps keyboard focus inside the dialog and hands it back to the opener', async ({ page }) => {
+    await prepareInventoryPage(page);
+    const catalogPage = new CatalogPage(page);
+    await catalogPage.goto();
+
+    const dialog = await catalogPage.openCreate('part');
+    await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
+
+    // More Tab presses than the dialog has tab stops: focus wraps instead of leaving the dialog.
+    for (let press = 0; press < 12; press += 1) {
+      await page.keyboard.press('Tab');
+    }
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(catalogPage.createButton('part')).toBeFocused();
+  });
+
+  test('dismisses the dialog from its backdrop', async ({ page }) => {
+    await prepareInventoryPage(page);
+    const catalogPage = new CatalogPage(page);
+    await catalogPage.goto();
+
+    const dialog = await catalogPage.openCreate('part');
+    // The backdrop is a button that fills the viewport behind the dialog; click its top-left corner.
+    await page.getByRole('button', { name: 'Dismiss dialog' }).click({ position: { x: 4, y: 4 } });
+
+    await expect(dialog).toHaveCount(0);
   });
 });

@@ -1,8 +1,10 @@
 /** Customer page helper utilities: data transformation, validation mapping, and formatting for the registry page. */
 
 import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
+import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
 import { normalizeSearchValue } from '../../utils/textSearch';
+import type { SortDirection } from './page.types';
 
 export { normalizeSearchValue };
 
@@ -32,21 +34,9 @@ export function buildCustomerDisplayName(customer: CustomerListItem): string {
     .join(' ');
 }
 
-/** Formats a timestamp string to locale-aware date-time text. */
-export function formatDateTime(value: string, locale: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+/** Orders a history the server returned ascending: as received for ascending, reversed for descending. */
+export function orderRepairHistory(appointments: AppointmentDto[], direction: SortDirection): AppointmentDto[] {
+  return direction === 'asc' ? appointments : [...appointments].reverse();
 }
 
 /** Maps customer-validation messages to i18n keys. */
@@ -132,6 +122,12 @@ export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
 }
 
+/** True when the server marked the field as required, whichever letter case its dictionary key uses. */
+export function hasRequiredFieldError(errors: ServerFieldErrors, fieldName: string): boolean {
+  const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
+  return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
+}
+
 /** Parses numeric vehicle form inputs into numbers for payload construction. */
 export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumericValues {
   return {
@@ -141,6 +137,7 @@ export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumeri
   };
 }
 
+/** Narrows a form string to one of the known drivetrain types. */
 export function isDrivetrainType(value: string): value is DrivetrainType {
   return (DRIVETRAIN_TYPES as readonly string[]).includes(value);
 }
@@ -162,5 +159,3 @@ export function buildVehicleNumericFieldErrors(values: VehicleNumericValues): Se
 
   return errors;
 }
-
-/** Status badge style mapper for repair history rows. */

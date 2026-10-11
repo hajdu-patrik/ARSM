@@ -1,16 +1,16 @@
-/** Memoized scheduler mutation handlers: call the service, update store/query caches, and toast the result. */
-import { useCallback, useMemo } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+/** Scheduler mutation handlers: every action is a mutation that updates the scheduler caches and toasts the outcome. */
+import { useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
 import {
+  findCachedAppointment,
   invalidateAppointmentReadCaches,
-  writeAppointmentToSchedulerCache,
+  removeAppointmentFromSchedulerCache,
 } from '../../../services/cache/appointmentQueryCache';
-import { getAuthQueryScope } from '../../../services/cache/queryKeys';
-import { useAuthStore } from '../../../store/auth.store';
-import { useSchedulerStore } from '../../../store/scheduler.store';
+import { isRecord } from '../../../services/http/record-guard';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
+import { useToastStore } from '../../../store/toast.store';
 import type {
   AppointmentDto,
   AppointmentStatus,
@@ -18,195 +18,172 @@ import type {
   UpdateAppointmentRequest,
   UpdateAppointmentVehicleRequest,
 } from '../../../types/scheduler/scheduler.types';
+import { settle } from './settle';
+import { useAppointmentMutation } from './useAppointmentMutation';
 
-/** Configuration for {@link useSchedulerActions}. */
-interface UseSchedulerActionsArgs {
-  /** Optimistic store upsert for the mutated appointment. */
-  readonly upsertAppointment: (appointment: AppointmentDto) => void;
-  /** Store removal that drops a deleted appointment from every scheduler view list. */
-  readonly removeAppointment: (id: number) => void;
-  /** State setter to keep the detail modal synchronized after mutations. */
-  readonly setSelectedAppointment: Dispatch<SetStateAction<AppointmentDto | null>>;
-  /** Displays a success toast by i18n key. */
-  readonly showSuccessToast: (key: string) => void;
-  /** Displays an error toast by i18n key. */
-  readonly showErrorToast: (key: string) => void;
+/** Variables of the admin assign and unassign mutations. */
+interface MechanicAssignment {
+  readonly appointmentId: number;
+  readonly mechanicId: number;
 }
 
-/** Returns memoized scheduler action handlers for appointment mutations. */
-export function useSchedulerActions({
-  upsertAppointment,
-  removeAppointment,
-  setSelectedAppointment,
-  showSuccessToast,
-  showErrorToast,
-}: UseSchedulerActionsArgs) {
-  const queryClient = useQueryClient();
-  const authUser = useAuthStore((state) => state.user);
-  const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
+/** Variables of the status mutation. */
+interface StatusChange {
+  readonly id: number;
+  readonly status: AppointmentStatus;
+}
 
-  /** Applies a scheduler mutation result to the UI store and related query caches. */
-  const applyAppointmentMutationResult = useCallback((
-    appointment: AppointmentDto,
-    options: { readonly invalidateCustomerRegistry?: boolean } = {},
-  ) => {
-    upsertAppointment(appointment);
+/** Variables of the update mutation; the vehicle details are saved after the appointment fields. */
+interface AppointmentUpdate {
+  readonly id: number;
+  readonly request: UpdateAppointmentRequest;
+  readonly vehicleRequest: UpdateAppointmentVehicleRequest | undefined;
+}
 
-    if (!authScope) {
-      return;
-    }
+/** Server codes that mean the unassign lost a race with another change. */
+const UNASSIGN_RACE_CODES: ReadonlySet<string> = new Set(['appointment_completed', 'last_assigned_mechanic', 'not_assigned']);
 
-    writeAppointmentToSchedulerCache(queryClient, authScope, appointment);
-    invalidateAppointmentReadCaches(queryClient, authScope, appointment, options);
-  }, [authScope, queryClient, upsertAppointment]);
+/** HTTP statuses the unassign endpoint answers when the appointment changed under the user. */
+const UNASSIGN_RACE_STATUSES: ReadonlySet<number> = new Set([400, 409, 422]);
 
-  const handleClaim = useCallback(async (id: number) => {
-    try {
-      const updated = await appointmentService.claim(id);
-      applyAppointmentMutationResult(updated);
-      setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
-      showSuccessToast('scheduler.claimSuccess');
-    } catch {
-      showErrorToast('scheduler.claimError');
-    }
-  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
+/** Maps a failed self-unassign to its toast key: cancelled, lost race, or a plain failure. */
+function resolveUnclaimErrorKey(error: unknown): string {
+  if (!isAxiosError<unknown>(error)) {
+    return 'scheduler.detail.unassignError';
+  }
 
-  const handleStatusChange = useCallback(async (id: number, status: AppointmentStatus) => {
-    try {
-      const updated = await appointmentService.updateStatus(id, { status });
-      applyAppointmentMutationResult(updated);
-      setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
-      showSuccessToast('scheduler.statusUpdateSuccess');
-    } catch {
-      showErrorToast('scheduler.statusUpdateError');
-    }
-  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
+  const data = error.response?.data;
+  const code = isRecord(data) && typeof data.code === 'string' ? data.code : undefined;
+  const status = error.response?.status;
 
-  const handleUnclaim = useCallback(async (id: number) => {
-    try {
-      const updated = await appointmentService.unclaim(id);
-      applyAppointmentMutationResult(updated);
-      setSelectedAppointment((prev) => (prev?.id === updated.id ? updated : prev));
-      showSuccessToast('scheduler.detail.unassignSuccess');
-    } catch (err) {
-      if (isAxiosError<{ code?: string }>(err)) {
-        const code = err.response?.data?.code;
-        const status = err.response?.status;
+  if (code === 'appointment_cancelled') {
+    return 'scheduler.detail.unassignCancelledError';
+  }
 
-        if (code === 'appointment_cancelled') {
-          showErrorToast('scheduler.detail.unassignCancelledError');
-          return;
-        }
+  if ((code !== undefined && UNASSIGN_RACE_CODES.has(code)) || (status !== undefined && UNASSIGN_RACE_STATUSES.has(status))) {
+    return 'scheduler.detail.unassignRaceError';
+  }
 
-        if (
-          code === 'appointment_completed'
-          || code === 'last_assigned_mechanic'
-          || code === 'not_assigned'
-          || status === 400
-          || status === 409
-          || status === 422
-        ) {
-          showErrorToast('scheduler.detail.unassignRaceError');
-          return;
-        }
+  return 'scheduler.detail.unassignError';
+}
 
-        showErrorToast('scheduler.detail.unassignError');
-        return;
-      }
+/** Saves the appointment fields, then the vehicle details when given; resolves with the last saved state. */
+async function updateWithOptionalVehicle({ id, request, vehicleRequest }: AppointmentUpdate): Promise<AppointmentDto> {
+  const updated = await appointmentService.updateAppointment(id, request);
 
-      showErrorToast('scheduler.detail.unassignError');
-    }
-  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
+  return vehicleRequest === undefined ? updated : appointmentService.updateAppointmentVehicle(id, vehicleRequest);
+}
 
-  const handleAdminAssign = useCallback(async (appointmentId: number, mechanicId: number) => {
-    try {
-      const updated = await appointmentService.adminAssign(appointmentId, mechanicId);
-      applyAppointmentMutationResult(updated);
-      setSelectedAppointment(updated);
-      showSuccessToast('scheduler.detail.assignSuccess');
-    } catch {
-      showErrorToast('scheduler.detail.assignError');
-    }
-  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
+/** Claim, unclaim and admin assignment handlers; a failure is toasted and never rejects. */
+function useAssignmentActions() {
+  const { mutateAsync: claim } = useAppointmentMutation({
+    mutationFn: (id: number) => appointmentService.claim(id),
+    successKey: 'scheduler.claimSuccess',
+    failureKey: 'scheduler.claimError',
+  });
+  const { mutateAsync: unclaim } = useAppointmentMutation({
+    mutationFn: (id: number) => appointmentService.unclaim(id),
+    successKey: 'scheduler.detail.unassignSuccess',
+    failureKey: resolveUnclaimErrorKey,
+  });
+  const { mutateAsync: adminAssign } = useAppointmentMutation({
+    mutationFn: ({ appointmentId, mechanicId }: MechanicAssignment) => appointmentService.adminAssign(appointmentId, mechanicId),
+    successKey: 'scheduler.detail.assignSuccess',
+    failureKey: 'scheduler.detail.assignError',
+  });
+  const { mutateAsync: adminUnassign } = useAppointmentMutation({
+    mutationFn: ({ appointmentId, mechanicId }: MechanicAssignment) => appointmentService.adminUnassign(appointmentId, mechanicId),
+    successKey: 'scheduler.detail.adminUnassignSuccess',
+    failureKey: 'scheduler.detail.adminUnassignError',
+  });
 
-  const handleAdminUnassign = useCallback(async (appointmentId: number, mechanicId: number) => {
-    try {
-      const updated = await appointmentService.adminUnassign(appointmentId, mechanicId);
-      applyAppointmentMutationResult(updated);
-      setSelectedAppointment(updated);
-      showSuccessToast('scheduler.detail.adminUnassignSuccess');
-    } catch {
-      showErrorToast('scheduler.detail.adminUnassignError');
-    }
-  }, [applyAppointmentMutationResult, showErrorToast, setSelectedAppointment, showSuccessToast]);
+  const handleClaim = useCallback((id: number) => settle(claim(id)), [claim]);
+  const handleUnclaim = useCallback((id: number) => settle(unclaim(id)), [unclaim]);
+  const handleAdminAssign = useCallback(
+    (appointmentId: number, mechanicId: number) => settle(adminAssign({ appointmentId, mechanicId })),
+    [adminAssign],
+  );
+  const handleAdminUnassign = useCallback(
+    (appointmentId: number, mechanicId: number) => settle(adminUnassign({ appointmentId, mechanicId })),
+    [adminUnassign],
+  );
 
+  return { handleClaim, handleUnclaim, handleAdminAssign, handleAdminUnassign };
+}
+
+/** Status, intake and update handlers; the status failure is toasted, the other two reject to their form. */
+function useEditActions() {
+  const { mutateAsync: changeStatus } = useAppointmentMutation({
+    mutationFn: ({ id, status }: StatusChange) => appointmentService.updateStatus(id, { status }),
+    successKey: 'scheduler.statusUpdateSuccess',
+    failureKey: 'scheduler.statusUpdateError',
+  });
+  const { mutateAsync: createIntake } = useAppointmentMutation({
+    mutationFn: (request: SchedulerCreateIntakeRequest) => appointmentService.createIntake(request),
+    successKey: 'scheduler.intake.createSuccess',
+    failureKey: null,
+    cacheOptions: () => ({ invalidateCustomerRegistry: true }),
+  });
+  const { mutateAsync: updateAppointment } = useAppointmentMutation({
+    mutationFn: updateWithOptionalVehicle,
+    successKey: 'scheduler.detail.updateSuccess',
+    failureKey: null,
+    cacheOptions: ({ vehicleRequest }) => ({ invalidateCustomerRegistry: vehicleRequest !== undefined }),
+  });
+
+  const handleStatusChange = useCallback(
+    (id: number, status: AppointmentStatus) => settle(changeStatus({ id, status })),
+    [changeStatus],
+  );
   const handleCreateIntake = useCallback(async (request: SchedulerCreateIntakeRequest) => {
-    const created = await appointmentService.createIntake(request);
-    applyAppointmentMutationResult(created, { invalidateCustomerRegistry: true });
-    showSuccessToast('scheduler.intake.createSuccess');
-  }, [applyAppointmentMutationResult, showSuccessToast]);
-
+    await createIntake(request);
+  }, [createIntake]);
   const handleUpdateAppointment = useCallback(async (
     id: number,
     request: UpdateAppointmentRequest,
     vehicleRequest?: UpdateAppointmentVehicleRequest,
   ) => {
-    let updated = await appointmentService.updateAppointment(id, request);
+    await updateAppointment({ id, request, vehicleRequest });
+  }, [updateAppointment]);
 
-    if (vehicleRequest) {
-      updated = await appointmentService.updateAppointmentVehicle(id, vehicleRequest);
-    }
+  return { handleStatusChange, handleCreateIntake, handleUpdateAppointment };
+}
 
-    applyAppointmentMutationResult(updated, { invalidateCustomerRegistry: Boolean(vehicleRequest) });
-    setSelectedAppointment(updated);
-    showSuccessToast('scheduler.detail.updateSuccess');
-  }, [applyAppointmentMutationResult, showSuccessToast, setSelectedAppointment]);
+/** Hard-delete handler: drops the appointment from the cached lists at once and refreshes the reads it touched. */
+function useDeleteAction() {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
+  const showSuccessToast = useToastStore((state) => state.showSuccess);
+  const showErrorToast = useToastStore((state) => state.showError);
 
-  /** Looks up an appointment's cached snapshot across view buckets; reads the store imperatively to avoid subscribing to every list change. */
-  const findVisibleAppointment = useCallback((id: number): AppointmentDto | undefined => {
-    const schedulerState = useSchedulerStore.getState();
-    return (
-      schedulerState.monthAppointments.find((item) => item.id === id)
-      ?? schedulerState.todayAppointments.find((item) => item.id === id)
-      ?? schedulerState.calendarAppointments.find((item) => item.id === id)
-    );
-  }, []);
+  const { mutateAsync: deleteAppointment } = useMutation({
+    mutationFn: (id: number) => appointmentService.deleteAppointment(id),
+    // The history invalidation needs the vehicle and customer ids, which the delete takes along.
+    onMutate: (id) => ({ snapshot: scope === null ? undefined : findCachedAppointment(queryClient, scope, id) }),
+    onSuccess: (_result, id, { snapshot }) => {
+      if (scope !== null) {
+        removeAppointmentFromSchedulerCache(queryClient, scope, id);
 
-  /** Hard-deletes an appointment and invalidates its read caches; the snapshot is captured before the request because cache invalidation needs dates no longer in the store afterward. */
-  const handleDelete = useCallback(async (id: number) => {
-    const target = findVisibleAppointment(id);
-
-    try {
-      await appointmentService.deleteAppointment(id);
-      removeAppointment(id);
-
-      if (authScope && target) {
-        invalidateAppointmentReadCaches(queryClient, authScope, target);
+        if (snapshot !== undefined) {
+          invalidateAppointmentReadCaches(queryClient, scope, snapshot);
+        }
       }
 
-      setSelectedAppointment(null);
       showSuccessToast('scheduler.detail.deleteSuccess');
-    } catch {
+    },
+    onError: () => {
       showErrorToast('scheduler.detail.deleteError');
-    }
-  }, [
-    authScope,
-    findVisibleAppointment,
-    queryClient,
-    removeAppointment,
-    setSelectedAppointment,
-    showErrorToast,
-    showSuccessToast,
-  ]);
+    },
+  });
 
-  return {
-    handleClaim,
-    handleStatusChange,
-    handleUnclaim,
-    handleAdminAssign,
-    handleAdminUnassign,
-    handleCreateIntake,
-    handleUpdateAppointment,
-    handleDelete,
-  };
+  return useCallback((id: number) => settle(deleteAppointment(id)), [deleteAppointment]);
+}
+
+/** Returns memoized scheduler action handlers for appointment mutations. */
+export function useSchedulerActions() {
+  const assignmentActions = useAssignmentActions();
+  const editActions = useEditActions();
+  const handleDelete = useDeleteAction();
+
+  return { ...assignmentActions, ...editActions, handleDelete };
 }

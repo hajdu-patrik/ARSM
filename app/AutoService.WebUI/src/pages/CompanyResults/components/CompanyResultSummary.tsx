@@ -52,7 +52,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
             <p data-testid="company-results-accepted-gross" className={headlineValueClass}>{formatHuf(result.accepted.gross, locale)}</p>
           </div>
         </div>
-        <p className={countTextClass}>{t('companyResults.quoteCount', { count: formatQuantity(result.accepted.quoteCount, locale) })}</p>
+        <p className={countTextClass}>{t('companyResults.quoteCount', { count: result.accepted.quoteCount })}</p>
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
@@ -63,7 +63,7 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
             <p className={countTextClass}>
               {t('companyResults.netAndCount', {
                 net: formatHuf(entry.row.net, locale),
-                count: formatQuantity(entry.row.quoteCount, locale),
+                count: entry.row.quoteCount,
               })}
             </p>
           </div>

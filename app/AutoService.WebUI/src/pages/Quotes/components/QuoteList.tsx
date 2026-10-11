@@ -5,7 +5,7 @@ import { DataList, type DataListColumn } from '../../../components/common/DataLi
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { QuoteCard } from './QuoteCard';
 
-/** Column grid template shared by the list header and every row's desktop cells. */
+/** Column grid template shared by the list header and every row's cells. */
 const quoteColumnsClass = '@4xl:grid-cols-[minmax(10rem,1.7fr)_minmax(5rem,1fr)_minmax(5.5rem,auto)_minmax(6rem,auto)_minmax(6.5rem,auto)_minmax(6.5rem,auto)_auto]';
 
 interface QuoteListProps {

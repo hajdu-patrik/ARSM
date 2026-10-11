@@ -1,10 +1,12 @@
 # Verified against Middleware/CsrfDoubleSubmitMiddleware.cs; Origin check runs first (see origin-csrf.http),
-# so this file always sends the allowed Origin. Coverage summary: tests/CLAUDE.md Coverage Anchors. "wrong-csrf-token" below is a deliberately invalid literal, not a credential.
+# so this file always sends the allowed Origin. Coverage summary: tests/CLAUDE.md Coverage Anchors. "wrong-csrf-token" below is a deliberately invalid literal, not a credential. Self-provisions/deletes its own catalog part.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @MechanicPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@CsrfPartNumber = ZZC{{RunId}}A
 
 
 ### [Setup][Csrf] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -13,7 +15,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Csrf] Login establishes the auth cookies and the autoservice_csrf cookie (200 expected)
+### [Setup][Csrf] Login establishes the auth cookies and the __Host-autoservice_csrf cookie (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -25,7 +27,7 @@ Content-Type: application/json
 }
 
 {{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
 }}
 
 ?? status == 200
@@ -60,8 +62,51 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 {{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
 }}
+
+?? status == 204
+
+###
+
+### [Setup][Csrf] Create a disposable catalog part as the DELETE target, with the rotated token (201 expected)
+# @name csrfTargetPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{CsrfPartNumber}}",
+  "name": "Csrf Delete Target Part",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 201
+
+###
+
+### [Negative][Csrf] Unsafe authenticated DELETE without X-CSRF-Token (403 expected, same code)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{csrfTargetPart.id}}
+Origin: {{WebUI_Origin}}
+
+?? status == 403
+?? js response.parsedBody.code == csrf_token_invalid
+
+###
+
+### [Negative][Csrf] The refused DELETE removed nothing, the part still exists (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{csrfTargetPart.id}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the disposable part with the correct X-CSRF-Token (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{csrfTargetPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 

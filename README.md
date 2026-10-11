@@ -53,7 +53,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 ### Prerequisites
 
 - .NET 10 SDK
-- Node.js 24+ with npm (CI pins Node 24)
+- Node.js 24+ with npm (CI pins Node 26)
 - Python 3.11+ for the local test runner
 - Docker Desktop running locally (required for the PostgreSQL and RustFS containers via AppHost)
 
@@ -213,9 +213,9 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
   by difficulty), each package reviewed as soon as it finishes (coding principles, UI/UX audit), docs sync
   beside one deterministic gate, then targeted tests.
 - `frontend` applies the `ui-ux-style-profile` policy itself; the profile audits the diff afterwards.
-- `python scripts/validate.py` is the gate: type check, lint, build, size limits and the no-shadow rule on
-  the changed files, plus security remediation (`npm audit fix`, vulnerable .NET packages) when a package
-  manifest changes.
+- `python scripts/validate.py` is the gate: type check, lint, build, size limits and the no-shadow rule
+  (Tailwind `ring-*` counts as a shadow) on the changed files, plus security remediation (`npm audit fix`,
+  `npm audit signatures`, vulnerable .NET packages) when a package manifest changes.
 - `python scripts/select-e2e-specs.py --run` runs only the Playwright specs affected by the diff.
 - Detailed policy files:
   - Root: `CLAUDE.md`

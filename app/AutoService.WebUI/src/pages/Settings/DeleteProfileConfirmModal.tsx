@@ -1,9 +1,11 @@
 /** Delete-profile confirmation modal for Settings. */
 
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
+import { FieldErrorText } from '../../components/common/FieldErrorText';
 import { Modal } from '../../components/common/Modal';
+import { fieldErrorA11yProps } from '../../utils/fieldA11y';
 import {
   dangerButtonClass,
   defaultIconClass,
@@ -20,6 +22,8 @@ interface DeleteProfileConfirmModalProps {
   readonly isDeleting: boolean;
   readonly deletePassword: string;
   readonly deletePasswordConfirm: string;
+  /** Message key of the server's verdict on the current password, shown under the first field. */
+  readonly deletePasswordError: string | undefined;
   readonly onDeletePasswordChange: (value: string) => void;
   readonly onDeletePasswordConfirmChange: (value: string) => void;
   readonly onClose: () => void;
@@ -32,12 +36,16 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
   isDeleting,
   deletePassword,
   deletePasswordConfirm,
+  deletePasswordError,
   onDeletePasswordChange,
   onDeletePasswordConfirmChange,
   onClose,
   onConfirm,
 }: DeleteProfileConfirmModalProps) {
   const { t } = useTranslation();
+  const idPrefix = useId();
+  const passwordErrorId = `${idPrefix}-password-error`;
+  const confirmErrorId = `${idPrefix}-confirm-error`;
   const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [showDeletePasswordConfirm, setShowDeletePasswordConfirm] = useState(false);
   const [isDeletePasswordFieldLocked, setIsDeletePasswordFieldLocked] = useState(true);
@@ -46,6 +54,9 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
     deletePassword.trim().length === 0
     || deletePasswordConfirm.trim().length === 0
     || deletePassword !== deletePasswordConfirm;
+  const confirmMismatchMessageKey = deletePasswordConfirm.length > 0 && deletePassword !== deletePasswordConfirm
+    ? 'settings.deletePasswordsDoNotMatch'
+    : undefined;
 
   let deleteConfirmDisabledReasonKey: string | null = null;
   if (isDeleting) {
@@ -156,70 +167,86 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
         defaultValue=""
       />
 
-      <div className={`mt-4 ${inputGroupContainerClass}`}>
-        <input
-          id="delete-profile-password"
-          type={showDeletePassword ? 'text' : 'password'}
-          value={deletePassword}
-          onChange={(event) => onDeletePasswordChange(event.target.value)}
-          onFocus={() => {
-            if (isDeletePasswordFieldLocked) {
-              setIsDeletePasswordFieldLocked(false);
-            }
-          }}
-          placeholder={t('settings.currentPasswordPlaceholder')}
-          autoComplete="off"
-          readOnly={isDeletePasswordFieldLocked}
-          name="settings-delete-security-field"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          data-bwignore="true"
-          disabled={isDeleting}
-          aria-label={t('settings.currentPassword')}
-          className={`${inputClass} pr-12`}
-        />
-        <button
-          type="button"
-          onClick={() => setShowDeletePassword((isVisible) => !isVisible)}
-          className={passwordToggleButtonClass}
-          aria-label={showDeletePassword ? t('settings.hidePassword') : t('settings.showPassword')}
-          disabled={isDeleting}
-        >
-          {showDeletePassword ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
-        </button>
+      <div className="mt-4 text-left">
+        <div className={inputGroupContainerClass}>
+          <input
+            id="delete-profile-password"
+            type={showDeletePassword ? 'text' : 'password'}
+            value={deletePassword}
+            onChange={(event) => {
+              onDeletePasswordChange(event.target.value);
+            }}
+            onFocus={() => {
+              if (isDeletePasswordFieldLocked) {
+                setIsDeletePasswordFieldLocked(false);
+              }
+            }}
+            placeholder={t('settings.currentPasswordPlaceholder')}
+            autoComplete="off"
+            readOnly={isDeletePasswordFieldLocked}
+            name="settings-delete-security-field"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            disabled={isDeleting}
+            aria-label={t('settings.currentPassword')}
+            className={`${inputClass} pr-12`}
+            {...fieldErrorA11yProps(passwordErrorId, deletePasswordError)}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeletePassword((isVisible) => !isVisible);
+            }}
+            className={passwordToggleButtonClass}
+            aria-label={showDeletePassword ? t('settings.hidePassword') : t('settings.showPassword')}
+            disabled={isDeleting}
+          >
+            {showDeletePassword ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
+          </button>
+        </div>
+        <FieldErrorText id={passwordErrorId} messageKey={deletePasswordError} />
       </div>
 
-      <div className={`mt-4 ${inputGroupContainerClass}`}>
-        <input
-          id="delete-profile-password-confirm"
-          type={showDeletePasswordConfirm ? 'text' : 'password'}
-          value={deletePasswordConfirm}
-          onChange={(event) => onDeletePasswordConfirmChange(event.target.value)}
-          onFocus={() => {
-            if (isDeletePasswordConfirmFieldLocked) {
-              setIsDeletePasswordConfirmFieldLocked(false);
-            }
-          }}
-          placeholder={t('settings.deleteConfirmPasswordPlaceholder')}
-          autoComplete="off"
-          readOnly={isDeletePasswordConfirmFieldLocked}
-          name="settings-delete-security-confirm-field"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          data-bwignore="true"
-          disabled={isDeleting}
-          aria-label={t('settings.deleteConfirmPassword')}
-          className={`${inputClass} pr-12`}
-        />
-        <button
-          type="button"
-          onClick={() => setShowDeletePasswordConfirm((isVisible) => !isVisible)}
-          className={passwordToggleButtonClass}
-          aria-label={showDeletePasswordConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
-          disabled={isDeleting}
-        >
-          {showDeletePasswordConfirm ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
-        </button>
+      <div className="mt-4 text-left">
+        <div className={inputGroupContainerClass}>
+          <input
+            id="delete-profile-password-confirm"
+            type={showDeletePasswordConfirm ? 'text' : 'password'}
+            value={deletePasswordConfirm}
+            onChange={(event) => {
+              onDeletePasswordConfirmChange(event.target.value);
+            }}
+            onFocus={() => {
+              if (isDeletePasswordConfirmFieldLocked) {
+                setIsDeletePasswordConfirmFieldLocked(false);
+              }
+            }}
+            placeholder={t('settings.deleteConfirmPasswordPlaceholder')}
+            autoComplete="off"
+            readOnly={isDeletePasswordConfirmFieldLocked}
+            name="settings-delete-security-confirm-field"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            disabled={isDeleting}
+            aria-label={t('settings.deleteConfirmPassword')}
+            className={`${inputClass} pr-12`}
+            {...fieldErrorA11yProps(confirmErrorId, confirmMismatchMessageKey)}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeletePasswordConfirm((isVisible) => !isVisible);
+            }}
+            className={passwordToggleButtonClass}
+            aria-label={showDeletePasswordConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
+            disabled={isDeleting}
+          >
+            {showDeletePasswordConfirm ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
+          </button>
+        </div>
+        <FieldErrorText id={confirmErrorId} messageKey={confirmMismatchMessageKey} />
       </div>
     </Modal>
   );

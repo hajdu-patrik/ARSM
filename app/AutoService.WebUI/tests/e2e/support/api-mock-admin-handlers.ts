@@ -5,6 +5,7 @@ import { PROTECTED_DEMO_MECHANIC_EMAILS } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
+/** Dispatches `/api/admin/*` mock requests: admin-only mechanic list and guarded delete. */
 export async function tryHandleAdminRoute(
   route: Route,
   method: string,
@@ -34,13 +35,12 @@ export async function tryHandleAdminRoute(
   const mechanicDeleteMatch = /^\/api\/admin\/mechanics\/(\d+)$/.exec(path);
   if (mechanicDeleteMatch && method === 'DELETE') {
     const personId = Number(mechanicDeleteMatch[1]);
-    const mechanicIndex = state.mechanics.findIndex((mechanic) => mechanic.personId === personId);
-    if (mechanicIndex < 0) {
+    const target = state.mechanics.find((mechanic) => mechanic.personId === personId);
+    if (!target) {
       await fulfillJson(route, { detail: 'Mechanic not found.' }, 404);
       return true;
     }
 
-    const target = state.mechanics[mechanicIndex];
     if (PROTECTED_DEMO_MECHANIC_EMAILS.has(target.email.toLowerCase())) {
       await fulfillJson(route, { detail: 'Cannot delete demo mechanic records used by seeded test data.' }, 422);
       return true;
@@ -57,7 +57,7 @@ export async function tryHandleAdminRoute(
       return true;
     }
 
-    state.mechanics.splice(mechanicIndex, 1);
+    state.mechanics.splice(state.mechanics.indexOf(target), 1);
     await fulfillNoContent(route);
     return true;
   }

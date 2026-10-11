@@ -1,29 +1,39 @@
-/** Labor type create/update/delete mutation hook: modal state, payload validation, server calls, list updates. */
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
-import { isAxiosError } from 'axios';
-import {
-  extractServerFieldErrors,
-  getFirstFieldErrorMessage,
-  normalizeServerFieldErrors,
-  type ServerFieldErrors,
-} from '../../../utils/serverValidation';
-import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } from '../../../types/catalog/catalog.types';
+/** Labor type create/update/delete mutation hook: modal state, payload validation, server calls, cached list updates. */
+import { useCallback, useState, type SyntheticEvent } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { laborTypeService } from '../../../services/catalog/labor-type.service';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
-import { buildLaborTypeRequest } from './catalogMutation.helpers';
+import type {
+  CreateLaborTypeRequest,
+  LaborTypeDto,
+  UpdateLaborTypeRequest,
+} from '../../../types/catalog/catalog.types';
+import { laborTypeCatalogFormConfig, readCatalogFieldValues } from '../catalogForm.config';
 import {
+  currentCatalogFieldErrors,
   EMPTY_LABOR_TYPE_FORM,
-  hasServerFieldErrors,
-  mapCatalogValidationMessageToKey,
+  pinCatalogFieldError,
   type CatalogModalMode,
   type LaborTypeFormState,
+  type PinnedCatalogFieldError,
 } from '../helpers';
+import { buildLaborTypeRequest, resolveCatalogSaveErrorKey, type CatalogRequestResult } from './catalogMutation.helpers';
 import type { CatalogMutationToastHandlers } from './mutation-toast.types';
 
+/** Variables of the labor type update mutation. */
+interface UpdateLaborTypeVariables {
+  readonly id: number;
+  readonly request: UpdateLaborTypeRequest;
+}
+
+/** True when the code, name and hourly net rate all hold non-blank text. */
 function hasRequiredLaborTypeFields(form: LaborTypeFormState): boolean {
   return form.code.trim().length > 0 && form.name.trim().length > 0 && form.hourlyNetRate.trim().length > 0;
 }
 
+/** True when the payload differs from the edited labor type; the code compares case-insensitively. */
 function hasLaborTypeUpdateChanges(snapshot: LaborTypeDto, payload: CreateLaborTypeRequest | UpdateLaborTypeRequest): boolean {
   return snapshot.code.trim().toUpperCase() !== payload.code.trim().toUpperCase()
     || snapshot.name !== payload.name
@@ -31,10 +41,17 @@ function hasLaborTypeUpdateChanges(snapshot: LaborTypeDto, payload: CreateLaborT
     || snapshot.vatRatePercent !== payload.vatRatePercent;
 }
 
-/** Dependencies required by labor type create/edit/delete mutation handlers. */
-interface UseLaborTypeMutationsParams extends CatalogMutationToastHandlers {
-  setLaborTypes: Dispatch<SetStateAction<LaborTypeDto[]>>;
-  reloadLaborTypes: (force?: boolean) => Promise<void>;
+/** A labor type form can be saved with a valid payload and, when editing, at least one real change. */
+function isLaborTypeSaveAllowed(
+  mode: CatalogModalMode,
+  snapshot: LaborTypeDto | null,
+  built: CatalogRequestResult<CreateLaborTypeRequest> | null,
+): boolean {
+  if (built === null || built.fieldError !== null) {
+    return false;
+  }
+
+  return mode === 'create' || (snapshot !== null && hasLaborTypeUpdateChanges(snapshot, built.payload));
 }
 
 /** Manages the labor type form/delete modal state and create/update/delete mutations. */
@@ -42,45 +59,108 @@ export function useLaborTypeMutations({
   showSuccessToast,
   showErrorToast,
   showWarningToast,
-  setLaborTypes,
-  reloadLaborTypes,
-}: UseLaborTypeMutationsParams) {
+}: CatalogMutationToastHandlers) {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
   const [laborTypeModalOpen, setLaborTypeModalOpen] = useState(false);
   const [laborTypeModalMode, setLaborTypeModalMode] = useState<CatalogModalMode>('create');
-  const [editingLaborTypeId, setEditingLaborTypeId] = useState<number | null>(null);
-  const [editingLaborTypeSnapshot, setEditingLaborTypeSnapshot] = useState<LaborTypeDto | null>(null);
+  const [editingLaborType, setEditingLaborType] = useState<LaborTypeDto | null>(null);
   const [laborTypeForm, setLaborTypeForm] = useState<LaborTypeFormState>(EMPTY_LABOR_TYPE_FORM);
-  const [isSavingLaborType, setIsSavingLaborType] = useState(false);
+  const [pinnedFieldError, setPinnedFieldError] = useState<PinnedCatalogFieldError | null>(null);
   const [deleteLaborTypeTarget, setDeleteLaborTypeTarget] = useState<LaborTypeDto | null>(null);
-  const [isDeletingLaborType, setIsDeletingLaborType] = useState(false);
 
-  const hasRequiredValues = hasRequiredLaborTypeFields(laborTypeForm);
-  const payloadResult = hasRequiredValues
-    ? buildLaborTypeRequest(laborTypeForm)
-    : { payload: null as never, fieldError: 'common.validation.fieldRequired' };
-  const hasValidPayload = hasRequiredValues && payloadResult.fieldError === null;
-  const isLaborTypeSaveEnabled = hasValidPayload
-    && (laborTypeModalMode === 'create' || Boolean(editingLaborTypeSnapshot && hasLaborTypeUpdateChanges(editingLaborTypeSnapshot, payloadResult.payload)))
+  /** Rewrites the cached labor type list; a list that has not loaded yet is left to its own fetch. */
+  const updateLaborTypeList = useCallback((update: (laborTypes: LaborTypeDto[]) => LaborTypeDto[]) => {
+    if (scope === null) {
+      return;
+    }
+
+    queryClient.setQueryData<LaborTypeDto[]>(
+      queryKeys.catalog.laborTypes(scope),
+      (laborTypes) => laborTypes && update(laborTypes),
+    );
+  }, [queryClient, scope]);
+
+  /** Marks the cached labor type list stale and resolves once the mounted list has refetched. */
+  const refreshLaborTypeList = useCallback(async () => {
+    if (scope === null) {
+      return;
+    }
+
+    await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.catalog.laborTypes(scope) });
+  }, [queryClient, scope]);
+
+  /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
+  const reportSaveError = useCallback((messageKey: string) => {
+    setPinnedFieldError(
+      pinCatalogFieldError(messageKey, readCatalogFieldValues(laborTypeCatalogFormConfig, laborTypeForm)),
+    );
+    showErrorToast(messageKey);
+  }, [laborTypeForm, showErrorToast]);
+
+  const { mutate: createLaborType, isPending: isCreatingLaborType } = useMutation({
+    mutationFn: (request: CreateLaborTypeRequest) => laborTypeService.createLaborType(request),
+    onSuccess: (created) => {
+      updateLaborTypeList((laborTypes) => [...laborTypes, created]);
+      showSuccessToast('inventory.toasts.laborTypeCreated');
+      setLaborTypeModalOpen(false);
+    },
+    onError: (error) => {
+      reportSaveError(resolveCatalogSaveErrorKey(error, 'inventory.errors.laborTypeSaveFailed'));
+    },
+  });
+
+  const { mutate: updateLaborType, isPending: isUpdatingLaborType } = useMutation({
+    mutationFn: ({ id, request }: UpdateLaborTypeVariables) => laborTypeService.updateLaborType(id, request),
+    onSuccess: async () => {
+      await refreshLaborTypeList();
+      showSuccessToast('inventory.toasts.laborTypeUpdated');
+      setLaborTypeModalOpen(false);
+    },
+    onError: (error) => {
+      reportSaveError(resolveCatalogSaveErrorKey(error, 'inventory.errors.laborTypeSaveFailed'));
+    },
+  });
+
+  const { mutate: deleteLaborType, isPending: isDeletingLaborType } = useMutation({
+    mutationFn: (id: number) => laborTypeService.deleteLaborType(id),
+    onSuccess: (_result, id) => {
+      updateLaborTypeList((laborTypes) => laborTypes.filter((laborType) => laborType.id !== id));
+      showSuccessToast('inventory.toasts.laborTypeDeleted');
+      setDeleteLaborTypeTarget(null);
+    },
+    onError: () => {
+      showErrorToast('inventory.errors.laborTypeDeleteFailed');
+    },
+  });
+
+  const isSavingLaborType = isCreatingLaborType || isUpdatingLaborType;
+  const builtRequest = hasRequiredLaborTypeFields(laborTypeForm) ? buildLaborTypeRequest(laborTypeForm) : null;
+  const isLaborTypeSaveEnabled = isLaborTypeSaveAllowed(laborTypeModalMode, editingLaborType, builtRequest)
     && !isSavingLaborType;
+  const laborTypeFieldErrors = currentCatalogFieldErrors(
+    pinnedFieldError,
+    readCatalogFieldValues(laborTypeCatalogFormConfig, laborTypeForm),
+  );
 
   const openCreateLaborTypeModal = useCallback(() => {
     setLaborTypeModalMode('create');
-    setEditingLaborTypeId(null);
-    setEditingLaborTypeSnapshot(null);
+    setEditingLaborType(null);
     setLaborTypeForm(EMPTY_LABOR_TYPE_FORM);
+    setPinnedFieldError(null);
     setLaborTypeModalOpen(true);
   }, []);
 
   const openEditLaborTypeModal = useCallback((laborType: LaborTypeDto) => {
     setLaborTypeModalMode('edit');
-    setEditingLaborTypeId(laborType.id);
-    setEditingLaborTypeSnapshot(laborType);
+    setEditingLaborType(laborType);
     setLaborTypeForm({
       code: laborType.code,
       name: laborType.name,
       hourlyNetRate: String(laborType.hourlyNetRate),
       vatRatePercent: laborType.vatRatePercent,
     });
+    setPinnedFieldError(null);
     setLaborTypeModalOpen(true);
   }, []);
 
@@ -92,86 +172,44 @@ export function useLaborTypeMutations({
     setLaborTypeModalOpen(false);
   }, [isSavingLaborType]);
 
-  const handleSubmitLaborTypeError = useCallback((error: unknown) => {
-    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-      showErrorToast('inventory.errors.laborTypeSaveFailed');
-      return;
-    }
-
-    const responseData = error.response?.data;
-    const mappedFieldErrors = normalizeServerFieldErrors(
-      extractServerFieldErrors(responseData),
-      mapCatalogValidationMessageToKey,
-    );
-
-    if (hasServerFieldErrors(mappedFieldErrors)) {
-      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'inventory.errors.laborTypeSaveFailed');
-      return;
-    }
-
-    const detailKey = responseData?.detail
-      ? mapCatalogValidationMessageToKey(responseData.detail)
-      : 'inventory.errors.laborTypeSaveFailed';
-    showErrorToast(detailKey);
-  }, [showErrorToast]);
-
-  const persistLaborTypeMutation = useCallback(async (payload: CreateLaborTypeRequest) => {
-    if (laborTypeModalMode === 'create') {
-      const created = await laborTypeService.createLaborType(payload);
-      setLaborTypes((prev) => [...prev, created]);
-      showSuccessToast('inventory.toasts.laborTypeCreated');
-      return;
-    }
-
-    if (editingLaborTypeId === null) {
-      return;
-    }
-
-    await laborTypeService.updateLaborType(editingLaborTypeId, payload);
-    await reloadLaborTypes(true);
-    showSuccessToast('inventory.toasts.laborTypeUpdated');
-  }, [editingLaborTypeId, laborTypeModalMode, reloadLaborTypes, setLaborTypes, showSuccessToast]);
-
-  const handleSubmitLaborType = useCallback(async (event: React.SyntheticEvent) => {
+  const handleSubmitLaborType = useCallback((event: SyntheticEvent) => {
     event.preventDefault();
 
-    const { payload, fieldError } = buildLaborTypeRequest(laborTypeForm);
+    const request = buildLaborTypeRequest(laborTypeForm);
 
-    if (fieldError) {
-      showErrorToast(fieldError);
+    if (request.fieldError !== null) {
+      reportSaveError(request.fieldError);
       return;
     }
 
-    if (
-      laborTypeModalMode === 'edit'
-      && editingLaborTypeSnapshot
-      && !hasLaborTypeUpdateChanges(editingLaborTypeSnapshot, payload)
-    ) {
+    if (laborTypeModalMode === 'create') {
+      createLaborType(request.payload);
+      return;
+    }
+
+    if (editingLaborType === null) {
+      return;
+    }
+
+    if (!hasLaborTypeUpdateChanges(editingLaborType, request.payload)) {
       showWarningToast(TOAST_KEY_NO_CHANGES);
       return;
     }
 
-    setIsSavingLaborType(true);
-
-    try {
-      await persistLaborTypeMutation(payload);
-      setLaborTypeModalOpen(false);
-    } catch (error) {
-      handleSubmitLaborTypeError(error);
-    } finally {
-      setIsSavingLaborType(false);
-    }
+    updateLaborType({ id: editingLaborType.id, request: request.payload });
   }, [
-    editingLaborTypeSnapshot,
-    handleSubmitLaborTypeError,
+    createLaborType,
+    editingLaborType,
     laborTypeForm,
     laborTypeModalMode,
-    persistLaborTypeMutation,
-    showErrorToast,
+    reportSaveError,
     showWarningToast,
+    updateLaborType,
   ]);
 
-  const openDeleteLaborTypeModal = useCallback((laborType: LaborTypeDto) => setDeleteLaborTypeTarget(laborType), []);
+  const openDeleteLaborTypeModal = useCallback((laborType: LaborTypeDto) => {
+    setDeleteLaborTypeTarget(laborType);
+  }, []);
 
   const closeDeleteLaborTypeModal = useCallback(() => {
     if (isDeletingLaborType) {
@@ -181,31 +219,18 @@ export function useLaborTypeMutations({
     setDeleteLaborTypeTarget(null);
   }, [isDeletingLaborType]);
 
-  const handleDeleteLaborType = useCallback(async () => {
-    if (!deleteLaborTypeTarget) {
-      return;
+  const handleDeleteLaborType = useCallback(() => {
+    if (deleteLaborTypeTarget !== null) {
+      deleteLaborType(deleteLaborTypeTarget.id);
     }
-
-    const id = deleteLaborTypeTarget.id;
-    setIsDeletingLaborType(true);
-
-    try {
-      await laborTypeService.deleteLaborType(id);
-      setLaborTypes((prev) => prev.filter((laborType) => laborType.id !== id));
-      showSuccessToast('inventory.toasts.laborTypeDeleted');
-      setDeleteLaborTypeTarget(null);
-    } catch {
-      showErrorToast('inventory.errors.laborTypeDeleteFailed');
-    } finally {
-      setIsDeletingLaborType(false);
-    }
-  }, [deleteLaborTypeTarget, setLaborTypes, showErrorToast, showSuccessToast]);
+  }, [deleteLaborType, deleteLaborTypeTarget]);
 
   return {
     laborTypeModalOpen,
     laborTypeModalMode,
     laborTypeForm,
     setLaborTypeForm,
+    laborTypeFieldErrors,
     isSavingLaborType,
     isLaborTypeSaveEnabled,
     openCreateLaborTypeModal,

@@ -1,20 +1,20 @@
 /** Shared field, placeholder, select, and input-group style primitives. */
+import { focusVisibleOutlineClass } from './surfaceStyles';
 
-/** Text-field surface shared by every input/textarea: border, fill, placeholder, focus lift/border, disabled state. Each field adds its own size, padding, typography and focus-ring strength. */
-const textFieldSurfaceClass = 'rounded-xl border border-arsm-border bg-arsm-input text-arsm-primary placeholder-arsm-placeholder outline-none transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:placeholder-arsm-placeholder-dark dark:focus-visible:border-arsm-accent';
+/** Text-field surface shared by every input/textarea: 3:1 field border that turns ui-focus on focus (it survives a clipping wrapper), fill, placeholder, focus lift/outline, disabled state. Each field adds its own size, padding and typography. */
+const textFieldSurfaceClass = `rounded-xl border border-ui-field-border bg-ui-input text-ui-text placeholder-ui-placeholder transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-ui-focus ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-70`;
 
-/** Focus-ring strengths: standard fields use the stronger ring, compact fields and selects the softer one. */
-const fieldFocusRingClass = 'focus-visible:ring-arsm-focus-ring/40 dark:focus-visible:ring-arsm-focus-ring/28';
-const fieldFocusRingSoftClass = 'focus-visible:ring-arsm-focus-ring/35 dark:focus-visible:ring-arsm-focus-ring/24';
+/** Full-width field body shared by the default and the search input; each variant adds its own horizontal padding and text size. */
+const inputFieldBaseClass = `min-h-11 w-full py-2.5 max-[320px]:py-2 ${textFieldSurfaceClass}`;
 
 /** Default full-width input used by standard forms (auth, settings, customer/admin forms). */
-export const inputClass = `min-h-11 w-full px-4 py-2.5 text-[15px] max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm ${textFieldSurfaceClass} ${fieldFocusRingClass}`;
+export const inputClass = `${inputFieldBaseClass} px-4 text-ui-field max-[320px]:px-3 max-[320px]:text-sm`;
 
 /** Compact input variant used in denser rows and table-like edit surfaces. */
-export const inputClassCompact = `min-h-11 w-full px-3 py-2 text-sm ${textFieldSurfaceClass} ${fieldFocusRingSoftClass}`;
+export const inputClassCompact = `min-h-11 w-full px-3 py-2 text-sm ${textFieldSurfaceClass}`;
 
 /** Intake form controls: one shared field body; the input and the textarea each add their own minimum height. */
-const intakeFieldBaseClass = `min-w-0 max-w-full w-full px-4 py-2.5 text-sm ${textFieldSurfaceClass} ${fieldFocusRingClass}`;
+const intakeFieldBaseClass = `min-w-0 max-w-full w-full px-4 py-2.5 text-sm ${textFieldSurfaceClass}`;
 
 export const intakeInputClass = `min-h-11 ${intakeFieldBaseClass}`;
 
@@ -24,12 +24,12 @@ export const textareaClass = `min-h-[6.5rem] resize-y ${intakeFieldBaseClass}`;
 export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClass}`;
 
 /** Select primitives for filter rows and compact form dropdowns. */
-export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 text-sm text-arsm-primary transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-arsm-accent focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-primary-dark dark:focus-visible:border-arsm-accent ${fieldFocusRingSoftClass}`;
+export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-ui-field-border bg-ui-input px-3 py-2 text-sm text-ui-text transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-ui-focus ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-50`;
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
 /** Compact select dedicated to filter toolbars (kept distinct from form/edit selects); reaches the 44px touch height below the lg breakpoint (1024px). */
-export const filterSelectCompactClass = 'h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-arsm-label transition-colors hover:bg-arsm-toggle-bg focus-visible:border-arsm-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-label-dark dark:hover:bg-arsm-toggle-bg-dark dark:focus-visible:border-arsm-border-dark dark:focus-visible:ring-arsm-focus-ring/30';
+export const filterSelectCompactClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:bg-arsm-input-dark`;
 
 /** Width wrapper for compact filter selects in responsive toolbar rows. */
 export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
@@ -44,18 +44,19 @@ export const formFieldGridClass = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2
 /** Input group primitives used by search fields and password visibility toggles. */
 export const inputGroupContainerClass = 'relative min-w-0 max-w-full';
 
-export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-arsm-muted dark:text-arsm-muted-dark';
+export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ui-muted';
 
-export const searchInputClass = `${inputClass} pl-10 pr-12 text-sm`;
+/** Search field: pl-10 clears the search icon and pr-12 the clear button; the compact line-height keeps it 44px tall. */
+export const searchInputClass = `${inputFieldBaseClass} pl-10 pr-12 text-ui-field leading-(--text-ui-small--line-height) max-[320px]:text-sm`;
 
-export const inputGroupOverlayButtonClass = 'absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-arsm-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-arsm-primary motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40 disabled:cursor-not-allowed disabled:opacity-60 dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark';
+export const inputGroupOverlayButtonClass = `absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-ui-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-ui-text motion-reduce:hover:scale-100 ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:text-ui-muted disabled:opacity-60 disabled:hover:scale-100 disabled:hover:text-ui-muted`;
 
 export const passwordToggleButtonClass = inputGroupOverlayButtonClass;
 
 export const searchClearButtonClass = inputGroupOverlayButtonClass;
 
 /** Label/read-only helpers used by profile/settings/intake summary sections. */
-export const intakeFieldWrapperClass = 'flex min-w-0 flex-col gap-1 text-sm text-arsm-primary dark:text-arsm-primary-dark';
+export const intakeFieldWrapperClass = 'flex min-w-0 flex-col gap-1 text-sm text-ui-text';
 export const intakeFieldLabelClass = 'font-medium';
-export const readonlyInputClass = 'min-h-11 w-full cursor-not-allowed rounded-xl border border-arsm-border bg-arsm-input px-4 py-2.5 text-[15px] text-arsm-label outline-none max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:border-arsm-border-dark dark:bg-arsm-input-dark dark:text-arsm-placeholder-dark';
-export const labelClass = 'mb-1.5 block text-sm font-medium text-arsm-label dark:text-arsm-label-dark';
+export const readonlyInputClass = `min-h-11 w-full cursor-not-allowed rounded-xl border border-ui-field-border bg-ui-input px-4 py-2.5 text-ui-field text-arsm-label focus-visible:border-ui-focus ${focusVisibleOutlineClass} max-[320px]:px-3 max-[320px]:py-2 max-[320px]:text-sm dark:text-arsm-placeholder-dark`;
+export const labelClass = 'mb-1.5 block text-sm font-medium text-ui-label';

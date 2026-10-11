@@ -16,7 +16,7 @@ import {
 	toolbarRowLayoutClass,
 	toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
-import { filterNameInput } from '../../../utils/validation';
+import { filterNameSearchInput } from '../../../utils/validation';
 import type { SortDirection } from '../page.types';
 
 interface CustomersToolbarProps {
@@ -29,6 +29,7 @@ interface CustomersToolbarProps {
 	onOpenCreateCustomerModal: () => void;
 }
 
+/** Renders the search field with its clear button, the sort toggle and the create-customer button. */
 const CustomersToolbarComponent = memo(function CustomersToolbar({
 	t,
 	searchTerm,
@@ -47,7 +48,9 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
 						data-testid="customers-search-input"
 						type="text"
 						value={searchTerm}
-						onChange={(event) => onSearchChange(filterNameInput(event.target.value))}
+						onChange={(event) => {
+							onSearchChange(filterNameSearchInput(event.target.value));
+						}}
 						placeholder={t('customers.searchPlaceholder')}
 						className={searchInputClass}
 					/>

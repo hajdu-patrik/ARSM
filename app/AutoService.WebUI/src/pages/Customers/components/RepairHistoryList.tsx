@@ -7,7 +7,7 @@ import {
 	mutedBodyTextClass,
 	mutedSecondaryTextClass,
 } from '../../../utils/formStyles';
-import { formatDateTime } from '../helpers';
+import { formatShortDateTime } from '../../../utils/intlFormat';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
 /** Props for the {@link RepairHistoryList} component. */
@@ -15,7 +15,7 @@ interface RepairHistoryListProps {
 	readonly appointments: AppointmentDto[];
 	readonly locale: string;
 	readonly emptyMessage: string;
-	readonly emptyMessageClassName?: string;
+	readonly emptyMessageClassName?: string | undefined;
 	readonly onOpenAppointment?: (appointment: AppointmentDto) => void;
 }
 
@@ -36,18 +36,20 @@ export const RepairHistoryList = memo(function RepairHistoryList({
 	}
 
 	return (
-		<div className="min-w-0 divide-y divide-arsm-border/80 dark:divide-arsm-border-dark/80">
+		<div className="min-w-0 divide-y divide-ui-border/80">
 			{appointments.map((appointment) => (
 				<button
 					key={appointment.id}
 					type="button"
-					className={`flex min-h-[5.75rem] w-full min-w-0 flex-col justify-between px-3 py-3 text-left transition-colors duration-200 ${onOpenAppointment ? 'cursor-pointer hover:bg-arsm-hover/70 dark:hover:bg-arsm-hover-dark/70' : 'cursor-default'}`}
-					onClick={() => onOpenAppointment?.(appointment)}
+					className={`flex min-h-[5.75rem] w-full min-w-0 flex-col justify-between px-3 py-3 text-left transition-colors duration-200 ${onOpenAppointment ? 'cursor-pointer hover:bg-ui-hover/70' : 'cursor-default'}`}
+					onClick={() => {
+						onOpenAppointment?.(appointment);
+					}}
 					disabled={!onOpenAppointment}
 				>
 					<div className={compactHeaderRowClass}>
 						<p className={compactItemTitleClampTextClass}>
-							{formatDateTime(appointment.scheduledDate, locale)}
+							{formatShortDateTime(appointment.scheduledDate, locale)}
 						</p>
 						<StatusBadge status={appointment.status} className="shrink-0" />
 					</div>

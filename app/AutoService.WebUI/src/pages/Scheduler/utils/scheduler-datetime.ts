@@ -1,36 +1,12 @@
-/** Shared scheduler date/time formatting and day-comparison helpers, using Intl.DateTimeFormat for locale-aware output. */
+/** Scheduler date helpers: display formats are the shared 24-hour presets of utils/intlFormat, so the
+ * scheduler follows the app-wide locale rules (en-GB for English, `-` for an unparsable value). */
+import { formatShortDateTime } from '../../../utils/intlFormat';
 
-/** Formats a Date to a long localized date string (e.g. "Monday, April 14, 2026"). */
-export function formatLongDate(date: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date);
-}
+export { formatLongDate, formatLongDateTime } from '../../../utils/intlFormat';
 
-/** Formats a datetime string to a long localized date-time string including weekday. */
-export function formatLongDateTime(isoValue: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(isoValue));
-}
-
-/** Formats a datetime string to a localized date-time string without weekday (used for due dates). */
-export function formatDueExactDateTime(isoValue: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(isoValue));
+/** Exact due date and time without weekday, as the short 24-hour date-time preset. */
+export function formatDueExactDateTime(isoValue: string, language: string): string {
+  return formatShortDateTime(isoValue, language);
 }
 
 /** Returns a new Date set to midnight (00:00:00.000) of the given date. */

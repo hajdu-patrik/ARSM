@@ -3,25 +3,26 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export type CatalogTab = 'parts' | 'labor-types';
 export type CatalogItemKind = 'part' | 'laborType';
 
-// Anchored per language: the tab buttons have no test id of their own, and
+// Anchored per language: the tabs have no test id of their own, and
 // the Inventory page has no other control whose accessible name collides.
 const TAB_LABEL: Record<CatalogTab, RegExp> = {
   parts: /^(Parts|Alkatrészek)$/,
-  'labor-types': /^(Labor types|Munkatípusok)$/,
+  'labor-types': /^(Labour types|Munkadíjtípusok)$/,
 };
-const CREATE_TITLE: Record<CatalogItemKind, string> = { part: 'Create part', laborType: 'Create labor type' };
-const EDIT_TITLE: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labor type' };
+const CREATE_TITLE: Record<CatalogItemKind, string> = { part: 'Create part', laborType: 'Create labour type' };
+const EDIT_TITLE: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labour type' };
 const DELETE_TITLE: Record<CatalogItemKind, string> = {
   part: 'Confirm part deletion',
-  laborType: 'Confirm labor type deletion',
+  laborType: 'Confirm labour type deletion',
 };
-const EDIT_LABEL: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labor type' };
-const DELETE_LABEL: Record<CatalogItemKind, string> = { part: 'Delete part', laborType: 'Delete labor type' };
+const EDIT_LABEL: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labour type' };
+const DELETE_LABEL: Record<CatalogItemKind, string> = { part: 'Delete part', laborType: 'Delete labour type' };
 const TOOLBAR_TESTID_PREFIX: Record<CatalogItemKind, string> = {
   part: 'inventory-parts',
   laborType: 'inventory-labor-types',
 };
 
+/** Page object for the Inventory page: parts and labour types tabs. */
 export class CatalogPage {
   constructor(private readonly page: Page) {}
 
@@ -33,8 +34,9 @@ export class CatalogPage {
     await expect(this.searchInput(activeKind)).toBeVisible();
   }
 
-  tabButton(tab: CatalogTab): Locator {
-    return this.page.getByRole('button', { name: TAB_LABEL[tab] });
+  /** The tab of the page's `tablist`; the active one has `aria-selected="true"`. */
+  tab(name: CatalogTab): Locator {
+    return this.page.getByRole('tab', { name: TAB_LABEL[name] });
   }
 
   searchInput(kind: CatalogItemKind): Locator {

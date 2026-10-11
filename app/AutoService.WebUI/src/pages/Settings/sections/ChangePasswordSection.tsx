@@ -1,10 +1,16 @@
 /** Settings change-password form: current/new/confirm inputs with visibility toggles and inline validation. */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound } from 'lucide-react';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import { buttonClass, cardClass, defaultIconClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
-import { getCredentialsDisabledReasonKey } from '../passwordFormPolicy';
+import {
+  getCredentialsDisabledReasonKey,
+  getPasswordFieldOfReason,
+  type PasswordFieldErrors,
+  type PasswordFieldName,
+} from '../passwordFormPolicy';
 import { useClearAutofilledCredentials, useLockFieldWhenEmpty } from '../hooks/usePasswordFieldProtection';
 import { PasswordInputWithToggle } from './PasswordInputWithToggle';
 
@@ -13,6 +19,7 @@ interface ChangePasswordSectionProps {
   readonly currentPassword: string;
   readonly newPassword: string;
   readonly confirmNewPassword: string;
+  readonly fieldErrors: PasswordFieldErrors;
   readonly isSubmitting: boolean;
   readonly onCurrentPasswordChange: (value: string) => void;
   readonly onNewPasswordChange: (value: string) => void;
@@ -25,6 +32,7 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   currentPassword,
   newPassword,
   confirmNewPassword,
+  fieldErrors,
   isSubmitting,
   onCurrentPasswordChange,
   onNewPasswordChange,
@@ -32,7 +40,9 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   onSubmit,
 }: ChangePasswordSectionProps) {
   const { t } = useTranslation();
-  const credentialsSubmitDisabledHintId = 'settings-credentials-submit-disabled-hint';
+  const idPrefix = useId();
+  const credentialsSubmitDisabledHintId = `${idPrefix}-submit-disabled-hint`;
+  const errorId = (field: PasswordFieldName) => `${idPrefix}-${field}-error`;
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -52,13 +62,42 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
   const passwordSubmitDisabledText = passwordSubmitDisabledReasonKey ? t(passwordSubmitDisabledReasonKey) : '';
   const shouldShowPasswordSubmitDisabledHint = isChangePasswordDisabled && Boolean(passwordSubmitDisabledReasonKey);
   const passwordSubmitDisabledTitle = shouldShowPasswordSubmitDisabledHint ? passwordSubmitDisabledText : undefined;
+  const hintedField = shouldShowPasswordSubmitDisabledHint
+    ? getPasswordFieldOfReason(passwordSubmitDisabledReasonKey)
+    : null;
 
-  const toggleShowCurrent = useCallback(() => setShowCurrent((isVisible) => !isVisible), []);
-  const toggleShowNew = useCallback(() => setShowNew((isVisible) => !isVisible), []);
-  const toggleShowConfirm = useCallback(() => setShowConfirm((isVisible) => !isVisible), []);
-  const unlockCurrentField = useCallback(() => setIsCurrentFieldLocked(false), []);
-  const unlockNewField = useCallback(() => setIsNewFieldLocked(false), []);
-  const unlockConfirmField = useCallback(() => setIsConfirmFieldLocked(false), []);
+  /** A field points at its own server error text, else at the hint under the button when that hint is about this field. */
+  const getFieldA11yProps = (field: PasswordFieldName) => {
+    const serverMessageKey = fieldErrors[field];
+
+    if (serverMessageKey !== undefined) {
+      return fieldErrorA11yProps(errorId(field), serverMessageKey);
+    }
+
+    return fieldErrorA11yProps(
+      credentialsSubmitDisabledHintId,
+      hintedField === field ? passwordSubmitDisabledText : undefined,
+    );
+  };
+
+  const toggleShowCurrent = useCallback(() => {
+    setShowCurrent((isVisible) => !isVisible);
+  }, []);
+  const toggleShowNew = useCallback(() => {
+    setShowNew((isVisible) => !isVisible);
+  }, []);
+  const toggleShowConfirm = useCallback(() => {
+    setShowConfirm((isVisible) => !isVisible);
+  }, []);
+  const unlockCurrentField = useCallback(() => {
+    setIsCurrentFieldLocked(false);
+  }, []);
+  const unlockNewField = useCallback(() => {
+    setIsNewFieldLocked(false);
+  }, []);
+  const unlockConfirmField = useCallback(() => {
+    setIsConfirmFieldLocked(false);
+  }, []);
 
   useLockFieldWhenEmpty(currentPassword, setIsCurrentFieldLocked);
   useLockFieldWhenEmpty(newPassword, setIsNewFieldLocked);
@@ -110,6 +149,9 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           onToggleVisibility={toggleShowCurrent}
           inputName="settings-security-current"
           toggleAriaLabel={showCurrent ? t('settings.hidePassword') : t('settings.showPassword')}
+          a11yProps={getFieldA11yProps('currentPassword')}
+          errorId={errorId('currentPassword')}
+          errorKey={fieldErrors.currentPassword}
         />
 
         <PasswordInputWithToggle
@@ -126,6 +168,9 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           inputName="settings-security-new"
           toggleAriaLabel={showNew ? t('settings.hidePassword') : t('settings.showPassword')}
           hintText={t('common.validation.passwordHint')}
+          a11yProps={getFieldA11yProps('newPassword')}
+          errorId={errorId('newPassword')}
+          errorKey={fieldErrors.newPassword}
         />
 
         <PasswordInputWithToggle
@@ -141,6 +186,9 @@ const ChangePasswordSectionComponent = memo(function ChangePasswordSection({
           onToggleVisibility={toggleShowConfirm}
           inputName="settings-security-confirm"
           toggleAriaLabel={showConfirm ? t('settings.hidePassword') : t('settings.showPassword')}
+          a11yProps={getFieldA11yProps('confirmNewPassword')}
+          errorId={errorId('confirmNewPassword')}
+          errorKey={fieldErrors.confirmNewPassword}
         />
 
         <div className="w-full" title={passwordSubmitDisabledTitle}>

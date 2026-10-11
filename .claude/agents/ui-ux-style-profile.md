@@ -23,7 +23,7 @@ tools: Read, Edit, Grep, Glob
 
 ## Non-Negotiable Contracts
 
-- No shadows (`shadow-*`, `dark:shadow-*`, CSS `box-shadow`, `transition-shadow`).
+- No shadows (`shadow-*`, `dark:shadow-*`, `ring-*`, `ring-offset-*`, CSS `box-shadow`, `transition-shadow`); Tailwind rings render as `box-shadow`, so focus and selected states use `outline-*` or a border instead.
 - Preserve existing appearance during style-system refactors: no unintended color, spacing, radius, hover, focus, layout, animation, or responsive changes.
 - Modal shell default keeps top-right close button visible (`showCloseButton=true`); hide only on explicitly approved blocking flows.
 - Close paths must remain: top-right X, overlay, Escape, explicit cancel.

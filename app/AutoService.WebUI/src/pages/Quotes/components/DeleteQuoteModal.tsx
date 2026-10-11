@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
-import type { DeleteQuoteTarget } from '../hooks/useQuoteMutations';
+import type { DeleteQuoteTarget } from '../hooks/useQuoteLifecycleMutations';
 
 interface DeleteQuoteModalProps {
   readonly target: DeleteQuoteTarget | null;

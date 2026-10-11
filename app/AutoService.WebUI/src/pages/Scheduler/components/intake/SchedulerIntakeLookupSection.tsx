@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import type { TFunction } from 'i18next';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
@@ -42,13 +42,15 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 	onNameLookupChange,
 	onSelectNameLookupResult,
 }: SchedulerIntakeLookupProps) {
+	const noMatchId = useId();
+
 	return (
 		<div className={`${insetSurfaceClass} relative space-y-3 overflow-hidden p-3.5`}>
 			<h3 className={compactSectionHeadingTextClass}>
 				{translate('scheduler.intake.customerLookup')}
 			</h3>
 
-			<div className="space-y-1">
+			<div className="space-y-1" aria-live="polite">
 				<p className={mutedMetaTextClass}>
 					{translate('scheduler.intake.lookupLiveHint')}
 				</p>
@@ -62,6 +64,8 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 			<LookupInput
 				licensePlateLookup={licensePlateLookup}
 				nameLookup={nameLookup}
+				noMatchField={lookupState === 'not-found' ? lookupMode : null}
+				noMatchId={noMatchId}
 				translate={translate}
 				onLicensePlateLookupChange={onLicensePlateLookupChange}
 				onNameLookupChange={onNameLookupChange}
@@ -80,7 +84,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 			)}
 
 			{lookupState === 'not-found' && (
-				<LookupNoMatch lookupMode={lookupMode} translate={translate} />
+				<LookupNoMatch id={noMatchId} lookupMode={lookupMode} translate={translate} />
 			)}
 		</div>
 	);

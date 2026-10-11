@@ -7,6 +7,10 @@ const QUERY_KEY_ROOT = 'arsm';
 const QUERY_KEY_SCOPE = 'private-data';
 const QUERY_KEY_VERSION = 'v1';
 
+const CATALOG_SEGMENT = 'catalog';
+const PARTS_SEGMENT = 'parts';
+const LABOR_TYPES_SEGMENT = 'labor-types';
+
 /** Authenticated query namespace segment that prevents persisted private data from crossing users or roles. */
 export type AuthQueryScope = readonly [
   typeof QUERY_KEY_ROOT,
@@ -17,6 +21,12 @@ export type AuthQueryScope = readonly [
   'admin' | 'staff',
 ];
 
+/** Number of segments an authenticated scope takes at the start of every private query key. */
+const AUTH_SCOPE_LENGTH: AuthQueryScope['length'] = 6;
+
+/** Key of every query observed while nobody is signed in; those run with skipToken, so nothing is fetched or persisted. */
+export const SIGNED_OUT_QUERY_KEY = [QUERY_KEY_ROOT, 'signed-out'] as const;
+
 /** Builds the authenticated query scope for the current user, or null when unauthenticated. */
 export function getAuthQueryScope(user: AuthUser | null): AuthQueryScope | null {
   if (!user) {
@@ -26,14 +36,25 @@ export function getAuthQueryScope(user: AuthUser | null): AuthQueryScope | null 
   return [QUERY_KEY_ROOT, QUERY_KEY_SCOPE, QUERY_KEY_VERSION, 'person', user.personId, user.isAdmin ? 'admin' : 'staff'];
 }
 
-/** Checks whether a query key belongs to the persisted private ARSM namespace. */
+/** Checks whether a query key belongs to the private ARSM namespace. */
 export function isPrivateArsmQueryKey(queryKey: QueryKey): boolean {
   return queryKey[0] === QUERY_KEY_ROOT
     && queryKey[1] === QUERY_KEY_SCOPE
     && queryKey[2] === QUERY_KEY_VERSION;
 }
 
-/** Canonical query-key factory for authenticated scheduler and customer read models. */
+/** Checks whether a query key may be persisted across reloads: only the part and labor-type catalog reads,
+ * which hold no personal data; every customer, quote, appointment and profile read stays in memory. */
+export function isPersistedArsmQueryKey(queryKey: QueryKey): boolean {
+  if (!isPrivateArsmQueryKey(queryKey) || queryKey[AUTH_SCOPE_LENGTH] !== CATALOG_SEGMENT) {
+    return false;
+  }
+
+  const catalogKind = queryKey[AUTH_SCOPE_LENGTH + 1];
+  return catalogKind === PARTS_SEGMENT || catalogKind === LABOR_TYPES_SEGMENT;
+}
+
+/** Canonical query-key factory for authenticated read models. */
 export const queryKeys = {
   scheduler: {
     root: (scope: AuthQueryScope) => [...scope, 'scheduler'] as const,
@@ -62,21 +83,28 @@ export const queryKeys = {
       'history',
       customerId,
     ] as const,
+    vehicle: (scope: AuthQueryScope, vehicleId: number) => [
+      ...scope,
+      'customers',
+      'vehicle',
+      vehicleId,
+    ] as const,
     vehicleHistory: (scope: AuthQueryScope, vehicleId: number) => [
       ...scope,
-      'vehicles',
-      'history',
+      'customers',
+      'vehicle-history',
       vehicleId,
     ] as const,
   },
   catalog: {
-    root: (scope: AuthQueryScope) => [...scope, 'catalog'] as const,
-    parts: (scope: AuthQueryScope) => [...scope, 'catalog', 'parts'] as const,
-    laborTypes: (scope: AuthQueryScope) => [...scope, 'catalog', 'labor-types'] as const,
+    root: (scope: AuthQueryScope) => [...scope, CATALOG_SEGMENT] as const,
+    parts: (scope: AuthQueryScope) => [...scope, CATALOG_SEGMENT, PARTS_SEGMENT] as const,
+    laborTypes: (scope: AuthQueryScope) => [...scope, CATALOG_SEGMENT, LABOR_TYPES_SEGMENT] as const,
   },
   quotes: {
     root: (scope: AuthQueryScope) => [...scope, 'quotes'] as const,
     list: (scope: AuthQueryScope) => [...scope, 'quotes', 'list'] as const,
+    detail: (scope: AuthQueryScope, quoteId: number) => [...scope, 'quotes', 'detail', quoteId] as const,
   },
   companyResults: {
     root: (scope: AuthQueryScope) => [...scope, 'company-results'] as const,
@@ -86,5 +114,11 @@ export const queryKeys = {
       year,
       month ?? 'year',
     ] as const,
+  },
+  profile: {
+    me: (scope: AuthQueryScope) => [...scope, 'profile'] as const,
+  },
+  admin: {
+    mechanics: (scope: AuthQueryScope) => [...scope, 'admin', 'mechanics'] as const,
   },
 };

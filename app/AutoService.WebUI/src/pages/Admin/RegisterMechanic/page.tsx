@@ -1,12 +1,8 @@
 /** Admin mechanic registration page: mechanic list management plus registration with inline validation and toast feedback. */
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isAxiosError } from 'axios';
 import { Save } from 'lucide-react';
-import { adminService } from '../../../services/admin/admin.service';
-import { useToastStore } from '../../../store/toast.store';
-import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues } from './helpers';
 import {
   buttonClass,
   cardClass,
@@ -25,158 +21,27 @@ import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
 import { MechanicListSection } from './sections/MechanicListSection';
 import { Modal } from '../../../components/common/Modal';
-import {
-  getFirstFieldErrorMessage,
-  mapAdminValidationMessageToKey,
-  normalizeServerFieldErrors,
-} from '../../../utils/serverValidation';
-import type { RegisterMechanicFormValues } from './types';
-
-function mapAdminMessageToToastKey(message: string): string {
-  const mappedMessage = mapAdminValidationMessageToKey(message);
-  return mappedMessage === message ? 'admin.genericError' : mappedMessage;
-}
+import { useRegisterMechanicForm } from './useRegisterMechanicForm';
 
 const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
   const { t } = useTranslation();
-  const showSuccessToast = useToastStore((state) => state.showSuccess);
-  const showErrorToast = useToastStore((state) => state.showError);
-
-  const [formValues, setFormValues] = useState<RegisterMechanicFormValues>(emptyRegisterMechanicFormValues);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isRegisterConfirmOpen, setIsRegisterConfirmOpen] = useState(false);
-  const [pendingRegisterEmail, setPendingRegisterEmail] = useState('');
-  const [mechanicListRefreshKey, setMechanicListRefreshKey] = useState(0);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const setFieldValue = useCallback(
-    <K extends keyof RegisterMechanicFormValues>(field: K, value: RegisterMechanicFormValues[K]) => {
-      setFormValues((prev) => ({ ...prev, [field]: value }));
-    },
-    [],
-  );
-
-  const toggleExpertise = useCallback((value: string) => {
-    setFormValues((prev) => ({
-      ...prev,
-      expertise: prev.expertise.includes(value)
-        ? prev.expertise.filter((item) => item !== value)
-        : [...prev.expertise, value],
-    }));
-  }, []);
-
-  const canSubmit = useMemo(() => canSubmitForm(formValues, isSubmitting), [formValues, isSubmitting]);
-
-  const handleToggleShowPassword = useCallback(() => {
-    setShowPassword((prev) => !prev);
-  }, []);
-
-  const handleToggleShowConfirmPassword = useCallback(() => {
-    setShowConfirmPassword((prev) => !prev);
-  }, []);
-
-  const handleFirstNameChange = useCallback((value: string) => {
-    setFieldValue('firstName', value);
-  }, [setFieldValue]);
-
-  const handleMiddleNameChange = useCallback((value: string) => {
-    setFieldValue('middleName', value);
-  }, [setFieldValue]);
-
-  const handleLastNameChange = useCallback((value: string) => {
-    setFieldValue('lastName', value);
-  }, [setFieldValue]);
-
-  const handleEmailChange = useCallback((value: string) => {
-    setFieldValue('email', value);
-  }, [setFieldValue]);
-
-  const handlePhoneNumberChange = useCallback((value: string) => {
-    setFieldValue('phoneNumber', value);
-  }, [setFieldValue]);
-
-  const handlePasswordChange = useCallback((value: string) => {
-    setFieldValue('password', value);
-  }, [setFieldValue]);
-
-  const handleConfirmPasswordChange = useCallback((value: string) => {
-    setFieldValue('confirmPassword', value);
-  }, [setFieldValue]);
-
-  const handleSpecializationChange = useCallback((value: string) => {
-    setFieldValue('specialization', value);
-  }, [setFieldValue]);
-
-  const resetForm = useCallback(() => {
-    setFormValues(emptyRegisterMechanicFormValues());
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-  }, []);
-
-  /** Maps a registration error to an inline field error, falling back to a toast message. */
-  const handleSubmitError = useCallback((err: unknown) => {
-    if (!isAxiosError<{ errors?: Record<string, string[]>; detail?: string }>(err)) {
-      showErrorToast('admin.genericError');
-      return;
-    }
-
-    if (err.response?.status === 403) {
-      showErrorToast('admin.forbidden');
-      return;
-    }
-
-    const data = err.response?.data;
-    const normalizedFieldErrors = normalizeServerFieldErrors(data?.errors ?? {}, mapAdminMessageToToastKey);
-
-    if (Object.keys(normalizedFieldErrors).length > 0) {
-      showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'admin.genericError');
-      return;
-    }
-
-    if (data?.detail) {
-      showErrorToast(mapAdminMessageToToastKey(data.detail));
-      return;
-    }
-
-    showErrorToast('admin.genericError');
-  }, [showErrorToast]);
-
-  /** Validates password confirmation and opens the registration confirmation modal. */
-  const handleSubmit = useCallback(
-    (e: React.SyntheticEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-      if (formValues.password !== formValues.confirmPassword) {
-        showErrorToast('common.validation.passwordMismatch');
-        return;
-      }
-
-      setPendingRegisterEmail(formValues.email.trim());
-      setIsRegisterConfirmOpen(true);
-    },
-    [formValues, showErrorToast],
-  );
-
-  /** Registers the mechanic, then resets the form and refreshes the list on success. */
-  const handleRegisterConfirmed = useCallback(async () => {
-    setIsRegisterConfirmOpen(false);
-    setIsSubmitting(true);
-
-    try {
-      const request = buildRegisterMechanicRequest(formValues);
-      const response = await adminService.registerMechanic(request);
-
-      showSuccessToast('admin.successMessage', { email: response.email });
-      resetForm();
-      setMechanicListRefreshKey((k) => k + 1);
-    } catch (err) {
-      handleSubmitError(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formValues, handleSubmitError, resetForm, showSuccessToast]);
+  const {
+    formValues,
+    fieldErrors,
+    showPassword,
+    showConfirmPassword,
+    isSubmitting,
+    canSubmit,
+    isRegisterConfirmOpen,
+    pendingRegisterEmail,
+    setFieldValue,
+    toggleExpertise,
+    toggleShowPassword,
+    toggleShowConfirmPassword,
+    handleSubmit,
+    handleRegisterConfirmed,
+    closeRegisterConfirm,
+  } = useRegisterMechanicForm();
 
   return (
     <section className={pageShellClass}>
@@ -190,7 +55,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
             <h2 className={sectionTitleClass}>
               {t('admin.mechanicList')}
             </h2>
-            <MechanicListSection refreshKey={mechanicListRefreshKey} />
+            <MechanicListSection />
           </section>
 
           <section className={cardClass} aria-label={t('admin.registerMechanic')}>
@@ -205,12 +70,9 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
                 lastName={formValues.lastName}
                 email={formValues.email}
                 phoneNumber={formValues.phoneNumber}
+                fieldErrors={fieldErrors}
                 isSubmitting={isSubmitting}
-                onFirstNameChange={handleFirstNameChange}
-                onMiddleNameChange={handleMiddleNameChange}
-                onLastNameChange={handleLastNameChange}
-                onEmailChange={handleEmailChange}
-                onPhoneNumberChange={handlePhoneNumberChange}
+                onFieldChange={setFieldValue}
               />
 
               <SecuritySection
@@ -218,18 +80,19 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
                 confirmPassword={formValues.confirmPassword}
                 showPassword={showPassword}
                 showConfirmPassword={showConfirmPassword}
+                fieldErrors={fieldErrors}
                 isSubmitting={isSubmitting}
-                onPasswordChange={handlePasswordChange}
-                onConfirmPasswordChange={handleConfirmPasswordChange}
-                onToggleShowPassword={handleToggleShowPassword}
-                onToggleShowConfirmPassword={handleToggleShowConfirmPassword}
+                onFieldChange={setFieldValue}
+                onToggleShowPassword={toggleShowPassword}
+                onToggleShowConfirmPassword={toggleShowConfirmPassword}
               />
 
               <ProfessionalSection
                 specialization={formValues.specialization}
                 expertise={formValues.expertise}
+                fieldErrors={fieldErrors}
                 isSubmitting={isSubmitting}
-                onSpecializationChange={handleSpecializationChange}
+                onFieldChange={setFieldValue}
                 onToggleExpertise={toggleExpertise}
               />
 
@@ -249,14 +112,14 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
 
       <Modal
         isOpen={isRegisterConfirmOpen}
-        onClose={() => { if (!isSubmitting) setIsRegisterConfirmOpen(false); }}
+        onClose={closeRegisterConfirm}
         title={t('admin.confirmRegisterTitle')}
         variant="confirm"
         footer={(
           <>
             <button
               type="button"
-              onClick={() => setIsRegisterConfirmOpen(false)}
+              onClick={closeRegisterConfirm}
               disabled={isSubmitting}
               className={secondaryButtonClass}
             >
@@ -264,7 +127,7 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
             </button>
             <button
               type="button"
-              onClick={() => { void handleRegisterConfirmed(); }}
+              onClick={handleRegisterConfirmed}
               disabled={isSubmitting}
               aria-busy={isSubmitting}
               className={buttonClass}

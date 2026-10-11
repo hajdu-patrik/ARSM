@@ -6,13 +6,11 @@ import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { compactFilterChipNeutralButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
-import { schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
+import { schedulerChipLabelClass, schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
 /** Sort and clear-day chips share one row; their columns shrink equally (labels wrap) only when the row is too narrow. */
 const schedulerSortControlsRowClass = 'grid min-w-0 max-w-full auto-cols-[minmax(0,max-content)] grid-flow-col gap-2';
-/** Chip label that wraps and centers instead of ellipsizing (the chip base sets `whitespace-nowrap` on the button). */
-const schedulerChipLabelClass = 'min-w-0 whitespace-normal text-center';
 
 const STATUS_FILTERS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 
@@ -31,6 +29,7 @@ interface MonthAppointmentSortControlsProps {
   readonly onClearFilter: () => void;
 }
 
+/** Maps the mechanic select value to an id; empty or non-numeric means "all mechanics". */
 function parseMechanicFilterValue(value: string): number | null {
   if (value === '') {
     return null;
@@ -90,7 +89,15 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
           : `${colors.inactive} ${colors.inactiveHover} ${colors.inactivePress}`;
 
         return (
-          <button type="button" key={status} onClick={() => onToggleStatus(status)} aria-pressed={isActive} className={`${schedulerStatusFilterChipButtonClass} ${chipStateClass}`}>
+          <button
+            type="button"
+            key={status}
+            onClick={() => {
+              onToggleStatus(status);
+            }}
+            aria-pressed={isActive}
+            className={`${schedulerStatusFilterChipButtonClass} ${chipStateClass}`}
+          >
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${toneDotClasses[tone]}`} aria-hidden="true" />
             <span>{t(`scheduler.status.${status.toLowerCase()}`)}</span>
           </button>
@@ -102,7 +109,9 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
           value={selectedMechanicId ?? ''}
           title={selectedMechanicName}
           aria-label={t('scheduler.monthList.mechanicAll')}
-          onChange={(event) => onMechanicChange(parseMechanicFilterValue(event.target.value))}
+          onChange={(event) => {
+            onMechanicChange(parseMechanicFilterValue(event.target.value));
+          }}
           className={filterSelectCompactClass}
         >
           <option value="">{t('scheduler.monthList.mechanicAll')}</option>

@@ -1,7 +1,7 @@
 /** Login parsing and error-resolution helpers: normalizes identifiers, maps backend/transport failures to i18n keys. */
 
 import { isAxiosError, type AxiosError } from 'axios';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { logError } from '../../utils/devLog';
 
 interface ApiErrorPayload {
   readonly code?: string;
@@ -23,14 +23,34 @@ export type LoginError =
   | { key: 'login.attemptsExceeded' }
   | { key: 'login.error' };
 
+/** Why an identifier is refused: left empty, the wrong shape, or typed into the other login method. */
+export type InvalidIdentifierReason = 'required' | 'format' | 'wrong_method_email' | 'wrong_method_phone';
+
 /** Parsed login identifier model for email or EU phone input. */
 export type ParsedIdentifier =
   | { kind: 'email'; email: string }
   | { kind: 'phone'; phoneNumber: string }
-  | { kind: 'invalid'; reason: 'format' | 'wrong_method_email' | 'wrong_method_phone' };
+  | { kind: 'invalid'; reason: InvalidIdentifierReason };
 
 /** Identifier login mode currently selected by the user. */
 export type LoginMethod = 'email' | 'phone';
+
+/** Form fields of the login page that can carry a validation message. */
+export type LoginFieldName = 'identifier' | 'password';
+
+/** The validation message key of every field, undefined while the field has none. */
+export type LoginFieldErrors = Readonly<Record<LoginFieldName, string | undefined>>;
+
+export const NO_LOGIN_FIELD_ERRORS: LoginFieldErrors = { identifier: undefined, password: undefined };
+
+const REQUIRED_FIELD_KEY = 'common.validation.fieldRequired';
+
+const IDENTIFIER_ERROR_KEYS: Readonly<Record<InvalidIdentifierReason, string>> = {
+  required: REQUIRED_FIELD_KEY,
+  format: 'login.invalidFormat',
+  wrong_method_email: 'login.wrongMethodEmailInPhone',
+  wrong_method_phone: 'login.wrongMethodPhoneInEmail',
+};
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -48,6 +68,7 @@ function looksLikePhone(value: string): boolean {
   return value.trim().startsWith('+') || stripped.length >= 7;
 }
 
+/** Email mode: refuses a phone-shaped value as the wrong method, otherwise checks and lowercases the address. */
 function parseEmailIdentifier(value: string): ParsedIdentifier {
   if (!value.includes('@') && looksLikePhone(value)) {
     return { kind: 'invalid', reason: 'wrong_method_phone' };
@@ -63,10 +84,35 @@ function parseEmailIdentifier(value: string): ParsedIdentifier {
   };
 }
 
-function parsePhoneIdentifier(value: string): ParsedIdentifier {
+type PhoneLibrary = typeof import('libphonenumber-js');
+
+/** The phone number library, once requested; a failed load is dropped so the next request imports it again. */
+let phoneLibraryPromise: Promise<PhoneLibrary> | null = null;
+
+/** Imports libphonenumber-js on first use, which keeps its metadata out of the login chunk until phone mode needs it. */
+function loadPhoneLibrary(): Promise<PhoneLibrary> {
+  phoneLibraryPromise ??= import('libphonenumber-js').catch((error: unknown) => {
+    phoneLibraryPromise = null;
+    throw error;
+  });
+
+  return phoneLibraryPromise;
+}
+
+/** Starts loading the phone number library early (when phone mode is chosen); a failure is logged and retried at submit. */
+export function preloadPhoneLibrary(): void {
+  loadPhoneLibrary().catch((error: unknown) => {
+    logError('login.phoneLibrary', error);
+  });
+}
+
+/** Phone mode: refuses an email as the wrong method, otherwise accepts a valid number of an accepted country. */
+async function parsePhoneIdentifier(value: string): Promise<ParsedIdentifier> {
   if (value.includes('@')) {
     return { kind: 'invalid', reason: 'wrong_method_email' };
   }
+
+  const { parsePhoneNumberFromString } = await loadPhoneLibrary();
 
   // Use libphonenumber-js with HU as default country for local numbers.
   try {
@@ -79,26 +125,47 @@ function parsePhoneIdentifier(value: string): ParsedIdentifier {
   return { kind: 'invalid', reason: 'format' };
 }
 
-/** Parses and validates a user-provided identifier by selected login method. */
-export function parseIdentifierByMethod(value: string, method: LoginMethod): ParsedIdentifier {
+/** Parses and validates a user-provided identifier by selected login method; phone mode awaits the lazy phone library. */
+export async function parseIdentifierByMethod(value: string, method: LoginMethod): Promise<ParsedIdentifier> {
   const trimmedValue = value.trim();
 
   if (!trimmedValue) {
-    return { kind: 'invalid', reason: 'format' };
+    return { kind: 'invalid', reason: 'required' };
   }
 
   return method === 'email'
     ? parseEmailIdentifier(trimmedValue)
-    : parsePhoneIdentifier(trimmedValue);
+    : await parsePhoneIdentifier(trimmedValue);
 }
 
+/** The message key explaining why an identifier was refused. */
+export function getIdentifierErrorKey(reason: InvalidIdentifierReason): string {
+  return IDENTIFIER_ERROR_KEYS[reason];
+}
+
+/** Validates the whole form at submit time: the parsed identifier and a non-blank password. */
+export function collectLoginFieldErrors(identifier: ParsedIdentifier, password: string): LoginFieldErrors {
+  return {
+    identifier: identifier.kind === 'invalid' ? getIdentifierErrorKey(identifier.reason) : undefined,
+    password: password.trim().length === 0 ? REQUIRED_FIELD_KEY : undefined,
+  };
+}
+
+/** True when at least one field carries a validation message. */
+export function hasLoginFieldErrors(errors: LoginFieldErrors): boolean {
+  return errors.identifier !== undefined || errors.password !== undefined;
+}
+
+/** Seconds until the next attempt, from the payload or the `Retry-After` header (seconds or date), else null. */
 function parseRetryAfterSeconds(err: AxiosError<ApiErrorPayload>): number | null {
-  const payloadRetryAfter = err.response?.data?.retryAfterSeconds;
+  const body = err.response?.data;
+  const payloadRetryAfter = body?.retryAfterSeconds;
   if (typeof payloadRetryAfter === 'number' && Number.isFinite(payloadRetryAfter) && payloadRetryAfter > 0) {
     return Math.floor(payloadRetryAfter);
   }
 
-  const retryAfterHeader = err.response?.headers?.['retry-after'];
+  // Axios types a header lookup as `any`; unknown makes the typeof checks below do the narrowing.
+  const retryAfterHeader: unknown = err.response?.headers['retry-after'];
 
   if (typeof retryAfterHeader === 'string') {
     const parsedSeconds = Number.parseInt(retryAfterHeader, 10);
@@ -118,6 +185,7 @@ function parseRetryAfterSeconds(err: AxiosError<ApiErrorPayload>): number | null
   return null;
 }
 
+/** The lockout error, carrying the wait in whole minutes (at least one) when the server named it. */
 function toAttemptsExceededError(retryAfterSeconds: number | null): LoginError {
   if (retryAfterSeconds === null) {
     return { key: 'login.attemptsExceeded' };
@@ -135,6 +203,7 @@ function includesAny(haystack: string, needles: readonly string[]): boolean {
   return needles.some((needle) => haystack.includes(needle));
 }
 
+/** Every text field of the error body plus the transport message, joined and lowercased for keyword matching. */
 function buildNormalizedErrorText(
   responseData: ApiErrorPayload | undefined,
   message: string | undefined,

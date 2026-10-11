@@ -28,7 +28,9 @@ SOURCE_SUFFIXES = (".cs", ".ts", ".tsx", ".js", ".mjs", ".py")
 SOURCE_LIMIT, TEST_LIMIT, CSHARP_TYPE_LIMIT = 500, 250, 300
 GENERATED_MARKERS = ("/Migrations/", "/node_modules/", "/dist/", "/bin/", "/obj/", ".Designer.cs", "ModelSnapshot.cs")
 SHADOW_PATTERN = re.compile(
-    r"box-shadow|transition-shadow|(?:^|[\s\"'`:])(?:dark:)?shadow(?:-[\w/\[\].-]+)?(?=[\s\"'`]|$)")
+    r"box-shadow|transition-shadow|(?:^|[\s\"'`:])(?:dark:)?shadow(?:-[\w/\[\].-]+)?(?=[\s\"'`]|$)"
+    # Tailwind renders ring-* as box-shadow; a bare ring counts only behind a variant prefix (focus:ring).
+    r"|(?:^|[\s\"'`:!])(?:inset-)?ring-|:ring(?=[\s\"'`!]|$)")
 CSHARP_TYPE_PATTERN = re.compile(r"^\s*(?:[\w<>\[\],]+\s+)*(?:class|record|struct|interface)\s+(\w+)")
 FRONTEND_MANIFESTS = ("app/AutoService.WebUI/package.json", "app/AutoService.WebUI/package-lock.json")
 BACKEND_MANIFEST_PATTERN = re.compile(r"(\.csproj|Directory\.Packages\.props|packages\.lock\.json|Directory\.Build\.props)$")
@@ -160,8 +162,10 @@ def stage_security(files: list[str], forced: bool) -> StageResult:
     if frontend:
         run_command(["npm", "audit", "fix"], WEBUI)
         audit_ok, audit_out = run_command(["npm", "audit", "--audit-level=high"], WEBUI)
-        ok &= audit_ok
+        signatures_ok, signatures_out = run_command(["npm", "audit", "signatures"], WEBUI)
+        ok &= audit_ok and signatures_ok
         result.detail += [] if audit_ok else ["npm audit (after fix):", *audit_out]
+        result.detail += [] if signatures_ok else ["npm audit signatures:", *signatures_out]
     if backend:
         listed, output = run_command(["dotnet", "list", "package", "--vulnerable", "--include-transitive"], APP)
         vulnerable = not listed or any("has the following vulnerable packages" in line for line in output)

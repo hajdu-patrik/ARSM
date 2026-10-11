@@ -4,11 +4,10 @@ import type { TFunction } from 'i18next';
 import { Plus } from 'lucide-react';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import { MAX_QUOTE_LINE_COUNT, type QuoteDetailDto, type QuoteLineDto } from '../../../types/quotes/quotes.types';
-import { DataList, type DataListColumn } from '../../../components/common/DataList';
+import { DataList, DataListFullRow, type DataListColumn } from '../../../components/common/DataList';
 import {
   compactHeaderRowClass,
   compactSectionHeadingTextClass,
-  dataListBreakpointClasses,
   defaultIconClass,
   mutedMetaTextClass,
   referenceChipPrimaryWrapButtonClass,
@@ -119,7 +118,7 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
         {quote.lines.map((line) => (
           isLineBeingEdited(editingTarget, line)
             ? (
-              <div key={line.id} className={dataListBreakpointClasses['3xl'].fullSpan}>
+              <DataListFullRow key={line.id}>
                 <QuoteLineForm
                   t={t}
                   locale={locale}
@@ -131,7 +130,7 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
                   onSubmit={onSubmitLine}
                   onCancel={onCancelLineEditing}
                 />
-              </div>
+              </DataListFullRow>
             )
             : (
               <QuoteLineRow
@@ -141,8 +140,8 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
                 line={line}
                 canEdit={canEdit}
                 isSaving={isSaving}
-                onStartEdit={() => onStartEditLine(line)}
-                onDelete={() => onDeleteLine(line)}
+                onStartEdit={() => { onStartEditLine(line); }}
+                onDelete={() => { onDeleteLine(line); }}
               />
             )
         ))}

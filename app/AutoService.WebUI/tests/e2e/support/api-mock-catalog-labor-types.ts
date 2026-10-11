@@ -4,6 +4,7 @@ import type { MockApiState } from './test-data';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 import { resolveGrossAmount } from './api-mock-catalog-pricing';
 
+/** Dispatches `/api/labor-types` mock requests (list, create, update, delete). */
 export async function tryHandleLaborTypeRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
   if (path === '/api/labor-types' && method === 'GET') {
     await fulfillJson(route, state.laborTypes);
@@ -35,25 +36,25 @@ export async function tryHandleLaborTypeRoute(route: Route, method: string, path
 }
 
 async function handleCreateLaborType(route: Route, state: MockApiState): Promise<void> {
-  const payload = route.request().postDataJSON() as CreateLaborTypeRequest;
+  const { code, name, hourlyNetRate, vatRatePercent } = route.request().postDataJSON() as Partial<CreateLaborTypeRequest>;
 
-  if (!payload.code?.trim() || !payload.name?.trim()) {
+  if (!code?.trim() || !name?.trim() || hourlyNetRate === undefined || vatRatePercent === undefined) {
     await fulfillJson(route, { detail: 'Code and Name are required.' }, 422);
     return;
   }
 
-  if (state.laborTypes.some((laborType) => laborType.code === payload.code)) {
+  if (state.laborTypes.some((laborType) => laborType.code === code)) {
     await fulfillJson(route, { detail: 'A labor type with this code already exists.' }, 409);
     return;
   }
 
   const created: LaborTypeDto = {
     id: state.nextLaborTypeId++,
-    code: payload.code,
-    name: payload.name,
-    hourlyNetRate: payload.hourlyNetRate,
-    vatRatePercent: payload.vatRatePercent,
-    grossHourlyRate: resolveGrossAmount(state, payload.hourlyNetRate, payload.vatRatePercent),
+    code,
+    name,
+    hourlyNetRate,
+    vatRatePercent,
+    grossHourlyRate: resolveGrossAmount(state, hourlyNetRate, vatRatePercent),
   };
 
   state.laborTypes.push(created);
@@ -61,8 +62,8 @@ async function handleCreateLaborType(route: Route, state: MockApiState): Promise
 }
 
 async function handleUpdateLaborType(route: Route, state: MockApiState, id: number): Promise<void> {
-  const index = state.laborTypes.findIndex((laborType) => laborType.id === id);
-  if (index < 0) {
+  const existing = state.laborTypes.find((laborType) => laborType.id === id);
+  if (!existing) {
     await fulfillJson(route, { detail: 'Labor type not found.' }, 404);
     return;
   }
@@ -74,8 +75,8 @@ async function handleUpdateLaborType(route: Route, state: MockApiState, id: numb
     return;
   }
 
-  state.laborTypes[index] = {
-    ...state.laborTypes[index],
+  state.laborTypes[state.laborTypes.indexOf(existing)] = {
+    ...existing,
     code: payload.code,
     name: payload.name,
     hourlyNetRate: payload.hourlyNetRate,

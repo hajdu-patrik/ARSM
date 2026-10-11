@@ -1,7 +1,6 @@
-/** Scheduler page: composes the calendar/intake sections and keeps the selected appointment synced with store updates. */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+/** Scheduler page: composes the calendar/intake sections over the cached scheduler reads and opens the selected appointment. */
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import { useSchedulerStore } from '../../store/scheduler.store';
 import { useToastStore } from '../../store/toast.store';
@@ -17,60 +16,51 @@ import { SchedulerQuickIntakeSection } from './components/summary/SchedulerQuick
 import { useSchedulerSummary } from './hooks/useSchedulerSummary';
 import { useSchedulerDataSync } from './hooks/useSchedulerDataSync';
 import { useSchedulerActions } from './hooks/useSchedulerActions';
+import { useSchedulerRouteFocus } from './hooks/useSchedulerRouteFocus';
 import { pageShellClass } from '../../utils/formStyles';
 
-interface SchedulerFocusState {
-  readonly focusAppointmentId: number;
-  readonly focusScheduledDate: string;
-}
-
-function parseSchedulerFocusState(value: unknown): SchedulerFocusState | null {
-  if (value === null || typeof value !== 'object') {
+/** Finds an appointment by id in the first list that holds it; the selected one is read from the live lists. */
+function findAppointmentById(
+  appointmentId: number | null,
+  appointmentLists: readonly (readonly AppointmentDto[])[],
+): AppointmentDto | null {
+  if (appointmentId === null) {
     return null;
   }
 
-  const candidate = value as {
-    readonly focusAppointmentId?: unknown;
-    readonly focusScheduledDate?: unknown;
-  };
-
-  if (typeof candidate.focusAppointmentId !== 'number' || !Number.isFinite(candidate.focusAppointmentId)) {
-    return null;
+  for (const appointments of appointmentLists) {
+    const match = appointments.find((appointment) => appointment.id === appointmentId);
+    if (match !== undefined) {
+      return match;
+    }
   }
 
-  if (typeof candidate.focusScheduledDate !== 'string') {
-    return null;
-  }
-
-  return {
-    focusAppointmentId: candidate.focusAppointmentId,
-    focusScheduledDate: candidate.focusScheduledDate,
-  };
+  return null;
 }
 
 /** Coordinates the scheduler page sections and modal flows. */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
-  const location = useLocation();
   const user = useAuthStore((state) => state.user);
-  const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
-  const todayAppointments = useSchedulerStore((state) => state.todayAppointments);
-  const monthAppointments = useSchedulerStore((state) => state.monthAppointments);
-  const calendarAppointments = useSchedulerStore((state) => state.calendarAppointments);
   const calendarYear = useSchedulerStore((state) => state.calendarYear);
   const calendarMonth = useSchedulerStore((state) => state.calendarMonth);
   const selectedDay = useSchedulerStore((state) => state.selectedDay);
-  const isLoadingMonth = useSchedulerStore((state) => state.isLoadingMonth);
   const setSelectedDay = useSchedulerStore((state) => state.setSelectedDay);
   const setCalendarMonth = useSchedulerStore((state) => state.setCalendarMonth);
-  const upsertAppointment = useSchedulerStore((state) => state.upsertAppointment);
-  const removeAppointment = useSchedulerStore((state) => state.removeAppointment);
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDto | null>(null);
+  const focusedAppointmentId = useSchedulerRouteFocus();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(focusedAppointmentId);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const isRouteFocusAppliedRef = useRef(false);
-  const isRouteFocusOpenedRef = useRef(false);
-  const routeFocus = useMemo(() => parseSchedulerFocusState(location.state), [location.state]);
+  const {
+    todayAppointments,
+    monthAppointments,
+    calendarAppointments,
+    isLoadingMonth,
+  } = useSchedulerDataSync({
+    calendarYear,
+    calendarMonth,
+    showErrorToast,
+  });
   const {
     selectedDate,
     selectedDateLabel,
@@ -85,11 +75,6 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     locale: i18n.language,
     t,
   });
-  useSchedulerDataSync({
-    calendarYear,
-    calendarMonth,
-    showErrorToast,
-  });
 
   const {
     handleClaim,
@@ -100,22 +85,36 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     handleCreateIntake,
     handleUpdateAppointment,
     handleDelete,
-  } = useSchedulerActions({
-    upsertAppointment,
-    removeAppointment,
-    setSelectedAppointment,
-    showSuccessToast,
-    showErrorToast,
-  });
+  } = useSchedulerActions();
 
-  const handleCardClick = useCallback((appt: AppointmentDto) => setSelectedAppointment(appt), []);
+  // The open appointment is read from the live lists by id, so every cache write reaches the modal;
+  // it closes by itself when the appointment is deleted.
+  const selectedAppointment = findAppointmentById(selectedAppointmentId, [
+    monthAppointments,
+    todayAppointments,
+    calendarAppointments,
+  ]);
+
+  const handleCardClick = useCallback((appointment: AppointmentDto) => {
+    setSelectedAppointmentId(appointment.id);
+  }, []);
 
   const handleDayClick = useCallback((day: number) => {
     const nextDay = selectedDay === day ? null : day;
     setSelectedDay(nextDay);
   }, [selectedDay, setSelectedDay]);
 
-  const handleCloseModal = useCallback(() => setSelectedAppointment(null), []);
+  const handleClearDayFilter = useCallback(() => {
+    setSelectedDay(null);
+  }, [setSelectedDay]);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedAppointmentId(null);
+  }, []);
+
+  const handleCloseIntake = useCallback(() => {
+    setIsIntakeOpen(false);
+  }, []);
 
   const handleOpenIntake = useCallback(() => {
     if (!selectedDate) {
@@ -125,74 +124,6 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
 
     setIsIntakeOpen(true);
   }, [selectedDate, showErrorToast]);
-
-  const selectedAppointmentId = selectedAppointment?.id;
-
-  useEffect(() => {
-    if (routeFocus === null || isRouteFocusAppliedRef.current) {
-      return;
-    }
-
-    const scheduledDate = new Date(routeFocus.focusScheduledDate);
-    if (!Number.isNaN(scheduledDate.getTime())) {
-      setCalendarMonth(scheduledDate.getFullYear(), scheduledDate.getMonth() + 1);
-      setSelectedDay(scheduledDate.getDate());
-    }
-
-    isRouteFocusAppliedRef.current = true;
-  }, [routeFocus, setCalendarMonth, setSelectedDay]);
-
-  useEffect(() => {
-    if (routeFocus === null || isRouteFocusOpenedRef.current) {
-      return;
-    }
-
-    const focusedAppointment =
-      monthAppointments.find((item) => item.id === routeFocus.focusAppointmentId)
-      ?? todayAppointments.find((item) => item.id === routeFocus.focusAppointmentId);
-
-    if (!focusedAppointment) {
-      return;
-    }
-
-    const frameId = globalThis.requestAnimationFrame(() => {
-      setSelectedAppointment(focusedAppointment);
-      isRouteFocusOpenedRef.current = true;
-    });
-
-    return () => {
-      globalThis.cancelAnimationFrame(frameId);
-    };
-  }, [monthAppointments, routeFocus, todayAppointments]);
-
-  // Keep modal content in sync with the latest store snapshot.
-  useEffect(() => {
-    if (selectedAppointmentId === undefined) {
-      return;
-    }
-
-    const latest =
-      monthAppointments.find((item) => item.id === selectedAppointmentId)
-      ?? todayAppointments.find((item) => item.id === selectedAppointmentId);
-
-    if (!latest) {
-      return;
-    }
-
-    const frameId = globalThis.requestAnimationFrame(() => {
-      setSelectedAppointment((prev) => {
-        if (prev?.id !== latest.id) {
-          return prev;
-        }
-
-        return prev === latest ? prev : latest;
-      });
-    });
-
-    return () => {
-      globalThis.cancelAnimationFrame(frameId);
-    };
-  }, [selectedAppointmentId, monthAppointments, todayAppointments]);
 
   return (
     <section className={`${pageShellClass} flex flex-col gap-6`}>
@@ -214,7 +145,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
           year={calendarYear}
           month={calendarMonth}
           isLoading={isLoadingMonth}
-          onMonthChange={(year, month) => setCalendarMonth(year, month)}
+          onMonthChange={setCalendarMonth}
           onDayClick={handleDayClick}
           selectedDay={selectedDay}
         />
@@ -241,7 +172,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
           onClaim={handleClaim}
           onUnclaim={handleUnclaim}
           onCardClick={handleCardClick}
-          onClearFilter={() => setSelectedDay(null)}
+          onClearFilter={handleClearDayFilter}
         />
       </section>
 
@@ -264,7 +195,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         <SchedulerIntakeModal
           isOpen={isIntakeOpen}
           selectedDate={selectedDate}
-          onClose={() => setIsIntakeOpen(false)}
+          onClose={handleCloseIntake}
           onSubmit={handleCreateIntake}
         />
       )}

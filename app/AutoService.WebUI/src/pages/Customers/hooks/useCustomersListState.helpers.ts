@@ -1,59 +1,40 @@
-import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
+import type { CustomerListItem } from '../../../types/customers/customers.types';
+import { normalizeSearchValue } from '../../../utils/textSearch';
+import { buildCustomerDisplayName } from '../helpers';
+import type { SortDirection } from '../page.types';
 
-/** Finds the current license plate for a vehicle before a local update/delete mutates cached state. */
-export function prevVehicleLicensePlate(vehicles: VehicleDetailDto[], vehicleId: number): string | null {
-  return vehicles.find((vehicle) => vehicle.id === vehicleId)?.licensePlate ?? null;
-}
-
-/** Reconciles customer summary counts and searchable plates after vehicles are loaded on demand. */
-export function applyLoadedVehicleSummary(
-  customer: CustomerListItem,
-  customerId: number,
-  vehicles: VehicleDetailDto[],
-): CustomerListItem {
-  if (customer.id !== customerId) {
-    return customer;
+/** Keeps the customers whose name or one of their license plates contains the normalized search term. */
+export function filterCustomersBySearch(
+  customers: CustomerListItem[],
+  normalizedSearchTerm: string,
+): CustomerListItem[] {
+  if (normalizedSearchTerm.length === 0) {
+    return customers;
   }
 
-  return {
-    ...customer,
-    vehicleCount: vehicles.length,
-    vehicleLicensePlates: vehicles.map((vehicle) => vehicle.licensePlate),
-  };
+  return customers.filter((customer) => {
+    const nameMatches = normalizeSearchValue(buildCustomerDisplayName(customer)).includes(normalizedSearchTerm);
+    const plateMatches = customer.vehicleLicensePlates.some((plate) => (
+      normalizeSearchValue(plate).includes(normalizedSearchTerm)
+    ));
+
+    return nameMatches || plateMatches;
+  });
 }
 
-/** Replaces a cached plate reference so customer search stays aligned after vehicle edits. */
-export function replaceCustomerVehiclePlate(
-  customer: CustomerListItem,
-  customerId: number,
-  previousPlate: string | null,
-  nextPlate: string,
-): CustomerListItem {
-  if (customer.id !== customerId || previousPlate === null) {
-    return customer;
-  }
+/** Sorts a copy of the customers by display name in the given direction; equal names order by vehicle count. */
+export function sortCustomersByName(
+  customers: CustomerListItem[],
+  collator: Intl.Collator,
+  direction: SortDirection,
+): CustomerListItem[] {
+  const directionMultiplier = direction === 'asc' ? 1 : -1;
 
-  return {
-    ...customer,
-    vehicleLicensePlates: customer.vehicleLicensePlates.map((plate) => (plate === previousPlate ? nextPlate : plate)),
-  };
-}
+  return [...customers].sort((left, right) => {
+    const nameComparison = collator.compare(buildCustomerDisplayName(left), buildCustomerDisplayName(right));
 
-/** Removes a cached plate reference and decrements the customer vehicle summary after deletion. */
-export function removeCustomerVehiclePlate(
-  customer: CustomerListItem,
-  customerId: number,
-  deletedPlate: string | null,
-): CustomerListItem {
-  if (customer.id !== customerId) {
-    return customer;
-  }
-
-  return {
-    ...customer,
-    vehicleCount: Math.max(0, customer.vehicleCount - 1),
-    vehicleLicensePlates: deletedPlate === null
-      ? customer.vehicleLicensePlates
-      : customer.vehicleLicensePlates.filter((plate) => plate !== deletedPlate),
-  };
+    return nameComparison === 0
+      ? left.vehicleCount - right.vehicleCount
+      : nameComparison * directionMultiplier;
+  });
 }

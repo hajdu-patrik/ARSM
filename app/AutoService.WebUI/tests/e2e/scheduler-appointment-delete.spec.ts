@@ -3,6 +3,7 @@ import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { toastMessage } from './support/toast';
 
 /** Creates one appointment through the intake flow so the delete flow has something to act on. */
 async function createAppointmentForDelete(schedulerPage: SchedulerPage, taskDescription: string): Promise<void> {
@@ -49,8 +50,7 @@ test.describe('Scheduler appointment delete (admin)', () => {
     await expect(confirmDialog).toHaveCount(0);
     await expect(schedulerPage.detailDialog()).toHaveCount(0);
     // The intake toast from the setup step can still be on screen, so pick the deletion toast.
-    await expect(page.locator('output[aria-live="polite"]').filter({ hasText: 'Appointment deleted successfully.' }))
-      .toBeVisible();
+    await expect(toastMessage(page, 'Appointment deleted successfully.')).toBeVisible();
     await expect(page.getByText(taskDescription)).toHaveCount(0);
   });
 });

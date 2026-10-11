@@ -1,6 +1,7 @@
 /** Auth service: login, logout and session restore, using a {@code localStorage} hint to skip cold-start validate calls. */
 
 import { apiClient } from '../http/api.client';
+import { isTransientRequestFailure, redirectToServerError } from '../http/server-error';
 import type { LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse } from '../../types/auth/login.types';
 import { useAuthStore } from '../../store/auth.store';
 import { clearArsmQueryCache } from '../cache/queryClient';
@@ -14,7 +15,7 @@ function setAuthenticatedUser(user: AuthUser): void {
   useAuthStore.setState({ user, isAuthenticated: true, error: null });
 }
 
-/** Resets the auth store and private query cache to logged-out defaults. */
+/** Resets the auth store, the private query cache and the other per-user browser state to logged-out defaults. */
 function clearAuthState(): void {
   useAuthStore.getState().clearAuth();
 }
@@ -38,7 +39,7 @@ export const authService = {
     return authUser;
   },
 
-  /** Logs out via {@code POST /api/auth/logout}; clears local state in {@code finally} even on network failure. */
+  /** Logs out via {@code POST /api/auth/logout}; clears local state in {@code finally} even when the request fails. */
   async logout(): Promise<void> {
     try {
       await apiClient.post('/api/auth/logout');
@@ -53,10 +54,12 @@ export const authService = {
     return useAuthStore.getState().isAuthenticated;
   },
 
-  /** Restores auth from the cookie session via {@code GET /api/auth/validate}; skips the call with no session hint. */
+  /** Restores auth from the cookie session via {@code GET /api/auth/validate}; skips the call with no session hint.
+   * A timeout, network error or 5xx keeps the hint and sends the browser to /500, whose reload retries. */
   async restoreAuth(): Promise<AuthUser | null> {
     if (!hasAuthSessionHint()) {
-      clearAuthState();
+      // Only the stale private cache goes: a full clearAuth() would also drop the public error artwork cache.
+      clearArsmQueryCache();
       return null;
     }
 
@@ -85,7 +88,12 @@ export const authService = {
         setAuthenticatedUser(validatedUser);
         setAuthSessionHint();
         return validatedUser;
-      } catch {
+      } catch (error) {
+        if (isTransientRequestFailure(error)) {
+          redirectToServerError();
+          return null;
+        }
+
         clearAuthSessionHint();
         clearAuthState();
         return null;

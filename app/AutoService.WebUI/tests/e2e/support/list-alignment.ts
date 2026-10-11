@@ -1,88 +1,94 @@
-/** Column-alignment assertions for `DataList`/`DataListRow`: reads every rectangle atomically
- * after `document.fonts.ready`, 1px tolerance (tests/CLAUDE.md Coverage Anchors). */
+/** Column-alignment assertions for `DataList`: every rectangle of a list is read atomically in one
+ * browser round trip after `document.fonts.ready`, 1px tolerance (tests/CLAUDE.md Coverage Anchors). */
 import { expect, type Locator } from '@playwright/test';
 
-/** Plain, structured-clone-safe rectangle: only what the alignment checks need. */
-interface RectLike {
+/** Left edge and width of one header column or row cell. */
+interface ColumnBox {
   readonly x: number;
   readonly width: number;
 }
 
-interface ListMeasurement {
-  readonly header: RectLike[];
-  readonly rows: RectLike[][];
+/** A row cell box with the column key the cell exposes through `data-column`. */
+interface CellBox extends ColumnBox {
+  readonly column: string;
 }
 
-/** Reads every header cell's and every row's cell rectangles for one `DataList` section
- * in a single page round trip. */
-async function measureList(list: Locator): Promise<ListMeasurement> {
-  return list.evaluate(async (section) => {
-    await document.fonts.ready;
-
-    const toRect = (el: Element): { x: number; width: number } => {
-      const rect = el.getBoundingClientRect();
-      return { x: rect.x, width: rect.width };
-    };
-
-    const header = section.querySelector('[data-testid="data-list-header"]');
-    const headerCells = header ? Array.from(header.children).map(toRect) : [];
-    const rowWrappers = Array.from(section.querySelectorAll('[data-testid="data-list-row-cells"]'));
-    const rows = rowWrappers.map((wrapper) => Array.from(wrapper.children).map(toRect));
-
-    return { header: headerCells, rows };
-  });
+interface ListMeasurement {
+  readonly header: ColumnBox[];
+  readonly rows: CellBox[][];
 }
 
 /** Tolerance for float rounding only: measurements are atomic (module doc), so this only needs to
  * absorb `getBoundingClientRect`'s own sub-pixel rounding, not a layout change landing mid-measurement. */
 const DEFAULT_TOLERANCE_PX = 1;
 
-export interface ColumnAlignmentOptions {
-  /** Maximum allowed pixel drift between two cells that should align (float rounding). */
-  readonly tolerancePx?: number;
-  /** Column indexes exempt from the width check, kept to `x` only: `QuoteCard`'s status badge
-   * (`justify-self-start`) legitimately renders narrower than the header on a short status. */
-  readonly skipWidthColumns?: readonly number[];
-  /** Exact number of columns the header (and therefore every row) must expose. */
-  readonly expectedColumnCount?: number;
+/** Reads the header columns of the list the rows belong to and every row's cells (document order)
+ * in a single page round trip. */
+function measureList(rows: Locator): Promise<ListMeasurement> {
+  return rows.evaluateAll(async (rowElements): Promise<ListMeasurement> => {
+    await document.fonts.ready;
+
+    const toBox = (element: Element): ColumnBox => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, width: rect.width };
+    };
+
+    const header = rowElements[0]?.closest('section')?.querySelector('[data-testid="data-list-header"]');
+
+    return {
+      header: header ? Array.from(header.children).map(toBox) : [],
+      rows: rowElements.map((row) => Array.from(row.querySelectorAll('[data-testid="data-list-cell"]')).map(
+        (cell) => ({ column: cell.getAttribute('data-column') ?? '', ...toBox(cell) }),
+      )),
+    };
+  });
 }
 
-/** Asserts a `DataList` section's header and every row share the same column count and `x`/`width`
- * per column. Only meaningful in table mode; callers own the viewport/container width for that. */
-export async function expectColumnsAligned(list: Locator, options: ColumnAlignmentOptions = {}): Promise<void> {
-  const { tolerancePx = DEFAULT_TOLERANCE_PX, skipWidthColumns = [], expectedColumnCount } = options;
+export interface ColumnAlignmentOptions {
+  /** The `data-column` keys, in order, that the header columns and every row's cells must carry. */
+  readonly expectedColumns: readonly string[];
+  /** Maximum allowed pixel drift between two cells that should align (float rounding). */
+  readonly tolerancePx?: number;
+}
 
-  const { header: headerBoxes, rows: rowBoxes } = await measureList(list);
-  const headerCount = headerBoxes.length;
-  expect(headerCount, 'header has no columns').toBeGreaterThan(0);
+/** Fails when the cell is further than the tolerance from the expected box in `x` or `width`. */
+function expectSameColumnBox(actual: ColumnBox, expected: ColumnBox, label: string, tolerancePx: number): void {
+  expect(Math.abs(actual.x - expected.x), `${label} x`).toBeLessThanOrEqual(tolerancePx);
+  expect(Math.abs(actual.width - expected.width), `${label} width`).toBeLessThanOrEqual(tolerancePx);
+}
 
-  // `getBoundingClientRect` never returns null, only an all-zero rect for `display: none`, so a
-  // list still rendering its tile variant would otherwise report a false "0 equals 0" match.
-  expect(headerBoxes.every((box) => box.width > 0), 'header is not visible: list is not in table mode').toBe(true);
+/** Asserts the header and every row of a `DataList` share the same columns: keys, `x` and `width`.
+ * Only meaningful in table mode; callers own the viewport and container width for that. */
+export async function expectColumnsAligned(rows: Locator, options: ColumnAlignmentOptions): Promise<void> {
+  const { expectedColumns, tolerancePx = DEFAULT_TOLERANCE_PX } = options;
+  const { header, rows: rowBoxes } = await measureList(rows);
+  const [firstRow] = rowBoxes;
 
-  if (expectedColumnCount !== undefined) {
-    expect(headerCount, 'header column count').toBe(expectedColumnCount);
+  if (firstRow === undefined) {
+    throw new Error('list has no data rows');
   }
 
-  expect(rowBoxes.length, 'list has no data rows').toBeGreaterThan(0);
-  const firstRowBoxes = rowBoxes[0];
+  expect(header.length, 'header column count').toBe(expectedColumns.length);
+  // `getBoundingClientRect` never returns null, only an all-zero rect for `display: none`, so a
+  // list still in its tile layout would otherwise report a false "0 equals 0" match.
+  expect(header.every((box) => box.width > 0), 'header is not visible: list is not in table mode').toBe(true);
 
-  rowBoxes.forEach((cells, rowIndex) => {
-    expect(cells.length, `row ${rowIndex} column count`).toBe(headerCount);
+  for (const [rowIndex, cells] of rowBoxes.entries()) {
+    const rowLabel = `row ${String(rowIndex)}`;
+    expect(cells.map((cell) => cell.column), `${rowLabel} columns`).toEqual([...expectedColumns]);
 
-    for (let column = 0; column < headerCount; column += 1) {
-      const label = `row ${rowIndex} col ${column}`;
-      expect(Math.abs(cells[column].x - headerBoxes[column].x), `${label} x vs header`).toBeLessThanOrEqual(tolerancePx);
-      expect(Math.abs(cells[column].x - firstRowBoxes[column].x), `${label} x vs first row`).toBeLessThanOrEqual(tolerancePx);
+    for (const [columnIndex, cell] of cells.entries()) {
+      const headerBox = header[columnIndex];
+      const firstRowCell = firstRow[columnIndex];
 
-      if (skipWidthColumns.includes(column)) {
-        continue;
+      if (headerBox === undefined || firstRowCell === undefined) {
+        throw new Error(`${rowLabel} has no counterpart for column ${String(columnIndex)}`);
       }
 
-      expect(Math.abs(cells[column].width - headerBoxes[column].width), `${label} width vs header`).toBeLessThanOrEqual(tolerancePx);
-      expect(Math.abs(cells[column].width - firstRowBoxes[column].width), `${label} width vs first row`).toBeLessThanOrEqual(tolerancePx);
+      expectSameColumnBox(cell, headerBox, `${rowLabel} "${cell.column}" vs header`, tolerancePx);
+      expectSameColumnBox(cell, firstRowCell, `${rowLabel} "${cell.column}" vs first row`, tolerancePx);
     }
-  });
+  }
 }
 
 /** Resolves a `DataList`'s own root `<section>` from any locator inside it - a row test id, for example. */
@@ -91,55 +97,54 @@ export function listSection(within: Locator): Locator {
 }
 
 interface RowActionMeasurement {
-  readonly visibleButtonCount: number;
+  readonly buttonCount: number;
   readonly actionX: Record<string, number | null>;
 }
 
-/** Asserts every row exposes exactly `actionTestIds.length` visible action buttons at the same `x`;
+/** Asserts every row exposes exactly `actionTestIds.length` action buttons at the same `x`;
  * catches the "+1 icon" regression where an action rendered in one row shifts everything after it. */
 export async function expectRowActionsAligned(
   rows: Locator,
   actionTestIds: readonly string[],
   tolerancePx = DEFAULT_TOLERANCE_PX,
 ): Promise<void> {
-  const rowCount = await rows.count();
-  expect(rowCount, 'no rows to check').toBeGreaterThan(0);
-
-  const measurements: RowActionMeasurement[] = await rows.evaluateAll(async (rowElements, testIds) => {
+  const measurements = await rows.evaluateAll(async (rowElements, testIds): Promise<RowActionMeasurement[]> => {
     await document.fonts.ready;
 
-    // True when the element (and every ancestor) generates a box; the table/tiles copy switch
-    // hides one copy via `display: none`.
-    const isRendered = (el: Element): boolean => el.getClientRects().length > 0;
-
     return rowElements.map((row) => {
-      const visibleButtonCount = Array.from(row.querySelectorAll('button')).filter(isRendered).length;
       const actionX: Record<string, number | null> = {};
 
       for (const testId of testIds) {
-        const match = Array.from(row.querySelectorAll(`[data-testid="${testId}"]`)).find(isRendered);
-        actionX[testId] = match ? match.getBoundingClientRect().x : null;
+        const action = row.querySelector(`[data-testid="${testId}"]`);
+        actionX[testId] = action === null ? null : action.getBoundingClientRect().x;
       }
 
-      return { visibleButtonCount, actionX };
+      return { buttonCount: row.querySelectorAll('button').length, actionX };
     });
   }, actionTestIds);
 
-  const actionXByTestId = new Map<string, number>();
+  expect(measurements.length, 'no rows to check').toBeGreaterThan(0);
 
-  measurements.forEach((measurement, rowIndex) => {
-    expect(measurement.visibleButtonCount, `row ${rowIndex} action button count`).toBe(actionTestIds.length);
+  const firstRowX = new Map<string, number>();
+
+  for (const [rowIndex, measurement] of measurements.entries()) {
+    const rowLabel = `row ${String(rowIndex)}`;
+    expect(measurement.buttonCount, `${rowLabel} action button count`).toBe(actionTestIds.length);
 
     for (const testId of actionTestIds) {
       const x = measurement.actionX[testId];
-      expect(x, `row ${rowIndex} action "${testId}" has no bounding box`).not.toBeNull();
 
-      const expectedX = actionXByTestId.get(testId);
+      if (x === null || x === undefined) {
+        throw new Error(`${rowLabel} action "${testId}" has no bounding box`);
+      }
+
+      const expectedX = firstRowX.get(testId);
+
       if (expectedX === undefined) {
-        actionXByTestId.set(testId, x!);
+        firstRowX.set(testId, x);
       } else {
-        expect(Math.abs(x! - expectedX), `row ${rowIndex} action "${testId}" x drifted`).toBeLessThanOrEqual(tolerancePx);
+        expect(Math.abs(x - expectedX), `${rowLabel} action "${testId}" x drifted`).toBeLessThanOrEqual(tolerancePx);
       }
     }
-  });
+  }
 }

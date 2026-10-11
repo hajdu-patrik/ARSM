@@ -1,7 +1,8 @@
 /** Error boundary that falls back to the localized server-error page; wraps the app router. */
 
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
 import { ServerError } from '../../pages/ServerError';
+import { logError } from '../../utils/devLog';
 
 /** Props for the {@link ErrorBoundary} wrapper component. */
 interface ErrorBoundaryProps {
@@ -33,11 +34,9 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
     return { hasError: true };
   }
 
-  /** Logs captured errors in development mode to aid debugging. */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('[ErrorBoundary]', error, errorInfo);
-    }
+  /** Logs the captured error through the shared logger: the whole error in DEV, only its name in production. */
+  componentDidCatch(error: Error) {
+    logError('ErrorBoundary', error);
   }
 
   render() {

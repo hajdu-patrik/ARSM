@@ -1,27 +1,20 @@
-/** Quote list row via DataListRow (shared column model, `@4xl` tile collapse); every amount comes from the server DTO, never computed here. */
+/** Quote list row via DataListRow (one DOM, `@4xl` table or tiles); every amount comes from the server DTO, never computed here. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Download, Eye, Trash2 } from 'lucide-react';
-import { DataListRow } from '../../../components/common/DataList';
-import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
+import { DataListCell, DataListRow, DataListText } from '../../../components/common/DataList';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
 import {
-  compactItemTitleClampTextClass,
-  compactItemTitleTextClass,
   compactRowActionsClusterClass,
-  compactRowHeaderClass,
   compactTwoColumnFixedGridClass,
-  monoIdentifierTextClass,
-  monoIdentifierWrapTextClass,
-  mutedBodyTextClass,
-  numericValueTextClass,
   rowIconActionAccentClass,
   rowIconActionDangerClass,
   rowIconActionInfoClass,
   smallIconClass,
 } from '../../../utils/formStyles';
-import { formatQuoteDate, resolveQuoteDisplayStatus } from '../helpers';
+import { formatShortDate } from '../../../utils/intlFormat';
+import { resolveQuoteDisplayStatus } from '../helpers';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
 
 interface QuoteCardProps {
@@ -33,24 +26,30 @@ interface QuoteCardProps {
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
-const quoteDateTextClass = `min-w-0 truncate tabular-nums ${mutedBodyTextClass}`;
+/** Tile layout: the status badge takes its own line above the value tiles. */
+const statusTileClass = '@max-4xl:order-first @max-4xl:col-span-2';
 
-const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
-  const displayStatus = resolveQuoteDisplayStatus(quote);
+interface QuoteRowActionsProps {
+  readonly t: TFunction;
+  readonly quote: QuoteListItemDto;
+  readonly onOpen: (quote: QuoteListItemDto) => void;
+  readonly onDownloadPdf: (quote: QuoteListItemDto) => void;
+  readonly onDelete: (quote: QuoteListItemDto) => void;
+}
+
+/** Open, download and delete icon actions of one quote row; only a draft can be deleted. */
+function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRowActionsProps) {
   const isDraft = quote.status === 'Draft';
   const openLabel = t('quotes.openQuote', { quoteNumber: quote.quoteNumber });
   const downloadLabel = t('quotes.downloadPdfFor', { quoteNumber: quote.quoteNumber });
   const deleteLabel = t('quotes.deleteQuote');
-  const validUntilText = formatQuoteDate(quote.validUntil, locale);
-  const totalNetText = formatHuf(quote.totalNet, locale);
-  const totalGrossText = formatHuf(quote.totalGross, locale);
 
-  const actions = (
+  return (
     <div className={compactRowActionsClusterClass}>
       <button
         data-testid="quote-open-button"
         type="button"
-        onClick={() => onOpen(quote)}
+        onClick={() => { onOpen(quote); }}
         className={rowIconActionInfoClass}
         title={openLabel}
         aria-label={openLabel}
@@ -61,7 +60,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       <button
         data-testid="quote-download-button"
         type="button"
-        onClick={() => onDownloadPdf(quote)}
+        onClick={() => { onDownloadPdf(quote); }}
         className={rowIconActionAccentClass}
         title={downloadLabel}
         aria-label={downloadLabel}
@@ -71,7 +70,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       <button
         data-testid="quote-delete-button"
         type="button"
-        onClick={() => onDelete(quote)}
+        onClick={() => { onDelete(quote); }}
         disabled={!isDraft}
         className={rowIconActionDangerClass}
         title={isDraft ? deleteLabel : t('quotes.deleteDraftOnlyHint')}
@@ -81,46 +80,46 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       </button>
     </div>
   );
+}
+
+const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
+  const licensePlate = quote.vehicle.licensePlate;
+  const validUntilText = formatShortDate(quote.validUntil, locale);
+  const totalNetText = formatHuf(quote.totalNet, locale);
+  const totalGrossText = formatHuf(quote.totalGross, locale);
 
   return (
     <DataListRow
-      breakpoint="4xl"
       testId="quote-row"
-      desktop={(
-        <>
-          <div className="min-w-0">
-            <p className={compactItemTitleTextClass} title={quote.title}>{quote.title}</p>
-            <p className={monoIdentifierTextClass} title={quote.quoteNumber}>{quote.quoteNumber}</p>
-          </div>
-          <p className={monoIdentifierTextClass} title={quote.vehicle.licensePlate}>{quote.vehicle.licensePlate}</p>
-          <QuoteStatusBadge status={displayStatus} className="justify-self-start" />
-          <p className={quoteDateTextClass} title={validUntilText}>{validUntilText}</p>
-          <p className={numericValueTextClass} title={totalNetText}>{totalNetText}</p>
-          <p className={`${numericValueTextClass} font-semibold`} title={totalGrossText}>{totalGrossText}</p>
-          {actions}
-        </>
+      valuesClassName={compactTwoColumnFixedGridClass}
+      lead={(
+        <DataListCell column="quote">
+          <DataListText kind="title" title={quote.title}>{quote.title}</DataListText>
+          <DataListText kind="reference" title={quote.quoteNumber}>{quote.quoteNumber}</DataListText>
+        </DataListCell>
       )}
-      mobile={(
-        <>
-          <div className={compactRowHeaderClass}>
-            <div className="min-w-0">
-              <p className={compactItemTitleClampTextClass}>{quote.title}</p>
-              <p className={monoIdentifierWrapTextClass}>{quote.quoteNumber}</p>
-            </div>
-            {actions}
-          </div>
-
-          <QuoteStatusBadge status={displayStatus} />
-
-          <div className={compactTwoColumnFixedGridClass}>
-            <LabeledValueTile label={t('common.fields.vehicle')} value={quote.vehicle.licensePlate} valueClassName="font-mono" />
-            <LabeledValueTile label={t('quotes.validUntil')} value={validUntilText} valueClassName="tabular-nums" />
-            <LabeledValueTile label={t('quotes.columns.totalNet')} value={totalNetText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('quotes.columns.totalGross')} value={totalGrossText} valueClassName="text-right font-semibold tabular-nums" />
-          </div>
-        </>
+      actions={(
+        <DataListCell column="actions" headerEnd>
+          <QuoteRowActions t={t} quote={quote} onOpen={onOpen} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />
+        </DataListCell>
       )}
-    />
+    >
+      <DataListCell column="vehicle" label={t('common.fields.vehicle')} tile>
+        <DataListText kind="identifier" title={licensePlate}>{licensePlate}</DataListText>
+      </DataListCell>
+      <DataListCell column="status" className={statusTileClass}>
+        <QuoteStatusBadge status={resolveQuoteDisplayStatus(quote)} />
+      </DataListCell>
+      <DataListCell column="validUntil" label={t('quotes.validUntil')} tile>
+        <DataListText kind="date" title={validUntilText}>{validUntilText}</DataListText>
+      </DataListCell>
+      <DataListCell column="totalNet" label={t('quotes.columns.totalNet')} tile>
+        <DataListText kind="amount" title={totalNetText}>{totalNetText}</DataListText>
+      </DataListCell>
+      <DataListCell column="totalGross" label={t('quotes.columns.totalGross')} tile>
+        <DataListText kind="amount" title={totalGrossText} className="font-semibold">{totalGrossText}</DataListText>
+      </DataListCell>
+    </DataListRow>
   );
 });
 

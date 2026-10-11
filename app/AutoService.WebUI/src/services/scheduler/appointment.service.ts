@@ -1,6 +1,9 @@
 /** Scheduler appointment API service. */
 
+import axios from 'axios';
+import { API_URL } from '../http/api-url';
 import { apiClient } from '../http/api.client';
+import type { SilentRequestOptions } from '../http/request-options';
 import type {
   AppointmentDto,
   SchedulerCreateIntakeRequest,
@@ -10,13 +13,9 @@ import type {
   UpdateStatusRequest,
 } from '../../types/scheduler/scheduler.types';
 
-/** Base API URL for constructing direct resource URLs. */
-const API_URL = import.meta.env.VITE_API_URL;
-
-/** Per-call options for read endpoints that can also run as a silent background refresh. */
-interface SilentRequestOptions {
-  /** When {@code true}, opts this request out of the global 500 redirect (background/polling call). */
-  readonly skipErrorRedirect?: boolean;
+/** Checks whether an error is an HTTP 404 Not Found response. */
+function isNotFoundError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
 }
 
 /** Appointment service object for all scheduler-related API operations. */
@@ -77,19 +76,19 @@ export const appointmentService = {
 
   /** Updates an existing appointment via {@code PUT /api/appointments/{id}}. */
   async updateAppointment(id: number, request: UpdateAppointmentRequest): Promise<AppointmentDto> {
-    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}`, request);
+    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${String(id)}`, request);
     return response.data;
   },
 
   /** Updates appointment vehicle details via {@code PUT /api/appointments/{id}/vehicle}. */
   async updateAppointmentVehicle(id: number, request: UpdateAppointmentVehicleRequest): Promise<AppointmentDto> {
-    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}/vehicle`, request);
+    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${String(id)}/vehicle`, request);
     return response.data;
   },
 
   /** Deletes an appointment via {@code DELETE /api/appointments/{id}}. */
   async deleteAppointment(id: number): Promise<void> {
-    await apiClient.delete(`/api/appointments/${id}`);
+    await apiClient.delete(`/api/appointments/${String(id)}`);
   },
 
   /** Fetches appointments for a given month via {@code GET /api/appointments}. */
@@ -111,14 +110,14 @@ export const appointmentService = {
 
   /** Claims an appointment for the current mechanic via {@code PUT /api/appointments/{id}/claim}. */
   async claim(id: number): Promise<AppointmentDto> {
-    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}/claim`);
+    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${String(id)}/claim`);
     return response.data;
   },
 
   /** Updates an appointment's lifecycle status via {@code PUT /api/appointments/{id}/status}. */
   async updateStatus(id: number, status: UpdateStatusRequest): Promise<AppointmentDto> {
     const response = await apiClient.put<AppointmentDto>(
-      `/api/appointments/${id}/status`,
+      `/api/appointments/${String(id)}/status`,
       status,
     );
     return response.data;
@@ -126,29 +125,23 @@ export const appointmentService = {
 
   /** Unclaims the current mechanic from an appointment via {@code DELETE /api/appointments/{id}/claim}. */
   async unclaim(id: number): Promise<AppointmentDto> {
-    const response = await apiClient.delete<AppointmentDto>(`/api/appointments/${id}/claim`);
+    const response = await apiClient.delete<AppointmentDto>(`/api/appointments/${String(id)}/claim`);
     return response.data;
   },
 
   /** Admin-assigns a mechanic to an appointment via {@code PUT /api/appointments/{id}/assign/{mechanicId}}. */
   async adminAssign(id: number, mechanicId: number): Promise<AppointmentDto> {
-    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${id}/assign/${mechanicId}`);
+    const response = await apiClient.put<AppointmentDto>(
+      `/api/appointments/${String(id)}/assign/${String(mechanicId)}`,
+    );
     return response.data;
   },
 
   /** Admin-unassigns a mechanic from an appointment via {@code DELETE /api/appointments/{id}/assign/{mechanicId}}. */
   async adminUnassign(id: number, mechanicId: number): Promise<AppointmentDto> {
-    const response = await apiClient.delete<AppointmentDto>(`/api/appointments/${id}/assign/${mechanicId}`);
+    const response = await apiClient.delete<AppointmentDto>(
+      `/api/appointments/${String(id)}/assign/${String(mechanicId)}`,
+    );
     return response.data;
   },
 };
-
-/** Checks whether an error is an HTTP 404 Not Found response. */
-function isNotFoundError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('response' in error)) {
-    return false;
-  }
-
-  const maybeResponse = (error as { response?: { status?: number } }).response;
-  return maybeResponse?.status === 404;
-}

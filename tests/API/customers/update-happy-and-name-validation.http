@@ -24,7 +24,7 @@ Content-Type: application/json
 }
 
 {{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('autoservice_csrf='))?.match(/^autoservice_csrf=([^;]+)/)?.[1];
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
 }}
 
 ?? status == 200

@@ -18,6 +18,7 @@ interface CustomerListSectionProps {
   readonly history: CustomerHistoryState;
 }
 
+/** Renders the loading, empty or filtered customer card list, closed by an end-of-list divider. */
 const CustomerListSectionComponent = memo(function CustomerListSection({
   t,
   data,
@@ -29,9 +30,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
     filteredCustomers,
     isLoadingCustomers,
     expandedCustomerIds,
-    vehiclesByCustomerId,
-    isLoadingVehiclesByCustomerId,
-    resolvedDetailsTarget,
+    detailsTarget,
     locale,
   } = data;
 
@@ -56,9 +55,7 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
           searchTerm={searchTerm}
           customer={customer}
           isExpanded={expandedCustomerIds.has(customer.id)}
-          vehicles={vehiclesByCustomerId[customer.id] ?? []}
-          isLoadingVehicles={isLoadingVehiclesByCustomerId[customer.id] ?? false}
-          activeTarget={resolvedDetailsTarget?.customer.id === customer.id ? resolvedDetailsTarget : null}
+          detailsTarget={detailsTarget?.customerId === customer.id ? detailsTarget : null}
           locale={locale}
           actions={actions}
           history={history}

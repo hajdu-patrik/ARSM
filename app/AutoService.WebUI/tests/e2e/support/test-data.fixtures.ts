@@ -49,32 +49,31 @@ const noraCustomer: CustomerListItem = {
   vehicleCount: 0,
   vehicleLicensePlates: [],
 };
-const annaVehicles: VehicleDetailDto[] = [
-  {
-    id: MOCK_VEHICLE_IDS.annaNxe441,
-    licensePlate: 'NXE-441',
-    vin: 'WVWZZZAUZJW123456',
-    brand: 'Volkswagen',
-    model: 'Golf',
-    year: 2018,
-    mileageKm: 124500,
-    enginePowerKw: 110,
-    drivetrainType: 'Hybrid',
-    customer: { id: annaCustomer.id, firstName: annaCustomer.firstName, middleName: null, lastName: annaCustomer.lastName },
-  },
-  {
-    id: MOCK_VEHICLE_IDS.annaPhe220,
-    licensePlate: 'PHE-220',
-    vin: 'KMHLN4AJXPU654321',
-    brand: 'Hyundai',
-    model: 'Ioniq',
-    year: 2022,
-    mileageKm: 41000,
-    enginePowerKw: 104,
-    drivetrainType: 'PHEV',
-    customer: { id: annaCustomer.id, firstName: annaCustomer.firstName, middleName: null, lastName: annaCustomer.lastName },
-  },
-];
+const annaGolf: VehicleDetailDto = {
+  id: MOCK_VEHICLE_IDS.annaNxe441,
+  licensePlate: 'NXE-441',
+  vin: 'WVWZZZAUZJW123456',
+  brand: 'Volkswagen',
+  model: 'Golf',
+  year: 2018,
+  mileageKm: 124500,
+  enginePowerKw: 110,
+  drivetrainType: 'Hybrid',
+  customer: { id: annaCustomer.id, firstName: annaCustomer.firstName, middleName: null, lastName: annaCustomer.lastName },
+};
+const annaIoniq: VehicleDetailDto = {
+  id: MOCK_VEHICLE_IDS.annaPhe220,
+  licensePlate: 'PHE-220',
+  vin: 'KMHLN4AJXPU654321',
+  brand: 'Hyundai',
+  model: 'Ioniq',
+  year: 2022,
+  mileageKm: 41000,
+  enginePowerKw: 104,
+  drivetrainType: 'PHEV',
+  customer: { id: annaCustomer.id, firstName: annaCustomer.firstName, middleName: null, lastName: annaCustomer.lastName },
+};
+const annaVehicles: VehicleDetailDto[] = [annaGolf, annaIoniq];
 
 const belaVehicles: VehicleDetailDto[] = [
   {
@@ -230,9 +229,9 @@ export function createFixtureState(): MockFixtureState {
     [noraCustomer.id]: [],
   };
 
-  const annaLookup = toLookupCustomer(annaCustomer, vehiclesByCustomerId[annaCustomer.id], MOCK_VEHICLE_IDS.annaNxe441);
-  const belaLookup = toLookupCustomer(belaCustomer, vehiclesByCustomerId[belaCustomer.id], MOCK_VEHICLE_IDS.belaBrc918);
-  const historyAppointment = appointmentForVehicle(vehiclesByCustomerId[annaCustomer.id][0]);
+  const annaLookup = toLookupCustomer(annaCustomer, annaVehicles, MOCK_VEHICLE_IDS.annaNxe441);
+  const belaLookup = toLookupCustomer(belaCustomer, belaVehicles, MOCK_VEHICLE_IDS.belaBrc918);
+  const historyAppointment = appointmentForVehicle(annaGolf);
 
   return {
     customers: [annaCustomer, belaCustomer, noraCustomer].map(cloneCustomer),

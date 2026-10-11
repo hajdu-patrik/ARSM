@@ -9,12 +9,21 @@ import {
   type QuoteListItemDto,
   type QuoteStatus,
 } from '../../types/quotes/quotes.types';
+import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
+
+/** Id in the key of a switched-off query: real ids start at 1, so that key is never fetched or shared with a record. */
+export const IDLE_QUERY_ENTITY_ID = 0;
 
 /** Status chips offered by the toolbar: the four stored values, the computed expiry, and no filter. */
 export const QUOTE_STATUS_FILTERS = ['All', 'Draft', 'Sent', 'Expired', 'Accepted', 'Rejected'] as const;
 
 /** Selected toolbar status filter. */
 export type QuoteStatusFilter = (typeof QUOTE_STATUS_FILTERS)[number];
+
+/** Narrows a select value to a toolbar status filter. */
+export function isQuoteStatusFilter(value: string): value is QuoteStatusFilter {
+  return QUOTE_STATUS_FILTERS.some((filter) => filter === value);
+}
 
 /** What the badge shows: the stored status, or Expired for a sent quote past its deadline. */
 export type QuoteDisplayStatus = QuoteStatus | 'Expired';
@@ -50,6 +59,30 @@ export const EMPTY_QUOTE_LINE_FORM: QuoteLineFormState = {
   vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
 };
 
+/** Blank header form: what the editor holds while no quote is open. */
+export const EMPTY_QUOTE_HEADER_FORM: QuoteHeaderFormState = {
+  title: '',
+  notes: '',
+  validUntil: '',
+  appointmentId: '',
+};
+
+/** Header fields the client rejected, as the i18n key of their error text; an absent field is valid. */
+export interface QuoteHeaderFieldErrors {
+  readonly title?: string;
+}
+
+/** Line fields the client rejected, as the i18n key of their error text; an absent field is valid. */
+export interface QuoteLineFieldErrors {
+  readonly quantity?: string;
+  readonly description?: string;
+  readonly netUnitPrice?: string;
+}
+
+/** Shared "nothing is invalid" results, so a form without errors hands out one stable object. */
+export const NO_QUOTE_HEADER_FIELD_ERRORS: QuoteHeaderFieldErrors = {};
+export const NO_QUOTE_LINE_FIELD_ERRORS: QuoteLineFieldErrors = {};
+
 /** Converts a server timestamp to the `yyyy-MM-dd` value a date input needs. */
 export function toDateInputValue(isoValue: string): string {
   const date = new Date(isoValue);
@@ -64,17 +97,6 @@ export function toDateInputValue(isoValue: string): string {
 /** Converts a `yyyy-MM-dd` input to the end of that UTC day (not midnight), since "valid through this day" would otherwise be instantly past. */
 export function toValidUntilIso(dateInputValue: string): string {
   return new Date(`${dateInputValue}T23:59:59.000Z`).toISOString();
-}
-
-/** Formats a quote timestamp as a locale-aware date; quotes are dated by day, so time of day is never shown. */
-export function formatQuoteDate(isoValue: string, locale: string): string {
-  const date = new Date(isoValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
 
 /** Builds the header form for a new draft, with the default validity window pre-filled (D22). */
@@ -107,6 +129,11 @@ export function hasQuoteHeaderChanges(form: QuoteHeaderFormState, quote: QuoteDe
   return form.title.trim() !== quote.title || (notes.length > 0 ? notes : null) !== quote.notes;
 }
 
+/** Validates the header form; the title is the one field the client checks, the server owns the rest. */
+export function validateQuoteHeaderForm(form: QuoteHeaderFormState): QuoteHeaderFieldErrors {
+  return form.title.trim().length === 0 ? { title: 'quotes.errors.titleRequired' } : NO_QUOTE_HEADER_FIELD_ERRORS;
+}
+
 /** Builds the line form from a saved line so the inline editor starts from its stored values. */
 export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
   const catalogId = line.lineKind === 'Part' ? line.partId : line.laborTypeId;
@@ -119,6 +146,30 @@ export function buildQuoteLineForm(line: QuoteLineDto): QuoteLineFormState {
     netUnitPrice: String(line.netUnitPrice),
     vatRatePercent: line.vatRatePercent,
   };
+}
+
+/** Validates the line form: a positive quantity, a description unless a catalog item is picked, and a typed or catalog price. */
+export function validateQuoteLineForm(form: QuoteLineFormState): QuoteLineFieldErrors {
+  const quantity = Number(form.quantity);
+  const hasCatalogReference = form.catalogId.length > 0;
+  const typedNetUnitPrice = form.netUnitPrice.trim();
+  const errors: { quantity?: string; description?: string; netUnitPrice?: string } = {};
+
+  if (Number.isNaN(quantity) || quantity <= 0) {
+    errors.quantity = 'quotes.errors.invalidQuantity';
+  }
+
+  if (!hasCatalogReference && form.description.trim().length === 0) {
+    errors.description = 'quotes.errors.lineFieldsRequired';
+  }
+
+  if (typedNetUnitPrice.length > 0 && Number.isNaN(Number(typedNetUnitPrice))) {
+    errors.netUnitPrice = 'quotes.errors.invalidMoney';
+  } else if (!hasCatalogReference && typedNetUnitPrice.length === 0) {
+    errors.netUnitPrice = 'quotes.errors.lineFieldsRequired';
+  }
+
+  return errors;
 }
 
 /** Picks the label set for a line kind: a part is in pieces at a unit price, labor in hours at an hourly rate (requirement 4). */
@@ -203,6 +254,13 @@ export function matchesQuoteSearch(quote: QuoteListItemDto, normalizedTerm: stri
   return normalizeQuoteSearchValue(quote.quoteNumber).includes(normalizedTerm)
     || normalizeQuoteSearchValue(quote.title).includes(normalizedTerm)
     || normalizeQuoteSearchValue(quote.vehicle.licensePlate).includes(normalizedTerm);
+}
+
+/** Orders appointments newest first by scheduled date, later id first on a tie; the cached history keeps the server's ascending order. */
+export function sortAppointmentsNewestFirst(appointments: readonly AppointmentDto[]): AppointmentDto[] {
+  return [...appointments].sort(
+    (left, right) => Date.parse(right.scheduledDate) - Date.parse(left.scheduledDate) || right.id - left.id,
+  );
 }
 
 /** Live line-amount preview before the server line exists; mirrors `Pricing/QuoteLineCalculator` exactly (gross = net+vat, never a separate multiplication) — the only client-side amount calc (see CLAUDE.md). */

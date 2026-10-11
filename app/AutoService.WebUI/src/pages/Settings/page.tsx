@@ -31,22 +31,14 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
   const {
     profile,
-    setProfile,
     isLoadingProfile,
-    firstName,
-    middleName,
-    lastName,
-    email,
-    phoneNumber,
+    values,
+    fieldErrors,
     isUpdatingProfile,
     hasProfileChanges,
     profileSaveDisabledReasonKey,
     isProfileSaveConfirmOpen,
-    setFirstName,
-    setMiddleName,
-    setLastName,
-    setEmail,
-    setPhoneNumber,
+    setField,
     handleProfileSaveRequest,
     handleProfileSaveConfirmed,
     closeProfileSaveConfirm,
@@ -56,11 +48,12 @@ const SettingsPageComponent = memo(function SettingsPage() {
     currentPassword,
     newPassword,
     confirmNewPassword,
+    fieldErrors: passwordFieldErrors,
     isChangingPassword,
     isPasswordChangeConfirmOpen,
-    setCurrentPassword,
-    setNewPassword,
-    setConfirmNewPassword,
+    changeCurrentPassword,
+    changeNewPassword,
+    changeConfirmNewPassword,
     handlePasswordChangeRequest,
     handlePasswordChangeConfirmed,
     closePasswordChangeConfirm,
@@ -71,7 +64,8 @@ const SettingsPageComponent = memo(function SettingsPage() {
     isDeletingProfile,
     deletePassword,
     deletePasswordConfirm,
-    setDeletePassword,
+    deletePasswordError,
+    changeDeletePassword,
     setDeletePasswordConfirm,
     openDeleteModal,
     closeDeleteModal,
@@ -91,20 +85,22 @@ const SettingsPageComponent = memo(function SettingsPage() {
     handleRemovePictureRequest,
   } = useProfilePictureSettings({
     profile,
-    setProfile,
     showSuccessToast,
     showErrorToast,
   });
 
   const initials = useMemo(() => {
-    if (!profile) return '';
+    if (!profile) {
+      return '';
+    }
+
     return getAvatarInitials(profile.firstName, profile.lastName, profile.email);
   }, [profile]);
 
-  const fallbackColorClass = useMemo(() => {
-    if (!profile) return getDeterministicAvatarColor('anonymous');
-    return getDeterministicAvatarColor(profile.personId ?? profile.email);
-  }, [profile]);
+  const fallbackColorClass = useMemo(
+    () => getDeterministicAvatarColor(profile?.personId ?? 'anonymous'),
+    [profile],
+  );
 
   if (isLoadingProfile) {
     return (
@@ -143,19 +139,12 @@ const SettingsPageComponent = memo(function SettingsPage() {
 
           <section aria-label={t('common.fields.personalInformation')}>
             <PersonalInfoSection
-              firstName={firstName}
-              middleName={middleName}
-              lastName={lastName}
-              email={email}
-              phoneNumber={phoneNumber}
+              values={values}
+              fieldErrors={fieldErrors}
               isSaveEnabled={hasProfileChanges}
               saveDisabledReasonKey={profileSaveDisabledReasonKey}
               isSubmitting={isUpdatingProfile}
-              onFirstNameChange={setFirstName}
-              onMiddleNameChange={setMiddleName}
-              onLastNameChange={setLastName}
-              onEmailChange={setEmail}
-              onPhoneNumberChange={setPhoneNumber}
+              onFieldChange={setField}
               onSubmit={handleProfileSaveRequest}
             />
           </section>
@@ -165,10 +154,11 @@ const SettingsPageComponent = memo(function SettingsPage() {
               currentPassword={currentPassword}
               newPassword={newPassword}
               confirmNewPassword={confirmNewPassword}
+              fieldErrors={passwordFieldErrors}
               isSubmitting={isChangingPassword}
-              onCurrentPasswordChange={setCurrentPassword}
-              onNewPasswordChange={setNewPassword}
-              onConfirmNewPasswordChange={setConfirmNewPassword}
+              onCurrentPasswordChange={changeCurrentPassword}
+              onNewPasswordChange={changeNewPassword}
+              onConfirmNewPasswordChange={changeConfirmNewPassword}
               onSubmit={handlePasswordChangeRequest}
             />
           </section>
@@ -192,24 +182,29 @@ const SettingsPageComponent = memo(function SettingsPage() {
       <SettingsActionModals
         isPictureRemoveConfirmOpen={isPictureRemoveConfirmOpen}
         isUploadingPicture={isUploadingPicture}
-        onClosePictureRemoveConfirm={() => { if (!isUploadingPicture) setIsPictureRemoveConfirmOpen(false); }}
-        onConfirmPictureRemove={() => { void handleRemovePicture(); }}
+        onClosePictureRemoveConfirm={() => {
+          if (!isUploadingPicture) {
+            setIsPictureRemoveConfirmOpen(false);
+          }
+        }}
+        onConfirmPictureRemove={handleRemovePicture}
         isProfileSaveConfirmOpen={isProfileSaveConfirmOpen}
         isUpdatingProfile={isUpdatingProfile}
         onCloseProfileSaveConfirm={closeProfileSaveConfirm}
-        onConfirmProfileSave={() => { void handleProfileSaveConfirmed(); }}
+        onConfirmProfileSave={handleProfileSaveConfirmed}
         isPasswordChangeConfirmOpen={isPasswordChangeConfirmOpen}
         isChangingPassword={isChangingPassword}
         onClosePasswordChangeConfirm={closePasswordChangeConfirm}
-        onConfirmPasswordChange={() => { handlePasswordChangeConfirmed().catch(() => undefined); }}
+        onConfirmPasswordChange={handlePasswordChangeConfirmed}
         isDeleteModalOpen={isDeleteModalOpen}
         isDeletingProfile={isDeletingProfile}
         deletePassword={deletePassword}
         deletePasswordConfirm={deletePasswordConfirm}
-        onDeletePasswordChange={setDeletePassword}
+        deletePasswordError={deletePasswordError}
+        onDeletePasswordChange={changeDeletePassword}
         onDeletePasswordConfirmChange={setDeletePasswordConfirm}
         onCloseDeleteModal={closeDeleteModal}
-        onConfirmDeleteProfile={() => { handleDeleteProfile().catch(() => undefined); }}
+        onConfirmDeleteProfile={handleDeleteProfile}
       />
     </section>
   );

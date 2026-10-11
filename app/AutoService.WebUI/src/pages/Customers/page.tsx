@@ -2,16 +2,16 @@
 
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
+import { useCustomersListMutations } from './hooks/useCustomersListMutations';
 import { useCustomerMutations } from './hooks/useCustomerMutations';
 import { useVehicleMutations } from './hooks/useVehicleMutations';
 import { useCustomerDetailsPanel } from './hooks/useCustomerDetailsPanel';
 import { CustomerFormModal } from './components/CustomerFormModal';
-import type { ResolvedCustomerDetailsPanelTarget } from './components/CustomerDetailsPanel';
 import { CustomerListSection } from './components/CustomerListSection';
 import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './components/customerListSection.types';
 import { CustomersToolbar } from './components/CustomersToolbar';
@@ -35,19 +35,25 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const showWarningToast = useToastStore((state) => state.showWarning);
   const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
-  const listState = useCustomersListState({
-    language: i18n.language,
-    showErrorToast,
-  });
+  const listState = useCustomersListState({ language: i18n.language });
+
+  const {
+    refreshAfterCustomerCreated,
+    refreshAfterCustomerUpdated,
+    refreshAfterCustomerDeleted,
+    refreshAfterVehicleCreated,
+    refreshAfterVehicleUpdated,
+    refreshAfterVehicleDeleted,
+  } = useCustomersListMutations();
 
   const customerMutations = useCustomerMutations({
     showSuccessToast,
     showErrorToast,
     showWarningToast,
     getFirstFieldErrorMessage,
-    applyCustomerCreated: listState.applyCustomerCreated,
-    applyCustomerUpdated: listState.applyCustomerUpdated,
-    applyCustomerDeleted: listState.applyCustomerDeleted,
+    refreshAfterCustomerCreated,
+    refreshAfterCustomerUpdated,
+    refreshAfterCustomerDeleted,
   });
 
   const vehicleMutations = useVehicleMutations({
@@ -55,66 +61,38 @@ const CustomersPageComponent = memo(function CustomersPage() {
     showErrorToast,
     showWarningToast,
     getFirstFieldErrorMessage,
-    customerHistoryByCustomerId: listState.customerHistoryByCustomerId,
-    vehicleHistoryByVehicleId: listState.vehicleHistoryByVehicleId,
-    applyVehicleCreated: listState.applyVehicleCreated,
-    applyVehicleUpdated: listState.applyVehicleUpdated,
-    applyVehicleDeleted: listState.applyVehicleDeleted,
-    loadCustomerHistory: listState.loadCustomerHistory,
-    loadVehicleHistory: listState.loadVehicleHistory,
+    refreshAfterVehicleCreated,
+    refreshAfterVehicleUpdated,
+    refreshAfterVehicleDeleted,
   });
 
-  const detailsPanel = useCustomerDetailsPanel({
-    loadCustomerHistory: listState.loadCustomerHistory,
-    loadVehicleHistory: listState.loadVehicleHistory,
-  });
-
-  const resolvedDetailsTarget = useMemo<ResolvedCustomerDetailsPanelTarget | null>(() => {
-    const target = detailsPanel.target;
-    if (!target) {
-      return null;
-    }
-
-    const customer = listState.customers.find((item) => item.id === target.customerId);
-    if (!customer) {
-      return null;
-    }
-
-    if (target.kind === 'customer') {
-      return { kind: 'customer', customer };
-    }
-
-    const vehicle = (listState.vehiclesByCustomerId[customer.id] ?? [])
-      .find((item) => item.id === target.vehicleId);
-
-    return vehicle ? { kind: 'vehicle', customer, vehicle } : null;
-  }, [detailsPanel.target, listState.customers, listState.vehiclesByCustomerId]);
+  const detailsPanel = useCustomerDetailsPanel();
 
   const customerListData = useMemo<CustomerListData>(() => ({
     searchTerm: listState.searchTerm,
     filteredCustomers: listState.filteredCustomers,
     isLoadingCustomers: listState.isLoadingCustomers,
     expandedCustomerIds: listState.expandedCustomerIds,
-    vehiclesByCustomerId: listState.vehiclesByCustomerId,
-    isLoadingVehiclesByCustomerId: listState.isLoadingVehiclesByCustomerId,
-    resolvedDetailsTarget,
+    detailsTarget: detailsPanel.target,
     locale: i18n.language,
   }), [
+    detailsPanel.target,
     i18n.language,
     listState.expandedCustomerIds,
     listState.filteredCustomers,
     listState.isLoadingCustomers,
-    listState.isLoadingVehiclesByCustomerId,
     listState.searchTerm,
-    listState.vehiclesByCustomerId,
-    resolvedDetailsTarget,
   ]);
 
   // A quote is anchored to a vehicle, so the vehicle row starts one, and the
   // Quotes page owns the editor from there.
   const handleCreateQuoteForVehicle = useCallback((vehicleId: number) => {
-    navigate(`/quotes?vehicleId=${vehicleId}&new=1`);
+    void navigate(`/quotes?vehicleId=${String(vehicleId)}&new=1`);
   }, [navigate]);
+
+  const handleCloseHistoryAppointment = useCallback(() => {
+    setHistoryAppointment(null);
+  }, []);
 
   const customerListActions = useMemo<CustomerListActions>(() => ({
     onToggleCustomerExpanded: listState.toggleCustomerExpanded,
@@ -139,23 +117,15 @@ const CustomersPageComponent = memo(function CustomersPage() {
   ]);
 
   const customerHistoryState = useMemo<CustomerHistoryState>(() => ({
-    customerHistoryByCustomerId: listState.customerHistoryByCustomerId,
-    isLoadingCustomerHistoryByCustomerId: listState.isLoadingCustomerHistoryByCustomerId,
     customerHistorySortByCustomerId: listState.customerHistorySortByCustomerId,
-    vehicleHistoryByVehicleId: listState.vehicleHistoryByVehicleId,
-    isLoadingVehicleHistoryByVehicleId: listState.isLoadingVehicleHistoryByVehicleId,
     vehicleHistorySortByVehicleId: listState.vehicleHistorySortByVehicleId,
     onToggleCustomerHistorySort: listState.toggleCustomerHistorySort,
     onToggleVehicleHistorySort: listState.toggleVehicleHistorySort,
     onOpenHistoryAppointment: setHistoryAppointment,
   }), [
-    listState.customerHistoryByCustomerId,
     listState.customerHistorySortByCustomerId,
-    listState.isLoadingCustomerHistoryByCustomerId,
-    listState.isLoadingVehicleHistoryByVehicleId,
     listState.toggleCustomerHistorySort,
     listState.toggleVehicleHistorySort,
-    listState.vehicleHistoryByVehicleId,
     listState.vehicleHistorySortByVehicleId,
   ]);
 
@@ -191,6 +161,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isSaving={customerMutations.isSavingCustomer}
         isSaveEnabled={customerMutations.isCustomerSaveEnabled}
         form={customerMutations.customerForm}
+        fieldErrors={customerMutations.customerFieldErrors}
         t={t}
         onClose={customerMutations.closeCustomerModal}
         onSubmit={customerMutations.handleSubmitCustomer}
@@ -211,6 +182,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         isSaving={vehicleMutations.isSavingVehicle}
         isSaveEnabled={vehicleMutations.isVehicleSaveEnabled}
         form={vehicleMutations.vehicleForm}
+        fieldErrors={vehicleMutations.vehicleFieldErrors}
         t={t}
         onClose={vehicleMutations.closeVehicleModal}
         onSubmit={vehicleMutations.handleSubmitVehicle}
@@ -229,7 +201,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
         appointment={historyAppointment}
         locale={i18n.language}
         isOpen={historyAppointment !== null}
-        onClose={() => setHistoryAppointment(null)}
+        onClose={handleCloseHistoryAppointment}
       />
     </div>
   );

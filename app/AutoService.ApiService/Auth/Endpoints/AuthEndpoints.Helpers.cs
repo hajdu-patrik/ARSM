@@ -38,6 +38,7 @@ public static partial class AuthEndpoints
             isAccessTokenTtlConfigured = true;
         }
     }
+
     /** Converts an Identity error result into the RFC 7807 validation problem format used by Results.ValidationProblem(). */
     private static Dictionary<string, string[]> ToValidationErrors(IdentityResult identityResult)
     {
@@ -72,7 +73,8 @@ public static partial class AuthEndpoints
     internal static string HashRefreshToken(string token)
         => TokenSecurity.HashSha256(token);
 
-    /** Builds the shared HttpOnly/Secure/Strict cookie options used for both the access-token and refresh-token cookies. */
+    /** Builds the shared HttpOnly/Secure/Strict cookie options used for both the access-token and refresh-token cookies;
+        Secure, Path=/ and no Domain are what the __Host- cookie prefix requires, so none of them may change. */
     private static CookieOptions BuildAuthCookieOptions(TimeSpan ttl) => new()
     {
         HttpOnly = true,
@@ -87,6 +89,15 @@ public static partial class AuthEndpoints
 
     private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
 
+    /** Builds the options that expire a __Host- session cookie: browsers ignore the expiry unless it repeats
+        Secure and Path=/ (no Domain), and SameSite matches the issued cookie. */
+    private static CookieOptions BuildAuthCookieDeletionOptions() => new()
+    {
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Path = "/"
+    };
+
     /** Issues the full session cookie set (access, refresh, CSRF) from one place, so no handler can
         rotate auth cookies without keeping the CSRF cookie in sync; used by login, refresh, change-password. */
     internal static void IssueSessionCookies(HttpResponse response, string accessToken, string refreshTokenValue)
@@ -99,8 +110,8 @@ public static partial class AuthEndpoints
     /** Clears the complete session cookie set; the counterpart of IssueSessionCookies. Logout and profile deletion both go through here. */
     internal static void ClearSessionCookies(HttpResponse response)
     {
-        response.Cookies.Delete(AuthCookieNames.AccessToken, new CookieOptions { Path = "/" });
-        response.Cookies.Delete(AuthCookieNames.RefreshToken, new CookieOptions { Path = "/" });
+        response.Cookies.Delete(AuthCookieNames.AccessToken, BuildAuthCookieDeletionOptions());
+        response.Cookies.Delete(AuthCookieNames.RefreshToken, BuildAuthCookieDeletionOptions());
         CsrfTokenCookie.Clear(response);
     }
 

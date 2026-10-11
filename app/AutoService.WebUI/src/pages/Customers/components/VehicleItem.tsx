@@ -28,6 +28,7 @@ interface VehicleItemProps {
 	isDetailsOpen: boolean;
 }
 
+/** Renders one vehicle row with its quote, history, edit and delete actions above the specs grid. */
 const VehicleItemComponent = memo(function VehicleItem({
 	t,
 	locale,
@@ -57,7 +58,9 @@ const VehicleItemComponent = memo(function VehicleItem({
 					<button
 						data-testid="vehicle-create-quote-button"
 						type="button"
-						onClick={() => onCreateQuoteForVehicle(vehicle.id)}
+						onClick={() => {
+							onCreateQuoteForVehicle(vehicle.id);
+						}}
 						className={rowIconActionAccentClass}
 						title={t('customers.createQuote')}
 						aria-label={t('customers.createQuote')}
@@ -67,7 +70,9 @@ const VehicleItemComponent = memo(function VehicleItem({
 
 					<button
 						type="button"
-						onClick={() => onOpenVehicleDetails(customerId, vehicle.id)}
+						onClick={() => {
+							onOpenVehicleDetails(customerId, vehicle.id);
+						}}
 						className={rowIconActionInfoClass}
 						title={detailsActionLabel}
 						aria-label={detailsActionLabel}
@@ -79,7 +84,9 @@ const VehicleItemComponent = memo(function VehicleItem({
 
 					<button
 						type="button"
-						onClick={() => onOpenEditVehicleModal(customerId, vehicle)}
+						onClick={() => {
+							onOpenEditVehicleModal(customerId, vehicle);
+						}}
 						className={rowIconActionWarningClass}
 						title={t('customers.editVehicle')}
 						aria-label={t('customers.editVehicle')}
@@ -89,7 +96,9 @@ const VehicleItemComponent = memo(function VehicleItem({
 
 					<button
 						type="button"
-						onClick={() => onOpenDeleteVehicleModal(customerId, vehicle)}
+						onClick={() => {
+							onOpenDeleteVehicleModal(customerId, vehicle);
+						}}
 						className={rowIconActionDangerClass}
 						title={t('customers.deleteVehicle')}
 						aria-label={t('customers.deleteVehicle')}

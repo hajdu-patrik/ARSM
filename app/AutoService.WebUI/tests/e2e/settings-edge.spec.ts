@@ -58,20 +58,25 @@ test.describe('Settings edge cases', () => {
   });
 
   test('persists language and theme toggle preferences', async ({ page }) => {
-    const initialTheme = await page.evaluate(() => localStorage.getItem('preferred-theme'));
+    const themeToggle = page.getByTestId('theme-mode-toggle');
+    const languageToggle = page.getByTestId('theme-language-toggle');
 
-    await page.getByTestId('theme-language-toggle').click();
+    // The icon shows the active theme (a sun in the light theme); the title names the switch.
+    await expect(themeToggle.locator('svg.lucide-sun')).toBeVisible();
+    await expect(themeToggle).toHaveAttribute('title', 'Switch to dark mode');
+    await themeToggle.click();
+
+    await expect(themeToggle.locator('svg.lucide-moon')).toBeVisible();
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBe('dark');
+
+    // The language button names the language it switches to: English is active, so it offers HU.
+    await expect(languageToggle).toHaveText('HU');
+    await languageToggle.click();
+
     await expect(page.locator('html')).toHaveAttribute('lang', 'hu');
-    const language = await page.evaluate(() => localStorage.getItem('preferred-language'));
-    expect(language).toBe('hu');
-
-    await page.getByTestId('theme-mode-toggle').click();
-
-    const changedTheme = await page.evaluate(() => localStorage.getItem('preferred-theme'));
-    expect(changedTheme).not.toBe(initialTheme);
-
-    const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-    expect(hasDarkClass).toBe(changedTheme === 'dark');
+    await expect(languageToggle).toHaveText('EN');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('preferred-language'))).toBe('hu');
   });
 
   test('keeps profile deletion disabled until password confirmation matches', async ({ page }) => {
@@ -98,5 +103,45 @@ test.describe('Settings edge cases', () => {
     await expect(page.locator('output[aria-live="polite"]')).toContainText(/Profile deleted successfully|Profil sikeresen törölve/i);
     const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
     expect(sessionHint).toBeNull();
+  });
+});
+
+test.describe('Theme default', () => {
+  test.use({ colorScheme: 'dark' });
+
+  test.beforeEach(async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true, theme: 'system' });
+    await installApiMocks(page, {
+      profileEmail: 'mechanic.theme@example.test',
+      isAuthenticated: true,
+    });
+    await page.goto('/settings');
+    await expect(page.locator('#settings-firstName')).toBeVisible();
+  });
+
+  test('starts from the system color scheme and follows it until a theme is picked', async ({ page }) => {
+    const html = page.locator('html');
+
+    await expect(html).toHaveClass(/\bdark\b/);
+    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBeNull();
+
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(html).not.toHaveClass(/\bdark\b/);
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(html).toHaveClass(/\bdark\b/);
+  });
+
+  test('keeps a picked theme when the system color scheme changes', async ({ page }) => {
+    const html = page.locator('html');
+
+    await page.getByTestId('theme-mode-toggle').click();
+    await expect(html).not.toHaveClass(/\bdark\b/);
+    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBe('light');
+
+    // The system goes light and back to dark; the picked light theme stays.
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(html).not.toHaveClass(/\bdark\b/);
   });
 });

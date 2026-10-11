@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
+import { toastMessage } from './support/toast';
 
 function registrationSelectors(page: Page) {
   return {
@@ -15,7 +16,7 @@ function registrationSelectors(page: Page) {
 }
 
 function selectedMechanicsSection(page: Page) {
-  return page.locator('section[aria-label="Selected mechanics"], section[aria-label="Kijelölt szerelők"]');
+  return page.locator('section[aria-label="Registered mechanics"], section[aria-label="Regisztrált szerelők"]');
 }
 
 /** Required registration form values with overridable defaults for edge cases. */
@@ -113,9 +114,7 @@ test.describe('Admin mechanic registration edge cases', () => {
 
     // The registration toast from the step above can still be on screen, so match the deletion
     // message rather than the email, which both toasts contain.
-    await expect(page.locator('output[aria-live="polite"]')
-      .filter({ hasText: /deleted successfully|sikeresen törölve/i }))
-      .toContainText(newEmail);
+    await expect(toastMessage(page, /deleted successfully|sikeresen törölve/i)).toContainText(newEmail);
     await expect(mechanicsSection.getByText(newEmail, { exact: true })).toHaveCount(0);
   });
 });

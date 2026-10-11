@@ -1,11 +1,13 @@
 /** Inline add/edit quote line form; part and labor share it, only labels differ. Live preview mirrors the server formula (see CLAUDE.md); saved amounts come from the DTO. */
-import { memo, type Dispatch, type SetStateAction } from 'react';
+import { memo, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, X } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import { VAT_RATE_OPTIONS } from '../../../types/catalog/catalog.types';
 import { MAX_QUOTE_LINE_DESCRIPTION_LENGTH } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   compactDataSurfaceClass,
   compactPrimaryValueTextClass,
@@ -22,7 +24,14 @@ import {
   segmentedControlClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
-import { applyCatalogSelection, computeQuoteLineAmountsPreview, resolveLineLabelKeys, type QuoteLineFormState } from '../helpers';
+import {
+  applyCatalogSelection,
+  computeQuoteLineAmountsPreview,
+  NO_QUOTE_LINE_FIELD_ERRORS,
+  resolveLineLabelKeys,
+  validateQuoteLineForm,
+  type QuoteLineFormState,
+} from '../helpers';
 
 interface QuoteLineFormProps {
   readonly t: TFunction;
@@ -36,6 +45,7 @@ interface QuoteLineFormProps {
   readonly onCancel: () => void;
 }
 
+/** Quote line editor that shows bound field errors once a save was attempted. */
 const QuoteLineFormComponent = memo(function QuoteLineForm({
   t,
   locale,
@@ -47,6 +57,12 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
   onSubmit,
   onCancel,
 }: QuoteLineFormProps) {
+  const quantityErrorId = useId();
+  const descriptionErrorId = useId();
+  const netUnitPriceErrorId = useId();
+  // Field errors appear once a save was attempted, then follow the form while it is fixed.
+  const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
+  const errors = hasSubmitAttempt ? validateQuoteLineForm(form) : NO_QUOTE_LINE_FIELD_ERRORS;
   const { quantityKey, unitPriceKey } = resolveLineLabelKeys(form.lineKind);
   const preview = computeQuoteLineAmountsPreview(Number(form.quantity), Number(form.netUnitPrice), form.vatRatePercent);
   const catalogOptions = form.lineKind === 'Part'
@@ -60,7 +76,9 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           data-testid="quote-line-kind-part"
           type="button"
           aria-pressed={form.lineKind === 'Part'}
-          onClick={() => setForm((previous) => ({ ...previous, lineKind: 'Part', catalogId: '' }))}
+          onClick={() => {
+            setForm((previous) => ({ ...previous, lineKind: 'Part', catalogId: '' }));
+          }}
           disabled={isSaving}
           className={getSegmentedControlOptionClass(form.lineKind === 'Part')}
         >
@@ -70,7 +88,9 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           data-testid="quote-line-kind-labor"
           type="button"
           aria-pressed={form.lineKind === 'Labor'}
-          onClick={() => setForm((previous) => ({ ...previous, lineKind: 'Labor', catalogId: '' }))}
+          onClick={() => {
+            setForm((previous) => ({ ...previous, lineKind: 'Labor', catalogId: '' }));
+          }}
           disabled={isSaving}
           className={getSegmentedControlOptionClass(form.lineKind === 'Labor')}
         >
@@ -87,7 +107,9 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
             data-testid="quote-line-catalog-select"
             id="quote-line-catalog"
             value={form.catalogId}
-            onChange={(event) => setForm((previous) => applyCatalogSelection(previous, event.target.value, parts, laborTypes))}
+            onChange={(event) => {
+              setForm((previous) => applyCatalogSelection(previous, event.target.value, parts, laborTypes));
+            }}
             className={`${inputClassCompact} min-w-0 truncate`}
             disabled={isSaving}
           >
@@ -106,12 +128,16 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           id="quote-line-description"
           type="text"
           value={form.description}
-          onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))}
+          onChange={(event) => {
+            setForm((previous) => ({ ...previous, description: event.target.value }));
+          }}
           className={inputClassCompact}
           placeholder={t('quotes.line.descriptionPlaceholder')}
           maxLength={MAX_QUOTE_LINE_DESCRIPTION_LENGTH}
           disabled={isSaving}
+          {...fieldErrorA11yProps(descriptionErrorId, errors.description)}
         />
+        <FieldErrorText id={descriptionErrorId} messageKey={errors.description} />
       </div>
 
       <div className={formFieldGridClass}>
@@ -125,10 +151,14 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
             max="10000"
             step="0.01"
             value={form.quantity}
-            onChange={(event) => setForm((previous) => ({ ...previous, quantity: event.target.value }))}
+            onChange={(event) => {
+              setForm((previous) => ({ ...previous, quantity: event.target.value }));
+            }}
             className={inputClassCompact}
             disabled={isSaving}
+            {...fieldErrorA11yProps(quantityErrorId, errors.quantity)}
           />
+          <FieldErrorText id={quantityErrorId} messageKey={errors.quantity} />
         </div>
 
         <div className={formFieldGroupClass}>
@@ -141,10 +171,14 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
             max="100000000"
             step="0.01"
             value={form.netUnitPrice}
-            onChange={(event) => setForm((previous) => ({ ...previous, netUnitPrice: event.target.value }))}
+            onChange={(event) => {
+              setForm((previous) => ({ ...previous, netUnitPrice: event.target.value }));
+            }}
             className={inputClassCompact}
             disabled={isSaving}
+            {...fieldErrorA11yProps(netUnitPriceErrorId, errors.netUnitPrice)}
           />
+          <FieldErrorText id={netUnitPriceErrorId} messageKey={errors.netUnitPrice} />
         </div>
       </div>
 
@@ -156,7 +190,9 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
               data-testid="quote-line-vat-select"
               id="quote-line-vat"
               value={form.vatRatePercent}
-              onChange={(event) => setForm((previous) => ({ ...previous, vatRatePercent: Number(event.target.value) }))}
+              onChange={(event) => {
+                setForm((previous) => ({ ...previous, vatRatePercent: Number(event.target.value) }));
+              }}
               className={`${inputClassCompact} min-w-0 truncate`}
               disabled={isSaving}
             >
@@ -186,7 +222,10 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
         <button
           data-testid="quote-line-save-button"
           type="button"
-          onClick={onSubmit}
+          onClick={() => {
+            setHasSubmitAttempt(true);
+            onSubmit();
+          }}
           disabled={isSaving}
           aria-busy={isSaving}
           className={referenceChipPrimaryWrapButtonClass}

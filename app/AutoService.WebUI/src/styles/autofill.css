@@ -1,31 +1,17 @@
 /* Autofill overrides: MUST stay outside @layer (unlayered author rules beat
    layered Tailwind utilities and the UA autofill sheet). */
 
-/* Light mode */
+/* One rule for both themes: the ui-* variables swap under .dark; the border is the 3:1 field border. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--color-arsm-primary);
-  caret-color: var(--color-arsm-primary);
-  background-color: var(--color-arsm-input) !important;
-  background-image: linear-gradient(var(--color-arsm-input), var(--color-arsm-input)) !important;
+  -webkit-text-fill-color: var(--ui-text);
+  caret-color: var(--ui-text);
+  background-color: var(--ui-input) !important;
+  background-image: linear-gradient(var(--ui-input), var(--ui-input)) !important;
   background-clip: padding-box;
-  border-color: var(--color-arsm-border) !important;
+  border-color: var(--ui-field-border) !important;
   /* 9999s transition freezes the background so the browser never reverts it */
-  transition: background-color 9999s ease-in-out 0s;
-}
-
-/* Dark mode — html.dark for explicit element+class specificity */
-html.dark input:-webkit-autofill,
-html.dark input:-webkit-autofill:hover,
-html.dark input:-webkit-autofill:focus,
-html.dark input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--color-arsm-primary-dark);
-  caret-color: var(--color-arsm-primary-dark);
-  background-color: var(--color-arsm-input-dark) !important;
-  background-image: linear-gradient(var(--color-arsm-input-dark), var(--color-arsm-input-dark)) !important;
-  background-clip: padding-box;
-  border-color: var(--color-arsm-border-dark) !important;
   transition: background-color 9999s ease-in-out 0s;
 }

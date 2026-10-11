@@ -107,7 +107,9 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
         <button
           data-testid="quote-send-button"
           type="button"
-          onClick={() => onChangeStatus('Sent')}
+          onClick={() => {
+            onChangeStatus('Sent');
+          }}
           disabled={isSaving || isChangingStatus || hasNoLines}
           aria-busy={isChangingStatus}
           title={hasNoLines ? t('quotes.sendNeedsLineHint') : undefined}
@@ -128,7 +130,9 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
         <button
           data-testid="quote-reject-button"
           type="button"
-          onClick={() => onChangeStatus('Rejected')}
+          onClick={() => {
+            onChangeStatus('Rejected');
+          }}
           disabled={isSaving || isChangingStatus}
           aria-busy={isChangingStatus}
           className={dangerButtonClass}
@@ -139,7 +143,9 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
         <button
           data-testid="quote-accept-button"
           type="button"
-          onClick={() => onChangeStatus('Accepted')}
+          onClick={() => {
+            onChangeStatus('Accepted');
+          }}
           disabled={isSaving || isChangingStatus}
           aria-busy={isChangingStatus}
           className={buttonClass}

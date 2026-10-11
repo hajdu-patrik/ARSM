@@ -22,12 +22,8 @@ import {
 	secondaryButtonClass,
 } from '../../../../utils/formStyles';
 
-interface MechanicListSectionProps {
-	readonly refreshKey: number;
-}
-
 /** Renders the admin mechanic roster with search, sort, a scrollable window, and delete actions. */
-export const MechanicListSection = memo(function MechanicListSection({ refreshKey }: MechanicListSectionProps) {
+export const MechanicListSection = memo(function MechanicListSection() {
 	const { t, i18n } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
 	const showErrorToast = useToastStore((state) => state.showError);
@@ -47,7 +43,6 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 		closeDeleteModal,
 		handleDelete,
 	} = useMechanicListState({
-		refreshKey,
 		language: i18n.language,
 		showErrorToast,
 		showSuccessToast,
@@ -73,7 +68,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 			const rowHeight = firstRowNode.getBoundingClientRect().height;
 			const rowGap = Number.parseFloat(getComputedStyle(containerElement).rowGap || '0');
 			const maxHeight = (rowHeight * MECHANIC_LIST_VISIBLE_ROW_COUNT) + (rowGap * (MECHANIC_LIST_VISIBLE_ROW_COUNT - 1));
-			containerElement.style.maxHeight = `${maxHeight}px`;
+			containerElement.style.maxHeight = `${String(maxHeight)}px`;
 		};
 
 		updateListMaxHeight();
@@ -81,7 +76,9 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 		const resizeObserver = new ResizeObserver(updateListMaxHeight);
 		resizeObserver.observe(firstRowNode);
 
-		return () => resizeObserver.disconnect();
+		return () => {
+			resizeObserver.disconnect();
+		};
 	}, [firstRowNode]);
 
 	const removableMechanicCount = useMemo(
@@ -144,7 +141,9 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 										{canRemoveMechanic && (
 											<button
 												type="button"
-												onClick={() => openDeleteModal(mechanic)}
+												onClick={() => {
+													openDeleteModal(mechanic);
+												}}
 												title={t('admin.deleteMechanic')}
 												aria-label={t('admin.deleteMechanic')}
 												className={`ml-auto ${iconDangerButtonClass}`}
@@ -179,9 +178,7 @@ export const MechanicListSection = memo(function MechanicListSection({ refreshKe
 						</button>
 						<button
 							type="button"
-							onClick={() => {
-								void handleDelete();
-							}}
+							onClick={handleDelete}
 							disabled={isDeleting || !deleteTarget}
 							aria-busy={isDeleting}
 							className={dangerButtonClass}

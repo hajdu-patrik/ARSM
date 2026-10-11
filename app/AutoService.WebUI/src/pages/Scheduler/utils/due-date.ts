@@ -10,7 +10,7 @@ export interface DueState {
   toneClassName: string;
   /** i18n translation key describing the due state. */
   labelKey: string;
-  /** Interpolation values (days, hours, minutes) for the label key. */
+  /** Interpolation values (days, hours, minutes) for the label key; `count` is the days and picks the plural form. */
   labelValues?: Record<string, number>;
 }
 
@@ -20,6 +20,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Milliseconds in one minute. */
 const MS_PER_MINUTE = 60 * 1000;
 
+/** Splits a duration into whole days, hours and minutes, rounding up to the next minute. */
 function splitDuration(absDiffMs: number): { days: number; hours: number; minutes: number } {
   const totalMinutes = Math.max(0, Math.ceil(absDiffMs / MS_PER_MINUTE));
   const days = Math.floor(totalMinutes / (24 * 60));
@@ -37,7 +38,7 @@ export function getDueState(dueDateTime: string): DueState {
   if (Number.isNaN(dueTimestamp)) {
     return {
       isOverdue: false,
-      toneClassName: 'text-arsm-muted dark:text-arsm-muted-dark',
+      toneClassName: 'text-ui-muted',
       labelKey: 'scheduler.due.unknown',
     };
   }
@@ -51,7 +52,7 @@ export function getDueState(dueDateTime: string): DueState {
       isOverdue: true,
       toneClassName: toneTextClasses.error,
       labelKey: 'scheduler.due.overdueByDays',
-      labelValues: overdueDuration,
+      labelValues: { ...overdueDuration, count: overdueDuration.days },
     };
   }
 
@@ -63,7 +64,7 @@ export function getDueState(dueDateTime: string): DueState {
       ? toneTextClasses.warning
       : toneTextClasses.neutral,
     labelKey: 'scheduler.due.daysLeft',
-    labelValues: dueDuration,
+    labelValues: { ...dueDuration, count: dueDuration.days },
   };
 }
 
@@ -74,7 +75,7 @@ export function toDatetimeLocalValue(isoValue: string): string {
     return '';
   }
 
-  const year = date.getFullYear();
+  const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const hours = String(date.getHours()).padStart(2, '0');

@@ -1,3 +1,5 @@
+import { APP_ROUTE_PATHS } from '../../router/appRoutes';
+
 /** Per-route SEO configuration resolved from the current path and language. */
 export type SeoConfig = {
   /** Localized page title displayed before the application suffix. */
@@ -38,15 +40,6 @@ type SeoMetaName =
 /** Selector attribute used to locate or create a specific `<meta>` element. */
 type SeoMetaAttribute = 'name' | 'property';
 
-/** Flexible schema.org node shape used by the JSON-LD graph payload. */
-type JsonLdNode = Record<string, unknown>;
-
-/** JSON-LD script payload injected into the document head. */
-type JsonLdPayload = {
-  '@context': 'https://schema.org';
-  '@graph': JsonLdNode[];
-};
-
 /** Application name appended to every page title. */
 export const APP_NAME = 'ARSM';
 
@@ -59,14 +52,8 @@ export const DEFAULT_SOCIAL_IMAGE_TYPE = 'image/png';
 export const DEFAULT_SOCIAL_IMAGE_WIDTH = '1200';
 export const DEFAULT_SOCIAL_IMAGE_HEIGHT = '630';
 
-/** Organization logo path served from public assets (the square mark, not the social card). */
-export const ORGANIZATION_LOGO_PATH = '/AppLogoFrameBlack.webp';
-
 /** Strict crawler directive used for authenticated application routes. */
 export const NOINDEX_ROBOTS = 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none, max-snippet:0, max-video-preview:0';
-
-/** Stable script id for the managed JSON-LD `<script>` element. */
-const JSON_LD_SCRIPT_ID = 'arsm-seo-jsonld';
 
 /** Retrieves an existing `<meta>` tag or creates one if it does not exist. */
 export function getOrCreateMeta(name: SeoMetaName, attribute: SeoMetaAttribute = 'name') {
@@ -84,16 +71,15 @@ export function getOrCreateMeta(name: SeoMetaName, attribute: SeoMetaAttribute =
 }
 
 /** Resolves canonical site origin from env config with a browser-origin fallback. */
-export function resolveCanonicalSiteUrl() {
-  const configuredUrl = import.meta.env.VITE_SITE_URL?.trim();
+export function resolveCanonicalSiteUrl(): string {
+  const configuredUrl: unknown = import.meta.env.VITE_SITE_URL;
 
-  if (!configuredUrl) {
+  if (typeof configuredUrl !== 'string' || configuredUrl.trim() === '') {
     return globalThis.location.origin;
   }
 
   try {
-    const parsed = new URL(configuredUrl);
-    return parsed.origin;
+    return new URL(configuredUrl.trim()).origin;
   } catch {
     return globalThis.location.origin;
   }
@@ -107,8 +93,8 @@ export function buildAbsoluteUrl(siteUrl: string, path: string) {
 
 /** Normalizes a route pathname for canonical URL generation. */
 export function normalizeCanonicalPath(pathname: string) {
-  if (pathname === '/scheduler' || pathname === '/dashboard') {
-    return '/';
+  if (pathname === APP_ROUTE_PATHS.schedulerAlias || pathname === APP_ROUTE_PATHS.dashboardAlias) {
+    return APP_ROUTE_PATHS.scheduler;
   }
 
   if (pathname.length > 1 && pathname.endsWith('/')) {
@@ -131,76 +117,4 @@ export function getOrCreateCanonical() {
   link.setAttribute('rel', 'canonical');
   document.head.appendChild(link);
   return link;
-}
-
-/** Retrieves or creates the JSON-LD script node used for schema.org data. */
-export function getOrCreateJsonLdScript() {
-  const selector = `script#${JSON_LD_SCRIPT_ID}`;
-  const existing = document.head.querySelector<HTMLScriptElement>(selector);
-
-  if (existing) {
-    return existing;
-  }
-
-  const script = document.createElement('script');
-  script.id = JSON_LD_SCRIPT_ID;
-  script.type = 'application/ld+json';
-  document.head.appendChild(script);
-  return script;
-}
-
-/** Builds schema.org JSON-LD payload for organization, website, app, and page entities. */
-export function buildJsonLdPayload(params: {
-  canonicalUrl: string;
-  siteUrl: string;
-  fullTitle: string;
-  description: string;
-  htmlLang: string;
-  organizationName: string;
-}) {
-  const { canonicalUrl, siteUrl, fullTitle, description, htmlLang, organizationName } = params;
-
-  const payload: JsonLdPayload = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': `${siteUrl}#organization`,
-        name: organizationName,
-        url: siteUrl,
-        logo: buildAbsoluteUrl(siteUrl, ORGANIZATION_LOGO_PATH),
-      },
-      {
-        '@type': 'WebSite',
-        '@id': `${siteUrl}#website`,
-        name: APP_NAME,
-        url: siteUrl,
-        inLanguage: htmlLang,
-      },
-      {
-        '@type': 'WebApplication',
-        '@id': `${siteUrl}#app`,
-        name: APP_NAME,
-        url: siteUrl,
-        description,
-        applicationCategory: 'BusinessApplication',
-        operatingSystem: 'Web Browser',
-        isAccessibleForFree: false,
-        inLanguage: htmlLang,
-      },
-      {
-        '@type': 'WebPage',
-        '@id': `${canonicalUrl}#webpage`,
-        url: canonicalUrl,
-        name: fullTitle,
-        description,
-        inLanguage: htmlLang,
-        isPartOf: {
-          '@id': `${siteUrl}#website`,
-        },
-      },
-    ],
-  };
-
-  return payload;
 }

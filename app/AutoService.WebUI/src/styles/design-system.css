@@ -25,25 +25,17 @@
   }
 
   .arsm-page-title {
-    font-size: 1.5rem;
-    line-height: 2rem;
+    font-size: var(--text-ui-display);
+    line-height: var(--text-ui-display--line-height);
     font-weight: 700;
     letter-spacing: 0;
-    color: var(--color-arsm-primary);
-  }
-
-  .dark .arsm-page-title {
-    color: var(--color-arsm-primary-dark);
+    color: var(--ui-text);
   }
 
   .arsm-page-subtitle {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: var(--color-arsm-muted);
-  }
-
-  .dark .arsm-page-subtitle {
-    color: var(--color-arsm-muted-dark);
+    font-size: var(--text-ui-small);
+    line-height: var(--text-ui-small--line-height);
+    color: var(--ui-muted);
   }
 
   .arsm-section-stack {
@@ -54,39 +46,29 @@
 
   .arsm-section-title {
     margin-bottom: 1rem;
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+    font-size: var(--text-ui-title);
+    line-height: var(--text-ui-title--line-height);
     font-weight: 600;
-    color: var(--color-arsm-primary);
-  }
-
-  .dark .arsm-section-title {
-    color: var(--color-arsm-primary-dark);
+    color: var(--ui-text);
   }
 
   .arsm-card-surface {
     position: relative;
     overflow: hidden;
-    border-radius: 1rem;
-    border: 1px solid var(--color-arsm-border);
-    background-color: var(--color-arsm-card);
+    border-radius: var(--radius-ui-lg);
+    border: 1px solid var(--ui-border);
+    background-color: var(--ui-card);
     padding: 1.25rem;
     transition: all 200ms ease;
   }
 
-  .dark .arsm-card-surface {
-    border-color: var(--color-arsm-border-dark);
-    background-color: var(--color-arsm-card-dark);
-  }
-
   .arsm-surface-inset {
-    border-radius: 1rem;
-    border: 1px solid var(--color-arsm-border);
-    background-color: var(--color-arsm-input);
+    border-radius: var(--radius-ui-lg);
+    border: 1px solid var(--ui-border);
+    background-color: var(--ui-input);
   }
 
   .dark .arsm-surface-inset {
-    border-color: var(--color-arsm-border-dark);
     background-color: var(--color-arsm-card-dark);
   }
 
@@ -150,13 +132,8 @@
   }
 
   select option:checked {
-    background-color: var(--color-arsm-toggle-bg);
-    color: var(--color-arsm-primary);
-  }
-
-  .dark select option:checked {
-    background-color: var(--color-arsm-toggle-bg-dark);
-    color: var(--color-arsm-primary-dark);
+    background-color: var(--ui-toggle);
+    color: var(--ui-text);
   }
 }
 

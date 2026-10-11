@@ -1,110 +1,111 @@
-/** Quote editor state hook: which quote/vehicle, loaded detail, header/line forms; mutations live in useQuoteMutations. */
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
-import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import type { QuoteDetailDto, QuoteLineDto } from '../../../types/quotes/quotes.types';
-import { quoteService } from '../../../services/quotes/quote.service';
-import { customerRegistryService } from '../../../services/customers/customer-registry.service';
-import {
-  buildDefaultQuoteHeaderForm,
-  buildQuoteHeaderForm,
-  buildQuoteLineForm,
-  EMPTY_QUOTE_LINE_FORM,
-  type QuoteEditorMode,
-  type QuoteHeaderFormState,
-  type QuoteLineFormState,
-} from '../helpers';
+/** Quote editor state hook: which quote or vehicle is open and what is read for it (detail, vehicle); the forms live in their own hooks, the writes in useQuoteMutations. */
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { customersQueries } from '../../../services/queries/customers.queries';
+import { quotesQueries } from '../../../services/queries/quotes.queries';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
+import { IDLE_QUERY_ENTITY_ID, type QuoteEditorMode } from '../helpers';
+import { useQuoteHeaderForm } from './useQuoteHeaderForm';
+import { useQuoteLineForm } from './useQuoteLineForm';
 
-/** Which line row the editor is currently editing: a new one, an existing one, or none. */
-export type QuoteLineEditingTarget = { kind: 'new' } | { kind: 'existing'; lineId: number } | null;
+export type { QuoteLineEditingTarget } from './useQuoteLineForm';
 
 /** External dependencies for the quote editor hook. */
 interface UseQuoteEditorParams {
   showErrorToast: (key: string) => void;
 }
 
-/** Manages quote editor modal state, detail loading, and the two forms. */
+/** Calls `close` whenever `hasFailed` turns true; the callback may change on every render without re-running the effect. */
+function useCloseOnFailure(hasFailed: boolean, close: () => void): void {
+  const handleFailure = useEffectEvent(close);
+
+  useEffect(() => {
+    if (hasFailed) {
+      handleFailure();
+    }
+  }, [hasFailed]);
+}
+
+/** Manages the quote editor: what is open, the reads behind it, and the header and line forms. */
 export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
+  const scope = useAuthQueryScope();
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<QuoteEditorMode>('create');
-  const [vehicleId, setVehicleId] = useState<number | null>(null);
-  const [vehicle, setVehicle] = useState<VehicleDetailDto | null>(null);
-  const [quote, setQuote] = useState<QuoteDetailDto | null>(null);
-  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
-  const [headerForm, setHeaderForm] = useState<QuoteHeaderFormState>(buildDefaultQuoteHeaderForm);
-  const [lineForm, setLineForm] = useState<QuoteLineFormState>(EMPTY_QUOTE_LINE_FORM);
-  const [lineEditingTarget, setLineEditingTarget] = useState<QuoteLineEditingTarget>(null);
+  const [quoteId, setQuoteId] = useState<number | null>(null);
+  const [createVehicleId, setCreateVehicleId] = useState<number | null>(null);
+
+  const quoteQuery = useQuery({
+    ...quotesQueries.detail(scope, quoteId ?? IDLE_QUERY_ENTITY_ID),
+    enabled: quoteId !== null,
+  });
+  // Only the create form reads the vehicle; an existing quote carries its own vehicle summary.
+  const vehicleQuery = useQuery({
+    ...customersQueries.vehicle(scope, createVehicleId ?? IDLE_QUERY_ENTITY_ID),
+    enabled: quoteId === null && createVehicleId !== null,
+  });
+
+  const quote = quoteId === null ? null : (quoteQuery.data ?? null);
+  const vehicle = createVehicleId === null ? null : (vehicleQuery.data ?? null);
+  const vehicleId = quote?.vehicleId ?? createVehicleId;
+  const mode: QuoteEditorMode = quoteId === null ? 'create' : 'edit';
+  const isLoadingQuote = quoteId !== null && quote === null;
+
+  const header = useQuoteHeaderForm(quote);
+  const lines = useQuoteLineForm();
+  const { resetHeaderForm, startNewHeaderForm } = header;
+  const { cancelLineEditing } = lines;
 
   const close = useCallback(() => {
     setIsOpen(false);
-    setQuote(null);
-    setVehicle(null);
-    setVehicleId(null);
-    setLineEditingTarget(null);
-  }, []);
+    setQuoteId(null);
+    setCreateVehicleId(null);
+    resetHeaderForm();
+    cancelLineEditing();
+  }, [cancelLineEditing, resetHeaderForm]);
 
-  const openCreate = useCallback(async (targetVehicleId: number) => {
-    setMode('create');
-    setQuote(null);
-    setVehicle(null);
-    setVehicleId(targetVehicleId);
-    setHeaderForm(buildDefaultQuoteHeaderForm());
-    setLineForm(EMPTY_QUOTE_LINE_FORM);
-    setLineEditingTarget(null);
+  const openCreate = useCallback((targetVehicleId: number) => {
+    cancelLineEditing();
+    startNewHeaderForm();
+    setQuoteId(null);
+    setCreateVehicleId(targetVehicleId);
     setIsOpen(true);
+  }, [cancelLineEditing, startNewHeaderForm]);
 
-    try {
-      setVehicle(await customerRegistryService.getVehicle(targetVehicleId));
-    } catch {
-      // The anchor is the id, not the label: a failed vehicle lookup only
-      // costs the plate in the title, so the draft can still be written.
-      showErrorToast('quotes.errors.loadVehicleFailed');
-    }
-  }, [showErrorToast]);
-
-  const openQuote = useCallback(async (quoteId: number) => {
-    setMode('edit');
-    setQuote(null);
-    setVehicle(null);
-    setLineForm(EMPTY_QUOTE_LINE_FORM);
-    setLineEditingTarget(null);
-    setIsLoadingQuote(true);
+  const openQuote = useCallback((targetQuoteId: number) => {
+    cancelLineEditing();
+    resetHeaderForm();
+    setQuoteId(targetQuoteId);
+    setCreateVehicleId(null);
     setIsOpen(true);
+  }, [cancelLineEditing, resetHeaderForm]);
 
-    try {
-      const detail = await quoteService.getQuote(quoteId);
-      setQuote(detail);
-      setVehicleId(detail.vehicleId);
-      setHeaderForm(buildQuoteHeaderForm(detail));
-    } catch {
-      showErrorToast('quotes.errors.loadQuoteFailed');
-      setIsOpen(false);
-    } finally {
-      setIsLoadingQuote(false);
-    }
-  }, [showErrorToast]);
-
-  /** Adopts the quote a mutation returned; every write endpoint answers with the full detail (incl. version), so no refetch is needed. */
-  const applyQuote = useCallback((detail: QuoteDetailDto) => {
-    setMode('edit');
-    setQuote(detail);
-    setVehicleId(detail.vehicleId);
-    setHeaderForm(buildQuoteHeaderForm(detail));
+  /** Points the editor at the quote a write returned; a created draft turns the create form into that quote's editor. */
+  const adoptQuote = useCallback((adoptedQuoteId: number) => {
+    setQuoteId(adoptedQuoteId);
+    setCreateVehicleId(null);
   }, []);
 
-  const startAddLine = useCallback(() => {
-    setLineForm(EMPTY_QUOTE_LINE_FORM);
-    setLineEditingTarget({ kind: 'new' });
-  }, []);
+  // The vehicle only names the draft, so a failed lookup costs the plate, not the editor.
+  useReadFailureToast({
+    failureMessageKey: vehicleQuery.isLoadingError ? 'quotes.errors.loadVehicleFailed' : null,
+    errorUpdatedAt: vehicleQuery.errorUpdatedAt,
+    isSuccess: vehicleQuery.isSuccess,
+    readKey: String(createVehicleId ?? IDLE_QUERY_ENTITY_ID),
+    showErrorToast,
+  });
 
-  const startEditLine = useCallback((line: QuoteLineDto) => {
-    setLineForm(buildQuoteLineForm(line));
-    setLineEditingTarget({ kind: 'existing', lineId: line.id });
-  }, []);
+  const hasQuoteReadFailed = quoteQuery.isLoadingError;
+  useReadFailureToast({
+    failureMessageKey: hasQuoteReadFailed ? 'quotes.errors.loadQuoteFailed' : null,
+    errorUpdatedAt: quoteQuery.errorUpdatedAt,
+    isSuccess: quoteQuery.isSuccess,
+    readKey: String(quoteId ?? IDLE_QUERY_ENTITY_ID),
+    showErrorToast,
+  });
 
-  const cancelLineEditing = useCallback(() => {
-    setLineForm(EMPTY_QUOTE_LINE_FORM);
-    setLineEditingTarget(null);
-  }, []);
+  // A quote that cannot be read leaves nothing to edit, so the editor closes on every failed load,
+  // also when the toast stays silent because the same read already toasted.
+  useCloseOnFailure(hasQuoteReadFailed, close);
 
   return {
     isOpen,
@@ -113,20 +114,22 @@ export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
     vehicle,
     quote,
     isLoadingQuote,
-    headerForm,
-    setHeaderForm: setHeaderForm as Dispatch<SetStateAction<QuoteHeaderFormState>>,
-    lineForm,
-    setLineForm: setLineForm as Dispatch<SetStateAction<QuoteLineFormState>>,
-    lineEditingTarget,
+    headerForm: header.headerForm,
+    setHeaderForm: header.setHeaderForm,
+    headerErrors: header.headerErrors,
+    markHeaderSubmitAttempted: header.markHeaderSubmitAttempted,
+    lineForm: lines.lineForm,
+    setLineForm: lines.setLineForm,
+    lineEditingTarget: lines.lineEditingTarget,
+    startAddLine: lines.startAddLine,
+    startEditLine: lines.startEditLine,
+    cancelLineEditing,
     openCreate,
     openQuote,
     close,
-    applyQuote,
-    startAddLine,
-    startEditLine,
-    cancelLineEditing,
+    adoptQuote,
   };
 }
 
-/** Quote editor state and actions returned by {@link useQuoteEditor}. */
+/** Quote editor state and actions returned by useQuoteEditor. */
 export type QuoteEditorState = ReturnType<typeof useQuoteEditor>;

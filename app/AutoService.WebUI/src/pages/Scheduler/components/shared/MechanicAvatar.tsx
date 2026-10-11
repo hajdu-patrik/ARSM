@@ -1,7 +1,11 @@
 /** Mechanic avatar: profile picture with live SSE updates, falling back to a deterministic initials avatar. */
 import { memo, useEffect, useMemo, useState } from 'react';
+import { isRecord } from '../../../../services/http/record-guard';
 import { profileService } from '../../../../services/profile/profile.service';
-import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../../services/profile/profile-picture-live.service';
+import {
+  PROFILE_PICTURE_UPDATED_EVENT,
+  type ProfilePictureUpdatedDetail,
+} from '../../../../services/profile/profile-picture-live.service';
 import { useAuthStore } from '../../../../store/auth.store';
 import { getDeterministicAvatarColor } from '../../../../utils/avatar';
 
@@ -31,6 +35,29 @@ function getInitialsFromFullName(fullName: string): string {
   return initials.length > 0 ? initials : '??';
 }
 
+/** Reads the payload of a profile-picture update event, or null when the event carries no valid one. */
+function readUpdateDetail(event: Event): ProfilePictureUpdatedDetail | null {
+  if (!(event instanceof CustomEvent)) {
+    return null;
+  }
+
+  const detail: unknown = event.detail;
+  if (
+    !isRecord(detail) ||
+    typeof detail.personId !== 'number' ||
+    typeof detail.hasProfilePicture !== 'boolean' ||
+    typeof detail.cacheBuster !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    personId: detail.personId,
+    hasProfilePicture: detail.hasProfilePicture,
+    cacheBuster: detail.cacheBuster,
+  };
+}
+
 const MechanicAvatarComponent = memo(function MechanicAvatar({
   mechanicId,
   fullName,
@@ -48,15 +75,15 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
 
   useEffect(() => {
     const handleProfilePictureUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent<{ personId?: number; hasProfilePicture?: boolean; cacheBuster?: number }>;
-      if (customEvent.detail?.personId !== mechanicId) {
+      const detail = readUpdateDetail(event);
+      if (detail === null || detail.personId !== mechanicId) {
         return;
       }
 
       setLiveProfilePicture({
         mechanicId,
-        hasProfilePicture: customEvent.detail?.hasProfilePicture ?? true,
-        cacheBuster: customEvent.detail?.cacheBuster ?? Date.now(),
+        hasProfilePicture: detail.hasProfilePicture,
+        cacheBuster: detail.cacheBuster,
       });
       setFailedImageKey(null);
     };
@@ -69,9 +96,10 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
 
   const activeLiveProfilePicture = liveProfilePicture?.mechanicId === mechanicId ? liveProfilePicture : null;
   const resolvedHasProfilePicture = activeLiveProfilePicture?.hasProfilePicture ?? hasProfilePicture;
-  const cacheBuster = activeLiveProfilePicture?.cacheBuster ?? `${mechanicId}-${resolvedHasProfilePicture ? '1' : '0'}`;
+  const pictureFlag = resolvedHasProfilePicture ? '1' : '0';
+  const cacheBuster = String(activeLiveProfilePicture?.cacheBuster ?? `${String(mechanicId)}-${pictureFlag}`);
   const canReadMechanicPicture = currentUser?.isAdmin === true || currentUser?.personId === mechanicId;
-  const imageCacheKey = `${mechanicId}:${cacheBuster}:${resolvedHasProfilePicture ? '1' : '0'}`;
+  const imageCacheKey = `${String(mechanicId)}:${cacheBuster}:${pictureFlag}`;
   const shouldShowProfilePicture = canReadMechanicPicture && resolvedHasProfilePicture && failedImageKey !== imageCacheKey;
   const initials = useMemo(() => getInitialsFromFullName(fullName), [fullName]);
   const fallbackColorClass = getDeterministicAvatarColor(mechanicId);
@@ -81,15 +109,18 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
       <img
         src={`${profileService.getMechanicProfilePictureUrl(mechanicId)}?v=${cacheBuster}`}
         alt={fullName}
-        className={`inline-flex shrink-0 overflow-hidden rounded-full border border-arsm-border object-cover dark:border-arsm-border-dark ${sizeClassName} ${className ?? ''}`}
-        onError={() => setFailedImageKey(imageCacheKey)}
+        className={`inline-flex shrink-0 overflow-hidden rounded-full border border-ui-border object-cover ${sizeClassName} ${className ?? ''}`}
+        onError={() => {
+          setFailedImageKey(imageCacheKey);
+        }}
       />
     );
   }
 
   return (
     <div
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-arsm-border font-bold dark:border-arsm-border-dark ${sizeClassName} ${fallbackColorClass} ${className ?? ''}`}
+      role="img"
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-ui-border font-bold ${sizeClassName} ${fallbackColorClass} ${className ?? ''}`}
       title={fullName}
       aria-label={fullName}
     >

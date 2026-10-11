@@ -1,5 +1,5 @@
 /** Per-entity element ids, i18n keys, and field accessors consumed by the generic `CatalogFormModal`. */
-import type { LaborTypeFormState, PartFormState } from './helpers';
+import type { CatalogFieldValues, LaborTypeFormState, PartFormState } from './helpers';
 
 /** A single identifier/rate field: element id, i18n keys, and form get/set accessors. */
 export interface CatalogFormFieldConfig<TForm> {
@@ -22,6 +22,19 @@ export interface CatalogFormModalConfig<TForm extends { name: string; vatRatePer
   readonly grossPreviewLabelKey: string;
   readonly identifier: CatalogFormFieldConfig<TForm>;
   readonly rate: CatalogFormFieldConfig<TForm>;
+}
+
+/** Reads every validated field of a form as text, through the config accessors of its entity. */
+export function readCatalogFieldValues<TForm extends { name: string; vatRatePercent: number }>(
+  config: CatalogFormModalConfig<TForm>,
+  form: TForm,
+): CatalogFieldValues {
+  return {
+    identifier: config.identifier.get(form),
+    name: form.name,
+    rate: config.rate.get(form),
+    vatRate: String(form.vatRatePercent),
+  };
 }
 
 /** Part create/edit modal configuration. */

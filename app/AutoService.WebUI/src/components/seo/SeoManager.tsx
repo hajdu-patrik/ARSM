@@ -1,8 +1,9 @@
 /** Route-aware SEO manager: updates title, meta description, robots, Open Graph,
- * Twitter Card, canonical URL, JSON-LD and `html[lang]` on every route/language change. */
+ * Twitter Card, canonical URL and `html[lang]` on every route/language change. */
 import { useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import {
   APP_NAME,
   DEFAULT_SOCIAL_IMAGE_HEIGHT,
@@ -11,9 +12,7 @@ import {
   DEFAULT_SOCIAL_IMAGE_WIDTH,
   NOINDEX_ROBOTS,
   buildAbsoluteUrl,
-  buildJsonLdPayload,
   getOrCreateCanonical,
-  getOrCreateJsonLdScript,
   getOrCreateMeta,
   normalizeCanonicalPath,
   resolveCanonicalSiteUrl,
@@ -23,17 +22,17 @@ import {
 /** Translation keys of one route's page title and meta description. */
 type RouteSeoKeys = { readonly title: string; readonly description: string };
 
-/** Known routes by normalized path; their canonical path is the route itself. */
+/** Known routes by normalized path (the route table's paths); their canonical path is the route itself. */
 const ROUTE_SEO_KEYS: ReadonlyMap<string, RouteSeoKeys> = new Map([
-  ['/login', { title: 'seo.pages.login.title', description: 'seo.pages.login.description' }],
-  ['/', { title: 'seo.pages.scheduler.title', description: 'seo.pages.scheduler.description' }],
-  ['/customers', { title: 'seo.pages.customers.title', description: 'seo.pages.customers.description' }],
-  ['/quotes', { title: 'seo.pages.quotes.title', description: 'seo.pages.quotes.description' }],
-  ['/inventory', { title: 'seo.pages.inventory.title', description: 'seo.pages.inventory.description' }],
-  ['/company-results', { title: 'seo.pages.companyResults.title', description: 'seo.pages.companyResults.description' }],
-  ['/settings', { title: 'seo.pages.settings.title', description: 'seo.pages.settings.description' }],
-  ['/admin/register', { title: 'seo.pages.adminRegister.title', description: 'seo.pages.adminRegister.description' }],
-  ['/500', { title: 'serverError.title', description: 'seo.pages.serverError.description' }],
+  [APP_ROUTE_PATHS.login, { title: 'seo.pages.login.title', description: 'seo.pages.login.description' }],
+  [APP_ROUTE_PATHS.scheduler, { title: 'seo.pages.scheduler.title', description: 'seo.pages.scheduler.description' }],
+  [APP_ROUTE_PATHS.customers, { title: 'seo.pages.customers.title', description: 'seo.pages.customers.description' }],
+  [APP_ROUTE_PATHS.quotes, { title: 'seo.pages.quotes.title', description: 'seo.pages.quotes.description' }],
+  [APP_ROUTE_PATHS.inventory, { title: 'seo.pages.inventory.title', description: 'seo.pages.inventory.description' }],
+  [APP_ROUTE_PATHS.companyResults, { title: 'seo.pages.companyResults.title', description: 'seo.pages.companyResults.description' }],
+  [APP_ROUTE_PATHS.settings, { title: 'seo.pages.settings.title', description: 'seo.pages.settings.description' }],
+  [APP_ROUTE_PATHS.adminRegister, { title: 'seo.pages.adminRegister.title', description: 'seo.pages.adminRegister.description' }],
+  [APP_ROUTE_PATHS.serverError, { title: 'serverError.title', description: 'seo.pages.serverError.description' }],
 ]);
 
 /** Keys and canonical path of every unknown route. */
@@ -61,21 +60,12 @@ export function SeoManager() {
 
   useEffect(() => {
     const fullTitle = `${config.pageTitle} | ${APP_NAME}`;
-    const locale = i18n.resolvedLanguage?.startsWith('hu') ? 'hu_HU' : 'en_US';
+    const locale = i18n.resolvedLanguage?.startsWith('hu') ? 'hu_HU' : 'en_GB';
     const htmlLang = i18n.resolvedLanguage?.startsWith('hu') ? 'hu' : 'en';
     const siteUrl = resolveCanonicalSiteUrl();
     const canonicalUrl = buildAbsoluteUrl(siteUrl, config.canonicalPath);
     const socialImageUrl = buildAbsoluteUrl(siteUrl, config.socialImagePath);
     const socialImageAlt = translate('seo.socialImageAlt');
-    const organizationName = translate('seo.organizationName');
-    const jsonLdPayload = buildJsonLdPayload({
-      canonicalUrl,
-      siteUrl,
-      fullTitle,
-      description: config.description,
-      htmlLang,
-      organizationName,
-    });
 
     document.title = fullTitle;
     document.documentElement.lang = htmlLang;
@@ -104,8 +94,6 @@ export function SeoManager() {
     getOrCreateMeta('twitter:image:alt').content = socialImageAlt;
 
     getOrCreateCanonical().href = canonicalUrl;
-
-    getOrCreateJsonLdScript().textContent = JSON.stringify(jsonLdPayload);
   }, [config.canonicalPath, config.description, config.pageTitle, config.robots, config.socialImagePath, i18n.resolvedLanguage, translate]);
 
   return null;

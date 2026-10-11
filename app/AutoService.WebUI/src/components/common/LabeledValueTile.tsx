@@ -1,5 +1,5 @@
-/** Labeled value tile: bordered surface pairing a muted label with a primary value,
- * shared by mobile-tile list rows so features don't hand-write the same markup. */
+/** Bordered label/value tile for modal detail grids: a muted label above a primary value,
+ * so features don't hand-write the same markup. */
 import { memo, type ReactNode } from 'react';
 import {
   compactDataSurfaceClass,

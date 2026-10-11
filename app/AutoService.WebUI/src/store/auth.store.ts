@@ -3,6 +3,10 @@
 import { create } from 'zustand';
 import type { AuthUser } from '../types/auth/login.types';
 import { clearArsmQueryCache } from '../services/cache/queryClient';
+import { logError } from '../utils/devLog';
+import { clearErrorIllustrationCache } from '../utils/errorIllustrationCache';
+import { clearSchedulerSession } from './scheduler.store';
+import { clearToasts } from './toast.store';
 
 /** Shape of the authentication Zustand store. */
 interface AuthState {
@@ -22,8 +26,17 @@ interface AuthState {
   setIsLoading: (value: boolean) => void;
   /** Sets or clears the error message. */
   setError: (error: string | null) => void;
-  /** Resets auth state and private query cache to logged-out defaults. */
+  /** Resets auth state, the private query cache and the other per-user browser state to logged-out defaults. */
   clearAuth: () => void;
+}
+
+/** Removes the per-user browser state that outlives the query cache: scheduler view, toasts, error artwork. */
+function clearUserBrowserState(): void {
+  clearSchedulerSession();
+  clearToasts();
+  clearErrorIllustrationCache().catch((error: unknown) => {
+    logError('auth.clearErrorIllustrationCache', error);
+  });
 }
 
 /** Zustand store for auth status, the current user, and clearing private cache data on logout. */
@@ -33,12 +46,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   error: null,
 
-  setUser: (user) => set({ user }),
-  setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
-  setIsLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
+  setUser: (user) => {
+    set({ user });
+  },
+  setIsAuthenticated: (isAuthenticated) => {
+    set({ isAuthenticated });
+  },
+  setIsLoading: (isLoading) => {
+    set({ isLoading });
+  },
+  setError: (error) => {
+    set({ error });
+  },
   clearAuth: () => {
     clearArsmQueryCache();
+    clearUserBrowserState();
     set({
       user: null,
       isAuthenticated: false,

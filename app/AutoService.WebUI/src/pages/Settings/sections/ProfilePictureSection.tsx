@@ -58,7 +58,7 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 						key={pictureKey}
 						src={pictureUrl}
 						alt={t('settings.profilePicture')}
-						className="h-20 w-20 rounded-full border-2 border-arsm-accent/50 object-cover ring-3 ring-arsm-accent/15 dark:border-arsm-accent-dark/60 dark:ring-arsm-accent-dark/15"
+						className="h-20 w-20 rounded-full border-2 border-arsm-accent/50 object-cover outline-3 outline-ui-accent/15 dark:border-arsm-accent-dark/60"
 					/>
 				) : (
 					<div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold ${fallbackColorClass}`}>

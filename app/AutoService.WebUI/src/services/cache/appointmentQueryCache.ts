@@ -5,7 +5,7 @@ import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { queryKeys, type AuthQueryScope } from './queryKeys';
 
 /** Options that control which related read caches are invalidated after an appointment mutation. */
-interface AppointmentMutationCacheOptions {
+export interface AppointmentMutationCacheOptions {
   readonly invalidateCustomerRegistry?: boolean;
 }
 
@@ -23,7 +23,7 @@ function upsertAppointment(appointments: AppointmentDto[], updated: AppointmentD
 }
 
 /** Resolves the local-time month bucket for a scheduled date; a UTC bucket could misplace it when the
- * local and UTC calendar day differ (must match {@link getAdjacentMonthViews} and the scheduler store). */
+ * local and UTC calendar day differ (must match the month window of useSchedulerDataSync). */
 function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; month: number } {
   const scheduledDate = new Date(appointment.scheduledDate);
   return {
@@ -85,6 +85,39 @@ export function writeAppointmentToSchedulerCache(
         : withoutUpdated;
     });
   }
+}
+
+/** Drops a hard-deleted appointment from every materialized scheduler list (today and all cached months). */
+export function removeAppointmentFromSchedulerCache(
+  queryClient: QueryClient,
+  authScope: AuthQueryScope,
+  appointmentId: number,
+): void {
+  queryClient.setQueriesData<AppointmentDto[]>(
+    { queryKey: queryKeys.scheduler.root(authScope) },
+    (current) => current?.filter((item) => item.id !== appointmentId),
+  );
+}
+
+/** Finds a cached snapshot of an appointment across today and the cached months; read before a delete,
+ * because the history invalidation needs the vehicle and customer ids that the delete removes. */
+export function findCachedAppointment(
+  queryClient: QueryClient,
+  authScope: AuthQueryScope,
+  appointmentId: number,
+): AppointmentDto | undefined {
+  const cachedLists = queryClient.getQueriesData<AppointmentDto[]>({
+    queryKey: queryKeys.scheduler.root(authScope),
+  });
+
+  for (const [, appointments] of cachedLists) {
+    const match = appointments?.find((item) => item.id === appointmentId);
+    if (match) {
+      return match;
+    }
+  }
+
+  return undefined;
 }
 
 /** Invalidates scheduler and appointment-history reads affected by an appointment mutation. */

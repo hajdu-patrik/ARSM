@@ -1,8 +1,10 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { Modal } from '../../../components/common/Modal';
 import { DRIVETRAIN_TYPES } from '../../../types/customers/customers.types';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   buttonClass,
   defaultIconClass,
@@ -13,9 +15,9 @@ import {
   secondaryButtonClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
-import type { VehicleFormState } from '../helpers';
-
-type VehicleModalMode = 'create' | 'edit';
+import type { FieldErrorKeys, VehicleFieldName } from '../fieldErrors';
+import { isDrivetrainType, type VehicleFormState } from '../helpers';
+import type { VehicleModalMode } from '../page.types';
 
 interface VehicleFormModalProps {
   isOpen: boolean;
@@ -23,23 +25,29 @@ interface VehicleFormModalProps {
   isSaving: boolean;
   isSaveEnabled: boolean;
   form: VehicleFormState;
+  fieldErrors: FieldErrorKeys<VehicleFieldName>;
   t: TFunction;
   onClose: () => void;
   onSubmit: (event: React.SyntheticEvent) => void;
   setForm: React.Dispatch<React.SetStateAction<VehicleFormState>>;
 }
 
+/** Vehicle create/edit modal: identity, numeric and drivetrain fields with inline per-field validation errors. */
 const VehicleFormModalComponent = memo(function VehicleFormModal({
   isOpen,
   mode,
   isSaving,
   isSaveEnabled,
   form,
+  fieldErrors,
   t,
   onClose,
   onSubmit,
   setForm,
 }: VehicleFormModalProps) {
+  const errorIdPrefix = useId();
+  const errorId = (field: VehicleFieldName) => `${errorIdPrefix}-${field}-error`;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -78,11 +86,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-license-plate"
               type="text"
               value={form.licensePlate}
-              onChange={(event) => setForm((prev) => ({ ...prev, licensePlate: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, licensePlate: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('common.placeholders.licensePlate')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('licensePlate'), fieldErrors.licensePlate)}
             />
+            <FieldErrorText id={errorId('licensePlate')} messageKey={fieldErrors.licensePlate} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -91,12 +103,16 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-vin"
               type="text"
               value={form.vin}
-              onChange={(event) => setForm((prev) => ({ ...prev, vin: event.target.value.toUpperCase() }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, vin: event.target.value.toUpperCase() }));
+              }}
               className={`${inputClass} uppercase`}
               placeholder={t('customers.vinPlaceholder')}
               maxLength={17}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('vin'), fieldErrors.vin)}
             />
+            <FieldErrorText id={errorId('vin')} messageKey={fieldErrors.vin} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -105,11 +121,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-brand"
               type="text"
               value={form.brand}
-              onChange={(event) => setForm((prev) => ({ ...prev, brand: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, brand: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('customers.brandPlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('brand'), fieldErrors.brand)}
             />
+            <FieldErrorText id={errorId('brand')} messageKey={fieldErrors.brand} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -118,11 +138,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-model"
               type="text"
               value={form.model}
-              onChange={(event) => setForm((prev) => ({ ...prev, model: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, model: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('customers.modelPlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('model'), fieldErrors.model)}
             />
+            <FieldErrorText id={errorId('model')} messageKey={fieldErrors.model} />
           </div>
         </div>
 
@@ -133,11 +157,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-year"
               type="number"
               value={form.year}
-              onChange={(event) => setForm((prev) => ({ ...prev, year: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, year: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('customers.yearPlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('year'), fieldErrors.year)}
             />
+            <FieldErrorText id={errorId('year')} messageKey={fieldErrors.year} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -146,11 +174,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-mileage"
               type="number"
               value={form.mileageKm}
-              onChange={(event) => setForm((prev) => ({ ...prev, mileageKm: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, mileageKm: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('customers.mileagePlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('mileageKm'), fieldErrors.mileageKm)}
             />
+            <FieldErrorText id={errorId('mileageKm')} messageKey={fieldErrors.mileageKm} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -159,11 +191,15 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               id="vehicle-power"
               type="number"
               value={form.enginePowerKw}
-              onChange={(event) => setForm((prev) => ({ ...prev, enginePowerKw: event.target.value }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, enginePowerKw: event.target.value }));
+              }}
               className={inputClass}
               placeholder={t('customers.enginePowerPlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('enginePowerKw'), fieldErrors.enginePowerKw)}
             />
+            <FieldErrorText id={errorId('enginePowerKw')} messageKey={fieldErrors.enginePowerKw} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -172,9 +208,13 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
               <select
                 id="vehicle-drivetrain"
                 value={form.drivetrainType}
-                onChange={(event) => setForm((prev) => ({ ...prev, drivetrainType: event.target.value as VehicleFormState['drivetrainType'] }))}
+                onChange={(event) => {
+                  const { value } = event.target;
+                  setForm((prev) => ({ ...prev, drivetrainType: isDrivetrainType(value) ? value : '' }));
+                }}
                 className={`${inputClass} min-w-0 truncate`}
                 disabled={isSaving}
+                {...fieldErrorA11yProps(errorId('drivetrainType'), fieldErrors.drivetrainType)}
               >
                 <option value="" disabled hidden>
                   {t('common.placeholders.drivetrain')}
@@ -186,6 +226,7 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
                 ))}
               </select>
             </div>
+            <FieldErrorText id={errorId('drivetrainType')} messageKey={fieldErrors.drivetrainType} />
           </div>
         </div>
       </form>

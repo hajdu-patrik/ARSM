@@ -2,7 +2,7 @@
  * rather than patch state, since an appointment can move between months (see WebUI CLAUDE.md). */
 
 import { appointmentService } from './appointment.service';
-import { createLiveUpdateChannel } from '../live/live-update-channel';
+import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-channel';
 
 /** Custom event name dispatched when any appointment changes. */
 export const APPOINTMENT_UPDATED_EVENT = 'autoservice:appointment-updated';
@@ -17,16 +17,12 @@ export interface AppointmentUpdatedDetail {
 
 /** Parses a raw SSE data string into a typed appointment update detail, or null if invalid. */
 function parseAppointmentUpdate(data: string): AppointmentUpdatedDetail | null {
-  try {
-    const parsed = JSON.parse(data) as Partial<AppointmentUpdatedDetail>;
-    if (typeof parsed.appointmentId !== 'number' || typeof parsed.occurredAt !== 'number') {
-      return null;
-    }
-
-    return { appointmentId: parsed.appointmentId, occurredAt: parsed.occurredAt };
-  } catch {
+  const parsed = parseJsonObject(data);
+  if (parsed === null || typeof parsed.appointmentId !== 'number' || typeof parsed.occurredAt !== 'number') {
     return null;
   }
+
+  return { appointmentId: parsed.appointmentId, occurredAt: parsed.occurredAt };
 }
 
 const channel = createLiveUpdateChannel<AppointmentUpdatedDetail>({

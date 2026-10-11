@@ -7,6 +7,7 @@ import {
 	inlinePrimaryLabelTextClass,
 	mutedMetaTextClass,
 } from '../../../utils/formStyles';
+import { formatQuantity } from '../../../utils/number';
 
 interface VehicleSpecsGridProps {
 	readonly t: TFunction;
@@ -32,7 +33,7 @@ export const VehicleSpecsGrid = memo(function VehicleSpecsGrid({
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.vin')}:</span> {vehicle.vin}
 			</p>
 			<p className="min-w-0 [overflow-wrap:anywhere]">
-				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.mileageKm')}:</span> {vehicle.mileageKm.toLocaleString(locale)} km
+				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.mileageKm')}:</span> {formatQuantity(vehicle.mileageKm, locale)}
 			</p>
 			<p className="min-w-0 [overflow-wrap:anywhere]">
 				<span className={inlinePrimaryLabelTextClass}>{t('common.fields.enginePowerKw')}:</span> {vehicle.enginePowerKw} kW

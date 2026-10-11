@@ -1,9 +1,14 @@
 /** Shared input validation/filtering: character-level filters for name and phone
  * fields, and file extension validation for profile picture uploads. */
 
-/** Strip everything except Unicode letters and hyphens from name input. */
+/** Strip everything except Unicode letters and hyphens from name input (create/edit forms, backend NamePattern). */
 export function filterNameInput(value: string): string {
   return value.replaceAll(/[^\p{L}-]/gu, '');
+}
+
+/** Strip everything except Unicode letters, hyphens, spaces and apostrophes (' and U+2019): name search fields only. */
+export function filterNameSearchInput(value: string): string {
+  return value.replaceAll(/[^\p{L}' \u2019-]/gu, '');
 }
 
 /** Strip everything except digits and common phone special characters (+, -, (, ), space). */

@@ -8,6 +8,7 @@ import {
   labelClass,
   selectWrapperClass,
 } from '../../../utils/formStyles';
+import { formatMonthName } from '../../../utils/intlFormat';
 
 interface PeriodPickerProps {
   readonly t: TFunction;
@@ -23,10 +24,9 @@ const SELECTABLE_YEARS = 6;
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-/** Builds month labels in the current locale, so the list reads naturally without a translated key per name. */
+/** Builds month labels in the current language, so the list reads naturally without a translated key per name. */
 function buildMonthNames(locale: string): string[] {
-  const formatter = new Intl.DateTimeFormat(locale, { month: 'long' });
-  return MONTHS.map((month) => formatter.format(new Date(Date.UTC(2000, month - 1, 1))));
+  return MONTHS.map((month) => formatMonthName(new Date(2000, month - 1, 15), locale));
 }
 
 const PeriodPickerComponent = memo(function PeriodPicker({
@@ -51,7 +51,9 @@ const PeriodPickerComponent = memo(function PeriodPicker({
               data-testid="company-results-year"
               id="company-results-year"
               value={year}
-              onChange={(event) => onYearChange(Number(event.target.value))}
+              onChange={(event) => {
+                onYearChange(Number(event.target.value));
+              }}
               className={compactSelectFullClass}
             >
               {years.map((selectableYear) => (
@@ -68,7 +70,9 @@ const PeriodPickerComponent = memo(function PeriodPicker({
               data-testid="company-results-month"
               id="company-results-month"
               value={month ?? ''}
-              onChange={(event) => onMonthChange(event.target.value === '' ? null : Number(event.target.value))}
+              onChange={(event) => {
+                onMonthChange(event.target.value === '' ? null : Number(event.target.value));
+              }}
               className={compactSelectFullClass}
             >
               <option value="">{t('companyResults.wholeYear')}</option>

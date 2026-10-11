@@ -6,13 +6,13 @@
 
 *::-webkit-scrollbar-track {
   background: var(--color-arsm-accent-wash);
-  border-radius: 9999px;
+  border-radius: var(--radius-ui-pill);
 }
 
 *::-webkit-scrollbar-thumb {
   background: var(--color-arsm-accent-vivid);
   border: 2px solid var(--color-arsm-accent-wash);
-  border-radius: 9999px;
+  border-radius: var(--radius-ui-pill);
 }
 
 *::-webkit-scrollbar-thumb:hover {

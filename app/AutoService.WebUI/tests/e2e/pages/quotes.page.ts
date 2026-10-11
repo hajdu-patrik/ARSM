@@ -3,6 +3,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export type QuoteStatusFilterOption = 'All' | 'Draft' | 'Sent' | 'Expired' | 'Accepted' | 'Rejected';
 export type QuoteLineKindOption = 'part' | 'labor';
 
+/** Page object for the Quotes list and the quote editor dialog. */
 export class QuotesPage {
   constructor(private readonly page: Page) {}
 
@@ -34,10 +35,9 @@ export class QuotesPage {
     return this.rows().filter({ hasText: quoteNumber });
   }
 
-  /** Picks the visible copy: `DataListRow` renders each row's controls twice (cells vs. tiles),
-   * switched by a container query, not viewport width (tests/CLAUDE.md Coverage Anchors). */
+  /** A control of the row: `DataListRow` renders each row once, as a table row or as tiles. */
   rowAction(quoteNumber: string, testId: string): Locator {
-    return this.row(quoteNumber).getByTestId(testId).filter({ visible: true }).first();
+    return this.row(quoteNumber).getByTestId(testId);
   }
 
   statusBadge(quoteNumber: string): Locator {
@@ -45,14 +45,14 @@ export class QuotesPage {
   }
 
   lineAction(index: number, testId: string): Locator {
-    return this.lineRows().nth(index).getByTestId(testId).filter({ visible: true }).first();
+    return this.lineRows().nth(index).getByTestId(testId);
   }
 
   editorDialog(): Locator {
     return this.page.getByRole('dialog').first();
   }
 
-  /** Anchored per language, so it never also matches the modal chrome's "Close modal" control
+  /** Anchored per language, so it never also matches the dialog chrome's "Close dialog" control
    * (both share the word "Close" in English). */
   closeEditorButton(): Locator {
     return this.page.getByRole('button', { name: /^(Close|Bezárás)$/ });
@@ -89,7 +89,7 @@ export class QuotesPage {
 
   /** Starts a new draft from the vehicle row of an expanded customer card. */
   async startQuoteFromVehicle(customerId: number, index = 0): Promise<Locator> {
-    await this.page.getByTestId(`customer-card-${customerId}`).getByTestId('vehicle-create-quote-button').nth(index).click();
+    await this.page.getByTestId(`customer-card-${String(customerId)}`).getByTestId('vehicle-create-quote-button').nth(index).click();
     await this.page.waitForURL(/\/quotes/);
     const dialog = this.page.getByRole('dialog', { name: 'New quote' });
     await expect(dialog).toBeVisible();

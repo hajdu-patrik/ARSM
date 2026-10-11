@@ -2,20 +2,20 @@
 
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
+import type { CustomerDetailsPanelTarget } from '../hooks/useCustomerDetailsPanel';
 import type { SortDirection } from '../page.types';
-import type { ResolvedCustomerDetailsPanelTarget } from './CustomerDetailsPanel';
 
+/** Read-side list state: the filtered customers, expansion and the details panel target. */
 export interface CustomerListData {
   readonly searchTerm: string;
   readonly filteredCustomers: CustomerListItem[];
   readonly isLoadingCustomers: boolean;
   readonly expandedCustomerIds: Set<number>;
-  readonly vehiclesByCustomerId: Record<number, VehicleDetailDto[]>;
-  readonly isLoadingVehiclesByCustomerId: Record<number, boolean>;
-  readonly resolvedDetailsTarget: ResolvedCustomerDetailsPanelTarget | null;
+  readonly detailsTarget: CustomerDetailsPanelTarget | null;
   readonly locale: string;
 }
 
+/** Customer and vehicle row callbacks: expansion, details, modals and quote creation. */
 export interface CustomerListActions {
   readonly onToggleCustomerExpanded: (customerId: number) => void;
   readonly onOpenCustomerDetails: (customerId: number) => void;
@@ -28,12 +28,9 @@ export interface CustomerListActions {
   readonly onCreateQuoteForVehicle: (vehicleId: number) => void;
 }
 
+/** Per-customer and per-vehicle history sort directions, their toggles and the appointment opener. */
 export interface CustomerHistoryState {
-  readonly customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
-  readonly isLoadingCustomerHistoryByCustomerId: Record<number, boolean>;
   readonly customerHistorySortByCustomerId: Record<number, SortDirection>;
-  readonly vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
-  readonly isLoadingVehicleHistoryByVehicleId: Record<number, boolean>;
   readonly vehicleHistorySortByVehicleId: Record<number, SortDirection>;
   readonly onToggleCustomerHistorySort: (customerId: number) => void;
   readonly onToggleVehicleHistorySort: (vehicleId: number) => void;

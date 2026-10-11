@@ -17,6 +17,8 @@ test.describe('Scheduler intake customer lookup', () => {
     const dialog = await schedulerPage.openIntakeForCurrentDay();
 
     await schedulerPage.searchByLicensePlate('NXE-441');
+    // One result reads in the singular; the two name matches below read in the plural.
+    await expect(dialog.getByText('1 matching customer', { exact: true })).toBeVisible();
     await dialog.getByRole('button', { name: 'Select' }).first().click();
 
     await expect(dialog.getByText('Existing customer selected')).toBeVisible();
@@ -41,6 +43,7 @@ test.describe('Scheduler intake customer lookup', () => {
     await expect(page.locator('output[aria-live="polite"]')).toContainText('Intake created successfully.');
     await expect(page.getByText(taskDescription)).toBeVisible();
     await expect(page.getByText('NXE-441').first()).toBeVisible();
+    await expect(page.getByText('1 appointment', { exact: true })).toBeVisible();
   });
 
   test('shows multiple name lookup results and selects one customer', async ({ page }) => {

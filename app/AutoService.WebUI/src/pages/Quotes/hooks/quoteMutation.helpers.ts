@@ -4,13 +4,21 @@ import type {
   QuoteLineRequest,
   UpdateQuoteRequest,
 } from '../../../types/quotes/quotes.types';
-import { toValidUntilIso, type QuoteHeaderFormState, type QuoteLineFormState } from '../helpers';
+import {
+  toValidUntilIso,
+  validateQuoteHeaderForm,
+  validateQuoteLineForm,
+  type QuoteHeaderFormState,
+  type QuoteLineFormState,
+} from '../helpers';
 
-/** A built payload, or the i18n key of the field error that blocked it. */
-interface PayloadResult<TPayload> {
-  payload: TPayload;
-  fieldError: string | null;
-}
+/** Quote writes fail fast while offline instead of pausing: a paused write would fire minutes later against a quote the mechanic has left. */
+export const QUOTE_WRITE_NETWORK_MODE = 'always';
+
+/** A built payload, or the i18n key of the first field error that blocked it. */
+type PayloadResult<TPayload> =
+  | { readonly ok: true; readonly payload: TPayload }
+  | { readonly ok: false; readonly fieldError: string };
 
 /** Parses the optional appointment link from the header form. */
 function parseAppointmentId(appointmentId: string): number | null {
@@ -24,80 +32,65 @@ function parseAppointmentId(appointmentId: string): number | null {
 
 /** Builds the draft-creation payload from header form state. */
 export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResult<CreateQuoteRequest> {
-  const title = form.title.trim();
+  const { title: titleError } = validateQuoteHeaderForm(form);
 
-  if (title.length === 0) {
-    return { payload: null as never, fieldError: 'quotes.errors.titleRequired' };
+  if (titleError !== undefined) {
+    return { ok: false, fieldError: titleError };
   }
 
   const notes = form.notes.trim();
 
   return {
+    ok: true,
     payload: {
-      title,
+      title: form.title.trim(),
       notes: notes.length > 0 ? notes : null,
       validUntil: form.validUntil.length > 0 ? toValidUntilIso(form.validUntil) : null,
       appointmentId: parseAppointmentId(form.appointmentId),
     },
-    fieldError: null,
   };
 }
 
 /** Builds the header-edit payload; ValidUntil is absent on purpose since extending validity is its own endpoint/action (D23). */
 export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: number): PayloadResult<UpdateQuoteRequest> {
-  const title = form.title.trim();
+  const { title: titleError } = validateQuoteHeaderForm(form);
 
-  if (title.length === 0) {
-    return { payload: null as never, fieldError: 'quotes.errors.titleRequired' };
+  if (titleError !== undefined) {
+    return { ok: false, fieldError: titleError };
   }
 
   const notes = form.notes.trim();
 
   return {
-    payload: { title, notes: notes.length > 0 ? notes : null, version },
-    fieldError: null,
+    ok: true,
+    payload: { title: form.title.trim(), notes: notes.length > 0 ? notes : null, version },
   };
 }
 
 /** Builds the unified line payload (D40): the catalog reference carries the snapshot, any field still filled overrides it server-side. */
 export function buildQuoteLineRequest(form: QuoteLineFormState, version: number): PayloadResult<QuoteLineRequest> {
-  const quantity = Number(form.quantity);
+  const { quantity: quantityError, description: descriptionError, netUnitPrice: priceError } = validateQuoteLineForm(form);
+  const fieldError = quantityError ?? descriptionError ?? priceError;
 
-  if (Number.isNaN(quantity) || quantity <= 0) {
-    return { payload: null as never, fieldError: 'quotes.errors.invalidQuantity' };
+  if (fieldError !== undefined) {
+    return { ok: false, fieldError };
   }
 
   const description = form.description.trim();
-  const hasCatalogReference = form.catalogId.length > 0;
-
-  if (!hasCatalogReference && description.length === 0) {
-    return { payload: null as never, fieldError: 'quotes.errors.lineFieldsRequired' };
-  }
-
   const hasTypedNetUnitPrice = form.netUnitPrice.trim().length > 0;
-  const netUnitPrice = Number(form.netUnitPrice);
-
-  if (hasTypedNetUnitPrice && Number.isNaN(netUnitPrice)) {
-    return { payload: null as never, fieldError: 'quotes.errors.invalidMoney' };
-  }
-
-  if (!hasCatalogReference && !hasTypedNetUnitPrice) {
-    return { payload: null as never, fieldError: 'quotes.errors.lineFieldsRequired' };
-  }
-
-  const catalogId = hasCatalogReference ? Number(form.catalogId) : null;
+  const catalogId = form.catalogId.length > 0 ? Number(form.catalogId) : null;
 
   return {
+    ok: true,
     payload: {
       lineKind: form.lineKind,
-      quantity,
+      quantity: Number(form.quantity),
       partId: form.lineKind === 'Part' ? catalogId : null,
       laborTypeId: form.lineKind === 'Labor' ? catalogId : null,
       description: description.length > 0 ? description : null,
-      netUnitPrice: hasTypedNetUnitPrice ? netUnitPrice : null,
+      netUnitPrice: hasTypedNetUnitPrice ? Number(form.netUnitPrice) : null,
       vatRatePercent: form.vatRatePercent,
       version,
     },
-    fieldError: null,
   };
 }

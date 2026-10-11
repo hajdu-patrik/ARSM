@@ -14,3 +14,16 @@ export function extractFieldErrors(
 ): FieldErrors {
   return extractServerFieldErrors(data);
 }
+
+/** Message keys that describe one field; any other key is a generic failure that only the toast shows. */
+const FIELD_MESSAGE_KEY_PREFIXES: readonly string[] = ['common.validation.', 'settings.errors.'];
+
+/** Returns the first message key of a field when it describes that field, undefined otherwise. */
+export function getFieldMessageKey(errors: FieldErrors, field: string): string | undefined {
+  const messageKey = getFieldError(errors, field);
+  if (messageKey === undefined) {
+    return undefined;
+  }
+
+  return FIELD_MESSAGE_KEY_PREFIXES.some((prefix) => messageKey.startsWith(prefix)) ? messageKey : undefined;
+}

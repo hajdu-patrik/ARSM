@@ -51,7 +51,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 ### Előfeltételek
 
 - .NET 10 SDK
-- Node.js 24+ és npm (a CI Node 24-re van rögzítve)
+- Node.js 24+ és npm (a CI Node 26-ra van rögzítve)
 - Python 3.11+ a lokális tesztfuttatóhoz
 - Futó Docker Desktop (az AppHost PostgreSQL és RustFS konténert indít)
 
@@ -211,9 +211,9 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
   egyszerre legfeljebb 8 csomag), minden csomag reviewja rögtön a befejezése után (kódolási elvek, UI/UX
   audit), dokumentáció-szinkron az egyetlen determinisztikus kapu mellett, végül célzott tesztek.
 - A `frontend` maga alkalmazza a `ui-ux-style-profile` szabályait; a profil utána a diffet auditálja.
-- A kapu a `python scripts/validate.py`: típusellenőrzés, lint, build, mérethatárok és a no-shadow szabály a
-  módosított fájlokon, valamint security remediation (`npm audit fix`, sérülékeny .NET csomagok), ha
-  csomagmanifest változott.
+- A kapu a `python scripts/validate.py`: típusellenőrzés, lint, build, mérethatárok és a no-shadow szabály
+  (a Tailwind `ring-*` is árnyéknak számít) a módosított fájlokon, valamint security remediation
+  (`npm audit fix`, `npm audit signatures`, sérülékeny .NET csomagok), ha csomagmanifest változott.
 - A `python scripts/select-e2e-specs.py --run` csak a diff által érintett Playwright speceket futtatja.
 - Részletes policy fájlok:
   - Gyökér: `CLAUDE.md`

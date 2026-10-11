@@ -1,45 +1,33 @@
-type EnvMap = Record<string, string | undefined>;
-
+/** Credentials the E2E login and appointment flows sign in with. */
 export interface AppointmentFlowEnv {
   readonly mechanicEmail: string;
   readonly mechanicPassword: string;
-  readonly customerEmail?: string;
-  readonly wrongPassword?: string;
+  readonly customerEmail: string;
+  readonly wrongPassword: string;
 }
 
 const DEFAULT_MOCK_CREDENTIAL = 'mock-credential-token';
-const DEFAULT_INVALID_MOCK_CREDENTIAL = `${DEFAULT_MOCK_CREDENTIAL}-invalid`;
 
+/** Mock-only values taken when the matching ARSM_TEST_* variable is unset or blank. */
 const FALLBACK_APPOINTMENT_ENV: AppointmentFlowEnv = {
   mechanicEmail: 'gabor.kovacs@example.com',
   mechanicPassword: DEFAULT_MOCK_CREDENTIAL,
   customerEmail: 'anna.toth@example.com',
-  wrongPassword: DEFAULT_INVALID_MOCK_CREDENTIAL,
+  wrongPassword: `${DEFAULT_MOCK_CREDENTIAL}-invalid`,
 };
 
-function getProcessEnv(): EnvMap {
-  const runtime = globalThis as typeof globalThis & { process?: { env?: EnvMap } };
-  return runtime.process?.env ?? {};
-}
-
-function readOptionalEnv(name: string, env: EnvMap): string | undefined {
-  const value = env[name];
-  return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
-}
-
-function readRequiredEnvWithFallback(name: string, env: EnvMap, fallback: string): string {
-  const value = env[name];
-  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+/** Reads one environment variable, or returns the fallback when it is unset or blank. */
+function readEnvWithFallback(name: string, fallback: string): string {
+  const value = process.env[name];
+  return value !== undefined && value.trim().length > 0 ? value : fallback;
 }
 
 /** Loads appointment flow credentials from environment variables (set in .secrets, loaded by the test runner). */
 export function getAppointmentFlowEnv(): AppointmentFlowEnv {
-  const env = getProcessEnv();
-
   return {
-    mechanicEmail: readRequiredEnvWithFallback('ARSM_TEST_MECHANIC_EMAIL', env, FALLBACK_APPOINTMENT_ENV.mechanicEmail),
-    mechanicPassword: readRequiredEnvWithFallback('ARSM_TEST_MECHANIC_PASSWORD', env, FALLBACK_APPOINTMENT_ENV.mechanicPassword),
-    customerEmail: readOptionalEnv('ARSM_TEST_CUSTOMER_EMAIL', env) ?? FALLBACK_APPOINTMENT_ENV.customerEmail,
-    wrongPassword: readOptionalEnv('ARSM_TEST_WRONG_PASSWORD', env) ?? FALLBACK_APPOINTMENT_ENV.wrongPassword,
+    mechanicEmail: readEnvWithFallback('ARSM_TEST_MECHANIC_EMAIL', FALLBACK_APPOINTMENT_ENV.mechanicEmail),
+    mechanicPassword: readEnvWithFallback('ARSM_TEST_MECHANIC_PASSWORD', FALLBACK_APPOINTMENT_ENV.mechanicPassword),
+    customerEmail: readEnvWithFallback('ARSM_TEST_CUSTOMER_EMAIL', FALLBACK_APPOINTMENT_ENV.customerEmail),
+    wrongPassword: readEnvWithFallback('ARSM_TEST_WRONG_PASSWORD', FALLBACK_APPOINTMENT_ENV.wrongPassword),
   };
 }

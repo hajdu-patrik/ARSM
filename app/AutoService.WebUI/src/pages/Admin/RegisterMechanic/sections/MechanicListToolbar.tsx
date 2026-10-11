@@ -14,7 +14,7 @@ import {
 	toolbarRowLayoutClass,
 	toolbarSearchFieldClass,
 } from '../../../../utils/formStyles';
-import { filterNameInput } from '../../../../utils/validation';
+import { filterNameSearchInput } from '../../../../utils/validation';
 import type { SortDirection } from '../types';
 
 interface MechanicListToolbarProps {
@@ -42,7 +42,9 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 					data-testid="mechanic-search-input"
 					type="text"
 					value={searchTerm}
-					onChange={(event) => onSearchChange(filterNameInput(event.target.value))}
+					onChange={(event) => {
+						onSearchChange(filterNameSearchInput(event.target.value));
+					}}
 					placeholder={t('admin.mechanicSearchPlaceholder')}
 					className={searchInputClass}
 				/>
@@ -76,4 +78,6 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 });
 
 MechanicListToolbarComponent.displayName = 'MechanicListToolbar';
+
+/** Search field with a clear button and the sort-direction toggle above the mechanic roster. */
 export const MechanicListToolbar = MechanicListToolbarComponent;

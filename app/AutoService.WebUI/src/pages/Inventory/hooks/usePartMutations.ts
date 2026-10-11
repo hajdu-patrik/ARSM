@@ -1,29 +1,35 @@
-/** Part create/update/delete mutation hook: modal state, payload validation, server calls, list updates. */
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
-import { isAxiosError } from 'axios';
-import {
-  extractServerFieldErrors,
-  getFirstFieldErrorMessage,
-  normalizeServerFieldErrors,
-  type ServerFieldErrors,
-} from '../../../utils/serverValidation';
-import type { CreatePartRequest, PartDto, UpdatePartRequest } from '../../../types/catalog/catalog.types';
+/** Part create/update/delete mutation hook: modal state, payload validation, server calls, cached list updates. */
+import { useCallback, useState, type SyntheticEvent } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { partService } from '../../../services/catalog/part.service';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
-import { buildPartRequest } from './catalogMutation.helpers';
+import type { CreatePartRequest, PartDto, UpdatePartRequest } from '../../../types/catalog/catalog.types';
+import { partCatalogFormConfig, readCatalogFieldValues } from '../catalogForm.config';
 import {
+  currentCatalogFieldErrors,
   EMPTY_PART_FORM,
-  hasServerFieldErrors,
-  mapCatalogValidationMessageToKey,
+  pinCatalogFieldError,
   type CatalogModalMode,
   type PartFormState,
+  type PinnedCatalogFieldError,
 } from '../helpers';
+import { buildPartRequest, resolveCatalogSaveErrorKey, type CatalogRequestResult } from './catalogMutation.helpers';
 import type { CatalogMutationToastHandlers } from './mutation-toast.types';
 
+/** Variables of the part update mutation. */
+interface UpdatePartVariables {
+  readonly id: number;
+  readonly request: UpdatePartRequest;
+}
+
+/** True when the part number, name and net price all hold non-blank text. */
 function hasRequiredPartFields(form: PartFormState): boolean {
   return form.partNumber.trim().length > 0 && form.name.trim().length > 0 && form.netUnitPrice.trim().length > 0;
 }
 
+/** True when the payload differs from the edited part; the part number compares case-insensitively. */
 function hasPartUpdateChanges(snapshot: PartDto, payload: CreatePartRequest | UpdatePartRequest): boolean {
   return snapshot.partNumber.trim().toUpperCase() !== payload.partNumber.trim().toUpperCase()
     || snapshot.name !== payload.name
@@ -31,10 +37,17 @@ function hasPartUpdateChanges(snapshot: PartDto, payload: CreatePartRequest | Up
     || snapshot.vatRatePercent !== payload.vatRatePercent;
 }
 
-/** Dependencies required by part create/edit/delete mutation handlers. */
-interface UsePartMutationsParams extends CatalogMutationToastHandlers {
-  setParts: Dispatch<SetStateAction<PartDto[]>>;
-  reloadParts: (force?: boolean) => Promise<void>;
+/** A part form can be saved with a valid payload and, when editing, at least one real change. */
+function isPartSaveAllowed(
+  mode: CatalogModalMode,
+  snapshot: PartDto | null,
+  built: CatalogRequestResult<CreatePartRequest> | null,
+): boolean {
+  if (built === null || built.fieldError !== null) {
+    return false;
+  }
+
+  return mode === 'create' || (snapshot !== null && hasPartUpdateChanges(snapshot, built.payload));
 }
 
 /** Manages the part form/delete modal state and create/update/delete mutations. */
@@ -42,45 +55,104 @@ export function usePartMutations({
   showSuccessToast,
   showErrorToast,
   showWarningToast,
-  setParts,
-  reloadParts,
-}: UsePartMutationsParams) {
+}: CatalogMutationToastHandlers) {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
   const [partModalOpen, setPartModalOpen] = useState(false);
   const [partModalMode, setPartModalMode] = useState<CatalogModalMode>('create');
-  const [editingPartId, setEditingPartId] = useState<number | null>(null);
-  const [editingPartSnapshot, setEditingPartSnapshot] = useState<PartDto | null>(null);
+  const [editingPart, setEditingPart] = useState<PartDto | null>(null);
   const [partForm, setPartForm] = useState<PartFormState>(EMPTY_PART_FORM);
-  const [isSavingPart, setIsSavingPart] = useState(false);
+  const [pinnedFieldError, setPinnedFieldError] = useState<PinnedCatalogFieldError | null>(null);
   const [deletePartTarget, setDeletePartTarget] = useState<PartDto | null>(null);
-  const [isDeletingPart, setIsDeletingPart] = useState(false);
 
-  const hasRequiredValues = hasRequiredPartFields(partForm);
-  const payloadResult = hasRequiredValues
-    ? buildPartRequest(partForm)
-    : { payload: null as never, fieldError: 'common.validation.fieldRequired' };
-  const hasValidPayload = hasRequiredValues && payloadResult.fieldError === null;
-  const isPartSaveEnabled = hasValidPayload
-    && (partModalMode === 'create' || Boolean(editingPartSnapshot && hasPartUpdateChanges(editingPartSnapshot, payloadResult.payload)))
-    && !isSavingPart;
+  /** Rewrites the cached part list; a list that has not loaded yet is left to its own fetch. */
+  const updatePartList = useCallback((update: (parts: PartDto[]) => PartDto[]) => {
+    if (scope === null) {
+      return;
+    }
+
+    queryClient.setQueryData<PartDto[]>(queryKeys.catalog.parts(scope), (parts) => parts && update(parts));
+  }, [queryClient, scope]);
+
+  /** Marks the cached part list stale and resolves once the mounted list has refetched. */
+  const refreshPartList = useCallback(async () => {
+    if (scope === null) {
+      return;
+    }
+
+    await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.catalog.parts(scope) });
+  }, [queryClient, scope]);
+
+  /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
+  const reportSaveError = useCallback((messageKey: string) => {
+    setPinnedFieldError(pinCatalogFieldError(messageKey, readCatalogFieldValues(partCatalogFormConfig, partForm)));
+    showErrorToast(messageKey);
+  }, [partForm, showErrorToast]);
+
+  const { mutate: createPart, isPending: isCreatingPart } = useMutation({
+    mutationFn: (request: CreatePartRequest) => partService.createPart(request),
+    onSuccess: (created) => {
+      updatePartList((parts) => [...parts, created]);
+      showSuccessToast('inventory.toasts.partCreated');
+      setPartModalOpen(false);
+    },
+    onError: (error) => {
+      reportSaveError(resolveCatalogSaveErrorKey(error, 'inventory.errors.partSaveFailed'));
+    },
+  });
+
+  const { mutate: updatePart, isPending: isUpdatingPart } = useMutation({
+    mutationFn: ({ id, request }: UpdatePartVariables) => partService.updatePart(id, request),
+    // PUT returns 204 No Content: reload so the row shows the gross unit price
+    // the API recomputed.
+    onSuccess: async () => {
+      await refreshPartList();
+      showSuccessToast('inventory.toasts.partUpdated');
+      setPartModalOpen(false);
+    },
+    onError: (error) => {
+      reportSaveError(resolveCatalogSaveErrorKey(error, 'inventory.errors.partSaveFailed'));
+    },
+  });
+
+  const { mutate: deletePart, isPending: isDeletingPart } = useMutation({
+    mutationFn: (id: number) => partService.deletePart(id),
+    onSuccess: (_result, id) => {
+      updatePartList((parts) => parts.filter((part) => part.id !== id));
+      showSuccessToast('inventory.toasts.partDeleted');
+      setDeletePartTarget(null);
+    },
+    onError: () => {
+      showErrorToast('inventory.errors.partDeleteFailed');
+    },
+  });
+
+  const isSavingPart = isCreatingPart || isUpdatingPart;
+  const builtRequest = hasRequiredPartFields(partForm) ? buildPartRequest(partForm) : null;
+  const isPartSaveEnabled = isPartSaveAllowed(partModalMode, editingPart, builtRequest) && !isSavingPart;
+  const partFieldErrors = currentCatalogFieldErrors(
+    pinnedFieldError,
+    readCatalogFieldValues(partCatalogFormConfig, partForm),
+  );
 
   const openCreatePartModal = useCallback(() => {
     setPartModalMode('create');
-    setEditingPartId(null);
-    setEditingPartSnapshot(null);
+    setEditingPart(null);
     setPartForm(EMPTY_PART_FORM);
+    setPinnedFieldError(null);
     setPartModalOpen(true);
   }, []);
 
   const openEditPartModal = useCallback((part: PartDto) => {
     setPartModalMode('edit');
-    setEditingPartId(part.id);
-    setEditingPartSnapshot(part);
+    setEditingPart(part);
     setPartForm({
       partNumber: part.partNumber,
       name: part.name,
       netUnitPrice: String(part.netUnitPrice),
       vatRatePercent: part.vatRatePercent,
     });
+    setPinnedFieldError(null);
     setPartModalOpen(true);
   }, []);
 
@@ -92,76 +164,36 @@ export function usePartMutations({
     setPartModalOpen(false);
   }, [isSavingPart]);
 
-  const handleSubmitPartError = useCallback((error: unknown) => {
-    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-      showErrorToast('inventory.errors.partSaveFailed');
-      return;
-    }
-
-    const responseData = error.response?.data;
-    const mappedFieldErrors = normalizeServerFieldErrors(
-      extractServerFieldErrors(responseData),
-      mapCatalogValidationMessageToKey,
-    );
-
-    if (hasServerFieldErrors(mappedFieldErrors)) {
-      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'inventory.errors.partSaveFailed');
-      return;
-    }
-
-    const detailKey = responseData?.detail
-      ? mapCatalogValidationMessageToKey(responseData.detail)
-      : 'inventory.errors.partSaveFailed';
-    showErrorToast(detailKey);
-  }, [showErrorToast]);
-
-  const persistPartMutation = useCallback(async (payload: CreatePartRequest) => {
-    if (partModalMode === 'create') {
-      const created = await partService.createPart(payload);
-      setParts((prev) => [...prev, created]);
-      showSuccessToast('inventory.toasts.partCreated');
-      return;
-    }
-
-    if (editingPartId === null) {
-      return;
-    }
-
-    await partService.updatePart(editingPartId, payload);
-    // PUT returns 204 No Content: reload so the row reflects the server's
-    // authoritative recomputed gross unit price.
-    await reloadParts(true);
-    showSuccessToast('inventory.toasts.partUpdated');
-  }, [editingPartId, partModalMode, reloadParts, setParts, showSuccessToast]);
-
-  const handleSubmitPart = useCallback(async (event: React.SyntheticEvent) => {
+  const handleSubmitPart = useCallback((event: SyntheticEvent) => {
     event.preventDefault();
 
-    const { payload, fieldError } = buildPartRequest(partForm);
+    const request = buildPartRequest(partForm);
 
-    if (fieldError) {
-      showErrorToast(fieldError);
+    if (request.fieldError !== null) {
+      reportSaveError(request.fieldError);
       return;
     }
 
-    if (partModalMode === 'edit' && editingPartSnapshot && !hasPartUpdateChanges(editingPartSnapshot, payload)) {
+    if (partModalMode === 'create') {
+      createPart(request.payload);
+      return;
+    }
+
+    if (editingPart === null) {
+      return;
+    }
+
+    if (!hasPartUpdateChanges(editingPart, request.payload)) {
       showWarningToast(TOAST_KEY_NO_CHANGES);
       return;
     }
 
-    setIsSavingPart(true);
+    updatePart({ id: editingPart.id, request: request.payload });
+  }, [createPart, editingPart, partForm, partModalMode, reportSaveError, showWarningToast, updatePart]);
 
-    try {
-      await persistPartMutation(payload);
-      setPartModalOpen(false);
-    } catch (error) {
-      handleSubmitPartError(error);
-    } finally {
-      setIsSavingPart(false);
-    }
-  }, [editingPartSnapshot, handleSubmitPartError, partForm, partModalMode, persistPartMutation, showErrorToast, showWarningToast]);
-
-  const openDeletePartModal = useCallback((part: PartDto) => setDeletePartTarget(part), []);
+  const openDeletePartModal = useCallback((part: PartDto) => {
+    setDeletePartTarget(part);
+  }, []);
 
   const closeDeletePartModal = useCallback(() => {
     if (isDeletingPart) {
@@ -171,31 +203,18 @@ export function usePartMutations({
     setDeletePartTarget(null);
   }, [isDeletingPart]);
 
-  const handleDeletePart = useCallback(async () => {
-    if (!deletePartTarget) {
-      return;
+  const handleDeletePart = useCallback(() => {
+    if (deletePartTarget !== null) {
+      deletePart(deletePartTarget.id);
     }
-
-    const id = deletePartTarget.id;
-    setIsDeletingPart(true);
-
-    try {
-      await partService.deletePart(id);
-      setParts((prev) => prev.filter((part) => part.id !== id));
-      showSuccessToast('inventory.toasts.partDeleted');
-      setDeletePartTarget(null);
-    } catch {
-      showErrorToast('inventory.errors.partDeleteFailed');
-    } finally {
-      setIsDeletingPart(false);
-    }
-  }, [deletePartTarget, setParts, showErrorToast, showSuccessToast]);
+  }, [deletePart, deletePartTarget]);
 
   return {
     partModalOpen,
     partModalMode,
     partForm,
     setPartForm,
+    partFieldErrors,
     isSavingPart,
     isPartSaveEnabled,
     openCreatePartModal,

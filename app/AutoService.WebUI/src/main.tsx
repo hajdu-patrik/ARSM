@@ -4,11 +4,19 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './utils/i18n.ts'
+import { i18nReady } from './utils/i18n.ts'
 import App from './App.tsx'
 import { QueryCacheProvider } from './services/cache/QueryCacheProvider.tsx'
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')
+
+if (!rootElement) {
+  throw new Error('Missing #root element in index.html.')
+}
+
+await i18nReady
+
+createRoot(rootElement).render(
   <StrictMode>
     <QueryCacheProvider>
       <App />

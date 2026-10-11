@@ -67,22 +67,17 @@ const QuoteEditorModalComponent = memo(function QuoteEditorModal({
           isDownloadingPdf={mutations.isDownloadingPdf}
           canSaveHeader={quote !== null && canEditHeader && hasQuoteHeaderChanges(editor.headerForm, quote)}
           onClose={editor.close}
-          onCreate={() => void mutations.handleCreateQuote()}
-          onSaveHeader={() => void mutations.handleSaveHeader()}
-          onChangeStatus={(status) => void mutations.handleChangeStatus(status)}
+          onCreate={mutations.handleCreateQuote}
+          onSaveHeader={mutations.handleSaveHeader}
+          onChangeStatus={mutations.handleChangeStatus}
           onDownloadPdf={() => {
             if (quote) {
-              void mutations.handleDownloadPdf(quote);
+              mutations.handleDownloadPdf(quote);
             }
           }}
           onDelete={() => {
             if (quote) {
-              mutations.openDeleteModal({
-                id: quote.id,
-                quoteNumber: quote.quoteNumber,
-                title: quote.title,
-                version: quote.version,
-              });
+              mutations.openDeleteModal(quote);
             }
           }}
         />
@@ -99,11 +94,12 @@ const QuoteEditorModalComponent = memo(function QuoteEditorModal({
             vehicleLabel={vehicleLabel}
             form={editor.headerForm}
             setForm={editor.setHeaderForm}
+            errors={editor.headerErrors}
             appointments={reference.appointments}
             isSaving={mutations.isSavingQuote}
             canEditHeader={canEditHeader}
             canChangeValidity={canChangeValidity}
-            onSaveValidity={() => void mutations.handleExtendValidity()}
+            onSaveValidity={mutations.handleExtendValidity}
           />
 
           {quote ? (
@@ -121,8 +117,8 @@ const QuoteEditorModalComponent = memo(function QuoteEditorModal({
                 canEdit={canEditLines}
                 onStartAddLine={editor.startAddLine}
                 onStartEditLine={editor.startEditLine}
-                onDeleteLine={(line) => void mutations.handleDeleteLine(line)}
-                onSubmitLine={() => void mutations.handleSubmitLine()}
+                onDeleteLine={mutations.handleDeleteLine}
+                onSubmitLine={mutations.handleSubmitLine}
                 onCancelLineEditing={editor.cancelLineEditing}
               />
 

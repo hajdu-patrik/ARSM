@@ -4,7 +4,7 @@ using AutoService.ApiService.Auth.Session;
 
 namespace AutoService.ApiService.Middleware;
 
-/** Enforces the CSRF double-submit check (X-CSRF-Token header must equal the autoservice_csrf
+/** Enforces the CSRF double-submit check (X-CSRF-Token header must equal the __Host-autoservice_csrf
     cookie) on unsafe API requests, right after the Origin check; login is exempt (see ApiService/CLAUDE.md). */
 public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
 {

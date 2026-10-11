@@ -1,18 +1,18 @@
-/** Quote editor reference data: catalog for the line editor, vehicle appointments for the link; reuses Inventory/Customers' query keys/cache. */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+/** Quote editor reference data: catalog for the line editor, vehicle appointments for the link; shares Inventory's and Customers' cached reads. */
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import { partService } from '../../../services/catalog/part.service';
-import { laborTypeService } from '../../../services/catalog/labor-type.service';
-import { customerRegistryService } from '../../../services/customers/customer-registry.service';
-import {
-  CATALOG_STALE_TIME_MS,
-  CUSTOMER_HISTORY_STALE_TIME_MS,
-  PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-} from '../../../services/cache/cache-policy';
-import { getAuthQueryScope, queryKeys } from '../../../services/cache/queryKeys';
-import { useAuthStore } from '../../../store/auth.store';
+import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { catalogQueries } from '../../../services/queries/catalog.queries';
+import { customersQueries } from '../../../services/queries/customers.queries';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
+import { IDLE_QUERY_ENTITY_ID, sortAppointmentsNewestFirst } from '../helpers';
+
+/** Shared empty results, so a read that has not loaded yet does not hand out a new array on every render. */
+const NO_PARTS: PartDto[] = [];
+const NO_LABOR_TYPES: LaborTypeDto[] = [];
+const NO_APPOINTMENTS: AppointmentDto[] = [];
 
 /** External dependencies for the quote editor reference-data hook. */
 interface UseQuoteReferenceDataParams {
@@ -29,88 +29,37 @@ export interface QuoteReferenceData {
   readonly isLoadingCatalog: boolean;
 }
 
-/** Loads the catalog and the anchored vehicle's appointments while the editor is open. */
+/** Reads the catalog and the anchored vehicle's appointments while the editor is open. */
 export function useQuoteReferenceData({
   isOpen,
   vehicleId,
   showErrorToast,
 }: UseQuoteReferenceDataParams): QuoteReferenceData {
-  const queryClient = useQueryClient();
-  const authUser = useAuthStore((state) => state.user);
-  const authScope = useMemo(() => getAuthQueryScope(authUser), [authUser]);
-  const [parts, setParts] = useState<PartDto[]>([]);
-  const [laborTypes, setLaborTypes] = useState<LaborTypeDto[]>([]);
-  const [appointments, setAppointments] = useState<AppointmentDto[]>([]);
-  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const scope = useAuthQueryScope();
+  const partsQuery = useQuery({ ...catalogQueries.parts(scope), enabled: isOpen });
+  const laborTypesQuery = useQuery({ ...catalogQueries.laborTypes(scope), enabled: isOpen });
+  // The appointment link is optional, so a failed history read leaves the select empty without a toast.
+  const historyQuery = useQuery({
+    ...customersQueries.vehicleHistory(scope, vehicleId ?? IDLE_QUERY_ENTITY_ID),
+    enabled: isOpen && vehicleId !== null,
+  });
 
-  const loadCatalog = useCallback(async () => {
-    if (!authScope) {
-      return;
-    }
+  const history = historyQuery.data;
+  const appointments = useMemo(() => sortAppointmentsNewestFirst(history ?? NO_APPOINTMENTS), [history]);
 
-    setIsLoadingCatalog(true);
+  // The two catalog reads fold into one: it fails when either does, and succeeds when both did.
+  const hasCatalogFailed = partsQuery.isLoadingError || laborTypesQuery.isLoadingError;
+  useReadFailureToast({
+    failureMessageKey: hasCatalogFailed ? 'quotes.errors.loadCatalogFailed' : null,
+    errorUpdatedAt: Math.max(partsQuery.errorUpdatedAt, laborTypesQuery.errorUpdatedAt),
+    isSuccess: partsQuery.isSuccess && laborTypesQuery.isSuccess,
+    showErrorToast,
+  });
 
-    try {
-      const [loadedParts, loadedLaborTypes] = await Promise.all([
-        queryClient.fetchQuery({
-          gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-          queryFn: partService.listParts,
-          queryKey: queryKeys.catalog.parts(authScope),
-          staleTime: CATALOG_STALE_TIME_MS,
-        }),
-        queryClient.fetchQuery({
-          gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-          queryFn: laborTypeService.listLaborTypes,
-          queryKey: queryKeys.catalog.laborTypes(authScope),
-          staleTime: CATALOG_STALE_TIME_MS,
-        }),
-      ]);
-
-      setParts(loadedParts);
-      setLaborTypes(loadedLaborTypes);
-    } catch {
-      showErrorToast('quotes.errors.loadCatalogFailed');
-    } finally {
-      setIsLoadingCatalog(false);
-    }
-  }, [authScope, queryClient, showErrorToast]);
-
-  const loadAppointments = useCallback(async (targetVehicleId: number) => {
-    if (!authScope) {
-      return;
-    }
-
-    try {
-      const data = await queryClient.fetchQuery({
-        gcTime: PERSISTED_QUERY_CACHE_MAX_AGE_MS,
-        queryFn: () => customerRegistryService.getVehicleHistory(targetVehicleId, true),
-        queryKey: queryKeys.customers.vehicleHistory(authScope, targetVehicleId),
-        staleTime: CUSTOMER_HISTORY_STALE_TIME_MS,
-      });
-      setAppointments(data);
-    } catch {
-      // The appointment link is optional, so a failed lookup leaves the select
-      // empty instead of blocking the whole editor with an error toast.
-      setAppointments([]);
-    }
-  }, [authScope, queryClient]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    void loadCatalog();
-  }, [isOpen, loadCatalog]);
-
-  useEffect(() => {
-    if (!isOpen || vehicleId === null) {
-      setAppointments([]);
-      return;
-    }
-
-    void loadAppointments(vehicleId);
-  }, [isOpen, loadAppointments, vehicleId]);
-
-  return { parts, laborTypes, appointments, isLoadingCatalog };
+  return {
+    parts: partsQuery.data ?? NO_PARTS,
+    laborTypes: laborTypesQuery.data ?? NO_LABOR_TYPES,
+    appointments,
+    isLoadingCatalog: partsQuery.isLoading || laborTypesQuery.isLoading,
+  };
 }

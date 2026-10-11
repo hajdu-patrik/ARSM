@@ -1,4 +1,4 @@
-/* Typography: Inter with a system-font fallback for reduced CLS */
+/* Typography: self-hosted Inter with a system-font fallback for reduced CLS */
 @font-face {
   font-family: 'Inter fallback';
   src: local('Segoe UI'), local('system-ui'), local('Arial');
@@ -6,6 +6,26 @@
   ascent-override: 90%;
   descent-override: 22%;
   line-gap-override: 0%;
+}
+
+/* Inter variable, Fontsource subsets: latin holds the Latin-1 accents, latin-ext the Hungarian
+   double-acute letters; a file loads only when the page shows one of its characters. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/inter-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 /* Base layer: global element resets and theming */
@@ -21,12 +41,12 @@
     min-height: 100%;
     margin: 0;
     overflow: hidden;
-    background-color: var(--color-arsm-surface);
+    background-color: var(--ui-surface);
     background-image:
       radial-gradient(circle at 14% 9%, color-mix(in srgb, var(--color-arsm-accent) 18%, transparent) 0%, transparent 38%),
       radial-gradient(circle at 87% 16%, color-mix(in srgb, var(--color-arsm-accent-tint) 26%, transparent) 0%, transparent 42%),
       linear-gradient(180deg, var(--color-arsm-surface-soft) 0%, var(--color-arsm-surface) 100%);
-    color: var(--color-arsm-primary);
+    color: var(--ui-text);
     font-family: inherit;
     line-height: 1.5;
   }
@@ -36,12 +56,10 @@
   }
 
   .dark body {
-    background-color: var(--color-arsm-surface-dark);
     background-image:
       radial-gradient(circle at 13% 11%, color-mix(in srgb, var(--color-arsm-accent-dark) 24%, transparent) 0%, transparent 42%),
       radial-gradient(circle at 84% 16%, color-mix(in srgb, var(--color-arsm-hover-dark) 40%, transparent) 0%, transparent 46%),
       linear-gradient(180deg, var(--color-arsm-deepest) 0%, var(--color-arsm-surface-dark) 100%);
-    color: var(--color-arsm-primary-dark);
   }
 
   .dark {
@@ -62,36 +80,21 @@
   }
 
   select option {
-    background-color: var(--color-arsm-input);
-    color: var(--color-arsm-primary);
+    background-color: var(--ui-input);
+    color: var(--ui-text);
   }
 
   select option:hover,
   select option:focus,
   select option:checked {
-    color: var(--color-arsm-primary);
+    color: var(--ui-text);
     background: var(--color-arsm-accent-subtle) linear-gradient(0deg, var(--color-arsm-accent-subtle), var(--color-arsm-accent-subtle));
-  }
-
-  .dark select option {
-    background-color: var(--color-arsm-input-dark);
-    color: var(--color-arsm-primary-dark);
   }
 
   .dark select option:hover,
   .dark select option:focus,
   .dark select option:checked {
-    color: var(--color-arsm-primary-dark);
     background: var(--color-arsm-toggle-bg-dark) linear-gradient(0deg, var(--color-arsm-toggle-bg-dark), var(--color-arsm-toggle-bg-dark));
-  }
-
-  select:focus {
-    outline: none;
-    border-color: var(--color-arsm-focus-ring);
-  }
-
-  .dark select:focus {
-    border-color: var(--color-arsm-focus-ring);
   }
 
   a {
@@ -113,12 +116,11 @@
   }
 
   ::selection {
-    background: var(--color-arsm-accent);
-    color: var(--color-arsm-primary);
+    background: var(--ui-accent);
+    color: var(--ui-text);
   }
 
   .dark ::selection {
-    background: var(--color-arsm-accent-dark);
     color: var(--color-arsm-deepest);
   }
 

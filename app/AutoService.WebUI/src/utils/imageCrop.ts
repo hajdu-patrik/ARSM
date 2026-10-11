@@ -1,7 +1,7 @@
 /** Image loading and canvas crop-to-blob utilities for the profile picture crop workflow:
  * load a file, crop to a square region, produce a `Blob` for upload. */
 
-/** Expected prefix for data URL strings from {@code FileReader}. */
+/** Expected prefix for data URL strings from `FileReader`. */
 const FILE_READER_DATA_URL_PREFIX = 'data:';
 
 /** Encoder quality for the cropped output blob. */
@@ -11,15 +11,19 @@ const CROP_OUTPUT_QUALITY = 0.9;
 function createImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', () => reject(new Error('Failed to load image.')));
+    image.addEventListener('load', () => {
+      resolve(image);
+    });
+    image.addEventListener('error', () => {
+      reject(new Error('Failed to load image.'));
+    });
     image.setAttribute('crossOrigin', 'anonymous');
     image.src = src;
   });
 }
 
 /** Reads a `File` as a data URL string using `FileReader`. */
-async function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -31,13 +35,15 @@ async function readFileAsDataUrl(file: File): Promise<string> {
 
       resolve(result);
     };
-    reader.onerror = () => reject(reader.error ?? new Error('Failed to read image file.'));
+    reader.onerror = () => {
+      reject(reader.error ?? new Error('Failed to read image file.'));
+    };
     reader.readAsDataURL(file);
   });
 }
 
-/** Converts a `File` to a data URL suitable for use as an image source. */
-export async function fileToImageSource(file: File): Promise<string> {
+/** Converts a `File` to a data URL suitable for use as an image source; the caller inspects the file first. */
+export function fileToImageSource(file: File): Promise<string> {
   return readFileAsDataUrl(file);
 }
 

@@ -1,16 +1,24 @@
 /** Password-change workflow state for Settings. */
 
 import { useCallback, useState, type SyntheticEvent } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { profileService } from '../../../services/profile/profile.service';
+import type { ChangePasswordRequest } from '../../../types/profile/profile.types';
 import { getFirstFieldErrorMessage } from '../../../utils/serverValidation';
 import { extractPasswordChangeErrors } from '../handlers';
+import {
+  NO_PASSWORD_FIELD_ERRORS,
+  pickPasswordFieldErrors,
+  type PasswordFieldErrors,
+  type PasswordFieldName,
+} from '../passwordFormPolicy';
 
 interface UsePasswordChangeSettingsParams {
   readonly showSuccessToast: (message: string, options?: Record<string, string | number>) => void;
   readonly showErrorToast: (message: string, options?: Record<string, string | number>) => void;
 }
 
-/** Owns password-change field state, frontend validation, and confirm flow. */
+/** Owns password-change field state, frontend validation, per-field server errors and the confirm flow. */
 export function usePasswordChangeSettings({
   showSuccessToast,
   showErrorToast,
@@ -18,34 +26,55 @@ export function usePasswordChangeSettings({
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<PasswordFieldErrors>(NO_PASSWORD_FIELD_ERRORS);
   const [isPasswordChangeConfirmOpen, setIsPasswordChangeConfirmOpen] = useState(false);
 
-  const handlePasswordChangeFailure = useCallback((err: unknown) => {
-    const normalizedFieldErrors = extractPasswordChangeErrors(err);
-    if (normalizedFieldErrors) {
-      showErrorToast(getFirstFieldErrorMessage(normalizedFieldErrors) ?? 'toast.passwordChangeFailed');
+  const handlePasswordChangeFailure = useCallback((error: unknown) => {
+    const serverErrors = extractPasswordChangeErrors(error);
+    if (serverErrors === null) {
+      showErrorToast('toast.passwordChangeFailed');
       return;
     }
 
-    showErrorToast('toast.passwordChangeFailed');
+    setFieldErrors(pickPasswordFieldErrors(serverErrors));
+    showErrorToast(getFirstFieldErrorMessage(serverErrors) ?? 'toast.passwordChangeFailed');
   }, [showErrorToast]);
 
-  const handlePasswordChangeConfirmed = useCallback(async () => {
-    setIsPasswordChangeConfirmOpen(false);
-    setIsChangingPassword(true);
-    try {
-      await profileService.changePassword({ currentPassword, newPassword, confirmNewPassword });
+  const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
+    mutationFn: (request: ChangePasswordRequest) => profileService.changePassword(request),
+    onSuccess: () => {
       showSuccessToast('toast.passwordChanged');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
-    } catch (err) {
-      handlePasswordChangeFailure(err);
-    } finally {
-      setIsChangingPassword(false);
-    }
-  }, [confirmNewPassword, currentPassword, handlePasswordChangeFailure, newPassword, showSuccessToast]);
+      setFieldErrors(NO_PASSWORD_FIELD_ERRORS);
+    },
+    onError: handlePasswordChangeFailure,
+  });
+
+  const clearFieldError = useCallback((field: PasswordFieldName) => {
+    setFieldErrors((previous) => ({ ...previous, [field]: undefined }));
+  }, []);
+
+  const changeCurrentPassword = useCallback((value: string) => {
+    setCurrentPassword(value);
+    clearFieldError('currentPassword');
+  }, [clearFieldError]);
+
+  const changeNewPassword = useCallback((value: string) => {
+    setNewPassword(value);
+    clearFieldError('newPassword');
+  }, [clearFieldError]);
+
+  const changeConfirmNewPassword = useCallback((value: string) => {
+    setConfirmNewPassword(value);
+    clearFieldError('confirmNewPassword');
+  }, [clearFieldError]);
+
+  const handlePasswordChangeConfirmed = useCallback(() => {
+    setIsPasswordChangeConfirmOpen(false);
+    changePassword({ currentPassword, newPassword, confirmNewPassword });
+  }, [changePassword, confirmNewPassword, currentPassword, newPassword]);
 
   const handlePasswordChangeRequest = useCallback((event: SyntheticEvent) => {
     event.preventDefault();
@@ -73,11 +102,12 @@ export function usePasswordChangeSettings({
     currentPassword,
     newPassword,
     confirmNewPassword,
+    fieldErrors,
     isChangingPassword,
     isPasswordChangeConfirmOpen,
-    setCurrentPassword,
-    setNewPassword,
-    setConfirmNewPassword,
+    changeCurrentPassword,
+    changeNewPassword,
+    changeConfirmNewPassword,
     handlePasswordChangeRequest,
     handlePasswordChangeConfirmed,
     closePasswordChangeConfirm,

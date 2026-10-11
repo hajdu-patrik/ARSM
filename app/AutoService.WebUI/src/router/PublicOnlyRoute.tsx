@@ -1,12 +1,13 @@
 /** Route guard for public-only pages (e.g. login): redirects already-authenticated users to `/`. */
-import { memo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { memo, type ReactNode } from 'react';
+import { Navigate } from 'react-router';
 import { useAuthStore } from '../store/auth.store';
+import { APP_ROUTE_PATHS } from './appRoutes';
 
 /** Props for the {@link PublicOnlyRoute} component. */
 interface PublicOnlyRouteProps {
   /** Public content rendered only when the user is not authenticated. */
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
 }
 
 /** Route guard that redirects authenticated users to `/`, showing content only for unauthenticated visitors. */
@@ -19,7 +20,7 @@ const PublicOnlyRouteComponent = memo(function PublicOnlyRoute({ children }: Pub
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={APP_ROUTE_PATHS.scheduler} replace />;
   }
 
   return <>{children}</>;

@@ -1,3 +1,4 @@
+/** Scheduler intake modal: customer lookup, vehicle choice and task for a new appointment on the selected day. */
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchedulerCreateIntakeRequest } from '../../../../types/scheduler/scheduler.types';
@@ -22,16 +23,13 @@ interface SchedulerIntakeModalProps {
   readonly onSubmit: (request: SchedulerCreateIntakeRequest) => Promise<void>;
 }
 
-const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
-  isOpen,
-  selectedDate,
-  onClose,
-  onSubmit,
-}: SchedulerIntakeModalProps) {
+type SchedulerIntakeDialogProps = Omit<SchedulerIntakeModalProps, 'isOpen'>;
+
+/** The open intake dialog; it owns the form state, so every opening starts from an empty form. */
+function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerIntakeDialogProps) {
   const { t: translate, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
   const { state, derived, actions } = useSchedulerIntakeForm({
-    isOpen,
     selectedDate,
     onClose,
     onSubmit,
@@ -51,7 +49,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title={translate('scheduler.intake.title')}
       widthClassName="max-w-2xl"
@@ -68,9 +66,7 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
             <button
               type="button"
               data-testid="scheduler-intake-create"
-              onClick={() => {
-                actions.handleCreate();
-              }}
+              onClick={actions.handleCreate}
               disabled={state.isSubmitting}
               className={`${buttonClass} w-full sm:w-auto`}
             >
@@ -147,6 +143,27 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
         )}
       </div>
     </Modal>
+  );
+}
+
+/** Intake modal; the dialog mounts only while open and is keyed by the selected day. */
+const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
+  isOpen,
+  selectedDate,
+  onClose,
+  onSubmit,
+}: SchedulerIntakeModalProps) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <SchedulerIntakeDialog
+      key={selectedDate.getTime()}
+      selectedDate={selectedDate}
+      onClose={onClose}
+      onSubmit={onSubmit}
+    />
   );
 });
 

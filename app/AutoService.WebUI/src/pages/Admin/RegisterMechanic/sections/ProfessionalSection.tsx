@@ -1,9 +1,11 @@
 /** Professional details section for mechanic registration: specialization and expertise selections. */
 
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
+import { FieldErrorText } from '../../../../components/common/FieldErrorText';
 import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS } from '../constants';
+import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import {
   compactSelectFullClass,
   hiddenCheckboxClass,
@@ -16,24 +18,30 @@ import {
   optionTileInactiveClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
+import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
 /** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {
   readonly specialization: string;
   readonly expertise: string[];
+  readonly fieldErrors: RegisterFieldErrors;
   readonly isSubmitting: boolean;
-  readonly onSpecializationChange: (value: string) => void;
+  readonly onFieldChange: (field: RegisterTextFieldName, value: string) => void;
   readonly onToggleExpertise: (value: string) => void;
 }
 
 const ProfessionalSectionComponent = memo(function ProfessionalSection({
   specialization,
   expertise,
+  fieldErrors,
   isSubmitting,
-  onSpecializationChange,
+  onFieldChange,
   onToggleExpertise,
 }: ProfessionalSectionProps) {
   const { t } = useTranslation();
+  const idPrefix = useId();
+  const specializationErrorId = `${idPrefix}-specialization-error`;
+  const expertiseErrorId = `${idPrefix}-expertise-error`;
 
   return (
     <>
@@ -45,10 +53,13 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
           <select
             id="specialization"
             value={specialization}
-            onChange={(event) => onSpecializationChange(event.target.value)}
+            onChange={(event) => {
+              onFieldChange('specialization', event.target.value);
+            }}
             className={compactSelectFullClass}
             disabled={isSubmitting}
             required
+            {...fieldErrorA11yProps(specializationErrorId, fieldErrors.specialization)}
           >
             <option value="" disabled>
               {t('admin.selectSpecialization')}
@@ -60,6 +71,7 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
             ))}
           </select>
         </div>
+        <FieldErrorText id={specializationErrorId} messageKey={fieldErrors.specialization} />
       </div>
 
       <div>
@@ -78,9 +90,12 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => onToggleExpertise(opt.value)}
+                  onChange={() => {
+                    onToggleExpertise(opt.value);
+                  }}
                   disabled={isSubmitting}
                   className={hiddenCheckboxClass}
+                  {...fieldErrorA11yProps(expertiseErrorId, fieldErrors.expertise)}
                 />
                 <span
                   className={`${optionTileCheckboxClass} ${isSelected ? optionTileCheckboxActiveClass : optionTileCheckboxInactiveClass}`}
@@ -96,6 +111,7 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
             );
           })}
         </div>
+        <FieldErrorText id={expertiseErrorId} messageKey={fieldErrors.expertise} />
       </div>
     </>
   );

@@ -1,7 +1,7 @@
 /** Quotes page: search/status list plus the editor modal; creation always starts from a vehicle row (`?vehicleId=<id>&new=1`, see CLAUDE.md). */
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useToastStore } from '../../store/toast.store';
 import type { QuoteListItemDto } from '../../types/quotes/quotes.types';
 import {
@@ -27,12 +27,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
 
   const listState = useQuotesListState({ showErrorToast });
   const editor = useQuoteEditor({ showErrorToast });
-  const mutations = useQuoteMutations({
-    showSuccessToast,
-    showErrorToast,
-    editor,
-    reloadQuotes: listState.load,
-  });
+  const mutations = useQuoteMutations({ showSuccessToast, showErrorToast, editor });
   const reference = useQuoteReferenceData({
     isOpen: editor.isOpen,
     vehicleId: editor.vehicleId,
@@ -42,6 +37,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
   const isCreateRequested = searchParams.get('new') === '1';
   const requestedVehicleId = searchParams.get('vehicleId');
   const { openCreate, openQuote } = editor;
+  const { handleDownloadPdf, openDeleteModal } = mutations;
 
   useEffect(() => {
     if (!isCreateRequested) {
@@ -55,26 +51,13 @@ const QuotesPageComponent = memo(function QuotesPage() {
     setSearchParams(new URLSearchParams(), { replace: true });
 
     if (Number.isInteger(vehicleId) && vehicleId > 0) {
-      void openCreate(vehicleId);
+      openCreate(vehicleId);
     }
   }, [isCreateRequested, openCreate, requestedVehicleId, setSearchParams]);
 
   const handleOpenQuote = useCallback((quote: QuoteListItemDto) => {
-    void openQuote(quote.id);
+    openQuote(quote.id);
   }, [openQuote]);
-
-  const handleDownloadPdf = useCallback((quote: QuoteListItemDto) => {
-    void mutations.handleDownloadPdf(quote);
-  }, [mutations]);
-
-  const handleRequestDelete = useCallback((quote: QuoteListItemDto) => {
-    mutations.openDeleteModal({
-      id: quote.id,
-      quoteNumber: quote.quoteNumber,
-      title: quote.title,
-      version: quote.version,
-    });
-  }, [mutations]);
 
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
@@ -99,7 +82,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
         isLoading={listState.isLoading}
         onOpenQuote={handleOpenQuote}
         onDownloadQuotePdf={handleDownloadPdf}
-        onDeleteQuote={handleRequestDelete}
+        onDeleteQuote={openDeleteModal}
       />
 
       <QuoteEditorModal
@@ -115,7 +98,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
         isDeleting={mutations.isDeletingQuote}
         t={t}
         onClose={mutations.closeDeleteModal}
-        onConfirm={() => void mutations.handleDeleteQuote()}
+        onConfirm={mutations.handleDeleteQuote}
       />
     </div>
   );

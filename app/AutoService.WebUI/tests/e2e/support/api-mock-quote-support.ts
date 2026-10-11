@@ -67,6 +67,17 @@ export function toQuoteListItemResponse(quote: QuoteDetailDto): QuoteListItemDto
   };
 }
 
+/** Stores the saved quote in place of the one it was derived from. */
+export function replaceQuote(state: MockApiState, previous: QuoteDetailDto, saved: QuoteDetailDto): void {
+  const index = state.quotes.indexOf(previous);
+
+  if (index === -1) {
+    throw new Error(`Quote ${previous.quoteNumber} is not in the mock state.`);
+  }
+
+  state.quotes[index] = saved;
+}
+
 /** Returns the quotes newest first, the order the API lists them in. */
 export function sortedQuotes(state: MockApiState): QuoteDetailDto[] {
   return [...state.quotes].sort(

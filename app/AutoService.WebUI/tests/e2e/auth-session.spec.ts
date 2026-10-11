@@ -9,7 +9,7 @@ import { primeBrowserState } from './support/browser-state';
 const tokenStorageKeyPattern = /token|jwt|access|refresh/i;
 
 /** Reads storage keys that would indicate forbidden client-side token persistence. */
-async function getTokenLikeStorageKeys(page: Page): Promise<string[]> {
+function getTokenLikeStorageKeys(page: Page): Promise<string[]> {
   return page.evaluate((patternSource) => {
     const pattern = new RegExp(patternSource, 'i');
     const keys = [
@@ -66,7 +66,7 @@ test.describe('Auth session security flows', () => {
 
     expect(await getTokenLikeStorageKeys(page)).toEqual([]);
 
-    await page.getByRole('button', { name: /Logout|Kijelentkezés/i }).click();
+    await page.getByRole('button', { name: /Log out|Kijelentkezés/i }).click();
 
     await expect(page).toHaveURL(/\/login$/);
     const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));

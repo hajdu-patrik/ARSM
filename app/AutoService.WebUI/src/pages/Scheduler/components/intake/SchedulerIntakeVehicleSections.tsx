@@ -1,16 +1,16 @@
-import { memo } from 'react';
+import { type ChangeEvent, memo } from 'react';
 import type { TFunction } from 'i18next';
 import { DRIVETRAIN_TYPES } from '../../../../types/customers/customers.types';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
   controlRowClass,
   formFieldGridClass,
+  formFieldGroupClass,
   getTogglePillClass,
   insetSurfaceClass,
   intakeFieldLabelClass,
   intakeFieldWrapperClass,
   intakeInputClass,
-  selectWrapperClass,
   uppercaseMetaLabelTextClass,
 } from '../../../../utils/formStyles';
 import type { VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
@@ -40,10 +40,23 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
       {vehicleMode === 'existing' && <p className={uppercaseMetaLabelTextClass}>{translate('common.fields.vehicleDetails')}</p>}
 
       <div className={controlRowClass}>
-        <button type="button" onClick={() => onVehicleModeChange('existing')} disabled={!customerHasVehicles} className={getTogglePillClass(vehicleMode === 'existing')}>
+        <button
+          type="button"
+          onClick={() => {
+            onVehicleModeChange('existing');
+          }}
+          disabled={!customerHasVehicles}
+          className={getTogglePillClass(vehicleMode === 'existing')}
+        >
           {translate('scheduler.intake.useExistingVehicle')}
         </button>
-        <button type="button" onClick={() => onVehicleModeChange('new')} className={getTogglePillClass(vehicleMode === 'new')}>
+        <button
+          type="button"
+          onClick={() => {
+            onVehicleModeChange('new');
+          }}
+          className={getTogglePillClass(vehicleMode === 'new')}
+        >
           {translate('scheduler.intake.createNewVehicle')}
         </button>
       </div>
@@ -51,11 +64,13 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
       {vehicleMode === 'existing' && (
         <label className={intakeFieldWrapperClass}>
           <span className={intakeFieldLabelClass}>{translate('scheduler.intake.selectVehicle')}</span>
-          <div className={selectWrapperClass}>
+          <div className={formFieldGroupClass}>
             <select
               data-testid="scheduler-intake-existing-vehicle"
               value={existingVehicleId}
-              onChange={(event) => onExistingVehicleIdChange(event.target.value)}
+              onChange={(event) => {
+                onExistingVehicleIdChange(event.target.value);
+              }}
               className={`${intakeInputClass} truncate`}
             >
               <option value="" disabled hidden>{translate('scheduler.intake.selectVehiclePlaceholder')}</option>
@@ -84,49 +99,57 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
   translate,
   onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
+  /** Builds the change handler of one field; `uppercase` normalizes plate and VIN input. */
+  const changeField = (field: keyof VehicleFormState, uppercase = false) => (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { value } = event.target;
+    onVehicleFieldChange(field, uppercase ? value.toUpperCase() : value);
+  };
+
   return (
     <div className={`${insetSurfaceClass} ${formFieldGridClass} p-3.5`}>
       <p className={`${uppercaseMetaLabelTextClass} sm:col-span-2`}>{translate('common.fields.vehicleDetails')}</p>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.licensePlate')}</span>
-        <input value={vehicle.licensePlate} onChange={(event) => onVehicleFieldChange('licensePlate', event.target.value.toUpperCase())} placeholder={translate('common.placeholders.licensePlate')} className={`${intakeInputClass} uppercase`} />
+        <input value={vehicle.licensePlate} onChange={changeField('licensePlate', true)} placeholder={translate('common.placeholders.licensePlate')} className={`${intakeInputClass} uppercase`} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.vin')}</span>
-        <input value={vehicle.vin} onChange={(event) => onVehicleFieldChange('vin', event.target.value.toUpperCase())} placeholder={translate('scheduler.intake.vehicleVinPlaceholder')} className={`${intakeInputClass} uppercase`} maxLength={17} />
+        <input value={vehicle.vin} onChange={changeField('vin', true)} placeholder={translate('scheduler.intake.vehicleVinPlaceholder')} className={`${intakeInputClass} uppercase`} maxLength={17} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.brand')}</span>
-        <input value={vehicle.brand} onChange={(event) => onVehicleFieldChange('brand', event.target.value)} placeholder={translate('scheduler.intake.vehicleBrandPlaceholder')} className={intakeInputClass} />
+        <input value={vehicle.brand} onChange={changeField('brand')} placeholder={translate('scheduler.intake.vehicleBrandPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.model')}</span>
-        <input value={vehicle.model} onChange={(event) => onVehicleFieldChange('model', event.target.value)} placeholder={translate('scheduler.intake.vehicleModelPlaceholder')} className={intakeInputClass} />
+        <input value={vehicle.model} onChange={changeField('model')} placeholder={translate('scheduler.intake.vehicleModelPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.vehicleYear')}</span>
-        <input type="number" min={1886} max={2100} value={vehicle.year} onChange={(event) => onVehicleFieldChange('year', event.target.value)} placeholder={translate('scheduler.intake.vehicleYearPlaceholder')} className={intakeInputClass} />
+        <input type="number" min={1886} max={2100} value={vehicle.year} onChange={changeField('year')} placeholder={translate('scheduler.intake.vehicleYearPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.mileageKm')}</span>
-        <input type="number" min={0} max={5000000} value={vehicle.mileageKm} onChange={(event) => onVehicleFieldChange('mileageKm', event.target.value)} placeholder={translate('scheduler.intake.vehicleMileageKmPlaceholder')} className={intakeInputClass} />
+        <input type="number" min={0} max={5000000} value={vehicle.mileageKm} onChange={changeField('mileageKm')} placeholder={translate('scheduler.intake.vehicleMileageKmPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.enginePowerKw')}</span>
-        <input type="number" min={0} max={50000} value={vehicle.enginePowerKw} onChange={(event) => onVehicleFieldChange('enginePowerKw', event.target.value)} placeholder={translate('scheduler.intake.vehicleEnginePowerKwPlaceholder')} className={intakeInputClass} />
+        <input type="number" min={0} max={50000} value={vehicle.enginePowerKw} onChange={changeField('enginePowerKw')} placeholder={translate('scheduler.intake.vehicleEnginePowerKwPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.drivetrain')}</span>
-        <div className={selectWrapperClass}>
-          <select value={vehicle.drivetrainType} onChange={(event) => onVehicleFieldChange('drivetrainType', event.target.value)} className={`${intakeInputClass} truncate`}>
+        <div className={formFieldGroupClass}>
+          <select value={vehicle.drivetrainType} onChange={changeField('drivetrainType')} className={`${intakeInputClass} truncate`}>
             <option value="" disabled hidden>{translate('common.placeholders.drivetrain')}</option>
             {DRIVETRAIN_TYPES.map((type) => (
               <option key={type} value={type}>{translate(`vehicle.drivetrain.${type}`)}</option>

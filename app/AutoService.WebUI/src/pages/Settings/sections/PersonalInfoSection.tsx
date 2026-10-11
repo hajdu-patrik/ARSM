@@ -1,47 +1,38 @@
 /** Settings personal-information form: editable name/email/phone fields with inline server-validation display. */
 
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import { buttonClass, cardClass, defaultIconClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
+import type { ProfileFieldErrors, ProfileFieldName, ProfileFieldValues } from '../profileFields';
 
 /** Props for the PersonalInfoSection component. */
 interface PersonalInfoSectionProps {
-  readonly firstName: string;
-  readonly middleName: string;
-  readonly lastName: string;
-  readonly email: string;
-  readonly phoneNumber: string;
+  readonly values: ProfileFieldValues;
+  readonly fieldErrors: ProfileFieldErrors;
   readonly isSaveEnabled: boolean;
   readonly saveDisabledReasonKey: string | null;
   readonly isSubmitting: boolean;
-  readonly onFirstNameChange: (value: string) => void;
-  readonly onMiddleNameChange: (value: string) => void;
-  readonly onLastNameChange: (value: string) => void;
-  readonly onEmailChange: (value: string) => void;
-  readonly onPhoneNumberChange: (value: string) => void;
+  readonly onFieldChange: (field: ProfileFieldName, value: string) => void;
   readonly onSubmit: (event: React.SyntheticEvent) => void;
 }
 
 const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
-  firstName,
-  middleName,
-  lastName,
-  email,
-  phoneNumber,
+  values,
+  fieldErrors,
   isSaveEnabled,
   saveDisabledReasonKey,
   isSubmitting,
-  onFirstNameChange,
-  onMiddleNameChange,
-  onLastNameChange,
-  onEmailChange,
-  onPhoneNumberChange,
+  onFieldChange,
   onSubmit,
 }: PersonalInfoSectionProps) {
   const { t } = useTranslation();
-  const saveDisabledHintId = 'settings-profile-save-disabled-hint';
+  const idPrefix = useId();
+  const saveDisabledHintId = `${idPrefix}-save-disabled-hint`;
+  const errorId = (field: ProfileFieldName) => `${idPrefix}-${field}-error`;
   const isSaveDisabled = isSubmitting || !isSaveEnabled;
   const saveDisabledHintText = saveDisabledReasonKey ? t(saveDisabledReasonKey) : '';
   const shouldShowSaveDisabledHint = isSaveDisabled && Boolean(saveDisabledReasonKey);
@@ -62,13 +53,17 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             <input
               id="settings-firstName"
               type="text"
-              value={firstName}
-              onChange={(event) => onFirstNameChange(filterNameInput(event.target.value))}
+              value={values.firstName}
+              onChange={(event) => {
+                onFieldChange('firstName', filterNameInput(event.target.value));
+              }}
               placeholder={t('settings.firstNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="given-name"
+              {...fieldErrorA11yProps(errorId('firstName'), fieldErrors.firstName)}
             />
+            <FieldErrorText id={errorId('firstName')} messageKey={fieldErrors.firstName} />
           </div>
 
           <div>
@@ -78,13 +73,17 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             <input
               id="settings-middleName"
               type="text"
-              value={middleName}
-              onChange={(event) => onMiddleNameChange(filterNameInput(event.target.value))}
+              value={values.middleName}
+              onChange={(event) => {
+                onFieldChange('middleName', filterNameInput(event.target.value));
+              }}
               placeholder={t('settings.middleNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="additional-name"
+              {...fieldErrorA11yProps(errorId('middleName'), fieldErrors.middleName)}
             />
+            <FieldErrorText id={errorId('middleName')} messageKey={fieldErrors.middleName} />
           </div>
 
           <div>
@@ -94,13 +93,17 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             <input
               id="settings-lastName"
               type="text"
-              value={lastName}
-              onChange={(event) => onLastNameChange(filterNameInput(event.target.value))}
+              value={values.lastName}
+              onChange={(event) => {
+                onFieldChange('lastName', filterNameInput(event.target.value));
+              }}
               placeholder={t('settings.lastNamePlaceholder')}
               className={inputClass}
               disabled={isSubmitting}
               autoComplete="family-name"
+              {...fieldErrorA11yProps(errorId('lastName'), fieldErrors.lastName)}
             />
+            <FieldErrorText id={errorId('lastName')} messageKey={fieldErrors.lastName} />
           </div>
         </div>
 
@@ -111,13 +114,17 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
           <input
             id="settings-email"
             type="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
+            value={values.email}
+            onChange={(event) => {
+              onFieldChange('email', event.target.value);
+            }}
             placeholder={t('settings.emailPlaceholder')}
             className={inputClass}
             disabled={isSubmitting}
             autoComplete="email"
+            {...fieldErrorA11yProps(errorId('email'), fieldErrors.email)}
           />
+          <FieldErrorText id={errorId('email')} messageKey={fieldErrors.email} />
         </div>
 
         <div>
@@ -128,13 +135,17 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
             id="settings-phone"
             type="tel"
             inputMode="tel"
-            value={phoneNumber}
-            onChange={(event) => onPhoneNumberChange(filterPhoneInput(event.target.value))}
+            value={values.phoneNumber}
+            onChange={(event) => {
+              onFieldChange('phoneNumber', filterPhoneInput(event.target.value));
+            }}
             placeholder={t('common.placeholders.phone')}
             className={inputClass}
             disabled={isSubmitting}
             autoComplete="tel"
+            {...fieldErrorA11yProps(errorId('phoneNumber'), fieldErrors.phoneNumber)}
           />
+          <FieldErrorText id={errorId('phoneNumber')} messageKey={fieldErrors.phoneNumber} />
         </div>
 
         <div className="w-full" title={saveDisabledTitle}>

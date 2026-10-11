@@ -1,4 +1,4 @@
-/** Typed form model and field-error helpers for the mechanic registration page. */
+/** Form model, field-error and list types of the mechanic registration page. */
 
 /** Client-side form values for the mechanic registration form. */
 export interface RegisterMechanicFormValues {
@@ -13,6 +13,15 @@ export interface RegisterMechanicFormValues {
   expertise: string[];
 }
 
+/** Form fields that can carry a validation message. */
+export type RegisterFieldName = keyof RegisterMechanicFormValues;
+
+/** Form fields that hold plain text, as opposed to the expertise tags. */
+export type RegisterTextFieldName = Exclude<RegisterFieldName, 'expertise'>;
+
+/** The validation message key of every field, undefined while the field has none. */
+export type RegisterFieldErrors = Readonly<Record<RegisterFieldName, string | undefined>>;
+
 /** A selectable option for dropdowns and chip selectors. */
 export interface OptionItem {
   value: string;
@@ -21,9 +30,6 @@ export interface OptionItem {
 
 /** Dictionary of field names to their server validation error messages. */
 export type FieldErrors = Record<string, string[]>;
-
-/** Lookup function that returns the first validation error for a field. */
-export type GetFieldError = (field: string) => string | undefined;
 
 /** Sort direction used by the mechanic list. */
 export type SortDirection = 'asc' | 'desc';

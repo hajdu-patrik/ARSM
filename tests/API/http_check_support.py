@@ -17,7 +17,7 @@ UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # CSRF double-submit pair (Middleware/CsrfDoubleSubmitMiddleware): the cookie the client reads and the
 # header it echoes the value into on every unsafe, cookie-authenticated /api request.
-CSRF_COOKIE_NAME = "autoservice_csrf"
+CSRF_COOKIE_NAME = "__Host-autoservice_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 
 # urllib surfaces a server-side connection reset as an OSError rather than a status code.
@@ -48,7 +48,7 @@ class HttpClient:
         self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar))
 
     def _csrf_token(self) -> str | None:
-        """Returns the current `autoservice_csrf` cookie value, or ``None`` before login."""
+        """Returns the current `__Host-autoservice_csrf` cookie value, or ``None`` before login."""
         for cookie in self.cookie_jar:
             if cookie.name == CSRF_COOKIE_NAME:
                 return cookie.value

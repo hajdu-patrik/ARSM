@@ -1,17 +1,22 @@
+/** Edit-form helpers of the appointment detail dialog: form state, validation and change detection. */
 import type {
   AppointmentDto,
   UpdateAppointmentRequest,
 } from '../../../../types/scheduler/scheduler.types';
+import { toDatetimeLocalValue } from '../../utils/due-date';
 
+/** The validated update payload built from the edit form. */
 export interface UpdateEditFormResult {
   appointment: UpdateAppointmentRequest;
 }
 
+/** Editable fields of the detail dialog, as the inputs hold them. */
 export interface EditFormState {
   dueDateTime: string;
   taskDescription: string;
 }
 
+/** Fills the edit form from an appointment. */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
     dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),
@@ -19,6 +24,7 @@ export function buildEditForm(appointment: AppointmentDto): EditFormState {
   };
 }
 
+/** Normalizes a typed edit-form value; every field is kept as typed today. */
 export function normalizeEditFieldValue(_field: keyof EditFormState, value: string): string {
   return value;
 }
@@ -64,7 +70,33 @@ export function buildUpdateRequestFromEditForm(
   };
 }
 
-/** Applies a successful edit result to the local snapshot, avoiding a full list refetch. */
+/** True when the request changes the task text or the due moment of the appointment. */
+export function hasAppointmentEditChanges(
+  appointment: AppointmentDto,
+  request: UpdateAppointmentRequest,
+): boolean {
+  if (appointment.taskDescription.trim() !== request.taskDescription.trim()) {
+    return true;
+  }
+
+  const currentDueMs = Date.parse(appointment.dueDateTime);
+  const nextDueMs = Date.parse(request.dueDateTime);
+
+  if (Number.isNaN(currentDueMs) || Number.isNaN(nextDueMs)) {
+    return appointment.dueDateTime !== request.dueDateTime;
+  }
+
+  return currentDueMs !== nextDueMs;
+}
+
+/** True when the edit form is valid and differs from the appointment, which is what enables saving. */
+export function canSaveEditForm(appointment: AppointmentDto, editForm: EditFormState): boolean {
+  const validation = buildUpdateRequestFromEditForm(appointment, editForm);
+
+  return !('errorKey' in validation) && hasAppointmentEditChanges(appointment, validation.request.appointment);
+}
+
+/** Applies a saved edit to a copy of the appointment, so the edit form restarts from the saved values. */
 export function buildUpdatedAppointmentSnapshot(
   appointment: AppointmentDto,
   request: UpdateEditFormResult,
@@ -73,21 +105,5 @@ export function buildUpdatedAppointmentSnapshot(
     ...appointment,
     dueDateTime: request.appointment.dueDateTime,
     taskDescription: request.appointment.taskDescription,
-    vehicle: appointment.vehicle,
   };
-}
-
-function toDatetimeLocalValue(isoValue: string): string {
-  const date = new Date(isoValue);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hour = String(date.getHours()).padStart(2, '0');
-  const minute = String(date.getMinutes()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T${hour}:${minute}`;
 }

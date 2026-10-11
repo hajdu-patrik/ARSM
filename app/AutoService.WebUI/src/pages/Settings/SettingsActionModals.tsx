@@ -24,6 +24,7 @@ interface SettingsActionModalsProps {
   readonly isDeletingProfile: boolean;
   readonly deletePassword: string;
   readonly deletePasswordConfirm: string;
+  readonly deletePasswordError: string | undefined;
   readonly onDeletePasswordChange: (value: string) => void;
   readonly onDeletePasswordConfirmChange: (value: string) => void;
   readonly onCloseDeleteModal: () => void;
@@ -47,6 +48,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
   isDeletingProfile,
   deletePassword,
   deletePasswordConfirm,
+  deletePasswordError,
   onDeletePasswordChange,
   onDeletePasswordConfirmChange,
   onCloseDeleteModal,
@@ -166,6 +168,7 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
         isDeleting={isDeletingProfile}
         deletePassword={deletePassword}
         deletePasswordConfirm={deletePasswordConfirm}
+        deletePasswordError={deletePasswordError}
         onDeletePasswordChange={onDeletePasswordChange}
         onDeletePasswordConfirmChange={onDeletePasswordConfirmChange}
         onClose={onCloseDeleteModal}
@@ -177,4 +180,5 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
 SettingsActionModalsComponent.displayName = 'SettingsActionModals';
 
+/** The picture-remove, profile-save and password-change confirmations plus the delete-profile modal. */
 export const SettingsActionModals = SettingsActionModalsComponent;

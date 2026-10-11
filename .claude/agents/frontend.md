@@ -41,5 +41,6 @@ tools: Read, Edit, Grep, Glob, Bash
 ## Required Validation
 
 - Inside `arsm-chain`, leave validation to the chain's gate. Otherwise run `python scripts/validate.py`
-  (type check, lint, size, no-shadow, and `npm audit fix` when a manifest changed).
+  (type check, lint, size, no-shadow incl. Tailwind `ring-*`, and `npm audit fix` plus `npm audit signatures`
+  when a manifest changed).
 - Playwright only when gate requires.

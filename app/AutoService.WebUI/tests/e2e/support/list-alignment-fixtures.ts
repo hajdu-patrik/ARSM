@@ -3,6 +3,7 @@
 import { MAX_CATALOG_IDENTIFIER_LENGTH } from '../../../src/types/catalog/catalog.types';
 import { MAX_QUOTE_TITLE_LENGTH } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';
+import { MOCK_QUOTE_IDS, MOCK_QUOTE_LINE_IDS } from './test-data.constants';
 
 /** At the server's max quote title length, the worst case for a truncating column. */
 const LONG_TITLE = 'Teljes futomu-felujitas, vezerles- es kuplungcsere, klimatoltes, valamint negykerek-beallitas garanciailis atvizsgalassal es garanciahosszabbitassal is'
@@ -15,11 +16,18 @@ const LONG_LABOR_CODE = 'LBR-FULL-SUSPENSION-OVERHAUL-PREMIUM-XL-EXTRA'.slice(0,
 /** Pushes worst-case quotes, parts and labor types into a fresh mock state, so every list under
  * test renders its longest/highest/edge-case values at once. */
 export function seedWorstCaseListData(state: MockApiState): void {
-  const [draft, sent] = state.quotes;
+  const draft = state.quotes.find((quote) => quote.id === MOCK_QUOTE_IDS.draftTimingBelt);
+  const sent = state.quotes.find((quote) => quote.id === MOCK_QUOTE_IDS.sentDiagnostics);
+  const draftLine = draft?.lines.find((line) => line.id === MOCK_QUOTE_LINE_IDS.draftTimingBelt);
+  const sentLine = sent?.lines.find((line) => line.id === MOCK_QUOTE_LINE_IDS.sentDiagnostics);
+
+  if (!draft || !sent || !draftLine || !sentLine) {
+    throw new Error('The quote fixtures changed: the worst-case seed needs the draft and the sent quote with their lines.');
+  }
 
   draft.lines.push(
     {
-      ...draft.lines[0],
+      ...draftLine,
       id: 79001,
       description: LONG_TITLE,
       quantity: 9999.99,
@@ -30,7 +38,7 @@ export function seedWorstCaseListData(state: MockApiState): void {
       sortOrder: 2,
     },
     {
-      ...sent.lines[0],
+      ...sentLine,
       id: 79002,
       description: 'Diagnosztika',
       quantity: 1.5,
@@ -55,7 +63,7 @@ export function seedWorstCaseListData(state: MockApiState): void {
       totalVat: 20997162.71,
       totalGross: 98764432,
       vehicle: { ...sent.vehicle, licensePlate: 'AABB-123' },
-      lines: [{ ...sent.lines[0], id: 79111, netAmount: 77767269, vatAmount: 20997163, grossAmount: 98764432 }],
+      lines: [{ ...sentLine, id: 79111, netAmount: 77767269, vatAmount: 20997163, grossAmount: 98764432 }],
     },
     {
       ...sent,
@@ -69,7 +77,7 @@ export function seedWorstCaseListData(state: MockApiState): void {
       totalVat: 243,
       totalGross: 1143,
       vehicle: { ...sent.vehicle, licensePlate: 'X-1' },
-      lines: [{ ...sent.lines[0], id: 79112 }],
+      lines: [{ ...sentLine, id: 79112 }],
     },
     {
       ...sent,
@@ -83,8 +91,8 @@ export function seedWorstCaseListData(state: MockApiState): void {
       totalVat: 336150,
       totalGross: 1581150,
       lines: [
-        { ...sent.lines[0], id: 79113, vatRatePercent: 27, netAmount: 1000000, vatAmount: 270000, grossAmount: 1270000 },
-        { ...draft.lines[0], id: 79114, vatRatePercent: 5, netAmount: 245000, vatAmount: 12250, grossAmount: 257250 },
+        { ...sentLine, id: 79113, vatRatePercent: 27, netAmount: 1000000, vatAmount: 270000, grossAmount: 1270000 },
+        { ...draftLine, id: 79114, vatRatePercent: 5, netAmount: 245000, vatAmount: 12250, grossAmount: 257250 },
       ],
     },
   );

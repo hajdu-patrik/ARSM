@@ -1,7 +1,9 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { Modal } from '../../../components/common/Modal';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 import {
   buttonClass,
@@ -12,16 +14,8 @@ import {
   labelClass,
   secondaryButtonClass,
 } from '../../../utils/formStyles';
-
-type CustomerModalMode = 'create' | 'edit';
-
-interface CustomerFormState {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-}
+import type { CustomerFieldName, FieldErrorKeys } from '../fieldErrors';
+import type { CustomerFormState, CustomerModalMode } from '../page.types';
 
 interface CustomerFormModalProps {
   isOpen: boolean;
@@ -29,23 +23,29 @@ interface CustomerFormModalProps {
   isSaving: boolean;
   isSaveEnabled: boolean;
   form: CustomerFormState;
+  fieldErrors: FieldErrorKeys<CustomerFieldName>;
   t: TFunction;
   onClose: () => void;
   onSubmit: (event: React.SyntheticEvent) => void;
   setForm: React.Dispatch<React.SetStateAction<CustomerFormState>>;
 }
 
+/** Customer create/edit modal: name and contact fields with inline per-field validation errors. */
 const CustomerFormModalComponent = memo(function CustomerFormModal({
   isOpen,
   mode,
   isSaving,
   isSaveEnabled,
   form,
+  fieldErrors,
   t,
   onClose,
   onSubmit,
   setForm,
 }: CustomerFormModalProps) {
+  const errorIdPrefix = useId();
+  const errorId = (field: CustomerFieldName) => `${errorIdPrefix}-${field}-error`;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -84,11 +84,15 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
               id="customer-first-name"
               type="text"
               value={form.firstName}
-              onChange={(event) => setForm((prev) => ({ ...prev, firstName: filterNameInput(event.target.value) }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, firstName: filterNameInput(event.target.value) }));
+              }}
               className={inputClass}
               placeholder={t('common.placeholders.firstName')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('firstName'), fieldErrors.firstName)}
             />
+            <FieldErrorText id={errorId('firstName')} messageKey={fieldErrors.firstName} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -97,11 +101,15 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
               id="customer-middle-name"
               type="text"
               value={form.middleName}
-              onChange={(event) => setForm((prev) => ({ ...prev, middleName: filterNameInput(event.target.value) }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, middleName: filterNameInput(event.target.value) }));
+              }}
               className={inputClass}
               placeholder={t('customers.middleNamePlaceholder')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('middleName'), fieldErrors.middleName)}
             />
+            <FieldErrorText id={errorId('middleName')} messageKey={fieldErrors.middleName} />
           </div>
 
           <div className={formFieldGroupClass}>
@@ -110,11 +118,15 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
               id="customer-last-name"
               type="text"
               value={form.lastName}
-              onChange={(event) => setForm((prev) => ({ ...prev, lastName: filterNameInput(event.target.value) }))}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, lastName: filterNameInput(event.target.value) }));
+              }}
               className={inputClass}
               placeholder={t('common.placeholders.lastName')}
               disabled={isSaving}
+              {...fieldErrorA11yProps(errorId('lastName'), fieldErrors.lastName)}
             />
+            <FieldErrorText id={errorId('lastName')} messageKey={fieldErrors.lastName} />
           </div>
         </div>
 
@@ -124,11 +136,15 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             id="customer-email"
             type="email"
             value={form.email}
-            onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+            onChange={(event) => {
+              setForm((prev) => ({ ...prev, email: event.target.value }));
+            }}
             className={inputClass}
             placeholder={t('customers.emailPlaceholder')}
             disabled={isSaving}
+            {...fieldErrorA11yProps(errorId('email'), fieldErrors.email)}
           />
+          <FieldErrorText id={errorId('email')} messageKey={fieldErrors.email} />
         </div>
 
         <div className={formFieldGroupClass}>
@@ -137,11 +153,15 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
             id="customer-phone"
             type="tel"
             value={form.phoneNumber}
-            onChange={(event) => setForm((prev) => ({ ...prev, phoneNumber: filterPhoneInput(event.target.value) }))}
+            onChange={(event) => {
+              setForm((prev) => ({ ...prev, phoneNumber: filterPhoneInput(event.target.value) }));
+            }}
             className={inputClass}
             placeholder={t('common.placeholders.phone')}
             disabled={isSaving}
+            {...fieldErrorA11yProps(errorId('phoneNumber'), fieldErrors.phoneNumber)}
           />
+          <FieldErrorText id={errorId('phoneNumber')} messageKey={fieldErrors.phoneNumber} />
         </div>
       </form>
     </Modal>

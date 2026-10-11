@@ -1,8 +1,9 @@
 /** Sidebar chrome and navigation content for authenticated layouts. */
 import { memo, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router';
 import { CalendarDays, ChevronsLeft, FileText, LogOut, Package, Settings, Shield, TrendingUp, Users } from 'lucide-react';
+import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import {
   compactListPrimaryTextClass,
   compactListSecondaryTextClass,
@@ -11,6 +12,7 @@ import {
   sidebarIconSlotClass,
 } from '../../utils/formStyles';
 
+/** One sidebar navigation entry: stable key, translated label key, icon and target path. */
 export interface NavItem {
   readonly key: string;
   readonly labelKey: string;
@@ -18,7 +20,8 @@ export interface NavItem {
   readonly path: string;
 }
 
-interface SidebarProfileViewModel {
+/** What the sidebar shows about the signed-in person: avatar (picture or initials), name and email. */
+export interface SidebarProfileViewModel {
   readonly initials: string;
   readonly fallbackAvatarColorClass: string;
   readonly showProfilePicture: boolean;
@@ -31,8 +34,10 @@ interface SidebarProfileViewModel {
 
 interface SidebarContentProps {
   readonly collapsed: boolean;
+  /** Id of the sidebar region that the collapse toggle collapses and expands (`aria-controls`). */
+  readonly collapseControlsId: string;
   readonly logoSrc: string;
-  readonly navItems?: readonly NavItem[];
+  readonly navItems?: readonly NavItem[] | undefined;
   readonly profile: SidebarProfileViewModel;
   readonly canShowAdminNav: boolean;
   readonly onCloseMobile: () => void;
@@ -54,15 +59,15 @@ interface SidebarProfileSummaryProps {
 }
 
 const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
-  { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: '/scheduler' },
-  { key: 'customers', labelKey: 'nav.customers', icon: Users, path: '/customers' },
-  { key: 'quotes', labelKey: 'nav.quotes', icon: FileText, path: '/quotes' },
-  { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: '/inventory' },
-  { key: 'company-results', labelKey: 'nav.companyResults', icon: TrendingUp, path: '/company-results' },
+  { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: APP_ROUTE_PATHS.schedulerAlias },
+  { key: 'customers', labelKey: 'nav.customers', icon: Users, path: APP_ROUTE_PATHS.customers },
+  { key: 'quotes', labelKey: 'nav.quotes', icon: FileText, path: APP_ROUTE_PATHS.quotes },
+  { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: APP_ROUTE_PATHS.inventory },
+  { key: 'company-results', labelKey: 'nav.companyResults', icon: TrendingUp, path: APP_ROUTE_PATHS.companyResults },
 ];
 
-const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: '/admin/register' };
-const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: '/settings' };
+const ADMIN_NAV_ITEM: NavItem = { key: 'admin', labelKey: 'nav.admin', icon: Shield, path: APP_ROUTE_PATHS.adminRegister };
+const SETTINGS_NAV_ITEM: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: Settings, path: APP_ROUTE_PATHS.settings };
 const TEXT_CLIP_TRANSITION = 'overflow-hidden transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
 const TEXT_TRANSITION = `${TEXT_CLIP_TRANSITION} whitespace-nowrap`;
 /** Wrapping label box: its own max width (the 180px of `collapsedText`) keeps line breaks
@@ -70,17 +75,21 @@ const TEXT_TRANSITION = `${TEXT_CLIP_TRANSITION} whitespace-nowrap`;
 const WRAPPING_LABEL_CLASS = 'block w-max max-w-[180px] text-left';
 const SIDEBAR_ICON_MOTION_CLASS = 'transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none motion-reduce:transition-colors';
 const NAV_LINK_BASE_CLASS = `group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium ${rowHoverMotionClass}`;
-const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-arsm-toggle-bg text-arsm-primary dark:border-arsm-accent-dark/50 dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover';
-const NAV_LINK_IDLE_CLASS = 'border-transparent text-arsm-label dark:text-arsm-label-dark hover:border-arsm-border hover:bg-arsm-accent-subtle hover:-translate-y-px active:translate-y-0 dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark';
-const SIDEBAR_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label hover:-translate-y-px hover:border-arsm-border hover:bg-arsm-accent-subtle active:translate-y-0 dark:text-arsm-label-dark dark:hover:border-arsm-border-dark dark:hover:bg-arsm-hover-dark ${rowHoverMotionClass}`;
-const SIDEBAR_DANGER_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active hover:-translate-y-px hover:border-arsm-error-border-light hover:bg-arsm-error-bg active:translate-y-0 dark:text-arsm-error-soft dark:hover:border-arsm-error-dark dark:hover:bg-arsm-error-bg-dark ${rowHoverMotionClass}`;
-const SIDEBAR_COLLAPSED_ACTION_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-label hover:text-arsm-accent-deep dark:text-arsm-label-dark dark:hover:text-arsm-primary-dark ${SIDEBAR_ICON_MOTION_CLASS}`;
+const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-ui-toggle text-arsm-primary dark:border-arsm-accent-dark/50 dark:text-arsm-hover';
+const NAV_LINK_IDLE_CLASS = 'border-transparent text-ui-label hover:border-ui-border hover:bg-arsm-accent-subtle hover:-translate-y-px active:translate-y-0 dark:hover:bg-arsm-hover-dark';
+const SIDEBAR_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-ui-label hover:-translate-y-px hover:border-ui-border hover:bg-arsm-accent-subtle active:translate-y-0 dark:hover:bg-arsm-hover-dark ${rowHoverMotionClass}`;
+const SIDEBAR_DANGER_ACTION_ROW_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active hover:-translate-y-px hover:border-arsm-error-border-light hover:bg-ui-error-bg active:translate-y-0 dark:text-arsm-error-soft dark:hover:border-arsm-error-dark ${rowHoverMotionClass}`;
+const SIDEBAR_COLLAPSED_ACTION_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-ui-label hover:text-arsm-accent-deep dark:hover:text-arsm-primary-dark ${SIDEBAR_ICON_MOTION_CLASS}`;
 const SIDEBAR_COLLAPSED_DANGER_ACTION_CLASS = `flex min-h-11 w-full min-w-0 items-center rounded-xl border border-transparent text-arsm-error-active hover:text-arsm-error-text dark:text-arsm-error-soft dark:hover:text-arsm-error-text-light ${SIDEBAR_ICON_MOTION_CLASS}`;
 
 /** Keeps scheduler aliases highlighted with the scheduler nav item. */
 function isSidebarNavItemActive(item: NavItem, pathname: string, isActiveRoute: boolean): boolean {
   return isActiveRoute
-    || (item.key === 'scheduler' && (pathname === '/' || pathname === '/scheduler' || pathname === '/dashboard'));
+    || (item.key === 'scheduler' && (
+      pathname === APP_ROUTE_PATHS.scheduler
+      || pathname === APP_ROUTE_PATHS.schedulerAlias
+      || pathname === APP_ROUTE_PATHS.dashboardAlias
+    ));
 }
 
 /** Resolves the nav link className for the active/idle visual state. */
@@ -92,6 +101,7 @@ function getSidebarNavLinkClassName(item: NavItem, pathname: string, isActiveRou
   return `${NAV_LINK_BASE_CLASS} ${stateClass}`;
 }
 
+/** One navigation link with its icon slot and the label that clips away when collapsed. */
 const SidebarNavLink = memo(function SidebarNavLink({
   item,
   collapsed,
@@ -119,6 +129,7 @@ const SidebarNavLink = memo(function SidebarNavLink({
 
 SidebarNavLink.displayName = 'SidebarNavLink';
 
+/** Avatar (picture or initials) beside the signed-in person's name and email. */
 const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedText, profile }: SidebarProfileSummaryProps) {
   const { t: translate } = useTranslation();
 
@@ -129,7 +140,7 @@ const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedTex
           <img
             src={profile.profilePictureUrl}
             alt={translate('settings.profilePicture')}
-            className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover ring-2 ring-arsm-accent/15 dark:border-arsm-accent-dark/50 dark:ring-arsm-accent-dark/15"
+            className="h-8 w-8 rounded-full border-2 border-arsm-accent/40 object-cover outline-2 outline-ui-accent/15 dark:border-arsm-accent-dark/50"
             onError={profile.onAvatarLoadFailed}
           />
         ) : (
@@ -154,6 +165,7 @@ SidebarProfileSummary.displayName = 'SidebarProfileSummary';
 
 const SidebarContentComponent = memo(function SidebarContent({
   collapsed,
+  collapseControlsId,
   logoSrc,
   navItems = DEFAULT_NAV_ITEMS,
   profile,
@@ -179,7 +191,7 @@ const SidebarContentComponent = memo(function SidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex min-w-0 h-[73px] items-center border-b border-arsm-border px-2 dark:border-arsm-border-dark">
+      <div className="flex min-w-0 h-[73px] items-center border-b border-ui-border px-2">
         <span className={sidebarIconSlotClass}>
           <img
             src={logoSrc}
@@ -189,7 +201,7 @@ const SidebarContentComponent = memo(function SidebarContent({
             className="h-8 w-8 select-none object-contain pointer-events-none"
           />
         </span>
-        <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-lg font-bold text-arsm-primary dark:text-arsm-primary-dark`}>ARSM</span>
+        <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-lg font-bold text-ui-text`}>ARSM</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-2 py-3">{navItems.map(renderNavLink)}</nav>
@@ -200,6 +212,8 @@ const SidebarContentComponent = memo(function SidebarContent({
           onClick={onToggleCollapse}
           title={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
           aria-label={collapsed ? translate('sidebar.expand') : translate('sidebar.collapse')}
+          aria-expanded={!collapsed}
+          aria-controls={collapseControlsId}
           className={collapsed ? SIDEBAR_COLLAPSED_ACTION_CLASS : SIDEBAR_ACTION_ROW_CLASS}
         >
           <span className={sidebarIconSlotClass}>
@@ -211,7 +225,7 @@ const SidebarContentComponent = memo(function SidebarContent({
         </button>
       </div>
 
-      <div className="space-y-1 border-t border-arsm-border px-2 py-3 dark:border-arsm-border-dark">
+      <div className="space-y-1 border-t border-ui-border px-2 py-3">
         <SidebarProfileSummary collapsedText={collapsedText} profile={profile} />
 
         {canShowAdminNav && renderNavLink(ADMIN_NAV_ITEM)}
@@ -236,4 +250,5 @@ const SidebarContentComponent = memo(function SidebarContent({
 
 SidebarContentComponent.displayName = 'SidebarContent';
 
+/** Sidebar body: logo, navigation, collapse toggle, profile summary, admin/settings links and logout. */
 export const SidebarContent = SidebarContentComponent;

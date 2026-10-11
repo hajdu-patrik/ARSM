@@ -1,14 +1,17 @@
+/** Live customer lookup of the scheduler intake: a debounced search by name or license plate. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
 import type { SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
 import type { LookupMode, LookupState } from '../components/intake/SchedulerIntakeModal.types';
 
+/** Inputs of {@link useSchedulerIntakeLookup}: the form callbacks a lookup change drives. */
 interface UseSchedulerIntakeLookupParams {
   readonly onLookupReset: () => void;
   readonly onLookupFound: (lookup: SchedulerCustomerLookupDto) => void;
   readonly setErrorKey: (key: string | null) => void;
 }
 
+/** Typing pause before the live lookup runs. */
 const LOOKUP_DEBOUNCE_MS = 280;
 
 /** Owns scheduler intake lookup state with live customer filtering by name and license plate. */
@@ -17,6 +20,8 @@ export function useSchedulerIntakeLookup({
   onLookupFound,
   setErrorKey,
 }: UseSchedulerIntakeLookupParams) {
+  // The search is typed by the user and holds personal data, so it is no cacheable read: a request id
+  // drops the response of a term that was superseded while it was in flight.
   const lookupRequestIdRef = useRef(0);
   const [currentLookupMode, setCurrentLookupMode] = useState<LookupMode>('name');
   const [lookupState, setLookupState] = useState<LookupState>('idle');
@@ -38,15 +43,6 @@ export function useSchedulerIntakeLookup({
     resetLookupState();
     onLookupReset();
   }, [onLookupReset, resetLookupState]);
-
-  const resetLookupForm = useCallback(() => {
-    lookupRequestIdRef.current += 1;
-    setCurrentLookupMode('name');
-    resetLookupState();
-    setEmail('');
-    setLicensePlateLookup('');
-    setNameLookup('');
-  }, [resetLookupState]);
 
   const applyFoundLookup = useCallback((lookup: SchedulerCustomerLookupDto) => {
     setLookupState('found');
@@ -124,8 +120,7 @@ export function useSchedulerIntakeLookup({
   useEffect(() => {
     if (nameLookup.trim().length === 0 && licensePlateLookup.trim().length === 0) {
       lookupRequestIdRef.current += 1;
-      setIsSearching(false);
-      return;
+      return undefined;
     }
 
     const timeoutId = globalThis.setTimeout(() => {
@@ -153,18 +148,17 @@ export function useSchedulerIntakeLookup({
     handleLicensePlateLookupChange,
     handleNameLookupChange,
     handleSelectNameLookupResult: applyFoundLookup,
-    resetLookupForm,
   }), [
     applyFoundLookup,
     handleEmailChange,
     handleLicensePlateLookupChange,
     handleNameLookupChange,
-    resetLookupForm,
   ]);
 
   return { state, actions };
 }
 
+/** True when the customer's full name contains the typed name, or no name was typed. */
 function matchesNameFilter(customer: SchedulerCustomerLookupDto, normalizedName: string): boolean {
   if (normalizedName.length === 0) {
     return true;
@@ -178,6 +172,7 @@ function matchesNameFilter(customer: SchedulerCustomerLookupDto, normalizedName:
   return fullName.includes(normalizedName.toUpperCase());
 }
 
+/** True when one of the customer's plates contains the typed plate, or no plate was typed. */
 function matchesLicensePlateFilter(customer: SchedulerCustomerLookupDto, normalizedPlate: string): boolean {
   if (normalizedPlate.length === 0) {
     return true;

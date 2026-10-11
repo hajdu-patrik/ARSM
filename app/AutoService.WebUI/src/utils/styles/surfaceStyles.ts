@@ -7,16 +7,20 @@ export const controlRowClass = 'arsm-control-row';
 export const controlPanelFooterClass = 'arsm-modal-footer';
 export const equalWidthControlGroupClass = 'arsm-equal-control-group';
 
+/** Keyboard focus indicator: a 2px outline 2px off the edge in the focus color, so focus never shifts the layout.
+ * `arsm-focus-outline` (components.css) rests the outline color on it, so the transition does not fade it in from currentcolor. */
+export const focusVisibleOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ui-focus';
+
 /** Scheduler details surfaces used in appointment side panels and info rows. */
-export const schedulerDetailPanelClass = 'rounded-2xl border border-arsm-border bg-arsm-input/80 p-3.5 dark:border-arsm-border-dark dark:bg-arsm-input-dark/65';
-export const schedulerDetailRowClass = 'rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
+export const schedulerDetailPanelClass = 'rounded-2xl border border-ui-border bg-arsm-input/80 p-3.5 dark:bg-arsm-input-dark/65';
+export const schedulerDetailRowClass = 'rounded-xl border border-ui-border bg-ui-input px-3 py-2';
 
 /** Generic card and border primitives reused by Customers/Admin/Scheduler sections. */
 export const roundedOverflowBorderLayoutClass = 'overflow-hidden rounded-2xl border';
 export const relativeOverflowBorderLayoutClass = `relative ${roundedOverflowBorderLayoutClass}`;
-export const defaultBorderToneClass = 'border-arsm-border dark:border-arsm-border-dark';
-export const contentCardFrameClass = `${roundedOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-arsm-card dark:bg-arsm-card-dark`;
-export const compactInputSurfaceClass = 'rounded-xl border border-arsm-border bg-arsm-input dark:border-arsm-border-dark dark:bg-arsm-input-dark';
+export const defaultBorderToneClass = 'border-ui-border';
+export const contentCardFrameClass = `${roundedOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-ui-card`;
+export const compactInputSurfaceClass = 'rounded-xl border border-ui-border bg-ui-input';
 
 /** Shared outer frame for popup, toast, and live notification surfaces. */
 export const feedbackFrameClass = 'outline outline-1 outline-offset-1 outline-arsm-primary/25 dark:outline-purple-900/80';
@@ -31,11 +35,11 @@ export const compactTwoColumnGridClass = 'grid min-w-0 grid-cols-1 gap-2 sm:grid
 /** Two columns at every width, 320px included, with the same gap as `compactTwoColumnGridClass`. */
 export const compactTwoColumnFixedGridClass = 'grid min-w-0 grid-cols-2 gap-2';
 export const compactHeaderRowClass = 'flex min-w-0 flex-wrap items-center justify-between gap-2';
-export const compactDividerLineClass = 'h-px flex-1 bg-arsm-border dark:bg-arsm-border-dark';
-export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-arsm-border bg-arsm-input px-3 py-2 dark:border-arsm-border-dark dark:bg-arsm-input-dark';
-export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
+export const compactDividerLineClass = 'h-px flex-1 bg-ui-border';
+export const compactDataSurfaceClass = 'min-w-0 rounded-xl border border-ui-border bg-ui-input px-3 py-2';
+export const metadataPillClass = 'inline-block min-w-0 max-w-full truncate rounded-xl border border-ui-border bg-ui-toggle px-2.5 py-1 text-xs font-semibold';
 /** Same look as `metadataPillClass`, but long values wrap instead of truncating. */
-export const metadataPillWrapClass = 'inline-block min-w-0 max-w-full [overflow-wrap:anywhere] rounded-xl border border-arsm-border bg-arsm-toggle-bg px-2.5 py-1 text-xs font-semibold dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark';
+export const metadataPillWrapClass = 'inline-block min-w-0 max-w-full [overflow-wrap:anywhere] rounded-xl border border-ui-border bg-ui-toggle px-2.5 py-1 text-xs font-semibold';
 
 /** Wrapping toolbar row: items share a line while there is room, otherwise the next one wraps below. */
 export const toolbarRowLayoutClass = 'flex min-w-0 flex-wrap items-center justify-between gap-3';
@@ -81,30 +85,4 @@ export const actionClusterClass = 'arsm-action-cluster';
 export const sidebarIconSlotClass = 'inline-flex h-10 w-[52px] flex-shrink-0 items-center justify-center';
 
 /** Dashed empty-state box shown when a list/search has no results. */
-export const emptyStateBoxClass = `rounded-2xl border border-dashed border-arsm-border bg-arsm-input px-4 py-12 text-center text-sm ${mutedDarkCardToneClass}`;
-
-/** Container-query thresholds at which an aligned data list switches from labeled tiles to the column table. */
-export type DataListBreakpoint = 'lg' | '3xl' | '4xl';
-
-/** Container-query class set one breakpoint contributes to the shared data-list grid. */
-export interface DataListBreakpointClasses {
-  /** Grid root: the feature adds its own `@…:grid-cols-[…]` template next to this. */
-  readonly root: string;
-  /** Spans every track and inherits them, so header, body and rows share one column model. */
-  readonly subgrid: string;
-  /** Vertical centering for a data row. */
-  readonly rowAlign: string;
-  /** Full-width child of the body (for example an inline editor) once the table is active. */
-  readonly fullSpan: string;
-  /** Wrapper of the desktop cells: dissolves so the cells become subgrid items. */
-  readonly desktopCells: string;
-  /** Labeled-tile block shown below the threshold. */
-  readonly mobileBlock: string;
-}
-
-/** Literal class sets per breakpoint, spelled out so Tailwind can detect every variant. */
-export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreakpointClasses> = {
-  lg:    { root: '@lg:grid @lg:gap-x-3',   subgrid: '@lg:col-span-full @lg:grid @lg:grid-cols-subgrid',    rowAlign: '@lg:items-center',  fullSpan: '@lg:col-span-full',  desktopCells: 'hidden @lg:contents',  mobileBlock: '@lg:hidden' },
-  '3xl': { root: '@3xl:grid @3xl:gap-x-3', subgrid: '@3xl:col-span-full @3xl:grid @3xl:grid-cols-subgrid', rowAlign: '@3xl:items-center', fullSpan: '@3xl:col-span-full', desktopCells: 'hidden @3xl:contents', mobileBlock: '@3xl:hidden' },
-  '4xl': { root: '@4xl:grid @4xl:gap-x-3', subgrid: '@4xl:col-span-full @4xl:grid @4xl:grid-cols-subgrid', rowAlign: '@4xl:items-center', fullSpan: '@4xl:col-span-full', desktopCells: 'hidden @4xl:contents', mobileBlock: '@4xl:hidden' },
-};
+export const emptyStateBoxClass = `rounded-2xl border border-dashed border-ui-border bg-arsm-input px-4 py-12 text-center text-sm ${mutedDarkCardToneClass}`;

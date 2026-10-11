@@ -11,6 +11,7 @@ import { fulfillJson } from './api-mock-response';
 import {
   applyQuoteWrite,
   rejectQuoteVersion,
+  replaceQuote,
   sortedQuotes,
   toQuoteDetailResponse,
   toQuoteListItemResponse,
@@ -37,9 +38,10 @@ export async function handleVehicleQuoteRoute(
     return false;
   }
 
-  const payload = route.request().postDataJSON() as CreateQuoteRequest;
+  const payload = route.request().postDataJSON() as Partial<CreateQuoteRequest>;
+  const title = payload.title?.trim();
 
-  if (!payload.title?.trim()) {
+  if (!title) {
     await fulfillJson(route, { detail: 'Title cannot be empty.' }, 422);
     return true;
   }
@@ -56,8 +58,8 @@ export async function handleVehicleQuoteRoute(
   const created: QuoteDetailDto = {
     id: state.nextQuoteId++,
     quoteNumber: `ARSM-2026-${String(state.nextQuoteSequence++).padStart(4, '0')}`,
-    title: payload.title.trim(),
-    notes: payload.notes,
+    title,
+    notes: payload.notes ?? null,
     status: 'Draft',
     isExpired: false,
     createdAt: new Date().toISOString(),
@@ -74,7 +76,7 @@ export async function handleVehicleQuoteRoute(
       brand: vehicle.brand,
       model: vehicle.model,
     },
-    appointmentId: payload.appointmentId,
+    appointmentId: payload.appointmentId ?? null,
     createdByMechanic: { id: MOCK_MECHANIC_IDS.gabor, fullName: 'Gabor Kovacs' },
     lines: [],
     version: 1,
@@ -86,8 +88,7 @@ export async function handleVehicleQuoteRoute(
 }
 
 /** Applies a status transition, enforcing the state machine and the send rule. */
-export async function handleChangeQuoteStatus(route: Route, state: MockApiState, index: number): Promise<void> {
-  const quote = state.quotes[index];
+export async function handleChangeQuoteStatus(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   const payload = route.request().postDataJSON() as ChangeQuoteStatusRequest;
   const isAllowed = (quote.status === 'Draft' && payload.status === 'Sent')
     || (quote.status === 'Sent' && (payload.status === 'Accepted' || payload.status === 'Rejected'));
@@ -113,13 +114,12 @@ export async function handleChangeQuoteStatus(route: Route, state: MockApiState,
     sentAt: payload.status === 'Sent' ? now : quote.sentAt,
     decidedAt: payload.status === 'Sent' ? quote.decidedAt : now,
   });
-  state.quotes[index] = saved;
+  replaceQuote(state, quote, saved);
   await fulfillJson(route, toQuoteDetailResponse(saved));
 }
 
 /** Saves a new validity deadline, with the sent-quote extend-only rule (D23). */
-export async function handleExtendQuoteValidity(route: Route, state: MockApiState, index: number): Promise<void> {
-  const quote = state.quotes[index];
+export async function handleExtendQuoteValidity(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   const payload = route.request().postDataJSON() as ExtendQuoteValidityRequest;
 
   if (quote.status === 'Accepted' || quote.status === 'Rejected') {
@@ -146,6 +146,6 @@ export async function handleExtendQuoteValidity(route: Route, state: MockApiStat
   }
 
   const saved = applyQuoteWrite({ ...quote, validUntil: payload.validUntil });
-  state.quotes[index] = saved;
+  replaceQuote(state, quote, saved);
   await fulfillJson(route, toQuoteDetailResponse(saved));
 }

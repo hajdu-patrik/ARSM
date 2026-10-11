@@ -43,14 +43,16 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
             type="datetime-local"
             data-testid="scheduler-intake-due-datetime"
             value={dueDateTime}
-            onChange={(event) => onDueDateTimeChange(event.target.value)}
+            onChange={(event) => {
+              onDueDateTimeChange(event.target.value);
+            }}
             className={intakeDateTimeInputClass}
           />
         </label>
       </div>
 
       <div className={`${insetSurfaceClass} p-3.5 text-sm`}>
-        <span className="font-medium text-arsm-muted dark:text-arsm-muted-dark">{translate('scheduler.intake.statusLabel')}</span>
+        <span className="font-medium text-ui-muted">{translate('scheduler.intake.statusLabel')}</span>
         <StatusBadge status="InProgress" className="mt-1" />
       </div>
     </div>
@@ -95,7 +97,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
           type="email"
           data-testid="scheduler-intake-customer-email"
           value={customerEmail}
-          onChange={(event) => onCustomerEmailChange(event.target.value)}
+          onChange={(event) => {
+            onCustomerEmailChange(event.target.value);
+          }}
           placeholder={translate('scheduler.intake.customerEmailPlaceholder')}
           className={`${intakeInputClass} truncate`}
         />
@@ -105,7 +109,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <span className={intakeFieldLabelClass}>{translate('common.fields.firstName')}</span>
         <input
           value={customerFirstName}
-          onChange={(event) => onCustomerFirstNameChange(filterNameInput(event.target.value))}
+          onChange={(event) => {
+            onCustomerFirstNameChange(filterNameInput(event.target.value));
+          }}
           placeholder={translate('common.placeholders.firstName')}
           className={intakeInputClass}
         />
@@ -115,7 +121,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <span className={intakeFieldLabelClass}>{translate('common.fields.middleName')}</span>
         <input
           value={customerMiddleName}
-          onChange={(event) => onCustomerMiddleNameChange(filterNameInput(event.target.value))}
+          onChange={(event) => {
+            onCustomerMiddleNameChange(filterNameInput(event.target.value));
+          }}
           placeholder={translate('scheduler.intake.customerMiddleNamePlaceholder')}
           className={intakeInputClass}
         />
@@ -125,7 +133,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <span className={intakeFieldLabelClass}>{translate('common.fields.lastName')}</span>
         <input
           value={customerLastName}
-          onChange={(event) => onCustomerLastNameChange(filterNameInput(event.target.value))}
+          onChange={(event) => {
+            onCustomerLastNameChange(filterNameInput(event.target.value));
+          }}
           placeholder={translate('common.placeholders.lastName')}
           className={intakeInputClass}
         />
@@ -135,7 +145,9 @@ export const SchedulerIntakeCustomerForm = memo(function SchedulerIntakeCustomer
         <span className={intakeFieldLabelClass}>{translate('common.fields.phoneNumber')}</span>
         <input
           value={customerPhone}
-          onChange={(event) => onCustomerPhoneChange(filterPhoneInput(event.target.value))}
+          onChange={(event) => {
+            onCustomerPhoneChange(filterPhoneInput(event.target.value));
+          }}
           placeholder={translate('common.placeholders.phone')}
           className={intakeInputClass}
         />

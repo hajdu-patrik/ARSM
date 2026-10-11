@@ -46,14 +46,14 @@ export interface AppointmentDto {
   taskDescription: string;
   status: AppointmentStatus;
   /** Timestamp when completed, or {@code null} if not yet completed. */
-  completedAt?: string | null;
+  completedAt?: string | null | undefined;
   /** Timestamp when cancelled, or {@code null} if not cancelled. */
-  canceledAt?: string | null;
+  canceledAt?: string | null | undefined;
   vehicle: VehicleDto;
   mechanics: MechanicSummaryDto[];
 }
 
-/** Request payload for updating an appointment's lifecycle status ({@code PATCH /api/appointments/{id}/status}). */
+/** Request payload for updating an appointment's lifecycle status ({@code PUT /api/appointments/{id}/status}). */
 export interface UpdateStatusRequest {
   /** Target status to transition to. */
   status: AppointmentStatus;
@@ -99,7 +99,7 @@ export interface SchedulerCustomerLookupDto {
   phoneNumber: string | null;
   vehicles: SchedulerVehicleLookupDto[];
   /** Vehicle matched by the lookup endpoint, when applicable. */
-  matchedVehicleId?: number | null;
+  matchedVehicleId?: number | null | undefined;
 }
 
 /** Request payload for registering a new vehicle during intake, when no existing vehicle fits. */
@@ -122,13 +122,13 @@ export interface SchedulerCreateIntakeRequest {
   /** Email of the customer owning the vehicle. */
   customerEmail: string;
   /** Customer first name (optional for mechanic-email owner-link resolution). */
-  customerFirstName?: string;
-  customerMiddleName?: string;
+  customerFirstName?: string | undefined;
+  customerMiddleName?: string | undefined;
   /** Customer last name (optional for mechanic-email owner-link resolution). */
-  customerLastName?: string;
-  customerPhoneNumber?: string;
-  vehicleId?: number;
-  vehicle?: SchedulerNewVehicleRequest;
+  customerLastName?: string | undefined;
+  customerPhoneNumber?: string | undefined;
+  vehicleId?: number | undefined;
+  vehicle?: SchedulerNewVehicleRequest | undefined;
   scheduledDate: string;
   dueDateTime: string;
   taskDescription: string;
@@ -137,7 +137,7 @@ export interface SchedulerCreateIntakeRequest {
 /** Request payload for updating an existing appointment ({@code PUT /api/appointments/{id}}). */
 export interface UpdateAppointmentRequest {
   /** Optional scheduled service date for backward compatibility. */
-  scheduledDate?: string;
+  scheduledDate?: string | undefined;
   dueDateTime: string;
   taskDescription: string;
 }

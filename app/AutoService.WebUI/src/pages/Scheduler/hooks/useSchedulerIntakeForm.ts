@@ -1,27 +1,13 @@
 /** Manages intake modal form state: live customer lookup, vehicle mode switching, validation, and submission. */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SchedulerCreateIntakeRequest, SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
-import {
-  enrichPayloadByLookupState,
-  getCreateValidationError,
-  getDefaultDueDate,
-  getDefaultScheduledDate,
-  mapIntakeErrorToKey,
-  normalizeRangedNumberInput,
-  toIso,
-} from '../components/intake/SchedulerIntakeModal.helpers';
-import {
-  EMPTY_VEHICLE,
-  type VehicleFormState,
-  type VehicleMode,
-  VEHICLE_NUMERIC_LIMITS,
-} from '../components/intake/SchedulerIntakeModal.types';
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import type { SchedulerCreateIntakeRequest } from '../../../types/scheduler/scheduler.types';
+import { buildIntakeRequest, mapIntakeErrorToKey } from '../components/intake/SchedulerIntakeModal.helpers';
+import { useSchedulerIntakeFields } from './useSchedulerIntakeFields';
 import { useSchedulerIntakeLookup } from './useSchedulerIntakeLookup';
 
 /** Configuration for {@link useSchedulerIntakeForm}. */
 interface UseSchedulerIntakeFormArgs {
-  /** Whether the intake modal is currently visible. */
-  readonly isOpen: boolean;
   /** The calendar day selected for the new appointment. */
   readonly selectedDate: Date;
   /** Callback to close the intake modal on successful submission. */
@@ -30,41 +16,19 @@ interface UseSchedulerIntakeFormArgs {
   readonly onSubmit: (request: SchedulerCreateIntakeRequest) => Promise<void>;
 }
 
-/** Manages the full lifecycle of the scheduler intake form: field state, lookup, validation, and submission. */
+/** Manages the full lifecycle of the scheduler intake form: field state, lookup, validation, and submission.
+ * The form starts empty each time it mounts, so the modal mounts it only while it is open. */
 export function useSchedulerIntakeForm({
-  isOpen,
   selectedDate,
   onClose,
   onSubmit,
 }: UseSchedulerIntakeFormArgs) {
-  const [customerFirstName, setCustomerFirstName] = useState('');
-  const [customerMiddleName, setCustomerMiddleName] = useState('');
-  const [customerLastName, setCustomerLastName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
-  const [dueDateTime, setDueDateTime] = useState('');
-  const [vehicleMode, setVehicleMode] = useState<VehicleMode>('existing');
-  const [existingVehicleId, setExistingVehicleId] = useState('');
-  const [vehicle, setVehicle] = useState<VehicleFormState>(EMPTY_VEHICLE);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fields = useSchedulerIntakeFields(selectedDate);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
-  const resetVehicleSelectionState = useCallback(() => {
-    setVehicleMode('existing');
-    setExistingVehicleId('');
-    setTaskDescription('');
-  }, []);
-
-  const applyFoundLookupToVehicleState = useCallback((lookup: SchedulerCustomerLookupDto) => {
-    const matchedVehicleId = lookup.matchedVehicleId ?? lookup.vehicles[0]?.id ?? null;
-
-    setVehicleMode(lookup.vehicles.length > 0 ? 'existing' : 'new');
-    setExistingVehicleId(matchedVehicleId ? String(matchedVehicleId) : '');
-  }, []);
-
   const lookup = useSchedulerIntakeLookup({
-    onLookupReset: resetVehicleSelectionState,
-    onLookupFound: applyFoundLookupToVehicleState,
+    onLookupReset: fields.resetVehicleSelectionState,
+    onLookupFound: fields.applyFoundLookupToVehicleState,
     setErrorKey,
   });
   const {
@@ -72,83 +36,46 @@ export function useSchedulerIntakeForm({
     handleLicensePlateLookupChange,
     handleNameLookupChange,
     handleSelectNameLookupResult,
-    resetLookupForm,
   } = lookup.actions;
+  const { lookupState, customerLookup, email } = lookup.state;
+  const {
+    customerFirstName,
+    customerMiddleName,
+    customerLastName,
+    customerPhone,
+    taskDescription,
+    dueDateTime,
+    vehicleMode,
+    existingVehicleId,
+    vehicle,
+  } = fields;
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+  const { isPending: isSubmitting, mutate: submitIntake } = useMutation({
+    mutationFn: onSubmit,
+    onSuccess: () => {
+      onClose();
+    },
+    onError: (error) => {
+      setErrorKey(mapIntakeErrorToKey(error));
+    },
+  });
 
-    resetLookupForm();
-    setCustomerFirstName('');
-    setCustomerMiddleName('');
-    setCustomerLastName('');
-    setCustomerPhone('');
-    setTaskDescription('');
-    setVehicleMode('existing');
-    setExistingVehicleId('');
-    setVehicle(EMPTY_VEHICLE);
-    setErrorKey(null);
-    setDueDateTime(getDefaultDueDate(selectedDate));
-  }, [isOpen, resetLookupForm, selectedDate]);
+  const shouldShowCustomerCreate = lookupState === 'not-found';
+  const shouldShowVehicleCreate = shouldShowCustomerCreate || (lookupState === 'found' && vehicleMode === 'new');
+  const customerHasVehicles = (customerLookup?.vehicles.length ?? 0) > 0;
+  const canCreateIntake = lookupState === 'found' || lookupState === 'not-found';
 
-  const shouldShowCustomerCreate = lookup.state.lookupState === 'not-found';
-  const shouldShowVehicleCreate = shouldShowCustomerCreate || (lookup.state.lookupState === 'found' && vehicleMode === 'new');
-  const customerHasVehicles = (lookup.state.customerLookup?.vehicles.length ?? 0) > 0;
-  const canCreateIntake = lookup.state.lookupState === 'found' || lookup.state.lookupState === 'not-found';
-
-  const handleVehicleField = useCallback((field: keyof VehicleFormState, value: string) => {
-    if (field in VEHICLE_NUMERIC_LIMITS) {
-      const limits = VEHICLE_NUMERIC_LIMITS[field as keyof typeof VEHICLE_NUMERIC_LIMITS];
-      setVehicle((prev) => ({
-        ...prev,
-        [field]: normalizeRangedNumberInput(value, limits.min, limits.max),
-      }));
-      return;
-    }
-
-    setVehicle((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  }, []);
-
-  const handleCreate = useCallback(async () => {
+  const handleCreate = useCallback(() => {
     setErrorKey(null);
 
-    const normalizedEmail = (
-      lookup.state.lookupState === 'found'
-        ? lookup.state.customerLookup?.email ?? lookup.state.email
-        : lookup.state.email
-    ).trim().toLowerCase();
-    const autoScheduledDate = getDefaultScheduledDate(selectedDate);
-
-    const validationError = getCreateValidationError({
-      lookupState: lookup.state.lookupState,
+    const normalizedEmail = (lookupState === 'found' ? customerLookup?.email ?? email : email).trim().toLowerCase();
+    const result = buildIntakeRequest({
+      lookupState,
       normalizedEmail,
       dueDateTime,
       selectedDate,
-      autoScheduledDate,
       taskDescription,
       shouldShowVehicleCreate,
-      vehicle,
-    });
-    if (validationError) {
-      setErrorKey(validationError);
-      return;
-    }
-
-    const basePayload: SchedulerCreateIntakeRequest = {
-      customerEmail: normalizedEmail,
-      scheduledDate: toIso(autoScheduledDate),
-      dueDateTime: toIso(dueDateTime),
-      taskDescription: taskDescription.trim(),
-    };
-
-    const payloadError = enrichPayloadByLookupState({
-      basePayload,
-      lookupState: lookup.state.lookupState,
       vehicleMode,
       existingVehicleId,
       vehicle,
@@ -157,40 +84,42 @@ export function useSchedulerIntakeForm({
       customerLastName,
       customerPhone,
     });
-    if (payloadError) {
-      setErrorKey(payloadError);
+
+    if ('errorKey' in result) {
+      setErrorKey(result.errorKey);
       return;
     }
 
-    setIsSubmitting(true);
-    setErrorKey(null);
-
-    try {
-      await onSubmit(basePayload);
-      onClose();
-    } catch (error) {
-      setErrorKey(mapIntakeErrorToKey(error));
-    } finally {
-      setIsSubmitting(false);
-    }
+    submitIntake(result.request);
   }, [
     customerFirstName,
     customerLastName,
+    customerLookup,
     customerMiddleName,
     customerPhone,
     dueDateTime,
-    lookup.state.customerLookup?.email,
-    lookup.state.email,
-    lookup.state.lookupState,
+    email,
     existingVehicleId,
-    onClose,
-    onSubmit,
+    lookupState,
     selectedDate,
     shouldShowVehicleCreate,
+    submitIntake,
     taskDescription,
     vehicle,
     vehicleMode,
   ]);
+
+  const {
+    setCustomerFirstName,
+    setCustomerMiddleName,
+    setCustomerLastName,
+    setCustomerPhone,
+    setTaskDescription,
+    setDueDateTime,
+    setVehicleMode,
+    setExistingVehicleId,
+    handleVehicleField,
+  } = fields;
 
   const actions = useMemo(() => ({
     handleEmailChange,
@@ -214,17 +143,19 @@ export function useSchedulerIntakeForm({
     handleLicensePlateLookupChange,
     handleNameLookupChange,
     handleSelectNameLookupResult,
+    setCustomerFirstName,
+    setCustomerLastName,
+    setCustomerMiddleName,
+    setCustomerPhone,
+    setDueDateTime,
+    setExistingVehicleId,
+    setTaskDescription,
+    setVehicleMode,
   ]);
 
   return {
     state: {
-      lookupMode: lookup.state.lookupMode,
-      lookupState: lookup.state.lookupState,
-      customerLookup: lookup.state.customerLookup,
-      nameLookupResults: lookup.state.nameLookupResults,
-      email: lookup.state.email,
-      licensePlateLookup: lookup.state.licensePlateLookup,
-      nameLookup: lookup.state.nameLookup,
+      ...lookup.state,
       customerFirstName,
       customerMiddleName,
       customerLastName,
@@ -234,7 +165,6 @@ export function useSchedulerIntakeForm({
       vehicleMode,
       existingVehicleId,
       vehicle,
-      isSearching: lookup.state.isSearching,
       isSubmitting,
       errorKey,
     },

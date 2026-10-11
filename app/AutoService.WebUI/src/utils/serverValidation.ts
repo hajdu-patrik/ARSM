@@ -33,46 +33,90 @@ export function extractServerFieldErrors(
   return data?.errors ?? {};
 }
 
+/** True when the text contains at least one of the fragments. */
 function containsAny(text: string, fragments: readonly string[]): boolean {
   return fragments.some((fragment) => text.includes(fragment));
 }
 
+/** True when the text contains every fragment. */
 function containsAll(text: string, fragments: readonly string[]): boolean {
   return fragments.every((fragment) => text.includes(fragment));
 }
 
-function mapCommonValidationMessageToKey(normalizedMessage: string): string | null {
-  const commonRules: Array<{ readonly suffix: string; readonly isMatch: (message: string) => boolean }> = [
-    {
-      suffix: 'emailExists',
-      isMatch: (message) => containsAll(message, ['email']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
-    },
-    {
-      suffix: 'phoneExists',
-      isMatch: (message) => containsAll(message, ['phone']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
-    },
-    {
-      suffix: 'invalidEmail',
-      isMatch: (message) => message.includes('email must be a valid email address'),
-    },
-    {
-      suffix: 'invalidPhone',
-      isMatch: (message) => message.includes('phone number must be a valid european number'),
-    },
-    {
-      suffix: 'invalidName',
-      isMatch: (message) => message.includes('may only contain letters and hyphens'),
-    },
-    {
-      suffix: 'fieldRequired',
-      isMatch: (message) => containsAny(message, ['cannot be empty', 'is required', 'must not be blank', 'field is required']),
-    },
-  ];
+/** One message-matching rule: a normalized message that matches maps to `common.validation.<suffix>`. */
+interface ValidationMessageRule {
+  readonly suffix: string;
+  readonly isMatch: (message: string) => boolean;
+}
 
-  const matchedRule = commonRules.find((rule) => rule.isMatch(normalizedMessage));
+/** Returns the `common.validation.*` key of the first matching rule, or null. */
+function findValidationRuleKey(rules: readonly ValidationMessageRule[], normalizedMessage: string): string | null {
+  const matchedRule = rules.find((rule) => rule.isMatch(normalizedMessage));
   return matchedRule ? `common.validation.${matchedRule.suffix}` : null;
 }
 
+/** Uniqueness, format, name and required-field rules shared by every context. */
+const COMMON_VALIDATION_RULES: readonly ValidationMessageRule[] = [
+  {
+    suffix: 'emailExists',
+    isMatch: (message) => containsAll(message, ['email']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
+  },
+  {
+    suffix: 'phoneExists',
+    isMatch: (message) => containsAll(message, ['phone']) && containsAny(message, ['already exists', 'already in use', 'is taken']),
+  },
+  {
+    suffix: 'invalidEmail',
+    isMatch: (message) => message.includes('email must be a valid email address'),
+  },
+  {
+    suffix: 'invalidPhone',
+    isMatch: (message) => message.includes('phone number must be a valid european number'),
+  },
+  {
+    suffix: 'invalidName',
+    isMatch: (message) => message.includes('may only contain letters and hyphens'),
+  },
+  {
+    suffix: 'fieldRequired',
+    isMatch: (message) => containsAny(message, ['cannot be empty', 'is required', 'must not be blank', 'field is required']),
+  },
+];
+
+/** Password-policy rules, checked in order once the message mentions a password. */
+const PASSWORD_VALIDATION_RULES: readonly ValidationMessageRule[] = [
+  {
+    suffix: 'passwordTooShort',
+    isMatch: (message) => message.includes('at least') && (message.includes('character') || message.includes('length')),
+  },
+  {
+    suffix: 'passwordMissingUpper',
+    isMatch: (message) => containsAny(message, ['uppercase', 'upper case', 'capital letter']),
+  },
+  {
+    suffix: 'passwordMissingLower',
+    isMatch: (message) => containsAny(message, ['lowercase', 'lower case']),
+  },
+  {
+    suffix: 'passwordMissingDigit',
+    isMatch: (message) => containsAny(message, ['digit', 'number', 'numeric']),
+  },
+  {
+    suffix: 'passwordMissingSpecial',
+    isMatch: (message) => containsAny(message, ['non alphanumeric', 'special character', 'special']),
+  },
+  {
+    suffix: 'passwordTooWeak',
+    isMatch: (message) => containsAny(message, ['too weak', 'does not meet', 'does not satisfy']),
+  },
+];
+
+/** Maps a uniqueness, format, name or required-field message to its shared key. */
+function mapCommonValidationMessageToKey(normalizedMessage: string): string | null {
+  return findValidationRuleKey(COMMON_VALIDATION_RULES, normalizedMessage);
+}
+
+/** Maps the password-confirmation mismatch message to its shared key. */
 function mapPasswordMismatchMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('passwords do not match')) {
     return null;
@@ -81,42 +125,16 @@ function mapPasswordMismatchMessageToKey(normalizedMessage: string): string | nu
   return 'common.validation.passwordMismatch';
 }
 
+/** Maps a password-policy message to its shared key. */
 function mapPasswordValidationMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('password')) {
     return null;
   }
 
-  const passwordRules: Array<{ readonly suffix: string; readonly isMatch: (message: string) => boolean }> = [
-    {
-      suffix: 'passwordTooShort',
-      isMatch: (message) => message.includes('at least') && (message.includes('character') || message.includes('length')),
-    },
-    {
-      suffix: 'passwordMissingUpper',
-      isMatch: (message) => containsAny(message, ['uppercase', 'upper case', 'capital letter']),
-    },
-    {
-      suffix: 'passwordMissingLower',
-      isMatch: (message) => containsAny(message, ['lowercase', 'lower case']),
-    },
-    {
-      suffix: 'passwordMissingDigit',
-      isMatch: (message) => containsAny(message, ['digit', 'number', 'numeric']),
-    },
-    {
-      suffix: 'passwordMissingSpecial',
-      isMatch: (message) => containsAny(message, ['non alphanumeric', 'special character', 'special']),
-    },
-    {
-      suffix: 'passwordTooWeak',
-      isMatch: (message) => containsAny(message, ['too weak', 'does not meet', 'does not satisfy']),
-    },
-  ];
-
-  const matchedRule = passwordRules.find((rule) => rule.isMatch(normalizedMessage));
-  return matchedRule ? `common.validation.${matchedRule.suffix}` : null;
+  return findValidationRuleKey(PASSWORD_VALIDATION_RULES, normalizedMessage);
 }
 
+/** Maps a settings-only message (wrong current password) to its settings key. */
 function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): string | null {
   if (containsAny(normalizedMessage, ['current password is invalid', 'password is incorrect'])) {
     return 'settings.errors.currentPasswordInvalid';
@@ -180,9 +198,9 @@ export function normalizeServerFieldErrors(
 
 /** Returns the first available message from a field-errors dictionary. */
 export function getFirstFieldErrorMessage(errors: ServerFieldErrors): string | null {
-  for (const values of Object.values(errors)) {
-    if (values.length > 0) {
-      return values[0];
+  for (const [firstMessage] of Object.values(errors)) {
+    if (firstMessage !== undefined) {
+      return firstMessage;
     }
   }
 

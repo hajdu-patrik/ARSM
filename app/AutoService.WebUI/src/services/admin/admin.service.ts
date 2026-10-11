@@ -1,13 +1,14 @@
 /** Admin service for mechanic management; all endpoints require admin authorization. */
 
 import { apiClient } from '../http/api.client';
+import type { SilentRequestOptions } from '../http/request-options';
 
 /** Request payload for registering a new mechanic via {@code POST /api/auth/register}. */
 export interface RegisterMechanicRequest {
   /** Mechanic's first name. */
   firstName: string;
   /** Mechanic's middle name (optional). */
-  middleName?: string;
+  middleName?: string | undefined;
   /** Mechanic's last name. */
   lastName: string;
   /** Email address for the new account. */
@@ -15,7 +16,7 @@ export interface RegisterMechanicRequest {
   /** Initial password for the new account. */
   password: string;
   /** Phone number (optional, Hungarian format). */
-  phoneNumber?: string;
+  phoneNumber?: string | undefined;
   /** Primary specialization area. */
   specialization: string;
   /** Additional expertise tags. */
@@ -49,7 +50,7 @@ export interface MechanicListItem {
   /** Primary specialization area. */
   specialization: string;
   /** Whether the mechanic has an uploaded profile picture. */
-  hasProfilePicture?: boolean;
+  hasProfilePicture?: boolean | undefined;
   /** Whether this mechanic has admin privileges. */
   isAdmin: boolean;
 }
@@ -66,13 +67,15 @@ export const adminService = {
   },
 
   /** Fetches all registered mechanics via {@code GET /api/admin/mechanics}. */
-  async listMechanics(): Promise<MechanicListItem[]> {
-    const response = await apiClient.get<MechanicListItem[]>('/api/admin/mechanics');
+  async listMechanics(options?: SilentRequestOptions): Promise<MechanicListItem[]> {
+    const response = await apiClient.get<MechanicListItem[]>('/api/admin/mechanics', {
+      skipErrorRedirect: options?.skipErrorRedirect,
+    });
     return response.data;
   },
 
   /** Deletes a mechanic via {@code DELETE /api/admin/mechanics/{id}}; may 422 (invariant) or 409 (contention). */
   async deleteMechanic(personId: number): Promise<void> {
-    await apiClient.delete(`/api/admin/mechanics/${personId}`);
+    await apiClient.delete(`/api/admin/mechanics/${String(personId)}`);
   },
 };

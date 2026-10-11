@@ -1,25 +1,20 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, CarFront, History, UserRound, X } from 'lucide-react';
-import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+import { CarFront, UserRound, X } from 'lucide-react';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
-  compactChipNeutralButtonClass,
-  compactHeaderRowClass,
   defaultIconClass,
-  inlineSectionTitleClass,
   modalConfirmCloseButtonClass,
   mutedMetaTextClass,
-  mutedSecondaryTextClass,
-  smallIconClass,
   uppercaseMetaLabelTextClass,
 } from '../../../utils/formStyles';
-import type { SortDirection } from '../page.types';
 import { buildCustomerDisplayName } from '../helpers';
-import { RepairHistoryList } from './RepairHistoryList';
+import type { CustomerHistoryState } from './customerListSection.types';
+import { CustomerRepairHistory, VehicleRepairHistory } from './RepairHistorySections';
 import { VehicleSpecsGrid } from './VehicleSpecsGrid';
 
+/** Details panel target with the customer and, for a vehicle target, the vehicle already looked up. */
 export type ResolvedCustomerDetailsPanelTarget =
   | { readonly kind: 'customer'; readonly customer: CustomerListItem }
   | { readonly kind: 'vehicle'; readonly customer: CustomerListItem; readonly vehicle: VehicleDetailDto };
@@ -27,35 +22,19 @@ export type ResolvedCustomerDetailsPanelTarget =
 interface CustomerDetailsPanelProps {
   readonly target: ResolvedCustomerDetailsPanelTarget | null;
   readonly locale: string;
-  readonly customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
-  readonly isLoadingCustomerHistoryByCustomerId: Record<number, boolean>;
-  readonly customerHistorySortByCustomerId: Record<number, SortDirection>;
-  readonly vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
-  readonly isLoadingVehicleHistoryByVehicleId: Record<number, boolean>;
-  readonly vehicleHistorySortByVehicleId: Record<number, SortDirection>;
+  readonly history: CustomerHistoryState;
   readonly t: TFunction;
   readonly onClose?: () => void;
-  readonly onToggleCustomerHistorySort: (customerId: number) => void;
-  readonly onToggleVehicleHistorySort: (vehicleId: number) => void;
-  readonly onOpenHistoryAppointment: (appointment: AppointmentDto) => void;
   readonly variant?: 'overlay' | 'inline';
 }
 
-/** Displays selected customer or vehicle context with lazy-loaded repair history. */
+/** Displays selected customer or vehicle context with its lazily read repair history. */
 export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
   target,
   locale,
-  customerHistoryByCustomerId,
-  isLoadingCustomerHistoryByCustomerId,
-  customerHistorySortByCustomerId,
-  vehicleHistoryByVehicleId,
-  isLoadingVehicleHistoryByVehicleId,
-  vehicleHistorySortByVehicleId,
+  history,
   t,
   onClose,
-  onToggleCustomerHistorySort,
-  onToggleVehicleHistorySort,
-  onOpenHistoryAppointment,
   variant = 'overlay',
 }: CustomerDetailsPanelProps) {
   if (!target) {
@@ -65,31 +44,16 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
   const isInline = variant === 'inline';
 
   const { customer } = target;
-  const historySource = getHistorySource({
-    target,
-    t,
-    customerHistoryByCustomerId,
-    isLoadingCustomerHistoryByCustomerId,
-    customerHistorySortByCustomerId,
-    vehicleHistoryByVehicleId,
-    isLoadingVehicleHistoryByVehicleId,
-    vehicleHistorySortByVehicleId,
-    onToggleCustomerHistorySort,
-    onToggleVehicleHistorySort,
-  });
-  const displayedHistory = historySource.sortDirection === 'asc'
-    ? historySource.appointments
-    : [...historySource.appointments].reverse();
 
   return (
     <aside
       aria-label={t('customers.detailsPanelTitle')}
       className={isInline
         ? 'min-w-0'
-        : 'fixed inset-x-0 bottom-0 z-[90] max-h-[82vh] min-w-0 overflow-hidden rounded-t-2xl border border-arsm-border bg-arsm-card dark:border-arsm-border-dark dark:bg-arsm-card-dark lg:sticky lg:top-6 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-2xl'}
+        : 'fixed inset-x-0 bottom-0 z-[90] max-h-[82vh] min-w-0 overflow-hidden rounded-t-2xl border border-ui-border bg-ui-card lg:sticky lg:top-6 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-2xl'}
     >
       {!isInline && (
-        <div className="flex min-w-0 items-start justify-between gap-3 border-b border-arsm-border px-4 py-3 dark:border-arsm-border-dark">
+        <div className="flex min-w-0 items-start justify-between gap-3 border-b border-ui-border px-4 py-3">
           <div className="min-w-0">
             <p className={`flex min-w-0 items-center gap-2 ${uppercaseMetaLabelTextClass}`}>
               {target.kind === 'customer' ? <UserRound className={defaultIconClass} /> : <CarFront className={defaultIconClass} />}
@@ -103,7 +67,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
             <p className={`[overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
               {target.kind === 'customer'
                 ? customer.email
-                : `${target.vehicle.brand} ${target.vehicle.model} (${target.vehicle.year})`}
+                : `${target.vehicle.brand} ${target.vehicle.model} (${String(target.vehicle.year)})`}
             </p>
           </div>
 
@@ -132,34 +96,23 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
         )}
 
         <section className={isInline ? 'min-w-0 space-y-3' : 'min-w-0 space-y-3 pt-2'}>
-          <div className={compactHeaderRowClass}>
-            <h3 className={inlineSectionTitleClass}>
-              <History className={defaultIconClass} />
-              <span className="min-w-0 [overflow-wrap:anywhere]">{historySource.title}</span>
-            </h3>
-            <button
-              type="button"
-              onClick={historySource.toggleSort}
-              className={`${compactChipNeutralButtonClass} w-full sm:w-auto`}
-            >
-              <ArrowUpDown className={smallIconClass} />
-              <span className="min-w-0 whitespace-normal text-center">{historySource.sortDirection === 'asc' ? t('customers.historySortAsc') : t('customers.historySortDesc')}</span>
-            </button>
-          </div>
-
-          {historySource.isLoading && (
-            <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingHistory')}</p>
-          )}
-
-          {!historySource.isLoading && (
-            <RepairHistoryList
-              appointments={displayedHistory}
+          {target.kind === 'vehicle' ? (
+            <VehicleRepairHistory
+              t={t}
               locale={locale}
-              emptyMessage={target.kind === 'vehicle'
-                ? t('customers.emptyVehicleHistory')
-                : t('customers.emptyCustomerHistory')}
-              emptyMessageClassName={target.kind === 'vehicle' ? 'px-3 py-2 text-left' : undefined}
-              onOpenAppointment={onOpenHistoryAppointment}
+              vehicle={target.vehicle}
+              sortDirection={history.vehicleHistorySortByVehicleId[target.vehicle.id] ?? 'asc'}
+              onToggleSort={history.onToggleVehicleHistorySort}
+              onOpenAppointment={history.onOpenHistoryAppointment}
+            />
+          ) : (
+            <CustomerRepairHistory
+              t={t}
+              locale={locale}
+              customerId={customer.id}
+              sortDirection={history.customerHistorySortByCustomerId[customer.id] ?? 'asc'}
+              onToggleSort={history.onToggleCustomerHistorySort}
+              onOpenAppointment={history.onOpenHistoryAppointment}
             />
           )}
         </section>
@@ -167,40 +120,3 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
     </aside>
   );
 });
-
-function getHistorySource(params: {
-  readonly target: ResolvedCustomerDetailsPanelTarget;
-  readonly t: TFunction;
-  readonly customerHistoryByCustomerId: Record<number, AppointmentDto[]>;
-  readonly isLoadingCustomerHistoryByCustomerId: Record<number, boolean>;
-  readonly customerHistorySortByCustomerId: Record<number, SortDirection>;
-  readonly vehicleHistoryByVehicleId: Record<number, AppointmentDto[]>;
-  readonly isLoadingVehicleHistoryByVehicleId: Record<number, boolean>;
-  readonly vehicleHistorySortByVehicleId: Record<number, SortDirection>;
-  readonly onToggleCustomerHistorySort: (customerId: number) => void;
-  readonly onToggleVehicleHistorySort: (vehicleId: number) => void;
-}) {
-  if (params.target.kind === 'vehicle') {
-    const vehicleId = params.target.vehicle.id;
-
-    return {
-      title: params.t('customers.vehicleHistoryForPlateTitle', {
-        plate: params.target.vehicle.licensePlate,
-      }),
-      appointments: params.vehicleHistoryByVehicleId[vehicleId] ?? [],
-      isLoading: params.isLoadingVehicleHistoryByVehicleId[vehicleId] ?? false,
-      sortDirection: params.vehicleHistorySortByVehicleId[vehicleId] ?? 'asc',
-      toggleSort: () => params.onToggleVehicleHistorySort(vehicleId),
-    };
-  }
-
-  const customerId = params.target.customer.id;
-
-  return {
-    title: params.t('customers.customerHistoryTitle'),
-    appointments: params.customerHistoryByCustomerId[customerId] ?? [],
-    isLoading: params.isLoadingCustomerHistoryByCustomerId[customerId] ?? false,
-    sortDirection: params.customerHistorySortByCustomerId[customerId] ?? 'asc',
-    toggleSort: () => params.onToggleCustomerHistorySort(customerId),
-  };
-}

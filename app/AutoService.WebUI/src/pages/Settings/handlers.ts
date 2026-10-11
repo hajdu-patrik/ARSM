@@ -1,4 +1,4 @@
-/** Settings page handler utilities: password validation, error mapping, and failure handling for page workflows. */
+/** Settings error mapping: turns rejected profile, password and delete requests into field errors and message keys. */
 
 import { isAxiosError } from 'axios';
 import type { FieldErrors } from './types';
@@ -11,6 +11,10 @@ import { extractFieldErrors } from './helpers';
 
 const SETTINGS_REQUIRED_FIELD_KEY = 'common.validation.fieldRequired';
 
+/** Message key of a wrong current password, which belongs to the current-password field. */
+export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInvalid';
+
+/** Maps a server message to its message key, or to the fallback key when no mapping exists. */
 function mapSettingsMessageToToastKey(message: string, fallbackKey: string): string {
   const mappedMessage = mapSettingsValidationMessageToKey(message);
   return mappedMessage === message ? fallbackKey : mappedMessage;
@@ -27,14 +31,21 @@ export function fieldHasRequiredError(errors: FieldErrors, fieldName: string): b
   return variants.some((variant) => (errors[variant] ?? []).includes(SETTINGS_REQUIRED_FIELD_KEY));
 }
 
+/** Error body of a rejected settings request: a field-error dictionary and/or a single detail message. */
+interface ServerErrorBody {
+  errors?: FieldErrors;
+  detail?: string;
+}
+
 /** Extracts and localizes field errors from a profile-save response. */
 export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
-  if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+  if (!isAxiosError<ServerErrorBody>(err)) {
     return null;
   }
 
+  const data = err.response?.data;
   const normalizedFieldErrors = normalizeServerFieldErrors(
-    extractFieldErrors(err.response?.data),
+    extractFieldErrors(data),
     (message) => mapSettingsMessageToToastKey(message, 'toast.profileUpdateFailed'),
   );
 
@@ -42,10 +53,9 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
     return normalizedFieldErrors;
   }
 
-  const detail = err.response?.data?.detail;
-  if (detail) {
+  if (data?.detail) {
     return {
-      Detail: [mapSettingsMessageToToastKey(detail, 'toast.profileUpdateFailed')],
+      Detail: [mapSettingsMessageToToastKey(data.detail, 'toast.profileUpdateFailed')],
     };
   }
 
@@ -63,8 +73,6 @@ export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
       mapped.CurrentPassword = [...(mapped.CurrentPassword ?? []), ...normalizedValues];
     } else if (key === 'ConfirmNewPassword') {
       mapped.ConfirmNewPassword = [...(mapped.ConfirmNewPassword ?? []), ...normalizedValues];
-    } else if (key === 'NewPassword') {
-      mapped.NewPassword = [...(mapped.NewPassword ?? []), ...normalizedValues];
     } else {
       mapped.NewPassword = [...(mapped.NewPassword ?? []), ...normalizedValues];
     }
@@ -75,7 +83,7 @@ export function mapPasswordErrors(errors: FieldErrors): FieldErrors {
 
 /** Maps a password-change error to normalized field errors for 422/400 responses, else null. */
 export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
-  if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+  if (!isAxiosError<ServerErrorBody>(err)) {
     return null;
   }
 
@@ -97,13 +105,13 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
 
 /** Maps a profile-deletion error to a message key: 403/401 to a password-invalid key, else field/detail mapping, or null. */
 export function extractDeleteProfileErrorKey(err: unknown): string | null {
-  if (!isAxiosError<{ errors?: FieldErrors; detail?: string }>(err)) {
+  if (!isAxiosError<ServerErrorBody>(err)) {
     return null;
   }
 
   const status = err.response?.status;
   if (status === 403 || status === 401) {
-    return 'settings.errors.currentPasswordInvalid';
+    return CURRENT_PASSWORD_INVALID_KEY;
   }
 
   const data = err.response?.data;

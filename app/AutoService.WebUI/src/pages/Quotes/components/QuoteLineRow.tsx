@@ -1,21 +1,13 @@
-/** Saved quote line row via DataListRow (shared column model, `@3xl` tile collapse); actions only while editable, amounts always from the server DTO. */
+/** Saved quote line row via DataListRow (one DOM, `@3xl` table or tiles); actions only while editable, amounts always from the server DTO. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Pencil, Trash2 } from 'lucide-react';
-import { DataListRow } from '../../../components/common/DataList';
-import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
+import { DataListCell, DataListRow, DataListText } from '../../../components/common/DataList';
 import type { QuoteLineDto } from '../../../types/quotes/quotes.types';
 import { formatHuf, formatHufUnitPrice } from '../../../utils/currency';
 import {
-  compactItemTitleClampTextClass,
-  compactItemTitleTextClass,
   compactRowActionsClusterClass,
-  compactRowHeaderClass,
   compactTwoColumnGridClass,
-  metadataPillClass,
-  metadataPillWrapClass,
-  numericMutedValueTextClass,
-  numericValueTextClass,
   rowIconActionDangerClass,
   rowIconActionWarningClass,
   smallIconClass,
@@ -33,24 +25,16 @@ interface QuoteLineRowProps {
   readonly onDelete: () => void;
 }
 
-const QuoteLineRowComponent = memo(function QuoteLineRow({
-  t,
-  locale,
-  line,
-  canEdit,
-  isSaving,
-  onStartEdit,
-  onDelete,
-}: QuoteLineRowProps) {
-  const { quantityKey, unitPriceKey } = resolveLineLabelKeys(line.lineKind);
-  const kindLabel = line.lineKind === 'Labor' ? t('quotes.line.kindLabor') : t('quotes.line.kindPart');
-  const quantityText = formatQuantity(line.quantity, locale);
-  const unitPriceText = formatHufUnitPrice(line.netUnitPrice, locale);
-  const vatText = `${line.vatRatePercent}%`;
-  const netText = formatHuf(line.netAmount, locale);
-  const grossText = formatHuf(line.grossAmount, locale);
+interface QuoteLineActionsProps {
+  readonly t: TFunction;
+  readonly isSaving: boolean;
+  readonly onStartEdit: () => void;
+  readonly onDelete: () => void;
+}
 
-  const actions = (
+/** Edit and delete icon actions of one saved line. */
+function QuoteLineActions({ t, isSaving, onStartEdit, onDelete }: QuoteLineActionsProps) {
+  return (
     <div className={compactRowActionsClusterClass}>
       <button
         data-testid="quote-line-edit-button"
@@ -76,45 +60,57 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
       </button>
     </div>
   );
+}
+
+const QuoteLineRowComponent = memo(function QuoteLineRow({
+  t,
+  locale,
+  line,
+  canEdit,
+  isSaving,
+  onStartEdit,
+  onDelete,
+}: QuoteLineRowProps) {
+  const { quantityKey, unitPriceKey } = resolveLineLabelKeys(line.lineKind);
+  const kindLabel = line.lineKind === 'Labor' ? t('quotes.line.kindLabor') : t('quotes.line.kindPart');
+  const quantityText = formatQuantity(line.quantity, locale);
+  const unitPriceText = formatHufUnitPrice(line.netUnitPrice, locale);
+  const vatText = `${formatQuantity(line.vatRatePercent, locale)}%`;
+  const netText = formatHuf(line.netAmount, locale);
+  const grossText = formatHuf(line.grossAmount, locale);
 
   return (
     <DataListRow
-      breakpoint="3xl"
       testId="quote-line-row"
-      desktop={(
-        <>
-          <div className="min-w-0">
-            <p className={compactItemTitleTextClass} title={line.description}>{line.description}</p>
-            <p className={`mt-1 ${metadataPillClass}`} title={kindLabel}>{kindLabel}</p>
-          </div>
-          <p className={numericMutedValueTextClass} title={quantityText}>{quantityText}</p>
-          <p className={numericMutedValueTextClass} title={unitPriceText}>{unitPriceText}</p>
-          <p className={numericMutedValueTextClass} title={vatText}>{vatText}</p>
-          <p className={numericValueTextClass} title={netText}>{netText}</p>
-          <p className={`${numericValueTextClass} font-semibold`} title={grossText}>{grossText}</p>
-          {canEdit && actions}
-        </>
+      valuesClassName={compactTwoColumnGridClass}
+      lead={(
+        <DataListCell column="description">
+          <DataListText kind="title" title={line.description}>{line.description}</DataListText>
+          <DataListText kind="pill" title={kindLabel} className="mt-1">{kindLabel}</DataListText>
+        </DataListCell>
       )}
-      mobile={(
-        <>
-          <div className={compactRowHeaderClass}>
-            <div className="min-w-0">
-              <p className={compactItemTitleClampTextClass}>{line.description}</p>
-              <p className={`mt-1 ${metadataPillWrapClass}`}>{kindLabel}</p>
-            </div>
-            {canEdit && actions}
-          </div>
-
-          <div className={compactTwoColumnGridClass}>
-            <LabeledValueTile label={t(quantityKey)} value={quantityText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t(unitPriceKey)} value={unitPriceText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.vatRate')} value={vatText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.net')} value={netText} valueClassName="text-right tabular-nums" />
-            <LabeledValueTile label={t('common.fields.gross')} value={grossText} valueClassName="text-right font-semibold tabular-nums" />
-          </div>
-        </>
-      )}
-    />
+      actions={canEdit ? (
+        <DataListCell column="actions" headerEnd>
+          <QuoteLineActions t={t} isSaving={isSaving} onStartEdit={onStartEdit} onDelete={onDelete} />
+        </DataListCell>
+      ) : null}
+    >
+      <DataListCell column="quantity" label={t(quantityKey)} tile>
+        <DataListText kind="quantity" title={quantityText}>{quantityText}</DataListText>
+      </DataListCell>
+      <DataListCell column="unitPrice" label={t(unitPriceKey)} tile>
+        <DataListText kind="quantity" title={unitPriceText}>{unitPriceText}</DataListText>
+      </DataListCell>
+      <DataListCell column="vat" label={t('common.fields.vatRate')} tile>
+        <DataListText kind="quantity" title={vatText}>{vatText}</DataListText>
+      </DataListCell>
+      <DataListCell column="net" label={t('common.fields.net')} tile>
+        <DataListText kind="amount" title={netText}>{netText}</DataListText>
+      </DataListCell>
+      <DataListCell column="gross" label={t('common.fields.gross')} tile>
+        <DataListText kind="amount" title={grossText} className="font-semibold">{grossText}</DataListText>
+      </DataListCell>
+    </DataListRow>
   );
 });
 

@@ -1,19 +1,14 @@
 /** VAT breakdown of the accepted revenue: tax base and tax charged per rate, the pair an accountant reconciles first. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { DataList, DataListRow, type DataListColumn } from '../../../components/common/DataList';
+import { DataList, DataListCell, DataListRow, DataListText, type DataListColumn } from '../../../components/common/DataList';
 import type { CompanyResultVatRowDto } from '../../../types/reporting/company-results.types';
 import { formatHuf } from '../../../utils/currency';
-import {
-  compactItemTitleClampTextClass,
-  compactItemTitleTextClass,
-  compactSectionHeadingTextClass,
-  numericValueTextClass,
-  numericValueWrapTextClass,
-} from '../../../utils/formStyles';
+import { compactSectionHeadingTextClass } from '../../../utils/formStyles';
+import { formatQuantity } from '../../../utils/number';
 import { MobileColumnStrip } from './MobileColumnStrip';
 import { MobileStackedValues } from './MobileStackedValues';
-import { mobileColumnsClass } from './mobileColumns';
+import { mobileValuesClass } from './mobileColumns';
 
 interface VatBreakdownListProps {
   readonly t: TFunction;
@@ -23,15 +18,12 @@ interface VatBreakdownListProps {
 
 /** Column grid shared by the header row and every VAT row via CSS subgrid. */
 const vatColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
-const vatRateTextClass = `${compactItemTitleTextClass} tabular-nums`;
-const vatRateWrapTextClass = `${compactItemTitleClampTextClass} tabular-nums`;
 
 const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, rows }: VatBreakdownListProps) {
-  const columns: DataListColumn[] = [
-    { key: 'vatRate', label: t('companyResults.vatRate') },
-    { key: 'taxBase', label: t('companyResults.taxBase'), align: 'right' },
-    { key: 'tax', label: t('companyResults.tax'), align: 'right' },
-  ];
+  const rateColumn: DataListColumn = { key: 'vatRate', label: t('companyResults.vatRate') };
+  const taxBaseColumn: DataListColumn = { key: 'taxBase', label: t('companyResults.taxBase'), align: 'right' };
+  const taxColumn: DataListColumn = { key: 'tax', label: t('companyResults.tax'), align: 'right' };
+  const columns = [rateColumn, taxBaseColumn, taxColumn];
 
   return (
     <section className="min-w-0 space-y-3">
@@ -46,36 +38,23 @@ const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, ro
         emptyTestId="company-results-vat-empty"
       >
         <MobileColumnStrip columns={columns} />
-        {rows.map((row) => (
-          <DataListRow
-            key={row.vatRatePercent}
-            breakpoint="lg"
-            testId="company-results-vat-row"
-            desktop={(
-              <>
-                <p className={vatRateTextClass}>{row.vatRatePercent}%</p>
-                <p className={numericValueTextClass}>{formatHuf(row.net, locale)}</p>
-                <p className={`${numericValueTextClass} font-semibold`}>{formatHuf(row.vat, locale)}</p>
-              </>
-            )}
-            mobile={(
-              <>
-                <div className={mobileColumnsClass}>
-                  <p className={vatRateWrapTextClass}>{row.vatRatePercent}%</p>
-                  <p className={numericValueWrapTextClass}>{formatHuf(row.net, locale)}</p>
-                  <p className={`${numericValueWrapTextClass} font-semibold`}>{formatHuf(row.vat, locale)}</p>
-                </div>
-                <p className={`${vatRateWrapTextClass} min-[360px]:hidden`}>{row.vatRatePercent}%</p>
-                <MobileStackedValues
-                  values={[
-                    { label: columns[1].label, value: formatHuf(row.net, locale) },
-                    { label: columns[2].label, value: formatHuf(row.vat, locale), emphasized: true },
-                  ]}
-                />
-              </>
-            )}
-          />
-        ))}
+        {rows.map((row) => {
+          const rateText = `${formatQuantity(row.vatRatePercent, locale)}%`;
+
+          return (
+            <DataListRow key={row.vatRatePercent} testId="company-results-vat-row" valuesClassName={mobileValuesClass}>
+              <DataListCell column={rateColumn.key} className="max-[359px]:mb-1">
+                <DataListText kind="title" title={rateText} className="tabular-nums">{rateText}</DataListText>
+              </DataListCell>
+              <MobileStackedValues
+                values={[
+                  { column: taxBaseColumn.key, label: taxBaseColumn.label, value: formatHuf(row.net, locale), ellipsis: true },
+                  { column: taxColumn.key, label: taxColumn.label, value: formatHuf(row.vat, locale), ellipsis: true, emphasized: true },
+                ]}
+              />
+            </DataListRow>
+          );
+        })}
       </DataList>
     </section>
   );

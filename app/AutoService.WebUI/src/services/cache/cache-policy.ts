@@ -7,11 +7,14 @@ const DAY_MS = 24 * 60 * MINUTE_MS;
 /** Storage key for persisted private TanStack Query data. */
 export const PERSISTED_QUERY_CACHE_KEY = 'arsm-private-query-cache';
 
-/** Cache buster for persisted private query data schema changes. */
-export const PERSISTED_QUERY_CACHE_BUSTER = 'arsm-private-query-cache-v1';
+/** Cache buster base for persisted query data; the person id is appended, so one user's payload never restores for another. */
+export const PERSISTED_QUERY_CACHE_BUSTER = 'arsm-private-query-cache-v2';
 
-/** Maximum age for private persisted read-model data in the current browser session. */
-export const PERSISTED_QUERY_CACHE_MAX_AGE_MS = 30 * DAY_MS;
+/** Maximum age of persisted data and default garbage-collection time of every query (at most 24 h). */
+export const PERSISTED_QUERY_CACHE_MAX_AGE_MS = DAY_MS;
+
+/** Minimum gap between two writes of the persisted cache; the last state of a burst is still written. */
+export const PERSISTED_QUERY_CACHE_WRITE_THROTTLE_MS = SECOND_MS;
 
 /** Stale time for the scheduler today query, which refreshes more aggressively than month windows. */
 export const SCHEDULER_TODAY_STALE_TIME_MS = 30 * SECOND_MS;
@@ -36,3 +39,9 @@ export const QUOTES_STALE_TIME_MS = MINUTE_MS;
 
 /** Stale time for the company result report read. */
 export const COMPANY_RESULTS_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for the signed-in user's profile read. */
+export const PROFILE_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for the admin mechanic roster read. */
+export const ADMIN_MECHANICS_STALE_TIME_MS = MINUTE_MS;

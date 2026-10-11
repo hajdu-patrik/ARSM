@@ -1,7 +1,8 @@
 /** Quote editor header: metadata, title/notes, validity (own save action), and appointment link; fields disable rather than hide past Draft, except validity, which extends via its own endpoint (D23, see CLAUDE.md). */
-import { memo, type Dispatch, type SetStateAction } from 'react';
+import { memo, useId, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { CalendarClock } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
@@ -24,7 +25,9 @@ import {
   textareaClass,
   warningNoticeSurfaceClass,
 } from '../../../utils/formStyles';
-import { formatQuoteDate, resolveQuoteDisplayStatus, type QuoteHeaderFormState } from '../helpers';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
+import { formatShortDate } from '../../../utils/intlFormat';
+import { resolveQuoteDisplayStatus, type QuoteHeaderFieldErrors, type QuoteHeaderFormState } from '../helpers';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
 
 interface QuoteEditorHeaderSectionProps {
@@ -34,6 +37,7 @@ interface QuoteEditorHeaderSectionProps {
   readonly vehicleLabel: string;
   readonly form: QuoteHeaderFormState;
   readonly setForm: Dispatch<SetStateAction<QuoteHeaderFormState>>;
+  readonly errors: QuoteHeaderFieldErrors;
   readonly appointments: AppointmentDto[];
   readonly isSaving: boolean;
   readonly canEditHeader: boolean;
@@ -43,11 +47,11 @@ interface QuoteEditorHeaderSectionProps {
 
 /** Builds the option label for one appointment: the scheduled day plus the task. */
 function buildAppointmentOptionLabel(appointment: AppointmentDto, locale: string): string {
-  return `${formatQuoteDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
+  return `${formatShortDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
 }
 
 /** Picks the locked-header notice key by status: Accepted and Rejected read as closed, Sent keeps the original text. */
-function resolveLockedNoticeKey(status: QuoteStatus | undefined): string {
+function resolveLockedNoticeKey(status: QuoteStatus): string {
   switch (status) {
     case 'Accepted':
       return 'quotes.headerLockedNoticeAccepted';
@@ -58,6 +62,7 @@ function resolveLockedNoticeKey(status: QuoteStatus | undefined): string {
   }
 }
 
+/** Header fields of the quote editor, with an inline error bound to the title. */
 const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection({
   t,
   locale,
@@ -65,12 +70,14 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
   vehicleLabel,
   form,
   setForm,
+  errors,
   appointments,
   isSaving,
   canEditHeader,
   canChangeValidity,
   onSaveValidity,
 }: QuoteEditorHeaderSectionProps) {
+  const titleErrorId = useId();
   const isExistingQuote = quote !== null;
   // A linked appointment that the vehicle history no longer returns would
   // otherwise leave the disabled select blank, hiding an existing link.
@@ -88,15 +95,15 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
           </div>
         )}
         {quote && (
-          <LabeledValueTile label={t('quotes.columns.createdAt')} value={formatQuoteDate(quote.createdAt, locale)} valueClassName="tabular-nums" />
+          <LabeledValueTile label={t('quotes.columns.createdAt')} value={formatShortDate(quote.createdAt, locale)} valueClassName="tabular-nums" />
         )}
         {quote && (
           <LabeledValueTile label={t('quotes.columns.createdBy')} value={quote.createdByMechanic?.fullName ?? t('quotes.unknownMechanic')} />
         )}
       </div>
 
-      {isExistingQuote && !canEditHeader && (
-        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t(resolveLockedNoticeKey(quote?.status))}</p>
+      {quote !== null && !canEditHeader && (
+        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t(resolveLockedNoticeKey(quote.status))}</p>
       )}
 
       <div className={formFieldGroupClass}>
@@ -106,12 +113,16 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
           id="quote-title"
           type="text"
           value={form.title}
-          onChange={(event) => setForm((previous) => ({ ...previous, title: event.target.value }))}
+          onChange={(event) => {
+            setForm((previous) => ({ ...previous, title: event.target.value }));
+          }}
           className={inputClass}
           placeholder={t('quotes.titlePlaceholder')}
           maxLength={MAX_QUOTE_TITLE_LENGTH}
           disabled={isSaving || !canEditHeader}
+          {...fieldErrorA11yProps(titleErrorId, errors.title)}
         />
+        <FieldErrorText id={titleErrorId} messageKey={errors.title} />
       </div>
 
       <div className={formFieldGroupClass}>
@@ -120,7 +131,9 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
           data-testid="quote-notes-input"
           id="quote-notes"
           value={form.notes}
-          onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
+          onChange={(event) => {
+            setForm((previous) => ({ ...previous, notes: event.target.value }));
+          }}
           className={textareaClass}
           placeholder={t('quotes.notesPlaceholder')}
           maxLength={MAX_QUOTE_NOTES_LENGTH}
@@ -138,7 +151,9 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
               id="quote-valid-until"
               type="date"
               value={form.validUntil}
-              onChange={(event) => setForm((previous) => ({ ...previous, validUntil: event.target.value }))}
+              onChange={(event) => {
+                setForm((previous) => ({ ...previous, validUntil: event.target.value }));
+              }}
               className={`${inputClass} flex-1`}
               disabled={isSaving || !canChangeValidity}
             />
@@ -155,7 +170,7 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
               </button>
             )}
           </div>
-          {isExistingQuote && quote?.status === 'Sent' && (
+          {quote?.status === 'Sent' && (
             <p className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.validityExtendOnlyHint')}</p>
           )}
         </div>
@@ -166,7 +181,9 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
             data-testid="quote-appointment-select"
             id="quote-appointment"
             value={form.appointmentId}
-            onChange={(event) => setForm((previous) => ({ ...previous, appointmentId: event.target.value }))}
+            onChange={(event) => {
+              setForm((previous) => ({ ...previous, appointmentId: event.target.value }));
+            }}
             className={`${inputClass} min-w-0 truncate`}
             disabled={isSaving || isExistingQuote}
           >

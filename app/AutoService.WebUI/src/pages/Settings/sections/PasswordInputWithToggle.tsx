@@ -1,6 +1,8 @@
 /** Password input with a visibility toggle used by Settings forms. */
 
 import { Eye, EyeOff } from 'lucide-react';
+import { FieldErrorText } from '../../../components/common/FieldErrorText';
+import type { FieldErrorA11yProps } from '../../../utils/fieldA11y';
 import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../utils/formStyles';
 
 interface PasswordInputWithToggleProps {
@@ -17,6 +19,11 @@ interface PasswordInputWithToggleProps {
   readonly inputName: string;
   readonly toggleAriaLabel: string;
   readonly hintText?: string;
+  /** `aria-invalid` and `aria-describedby` of the field, pointing at whichever error text is on screen. */
+  readonly a11yProps: FieldErrorA11yProps;
+  /** Id of this field's own server error text, shown under the input while `errorKey` is set. */
+  readonly errorId: string;
+  readonly errorKey: string | undefined;
 }
 
 /** Renders a controlled password input with lock/autofill-safe attributes. */
@@ -34,6 +41,9 @@ export function PasswordInputWithToggle({
   inputName,
   toggleAriaLabel,
   hintText,
+  a11yProps,
+  errorId,
+  errorKey,
 }: PasswordInputWithToggleProps) {
   return (
     <div>
@@ -45,7 +55,9 @@ export function PasswordInputWithToggle({
           id={id}
           type={isVisible ? 'text' : 'password'}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onChange(event.target.value);
+          }}
           onFocus={onFocus}
           placeholder={placeholder}
           className={`${inputClass} pr-12`}
@@ -57,6 +69,7 @@ export function PasswordInputWithToggle({
           data-1p-ignore="true"
           data-bwignore="true"
           spellCheck={false}
+          {...a11yProps}
         />
         <button
           type="button"
@@ -67,6 +80,7 @@ export function PasswordInputWithToggle({
           {isVisible ? <EyeOff className={largeIconClass} /> : <Eye className={largeIconClass} />}
         </button>
       </div>
+      <FieldErrorText id={errorId} messageKey={errorKey} />
       {hintText ? <p className={`mt-1 ${mutedMetaTextClass}`}>{hintText}</p> : null}
     </div>
   );

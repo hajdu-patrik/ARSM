@@ -1,5 +1,6 @@
 /** Computes summary-strip data for the scheduler page header: selected date, label, and appointment count. */
 import { useMemo } from 'react';
+import type { TFunction } from 'i18next';
 import { formatLongDate, isPastCalendarDay } from '../utils/scheduler-datetime';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
@@ -18,7 +19,7 @@ interface UseSchedulerSummaryArgs {
   /** Active i18n locale code (e.g. "en", "hu"). */
   readonly locale: string;
   /** i18next translation function. */
-  readonly t: (key: string, options?: Record<string, unknown>) => string;
+  readonly t: TFunction;
 }
 
 /** Computes display data for the scheduler summary strip. */

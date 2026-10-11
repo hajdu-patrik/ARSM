@@ -5,13 +5,14 @@ export type TestTheme = 'light' | 'dark';
 
 interface PrimeBrowserStateOptions {
   readonly language?: TestLanguage;
-  readonly theme?: TestTheme;
+  /** `'system'` saves no theme, so the app follows the system color scheme. */
+  readonly theme?: TestTheme | 'system';
   readonly sessionHint?: boolean;
   readonly sidebarCollapsed?: boolean;
 }
 
-/** Preloads deterministic localStorage state before the app boots, avoiding loading-splash
- * delays and keeping auth-route tests stable. */
+/** Preloads deterministic localStorage state before the app boots: language, theme, sidebar
+ * state and the session hint that makes the app restore a session. */
 export async function primeBrowserState(page: Page, options: PrimeBrowserStateOptions = {}): Promise<void> {
   const {
     language = 'en',
@@ -22,14 +23,18 @@ export async function primeBrowserState(page: Page, options: PrimeBrowserStateOp
 
   await page.addInitScript((state: {
     language: TestLanguage;
-    theme: TestTheme;
+    theme: TestTheme | 'system';
     sessionHint: boolean;
     sidebarCollapsed: boolean;
   }) => {
     localStorage.setItem('preferred-language', state.language);
-    localStorage.setItem('preferred-theme', state.theme);
-    localStorage.setItem('loading-page-seen', 'true');
     localStorage.setItem('preferred-sidebar-collapsed', state.sidebarCollapsed ? 'true' : 'false');
+
+    if (state.theme === 'system') {
+      localStorage.removeItem('preferred-theme');
+    } else {
+      localStorage.setItem('preferred-theme', state.theme);
+    }
 
     if (state.sessionHint) {
       localStorage.setItem('autoservice-session-hint', '1');

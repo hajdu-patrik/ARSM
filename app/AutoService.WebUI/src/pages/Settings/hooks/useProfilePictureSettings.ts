@@ -1,9 +1,18 @@
+/** Profile picture workflow for Settings: inspection of the picked file, the crop step and the upload and removal mutations. */
+
 import { useCallback, useState } from 'react';
-import { profileService } from '../../../services/profile/profile.service';
-import { fileToImageSource } from '../../../utils/imageCrop';
-import { isAllowedPictureExtension } from '../../../utils/validation';
+import { useMutation } from '@tanstack/react-query';
 import { emitProfilePictureUpdated } from '../../../services/profile/profile-picture-live.service';
+import { profileService } from '../../../services/profile/profile.service';
 import type { ProfileData } from '../../../types/profile/profile.types';
+import { fileToImageSource } from '../../../utils/imageCrop';
+import {
+  MAX_PICTURE_MEGAPIXELS,
+  MAX_PICTURE_SIDE_PX,
+  findPictureRejection,
+  hasAllowedPictureType,
+} from '../../../utils/imageInspection';
+import { useProfileCache } from './useProfileCache';
 
 const MAX_PROFILE_PICTURE_BYTES = 4 * 1024 * 1024;
 const MAX_PROFILE_PICTURE_MB = MAX_PROFILE_PICTURE_BYTES / (1024 * 1024);
@@ -12,25 +21,66 @@ const CROPPED_PICTURE_EXTENSION = '.webp';
 
 interface UseProfilePictureSettingsParams {
   profile: ProfileData | null;
-  setProfile: React.Dispatch<React.SetStateAction<ProfileData | null>>;
   showSuccessToast: (message: string, options?: Record<string, string | number>) => void;
   showErrorToast: (message: string, options?: Record<string, string | number>) => void;
 }
 
+/** Owns the picture pick checks, the crop modal source, the upload and removal mutations and their confirm flow. */
 export function useProfilePictureSettings({
   profile,
-  setProfile,
   showSuccessToast,
   showErrorToast,
 }: UseProfilePictureSettingsParams) {
-  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const { storePictureState, invalidateRoster } = useProfileCache();
   const [pictureKey, setPictureKey] = useState(0);
   const [pictureSource, setPictureSource] = useState<string | null>(null);
   const [pendingPictureFileName, setPendingPictureFileName] = useState<string | null>(null);
   const [isPictureRemoveConfirmOpen, setIsPictureRemoveConfirmOpen] = useState(false);
 
+  const closePictureCropModal = useCallback(() => {
+    setPictureSource(null);
+    setPendingPictureFileName(null);
+  }, []);
+
+  /** Mirrors a changed picture into the profile cache, the admin roster, the preview key and the live-update event. */
+  const applyPictureChange = useCallback((hasProfilePicture: boolean) => {
+    storePictureState(hasProfilePicture);
+    invalidateRoster();
+    setPictureKey((previousKey) => previousKey + 1);
+
+    if (profile) {
+      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture });
+    }
+  }, [invalidateRoster, profile, storePictureState]);
+
+  const { mutate: uploadPicture, isPending: isUploadingFile } = useMutation({
+    mutationFn: (file: File) => profileService.uploadProfilePicture(file),
+    onSuccess: () => {
+      applyPictureChange(true);
+      closePictureCropModal();
+      showSuccessToast('toast.pictureUploaded');
+    },
+    onError: () => {
+      showErrorToast('toast.pictureUploadFailed');
+    },
+  });
+
+  const { mutate: removePicture, isPending: isRemovingPicture } = useMutation({
+    mutationFn: () => profileService.deleteProfilePicture(),
+    onSuccess: () => {
+      applyPictureChange(false);
+      showSuccessToast('toast.pictureRemoved');
+      setIsPictureRemoveConfirmOpen(false);
+    },
+    onError: () => {
+      showErrorToast('toast.pictureRemoveFailed');
+    },
+  });
+
+  const isUploadingPicture = isUploadingFile || isRemovingPicture;
+
   const handleSelectPicture = useCallback(async (file: File) => {
-    if (!isAllowedPictureExtension(file.name)) {
+    if (!hasAllowedPictureType(file)) {
       showErrorToast('toast.pictureInvalidType');
       return;
     }
@@ -41,6 +91,21 @@ export function useProfilePictureSettings({
     }
 
     try {
+      // The magic bytes and the pixel size come from the file head, so nothing is decoded before they pass.
+      const rejection = await findPictureRejection(file);
+      if (rejection === 'invalid-type') {
+        showErrorToast('toast.pictureInvalidType');
+        return;
+      }
+
+      if (rejection === 'dimensions-too-large') {
+        showErrorToast('toast.pictureDimensionsTooLarge', {
+          maxSide: MAX_PICTURE_SIDE_PX,
+          maxMegapixels: MAX_PICTURE_MEGAPIXELS,
+        });
+        return;
+      }
+
       const imageSource = await fileToImageSource(file);
       setPendingPictureFileName(file.name);
       setPictureSource(imageSource);
@@ -49,12 +114,7 @@ export function useProfilePictureSettings({
     }
   }, [showErrorToast]);
 
-  const closePictureCropModal = useCallback(() => {
-    setPictureSource(null);
-    setPendingPictureFileName(null);
-  }, []);
-
-  const handleConfirmPictureCrop = useCallback(async (blob: Blob) => {
+  const handleConfirmPictureCrop = useCallback((blob: Blob) => {
     if (!profile) {
       return;
     }
@@ -65,50 +125,19 @@ export function useProfilePictureSettings({
       return;
     }
 
-    setIsUploadingPicture(true);
+    const baseFileName = pendingPictureFileName?.replace(/\.[^.]+$/, '') ?? 'profile-picture';
+    uploadPicture(new File(
+      [blob],
+      `${baseFileName}${CROPPED_PICTURE_EXTENSION}`,
+      { type: blob.type || CROPPED_PICTURE_TYPE },
+    ));
+  }, [pendingPictureFileName, profile, showErrorToast, uploadPicture]);
 
-    try {
-      const finalFileName = pendingPictureFileName?.replace(/\.[^.]+$/, '') ?? 'profile-picture';
-      const croppedFile = new File(
-        [blob],
-        `${finalFileName}${CROPPED_PICTURE_EXTENSION}`,
-        { type: blob.type || CROPPED_PICTURE_TYPE },
-      );
-
-      await profileService.uploadProfilePicture(croppedFile);
-      setProfile((prev) => prev ? { ...prev, hasProfilePicture: true } : prev);
-      setPictureKey((previousKey) => previousKey + 1);
-      closePictureCropModal();
-
-      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: true });
-
-      showSuccessToast('toast.pictureUploaded');
-    } catch {
-      showErrorToast('toast.pictureUploadFailed');
-    } finally {
-      setIsUploadingPicture(false);
+  const handleRemovePicture = useCallback(() => {
+    if (profile) {
+      removePicture();
     }
-  }, [closePictureCropModal, pendingPictureFileName, profile, setProfile, showErrorToast, showSuccessToast]);
-
-  const handleRemovePicture = useCallback(async () => {
-    if (!profile) {
-      return;
-    }
-
-    setIsUploadingPicture(true);
-    try {
-      await profileService.deleteProfilePicture();
-      setProfile((prev) => prev ? { ...prev, hasProfilePicture: false } : prev);
-      setPictureKey((previousKey) => previousKey + 1);
-      emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture: false });
-      showSuccessToast('toast.pictureRemoved');
-      setIsPictureRemoveConfirmOpen(false);
-    } catch {
-      showErrorToast('toast.pictureRemoveFailed');
-    } finally {
-      setIsUploadingPicture(false);
-    }
-  }, [profile, setProfile, showErrorToast, showSuccessToast]);
+  }, [profile, removePicture]);
 
   const handleRemovePictureRequest = useCallback(() => {
     if (!isUploadingPicture) {

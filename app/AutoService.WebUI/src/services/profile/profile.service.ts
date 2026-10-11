@@ -1,6 +1,8 @@
 /** Profile service: CRUD for the authenticated user's profile, password changes and picture management. */
 
+import { API_URL } from '../http/api-url';
 import { apiClient } from '../http/api.client';
+import type { SilentRequestOptions } from '../http/request-options';
 import type {
   ProfileData,
   UpdateProfileRequest,
@@ -8,14 +10,13 @@ import type {
   DeleteProfileRequest,
 } from '../../types/profile/profile.types';
 
-/** Base API URL for constructing direct resource URLs. */
-const API_URL = import.meta.env.VITE_API_URL;
-
 /** Profile service object for managing the authenticated user's profile. */
 export const profileService = {
   /** Fetches the current user's profile data via {@code GET /api/profile}. */
-  async getProfile(): Promise<ProfileData> {
-    const response = await apiClient.get<ProfileData>('/api/profile/');
+  async getProfile(options?: SilentRequestOptions): Promise<ProfileData> {
+    const response = await apiClient.get<ProfileData>('/api/profile/', {
+      skipErrorRedirect: options?.skipErrorRedirect,
+    });
     return response.data;
   },
 
@@ -54,7 +55,7 @@ export const profileService = {
 
   /** Returns the direct URL for a specific mechanic's profile picture. */
   getMechanicProfilePictureUrl(personId: number): string {
-    return `${API_URL}/api/profile/picture/${personId}`;
+    return `${API_URL}/api/profile/picture/${String(personId)}`;
   },
 
   /** Returns the SSE endpoint URL for real-time profile picture update events. */

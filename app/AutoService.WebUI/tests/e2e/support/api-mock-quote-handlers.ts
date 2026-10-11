@@ -1,7 +1,7 @@
 /** Mocked quote routes (`/api/quotes` plus its two vehicle-nested routes): this is the router; writes
  * live in `api-mock-quote-mutations.ts`/`api-mock-quote-lines.ts`, shared math in `api-mock-quote-support.ts`. */
 import type { Route } from '@playwright/test';
-import type { UpdateQuoteRequest } from '../../../src/types/quotes/quotes.types';
+import type { QuoteDetailDto, UpdateQuoteRequest } from '../../../src/types/quotes/quotes.types';
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
@@ -9,6 +9,7 @@ import { fulfillJson, fulfillNoContent } from './api-mock-response';
 import {
   applyQuoteWrite,
   rejectQuoteVersion,
+  replaceQuote,
   sortedQuotes,
   toQuoteDetailResponse,
   toQuoteListItemResponse,
@@ -68,9 +69,9 @@ async function handleQuoteResourceRoute(
     return false;
   }
 
-  const index = state.quotes.findIndex((quote) => quote.id === Number(quoteMatch[1]));
+  const quote = state.quotes.find((candidate) => candidate.id === Number(quoteMatch[1]));
 
-  if (index < 0) {
+  if (!quote) {
     await fulfillJson(route, { detail: 'Quote not found.' }, 404);
     return true;
   }
@@ -81,32 +82,32 @@ async function handleQuoteResourceRoute(
   const version = Number(url.searchParams.get('version') ?? 0);
 
   if (segment?.startsWith('/lines')) {
-    return handleQuoteLineRoute(route, method, state, index, quoteMatch[3], version);
+    return handleQuoteLineRoute(route, method, state, quote, quoteMatch[3], version);
   }
 
   if (segment === '/status' && method === 'POST') {
-    await handleChangeQuoteStatus(route, state, index);
+    await handleChangeQuoteStatus(route, state, quote);
     return true;
   }
 
   if (segment === '/valid-until' && method === 'PUT') {
-    await handleExtendQuoteValidity(route, state, index);
+    await handleExtendQuoteValidity(route, state, quote);
     return true;
   }
 
-  return segment ? false : handleQuoteRootRoute(route, method, state, index, version);
+  return segment ? false : handleQuoteRootRoute(route, method, state, quote, version);
 }
 
 async function handleQuoteLineRoute(
   route: Route,
   method: string,
   state: MockApiState,
-  index: number,
+  quote: QuoteDetailDto,
   rawLineId: string | undefined,
   version: number,
 ): Promise<boolean> {
   if (method === 'POST') {
-    await handleAddQuoteLine(route, state, index);
+    await handleAddQuoteLine(route, state, quote);
     return true;
   }
 
@@ -117,12 +118,12 @@ async function handleQuoteLineRoute(
   const lineId = Number(rawLineId);
 
   if (method === 'PUT') {
-    await handleUpdateQuoteLine(route, state, index, lineId);
+    await handleUpdateQuoteLine(route, state, quote, lineId);
     return true;
   }
 
   if (method === 'DELETE') {
-    await handleDeleteQuoteLine(route, state, index, lineId, version);
+    await handleDeleteQuoteLine(route, state, quote, lineId, version);
     return true;
   }
 
@@ -133,11 +134,9 @@ async function handleQuoteRootRoute(
   route: Route,
   method: string,
   state: MockApiState,
-  index: number,
+  quote: QuoteDetailDto,
   version: number,
 ): Promise<boolean> {
-  const quote = state.quotes[index];
-
   if (method === 'GET') {
     await fulfillJson(route, toQuoteDetailResponse(quote));
     return true;
@@ -156,7 +155,7 @@ async function handleQuoteRootRoute(
     }
 
     const saved = applyQuoteWrite({ ...quote, title: payload.title, notes: payload.notes });
-    state.quotes[index] = saved;
+    replaceQuote(state, quote, saved);
     await fulfillJson(route, toQuoteDetailResponse(saved));
     return true;
   }
@@ -174,7 +173,7 @@ async function handleQuoteRootRoute(
     return true;
   }
 
-  state.quotes.splice(index, 1);
+  state.quotes.splice(state.quotes.indexOf(quote), 1);
   await fulfillNoContent(route);
   return true;
 }

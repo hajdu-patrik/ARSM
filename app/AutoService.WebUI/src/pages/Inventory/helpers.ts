@@ -1,4 +1,4 @@
-/** Inventory page helpers: search normalization, validation mapping, form-state types, and the one permitted gross preview. */
+/** Inventory page helpers: validation mapping, field-error pinning, form-state types, and the one permitted gross preview. */
 
 import { DEFAULT_VAT_RATE_PERCENT } from '../../types/catalog/catalog.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
@@ -49,12 +49,51 @@ export const EMPTY_LABOR_TYPE_FORM: LaborTypeFormState = {
   vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
 };
 
-/** Removes accents and lowercases input to support accent-insensitive search. */
-export function normalizeCatalogSearchValue(value: string): string {
-  return value
-    .normalize('NFD')
-    .replaceAll(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+/** Fields of the generic catalog form that can carry a validation message. */
+export type CatalogFieldName = 'identifier' | 'name' | 'rate' | 'vatRate';
+
+/** The i18n key of the validation message each field currently shows. */
+export type CatalogFieldErrors = Partial<Record<CatalogFieldName, string>>;
+
+/** The current value of every validated field as text, which a pinned message is compared with. */
+export type CatalogFieldValues = Readonly<Record<CatalogFieldName, string>>;
+
+/** A validation message together with the field and the value it was raised for. */
+export interface PinnedCatalogFieldError {
+  readonly field: CatalogFieldName;
+  readonly messageKey: string;
+  readonly value: string;
+}
+
+/** The catalog messages that concern exactly one field; the endpoints answer with one message, never a field dictionary. */
+const CATALOG_MESSAGE_FIELDS: Readonly<Record<string, CatalogFieldName>> = {
+  'inventory.errors.identifierTooLong': 'identifier',
+  'inventory.errors.partNumberExists': 'identifier',
+  'inventory.errors.codeExists': 'identifier',
+  'inventory.errors.nameTooLong': 'name',
+  'inventory.errors.invalidMoney': 'rate',
+  'common.validation.invalidVatRate': 'vatRate',
+};
+
+/** Pins a message to the one field it concerns and the value that field holds, or returns null for a message about no field. */
+export function pinCatalogFieldError(messageKey: string, values: CatalogFieldValues): PinnedCatalogFieldError | null {
+  const field = CATALOG_MESSAGE_FIELDS[messageKey];
+
+  return field === undefined ? null : { field, messageKey, value: values[field] };
+}
+
+/** The pinned message while its field still holds the value it was raised for, so editing the field clears it. */
+export function currentCatalogFieldErrors(
+  pinned: PinnedCatalogFieldError | null,
+  values: CatalogFieldValues,
+): CatalogFieldErrors {
+  const errors: CatalogFieldErrors = {};
+
+  if (pinned !== null && values[pinned.field] === pinned.value) {
+    errors[pinned.field] = pinned.messageKey;
+  }
+
+  return errors;
 }
 
 /** Returns true when the server field-error dictionary has at least one non-empty entry. */

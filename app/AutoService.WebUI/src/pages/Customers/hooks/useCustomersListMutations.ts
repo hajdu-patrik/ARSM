@@ -1,151 +1,72 @@
-import { useCallback, type Dispatch, type SetStateAction } from 'react';
-import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import type { CustomerListItem, DrivetrainType, VehicleDetailDto } from '../../../types/customers/customers.types';
-import {
-  prevVehicleLicensePlate,
-  removeCustomerVehiclePlate,
-  replaceCustomerVehiclePlate,
-} from './useCustomersListState.helpers';
+import { useCallback } from 'react';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { queryKeys, type AuthQueryScope } from '../../../services/cache/queryKeys';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 
-interface CustomerMutationPayload {
-  firstName: string;
-  middleName?: string | null;
-  lastName: string;
-  email: string;
-  phoneNumber?: string | null;
-}
+/** Derives the query keys one mutation has to refresh from the signed-in scope. */
+type RefreshKeys = (scope: AuthQueryScope) => readonly QueryKey[];
 
-interface VehicleMutationPayload {
-  licensePlate: string;
-  vin: string;
-  brand: string;
-  model: string;
-  year: number;
-  mileageKm: number;
-  enginePowerKw: number;
-  drivetrainType: DrivetrainType;
-}
+/** Builds the cache refreshers the customer and vehicle mutations call after a successful write. Each marks the
+ * reads that write can make stale and resolves once the mounted ones refetched, so a closing modal never shows old data. */
+export function useCustomersListMutations() {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
 
-interface UseCustomersListMutationsParams {
-  readonly setCustomers: Dispatch<SetStateAction<CustomerListItem[]>>;
-  readonly setVehiclesByCustomerId: Dispatch<SetStateAction<Record<number, VehicleDetailDto[]>>>;
-  readonly setCustomerHistoryByCustomerId: Dispatch<SetStateAction<Record<number, AppointmentDto[]>>>;
-  readonly setVehicleHistoryByVehicleId: Dispatch<SetStateAction<Record<number, AppointmentDto[]>>>;
-  readonly setExpandedCustomerIds: Dispatch<SetStateAction<Set<number>>>;
-  readonly vehiclesByCustomerId: Record<number, VehicleDetailDto[]>;
-}
+  const refresh = useCallback(async (buildKeys: RefreshKeys) => {
+    if (scope === null) {
+      return;
+    }
 
-/** Builds local cache update actions for customer and vehicle mutations. */
-export function useCustomersListMutations({
-  setCustomers,
-  setVehiclesByCustomerId,
-  setCustomerHistoryByCustomerId,
-  setVehicleHistoryByVehicleId,
-  setExpandedCustomerIds,
-  vehiclesByCustomerId,
-}: UseCustomersListMutationsParams) {
-  const applyCustomerCreated = useCallback((createdCustomer: CustomerListItem) => {
-    setCustomers((prev) => [...prev, createdCustomer]);
-  }, [setCustomers]);
+    await Promise.all(buildKeys(scope).map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+  }, [queryClient, scope]);
 
-  const applyCustomerUpdated = useCallback((customerId: number, payload: CustomerMutationPayload) => {
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? {
-          ...item,
-          firstName: payload.firstName,
-          middleName: payload.middleName ?? null,
-          lastName: payload.lastName,
-          email: payload.email,
-          phoneNumber: payload.phoneNumber ?? null,
-        }
-        : item
-    )));
-  }, [setCustomers]);
+  const refreshAfterCustomerCreated = useCallback(() => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+  ]), [refresh]);
 
-  const applyCustomerDeleted = useCallback((customerId: number) => {
-    setCustomers((prev) => prev.filter((item) => item.id !== customerId));
-    setVehiclesByCustomerId((prev) => {
-      const next = { ...prev };
-      delete next[customerId];
-      return next;
-    });
-    setCustomerHistoryByCustomerId((prev) => {
-      const next = { ...prev };
-      delete next[customerId];
-      return next;
-    });
-    setExpandedCustomerIds((prev) => {
-      const next = new Set(prev);
-      next.delete(customerId);
-      return next;
-    });
-  }, [setCustomerHistoryByCustomerId, setCustomers, setExpandedCustomerIds, setVehiclesByCustomerId]);
+  const refreshAfterCustomerUpdated = useCallback((customerId: number) => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+    queryKeys.customers.vehicles(authScope, customerId),
+  ]), [refresh]);
 
-  const applyVehicleCreated = useCallback((customerId: number, createdVehicle: VehicleDetailDto) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: [...(prev[customerId] ?? []), createdVehicle],
-    }));
+  // The API deletes a customer's vehicles with it, and a vehicle's quotes with the vehicle.
+  const refreshAfterCustomerDeleted = useCallback(() => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+    queryKeys.scheduler.root(authScope),
+    queryKeys.quotes.root(authScope),
+    queryKeys.companyResults.root(authScope),
+  ]), [refresh]);
 
-    setCustomers((prev) => prev.map((item) => (
-      item.id === customerId
-        ? {
-          ...item,
-          vehicleCount: item.vehicleCount + 1,
-          vehicleLicensePlates: [...item.vehicleLicensePlates, createdVehicle.licensePlate],
-        }
-        : item
-    )));
-  }, [setCustomers, setVehiclesByCustomerId]);
+  const refreshAfterVehicleCreated = useCallback((customerId: number) => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+    queryKeys.customers.vehicles(authScope, customerId),
+  ]), [refresh]);
 
-  const applyVehicleUpdated = useCallback((customerId: number, vehicleId: number, payload: VehicleMutationPayload) => {
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: (prev[customerId] ?? []).map((vehicle) => (
-        vehicle.id === vehicleId
-          ? {
-            ...vehicle,
-            licensePlate: payload.licensePlate,
-            vin: payload.vin,
-            brand: payload.brand,
-            model: payload.model,
-            year: payload.year,
-            mileageKm: payload.mileageKm,
-            enginePowerKw: payload.enginePowerKw,
-            drivetrainType: payload.drivetrainType,
-          }
-          : vehicle
-      )),
-    }));
+  const refreshAfterVehicleUpdated = useCallback((customerId: number, vehicleId: number) => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+    queryKeys.customers.vehicles(authScope, customerId),
+    queryKeys.customers.vehicle(authScope, vehicleId),
+    queryKeys.customers.customerHistory(authScope, customerId),
+    queryKeys.customers.vehicleHistory(authScope, vehicleId),
+    queryKeys.scheduler.root(authScope),
+  ]), [refresh]);
 
-    const previousPlate = prevVehicleLicensePlate(vehiclesByCustomerId[customerId] ?? [], vehicleId);
-    setCustomers((prev) => prev.map((item) => replaceCustomerVehiclePlate(item, customerId, previousPlate, payload.licensePlate)));
-  }, [setCustomers, setVehiclesByCustomerId, vehiclesByCustomerId]);
-
-  const applyVehicleDeleted = useCallback((customerId: number, vehicleId: number) => {
-    const deletedPlate = prevVehicleLicensePlate(vehiclesByCustomerId[customerId] ?? [], vehicleId);
-
-    setVehiclesByCustomerId((prev) => ({
-      ...prev,
-      [customerId]: (prev[customerId] ?? []).filter((vehicle) => vehicle.id !== vehicleId),
-    }));
-
-    setCustomers((prev) => prev.map((item) => removeCustomerVehiclePlate(item, customerId, deletedPlate)));
-
-    setVehicleHistoryByVehicleId((prev) => {
-      const next = { ...prev };
-      delete next[vehicleId];
-      return next;
-    });
-  }, [setCustomers, setVehicleHistoryByVehicleId, setVehiclesByCustomerId, vehiclesByCustomerId]);
+  // The vehicle's quotes go with it, so the Quotes list and the revenue report must not keep them.
+  const refreshAfterVehicleDeleted = useCallback((customerId: number) => refresh((authScope) => [
+    queryKeys.customers.list(authScope),
+    queryKeys.customers.vehicles(authScope, customerId),
+    queryKeys.customers.customerHistory(authScope, customerId),
+    queryKeys.scheduler.root(authScope),
+    queryKeys.quotes.root(authScope),
+    queryKeys.companyResults.root(authScope),
+  ]), [refresh]);
 
   return {
-    applyCustomerCreated,
-    applyCustomerUpdated,
-    applyCustomerDeleted,
-    applyVehicleCreated,
-    applyVehicleUpdated,
-    applyVehicleDeleted,
+    refreshAfterCustomerCreated,
+    refreshAfterCustomerUpdated,
+    refreshAfterCustomerDeleted,
+    refreshAfterVehicleCreated,
+    refreshAfterVehicleUpdated,
+    refreshAfterVehicleDeleted,
   };
 }

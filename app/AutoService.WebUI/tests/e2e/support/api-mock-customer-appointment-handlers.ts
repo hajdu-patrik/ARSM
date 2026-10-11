@@ -7,6 +7,7 @@ import { isAuthenticated } from './api-mock-authz';
 import { createAppointment, createVehicle, deleteAppointment, getLookupName } from './api-mock-data';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
+/** Dispatches `/api/customers` lookups and the nested customer/vehicle mock routes. */
 export async function tryHandleCustomerRoute(
   route: Route,
   method: string,
@@ -138,6 +139,7 @@ async function handleCustomerByLicensePlate(route: Route, url: URL, state: MockA
   await fulfillJson(route, { detail: 'Customer not found' }, 404);
 }
 
+/** Dispatches `/api/appointments` mock requests, including the live update stream. */
 export async function tryHandleAppointmentRoute(
   route: Route,
   method: string,
@@ -180,16 +182,16 @@ export async function tryHandleAppointmentRoute(
   const appointmentStatusMatch = /^\/api\/appointments\/(\d+)\/status$/.exec(path);
   if (appointmentStatusMatch && method === 'PUT') {
     const appointmentId = Number(appointmentStatusMatch[1]);
-    const appointmentIndex = state.appointments.findIndex((appointment) => appointment.id === appointmentId);
+    const appointment = state.appointments.find((candidate) => candidate.id === appointmentId);
 
-    if (appointmentIndex < 0) {
+    if (!appointment) {
       await fulfillJson(route, { detail: 'Appointment not found.' }, 404);
       return true;
     }
 
     const { status } = route.request().postDataJSON() as { status: AppointmentStatus };
-    const updated = { ...state.appointments[appointmentIndex], status };
-    state.appointments[appointmentIndex] = updated;
+    const updated = { ...appointment, status };
+    state.appointments[state.appointments.indexOf(appointment)] = updated;
     await fulfillJson(route, updated);
     return true;
   }

@@ -24,10 +24,10 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 	t,
 }: SchedulerSummaryStripProps) {
 	return (
-		<section className={`${insetSurfaceClass} relative overflow-hidden px-4 py-3.5`}>
+		<section className={`${insetSurfaceClass} px-4 py-3.5`}>
 			<div className={compactStackedRowClass}>
 				<p className={`min-w-0 [overflow-wrap:anywhere] ${compactSectionHeadingTextClass}`}>{summaryDateText}</p>
-				<span className="inline-flex shrink-0 items-center rounded-full border border-arsm-border bg-arsm-toggle-bg px-3 py-1 text-xs font-semibold text-arsm-primary dark:border-arsm-border-dark dark:bg-arsm-toggle-bg-dark dark:text-arsm-hover">
+				<span className="inline-flex shrink-0 items-center rounded-full border border-ui-border bg-ui-toggle px-3 py-1 text-xs font-semibold text-arsm-primary dark:text-arsm-hover">
 					{t('scheduler.scheduledCount', { count: summaryCount })}
 				</span>
 			</div>

@@ -25,7 +25,7 @@ interface MonthAppointmentListProps {
   readonly onClearFilter: () => void;
 }
 
-
+/** Mechanic names that are placeholders, not real people (EN/HU "unknown", n/a, dashes). */
 const PLACEHOLDER_MECHANIC_NAME_PATTERN = /^(?:unknown|ismeretlen|n\/a|none|-+)$/i;
 
 /** Returns whether a mechanic name is placeholder text that should be hidden from filters. */
@@ -142,7 +142,7 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     );
   } else {
     listContent = (
-      <div className={`grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 ${shouldSpanSingleCard ? 'md:grid-cols-1' : ''}`}>
+      <div className={`grid min-w-0 grid-cols-1 gap-3 ${shouldSpanSingleCard ? '' : 'md:grid-cols-2'}`}>
         {sortedAppointments.map((appointment) => (
           <AppointmentCard
             key={appointment.id}
@@ -151,7 +151,9 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
             isAdmin={isAdmin}
             onClaim={onClaim}
             onUnclaim={onUnclaim}
-            onClick={() => onCardClick(appointment)}
+            onClick={() => {
+              onCardClick(appointment);
+            }}
           />
         ))}
       </div>
@@ -174,7 +176,9 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
           <MonthAppointmentSortControls
             selectedDay={selectedDay}
             sortAsc={sortAsc}
-            onToggleSort={() => setSortAsc((previousSortOrder) => !previousSortOrder)}
+            onToggleSort={() => {
+              setSortAsc((previousSortOrder) => !previousSortOrder);
+            }}
             onClearFilter={onClearFilter}
           />
         </div>

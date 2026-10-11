@@ -3,6 +3,7 @@ import { AuthPage } from './pages/auth.page';
 import { CustomersPage } from './pages/customers.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks';
+import { errorToastMessage } from './support/toast';
 import { MOCK_CUSTOMER_IDS, MOCK_VEHICLE_IDS } from './support/test-data';
 
 /** Optional mock failure setup for customer-registry E2E preparation. */
@@ -128,6 +129,29 @@ test.describe('Customer registry vehicle flows', () => {
   });
 });
 
+test.describe('Customer registry history dates', () => {
+  // A fixed zone, so the fixture instants render the same wall-clock time on every machine.
+  test.use({ timezoneId: 'UTC' });
+
+  test.beforeEach(async ({ page }) => {
+    await prepareCustomerRegistry(page);
+  });
+
+  test('shows dates as DD/MM/YYYY with a 24-hour clock', async ({ page }) => {
+    const customersPage = new CustomersPage(page);
+    await customersPage.goto();
+    await customersPage.expandCustomer(MOCK_CUSTOMER_IDS.anna);
+    await customersPage.openFirstVehicleDetails(MOCK_CUSTOMER_IDS.anna);
+
+    // Scheduled at 09:00 UTC on 21 May 2026, due at 17:00 UTC on 24 May 2026.
+    const historyItem = customersPage.detailsPanel().getByRole('button').filter({ hasText: 'Hybrid system inspection' });
+    await expect(historyItem).toContainText('21/05/2026, 09:00');
+
+    await historyItem.click();
+    await expect(page.getByRole('dialog')).toContainText('24/05/2026, 17:00');
+  });
+});
+
 test.describe('Customer registry vehicle history failures', () => {
   test.beforeEach(async ({ page }) => {
     await prepareCustomerRegistry(page, {
@@ -145,6 +169,6 @@ test.describe('Customer registry vehicle history failures', () => {
     const panel = customersPage.detailsPanel();
     await customersPage.expectVehicleHistoryOnlyPanel('NXE-441');
     await expect(panel).toContainText(/No repair history found for this vehicle|Nincs javítási előzmény ehhez a járműhöz/i);
-    await expect(page.locator('output[aria-live="polite"]')).toContainText(/Failed to load repair history|Nem sikerült betölteni a javítási előzményeket/i);
+    await expect(errorToastMessage(page, /Failed to load repair history|Nem sikerült betölteni a javítási előzményeket/i)).toBeVisible();
   });
 });

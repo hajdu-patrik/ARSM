@@ -15,6 +15,9 @@ async function prepareQuotesPage(page: Page): Promise<MockApiState> {
 }
 
 test.describe('Quotes - list and editor', () => {
+  // A fixed zone, so the fixture instants render the same calendar day on every machine.
+  test.use({ timezoneId: 'UTC' });
+
   test('lists quotes with the vehicle, the status and the server-calculated totals', async ({ page }) => {
     await prepareQuotesPage(page);
     const quotesPage = new QuotesPage(page);
@@ -29,6 +32,8 @@ test.describe('Quotes - list and editor', () => {
     // Both figures come from the list DTO: 12,000 net and 15,240 gross.
     await expect(draftRow).toContainText(/12,000/);
     await expect(draftRow).toContainText(/15,240/);
+    // The validity date reads DD/MM/YYYY (the fixture is valid until 2099-12-31T23:59:59Z).
+    await expect(draftRow).toContainText('31/12/2099');
   });
 
   test('offers delete on every row, disabled for anything but a draft', async ({ page }) => {

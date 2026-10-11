@@ -11,7 +11,8 @@ import {
   mutedMetaTextClass,
   smallIconClass,
 } from '../../../../utils/formStyles';
-import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
+import { formatShortDateTime } from '../../../../utils/intlFormat';
+import { schedulerChipLabelClass, schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
 import { StatusBadge } from './StatusBadge';
 import { MechanicAvatar } from './MechanicAvatar';
 import { CompactOverflowBadge } from './CompactOverflowBadge';
@@ -29,6 +30,9 @@ interface AppointmentCardProps {
   readonly onClick?: () => void;
 }
 
+/** Focus outline of the full-card overlay button, inset (-2px) because the card's overflow-hidden would clip an outer one. */
+const overlayFocusOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ui-focus';
+
 const AppointmentCardComponent = memo(function AppointmentCard({
   appointment,
   currentMechanicId,
@@ -45,7 +49,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const canClaimAppointment = !isAdmin && !isAssigned && appointment.status === 'InProgress';
   const canUnclaimAppointment = !isAdmin && isAssigned && appointment.status === 'InProgress' && appointment.mechanics.length > 1;
   const showMechanicAction = canClaimAppointment || canUnclaimAppointment;
-  const vehicleTitle = `${vehicle.brand} ${vehicle.model} (${vehicle.year})`;
+  const vehicleTitle = `${vehicle.brand} ${vehicle.model} (${String(vehicle.year)})`;
   const visibleMechanics = appointment.mechanics.slice(0, 2);
   const overflowCount = Math.max(appointment.mechanics.length - visibleMechanics.length, 0);
 
@@ -55,13 +59,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
   const hasValidDueDate = !Number.isNaN(dueDateValue.getTime());
 
   const scheduleDateLabel = hasValidScheduleDate
-    ? new Intl.DateTimeFormat(i18n.language, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(scheduleDateValue)
+    ? formatShortDateTime(scheduleDateValue, i18n.language)
     : t('scheduler.due.unknown');
 
   const cardActions = useAppointmentCardActions({
@@ -85,7 +83,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     closeUnclaimConfirm,
   } = cardActions;
 
-  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-[background-color,border-color,color,transform] duration-200 hover:ring-2 hover:ring-arsm-focus-ring/45 dark:hover:ring-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
+  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-[background-color,border-color,color,transform] duration-200 hover:outline-2 hover:outline-arsm-focus-ring/45 dark:hover:outline-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
   const cardContentClassName = onClick ? 'pointer-events-none relative z-10 flex flex-col gap-3.5' : 'flex flex-col gap-3.5';
 
   const cardContent: ReactNode = (
@@ -103,13 +101,17 @@ const AppointmentCardComponent = memo(function AppointmentCard({
 
         <p className={`line-clamp-2 ${mutedBodyTextClass}`}>{appointment.taskDescription}</p>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-arsm-border/70 bg-arsm-input/70 px-2.5 py-2 dark:border-arsm-border-dark/70 dark:bg-arsm-input-dark/70">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-ui-border/70 bg-ui-input/70 px-2.5 py-2">
           <span className={`inline-flex shrink-0 items-center gap-1 ${mutedMetaTextClass}`}>
             <Clock3 className={smallIconClass} />
             <span>{t('scheduler.due.label')}</span>
           </span>
           {hasValidDueDate && (
-            <p className={`min-w-0 text-xs font-semibold [overflow-wrap:anywhere] ${dueState.toneClassName}`}>{t(dueState.labelKey, dueState.labelValues)}</p>
+            <p className={`min-w-0 text-xs font-semibold [overflow-wrap:anywhere] ${dueState.toneClassName}`}>
+              {dueState.labelValues === undefined
+                ? t(dueState.labelKey)
+                : t(dueState.labelKey, dueState.labelValues)}
+            </p>
           )}
         </div>
 
@@ -139,9 +141,9 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   disabled={isClaiming}
                   className={schedulerInlineClaimButtonClass}
                 >
-                  {isClaiming ? <span className="truncate">{t('scheduler.detail.claiming')}</span> : (
+                  {isClaiming ? <span className={schedulerChipLabelClass}>{t('scheduler.detail.claiming')}</span> : (
                     <>
-                      <span className="truncate">{t('scheduler.claim')}</span>
+                      <span className={schedulerChipLabelClass}>{t('scheduler.claim')}</span>
                       <UserPlus className={smallIconClass} />
                     </>
                   )}
@@ -158,9 +160,9 @@ const AppointmentCardComponent = memo(function AppointmentCard({
                   disabled={isUnclaiming}
                   className={schedulerInlineUnassignButtonClass}
                 >
-                  {isUnclaiming ? <span className="truncate">{t('scheduler.detail.unassigning')}</span> : (
+                  {isUnclaiming ? <span className={schedulerChipLabelClass}>{t('scheduler.detail.unassigning')}</span> : (
                     <>
-                      <span className="truncate">{t('scheduler.detail.unassignMe')}</span>
+                      <span className={schedulerChipLabelClass}>{t('scheduler.detail.unassignMe')}</span>
                       <LogOut className={smallIconClass} />
                     </>
                   )}
@@ -180,7 +182,7 @@ const AppointmentCardComponent = memo(function AppointmentCard({
           type="button"
           onClick={onClick}
           aria-label={t('scheduler.detail.title')}
-          className="absolute inset-0 z-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arsm-focus-ring/40"
+          className={`absolute inset-0 z-0 rounded-2xl ${overlayFocusOutlineClass}`}
         />
       )}
       {cardContent}

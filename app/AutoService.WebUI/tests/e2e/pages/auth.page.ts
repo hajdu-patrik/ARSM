@@ -1,11 +1,12 @@
 import { expect, type Page } from '@playwright/test';
+import type { TestLanguage } from '../support/browser-state';
 import type { AppointmentFlowEnv } from '../support/e2e-env';
 
-type TestLanguage = 'en' | 'hu';
-
+/** Page object for the login flow. */
 export class AuthPage {
   constructor(private readonly page: Page) {}
 
+  /** Primes language and sidebar state, signs in and waits for the scheduler. */
   async loginAsMechanic(env: AppointmentFlowEnv, language: TestLanguage = 'en'): Promise<void> {
     await this.prepareBrowserState(language);
     await this.page.goto('/login');
@@ -15,7 +16,7 @@ export class AuthPage {
 
     await Promise.all([
       this.page.waitForURL((url) => url.pathname !== '/login'),
-      this.page.getByRole('button', { name: /Login|Bejelentkezes|Bejelentkezés/i }).click(),
+      this.page.getByRole('button', { name: /Log in|Bejelentkezés/i }).click(),
     ]);
 
     await expect(this.page.getByTestId('scheduler-intake-open')).toBeVisible();
@@ -24,7 +25,6 @@ export class AuthPage {
   private async prepareBrowserState(language: TestLanguage): Promise<void> {
     await this.page.addInitScript((preferredLanguage) => {
       localStorage.setItem('preferred-language', preferredLanguage);
-      localStorage.setItem('loading-page-seen', 'true');
       localStorage.setItem('preferred-sidebar-collapsed', 'false');
     }, language);
   }

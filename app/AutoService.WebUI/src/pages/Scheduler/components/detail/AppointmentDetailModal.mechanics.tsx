@@ -19,6 +19,7 @@ import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } f
 /** Specialization tag: the accent pill look, with long words wrapping instead of truncating. */
 const specializationTagClass = 'min-w-0 max-w-full [overflow-wrap:anywhere] rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent';
 
+/** A mechanic the admin can add to the appointment. */
 export interface MechanicOption {
   readonly personId: number;
   readonly firstName: string;
@@ -26,6 +27,7 @@ export interface MechanicOption {
   readonly lastName: string;
 }
 
+/** Full name of a mechanic option, skipping an empty middle name. */
 function getMechanicOptionDisplayName(mechanic: MechanicOption): string {
   return [mechanic.firstName, mechanic.middleName, mechanic.lastName].filter(Boolean).join(' ');
 }
@@ -89,7 +91,9 @@ export const MechanicsSection = memo(function MechanicsSection({
             const isOwnRow = currentMechanicId !== undefined && mechanic.id === currentMechanicId;
             const canRemove = isAdmin || (isOwnRow && canUnclaim);
             const handleRemove = isAdmin
-              ? () => onAdminUnassign(mechanic.id)
+              ? () => {
+                onAdminUnassign(mechanic.id);
+              }
               : onUnclaim;
             return (
               <MechanicCard
@@ -129,7 +133,9 @@ export const MechanicsSection = memo(function MechanicsSection({
             <div className="min-w-0 max-w-full">
               <select
                 value={selectedNewMechanicId}
-                onChange={(event) => onSelectNewMechanic(event.target.value)}
+                onChange={(event) => {
+                  onSelectNewMechanic(event.target.value);
+                }}
                 disabled={isMechanicMutationBusy}
                 aria-label={t('scheduler.detail.selectMechanic')}
                 className={compactSelectFullClass}
@@ -171,6 +177,7 @@ interface MechanicCardProps {
   readonly t: TFunction;
 }
 
+/** One assigned mechanic with an optional remove (unassign) action. */
 const MechanicCard = memo(function MechanicCard({
   mechanic,
   showAdminRemove,

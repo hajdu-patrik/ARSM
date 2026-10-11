@@ -21,7 +21,9 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
         <textarea
           data-testid="scheduler-intake-task-description"
           value={taskDescription}
-          onChange={(event) => onTaskDescriptionChange(event.target.value)}
+          onChange={(event) => {
+            onTaskDescriptionChange(event.target.value);
+          }}
           placeholder={translate('scheduler.intake.taskDescriptionPlaceholder')}
           maxLength={200}
           rows={4}
