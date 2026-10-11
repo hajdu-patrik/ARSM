@@ -8,6 +8,18 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Added
+- First-admin bootstrap (2026-10-11): an empty database outside the demo seed had no way to get an Admin.
+  When a `Bootstrap:Admin` section is configured, startup (after migrations) creates one Mechanic with a
+  confirmed Identity account and the Admin role, in a single transaction under a PostgreSQL advisory lock
+  that re-checks for an existing admin, so concurrent instances create at most one. The mechanic
+  registration rules (`ContactNormalization`, name and length checks, the Identity password policy) apply.
+  It does nothing once any Admin exists, never touches an existing account, and logs invalid configuration
+  or any failure without secrets; the API always starts. `Data/AdminBootstrapSettings`, `Data/AdminBootstrapInitializer`.
+
+_Dev time: ~40m wall-clock (2026-10-11 ~21:48 to 22:28 +02:00, including the temporary tunnel instance and
+the runtime checks on a throwaway stack). cost: not measured._
+
 ### Changed
 - Dependency upgrade run (2026-10-11, `dependency-upgrade` skill): stable releases at least 7 days old, each
   web-checked for advisories, supply-chain incidents and breaking changes before it was applied.

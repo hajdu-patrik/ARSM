@@ -329,6 +329,9 @@ if (!app.Environment.IsDevelopment())
 // Ensure the database is created and seeded with demo data at startup.
 await app.EnsureSeededAsync();
 
+// First-admin bootstrap from Bootstrap:Admin, after migrations; a no-op once any admin exists.
+await app.EnsureBootstrapAdminAsync();
+
 /** Middleware order below is a security contract (exception handling wraps everything; origin/CSRF
     checks precede auth); see app/AutoService.ApiService/CLAUDE.md. */
 app.UseExceptionHandler(errorApp =>
