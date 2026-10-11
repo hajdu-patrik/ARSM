@@ -126,3 +126,6 @@ docs/PROJECT-OVERVIEW.md
 # Local production deployment kit (images, Nginx, Bicep, publish workflow, plan, security checklist); kept off GitHub on purpose
 /deploy/
 /.dockerignore
+
+# Impeccable design-hook local detector config
+.impeccable/
