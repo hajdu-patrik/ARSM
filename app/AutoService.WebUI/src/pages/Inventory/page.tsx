@@ -3,13 +3,11 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToastStore } from '../../store/toast.store';
 import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
-import { useCatalogState } from './hooks/useCatalogState';
 import { useCatalogMutations } from './hooks/useCatalogMutations';
 import { INVENTORY_TAB_LABEL_KEYS, INVENTORY_TABS, useInventoryTabs } from './hooks/useInventoryTabs';
-import { CatalogTab } from './components/CatalogTab';
+import { LaborTypesCatalogTab, PartsCatalogTab } from './components/CatalogTabs';
 import { CatalogFormModal } from './components/CatalogFormModal';
 import { DeleteCatalogItemModal } from './components/DeleteCatalogItemModal';
-import { laborTypeCatalogTabConfig, partCatalogTabConfig } from './catalogTab.config';
 import { laborTypeCatalogFormConfig, partCatalogFormConfig } from './catalogForm.config';
 import type { DeleteCatalogItemTarget } from './helpers';
 import {
@@ -44,7 +42,6 @@ const InventoryPageComponent = memo(function InventoryPage() {
   const showWarningToast = useToastStore((state) => state.showWarning);
 
   const tabs = useInventoryTabs();
-  const catalogState = useCatalogState({ language: i18n.language, showErrorToast });
   const catalogMutations = useCatalogMutations({ showSuccessToast, showErrorToast, showWarningToast });
 
   const deleteTarget = useMemo(
@@ -109,36 +106,22 @@ const InventoryPageComponent = memo(function InventoryPage() {
 
       <div id={tabs.panelId} role="tabpanel" aria-labelledby={tabs.getTabId(tabs.activeTab)} className="min-w-0">
         {tabs.activeTab === 'parts' ? (
-          <CatalogTab
+          <PartsCatalogTab
             t={t}
             locale={i18n.language}
-            items={catalogState.parts.filteredItems}
-            isLoading={catalogState.parts.isLoading}
-            searchTerm={catalogState.parts.searchTerm}
-            onSearchChange={catalogState.parts.setSearchTerm}
-            onClearSearch={catalogState.parts.clearSearch}
-            sortDirection={catalogState.parts.sortDirection}
-            onToggleSortDirection={catalogState.parts.toggleSortDirection}
+            showErrorToast={showErrorToast}
             onOpenCreateModal={catalogMutations.openCreatePartModal}
             onOpenEditModal={catalogMutations.openEditPartModal}
             onOpenDeleteModal={catalogMutations.openDeletePartModal}
-            config={partCatalogTabConfig}
           />
         ) : (
-          <CatalogTab
+          <LaborTypesCatalogTab
             t={t}
             locale={i18n.language}
-            items={catalogState.laborTypes.filteredItems}
-            isLoading={catalogState.laborTypes.isLoading}
-            searchTerm={catalogState.laborTypes.searchTerm}
-            onSearchChange={catalogState.laborTypes.setSearchTerm}
-            onClearSearch={catalogState.laborTypes.clearSearch}
-            sortDirection={catalogState.laborTypes.sortDirection}
-            onToggleSortDirection={catalogState.laborTypes.toggleSortDirection}
+            showErrorToast={showErrorToast}
             onOpenCreateModal={catalogMutations.openCreateLaborTypeModal}
             onOpenEditModal={catalogMutations.openEditLaborTypeModal}
             onOpenDeleteModal={catalogMutations.openDeleteLaborTypeModal}
-            config={laborTypeCatalogTabConfig}
           />
         )}
       </div>

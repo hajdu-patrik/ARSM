@@ -16,6 +16,27 @@ test.describe('Error route edge cases', () => {
     await expect(page).toHaveURL(/\/login$/, { timeout: 7000 });
   });
 
+  test('renders the not-found page at once, with no loading spinner before it', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: false, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.notfound-spinner@example.test',
+      isAuthenticated: false,
+    });
+    // The lazy-route fallback is the only role=status spinner on this route; note if one ever enters the DOM.
+    await page.addInitScript(() => {
+      new MutationObserver(() => {
+        if (document.querySelector('[role="status"]') !== null) {
+          Reflect.set(globalThis, '__spinnerSeen', true);
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+
+    await page.goto('/non-existent-edge-route');
+
+    await expect(page.getByText(/Page Not Found|Oldal nem található/i)).toBeVisible();
+    expect(await page.evaluate(() => Reflect.get(globalThis, '__spinnerSeen') === true), 'a loading spinner was shown first').toBe(false);
+  });
+
   test('offers the scheduler as the way back to a signed-in user', async ({ page }) => {
     await primeBrowserState(page, { sessionHint: true, language: 'en' });
     await installApiMocks(page, {

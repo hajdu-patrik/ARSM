@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { selectDropdownOption, selectDropdownOptionByLabel } from '../support/dropdown';
+import { paginationControls, type PaginationControls } from '../support/pagination';
 
 export type QuoteStatusFilterOption = 'All' | 'Draft' | 'Sent' | 'Expired' | 'Accepted' | 'Rejected';
 export type QuoteLineKindOption = 'part' | 'labor';
@@ -24,6 +26,10 @@ export class QuotesPage {
 
   statusFilter(): Locator {
     return this.page.getByTestId('quotes-status-filter');
+  }
+
+  pagination(): PaginationControls {
+    return paginationControls(this.page, 'quotes-pagination');
   }
 
   rows(): Locator {
@@ -75,7 +81,7 @@ export class QuotesPage {
   }
 
   async filterByStatus(option: QuoteStatusFilterOption): Promise<void> {
-    await this.statusFilter().selectOption(option);
+    await selectDropdownOption(this.page, 'quotes-status-filter', option);
   }
 
   /** Opens the editor for the quote with this quote number. */
@@ -112,7 +118,7 @@ export class QuotesPage {
     await editor.getByTestId(`quote-line-kind-${options.kind}`).click();
 
     if (options.catalogLabel) {
-      await editor.getByTestId('quote-line-catalog-select').selectOption({ label: options.catalogLabel });
+      await selectDropdownOptionByLabel(this.page, editor.getByTestId('quote-line-catalog-select'), options.catalogLabel);
     }
 
     if (options.description !== undefined) {

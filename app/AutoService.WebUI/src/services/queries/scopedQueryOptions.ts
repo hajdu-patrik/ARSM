@@ -1,7 +1,7 @@
 /** Shared builder of the scoped read queryOptions: key, queryFn and stale time in one place, and a
  * parked query (skipToken) while nobody is signed in. */
 
-import { queryOptions, skipToken, type QueryFunctionContext, type QueryKey } from '@tanstack/react-query';
+import { keepPreviousData as keepPreviousDataPlaceholder, queryOptions, skipToken, type QueryFunctionContext, type QueryKey } from '@tanstack/react-query';
 import { SIGNED_OUT_QUERY_KEY, type AuthQueryScope } from '../cache/queryKeys';
 import type { SilentRequestOptions } from '../http/request-options';
 
@@ -17,10 +17,12 @@ export function scopedQueryOptions<TData>(
   buildKey: (authScope: AuthQueryScope) => QueryKey,
   fetchData: (request: SilentRequestOptions) => Promise<TData>,
   staleTime: number,
+  keepPreviousData = false,
 ) {
   return queryOptions({
     queryKey: scope === null ? SIGNED_OUT_QUERY_KEY : buildKey(scope),
     queryFn: scope === null ? skipToken : (context: QueryFunctionContext) => fetchData(toRequestOptions(context)),
     staleTime,
+    ...(keepPreviousData ? { placeholderData: keepPreviousDataPlaceholder } : {}),
   });
 }

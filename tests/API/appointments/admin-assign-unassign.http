@@ -39,16 +39,16 @@ Content-Type: application/json
 
 ### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
 # @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@SeedCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+@SeedCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
 # @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
@@ -85,7 +85,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles[0].id}},
+  "vehicleId": {{seedVehicles.items[0].id}},
   "scheduledDate": "2026-04-18T10:30:00",
   "taskDescription": "Assign/unassign fixture: single-mechanic appointment",
   "mechanicIds": [{{AdminMechanicId}}]

@@ -1,0 +1,186 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+
+### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+
+{{
+  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuoteLineVat] Create a draft quote fixture (201 expected)
+# @name vatQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "title": "Line VAT Rates Quote {{RunId}}"
+}
+
+?? status == 201
+
+###
+
+### [Negative][QuoteLineVat] Add a line with VAT 0 is rejected (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 0,
+  "version": {{vatQuote.version}}
+}
+
+?? status == 422
+?? js response.parsedBody.detail includes VAT rate
+
+###
+
+### [Positive][QuoteLineVat] Add a line with VAT 5 (201 expected)
+# @name vatLine5
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 5,
+  "version": {{vatQuote.version}}
+}
+
+?? status == 201
+
+###
+
+### [Positive][QuoteLineVat] Add a line with VAT 18 (201 expected)
+# @name vatLine18
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 18,
+  "version": {{vatLine5.version}}
+}
+
+?? status == 201
+
+###
+
+### [Positive][QuoteLineVat] Add a line with VAT 27 (201 expected)
+# @name vatLine27
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{vatLine18.version}}
+}
+
+?? status == 201
+
+###
+
+### [Negative][QuoteLineVat] Update a line to VAT 0 is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines/{{vatLine5.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 0,
+  "version": {{vatLine27.version}}
+}
+
+?? status == 422
+?? js response.parsedBody.detail includes VAT rate
+
+###
+
+### [Positive][QuoteLineVat] Update a line from VAT 5 to 18 still succeeds (200 expected)
+# @name vatUpdated
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines/{{vatLine5.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 18,
+  "version": {{vatLine27.version}}
+}
+
+?? status == 200
+
+###
+
+### [Cleanup][QuoteLineVat] Delete the draft quote fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}?version={{vatUpdated.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###

@@ -14,6 +14,9 @@ async function prepareInventoryPage(page: Page): Promise<MockApiState> {
 }
 
 test.describe('Inventory - Labour types tab', () => {
+  // Tall enough that the page-sized list shows every fixture row at once.
+  test.use({ viewport: { width: 1280, height: 1000 } });
+
   test('deep links directly to the Labour types tab via the tab query param', async ({ page }) => {
     await prepareInventoryPage(page);
     const catalogPage = new CatalogPage(page);

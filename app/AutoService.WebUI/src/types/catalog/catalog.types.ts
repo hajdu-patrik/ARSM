@@ -1,10 +1,15 @@
 /** Part and labor-type catalog contracts used by the Inventory page. */
 
-/** Allowed VAT rate percentages, matching the backend `CK_*_VatRate` check constraints. */
-export const VAT_RATE_OPTIONS = [0, 5, 18, 27] as const;
+/** VAT rates accepted for new and edited items; a legacy stored 0 still lists but cannot be saved again. */
+export const VAT_RATE_OPTIONS = [5, 18, 27] as const;
 
 /** VAT rate percentage as a discriminated numeric literal union. */
 export type VatRatePercent = (typeof VAT_RATE_OPTIONS)[number];
+
+/** True when the rate is one of the allowed VAT rates. */
+export function isAllowedVatRate(rate: number): rate is VatRatePercent {
+  return VAT_RATE_OPTIONS.some((option) => option === rate);
+}
 
 /** Default VAT rate applied to new catalog items. */
 export const DEFAULT_VAT_RATE_PERCENT: VatRatePercent = 27;
@@ -15,7 +20,7 @@ export const MAX_CATALOG_IDENTIFIER_LENGTH = 40;
 /** Maximum part/labor-type name length, matching the backend `MaxLength` validation. */
 export const MAX_CATALOG_NAME_LENGTH = 120;
 
-/** Part catalog item returned by {@code GET /api/parts} and {@code GET /api/parts/{id}}. */
+/** Part catalog item returned by `GET /api/parts` and `GET /api/parts/{id}`. */
 export interface PartDto {
   id: number;
   partNumber: string;
@@ -25,7 +30,7 @@ export interface PartDto {
   vatRatePercent: number;
 }
 
-/** Request payload for creating a part via {@code POST /api/parts}. */
+/** Request payload for creating a part via `POST /api/parts`. */
 export interface CreatePartRequest {
   partNumber: string;
   name: string;
@@ -33,7 +38,7 @@ export interface CreatePartRequest {
   vatRatePercent: number;
 }
 
-/** Request payload for updating a part via {@code PUT /api/parts/{id}}. */
+/** Request payload for updating a part via `PUT /api/parts/{id}`. */
 export interface UpdatePartRequest {
   partNumber: string;
   name: string;
@@ -41,7 +46,7 @@ export interface UpdatePartRequest {
   vatRatePercent: number;
 }
 
-/** Labor type catalog item returned by {@code GET /api/labor-types} and {@code GET /api/labor-types/{id}}. */
+/** Labor type catalog item returned by `GET /api/labor-types` and `GET /api/labor-types/{id}`. */
 export interface LaborTypeDto {
   id: number;
   code: string;
@@ -51,7 +56,7 @@ export interface LaborTypeDto {
   vatRatePercent: number;
 }
 
-/** Request payload for creating a labor type via {@code POST /api/labor-types}. */
+/** Request payload for creating a labor type via `POST /api/labor-types`. */
 export interface CreateLaborTypeRequest {
   code: string;
   name: string;
@@ -59,7 +64,7 @@ export interface CreateLaborTypeRequest {
   vatRatePercent: number;
 }
 
-/** Request payload for updating a labor type via {@code PUT /api/labor-types/{id}}. */
+/** Request payload for updating a labor type via `PUT /api/labor-types/{id}`. */
 export interface UpdateLaborTypeRequest {
   code: string;
   name: string;

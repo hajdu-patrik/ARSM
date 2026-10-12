@@ -1,4 +1,4 @@
-/** Quotes page helpers: form-state shapes, filtering/validation mapping, and the live line preview (the only client-side amount calc; see CLAUDE.md). */
+/** Quotes page helpers: form-state shapes, status-filter/validation mapping, and the live line preview (the only client-side amount calc; see CLAUDE.md). */
 
 import { DEFAULT_VAT_RATE_PERCENT, type LaborTypeDto, type PartDto } from '../../types/catalog/catalog.types';
 import {
@@ -222,38 +222,17 @@ export function resolveQuoteDisplayStatus(quote: Pick<QuoteListItemDto, 'status'
   return quote.isExpired ? 'Expired' : quote.status;
 }
 
-/** Applies the toolbar status filter to one quote. */
-export function matchesQuoteStatusFilter(quote: QuoteListItemDto, filter: QuoteStatusFilter): boolean {
+/** Server filter for a toolbar chip: Expired is a Sent quote past its deadline (D7), and the Sent chip excludes it. */
+export function toQuoteListFilter(filter: QuoteStatusFilter): { status?: QuoteStatus; expired?: boolean } {
   if (filter === 'All') {
-    return true;
+    return {};
   }
 
   if (filter === 'Expired') {
-    return quote.isExpired;
+    return { expired: true };
   }
 
-  // An expired quote answers to the Expired chip only, so the Sent and
-  // Expired chips never list the same row.
-  return quote.status === filter && !quote.isExpired;
-}
-
-/** Removes accents and lowercases input to support accent-insensitive search. */
-export function normalizeQuoteSearchValue(value: string): string {
-  return value
-    .normalize('NFD')
-    .replaceAll(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-/** Matches a quote against the toolbar search term on quote number, title, and license plate. */
-export function matchesQuoteSearch(quote: QuoteListItemDto, normalizedTerm: string): boolean {
-  if (normalizedTerm.length === 0) {
-    return true;
-  }
-
-  return normalizeQuoteSearchValue(quote.quoteNumber).includes(normalizedTerm)
-    || normalizeQuoteSearchValue(quote.title).includes(normalizedTerm)
-    || normalizeQuoteSearchValue(quote.vehicle.licensePlate).includes(normalizedTerm);
+  return filter === 'Sent' ? { status: filter, expired: false } : { status: filter };
 }
 
 /** Orders appointments newest first by scheduled date, later id first on a tie; the cached history keeps the server's ascending order. */

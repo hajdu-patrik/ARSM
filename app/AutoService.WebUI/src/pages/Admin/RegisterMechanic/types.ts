@@ -30,6 +30,3 @@ export interface OptionItem {
 
 /** Dictionary of field names to their server validation error messages. */
 export type FieldErrors = Record<string, string[]>;
-
-/** Sort direction used by the mechanic list. */
-export type SortDirection = 'asc' | 'desc';

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
-import { CustomersPage } from './pages/customers.page';
+import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
@@ -15,8 +15,8 @@ async function prepareQuotesPage(page: Page): Promise<MockApiState> {
 }
 
 test.describe('Quotes - list and editor', () => {
-  // A fixed zone, so the fixture instants render the same calendar day on every machine.
-  test.use({ timezoneId: 'UTC' });
+  // A fixed zone keeps the fixture dates on one calendar day; a tall viewport lets the page-sized list show every row.
+  test.use({ timezoneId: 'UTC', viewport: { width: 1280, height: 1200 } });
 
   test('lists quotes with the vehicle, the status and the server-calculated totals', async ({ page }) => {
     await prepareQuotesPage(page);
@@ -73,11 +73,13 @@ test.describe('Quotes - list and editor', () => {
     await customersPage.goto();
     await customersPage.expandCustomer(MOCK_CUSTOMER_IDS.anna);
 
-    const dialog = await quotesPage.startQuoteFromVehicle(MOCK_CUSTOMER_IDS.anna);
+    const dialog = await quotesPage.startQuoteFromVehicle(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441);
     // The anchored vehicle is named in the editor, so the mechanic can see
     // which car the draft belongs to before writing anything.
     await expect(dialog).toContainText('NXE-441');
     await expect(page).toHaveURL(/\/quotes$/);
+    // The appointment link is a shared dropdown, still unset on a new draft.
+    await expect(dialog.getByTestId('quote-appointment-select')).toHaveText('No appointment');
 
     await dialog.getByTestId('quote-title-input').fill('Clutch replacement estimate');
     await dialog.getByTestId('quote-create-button').click();

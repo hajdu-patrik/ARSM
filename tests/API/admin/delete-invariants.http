@@ -54,17 +54,17 @@ X-CSRF-Token: {{CsrfToken}}
 
 ### [Setup][Admin] Resolve a seeded customer that owns a vehicle (200 expected)
 # @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
-@SoleAssignmentCustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+@SoleAssignmentCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
 
 ### [Setup][Admin] Resolve one of that customer vehicles (200 expected)
 # @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
@@ -101,7 +101,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles[0].id}},
+  "vehicleId": {{seedVehicles.items[0].id}},
   "scheduledDate": "2020-01-01T10:00:00",
   "taskDescription": "ARSM delete-invariants sole-assignment fixture",
   "mechanicIds": [{{soleAssignmentMechanic.personId}}]

@@ -41,7 +41,7 @@ test.describe('Scheduler live status propagation', () => {
     const detailDialog = page.getByRole('dialog', { name: /Appointment details/i });
     await expect(detailDialog).toBeVisible();
 
-    await detailDialog.getByLabel('Change appointment status').selectOption('Cancelled');
+    await schedulerPage.changeAppointmentStatus('Cancelled');
     const confirmDialog = page.getByRole('dialog', { name: /Confirm status change/i });
     await expect(confirmDialog).toBeVisible();
     await confirmDialog.getByRole('button', { name: 'Change status' }).click();

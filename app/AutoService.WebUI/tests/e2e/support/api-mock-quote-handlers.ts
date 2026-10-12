@@ -5,6 +5,7 @@ import type { QuoteDetailDto, UpdateQuoteRequest } from '../../../src/types/quot
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
+import { fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 import {
   applyQuoteWrite,
@@ -20,6 +21,9 @@ import {
   handleExtendQuoteValidity,
   handleVehicleQuoteRoute,
 } from './api-mock-quote-mutations';
+
+/** Stored statuses the list accepts as a filter (Expired is computed, never stored). */
+const QUOTE_STORED_STATUSES: readonly string[] = ['draft', 'sent', 'accepted', 'rejected'];
 
 /** Matches `/api/quotes/{id}` and its `/lines`, `/status` and `/valid-until` sub-routes. */
 const QUOTE_RESOURCE_PATTERN = /^\/api\/quotes\/(\d+)(\/lines(?:\/(\d+))?|\/status|\/valid-until)?$/;
@@ -45,7 +49,7 @@ export async function tryHandleQuoteRoute(
   }
 
   if (path === '/api/quotes' && method === 'GET') {
-    await fulfillJson(route, sortedQuotes(state).map((quote) => toQuoteListItemResponse(quote)));
+    await handleQuoteList(route, url, state);
     return true;
   }
 
@@ -54,6 +58,28 @@ export async function tryHandleQuoteRoute(
   }
 
   return handleQuoteResourceRoute(route, method, path, url, state);
+}
+
+/** Lists quotes newest first, filtered like the API: stored status, expired, vehicle and search. */
+async function handleQuoteList(route: Route, url: URL, state: MockApiState): Promise<void> {
+  const status = url.searchParams.get('status');
+  const vehicleId = url.searchParams.get('vehicleId');
+  const expired = url.searchParams.get('expired');
+
+  if (status !== null && !QUOTE_STORED_STATUSES.includes(status.toLowerCase())) {
+    await fulfillJson(route, { detail: 'Status must be one of: Draft, Sent, Accepted, Rejected.' }, 422);
+    return;
+  }
+
+  const matching = sortedQuotes(state)
+    .filter((quote) => status === null || quote.status.toLowerCase() === status.toLowerCase())
+    .filter((quote) => vehicleId === null || quote.vehicleId === Number(vehicleId))
+    .map((quote) => toQuoteListItemResponse(quote))
+    .filter((quote) => expired === null || quote.isExpired === (expired === 'true'));
+
+  await fulfillPaged(route, matching, {
+    searchFields: (quote) => [quote.quoteNumber, quote.title, quote.vehicle.licensePlate],
+  });
 }
 
 async function handleQuoteResourceRoute(

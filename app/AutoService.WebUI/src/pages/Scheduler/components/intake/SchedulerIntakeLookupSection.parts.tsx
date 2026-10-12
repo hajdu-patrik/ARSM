@@ -1,6 +1,8 @@
-import { memo } from 'react';
+import { memo, useId, useState } from 'react';
 import { UserCheck, UserPlus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
+import { HighlightedText } from '../../../../components/common/HighlightedText';
+import { Pagination } from '../../../../components/common/Pagination';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
 	compactInputSurfaceClass,
@@ -14,6 +16,7 @@ import {
 	mediumContextPrimaryWrapButtonClass,
 	mutedMetaTextClass,
 	successNoticeSurfaceClass,
+	toneTextClasses,
 	warningNoticeSurfaceClass,
 } from '../../../../utils/formStyles';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
@@ -21,6 +24,9 @@ import type { LookupMode } from './SchedulerIntakeModal.types';
 
 /** Hint shown under every lookup miss; it is the same for both lookup fields. */
 const LOOKUP_NO_MATCH_HINT_KEY = 'scheduler.intake.lookupNoCreateHint';
+
+/** Name suggestions shown per page. */
+const NAME_RESULTS_PAGE_SIZE = 5;
 
 interface LookupInputProps {
 	readonly licensePlateLookup: string;
@@ -44,39 +50,57 @@ export const LookupInput = memo(function LookupInput({
 	onLicensePlateLookupChange,
 	onNameLookupChange,
 }: LookupInputProps) {
+	const noteId = useId();
 	const noMatchText = noMatchField === null ? null : translate(getLookupNoMatchTitleKey(noMatchField));
+	const isNameDisabled = licensePlateLookup.trim().length > 0;
+	const isLicensePlateDisabled = nameLookup.trim().length > 0;
+	const note = (
+		<p id={noteId} data-testid="scheduler-intake-single-filter-note" className={`text-xs ${toneTextClasses.neutral}`}>
+			{translate('scheduler.intake.singleFilterNote')}
+		</p>
+	);
 
 	return (
 		<div className={compactTwoColumnGridClass}>
-			<label className={intakeFieldWrapperClass}>
-				<span className={intakeFieldLabelClass}>{translate('scheduler.intake.lookupName')}</span>
-				<input
-					type="text"
-					data-testid="scheduler-intake-name-lookup"
-					value={nameLookup}
-					onChange={(event) => {
-						onNameLookupChange(event.target.value);
-					}}
-					placeholder={translate('scheduler.intake.lookupNamePlaceholder')}
-					className={`${intakeInputClass} truncate`}
-					{...fieldErrorA11yProps(noMatchId, noMatchField === 'name' && noMatchText)}
-				/>
-			</label>
+			<div className="min-w-0 space-y-1">
+				<label className={intakeFieldWrapperClass}>
+					<span className={intakeFieldLabelClass}>{translate('scheduler.intake.lookupName')}</span>
+					<input
+						type="text"
+						data-testid="scheduler-intake-name-lookup"
+						value={nameLookup}
+						onChange={(event) => {
+							onNameLookupChange(event.target.value);
+						}}
+						disabled={isNameDisabled}
+						placeholder={translate('scheduler.intake.lookupNamePlaceholder')}
+						className={`${intakeInputClass} truncate`}
+						aria-describedby={isNameDisabled ? noteId : undefined}
+						{...fieldErrorA11yProps(noMatchId, noMatchField === 'name' && noMatchText)}
+					/>
+				</label>
+				{isNameDisabled && note}
+			</div>
 
-			<label className={intakeFieldWrapperClass}>
-				<span className={intakeFieldLabelClass}>{translate('common.fields.licensePlate')}</span>
-				<input
-					type="text"
-					data-testid="scheduler-intake-license-plate-lookup"
-					value={licensePlateLookup}
-					onChange={(event) => {
-						onLicensePlateLookupChange(event.target.value);
-					}}
-					placeholder={translate('common.placeholders.licensePlate')}
-					className={`${intakeInputClass} truncate uppercase`}
-					{...fieldErrorA11yProps(noMatchId, noMatchField === 'licensePlate' && noMatchText)}
-				/>
-			</label>
+			<div className="min-w-0 space-y-1">
+				<label className={intakeFieldWrapperClass}>
+					<span className={intakeFieldLabelClass}>{translate('common.fields.licensePlate')}</span>
+					<input
+						type="text"
+						data-testid="scheduler-intake-license-plate-lookup"
+						value={licensePlateLookup}
+						onChange={(event) => {
+							onLicensePlateLookupChange(event.target.value);
+						}}
+						disabled={isLicensePlateDisabled}
+						placeholder={translate('common.placeholders.licensePlate')}
+						className={`${intakeInputClass} truncate uppercase`}
+						aria-describedby={isLicensePlateDisabled ? noteId : undefined}
+						{...fieldErrorA11yProps(noMatchId, noMatchField === 'licensePlate' && noMatchText)}
+					/>
+				</label>
+				{isLicensePlateDisabled && note}
+			</div>
 		</div>
 	);
 });
@@ -105,16 +129,25 @@ export const FoundCustomerSummary = memo(function FoundCustomerSummary({
 
 interface NameLookupResultsProps {
 	readonly results: SchedulerCustomerLookupDto[];
+	/** Typed name filter; its matches are highlighted in the shown texts. */
+	readonly query: string;
 	readonly translate: TFunction;
 	readonly onSelect: (customer: SchedulerCustomerLookupDto) => void;
 }
 
-/** Lists name-search candidates and exposes a direct select action for each result. */
+/** Lists name-search candidates, five per page, and exposes a direct select action for each result. */
 export const NameLookupResults = memo(function NameLookupResults({
 	results,
+	query,
 	translate,
 	onSelect,
 }: NameLookupResultsProps) {
+	// The page belongs to the result set it was chosen in: a new set starts at page 1.
+	const [pageState, setPageState] = useState({ page: 1, results });
+	const totalPages = Math.max(1, Math.ceil(results.length / NAME_RESULTS_PAGE_SIZE));
+	const page = pageState.results === results ? Math.min(pageState.page, totalPages) : 1;
+	const pageResults = results.slice((page - 1) * NAME_RESULTS_PAGE_SIZE, page * NAME_RESULTS_PAGE_SIZE);
+
 	return (
 		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 ${compactPrimaryValueTextClass} ${compactInputSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
@@ -122,12 +155,16 @@ export const NameLookupResults = memo(function NameLookupResults({
 				<span className="min-w-0 truncate">{translate('scheduler.intake.nameResultsTitle', { count: results.length })}</span>
 			</div>
 
-			<div className="arsm-scroll-no-bar -mx-1 max-h-56 divide-y divide-ui-border/60 overflow-y-auto px-1">
-				{results.map((result) => (
+			<div className="divide-y divide-ui-border/60">
+				{pageResults.map((result) => (
 					<div key={result.id} className="flex min-w-0 flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
 						<div className="min-w-0">
-							<p className="truncate font-semibold">{getLookupCustomerName(result)}</p>
-							<p className={`truncate ${mutedMetaTextClass}`}>{result.email}</p>
+							<p className="truncate font-semibold">
+								<HighlightedText text={getLookupCustomerName(result)} query={query} />
+							</p>
+							<p className={`truncate ${mutedMetaTextClass}`}>
+								<HighlightedText text={result.email} query={query} />
+							</p>
 							<p className={`truncate ${mutedMetaTextClass}`}>
 								{translate('common.fields.vehicleCount', { count: result.vehicles.length })}
 							</p>
@@ -144,6 +181,17 @@ export const NameLookupResults = memo(function NameLookupResults({
 					</div>
 				))}
 			</div>
+
+			<Pagination
+				compact
+				page={page}
+				totalCount={results.length}
+				pageSize={NAME_RESULTS_PAGE_SIZE}
+				onPageChange={(nextPage) => {
+					setPageState({ page: nextPage, results });
+				}}
+				testIdPrefix="intake-suggestions-pagination"
+			/>
 		</div>
 	);
 });

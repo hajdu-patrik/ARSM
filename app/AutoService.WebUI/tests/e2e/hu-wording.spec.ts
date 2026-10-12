@@ -26,7 +26,8 @@ test.describe('Hungarian wording', () => {
     await expect(quotesPage.statusBadge('ARSM-2026-0001')).toHaveText('Piszkozat');
     await expect(quotesPage.statusBadge('ARSM-2026-0002')).toHaveText('Kiküldött');
     await expect(quotesPage.statusBadge('ARSM-2026-0003')).toHaveText('Lejárt');
-    await expect(quotesPage.statusFilter().locator('option')).toHaveText([
+    await quotesPage.statusFilter().click();
+    await expect(page.getByRole('option')).toHaveText([
       'Minden állapot',
       'Piszkozat',
       'Kiküldött',
@@ -34,6 +35,8 @@ test.describe('Hungarian wording', () => {
       'Elfogadott',
       'Elutasított',
     ]);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('listbox')).toBeHidden();
 
     // The validity date reads YYYY. MM. DD. (the fixture is valid until 2099-12-31T23:59:59Z).
     await expect(quotesPage.row('ARSM-2026-0001')).toContainText('2099. 12. 31.');

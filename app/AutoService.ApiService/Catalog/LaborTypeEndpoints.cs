@@ -1,3 +1,4 @@
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Catalog;
@@ -11,7 +12,7 @@ public static partial class LaborTypeEndpoints
         var group = endpoints.MapGroup("/api/labor-types").WithTags("LaborTypes").RequireAuthorization("MechanicOnly");
 
         group.MapGet("/", ListLaborTypesAsync)
-            .Produces<List<LaborTypeDto>>(StatusCodes.Status200OK)
+            .Produces<PagedResult<LaborTypeDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 

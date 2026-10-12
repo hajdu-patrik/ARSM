@@ -1,10 +1,10 @@
 /** Footer for the appointment detail modal: edit, status, and admin-only delete controls. */
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { TFunction } from 'i18next';
 import { Save, Trash2 } from 'lucide-react';
+import { Dropdown } from '../../../../components/common/Dropdown';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import {
-  compactSelectFullClass,
   defaultIconClass,
   equalWidthControlGroupClass,
   mediumContextDangerButtonClass,
@@ -55,6 +55,10 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   onStatusChange,
   onDeleteClick,
 }: AppointmentDetailFooterProps) {
+  const statusOptions = useMemo(() => STATUS_OPTIONS.map((status) => ({
+    value: status,
+    label: t(`scheduler.status.${status.toLowerCase()}`),
+  })), [t]);
   const shouldRenderGlobalControls = isEditing || showEdit || canChangeStatus || isAdmin;
 
   if (!shouldRenderGlobalControls) {
@@ -65,24 +69,17 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
     <div className={`${equalWidthControlGroupClass} w-full`}>
       {canChangeStatus && !isEditing && (
         <div className={selectWrapperClass}>
-          <select
+          <Dropdown
             value={appointment.status}
-            onChange={(event) => {
-              const nextStatus = event.target.value;
+            options={statusOptions}
+            onChange={(nextStatus) => {
               if (isAppointmentStatus(nextStatus)) {
                 onStatusChange(nextStatus);
               }
             }}
             disabled={isUpdating}
-            aria-label={t('scheduler.changeStatus')}
-            className={compactSelectFullClass}
-          >
-            {STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {t(`scheduler.status.${status.toLowerCase()}`)}
-              </option>
-            ))}
-          </select>
+            ariaLabel={t('scheduler.changeStatus')}
+          />
         </div>
       )}
 

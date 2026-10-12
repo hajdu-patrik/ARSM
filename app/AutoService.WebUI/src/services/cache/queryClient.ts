@@ -127,7 +127,7 @@ function buildPersistedCacheBuster(personId: number): string {
   return `${PERSISTED_QUERY_CACHE_BUSTER}:person-${String(personId)}`;
 }
 
-/** Restores the person's persisted catalog reads, then keeps persisting them; returns the stop function.
+/** Restores the person's persisted catalog option lists, then keeps persisting them; returns the stop function.
  * Only the non-personal catalog queries are dehydrated, and no mutation (its variables hold personal data) is. */
 export function startQueryCachePersistence(personId: number): () => void {
   const persistOptions: PersistQueryClientOptions = {

@@ -1,0 +1,210 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZP{{RunId}}
+
+### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Parts] Create paging fixture A (201 expected)
+# @name pageA
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{Key}}A",
+  "name": "Paging Part Alpha {{RunId}}",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 201
+
+###
+
+### [Setup][Parts] Create paging fixture B (201 expected)
+# @name pageB
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{Key}}B",
+  "name": "Paging Part Bravo {{RunId}}",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 201
+
+###
+
+### [Setup][Parts] Create paging fixture C (201 expected)
+# @name pageC
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "partNumber": "{{Key}}C",
+  "name": "Paging Part Charlie {{RunId}}",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27
+}
+
+?? status == 201
+
+###
+
+### [Positive][Parts] Page 1 of 2 with pageSize 2 (200 expected, 2 items, totalCount 3, ordered by partNumber)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&page=1&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 2
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 2
+?? js response.parsedBody.items[0].partNumber endsWith A
+?? js response.parsedBody.items[1].partNumber endsWith B
+
+###
+
+### [Positive][Parts] Page 2 of 2 holds the remaining row (200 expected, same totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&page=2&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 2
+?? js response.parsedBody.items[0].partNumber endsWith C
+
+###
+
+### [Positive][Parts] Page past the end returns no items but the real totalCount (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&page=99&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 99
+?? js response.parsedBody.pageSize == 2
+
+###
+
+### [Positive][Parts] page=0 is clamped to page 1 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&page=0&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.items.length == 2
+
+###
+
+### [Positive][Parts] pageSize=0 is clamped to 1 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount == 3
+
+###
+
+### [Positive][Parts] pageSize=100000 is clamped to 500 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}&pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length == 3
+
+###
+
+### [Positive][Parts] Search matches the partNumber case-insensitively (200 expected, one row)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}b
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js response.parsedBody.items[0].partNumber endsWith B
+
+###
+
+### [Positive][Parts] Search matches the name case-insensitively (200 expected, one row)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=paging%20part%20charlie%20{{RunId}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js response.parsedBody.items[0].partNumber endsWith C
+
+###
+
+### [Positive][Parts] Search without a match returns an empty page (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=zz-no-such-row-{{RunId}}
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+?? js response.parsedBody.page == 1
+
+###
+
+### [Positive][Parts] Blank search is ignored (200 expected, the whole list is counted)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=%20%20%20&pageSize=1
+
+?? status == 200
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount >= 3
+
+###
+
+### [Cleanup][Parts] Delete paging fixture A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{pageA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete paging fixture B (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{pageB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete paging fixture C (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{pageC.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

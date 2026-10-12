@@ -2,6 +2,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Eye, EyeOff, FilePlus, Pencil, Trash2 } from 'lucide-react';
+import { HighlightedText } from '../../../components/common/HighlightedText';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import {
 	compactItemTitleClampTextClass,
@@ -21,6 +22,7 @@ interface VehicleItemProps {
 	locale: string;
 	customerId: number;
 	vehicle: VehicleDetailDto;
+	searchTerm: string;
 	onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
 	onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
 	onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
@@ -28,12 +30,13 @@ interface VehicleItemProps {
 	isDetailsOpen: boolean;
 }
 
-/** Renders one vehicle row with its quote, history, edit and delete actions above the specs grid. */
+/** Renders one vehicle row (plate highlighted by the search) with its quote, history, edit and delete actions above the specs grid. */
 const VehicleItemComponent = memo(function VehicleItem({
 	t,
 	locale,
 	customerId,
 	vehicle,
+	searchTerm,
 	onOpenEditVehicleModal,
 	onOpenDeleteVehicleModal,
 	onOpenVehicleDetails,
@@ -46,7 +49,9 @@ const VehicleItemComponent = memo(function VehicleItem({
 		<div className="min-w-0 px-3 py-3 sm:px-3.5">
 			<div className={compactRowHeaderClass}>
 				<div className="min-w-0">
-					<p className={compactItemTitleClampTextClass}>{vehicle.licensePlate}</p>
+					<p className={compactItemTitleClampTextClass}>
+						<HighlightedText text={vehicle.licensePlate} query={searchTerm} />
+					</p>
 					<p className={`[overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
 						{vehicle.brand} {vehicle.model} ({vehicle.year})
 					</p>
@@ -54,7 +59,7 @@ const VehicleItemComponent = memo(function VehicleItem({
 
 				<div className={compactRowActionsClusterClass}>
 					{/* A new quote is neither info, edit nor delete, so it keeps its own icon
-					    and accent tone instead of borrowing one of the three fixed semantics. */}
+							and accent tone instead of borrowing one of the three fixed semantics. */}
 					<button
 						data-testid="vehicle-create-quote-button"
 						type="button"

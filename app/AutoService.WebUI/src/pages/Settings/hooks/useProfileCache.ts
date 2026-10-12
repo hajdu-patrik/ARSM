@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { adminQueries } from '../../../services/queries/admin.queries';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { profileQueries } from '../../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { ProfileData } from '../../../types/profile/profile.types';
@@ -39,7 +39,7 @@ export function useProfileCache() {
       return;
     }
 
-    void queryClient.invalidateQueries({ queryKey: adminQueries.mechanics(scope).queryKey });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.admin.mechanics(scope) });
   }, [queryClient, scope]);
 
   return { storeProfile, storePictureState, invalidateRoster };

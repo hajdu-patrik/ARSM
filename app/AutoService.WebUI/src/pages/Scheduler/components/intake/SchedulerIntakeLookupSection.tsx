@@ -78,6 +78,7 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 			{lookupState === 'name-results' && (
 				<NameLookupResults
 					results={nameLookupResults}
+					query={nameLookup}
 					translate={translate}
 					onSelect={onSelectNameLookupResult}
 				/>

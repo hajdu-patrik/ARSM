@@ -1,3 +1,4 @@
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Customers;
@@ -11,7 +12,7 @@ public static partial class CustomerEndpoints
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();
 
         group.MapGet("/", ListCustomersAsync)
-            .Produces<List<CustomerDto>>(StatusCodes.Status200OK)
+            .Produces<PagedResult<CustomerDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/by-email", GetCustomerByEmailAsync)

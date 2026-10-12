@@ -6,6 +6,7 @@ import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { selectDropdownOption } from './support/dropdown';
 import type { TestLanguage, TestTheme } from './support/browser-state';
 import { seedWorstCaseListData } from './support/list-alignment-fixtures';
 import { expectColumnsAligned, expectRowActionsAligned, listSection } from './support/list-alignment';
@@ -51,6 +52,12 @@ async function forceSidebarCollapsed(page: Page, collapsed: boolean): Promise<vo
   }, collapsed ? 'true' : 'false');
 }
 
+/** Opens a quote through the search box: the lists are page-sized, so a row may sit on a later page. */
+async function openQuoteBySearch(quotesPage: QuotesPage, quoteNumber: string): Promise<void> {
+  await quotesPage.searchInput().fill(quoteNumber);
+  await quotesPage.openQuote(quoteNumber);
+}
+
 /** Runs the (a)+(b)+(d) sweep across every list, once the session is already booted. */
 async function expectListsAligned(page: Page, lang: TestLanguage): Promise<void> {
   const quotesPage = new QuotesPage(page);
@@ -58,33 +65,35 @@ async function expectListsAligned(page: Page, lang: TestLanguage): Promise<void>
   const catalogRows = page.getByTestId('catalog-item-row');
 
   await quotesPage.goto();
-  await expect(quotesPage.rows().first()).toBeVisible();
+  // The list is page-sized: wait until a second row shows so the check covers more than the loading page.
+  await expect(quotesPage.rows().nth(1)).toBeVisible();
   await expectColumnsAligned(quotesPage.rows(), { expectedColumns: QUOTE_COLUMNS });
   await expectRowActionsAligned(quotesPage.rows(), ['quote-open-button', 'quote-download-button', 'quote-delete-button']);
 
-  await quotesPage.openQuote('ARSM-2026-0001');
+  await openQuoteBySearch(quotesPage, 'ARSM-2026-0001');
   await expect(quotesPage.lineRows().first()).toBeVisible();
   const fractionalLine = quotesPage.lineRows().filter({ hasText: 'Diagnosztika' });
   await expect(fractionalLine.locator('[data-column="quantity"]')).toContainText(FRACTIONAL_QUANTITY_TEXT[lang]);
   await expectColumnsAligned(quotesPage.lineRows(), { expectedColumns: [...QUOTE_LINE_COLUMNS, 'actions'] });
   await quotesPage.closeEditorButton().click();
 
-  await quotesPage.openQuote('ARSM-2026-0002');
+  await quotesPage.goto();
+  await openQuoteBySearch(quotesPage, 'ARSM-2026-0002');
   await expect(quotesPage.lineRows().first()).toBeVisible();
   await expectColumnsAligned(quotesPage.lineRows(), { expectedColumns: QUOTE_LINE_COLUMNS });
   await quotesPage.closeEditorButton().click();
 
   await catalogPage.goto('parts');
-  await expect(catalogRows.first()).toBeVisible();
+  await expect(catalogRows.nth(1)).toBeVisible();
   await expectColumnsAligned(catalogRows, { expectedColumns: CATALOG_COLUMNS });
 
   await catalogPage.tab('labor-types').click();
   await expect(catalogPage.tab('labor-types')).toHaveAttribute('aria-selected', 'true');
-  await expect(catalogRows.first()).toBeVisible();
+  await expect(catalogRows.nth(1)).toBeVisible();
   await expectColumnsAligned(catalogRows, { expectedColumns: CATALOG_COLUMNS });
 
   await page.goto('/company-results');
-  await page.getByTestId('company-results-year').selectOption('2026');
+  await selectDropdownOption(page, 'company-results-year', '2026');
   await expect(page.getByTestId('company-results-vat-row').first()).toBeVisible();
   await expectColumnsAligned(page.getByTestId('company-results-month-row'), { expectedColumns: MONTH_COLUMNS });
   await expectColumnsAligned(page.getByTestId('company-results-vat-row'), { expectedColumns: VAT_COLUMNS });

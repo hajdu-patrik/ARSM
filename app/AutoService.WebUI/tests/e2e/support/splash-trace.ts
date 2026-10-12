@@ -10,6 +10,12 @@ export interface SplashTrace {
 
 const TRACE_KEY = '__arsmSplashTrace';
 
+/** Minimum splash time of the first full load of a tab; the app keeps it with `arsm-splash-shown` unset. */
+export const FIRST_LOAD_SPLASH_MIN_MS = 2500;
+
+/** Minimum splash time of a later load in the same tab (flag set by `seedSplashShown` or the first load). */
+export const REPEAT_LOAD_SPLASH_MIN_MS = 250;
+
 /** Records the live splash from the first frame of every document, so a short splash cannot slip
  * between two polls. Read the result with `readSplashTrace`. */
 export async function traceSplash(page: Page): Promise<void> {

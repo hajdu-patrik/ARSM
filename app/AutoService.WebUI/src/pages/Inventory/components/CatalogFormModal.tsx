@@ -2,11 +2,12 @@
 import { useId, type Dispatch, type SetStateAction, type SyntheticEvent } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
+import { Dropdown, type DropdownOption } from '../../../components/common/Dropdown';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { Modal } from '../../../components/common/Modal';
 import { MAX_CATALOG_IDENTIFIER_LENGTH, MAX_CATALOG_NAME_LENGTH, VAT_RATE_OPTIONS } from '../../../types/catalog/catalog.types';
 import { formatHufUnitPrice } from '../../../utils/currency';
-import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
+import { fieldErrorA11yProps, type FieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   buttonClass,
   defaultIconClass,
@@ -16,7 +17,6 @@ import {
   labelClass,
   readonlyInputClass,
   secondaryButtonClass,
-  selectWrapperClass,
 } from '../../../utils/formStyles';
 import type { CatalogFormModalConfig } from '../catalogForm.config';
 import {
@@ -25,6 +25,20 @@ import {
   type CatalogFieldName,
   type CatalogModalMode,
 } from '../helpers';
+
+/** VAT choices of the dropdown; values are strings, the form keeps the number. */
+const VAT_DROPDOWN_OPTIONS: readonly DropdownOption[] = VAT_RATE_OPTIONS.map((rate) => ({
+  value: String(rate),
+  label: `${String(rate)}%`,
+}));
+
+/** Maps the shared field a11y attributes to the camelCase props of the Dropdown. */
+function toDropdownA11yProps(a11y: FieldErrorA11yProps) {
+  return {
+    ...(a11y['aria-invalid'] === undefined ? {} : { ariaInvalid: a11y['aria-invalid'] }),
+    ...(a11y['aria-describedby'] === undefined ? {} : { ariaDescribedBy: a11y['aria-describedby'] }),
+  };
+}
 
 interface CatalogFormModalProps<TForm extends { name: string; vatRatePercent: number }> {
   readonly isOpen: boolean;
@@ -149,22 +163,19 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
 
           <div className={formFieldGroupClass}>
             <label htmlFor={config.vatRateElementId} className={labelClass}>{t('common.fields.vatRate')}</label>
-            <div className={selectWrapperClass}>
-              <select
-                id={config.vatRateElementId}
-                value={form.vatRatePercent}
-                onChange={(event) => {
-                  setForm((prev) => ({ ...prev, vatRatePercent: Number(event.target.value) }));
-                }}
-                className={`${inputClass} min-w-0 truncate`}
-                disabled={isSaving}
-                {...fieldErrorA11yProps(errorId('vatRate'), fieldErrors.vatRate)}
-              >
-                {VAT_RATE_OPTIONS.map((rate) => (
-                  <option key={rate} value={rate}>{rate}%</option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              id={config.vatRateElementId}
+              data-testid={config.vatRateElementId}
+              size="field"
+              value={String(form.vatRatePercent)}
+              options={VAT_DROPDOWN_OPTIONS}
+              placeholder={t('common.fields.vatRate')}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, vatRatePercent: Number(value) }));
+              }}
+              disabled={isSaving}
+              {...toDropdownA11yProps(fieldErrorA11yProps(errorId('vatRate'), fieldErrors.vatRate))}
+            />
             <FieldErrorText id={errorId('vatRate')} messageKey={fieldErrors.vatRate} />
           </div>
         </div>

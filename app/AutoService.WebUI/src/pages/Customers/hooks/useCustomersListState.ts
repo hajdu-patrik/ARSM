@@ -1,32 +1,56 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
+import { useFittingPageSize } from '../../../hooks/useFittingPageSize';
+import { useListPaging } from '../../../hooks/useListPaging';
 import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
-import { toIntlLocale } from '../../../utils/intlFormat';
-import { normalizeSearchValue } from '../../../utils/textSearch';
 import type { SortDirection } from '../page.types';
-import { filterCustomersBySearch, sortCustomersByName } from './useCustomersListState.helpers';
-
-/** External dependencies for the customers list-state hook. */
-interface UseCustomersListStateParams {
-  language: string;
-}
 
 /** Stable empty list for the render before the customers read has data. */
 const NO_CUSTOMERS: CustomerListItem[] = [];
+
+/** A collapsed card is the unit the page size is measured on; an expanded one is taller on purpose. */
+const COLLAPSED_CARD_SELECTOR = 'article[data-expanded="false"]';
+const CARD_FALLBACK_HEIGHT_PX = 80;
+
+/** Space below the cards: pagination bar, end-of-list divider, their gaps and the page padding. */
+const LIST_RESERVED_BOTTOM_PX = 136;
+
+/** Below sm the end-of-list divider wraps onto three rows, with room for a two-line label. */
+const NARROW_LIST_RESERVED_BOTTOM_PX = 162;
+const NARROW_VIEWPORT_QUERY = '(max-width: 639.98px)';
+
+function subscribeNarrowViewport(onChange: () => void): () => void {
+  const query = globalThis.matchMedia(NARROW_VIEWPORT_QUERY);
+  query.addEventListener('change', onChange);
+  return () => { query.removeEventListener('change', onChange); };
+}
+
+function isNarrowViewport(): boolean {
+  return globalThis.matchMedia(NARROW_VIEWPORT_QUERY).matches;
+}
 
 /** Flips one entry of a per-id sort map; an unset entry counts as ascending, so its first flip is descending. */
 function toggleSortEntry(previous: Record<number, SortDirection>, id: number): Record<number, SortDirection> {
   return { ...previous, [id]: previous[id] === 'desc' ? 'asc' : 'desc' };
 }
 
-/** Manages Customers page read-side state: the customers read, search/sort, expansion, and history sort directions. */
-export function useCustomersListState({ language }: UseCustomersListStateParams) {
+/** Manages Customers page read-side state: the paged customers read, search, expansion, and history sort directions. */
+export function useCustomersListState() {
   const scope = useAuthQueryScope();
-  const customersQuery = useQuery(customersQueries.list(scope));
+  const listRef = useRef<HTMLDivElement>(null);
+  const isNarrow = useSyncExternalStore(subscribeNarrowViewport, isNarrowViewport);
+  const pageSize = useFittingPageSize({
+    listRef,
+    fallbackItemHeightPx: CARD_FALLBACK_HEIGHT_PX,
+    itemSelector: COLLAPSED_CARD_SELECTOR,
+    reservedBottomPx: isNarrow ? NARROW_LIST_RESERVED_BOTTOM_PX : LIST_RESERVED_BOTTOM_PX,
+  });
+  const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
+  const customersQuery = useQuery(customersQueries.listPage(scope, { page, pageSize, search: debouncedSearch }));
   const showErrorToast = useToastStore((state) => state.showError);
   useReadFailureToast({
     failureMessageKey: customersQuery.isError && customersQuery.data === undefined ? 'customers.errors.loadFailed' : null,
@@ -35,28 +59,21 @@ export function useCustomersListState({ language }: UseCustomersListStateParams)
     showErrorToast,
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedCustomerIds, setExpandedCustomerIds] = useState<Set<number>>(() => new Set());
   const [customerHistorySortByCustomerId, setCustomerHistorySortByCustomerId] = useState<Record<number, SortDirection>>({});
   const [vehicleHistorySortByVehicleId, setVehicleHistorySortByVehicleId] = useState<Record<number, SortDirection>>({});
 
-  const collator = useMemo(() => new Intl.Collator(toIntlLocale(language), { sensitivity: 'base' }), [language]);
-  const customers = customersQuery.data ?? NO_CUSTOMERS;
-  const normalizedSearchTerm = useMemo(() => normalizeSearchValue(searchTerm), [searchTerm]);
-
-  const filteredCustomers = useMemo(
-    () => sortCustomersByName(filterCustomersBySearch(customers, normalizedSearchTerm), collator, sortDirection),
-    [collator, customers, normalizedSearchTerm, sortDirection],
-  );
+  const customers = customersQuery.data?.items ?? NO_CUSTOMERS;
+  const totalCount = customersQuery.data?.totalCount ?? 0;
+  const lastPage = Math.max(1, Math.ceil(totalCount / pageSize));
+  // A deleted last row of the last page leaves an empty page: step back to the new last one.
+  if (customersQuery.isSuccess && !customersQuery.isPlaceholderData && page > lastPage) {
+    setPage(lastPage);
+  }
 
   const clearSearch = useCallback(() => {
     setSearchTerm('');
-  }, []);
-
-  const toggleSortDirection = useCallback(() => {
-    setSortDirection((previous) => (previous === 'asc' ? 'desc' : 'asc'));
-  }, []);
+  }, [setSearchTerm]);
 
   const toggleCustomerExpanded = useCallback((customerId: number) => {
     setExpandedCustomerIds((previous) => {
@@ -80,15 +97,21 @@ export function useCustomersListState({ language }: UseCustomersListStateParams)
 
   return {
     isLoadingCustomers: customersQuery.isLoading,
+    hasLoadFailed: customersQuery.isError && customersQuery.data === undefined,
     searchTerm,
     setSearchTerm,
-    sortDirection,
+    highlightTerm: debouncedSearch,
+    listRef,
+    customers,
+    totalCount,
+    page: Math.min(page, lastPage),
+    pageSize,
+    setPage,
+    isPageLoading: customersQuery.isPlaceholderData,
     expandedCustomerIds,
     customerHistorySortByCustomerId,
     vehicleHistorySortByVehicleId,
-    filteredCustomers,
     clearSearch,
-    toggleSortDirection,
     toggleCustomerExpanded,
     toggleCustomerHistorySort,
     toggleVehicleHistorySort,

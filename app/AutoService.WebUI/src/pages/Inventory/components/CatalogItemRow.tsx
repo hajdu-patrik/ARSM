@@ -1,6 +1,7 @@
 /** Shared part/labor-type list row: renders through `DataListRow`, generic over caller-supplied labels for both tabs. */
 import { memo } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
+import { HighlightedText } from '../../../components/common/HighlightedText';
 import { DataListCell, DataListRow, DataListText } from '../../../components/common/DataList';
 import { formatHufUnitPrice } from '../../../utils/currency';
 import {
@@ -16,6 +17,7 @@ interface CatalogItemRowProps {
   readonly locale: string;
   readonly name: string;
   readonly identifier: string;
+  readonly searchQuery: string;
   readonly identifierLabel: string;
   readonly netAmount: number;
   readonly netLabel: string;
@@ -54,6 +56,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
   locale,
   name,
   identifier,
+  searchQuery,
   identifierLabel,
   netAmount,
   netLabel,
@@ -76,7 +79,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       valuesClassName={compactTwoColumnFixedGridClass}
       lead={(
         <DataListCell column="name">
-          <DataListText kind="title" title={name}>{name}</DataListText>
+          <DataListText kind="title" title={name}><HighlightedText text={name} query={searchQuery} /></DataListText>
         </DataListCell>
       )}
       actions={(
@@ -86,7 +89,7 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
       )}
     >
       <DataListCell column="identifier" label={identifierLabel} tile>
-        <DataListText kind="identifier" title={identifier}>{identifier}</DataListText>
+        <DataListText kind="identifier" title={identifier}><HighlightedText text={identifier} query={searchQuery} /></DataListText>
       </DataListCell>
       <DataListCell column="net" label={netLabel} tile>
         <DataListText kind="amount" title={netText}>{netText}</DataListText>

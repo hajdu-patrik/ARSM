@@ -1,5 +1,6 @@
-/** Query options of the customer registry reads: list, vehicles, one vehicle and the two repair histories. */
+/** Query options of the customer registry reads: paged list, paged vehicles, one vehicle and the two repair histories. */
 
+import type { PagedQuery } from '../../types/common/pagination.types';
 import { CUSTOMER_HISTORY_STALE_TIME_MS, CUSTOMER_REGISTRY_STALE_TIME_MS } from '../cache/cache-policy';
 import { queryKeys, type AuthQueryScope } from '../cache/queryKeys';
 import { customerRegistryService } from '../customers/customer-registry.service';
@@ -7,22 +8,24 @@ import { scopedQueryOptions } from './scopedQueryOptions';
 
 /** Customer read factories; every one takes the scope of useAuthQueryScope() first. */
 export const customersQueries = {
-  /** All customers. */
-  list: (scope: AuthQueryScope | null) =>
+  /** One page of customers; the previous page stays shown while the next loads. */
+  listPage: (scope: AuthQueryScope | null, query: PagedQuery) =>
     scopedQueryOptions(
       scope,
-      queryKeys.customers.list,
-      (request) => customerRegistryService.listCustomers(request),
+      (authScope) => queryKeys.customers.listPage(authScope, query),
+      (request) => customerRegistryService.listCustomers(query, request),
       CUSTOMER_REGISTRY_STALE_TIME_MS,
+      true,
     ),
 
-  /** The vehicles of one customer. */
-  vehicles: (scope: AuthQueryScope | null, customerId: number) =>
+  /** One page of the vehicles of one customer; the previous page stays shown while the next loads. */
+  vehiclesPage: (scope: AuthQueryScope | null, customerId: number, query: PagedQuery) =>
     scopedQueryOptions(
       scope,
-      (authScope) => queryKeys.customers.vehicles(authScope, customerId),
-      (request) => customerRegistryService.listVehicles(customerId, request),
+      (authScope) => queryKeys.customers.vehiclesPage(authScope, customerId, query),
+      (request) => customerRegistryService.listVehicles(customerId, query, request),
       CUSTOMER_REGISTRY_STALE_TIME_MS,
+      true,
     ),
 
   /** One vehicle with its owner summary. */

@@ -4,6 +4,7 @@ import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
 /** Per-entity configuration consumed by the generic `CatalogTab` component. */
 export interface CatalogTabConfig<TDto> {
   readonly testIdPrefix: 'inventory-parts' | 'inventory-labor-types';
+  readonly paginationTestIdPrefix: 'parts-pagination' | 'labor-types-pagination';
   readonly searchPlaceholderKey: string;
   readonly createLabelKey: string;
   readonly emptyKey: string;
@@ -24,6 +25,7 @@ export interface CatalogTabConfig<TDto> {
 /** Parts tab configuration. */
 export const partCatalogTabConfig: CatalogTabConfig<PartDto> = {
   testIdPrefix: 'inventory-parts',
+  paginationTestIdPrefix: 'parts-pagination',
   searchPlaceholderKey: 'inventory.searchPlaceholderParts',
   createLabelKey: 'inventory.createPart',
   emptyKey: 'inventory.emptyParts',
@@ -44,6 +46,7 @@ export const partCatalogTabConfig: CatalogTabConfig<PartDto> = {
 /** Labor types tab configuration. */
 export const laborTypeCatalogTabConfig: CatalogTabConfig<LaborTypeDto> = {
   testIdPrefix: 'inventory-labor-types',
+  paginationTestIdPrefix: 'labor-types-pagination',
   searchPlaceholderKey: 'inventory.searchPlaceholderLaborTypes',
   createLabelKey: 'inventory.createLaborType',
   emptyKey: 'inventory.emptyLaborTypes',

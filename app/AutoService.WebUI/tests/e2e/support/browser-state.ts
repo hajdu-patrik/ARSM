@@ -3,23 +3,40 @@ import type { Page } from '@playwright/test';
 export type TestLanguage = 'en' | 'hu';
 export type TestTheme = 'light' | 'dark';
 
+/** sessionStorage flag the app sets once a tab showed its first splash (the 2500 ms intro). */
+export const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
+
 interface PrimeBrowserStateOptions {
   readonly language?: TestLanguage;
   /** `'system'` saves no theme, so the app follows the system color scheme. */
   readonly theme?: TestTheme | 'system';
   readonly sessionHint?: boolean;
   readonly sidebarCollapsed?: boolean;
+  /** Default true: the tab counts as past its first splash, so loads keep the 250 ms minimum. Pass false to test the first load. */
+  readonly splashShown?: boolean;
 }
 
-/** Preloads deterministic localStorage state before the app boots: language, theme, sidebar
- * state and the session hint that makes the app restore a session. */
+/** Marks every document of the tab as past its first splash, so a spec is not slowed by the 2500 ms intro. */
+export async function seedSplashShown(page: Page): Promise<void> {
+  await page.addInitScript((key: string) => {
+    sessionStorage.setItem(key, '1');
+  }, SPLASH_SHOWN_STORAGE_KEY);
+}
+
+/** Preloads deterministic browser state before the app boots: language, theme, sidebar state,
+ * the session hint that makes the app restore a session, and the per-tab splash-shown flag. */
 export async function primeBrowserState(page: Page, options: PrimeBrowserStateOptions = {}): Promise<void> {
   const {
     language = 'en',
     theme = 'light',
     sessionHint = false,
     sidebarCollapsed = false,
+    splashShown = true,
   } = options;
+
+  if (splashShown) {
+    await seedSplashShown(page);
+  }
 
   await page.addInitScript((state: {
     language: TestLanguage;

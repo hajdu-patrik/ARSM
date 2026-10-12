@@ -26,7 +26,7 @@ import {
   pageTitleClass,
 } from '../../utils/formStyles';
 
-/** Customers registry page container: coordinates customer/vehicle CRUD, search/sort state, and history panels. */
+/** Customers registry page container: coordinates customer/vehicle CRUD, search state, and history panels. */
 const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const showWarningToast = useToastStore((state) => state.showWarning);
   const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
-  const listState = useCustomersListState({ language: i18n.language });
+  const listState = useCustomersListState();
 
   const {
     refreshAfterCustomerCreated,
@@ -69,9 +69,18 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const detailsPanel = useCustomerDetailsPanel();
 
   const customerListData = useMemo<CustomerListData>(() => ({
-    searchTerm: listState.searchTerm,
-    filteredCustomers: listState.filteredCustomers,
+    searchTerm: listState.highlightTerm,
+    customers: listState.customers,
+    listRef: listState.listRef,
+    paging: {
+      page: listState.page,
+      pageSize: listState.pageSize,
+      totalCount: listState.totalCount,
+      isLoading: listState.isPageLoading,
+      onPageChange: listState.setPage,
+    },
     isLoadingCustomers: listState.isLoadingCustomers,
+    hasLoadFailed: listState.hasLoadFailed,
     expandedCustomerIds: listState.expandedCustomerIds,
     detailsTarget: detailsPanel.target,
     locale: i18n.language,
@@ -79,9 +88,16 @@ const CustomersPageComponent = memo(function CustomersPage() {
     detailsPanel.target,
     i18n.language,
     listState.expandedCustomerIds,
-    listState.filteredCustomers,
+    listState.customers,
+    listState.highlightTerm,
+    listState.hasLoadFailed,
     listState.isLoadingCustomers,
-    listState.searchTerm,
+    listState.isPageLoading,
+    listState.listRef,
+    listState.page,
+    listState.pageSize,
+    listState.setPage,
+    listState.totalCount,
   ]);
 
   // A quote is anchored to a vehicle, so the vehicle row starts one, and the
@@ -141,10 +157,8 @@ const CustomersPageComponent = memo(function CustomersPage() {
       <CustomersToolbar
         t={t}
         searchTerm={listState.searchTerm}
-        sortDirection={listState.sortDirection}
         onSearchChange={listState.setSearchTerm}
         onClearSearch={listState.clearSearch}
-        onToggleSortDirection={listState.toggleSortDirection}
         onOpenCreateCustomerModal={customerMutations.openCreateCustomerModal}
       />
 

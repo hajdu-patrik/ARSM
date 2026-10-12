@@ -8,6 +8,7 @@ import {
   loadingSpinnerClass,
   uppercaseMetaLabelTextClass,
 } from '../../../utils/formStyles';
+import { Pagination } from '../../../components/common/Pagination';
 import { CustomerCard } from './CustomerCard';
 import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './customerListSection.types';
 
@@ -18,7 +19,7 @@ interface CustomerListSectionProps {
   readonly history: CustomerHistoryState;
 }
 
-/** Renders the loading, empty or filtered customer card list, closed by an end-of-list divider. */
+/** Renders the loading, empty or paged customer card list, with its pagination and an end-of-list divider. */
 const CustomerListSectionComponent = memo(function CustomerListSection({
   t,
   data,
@@ -27,42 +28,57 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
 }: CustomerListSectionProps) {
   const {
     searchTerm,
-    filteredCustomers,
+    customers,
+    listRef,
+    paging,
     isLoadingCustomers,
+    hasLoadFailed,
     expandedCustomerIds,
     detailsTarget,
     locale,
   } = data;
+  const isLastPage = paging.page * paging.pageSize >= paging.totalCount;
 
   return (
     <section className="space-y-3">
-      {isLoadingCustomers && (
-        <div className={centeredLoadingWrapperClass}>
-          <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
-        </div>
-      )}
+      <div ref={listRef} className="flex flex-col gap-3">
+        {isLoadingCustomers && (
+          <div className={centeredLoadingWrapperClass}>
+            <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
+          </div>
+        )}
 
-      {!isLoadingCustomers && filteredCustomers.length === 0 && (
-        <p className={emptyStateBoxClass}>
-          {t('customers.empty')}
-        </p>
-      )}
+        {!isLoadingCustomers && !hasLoadFailed && customers.length === 0 && (
+          <p className={emptyStateBoxClass}>
+            {t('customers.empty')}
+          </p>
+        )}
 
-      {!isLoadingCustomers && filteredCustomers.map((customer) => (
-        <CustomerCard
-          key={customer.id}
-          t={t}
-          searchTerm={searchTerm}
-          customer={customer}
-          isExpanded={expandedCustomerIds.has(customer.id)}
-          detailsTarget={detailsTarget?.customerId === customer.id ? detailsTarget : null}
-          locale={locale}
-          actions={actions}
-          history={history}
-        />
-      ))}
+        {!isLoadingCustomers && customers.map((customer) => (
+          <CustomerCard
+            key={customer.id}
+            t={t}
+            searchTerm={searchTerm}
+            customer={customer}
+            isExpanded={expandedCustomerIds.has(customer.id)}
+            detailsTarget={detailsTarget?.customerId === customer.id ? detailsTarget : null}
+            locale={locale}
+            actions={actions}
+            history={history}
+          />
+        ))}
+      </div>
 
-      {!isLoadingCustomers && filteredCustomers.length > 0 && (
+      <Pagination
+        page={paging.page}
+        pageSize={paging.pageSize}
+        totalCount={paging.totalCount}
+        isLoading={paging.isLoading}
+        onPageChange={paging.onPageChange}
+        testIdPrefix="customers-pagination"
+      />
+
+      {!isLoadingCustomers && customers.length > 0 && isLastPage && (
         <div className={`flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2 py-2 text-center ${uppercaseMetaLabelTextClass}`}>
           <div className={compactDividerLineClass} />
           <span className="min-w-0 basis-full break-words text-center sm:basis-auto">{t('customers.endOfList')}</span>

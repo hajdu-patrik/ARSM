@@ -12,6 +12,11 @@ export const huCore = {
       ascending: 'Növekvő',
       descending: 'Csökkenő',
     },
+    pagination: {
+      previous: 'Előző oldal',
+      next: 'Következő oldal',
+      pageIndicator: '{{page}} / {{totalPages}}',
+    },
     fields: {
       email: 'E-mail',
       password: 'Jelszó',
@@ -54,7 +59,7 @@ export const huCore = {
       vehicleVinInvalid: 'A VIN legyen érvényes, 17 karakteres azonosító.',
       vehicleDrivetrainInvalid: 'Válasszon érvényes hajtáslánctípust.',
       vehicleYearInvalid: 'Az évjárat 1886 és 2100 közé kell essen.',
-      invalidVatRate: 'Az ÁFA-kulcs 0, 5, 18 vagy 27 lehet.',
+      invalidVatRate: 'Az ÁFA-kulcs 5, 18 vagy 27 lehet.',
       passwordHint: 'Min. 8 karakter, nagy- és kisbetű, szám és speciális karakter.',
       passwordTooShort: 'A jelszónak legalább 8 karakter hosszúnak kell lennie.',
       passwordMismatch: 'A jelszavak nem egyeznek.',
@@ -196,6 +201,7 @@ export const huCore = {
       lookupName: 'Ügyfél neve',
       lookupNamePlaceholder: 'pl. Kovács Anna',
       lookupLiveHint: 'Keresés név vagy rendszám alapján. A találatok gépelés közben automatikusan frissülnek.',
+      singleFilterNote: 'Egyszerre csak egy szűrő használható.',
       searching: 'Keresés...',
       customerFound: 'Meglévő ügyfél kiválasztva',
       customerNotFound: 'Ügyfél nem található',

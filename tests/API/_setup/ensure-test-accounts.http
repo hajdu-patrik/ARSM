@@ -55,7 +55,7 @@ Content-Type: application/json
 
 ### [Setup] List mechanics to find a stale plain-mechanic test account (200 expected)
 # @name allMechanics
-GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=1&pageSize=500
 
 ?? status == 200
 
@@ -64,7 +64,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 ### [Repair] Delete the plain mechanic test account only when its login failed (200 expected per delete)
 # Self-healing: a stale password left by an earlier non-idempotent test is fixed by deleting and
 # re-registering below, only when the probe login failed, and only for an '@example.test' address (never an admin or a demo '@example.com' account).
-# @loop for staleMechanic of (mechanicProbe && mechanicProbe.personId ? [] : allMechanics.filter(m => !m.isAdmin && m.email.toLowerCase() === MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test")))
+# @loop for staleMechanic of (mechanicProbe && mechanicProbe.personId ? [] : allMechanics.items.filter(m => !m.isAdmin && m.email.toLowerCase() === MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test")))
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{staleMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

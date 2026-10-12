@@ -3,26 +3,40 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Pagination;
 using AutoService.ApiService.Pricing;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace AutoService.ApiService.Catalog;
 
 public static partial class PartEndpoints
 {
-    /** Lists parts ordered by part number. */
+    /** Lists one page of parts ordered by part number, optionally searched by part number or name. */
     private static async Task<IResult> ListPartsAsync(
-        int? limit,
+        [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
+        [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
+        [Description("Optional case-insensitive substring filter, trimmed, max 100 characters.")] string? search,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var boundedLimit = ListQueryLimits.Normalize(limit);
+        var request = ListQueryLimits.NormalizePage(page, pageSize);
+        var term = SearchTerm.Normalize(search);
 
-        var parts = await db.Parts
-            .AsNoTracking()
+        var query = db.Parts.AsNoTracking();
+        if (term is not null)
+        {
+            query = query.Where(p =>
+                p.PartNumber.ToUpper().Contains(term) ||
+                p.Name.ToUpper().Contains(term));
+        }
+
+        var result = await query
             .OrderBy(p => p.PartNumber)
-            .Take(boundedLimit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(request, cancellationToken);
 
-        return Results.Ok(parts.Select(ToPartDto).ToList());
+        return Results.Ok(new PagedResult<PartDto>(
+            result.Items.Select(ToPartDto).ToList(),
+            result.TotalCount,
+            result.Page,
+            result.PageSize));
     }
 
     /** Returns a single part by id. */

@@ -30,10 +30,10 @@ Content-Type: application/json
 # Vehicle ids depend on the local DB's insert history, so this resolves the demo vehicle anchor via the
 # seeded quote's stable QuoteNumber (D13) instead of a literal id that would 404 on another machine.
 # @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
 
 {{
-  exports.AnchorVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
 }}
 
 ?? status == 200

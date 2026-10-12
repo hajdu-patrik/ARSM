@@ -1,4 +1,4 @@
-/** Labor type create/update/delete mutation hook: modal state, payload validation, server calls, cached list updates. */
+/** Labor type create/update/delete mutation hook: modal state, payload validation, server calls, list refresh. */
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../services/cache/queryKeys';
@@ -69,25 +69,13 @@ export function useLaborTypeMutations({
   const [pinnedFieldError, setPinnedFieldError] = useState<PinnedCatalogFieldError | null>(null);
   const [deleteLaborTypeTarget, setDeleteLaborTypeTarget] = useState<LaborTypeDto | null>(null);
 
-  /** Rewrites the cached labor type list; a list that has not loaded yet is left to its own fetch. */
-  const updateLaborTypeList = useCallback((update: (laborTypes: LaborTypeDto[]) => LaborTypeDto[]) => {
-    if (scope === null) {
-      return;
-    }
-
-    queryClient.setQueryData<LaborTypeDto[]>(
-      queryKeys.catalog.laborTypes(scope),
-      (laborTypes) => laborTypes && update(laborTypes),
-    );
-  }, [queryClient, scope]);
-
-  /** Marks the cached labor type list stale and resolves once the mounted list has refetched. */
+  /** Marks every cached labor-type read stale (pages and options) and resolves once the mounted page has refetched. */
   const refreshLaborTypeList = useCallback(async () => {
     if (scope === null) {
       return;
     }
 
-    await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.catalog.laborTypes(scope) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.laborTypes(scope) });
   }, [queryClient, scope]);
 
   /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
@@ -100,8 +88,8 @@ export function useLaborTypeMutations({
 
   const { mutate: createLaborType, isPending: isCreatingLaborType } = useMutation({
     mutationFn: (request: CreateLaborTypeRequest) => laborTypeService.createLaborType(request),
-    onSuccess: (created) => {
-      updateLaborTypeList((laborTypes) => [...laborTypes, created]);
+    onSuccess: async () => {
+      await refreshLaborTypeList();
       showSuccessToast('inventory.toasts.laborTypeCreated');
       setLaborTypeModalOpen(false);
     },
@@ -124,8 +112,8 @@ export function useLaborTypeMutations({
 
   const { mutate: deleteLaborType, isPending: isDeletingLaborType } = useMutation({
     mutationFn: (id: number) => laborTypeService.deleteLaborType(id),
-    onSuccess: (_result, id) => {
-      updateLaborTypeList((laborTypes) => laborTypes.filter((laborType) => laborType.id !== id));
+    onSuccess: async () => {
+      await refreshLaborTypeList();
       showSuccessToast('inventory.toasts.laborTypeDeleted');
       setDeleteLaborTypeTarget(null);
     },

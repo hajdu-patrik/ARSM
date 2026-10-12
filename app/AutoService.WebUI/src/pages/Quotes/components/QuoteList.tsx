@@ -12,6 +12,7 @@ interface QuoteListProps {
   readonly t: TFunction;
   readonly locale: string;
   readonly quotes: QuoteListItemDto[];
+  readonly searchQuery: string;
   readonly isLoading: boolean;
   readonly onOpenQuote: (quote: QuoteListItemDto) => void;
   readonly onDownloadQuotePdf: (quote: QuoteListItemDto) => void;
@@ -22,6 +23,7 @@ const QuoteListComponent = memo(function QuoteList({
   t,
   locale,
   quotes,
+  searchQuery,
   isLoading,
   onOpenQuote,
   onDownloadQuotePdf,
@@ -54,6 +56,7 @@ const QuoteListComponent = memo(function QuoteList({
           t={t}
           locale={locale}
           quote={quote}
+          searchQuery={searchQuery}
           onOpen={onOpenQuote}
           onDownloadPdf={onDownloadQuotePdf}
           onDelete={onDeleteQuote}

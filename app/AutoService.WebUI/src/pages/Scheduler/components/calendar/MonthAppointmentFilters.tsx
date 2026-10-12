@@ -1,10 +1,11 @@
 /** Month appointment list filter controls. */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { compactFilterChipNeutralButtonClass, filterSelectCompactClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
+import { Dropdown } from '../../../../components/common/Dropdown';
+import { compactFilterChipNeutralButtonClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 import { schedulerChipLabelClass, schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
@@ -77,6 +78,10 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
   const selectedMechanicName = selectedMechanicId === null
     ? t('scheduler.monthList.mechanicAll')
     : uniqueMechanics.find(([id]) => id === selectedMechanicId)?.[1] ?? t('scheduler.monthList.mechanicAll');
+  const mechanicOptions = useMemo(() => [
+    { value: '', label: t('scheduler.monthList.mechanicAll') },
+    ...uniqueMechanics.map(([id, name]) => ({ value: String(id), label: name })),
+  ], [t, uniqueMechanics]);
 
   return (
     <div className={`${schedulerControlRowClass} w-full justify-start`}>
@@ -104,21 +109,16 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
         );
       })}
 
-      <div className={filterSelectCompactWrapperClass}>
-        <select
-          value={selectedMechanicId ?? ''}
-          title={selectedMechanicName}
-          aria-label={t('scheduler.monthList.mechanicAll')}
-          onChange={(event) => {
-            onMechanicChange(parseMechanicFilterValue(event.target.value));
+      <div className={filterSelectCompactWrapperClass} title={selectedMechanicName}>
+        <Dropdown
+          size="compact"
+          value={selectedMechanicId === null ? '' : String(selectedMechanicId)}
+          options={mechanicOptions}
+          ariaLabel={t('scheduler.monthList.mechanicAll')}
+          onChange={(value) => {
+            onMechanicChange(parseMechanicFilterValue(value));
           }}
-          className={filterSelectCompactClass}
-        >
-          <option value="">{t('scheduler.monthList.mechanicAll')}</option>
-          {uniqueMechanics.map(([id, name]) => (
-            <option key={id} value={id} title={name}>{name}</option>
-          ))}
-        </select>
+        />
       </div>
     </div>
   );

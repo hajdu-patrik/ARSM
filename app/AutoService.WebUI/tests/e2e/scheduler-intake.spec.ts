@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
+import { expectDropdownValue } from './support/dropdown';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
 
@@ -23,7 +24,7 @@ test.describe('Scheduler intake customer lookup', () => {
 
     await expect(dialog.getByText('Existing customer selected')).toBeVisible();
     await expect(dialog.getByText('anna.kovacs@example.test')).toBeVisible();
-    await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toHaveValue('1001');
+    await expectDropdownValue(page, 'scheduler-intake-existing-vehicle', '1001');
     await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toContainText('NXE-441 - Volkswagen Golf (2018)');
   });
 
@@ -61,7 +62,7 @@ test.describe('Scheduler intake customer lookup', () => {
 
     await expect(dialog.getByText('Existing customer selected')).toBeVisible();
     await expect(dialog.getByText('adam.kovacs@example.test')).toBeVisible();
-    await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toHaveValue('1004');
+    await expectDropdownValue(page, 'scheduler-intake-existing-vehicle', '1004');
   });
 });
 

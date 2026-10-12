@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import type { TestLanguage } from '../support/browser-state';
+import { seedSplashShown, type TestLanguage } from '../support/browser-state';
 import type { AppointmentFlowEnv } from '../support/e2e-env';
 
 /** Page object for the login flow. */
@@ -23,6 +23,7 @@ export class AuthPage {
   }
 
   private async prepareBrowserState(language: TestLanguage): Promise<void> {
+    await seedSplashShown(this.page);
     await this.page.addInitScript((preferredLanguage) => {
       localStorage.setItem('preferred-language', preferredLanguage);
       localStorage.setItem('preferred-sidebar-collapsed', 'false');

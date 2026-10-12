@@ -3,6 +3,7 @@
 import { memo, useId } from 'react';
 import type { TFunction } from 'i18next';
 import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { HighlightedText } from '../../../components/common/HighlightedText';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import {
   baseSectionHeadingTextClass,
@@ -33,32 +34,6 @@ interface CustomerCardProps {
   readonly history: CustomerHistoryState;
 }
 
-/** Splits the name around case-insensitive matches of the trimmed search term and marks each match. */
-function renderHighlightedCustomerName(fullName: string, searchTerm: string) {
-  const trimmedSearchTerm = searchTerm.trim();
-  if (trimmedSearchTerm.length === 0) {
-    return fullName;
-  }
-
-  const escapedSearch = trimmedSearchTerm.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, String.raw`\$&`);
-  const highlightRegex = new RegExp(`(${escapedSearch})`, 'ig');
-
-  return fullName.split(highlightRegex).map((part, index) => {
-    if (part.length > 0 && part.toLowerCase() === trimmedSearchTerm.toLowerCase()) {
-      return (
-        <mark
-          key={`${part}-${String(index)}`}
-          className="rounded border border-arsm-accent/55 bg-ui-accent px-0.5 font-semibold text-arsm-primary dark:border-arsm-accent-dark/65"
-        >
-          {part}
-        </mark>
-      );
-    }
-
-    return <span key={`${part}-${String(index)}`}>{part}</span>;
-  });
-}
-
 /** Renders a single customer card and, once expanded, its vehicle and history details. */
 const CustomerCardComponent = memo(function CustomerCard({
   t,
@@ -84,6 +59,7 @@ const CustomerCardComponent = memo(function CustomerCard({
   return (
     <article
       data-testid={`customer-card-${String(customer.id)}`}
+      data-expanded={isExpanded}
       className={`min-w-0 duration-200 ${contentCardFrameClass}`}
     >
       <div className="flex min-w-0 flex-col gap-3 px-4 py-4 sm:px-5 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
@@ -99,7 +75,7 @@ const CustomerCardComponent = memo(function CustomerCard({
             }}
             className={rowIconActionNeutralClass}
             aria-expanded={isExpanded}
-            aria-controls={detailsRegionId}
+            aria-controls={isExpanded ? detailsRegionId : undefined}
             aria-label={expandLabel}
             title={expandLabel}
           >
@@ -115,7 +91,11 @@ const CustomerCardComponent = memo(function CustomerCard({
             }}
             className={`inline-flex min-h-11 min-w-11 max-w-full items-center text-left hover:text-arsm-accent-vivid dark:hover:text-arsm-accent ${focusVisibleOutlineClass}`}
           >
-            <span className="min-w-0 [overflow-wrap:anywhere]">{renderHighlightedCustomerName(buildCustomerDisplayName(customer), searchTerm)}</span>
+            <HighlightedText
+              className="min-w-0 [overflow-wrap:anywhere]"
+              text={buildCustomerDisplayName(customer)}
+              query={searchTerm}
+            />
           </button>
         </h2>
 
@@ -157,6 +137,7 @@ const CustomerCardComponent = memo(function CustomerCard({
           id={detailsRegionId}
           t={t}
           customer={customer}
+          searchTerm={searchTerm}
           detailsTarget={detailsTarget}
           locale={locale}
           actions={actions}

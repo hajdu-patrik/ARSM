@@ -38,34 +38,34 @@ Content-Type: application/json
 
 ### [Setup][Appointments] Resolve two customers that each own a vehicle (200 expected)
 # @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
-@CustomerId = {{seedCustomers.filter(c => c.vehicleCount > 0)[0].id}}
-@OtherCustomerId = {{seedCustomers.filter(c => c.vehicleCount > 0)[1].id}}
+@CustomerId = {{seedCustomers.items.filter(c => c.vehicleCount > 0)[0].id}}
+@OtherCustomerId = {{seedCustomers.items.filter(c => c.vehicleCount > 0)[1].id}}
 
 ### [Setup][Appointments] Resolve CustomerId's own vehicle (200 expected)
 # @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
-@CustomerVehicleId = {{seedVehicles[0].id}}
+@CustomerVehicleId = {{seedVehicles.items[0].id}}
 
 ### [Setup][Appointments] Resolve a vehicle owned by the other customer (200 expected)
 # @name otherSeedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{OtherCustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{OtherCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
-@AnotherCustomerVehicleId = {{otherSeedVehicles[0].id}}
+@AnotherCustomerVehicleId = {{otherSeedVehicles.items[0].id}}
 
 ### [Negative][Appointments] Admin create fails when customer does not exist (404 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/customers/99999/appointments

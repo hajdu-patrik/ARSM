@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MechanicListItem } from '../../../services/admin/admin.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile-picture-live.service';
 import { adminQueries } from '../../../services/queries/admin.queries';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { logError } from '../../../utils/devLog';
 
@@ -14,7 +15,7 @@ const NO_MECHANICS: MechanicListItem[] = [];
 export function useAdminMechanics(isAdmin: boolean) {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();
-  const { data, error } = useQuery({ ...adminQueries.mechanics(scope), enabled: isAdmin });
+  const { data, error } = useQuery({ ...adminQueries.mechanicOptions(scope), enabled: isAdmin });
 
   useEffect(() => {
     if (error) {
@@ -27,8 +28,12 @@ export function useAdminMechanics(isAdmin: boolean) {
       return undefined;
     }
 
+    if (scope === null) {
+      return undefined;
+    }
+
     const refreshMechanics = () => {
-      void queryClient.invalidateQueries({ queryKey: adminQueries.mechanics(scope).queryKey });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.mechanics(scope) });
     };
 
     globalThis.addEventListener(PROFILE_PICTURE_UPDATED_EVENT, refreshMechanics);

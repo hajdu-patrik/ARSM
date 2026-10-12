@@ -28,10 +28,94 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Admin] List all mechanics (200 expected)
-# Response items include isAdmin and hasProfilePicture.
-### [Case][Admin] GET /api/admin/mechanics
+### [Positive][Admin] List all mechanics (200 expected, paged shape with isAdmin and hasProfilePicture)
+# @name allMechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=1&pageSize=500
 
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 500
+?? js (response.parsedBody.totalCount == response.parsedBody.items.length) == true
+?? js (response.parsedBody.items.every(m => typeof m.isAdmin == "boolean" && typeof m.hasProfilePicture == "boolean")) == true
+?? js response.parsedBody.items.some(m => m.isAdmin)
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics (200 expected, default page 1 and pageSize 20)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 
 ?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js response.parsedBody.items.length <= 20
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount >= 1
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=0
+
+?? status == 200
+?? js response.parsedBody.page == 1
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=100000&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js (response.parsedBody.totalCount == allMechanics.items.length) == true
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?page=2&pageSize=1 (200 expected, second row of the ordered set)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=2&pageSize=1
+
+?? status == 200
+?? js (response.parsedBody.items.length == 0 || response.parsedBody.items[0].personId == allMechanics.items[1].personId) == true
+?? js (response.parsedBody.totalCount == allMechanics.items.length) == true
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=abc
+
+?? status == 400
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?search=<listed admin email, upper case> (200 expected, case-insensitive email match)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{allMechanics.items.find(m => m.isAdmin).email.toUpperCase()}}
+
+?? status == 200
+?? js response.parsedBody.totalCount >= 1
+?? js (response.parsedBody.items.some(m => m.isAdmin && m.email.toLowerCase() == allMechanics.items.find(a => a.isAdmin).email.toLowerCase())) == true
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?search=zzzzqqqqxxxx (200 expected, no match: empty items and totalCount 0)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=zzzzqqqqxxxx
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###

@@ -15,6 +15,9 @@ async function prepareInventoryPage(page: Page): Promise<MockApiState> {
 }
 
 test.describe('Inventory - Parts tab', () => {
+  // Tall enough that the page-sized list shows every fixture row at once.
+  test.use({ viewport: { width: 1280, height: 1000 } });
+
   test('defaults to the Parts tab and shows net and gross unit price side by side', async ({ page }) => {
     await prepareInventoryPage(page);
     const catalogPage = new CatalogPage(page);
@@ -86,18 +89,18 @@ test.describe('Inventory - Parts tab', () => {
     await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(1);
   });
 
-  test('toolbar sort toggles ascending/descending part-number order', async ({ page }) => {
+  test('lists parts in ascending part-number order and offers no sort toggle', async ({ page }) => {
     await prepareInventoryPage(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
-    const ascendingFirst = await catalogPage.openEdit('part', 0);
-    await expect(ascendingFirst.getByLabel('Part number')).toHaveValue('ALT-1001');
-    await ascendingFirst.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByTestId('inventory-parts-sort-toggle')).toHaveCount(0);
+    const first = await catalogPage.openEdit('part', 0);
+    await expect(first.getByLabel('Part number')).toHaveValue('ALT-1001');
+    await first.getByRole('button', { name: 'Cancel' }).click();
 
-    await catalogPage.sortToggle('part').click();
-    const descendingFirst = await catalogPage.openEdit('part', 0);
-    await expect(descendingFirst.getByLabel('Part number')).toHaveValue('BRK-2002');
+    const second = await catalogPage.openEdit('part', 1);
+    await expect(second.getByLabel('Part number')).toHaveValue('BRK-2002');
   });
 
   test('create modal previews the gross price live and saves using the server-returned value', async ({ page }) => {

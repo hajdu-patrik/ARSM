@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace AutoService.ApiService.Vehicles;
 
@@ -27,10 +28,11 @@ public static partial class VehicleEndpoints
             v.Customer.Name.MiddleName,
             v.Customer.Name.LastName));
 
-    /** Returns the vehicles owned by a customer, capped at the shared list limit. */
+    /** Returns the vehicles owned by a customer, one page, ordered by brand, model, id. */
     private static async Task<IResult> ListCustomerVehiclesAsync(
         int customerId,
-        int? limit,
+        [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
+        [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -44,15 +46,15 @@ public static partial class VehicleEndpoints
                 statusCode: StatusCodes.Status404NotFound);
         }
 
+        var request = ListQueryLimits.NormalizePage(page, pageSize);
         var vehicles = await db.Vehicles
             .AsNoTracking()
             .Where(v => v.CustomerId == customerId)
             .OrderBy(v => v.Brand)
             .ThenBy(v => v.Model)
             .ThenBy(v => v.Id)
-            .Take(ListQueryLimits.Normalize(limit))
             .Select(VehicleDetailProjection)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(request, cancellationToken);
 
         return Results.Ok(vehicles);
     }

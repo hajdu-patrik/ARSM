@@ -1,13 +1,17 @@
 import type { Route } from '@playwright/test';
 import type { CreatePartRequest, PartDto, UpdatePartRequest } from '../../../src/types/catalog/catalog.types';
 import type { MockApiState } from './test-data';
+import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
-import { resolveGrossAmount } from './api-mock-catalog-pricing';
+import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate, resolveGrossAmount } from './api-mock-catalog-pricing';
 
 /** Dispatches `/api/parts` mock requests (list, create, update, delete). */
 export async function tryHandlePartRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
   if (path === '/api/parts' && method === 'GET') {
-    await fulfillJson(route, state.parts);
+    await fulfillPaged(route, state.parts, {
+      searchFields: (part) => [part.partNumber, part.name],
+      compare: (left, right) => compareText(left.partNumber, right.partNumber) || left.id - right.id,
+    });
     return true;
   }
 
@@ -43,6 +47,11 @@ async function handleCreatePart(route: Route, state: MockApiState): Promise<void
     return;
   }
 
+  if (!isAllowedVatRate(vatRatePercent)) {
+    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+    return;
+  }
+
   if (state.parts.some((part) => part.partNumber === partNumber)) {
     await fulfillJson(route, { detail: 'A part with this part number already exists.' }, 409);
     return;
@@ -69,6 +78,11 @@ async function handleUpdatePart(route: Route, state: MockApiState, id: number): 
   }
 
   const payload = route.request().postDataJSON() as UpdatePartRequest;
+  if (!isAllowedVatRate(payload.vatRatePercent)) {
+    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+    return;
+  }
+
   const hasDuplicate = state.parts.some((part) => part.id !== id && part.partNumber === payload.partNumber);
   if (hasDuplicate) {
     await fulfillJson(route, { detail: 'A part with this part number already exists.' }, 409);

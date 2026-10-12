@@ -1,5 +1,7 @@
 /** Quote contracts used by the Quotes page (see `Quotes/QuoteEndpoints.Contracts.cs`). */
 
+import type { PagedQuery } from '../common/pagination.types';
+
 /** Stored quote statuses; `Expired` is never one of them (it is the computed `isExpired` flag). */
 export const QUOTE_STATUSES = ['Draft', 'Sent', 'Accepted', 'Rejected'] as const;
 
@@ -74,6 +76,13 @@ export interface QuoteListItemDto {
   appointmentId: number | null;
   createdByMechanic: QuoteMechanicSummaryDto | null;
   version: number;
+}
+
+/** Query of {@code GET /api/quotes}: the paging and search parameters plus the optional stored-status and vehicle filters. */
+export interface QuoteListQuery extends PagedQuery {
+  status?: QuoteStatus;
+  expired?: boolean;
+  vehicleId?: number;
 }
 
 /** Full quote returned by {@code GET /api/quotes/{id}} and by every write endpoint. */

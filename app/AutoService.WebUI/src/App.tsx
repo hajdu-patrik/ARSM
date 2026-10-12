@@ -14,6 +14,7 @@ import { ToastViewport } from './components/common/ToastViewport';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SeoManager } from './components/seo/SeoManager';
 import { ServerError } from './pages/ServerError';
+import { NotFound } from './pages/NotFound';
 import { warmErrorIllustrationCache } from './utils/errorIllustrationCache';
 import { centeredLoadingWrapperClass, loadingSpinnerClass } from './utils/formStyles';
 
@@ -23,7 +24,6 @@ const CustomersPage = lazy(() => import('./pages/Customers/page').then((module) 
 const InventoryPage = lazy(() => import('./pages/Inventory/page').then((module) => ({ default: module.InventoryPage })));
 const QuotesPage = lazy(() => import('./pages/Quotes/page').then((module) => ({ default: module.QuotesPage })));
 const CompanyResultsPage = lazy(() => import('./pages/CompanyResults/page').then((module) => ({ default: module.CompanyResultsPage })));
-const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
 const RegisterMechanicPage = lazy(() => import('./pages/Admin/RegisterMechanic/page').then((module) => ({ default: module.RegisterMechanicPage })));
 const SettingsPage = lazy(() => import('./pages/Settings/page').then((module) => ({ default: module.SettingsPage })));
 

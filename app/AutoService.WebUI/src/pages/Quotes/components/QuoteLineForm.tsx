@@ -2,6 +2,7 @@
 import { memo, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, X } from 'lucide-react';
+import { Dropdown, type DropdownOption } from '../../../components/common/Dropdown';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import { VAT_RATE_OPTIONS } from '../../../types/catalog/catalog.types';
@@ -45,6 +46,12 @@ interface QuoteLineFormProps {
   readonly onCancel: () => void;
 }
 
+/** VAT choices of the dropdown; values are strings, the form keeps the number. */
+const VAT_DROPDOWN_OPTIONS: readonly DropdownOption[] = VAT_RATE_OPTIONS.map((rate) => ({
+  value: String(rate),
+  label: `${String(rate)}%`,
+}));
+
 /** Quote line editor that shows bound field errors once a save was attempted. */
 const QuoteLineFormComponent = memo(function QuoteLineForm({
   t,
@@ -65,9 +72,10 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
   const errors = hasSubmitAttempt ? validateQuoteLineForm(form) : NO_QUOTE_LINE_FIELD_ERRORS;
   const { quantityKey, unitPriceKey } = resolveLineLabelKeys(form.lineKind);
   const preview = computeQuoteLineAmountsPreview(Number(form.quantity), Number(form.netUnitPrice), form.vatRatePercent);
-  const catalogOptions = form.lineKind === 'Part'
-    ? parts.map((part) => ({ id: part.id, label: `${part.partNumber} - ${part.name}` }))
-    : laborTypes.map((laborType) => ({ id: laborType.id, label: `${laborType.code} - ${laborType.name}` }));
+  const catalogItems = form.lineKind === 'Part'
+    ? parts.map((part) => ({ value: String(part.id), label: `${part.partNumber} - ${part.name}` }))
+    : laborTypes.map((laborType) => ({ value: String(laborType.id), label: `${laborType.code} - ${laborType.name}` }));
+  const catalogOptions = [{ value: '', label: t('quotes.line.catalogNone') }, ...catalogItems];
 
   return (
     <div data-testid="quote-line-editor" className={`min-w-0 space-y-3 ${insetSurfaceClass} p-3.5`}>
@@ -103,21 +111,16 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
           {form.lineKind === 'Part' ? t('quotes.line.kindPart') : t('quotes.line.laborCatalog')}
         </label>
         <div className={selectWrapperClass}>
-          <select
+          <Dropdown
             data-testid="quote-line-catalog-select"
             id="quote-line-catalog"
             value={form.catalogId}
-            onChange={(event) => {
-              setForm((previous) => applyCatalogSelection(previous, event.target.value, parts, laborTypes));
+            options={catalogOptions}
+            onChange={(value) => {
+              setForm((previous) => applyCatalogSelection(previous, value, parts, laborTypes));
             }}
-            className={`${inputClassCompact} min-w-0 truncate`}
             disabled={isSaving}
-          >
-            <option value="">{t('quotes.line.catalogNone')}</option>
-            {catalogOptions.map((option) => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
+          />
         </div>
       </div>
 
@@ -186,20 +189,17 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
         <div className={formFieldGroupClass}>
           <label htmlFor="quote-line-vat" className={labelClass}>{t('common.fields.vatRate')}</label>
           <div className={selectWrapperClass}>
-            <select
+            <Dropdown
               data-testid="quote-line-vat-select"
               id="quote-line-vat"
-              value={form.vatRatePercent}
-              onChange={(event) => {
-                setForm((previous) => ({ ...previous, vatRatePercent: Number(event.target.value) }));
+              value={String(form.vatRatePercent)}
+              options={VAT_DROPDOWN_OPTIONS}
+              placeholder={t('common.fields.vatRate')}
+              onChange={(value) => {
+                setForm((previous) => ({ ...previous, vatRatePercent: Number(value) }));
               }}
-              className={`${inputClassCompact} min-w-0 truncate`}
               disabled={isSaving}
-            >
-              {VAT_RATE_OPTIONS.map((rate) => (
-                <option key={rate} value={rate}>{rate}%</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

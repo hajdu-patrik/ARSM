@@ -2,6 +2,7 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Download, Eye, Trash2 } from 'lucide-react';
+import { HighlightedText } from '../../../components/common/HighlightedText';
 import { DataListCell, DataListRow, DataListText } from '../../../components/common/DataList';
 import type { QuoteListItemDto } from '../../../types/quotes/quotes.types';
 import { formatHuf } from '../../../utils/currency';
@@ -21,6 +22,7 @@ interface QuoteCardProps {
   readonly t: TFunction;
   readonly locale: string;
   readonly quote: QuoteListItemDto;
+  readonly searchQuery: string;
   readonly onOpen: (quote: QuoteListItemDto) => void;
   readonly onDownloadPdf: (quote: QuoteListItemDto) => void;
   readonly onDelete: (quote: QuoteListItemDto) => void;
@@ -82,7 +84,7 @@ function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRow
   );
 }
 
-const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
+const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, searchQuery, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
   const licensePlate = quote.vehicle.licensePlate;
   const validUntilText = formatShortDate(quote.validUntil, locale);
   const totalNetText = formatHuf(quote.totalNet, locale);
@@ -94,8 +96,8 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       valuesClassName={compactTwoColumnFixedGridClass}
       lead={(
         <DataListCell column="quote">
-          <DataListText kind="title" title={quote.title}>{quote.title}</DataListText>
-          <DataListText kind="reference" title={quote.quoteNumber}>{quote.quoteNumber}</DataListText>
+          <DataListText kind="title" title={quote.title}><HighlightedText text={quote.title} query={searchQuery} /></DataListText>
+          <DataListText kind="reference" title={quote.quoteNumber}><HighlightedText text={quote.quoteNumber} query={searchQuery} /></DataListText>
         </DataListCell>
       )}
       actions={(
@@ -105,7 +107,7 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, onOpen, o
       )}
     >
       <DataListCell column="vehicle" label={t('common.fields.vehicle')} tile>
-        <DataListText kind="identifier" title={licensePlate}>{licensePlate}</DataListText>
+        <DataListText kind="identifier" title={licensePlate}><HighlightedText text={licensePlate} query={searchQuery} /></DataListText>
       </DataListCell>
       <DataListCell column="status" className={statusTileClass}>
         <QuoteStatusBadge status={resolveQuoteDisplayStatus(quote)} />

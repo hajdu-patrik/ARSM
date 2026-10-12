@@ -1,5 +1,6 @@
-import { type ChangeEvent, memo } from 'react';
+import { type ChangeEvent, memo, useMemo } from 'react';
 import type { TFunction } from 'i18next';
+import { Dropdown } from '../../../../components/common/Dropdown';
 import { DRIVETRAIN_TYPES } from '../../../../types/customers/customers.types';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
@@ -35,6 +36,11 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
   onVehicleModeChange,
   onExistingVehicleIdChange,
 }: SchedulerIntakeVehicleModeProps) {
+  const vehicleOptions = useMemo(() => (customerLookup?.vehicles ?? []).map((vehicleItem) => ({
+    value: String(vehicleItem.id),
+    label: `${vehicleItem.licensePlate} - ${vehicleItem.brand} ${vehicleItem.model} (${String(vehicleItem.year)})`,
+  })), [customerLookup]);
+
   return (
     <div className={`${insetSurfaceClass} space-y-3 p-3.5`}>
       {vehicleMode === 'existing' && <p className={uppercaseMetaLabelTextClass}>{translate('common.fields.vehicleDetails')}</p>}
@@ -46,6 +52,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
             onVehicleModeChange('existing');
           }}
           disabled={!customerHasVehicles}
+          aria-pressed={vehicleMode === 'existing'}
           className={getTogglePillClass(vehicleMode === 'existing')}
         >
           {translate('scheduler.intake.useExistingVehicle')}
@@ -55,6 +62,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
           onClick={() => {
             onVehicleModeChange('new');
           }}
+          aria-pressed={vehicleMode === 'new'}
           className={getTogglePillClass(vehicleMode === 'new')}
         >
           {translate('scheduler.intake.createNewVehicle')}
@@ -65,21 +73,14 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
         <label className={intakeFieldWrapperClass}>
           <span className={intakeFieldLabelClass}>{translate('scheduler.intake.selectVehicle')}</span>
           <div className={formFieldGroupClass}>
-            <select
+            <Dropdown
+              size="intake"
               data-testid="scheduler-intake-existing-vehicle"
               value={existingVehicleId}
-              onChange={(event) => {
-                onExistingVehicleIdChange(event.target.value);
-              }}
-              className={`${intakeInputClass} truncate`}
-            >
-              <option value="" disabled hidden>{translate('scheduler.intake.selectVehiclePlaceholder')}</option>
-              {customerLookup?.vehicles.map((vehicleItem) => (
-                <option key={vehicleItem.id} value={vehicleItem.id}>
-                  {vehicleItem.licensePlate} - {vehicleItem.brand} {vehicleItem.model} ({vehicleItem.year})
-                </option>
-              ))}
-            </select>
+              options={vehicleOptions}
+              onChange={onExistingVehicleIdChange}
+              placeholder={translate('scheduler.intake.selectVehiclePlaceholder')}
+            />
           </div>
         </label>
       )}
@@ -99,9 +100,14 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
   translate,
   onVehicleFieldChange,
 }: SchedulerIntakeVehicleFormProps) {
+  const drivetrainOptions = useMemo(() => DRIVETRAIN_TYPES.map((type) => ({
+    value: type,
+    label: translate(`vehicle.drivetrain.${type}`),
+  })), [translate]);
+
   /** Builds the change handler of one field; `uppercase` normalizes plate and VIN input. */
   const changeField = (field: keyof VehicleFormState, uppercase = false) => (
-    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ChangeEvent<HTMLInputElement>,
   ) => {
     const { value } = event.target;
     onVehicleFieldChange(field, uppercase ? value.toUpperCase() : value);
@@ -149,12 +155,15 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.drivetrain')}</span>
         <div className={formFieldGroupClass}>
-          <select value={vehicle.drivetrainType} onChange={changeField('drivetrainType')} className={`${intakeInputClass} truncate`}>
-            <option value="" disabled hidden>{translate('common.placeholders.drivetrain')}</option>
-            {DRIVETRAIN_TYPES.map((type) => (
-              <option key={type} value={type}>{translate(`vehicle.drivetrain.${type}`)}</option>
-            ))}
-          </select>
+          <Dropdown
+            size="intake"
+            value={vehicle.drivetrainType}
+            options={drivetrainOptions}
+            onChange={(value) => {
+              onVehicleFieldChange('drivetrainType', value);
+            }}
+            placeholder={translate('common.placeholders.drivetrain')}
+          />
         </div>
       </label>
     </div>

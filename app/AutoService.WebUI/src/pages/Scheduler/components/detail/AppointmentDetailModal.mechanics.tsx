@@ -1,10 +1,10 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto } from '../../../../types/scheduler/scheduler.types';
+import { Dropdown } from '../../../../components/common/Dropdown';
 import {
   compactPrimaryValueTextClass,
-  compactSelectFullClass,
   equalWidthControlGroupClass,
   mediumContextPrimaryButtonClass,
   mutedMetaTextClass,
@@ -73,6 +73,10 @@ export const MechanicsSection = memo(function MechanicsSection({
   onAdminUnassign,
 }: MechanicsSectionProps) {
   const isMechanicMutationBusy = isClaiming || isAssigning || isUnclaiming;
+  const mechanicOptions = useMemo(() => availableMechanics.map((mechanic) => ({
+    value: String(mechanic.personId),
+    label: getMechanicOptionDisplayName(mechanic),
+  })), [availableMechanics]);
   const uniqueMechanics = Array.from(new Map(appointment.mechanics.map((mechanic) => [mechanic.id, mechanic])).values());
 
   return (
@@ -131,26 +135,14 @@ export const MechanicsSection = memo(function MechanicsSection({
           </h5>
           <div className={equalWidthControlGroupClass}>
             <div className="min-w-0 max-w-full">
-              <select
+              <Dropdown
                 value={selectedNewMechanicId}
-                onChange={(event) => {
-                  onSelectNewMechanic(event.target.value);
-                }}
+                options={mechanicOptions}
+                onChange={onSelectNewMechanic}
                 disabled={isMechanicMutationBusy}
-                aria-label={t('scheduler.detail.selectMechanic')}
-                className={compactSelectFullClass}
-              >
-                <option value="" disabled hidden>
-                  {t('scheduler.detail.selectMechanic')}
-                </option>
-                {availableMechanics.map((mechanic) => {
-                  return (
-                    <option key={mechanic.personId} value={mechanic.personId}>
-                      {getMechanicOptionDisplayName(mechanic)}
-                    </option>
-                  );
-                })}
-              </select>
+                ariaLabel={t('scheduler.detail.selectMechanic')}
+                placeholder={t('scheduler.detail.selectMechanic')}
+              />
             </div>
             <button
               type="button"

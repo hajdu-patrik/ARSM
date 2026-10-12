@@ -1,4 +1,4 @@
-/** List-state hook for the admin mechanic roster: the roster read, the delete mutation, search and sorting. */
+/** List-state hook for the admin mechanic roster: the paged read, the delete mutation, search and paging. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
@@ -7,14 +7,13 @@ import { adminService, type MechanicListItem } from '../../../services/admin/adm
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile-picture-live.service';
 import { adminQueries } from '../../../services/queries/admin.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
-import { toIntlLocale } from '../../../utils/intlFormat';
-import { normalizeSearchValue } from '../../../utils/textSearch';
-import { buildMechanicDisplayName } from './helpers';
-import type { SortDirection } from './types';
+import { queryKeys } from '../../../services/cache/queryKeys';
+import { useListPaging } from '../../../hooks/useListPaging';
+import type { PagedQuery, PagedResult } from '../../../types/common/pagination.types';
+import { MECHANIC_LIST_PAGE_SIZE } from './constants';
 
 /** External dependencies for the mechanic list-state hook. */
 interface UseMechanicListStateParams {
-  readonly language: string;
   readonly showErrorToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
 }
@@ -24,7 +23,7 @@ interface DeleteErrorBody {
   detail?: string;
 }
 
-/** Stable empty roster for the render before the read has data. */
+/** Stable empty page for the render before the read has data. */
 const NO_MECHANICS: MechanicListItem[] = [];
 
 /** Maps a failed delete to the toast that explains it. */
@@ -56,41 +55,39 @@ function getDeleteErrorKey(error: unknown): string {
   return status === 500 ? 'admin.mechanicDeleteIdentityFailed' : 'admin.mechanicDeleteFailed';
 }
 
-/** Narrows the roster to the normalized name search, then sorts it by display name in the given direction. */
-function selectVisibleMechanics(
-  mechanics: MechanicListItem[],
-  normalizedSearchTerm: string,
-  collator: Intl.Collator,
-  sortDirection: SortDirection,
-): MechanicListItem[] {
-  const filtered = normalizedSearchTerm.length > 0
-    ? mechanics.filter((mechanic) => (
-      normalizeSearchValue(buildMechanicDisplayName(mechanic)).includes(normalizedSearchTerm)
-    ))
-    : mechanics;
-
-  const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
-
-  return [...filtered].sort((left, right) => (
-    collator.compare(buildMechanicDisplayName(left), buildMechanicDisplayName(right)) * directionMultiplier
-  ));
-}
-
-/** Manages the admin mechanic roster: the cached read, delete flow, name search, and locale-aware sorting. */
+/** Manages the admin mechanic roster: the cached paged read, the delete flow and the server-side name search. */
 export function useMechanicListState({
-  language,
   showErrorToast,
   showSuccessToast,
 }: UseMechanicListStateParams) {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();
-  const { data, isError, isLoading, isSuccess, errorUpdatedAt } = useQuery(adminQueries.mechanics(scope));
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
   const [deleteTarget, setDeleteTarget] = useState<MechanicListItem | null>(null);
 
-  const mechanics = data ?? NO_MECHANICS;
-  const collator = useMemo(() => new Intl.Collator(toIntlLocale(language), { sensitivity: 'base' }), [language]);
+  const query = useMemo<PagedQuery>(() => {
+    const search = debouncedSearch.trim();
+    return search.length > 0
+      ? { page, pageSize: MECHANIC_LIST_PAGE_SIZE, search }
+      : { page, pageSize: MECHANIC_LIST_PAGE_SIZE };
+  }, [debouncedSearch, page]);
+
+  const { data, isError, isLoading, isSuccess, isPlaceholderData, errorUpdatedAt } = useQuery(
+    adminQueries.mechanicsPage(scope, query),
+  );
+  const { data: allMechanics } = useQuery(adminQueries.mechanicOptions(scope));
+
+  const mechanics = data?.items ?? NO_MECHANICS;
+  const totalCount = data?.totalCount ?? 0;
+  const lastPage = Math.max(1, Math.ceil(totalCount / MECHANIC_LIST_PAGE_SIZE));
+  const removableMechanicCount = useMemo(
+    () => (allMechanics ?? NO_MECHANICS).filter((item) => !item.isAdmin).length,
+    [allMechanics],
+  );
+
+  if (data !== undefined && !isPlaceholderData && page > lastPage) {
+    setPage(lastPage);
+  }
 
   useReadFailureToast({
     failureMessageKey: isError && data === undefined ? 'admin.mechanicListError' : null,
@@ -99,13 +96,13 @@ export function useMechanicListState({
     showErrorToast,
   });
 
-  /** Marks the roster stale, so the mounted list refetches it. */
+  /** Marks every roster read (pages and option list) stale, so the mounted list refetches it. */
   const refreshRoster = useCallback(() => {
     if (scope === null) {
       return;
     }
 
-    void queryClient.invalidateQueries({ queryKey: adminQueries.mechanics(scope).queryKey });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.admin.mechanics(scope) });
   }, [queryClient, scope]);
 
   useEffect(() => {
@@ -119,9 +116,13 @@ export function useMechanicListState({
     mutationFn: (target: MechanicListItem) => adminService.deleteMechanic(target.personId),
     onSuccess: (_result, target) => {
       if (scope !== null) {
-        queryClient.setQueryData<MechanicListItem[]>(
-          adminQueries.mechanics(scope).queryKey,
-          (roster) => roster?.filter((mechanic) => mechanic.personId !== target.personId),
+        queryClient.setQueryData<PagedResult<MechanicListItem>>(
+          adminQueries.mechanicsPage(scope, query).queryKey,
+          (current) => (current === undefined ? current : {
+            ...current,
+            items: current.items.filter((mechanic) => mechanic.personId !== target.personId),
+            totalCount: Math.max(0, current.totalCount - 1),
+          }),
         );
       }
 
@@ -134,25 +135,9 @@ export function useMechanicListState({
     },
   });
 
-  const uniqueMechanics = useMemo(
-    () => Array.from(new Map(mechanics.map((mechanic) => [mechanic.personId, mechanic])).values()),
-    [mechanics],
-  );
-
-  const normalizedSearchTerm = useMemo(() => normalizeSearchValue(searchTerm), [searchTerm]);
-
-  const visibleMechanics = useMemo(
-    () => selectVisibleMechanics(uniqueMechanics, normalizedSearchTerm, collator, sortDirection),
-    [collator, normalizedSearchTerm, sortDirection, uniqueMechanics],
-  );
-
   const clearSearch = useCallback(() => {
     setSearchTerm('');
-  }, []);
-
-  const toggleSortDirection = useCallback(() => {
-    setSortDirection((previous) => (previous === 'asc' ? 'desc' : 'asc'));
-  }, []);
+  }, [setSearchTerm]);
 
   const openDeleteModal = useCallback((mechanic: MechanicListItem) => {
     setDeleteTarget(mechanic);
@@ -175,12 +160,15 @@ export function useMechanicListState({
   return {
     isLoading,
     mechanics,
+    totalCount,
+    page,
+    setPage,
+    isPlaceholderData,
+    removableMechanicCount,
+    hasSearch: searchTerm.length > 0 || debouncedSearch.length > 0,
     searchTerm,
     setSearchTerm,
-    sortDirection,
-    toggleSortDirection,
     clearSearch,
-    visibleMechanics,
     deleteTarget,
     isDeleting,
     openDeleteModal,

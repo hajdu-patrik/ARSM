@@ -2,21 +2,26 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /** Lists quotes, optionally filtered by vehicle and/or status (D43: only the four real enum
-     * values; Expired is a DTO-level flag, never a filter value), ordered by CreatedAt descending. */
+    /** Lists one page of quotes, filtered by vehicle, status (the four stored values), expired
+     * (a Sent quote past ValidUntil, D7) and search, ordered by CreatedAt descending. */
     private static async Task<IResult> ListQuotesAsync(
         int? vehicleId,
         string? status,
-        int? limit,
+        [Description("Optional: true keeps only expired quotes (Sent and past ValidUntil), false excludes them.")] bool? expired,
+        [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
+        [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
+        [Description("Optional case-insensitive substring filter, trimmed, max 100 characters.")] string? search,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var boundedLimit = ListQueryLimits.Normalize(limit);
+        var request = ListQueryLimits.NormalizePage(page, pageSize);
+        var term = SearchTerm.Normalize(search);
 
         QuoteStatus? statusFilter = null;
         if (status is not null)
@@ -47,14 +52,32 @@ public static partial class QuoteEndpoints
             query = query.Where(q => q.Status == statusFilter);
         }
 
-        var quotes = await query
+        var nowUtc = DateTime.UtcNow;
+        if (expired is not null)
+        {
+            query = expired.Value
+                ? query.Where(q => q.Status == QuoteStatus.Sent && q.ValidUntil < nowUtc)
+                : query.Where(q => !(q.Status == QuoteStatus.Sent && q.ValidUntil < nowUtc));
+        }
+
+        if (term is not null)
+        {
+            query = query.Where(q =>
+                q.QuoteNumber.ToUpper().Contains(term) ||
+                q.Title.ToUpper().Contains(term) ||
+                q.Vehicle.LicensePlate.ToUpper().Contains(term));
+        }
+
+        var result = await query
             .OrderByDescending(q => q.CreatedAt)
             .ThenBy(q => q.Id)
-            .Take(boundedLimit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(request, cancellationToken);
 
-        var nowUtc = DateTime.UtcNow;
-        return Results.Ok(quotes.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList());
+        return Results.Ok(new PagedResult<QuoteListItemDto>(
+            result.Items.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList(),
+            result.TotalCount,
+            result.Page,
+            result.PageSize));
     }
 
     /** Lists a vehicle's quotes, ordered by CreatedAt descending. */

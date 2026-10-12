@@ -1,3 +1,4 @@
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Admin;
@@ -10,7 +11,7 @@ public static partial class AdminEndpoints
         var group = endpoints.MapGroup("/api/admin").WithTags("Admin").RequireAuthorization("AdminOnly");
 
         group.MapGet("/mechanics", ListMechanicsAsync)
-            .Produces<List<MechanicListItemDto>>(StatusCodes.Status200OK)
+            .Produces<PagedResult<MechanicListItemDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 

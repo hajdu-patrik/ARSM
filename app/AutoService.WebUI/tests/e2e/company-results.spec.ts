@@ -3,6 +3,7 @@ import { AuthPage } from './pages/auth.page';
 import { QuotesPage } from './pages/quotes.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { selectDropdownOption } from './support/dropdown';
 import type { MockApiState } from './support/test-data';
 
 /** The year the quote fixtures were created in. */
@@ -37,7 +38,7 @@ test.describe('Company results', () => {
   test('splits sent money into pending and expired, and leaves drafts out of every row', async ({ page }) => {
     await prepareReportPage(page);
     await gotoReport(page);
-    await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
+    await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
 
     // Nothing is accepted yet: the live sent quote is pending (22,860), the expired one is 7,620,
     // and the draft counts only at the bottom, not in any money row.
@@ -57,7 +58,7 @@ test.describe('Company results', () => {
     await prepareReportPage(page);
     await acceptSentQuote(page);
     await gotoReport(page);
-    await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
+    await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
 
     // The quote was created in September and accepted now; it still belongs to
     // September, which is the rule the monthly breakdown rests on.
@@ -78,13 +79,13 @@ test.describe('Company results', () => {
     await acceptSentQuote(page);
     await gotoReport(page);
 
-    await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
-    await page.getByTestId('company-results-month').selectOption('9');
+    await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
+    await selectDropdownOption(page, 'company-results-month', '9');
 
     await expect(page.getByTestId('company-results-accepted-gross')).toHaveText(/22,860/);
     await expect(page.getByTestId('company-results-month-row')).toHaveCount(1);
 
-    await page.getByTestId('company-results-month').selectOption('1');
+    await selectDropdownOption(page, 'company-results-month', '1');
     await expect(page.getByTestId('company-results-accepted-gross')).toHaveText('HUF 0');
     await expect(page.getByTestId('company-results-month-row')).toHaveCount(1);
   });
@@ -93,7 +94,7 @@ test.describe('Company results', () => {
     await prepareReportPage(page);
     await acceptSentQuote(page);
     await gotoReport(page);
-    await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
+    await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
 
     const vatRow = page.getByTestId('company-results-vat-row');
     await expect(vatRow).toHaveCount(1);
@@ -109,7 +110,7 @@ test.describe('Company results', () => {
     await prepareReportPage(page);
     await gotoReport(page);
 
-    await page.getByTestId('company-results-year').selectOption(FIXTURE_YEAR);
+    await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
     await expect(page.getByTestId('company-results-vat-empty')).toBeVisible();
   });
 });

@@ -1,15 +1,16 @@
 /** Generic part/labor-type tab (toolbar plus list) driven by a `CatalogTabConfig`, shared by Parts and Labor types. */
+import type { RefObject } from 'react';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, Plus, Search, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { DataList, type DataListColumn } from '../../../components/common/DataList';
+import { Pagination } from '../../../components/common/Pagination';
 import type { CatalogTabConfig } from '../catalogTab.config';
-import type { CatalogSortDirection } from '../hooks/useCatalogState';
+import type { CatalogEntityListState } from '../hooks/useCatalogState';
 import {
   cardClass,
   defaultIconClass,
   inputGroupContainerClass,
   inputGroupIconClass,
-  referenceChipNeutralButtonClass,
   referenceChipPrimaryButtonClass,
   searchClearButtonClass,
   searchInputClass,
@@ -26,13 +27,8 @@ const catalogColumnsClass = '@3xl:grid-cols-[minmax(10rem,1.6fr)_minmax(6rem,1fr
 interface CatalogTabProps<TDto> {
   readonly t: TFunction;
   readonly locale: string;
-  readonly items: readonly TDto[];
-  readonly isLoading: boolean;
-  readonly searchTerm: string;
-  readonly onSearchChange: (value: string) => void;
-  readonly onClearSearch: () => void;
-  readonly sortDirection: CatalogSortDirection;
-  readonly onToggleSortDirection: () => void;
+  readonly list: CatalogEntityListState<TDto>;
+  readonly listRef: RefObject<HTMLDivElement | null>;
   readonly onOpenCreateModal: () => void;
   readonly onOpenEditModal: (item: TDto) => void;
   readonly onOpenDeleteModal: (item: TDto) => void;
@@ -42,13 +38,8 @@ interface CatalogTabProps<TDto> {
 function CatalogTab<TDto>({
   t,
   locale,
-  items,
-  isLoading,
-  searchTerm,
-  onSearchChange,
-  onClearSearch,
-  sortDirection,
-  onToggleSortDirection,
+  list,
+  listRef,
   onOpenCreateModal,
   onOpenEditModal,
   onOpenDeleteModal,
@@ -62,6 +53,7 @@ function CatalogTab<TDto>({
     { key: 'gross', label: t(config.grossColumnKey), align: 'right' },
     { key: 'actions', label: '' },
   ];
+  const { searchTerm } = list;
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -73,7 +65,7 @@ function CatalogTab<TDto>({
               data-testid={`${config.testIdPrefix}-search-input`}
               type="text"
               value={searchTerm}
-              onChange={(event) => { onSearchChange(event.target.value); }}
+              onChange={(event) => { list.setSearchTerm(event.target.value); }}
               placeholder={t(config.searchPlaceholderKey)}
               className={searchInputClass}
             />
@@ -81,7 +73,7 @@ function CatalogTab<TDto>({
               <button
                 data-testid={`${config.testIdPrefix}-search-clear`}
                 type="button"
-                onClick={onClearSearch}
+                onClick={list.clearSearch}
                 title={t('common.actions.clearSearch')}
                 aria-label={t('common.actions.clearSearch')}
                 className={searchClearButtonClass}
@@ -92,16 +84,6 @@ function CatalogTab<TDto>({
           </div>
 
           <div className={toolbarActionsWrapperClass}>
-            <button
-              data-testid={`${config.testIdPrefix}-sort-toggle`}
-              type="button"
-              onClick={onToggleSortDirection}
-              className={`${referenceChipNeutralButtonClass} ${toolbarActionGrowClass}`}
-            >
-              <ArrowUpDown className={defaultIconClass} />
-              {sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}
-            </button>
-
             <button
               data-testid={`${config.testIdPrefix}-create-button`}
               type="button"
@@ -115,35 +97,47 @@ function CatalogTab<TDto>({
         </div>
       </section>
 
-      <DataList
-        breakpoint="3xl"
-        columnsClassName={catalogColumnsClass}
-        columns={columns}
-        isLoading={isLoading}
-        loadingText={t(config.loadingKey)}
-        isEmpty={items.length === 0}
-        emptyText={t(config.emptyKey)}
-      >
-        {items.map((item) => (
-          <CatalogItemRow
-            key={config.getId(item)}
-            locale={locale}
-            name={config.getName(item)}
-            identifier={config.getIdentifier(item)}
-            identifierLabel={t(config.identifierColumnKey)}
-            netAmount={config.getNet(item)}
-            netLabel={t(config.netColumnKey)}
-            vatRatePercent={config.getVat(item)}
-            vatLabel={t('common.fields.vat')}
-            grossAmount={config.getGross(item)}
-            grossLabel={t(config.grossColumnKey)}
-            editLabel={t(config.editLabelKey)}
-            deleteLabel={t(config.deleteLabelKey)}
-            onEdit={() => { onOpenEditModal(item); }}
-            onDelete={() => { onOpenDeleteModal(item); }}
-          />
-        ))}
-      </DataList>
+      <div ref={listRef} className="min-w-0">
+        <DataList
+          breakpoint="3xl"
+          columnsClassName={catalogColumnsClass}
+          columns={columns}
+          isLoading={list.isLoading}
+          loadingText={t(config.loadingKey)}
+          isEmpty={list.items.length === 0}
+          emptyText={t(config.emptyKey)}
+        >
+          {list.items.map((item) => (
+            <CatalogItemRow
+              key={config.getId(item)}
+              locale={locale}
+              name={config.getName(item)}
+              identifier={config.getIdentifier(item)}
+              searchQuery={list.debouncedSearch}
+              identifierLabel={t(config.identifierColumnKey)}
+              netAmount={config.getNet(item)}
+              netLabel={t(config.netColumnKey)}
+              vatRatePercent={config.getVat(item)}
+              vatLabel={t('common.fields.vat')}
+              grossAmount={config.getGross(item)}
+              grossLabel={t(config.grossColumnKey)}
+              editLabel={t(config.editLabelKey)}
+              deleteLabel={t(config.deleteLabelKey)}
+              onEdit={() => { onOpenEditModal(item); }}
+              onDelete={() => { onOpenDeleteModal(item); }}
+            />
+          ))}
+        </DataList>
+      </div>
+
+      <Pagination
+        page={list.page}
+        totalCount={list.totalCount}
+        pageSize={list.pageSize}
+        onPageChange={list.setPage}
+        isLoading={list.isFetching}
+        testIdPrefix={config.paginationTestIdPrefix}
+      />
     </div>
   );
 }

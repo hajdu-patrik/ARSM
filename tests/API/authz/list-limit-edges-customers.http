@@ -1,5 +1,5 @@
 # limit clamps via ListQueryLimits.Normalize (1..500, default 500) or, for by-name only, NormalizeCustomerLookupLimit
-# (1..25, default 10); limit=abc fails model binding (400, never 500). Signs in as admin (also a mechanic, so MechanicOnly passes); /api/admin/mechanics shares the clamp but is AdminOnly, so it 403s first and is excluded here.
+# (1..25, default 10); limit=abc fails model binding (400, never 500). Signs in as admin (also a mechanic, so MechanicOnly passes); /api/admin/mechanics is AdminOnly and covered in admin/list.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -30,45 +30,158 @@ Content-Type: application/json
 ###
 
 
-# ── Customers: GET /api/customers, full matrix (ListQueryLimits, Customers/CustomerEndpoints.Queries.cs) ──
+# ── Customers: GET /api/customers paging (PagedResult, ListQueryLimits.NormalizePage, Customers/CustomerEndpoints.Queries.cs) ──
 
 
-### [Case][Authz] GET /api/customers?limit=0 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=0
+### [Setup][Authz] Read every customer to derive search inputs (200 expected)
+# @name seedList
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
-?? js response.parsedBody.length <= 1
+?? js response.parsedBody.items.length > 0
 
 ###
 
-### [Case][Authz] GET /api/customers?limit=-1 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=-1
+@SeedLast = {{seedList.items[0].lastName}}
+@SeedPlate = {{seedList.items.find(c => c.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]}}
+
+### [Case][Authz] GET /api/customers (200 expected, default page 1 and pageSize 20)
+GET {{AutoService_ApiService_HostAddress}}/api/customers
 
 ?? status == 200
-?? js response.parsedBody.length <= 1
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js response.parsedBody.items.length <= 20
+?? js (response.parsedBody.totalCount >= response.parsedBody.items.length) == true
 
 ###
 
-### [Case][Authz] GET /api/customers?limit=501 (200 expected, clamped to 500 rows)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=501
+### [Case][Authz] GET /api/customers?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?pageSize=0
 
 ?? status == 200
-?? js response.parsedBody.length <= 500
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length <= 1
+?? js response.parsedBody.totalCount >= 1
 
 ###
 
-### [Case][Authz] GET /api/customers?limit=100000 (200 expected, clamped to 500 rows)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=100000
+### [Case][Authz] GET /api/customers?pageSize=-1 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?pageSize=-1
 
 ?? status == 200
-?? js response.parsedBody.length <= 500
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length <= 1
 
 ###
 
-### [Case][Authz] GET /api/customers?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=abc
+### [Case][Authz] GET /api/customers?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length <= 500
+
+###
+
+### [Case][Authz] GET /api/customers?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=0
+
+?? status == 200
+?? js response.parsedBody.page == 1
+
+###
+
+### [Case][Authz] GET /api/customers?page=-5 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=-5
+
+?? status == 200
+?? js response.parsedBody.page == 1
+
+###
+
+### [Case][Authz] GET /api/customers?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=100000&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.page == 100000
+?? js response.parsedBody.items.length == 0
+?? js (response.parsedBody.totalCount == seedList.items.length) == true
+
+###
+
+### [Case][Authz] GET /api/customers?page=2&pageSize=1 (200 expected, second row of the ordered set)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=2&pageSize=1
+
+?? status == 200
+?? js (response.parsedBody.items.length == (seedList.items.length > 1 ? 1 : 0)) == true
+?? js (response.parsedBody.items.length == 0 || response.parsedBody.items[0].id == seedList.items[1].id) == true
+?? js (response.parsedBody.totalCount == seedList.items.length) == true
+
+###
+
+### [Case][Authz] GET /api/customers?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=abc
 
 ?? status == 400
+
+###
+
+### [Case][Authz] GET /api/customers?pageSize=abc (400 expected, a non-numeric pageSize fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?pageSize=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/customers?limit=1 (200 expected, the removed limit param is ignored)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=1&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.pageSize == 5
+
+###
+
+### [Case][Authz] GET /api/customers?search=<last name, lower case> (200 expected, case-insensitive name match)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedLast.toLowerCase()}}&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.totalCount >= 1
+?? js (response.parsedBody.items.some(c => c.lastName == seedList.items[0].lastName)) == true
+
+###
+
+### [Case][Authz] GET /api/customers?search=<last name, upper case> (200 expected, same matches as lower case)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedLast.toUpperCase()}}&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.totalCount >= 1
+
+###
+
+### [Case][Authz] GET /api/customers?search=<license plate, lower case> (200 expected, plate match, plates still exposed)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedPlate.toLowerCase()}}&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.totalCount >= 1
+?? js (response.parsedBody.items.some(c => c.vehicleLicensePlates.includes(seedList.items.find(x => x.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]))) == true
+
+###
+
+### [Case][Authz] GET /api/customers?search=zzzzqqqqxxxx (200 expected, no match: empty items and totalCount 0)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=zzzzqqqqxxxx
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Case][Authz] GET /api/customers?search=%20%20 (200 expected, a blank search applies no filter)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=%20%20&pageSize=1
+
+?? status == 200
+?? js (response.parsedBody.totalCount == seedList.items.length) == true
 
 ###
 

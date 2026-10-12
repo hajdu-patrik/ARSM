@@ -28,11 +28,11 @@ Content-Type: application/json
 
 ### [Setup][QuotesAuthz] Resolve the demo quote and vehicle anchors from the seeded quotes (200 expected)
 # @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
 
 {{
-  exports.SomeVehicleId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
-  exports.SomeQuoteId = seedQuotes.find(q => q.quoteNumber === 'ARSM-2026-0001').id;
+  exports.SomeVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+  exports.SomeQuoteId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').id;
 }}
 
 ?? status == 200

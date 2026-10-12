@@ -9,6 +9,35 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- List, search and dropdown polish (2026-10-12): one change set across API and WebUI.
+  - VAT rates: parts, labor types and quote line snapshots accept only 5, 18 and 27 percent; 0 is rejected
+    for new writes with the existing `InvalidVatRate` response. Stored rows keep their value; no migration.
+  - Search: the leading magnifier icon stays visible while focused and typing, and every search result and
+    suggestion list colors the matching text in the primary purple (text color only, no background, no bold).
+  - Server-side pagination: customers, a customer's vehicles, parts, labor types, quotes and the admin
+    mechanic list take `page`, `pageSize` and `search` and return `PagedResult` (`items`, `totalCount`,
+    `page`, `pageSize`); the old `limit` parameter is gone from these endpoints. The WebUI shows as many
+    rows as fit the visible height with previous/next arrows and a page indicator; the admin mechanic list
+    uses a fixed page size of 5.
+  - Scheduler intake: customer-name suggestions show 5 at a time with arrows; the name and license plate
+    filters are mutually exclusive, with an informational note beside the disabled one.
+  - Dropdowns: one shared accessible dropdown (combobox/listbox semantics, keyboard navigation, closes on
+    outside click and Escape) replaces every native select.
+  - 404: the page renders immediately, without a loading spinner.
+  - Splash: the first full load in a browser tab keeps the splash for at least 2500 ms (per-tab
+    sessionStorage flag); later reloads in the same tab keep the 250 ms minimum.
+  - Sorting: the customers, inventory and admin mechanic lists lose their ascending/descending toggle and the
+    API takes no `sortDirection`; every list is shown in ascending order.
+  - OpenAPI: the paged endpoints document `page`, `pageSize` and `search`.
+  - Quotes: `GET /api/quotes` takes `expired=true|false` (a Sent quote past its validity), so the Expired and
+    Sent chips page and count exactly on the server; the list stays newest first.
+  - Accessibility: an open dropdown list is named by its field's visible label.
+  - Search highlight uses the vivid accent text pair (`text-arsm-accent-vivid dark:text-arsm-accent`), readable in both themes.
+
+_Dev time: ~2h27m wall-clock (2026-10-12 14:22 to 16:49 +02:00, two arsm-chain runs plus direct fixes, the
+HTTP and E2E runs and a before/after visual check). Cost: ~$0.49-$19.69 output-token-only estimate (984k output tokens across both runs, haiku to
+opus pricing; excludes input tokens and cache, so a lower bound)._
+
 - First-admin bootstrap (2026-10-11): an empty database outside the demo seed had no way to get an Admin.
   When a `Bootstrap:Admin` section is configured, startup (after migrations) creates one Mechanic with a
   confirmed Identity account and the Admin role, in a single transaction under a PostgreSQL advisory lock

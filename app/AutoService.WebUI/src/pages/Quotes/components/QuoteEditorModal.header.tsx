@@ -2,6 +2,7 @@
 import { memo, useId, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { CalendarClock } from 'lucide-react';
+import { Dropdown } from '../../../components/common/Dropdown';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { LabeledValueTile } from '../../../components/common/LabeledValueTile';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
@@ -22,6 +23,7 @@ import {
   labelClass,
   mutedMetaTextClass,
   referenceChipNeutralWrapButtonClass,
+  selectWrapperClass,
   textareaClass,
   warningNoticeSurfaceClass,
 } from '../../../utils/formStyles';
@@ -80,9 +82,19 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
   const titleErrorId = useId();
   const isExistingQuote = quote !== null;
   // A linked appointment that the vehicle history no longer returns would
-  // otherwise leave the disabled select blank, hiding an existing link.
+  // otherwise leave the disabled dropdown blank, hiding an existing link.
   const hasUnlistedAppointmentLink = form.appointmentId.length > 0
     && !appointments.some((appointment) => String(appointment.id) === form.appointmentId);
+  const appointmentOptions = [
+    { value: '', label: t('quotes.appointmentNone') },
+    ...appointments.map((appointment) => ({
+      value: String(appointment.id),
+      label: buildAppointmentOptionLabel(appointment, locale),
+    })),
+    ...(hasUnlistedAppointmentLink
+      ? [{ value: form.appointmentId, label: t('quotes.appointmentUnlisted', { id: form.appointmentId }) }]
+      : []),
+  ];
 
   return (
     <section className="min-w-0 space-y-3">
@@ -177,26 +189,19 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
 
         <div className={formFieldGroupClass}>
           <label htmlFor="quote-appointment" className={labelClass}>{t('quotes.appointment')}</label>
-          <select
-            data-testid="quote-appointment-select"
-            id="quote-appointment"
-            value={form.appointmentId}
-            onChange={(event) => {
-              setForm((previous) => ({ ...previous, appointmentId: event.target.value }));
-            }}
-            className={`${inputClass} min-w-0 truncate`}
-            disabled={isSaving || isExistingQuote}
-          >
-            <option value="">{t('quotes.appointmentNone')}</option>
-            {appointments.map((appointment) => (
-              <option key={appointment.id} value={appointment.id}>
-                {buildAppointmentOptionLabel(appointment, locale)}
-              </option>
-            ))}
-            {hasUnlistedAppointmentLink && (
-              <option value={form.appointmentId}>{t('quotes.appointmentUnlisted', { id: form.appointmentId })}</option>
-            )}
-          </select>
+          <div className={selectWrapperClass}>
+            <Dropdown
+              data-testid="quote-appointment-select"
+              id="quote-appointment"
+              size="field"
+              value={form.appointmentId}
+              options={appointmentOptions}
+              onChange={(value) => {
+                setForm((previous) => ({ ...previous, appointmentId: value }));
+              }}
+              disabled={isSaving || isExistingQuote}
+            />
+          </div>
           {isExistingQuote && (
             <p className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.appointmentFixedHint')}</p>
           )}

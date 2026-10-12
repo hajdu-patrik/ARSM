@@ -1,4 +1,4 @@
-/** Quote editor reference data: catalog for the line editor, vehicle appointments for the link; shares Inventory's and Customers' cached reads. */
+/** Quote editor reference data: the full catalog option lists for the line editor and the vehicle appointments for the link. */
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
@@ -36,8 +36,8 @@ export function useQuoteReferenceData({
   showErrorToast,
 }: UseQuoteReferenceDataParams): QuoteReferenceData {
   const scope = useAuthQueryScope();
-  const partsQuery = useQuery({ ...catalogQueries.parts(scope), enabled: isOpen });
-  const laborTypesQuery = useQuery({ ...catalogQueries.laborTypes(scope), enabled: isOpen });
+  const partsQuery = useQuery({ ...catalogQueries.partOptions(scope), enabled: isOpen });
+  const laborTypesQuery = useQuery({ ...catalogQueries.laborTypeOptions(scope), enabled: isOpen });
   // The appointment link is optional, so a failed history read leaves the select empty without a toast.
   const historyQuery = useQuery({
     ...customersQueries.vehicleHistory(scope, vehicleId ?? IDLE_QUERY_ENTITY_ID),

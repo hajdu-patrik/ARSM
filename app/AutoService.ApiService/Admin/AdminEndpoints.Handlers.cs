@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Security.Claims;
+using System.ComponentModel;
 using System.Data;
 
 namespace AutoService.ApiService.Admin;
@@ -13,13 +14,15 @@ public static partial class AdminEndpoints
 {
     /** Lists mechanics for the admin console, flagging each row with its Admin-role status and whether it has a stored profile picture. */
     private static async Task<IResult> ListMechanicsAsync(
-        int? limit,
+        [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
+        [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
+        [Description("Optional case-insensitive substring filter, trimmed, max 100 characters.")] string? search,
         HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var boundedLimit = ListQueryLimits.Normalize(limit);
+        var request = ListQueryLimits.NormalizePage(page, pageSize);
 
         var logger = loggerFactory.CreateLogger("AdminEndpoints.ListMechanics");
 
@@ -31,12 +34,25 @@ public static partial class AdminEndpoints
             .ToListAsync(cancellationToken))
             .ToHashSet(StringComparer.Ordinal);
 
-        var items = await db.Mechanics
-            .AsNoTracking()
-            .OrderBy(m => m.Name.LastName)
+        var query = db.Mechanics.AsNoTracking();
+        var term = SearchTerm.Normalize(search);
+        if (term is not null)
+        {
+            query = query.Where(m =>
+                m.Name.FirstName.ToUpper().Contains(term) ||
+                (m.Name.MiddleName != null && m.Name.MiddleName.ToUpper().Contains(term)) ||
+                m.Name.LastName.ToUpper().Contains(term) ||
+                (m.Name.FirstName + " " + m.Name.LastName).ToUpper().Contains(term) ||
+                m.Email.ToUpper().Contains(term) ||
+                (m.PhoneNumber != null && m.PhoneNumber.ToUpper().Contains(term)) ||
+                m.Specialization.ToString().ToUpper().Contains(term));
+        }
+
+        var ordered = query.OrderBy(m => m.Name.LastName)
             .ThenBy(m => m.Name.FirstName)
-            .ThenBy(m => m.Id)
-            .Take(boundedLimit)
+            .ThenBy(m => m.Id);
+
+        var result = await ordered
             .Select(m => new MechanicListItemDto(
                 m.Id,
                 m.Name.FirstName,
@@ -47,11 +63,11 @@ public static partial class AdminEndpoints
                 m.Specialization.ToString(),
                 m.IdentityUserId != null && adminIdentityUserIdSet.Contains(m.IdentityUserId),
                 m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(request, cancellationToken);
 
-        logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", items.Count);
+        logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", result.Items.Count);
 
-        return Results.Ok(items);
+        return Results.Ok(result);
     }
 
     /** Deletes a mechanic and its linked identity account inside a serializable transaction, after rejecting self-deletion, deletion of an admin account, and any deletion-invariant violation. */

@@ -9,8 +9,8 @@ export const SPECIALIZATION_OPTIONS: OptionItem[] = [
   { value: 'All', labelKey: 'admin.spec.all' },
 ];
 
-/** Number of mechanic rows visible in the scrollable list window before it scrolls internally. */
-export const MECHANIC_LIST_VISIBLE_ROW_COUNT = 5;
+/** Fixed number of mechanic rows per roster page. */
+export const MECHANIC_LIST_PAGE_SIZE = 5;
 
 /** Available expertise tag options for the mechanic registration form. */
 export const EXPERTISE_OPTIONS: OptionItem[] = [

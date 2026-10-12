@@ -6,7 +6,7 @@ internal static class PricingValidation
     internal const decimal MaxMoneyAmount = 100_000_000m;
     internal const decimal MaxQuantity = 10_000m;
 
-    private static readonly int[] AllowedVatRatePercentages = [0, 5, 18, 27];
+    private static readonly int[] AllowedVatRatePercentages = [5, 18, 27];
 
     internal static string? GetVatRateValidationError(int vatRatePercent)
     {

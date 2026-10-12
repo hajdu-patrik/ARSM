@@ -118,6 +118,6 @@ export function seedWorstCaseListData(state: MockApiState): void {
       vatRatePercent: 27,
       grossHourlyRate: 158750.64,
     },
-    { id: 49002, code: 'L', name: 'Mosas', hourlyNetRate: 0.5, vatRatePercent: 0, grossHourlyRate: 0.5 },
+    { id: 49002, code: 'L', name: 'Mosas', hourlyNetRate: 0.5, vatRatePercent: 5, grossHourlyRate: 0.53 },
   );
 }

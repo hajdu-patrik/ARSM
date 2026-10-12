@@ -1,14 +1,17 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { useToastStore } from '../../../../store/toast.store';
+import { HighlightedText } from '../../../../components/common/HighlightedText';
 import { Modal } from '../../../../components/common/Modal';
+import { Pagination } from '../../../../components/common/Pagination';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 import { buildMechanicDisplayName } from '../helpers';
 import { useMechanicListState } from '../useMechanicListState';
-import { MECHANIC_LIST_VISIBLE_ROW_COUNT } from '../constants';
+import { MECHANIC_LIST_PAGE_SIZE } from '../constants';
 import { MechanicListToolbar } from './MechanicListToolbar';
 import {
+	centeredLoadingWrapperClass,
 	compactInputSurfaceClass,
 	compactListPrimaryWrapTextClass,
 	compactListSecondaryWrapTextClass,
@@ -22,73 +25,39 @@ import {
 	secondaryButtonClass,
 } from '../../../../utils/formStyles';
 
-/** Renders the admin mechanic roster with search, sort, a scrollable window, and delete actions. */
+/** Renders the admin mechanic roster: server-side search, fixed-size pages, and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection() {
-	const { t, i18n } = useTranslation();
+	const { t } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
 	const showErrorToast = useToastStore((state) => state.showError);
 
 	const {
 		isLoading,
 		mechanics,
+		totalCount,
+		page,
+		setPage,
+		isPlaceholderData,
+		removableMechanicCount,
+		hasSearch,
 		searchTerm,
 		setSearchTerm,
-		sortDirection,
-		toggleSortDirection,
 		clearSearch,
-		visibleMechanics,
 		deleteTarget,
 		isDeleting,
 		openDeleteModal,
 		closeDeleteModal,
 		handleDelete,
 	} = useMechanicListState({
-		language: i18n.language,
 		showErrorToast,
 		showSuccessToast,
 	});
 
-	const listContainerRef = useRef<HTMLDivElement>(null);
-	const [firstRowNode, setFirstRowNode] = useState<HTMLDivElement | null>(null);
-	const firstRowRef = useCallback((node: HTMLDivElement | null) => {
-		setFirstRowNode(node);
-	}, []);
-	const hasVisibleRows = visibleMechanics.length > 0;
-
-	useEffect(() => {
-		const containerElement = listContainerRef.current;
-
-		if (!firstRowNode || !containerElement) {
-			return;
-		}
-
-		// Written through the CSSOM rather than a React `style` attribute: the built app's CSP
-		// allows no inline style attributes (style-src-attr), and CSSOM writes are not subject to it.
-		const updateListMaxHeight = () => {
-			const rowHeight = firstRowNode.getBoundingClientRect().height;
-			const rowGap = Number.parseFloat(getComputedStyle(containerElement).rowGap || '0');
-			const maxHeight = (rowHeight * MECHANIC_LIST_VISIBLE_ROW_COUNT) + (rowGap * (MECHANIC_LIST_VISIBLE_ROW_COUNT - 1));
-			containerElement.style.maxHeight = `${String(maxHeight)}px`;
-		};
-
-		updateListMaxHeight();
-
-		const resizeObserver = new ResizeObserver(updateListMaxHeight);
-		resizeObserver.observe(firstRowNode);
-
-		return () => {
-			resizeObserver.disconnect();
-		};
-	}, [firstRowNode]);
-
-	const removableMechanicCount = useMemo(
-		() => mechanics.filter((item) => !item.isAdmin).length,
-		[mechanics],
-	);
+	const highlightQuery = searchTerm.trim();
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-12">
+			<div role="status" className={centeredLoadingWrapperClass}>
 				<div className={`h-8 w-8 ${loadingSpinnerClass}`} />
 			</div>
 		);
@@ -96,32 +65,26 @@ export const MechanicListSection = memo(function MechanicListSection() {
 
 	return (
 		<>
-			{mechanics.length === 0 ? (
+			{totalCount === 0 && !hasSearch ? (
 				<p className={emptyStateBoxClass}>{t('admin.noMechanics')}</p>
 			) : (
 				<div className="space-y-3">
 					<MechanicListToolbar
 						t={t}
 						searchTerm={searchTerm}
-						sortDirection={sortDirection}
 						onSearchChange={setSearchTerm}
 						onClearSearch={clearSearch}
-						onToggleSortDirection={toggleSortDirection}
 					/>
 
-					{hasVisibleRows ? (
-						<div
-							ref={listContainerRef}
-							className="flex flex-col gap-3 overflow-y-auto"
-						>
-							{visibleMechanics.map((mechanic, index) => {
+					{mechanics.length > 0 ? (
+						<div className="flex flex-col gap-3">
+							{mechanics.map((mechanic) => {
 								const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
 								const displayName = buildMechanicDisplayName(mechanic);
 
 								return (
 									<div
 										key={mechanic.personId}
-										ref={index === 0 ? firstRowRef : undefined}
 										className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
 									>
 										<MechanicAvatar
@@ -133,9 +96,11 @@ export const MechanicListSection = memo(function MechanicListSection() {
 
 										<div className="min-w-0 flex-1">
 											<p className={compactListPrimaryWrapTextClass}>
-												{displayName}
+												<HighlightedText text={displayName} query={highlightQuery} />
 											</p>
-											<p className={compactListSecondaryWrapTextClass}>{mechanic.email}</p>
+											<p className={compactListSecondaryWrapTextClass}>
+												<HighlightedText text={mechanic.email} query={highlightQuery} />
+											</p>
 										</div>
 
 										{canRemoveMechanic && (
@@ -158,6 +123,15 @@ export const MechanicListSection = memo(function MechanicListSection() {
 					) : (
 						<p className={emptyStateBoxClass}>{t('admin.noMechanicsFound')}</p>
 					)}
+
+					<Pagination
+						page={page}
+						totalCount={totalCount}
+						pageSize={MECHANIC_LIST_PAGE_SIZE}
+						onPageChange={setPage}
+						isLoading={isPlaceholderData}
+						testIdPrefix="mechanics-pagination"
+					/>
 				</div>
 			)}
 
@@ -183,7 +157,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 							aria-busy={isDeleting}
 							className={dangerButtonClass}
 						>
-							<Trash2 className={defaultIconClass} />
+							<Trash2 className={defaultIconClass} aria-hidden="true" />
 							<span>{isDeleting ? t('common.actions.deleting') : t('admin.confirmDelete')}</span>
 						</button>
 					</>

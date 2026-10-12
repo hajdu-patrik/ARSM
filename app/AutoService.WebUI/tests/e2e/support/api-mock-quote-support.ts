@@ -81,7 +81,7 @@ export function replaceQuote(state: MockApiState, previous: QuoteDetailDto, save
 /** Returns the quotes newest first, the order the API lists them in. */
 export function sortedQuotes(state: MockApiState): QuoteDetailDto[] {
   return [...state.quotes].sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime() || left.id - right.id,
   );
 }
 

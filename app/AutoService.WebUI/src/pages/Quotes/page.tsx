@@ -2,6 +2,7 @@
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
+import { Pagination } from '../../components/common/Pagination';
 import { useToastStore } from '../../store/toast.store';
 import type { QuoteListItemDto } from '../../types/quotes/quotes.types';
 import {
@@ -25,7 +26,7 @@ const QuotesPageComponent = memo(function QuotesPage() {
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
 
-  const listState = useQuotesListState({ showErrorToast });
+  const { list: listState, listRef } = useQuotesListState({ showErrorToast });
   const editor = useQuoteEditor({ showErrorToast });
   const mutations = useQuoteMutations({ showSuccessToast, showErrorToast, editor });
   const reference = useQuoteReferenceData({
@@ -75,14 +76,26 @@ const QuotesPageComponent = memo(function QuotesPage() {
         onStatusFilterChange={listState.setStatusFilter}
       />
 
-      <QuoteList
-        t={t}
-        locale={i18n.language}
-        quotes={listState.filteredQuotes}
-        isLoading={listState.isLoading}
-        onOpenQuote={handleOpenQuote}
-        onDownloadQuotePdf={handleDownloadPdf}
-        onDeleteQuote={openDeleteModal}
+      <div ref={listRef} className="min-w-0">
+        <QuoteList
+          t={t}
+          locale={i18n.language}
+          quotes={listState.quotes}
+          searchQuery={listState.debouncedSearch}
+          isLoading={listState.isLoading}
+          onOpenQuote={handleOpenQuote}
+          onDownloadQuotePdf={handleDownloadPdf}
+          onDeleteQuote={openDeleteModal}
+        />
+      </div>
+
+      <Pagination
+        page={listState.page}
+        totalCount={listState.totalCount}
+        pageSize={listState.pageSize}
+        onPageChange={listState.setPage}
+        isLoading={listState.isFetching}
+        testIdPrefix="quotes-pagination"
       />
 
       <QuoteEditorModal

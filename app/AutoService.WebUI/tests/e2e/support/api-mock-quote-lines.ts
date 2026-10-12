@@ -3,6 +3,7 @@
 import type { Route } from '@playwright/test';
 import type { QuoteDetailDto, QuoteLineDto, QuoteLineRequest } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';
+import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate } from './api-mock-catalog-pricing';
 import { fulfillJson } from './api-mock-response';
 import {
   applyQuoteWrite,
@@ -37,6 +38,16 @@ function resolveSnapshot(state: MockApiState, payload: QuoteLineRequest): QuoteL
   }
 
   return { description, netUnitPrice, vatRatePercent };
+}
+
+/** Rejects a line snapshot whose VAT rate is not 5, 18 or 27, like the server. */
+async function rejectInvalidVat(route: Route, snapshot: QuoteLineSnapshot): Promise<boolean> {
+  if (!isAllowedVatRate(snapshot.vatRatePercent)) {
+    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+    return true;
+  }
+
+  return false;
 }
 
 /** Rejects any line write on a quote that is no longer a draft. */
@@ -81,6 +92,10 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, quot
       { detail: 'Description, NetUnitPrice, and VatRatePercent are required when no catalog reference is provided.' },
       422,
     );
+    return;
+  }
+
+  if (await rejectInvalidVat(route, snapshot)) {
     return;
   }
 
@@ -141,6 +156,10 @@ export async function handleUpdateQuoteLine(
       { detail: 'Description, NetUnitPrice, and VatRatePercent are required when no catalog reference is provided.' },
       422,
     );
+    return;
+  }
+
+  if (await rejectInvalidVat(route, snapshot)) {
     return;
   }
 

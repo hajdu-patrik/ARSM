@@ -1,6 +1,8 @@
+/** Create/edit vehicle modal with bound field errors and a drivetrain select. */
 import { memo, useId } from 'react';
 import type { TFunction } from 'i18next';
 import { Save } from 'lucide-react';
+import { Dropdown, type DropdownOption } from '../../../components/common/Dropdown';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { Modal } from '../../../components/common/Modal';
 import { DRIVETRAIN_TYPES } from '../../../types/customers/customers.types';
@@ -18,6 +20,15 @@ import {
 import type { FieldErrorKeys, VehicleFieldName } from '../fieldErrors';
 import { isDrivetrainType, type VehicleFormState } from '../helpers';
 import type { VehicleModalMode } from '../page.types';
+
+/** Maps the shared field-error ARIA attributes to the Dropdown's camelCase props. */
+function dropdownA11yProps(errorId: string, error: string | null | undefined) {
+  const { 'aria-invalid': invalid, 'aria-describedby': describedBy } = fieldErrorA11yProps(errorId, error);
+  return {
+    ...(invalid === undefined ? {} : { ariaInvalid: invalid }),
+    ...(describedBy === undefined ? {} : { ariaDescribedBy: describedBy }),
+  };
+}
 
 interface VehicleFormModalProps {
   isOpen: boolean;
@@ -47,6 +58,10 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
 }: VehicleFormModalProps) {
   const errorIdPrefix = useId();
   const errorId = (field: VehicleFieldName) => `${errorIdPrefix}-${field}-error`;
+  const drivetrainOptions: DropdownOption[] = DRIVETRAIN_TYPES.map((type) => ({
+    value: type,
+    label: t(`vehicle.drivetrain.${type}`),
+  }));
 
   return (
     <Modal
@@ -205,26 +220,18 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
           <div className={formFieldGroupClass}>
             <label htmlFor="vehicle-drivetrain" className={labelClass}>{t('common.fields.drivetrain')}</label>
             <div className={selectWrapperClass}>
-              <select
+              <Dropdown
                 id="vehicle-drivetrain"
+                size="field"
                 value={form.drivetrainType}
-                onChange={(event) => {
-                  const { value } = event.target;
+                options={drivetrainOptions}
+                placeholder={t('common.placeholders.drivetrain')}
+                onChange={(value) => {
                   setForm((prev) => ({ ...prev, drivetrainType: isDrivetrainType(value) ? value : '' }));
                 }}
-                className={`${inputClass} min-w-0 truncate`}
                 disabled={isSaving}
-                {...fieldErrorA11yProps(errorId('drivetrainType'), fieldErrors.drivetrainType)}
-              >
-                <option value="" disabled hidden>
-                  {t('common.placeholders.drivetrain')}
-                </option>
-                {DRIVETRAIN_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`vehicle.drivetrain.${type}`)}
-                  </option>
-                ))}
-              </select>
+                {...dropdownA11yProps(errorId('drivetrainType'), fieldErrors.drivetrainType)}
+              />
             </div>
             <FieldErrorText id={errorId('drivetrainType')} messageKey={fieldErrors.drivetrainType} />
           </div>

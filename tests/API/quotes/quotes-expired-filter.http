@@ -1,0 +1,71 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+?? status == 200
+
+###
+
+### [Setup][Quotes] All quotes, no expired filter (200 expected)
+# @name allQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=1&pageSize=1
+
+?? status == 200
+
+###
+
+### [Positive][Quotes] expired=true keeps only expired quotes (200 expected)
+# @name expiredQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=true&page=1&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => q.isExpired && q.status == "Sent")) == true
+
+###
+
+### [Positive][Quotes] expired=false excludes expired quotes (200 expected)
+# @name activeQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=false&page=1&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => !q.isExpired)) == true
+
+###
+
+### [Case][Quotes] expired=true and expired=false split the whole list (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=1&pageSize=1
+
+?? status == 200
+?? js (response.parsedBody.totalCount == expiredQuotes.totalCount + activeQuotes.totalCount) == true
+
+###
+
+### [Positive][Quotes] status=Sent with expired=false is the Sent chip: Sent and not expired (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Sent&expired=false&page=1&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => q.status == "Sent" && !q.isExpired)) == true
+
+###
+
+### [Negative][Quotes] expired=maybe is not a boolean (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=maybe
+
+?? status == 400

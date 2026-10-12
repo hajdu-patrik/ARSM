@@ -1,3 +1,4 @@
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Vehicles;
@@ -14,7 +15,7 @@ public static partial class VehicleEndpoints
             .RequireAuthorization();
 
         nested.MapGet("/", ListCustomerVehiclesAsync)
-            .Produces<List<VehicleDetailDto>>(StatusCodes.Status200OK)
+            .Produces<PagedResult<VehicleDetailDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound);
 

@@ -1,4 +1,4 @@
-/** Part create/update/delete mutation hook: modal state, payload validation, server calls, cached list updates. */
+/** Part create/update/delete mutation hook: modal state, payload validation, server calls, list refresh. */
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../services/cache/queryKeys';
@@ -65,22 +65,13 @@ export function usePartMutations({
   const [pinnedFieldError, setPinnedFieldError] = useState<PinnedCatalogFieldError | null>(null);
   const [deletePartTarget, setDeletePartTarget] = useState<PartDto | null>(null);
 
-  /** Rewrites the cached part list; a list that has not loaded yet is left to its own fetch. */
-  const updatePartList = useCallback((update: (parts: PartDto[]) => PartDto[]) => {
-    if (scope === null) {
-      return;
-    }
-
-    queryClient.setQueryData<PartDto[]>(queryKeys.catalog.parts(scope), (parts) => parts && update(parts));
-  }, [queryClient, scope]);
-
-  /** Marks the cached part list stale and resolves once the mounted list has refetched. */
+  /** Marks every cached part read stale (pages and options) and resolves once the mounted page has refetched. */
   const refreshPartList = useCallback(async () => {
     if (scope === null) {
       return;
     }
 
-    await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.catalog.parts(scope) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.catalog.parts(scope) });
   }, [queryClient, scope]);
 
   /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
@@ -91,8 +82,8 @@ export function usePartMutations({
 
   const { mutate: createPart, isPending: isCreatingPart } = useMutation({
     mutationFn: (request: CreatePartRequest) => partService.createPart(request),
-    onSuccess: (created) => {
-      updatePartList((parts) => [...parts, created]);
+    onSuccess: async () => {
+      await refreshPartList();
       showSuccessToast('inventory.toasts.partCreated');
       setPartModalOpen(false);
     },
@@ -117,8 +108,8 @@ export function usePartMutations({
 
   const { mutate: deletePart, isPending: isDeletingPart } = useMutation({
     mutationFn: (id: number) => partService.deletePart(id),
-    onSuccess: (_result, id) => {
-      updatePartList((parts) => parts.filter((part) => part.id !== id));
+    onSuccess: async () => {
+      await refreshPartList();
       showSuccessToast('inventory.toasts.partDeleted');
       setDeletePartTarget(null);
     },

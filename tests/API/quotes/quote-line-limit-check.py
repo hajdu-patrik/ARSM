@@ -35,10 +35,10 @@ ANCHOR_QUOTE_NUMBER = "ARSM-2026-0001"
 
 def resolve_anchor_vehicle_id(client: HttpClient, results: list[StepResult]) -> int:
     """Finds the vehicle the seeded anchor quote is attached to."""
-    status, body = client.request_json("GET", QUOTES_PATH)
+    status, body = client.request_json("GET", f"{QUOTES_PATH}?pageSize=500")
     assert_status("list-quotes", status, {200}, results)
 
-    quotes = json.loads(body) if body else []
+    quotes = (json.loads(body) if body else {}).get("items", [])
     anchor = next((quote for quote in quotes if quote.get("quoteNumber") == ANCHOR_QUOTE_NUMBER), None)
     assert_condition(
         "anchor-quote-available",

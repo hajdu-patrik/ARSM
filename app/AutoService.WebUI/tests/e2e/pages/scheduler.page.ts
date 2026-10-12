@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { selectDropdownOption, selectDropdownOptionByLabel } from '../support/dropdown';
+import { paginationControls, type PaginationControls } from '../support/pagination';
 
 /** Page object for the scheduler calendar, intake and appointment detail dialogs. */
 export class SchedulerPage {
@@ -58,6 +60,22 @@ export class SchedulerPage {
   async searchMissingEmail(email: string): Promise<void> {
     const dialog = this.intakeDialog();
     await dialog.getByTestId('scheduler-intake-name-lookup').fill(email);
+  }
+
+  /** Picks one of the looked-up customer's vehicles in the intake form by its vehicle id. */
+  async selectExistingVehicle(vehicleId: number): Promise<void> {
+    await selectDropdownOption(this.page, 'scheduler-intake-existing-vehicle', String(vehicleId));
+  }
+
+  /** Changes the status in the open appointment detail dialog by the option's visible label. */
+  async changeAppointmentStatus(statusLabel: string | RegExp): Promise<void> {
+    const trigger = this.detailDialog().getByRole('combobox', { name: 'Change appointment status' });
+    await selectDropdownOptionByLabel(this.page, trigger, statusLabel);
+  }
+
+  /** The pager of the intake customer-name suggestions. */
+  suggestionsPagination(): PaginationControls {
+    return paginationControls(this.intakeDialog(), 'intake-suggestions-pagination');
   }
 
   async createWithCurrentForm(): Promise<void> {

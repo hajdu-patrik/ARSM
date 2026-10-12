@@ -1,13 +1,17 @@
 import type { Route } from '@playwright/test';
 import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } from '../../../src/types/catalog/catalog.types';
 import type { MockApiState } from './test-data';
+import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
-import { resolveGrossAmount } from './api-mock-catalog-pricing';
+import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate, resolveGrossAmount } from './api-mock-catalog-pricing';
 
 /** Dispatches `/api/labor-types` mock requests (list, create, update, delete). */
 export async function tryHandleLaborTypeRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
   if (path === '/api/labor-types' && method === 'GET') {
-    await fulfillJson(route, state.laborTypes);
+    await fulfillPaged(route, state.laborTypes, {
+      searchFields: (laborType) => [laborType.code, laborType.name],
+      compare: (left, right) => compareText(left.code, right.code) || left.id - right.id,
+    });
     return true;
   }
 
@@ -43,6 +47,11 @@ async function handleCreateLaborType(route: Route, state: MockApiState): Promise
     return;
   }
 
+  if (!isAllowedVatRate(vatRatePercent)) {
+    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+    return;
+  }
+
   if (state.laborTypes.some((laborType) => laborType.code === code)) {
     await fulfillJson(route, { detail: 'A labor type with this code already exists.' }, 409);
     return;
@@ -69,6 +78,11 @@ async function handleUpdateLaborType(route: Route, state: MockApiState, id: numb
   }
 
   const payload = route.request().postDataJSON() as UpdateLaborTypeRequest;
+  if (!isAllowedVatRate(payload.vatRatePercent)) {
+    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+    return;
+  }
+
   const hasDuplicate = state.laborTypes.some((laborType) => laborType.id !== id && laborType.code === payload.code);
   if (hasDuplicate) {
     await fulfillJson(route, { detail: 'A labor type with this code already exists.' }, 409);

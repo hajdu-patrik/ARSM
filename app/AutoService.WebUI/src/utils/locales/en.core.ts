@@ -12,6 +12,11 @@ export const enCore = {
       ascending: 'Ascending',
       descending: 'Descending',
     },
+    pagination: {
+      previous: 'Previous page',
+      next: 'Next page',
+      pageIndicator: '{{page}} / {{totalPages}}',
+    },
     fields: {
       email: 'Email',
       password: 'Password',
@@ -54,7 +59,7 @@ export const enCore = {
       vehicleVinInvalid: 'VIN must be a valid 17-character identifier.',
       vehicleDrivetrainInvalid: 'Select a valid drivetrain type.',
       vehicleYearInvalid: 'Vehicle year must be between 1886 and 2100.',
-      invalidVatRate: 'VAT rate must be 0, 5, 18, or 27.',
+      invalidVatRate: 'VAT rate must be 5, 18, or 27.',
       passwordHint: 'Min. 8 characters, with uppercase, lowercase, digit, and special character.',
       passwordTooShort: 'Password must be at least 8 characters.',
       passwordMismatch: 'Passwords do not match.',
@@ -196,6 +201,7 @@ export const enCore = {
       lookupName: 'Customer name',
       lookupNamePlaceholder: 'e.g. Anna Kovacs',
       lookupLiveHint: 'Search by name or license plate. Results refresh automatically while you type.',
+      singleFilterNote: 'Only one filter can be used at a time.',
       searching: 'Searching...',
       customerFound: 'Existing customer selected',
       customerNotFound: 'Customer not found',

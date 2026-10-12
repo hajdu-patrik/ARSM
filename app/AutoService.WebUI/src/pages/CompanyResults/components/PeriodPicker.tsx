@@ -1,9 +1,9 @@
 /** Period selector: year plus optional month; whole year is the default since that is what the report is for. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { Dropdown } from '../../../components/common/Dropdown';
 import {
   cardClass,
-  compactSelectFullClass,
   formFieldGridClass,
   labelClass,
   selectWrapperClass,
@@ -40,6 +40,11 @@ const PeriodPickerComponent = memo(function PeriodPicker({
   const currentYear = new Date().getUTCFullYear();
   const years = Array.from({ length: SELECTABLE_YEARS }, (_, index) => currentYear - index);
   const monthNames = buildMonthNames(locale);
+  const yearOptions = years.map((selectableYear) => ({ value: String(selectableYear), label: String(selectableYear) }));
+  const monthOptions = [
+    { value: '', label: t('companyResults.wholeYear') },
+    ...MONTHS.map((selectableMonth) => ({ value: String(selectableMonth), label: monthNames[selectableMonth - 1] ?? '' })),
+  ];
 
   return (
     <section className={cardClass}>
@@ -47,39 +52,30 @@ const PeriodPickerComponent = memo(function PeriodPicker({
         <div className="min-w-0">
           <label htmlFor="company-results-year" className={labelClass}>{t('companyResults.year')}</label>
           <div className={selectWrapperClass}>
-            <select
+            <Dropdown
               data-testid="company-results-year"
               id="company-results-year"
-              value={year}
-              onChange={(event) => {
-                onYearChange(Number(event.target.value));
+              value={String(year)}
+              options={yearOptions}
+              onChange={(value) => {
+                onYearChange(Number(value));
               }}
-              className={compactSelectFullClass}
-            >
-              {years.map((selectableYear) => (
-                <option key={selectableYear} value={selectableYear}>{selectableYear}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
         <div className="min-w-0">
           <label htmlFor="company-results-month" className={labelClass}>{t('companyResults.month')}</label>
           <div className={selectWrapperClass}>
-            <select
+            <Dropdown
               data-testid="company-results-month"
               id="company-results-month"
-              value={month ?? ''}
-              onChange={(event) => {
-                onMonthChange(event.target.value === '' ? null : Number(event.target.value));
+              value={month === null ? '' : String(month)}
+              options={monthOptions}
+              onChange={(value) => {
+                onMonthChange(value === '' ? null : Number(value));
               }}
-              className={compactSelectFullClass}
-            >
-              <option value="">{t('companyResults.wholeYear')}</option>
-              {MONTHS.map((selectableMonth) => (
-                <option key={selectableMonth} value={selectableMonth}>{monthNames[selectableMonth - 1]}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
       </div>

@@ -22,6 +22,9 @@ function getTokenLikeStorageKeys(page: Page): Promise<string[]> {
 }
 
 test.describe('Auth session security flows', () => {
+  // Tall enough that the page-size-by-height customers list shows Anna's card on page 1.
+  test.use({ viewport: { width: 1280, height: 1000 } });
+
   test('refreshes once and retries a protected request after an expired access cookie', async ({ page }) => {
     const routeCallLog: string[] = [];
 

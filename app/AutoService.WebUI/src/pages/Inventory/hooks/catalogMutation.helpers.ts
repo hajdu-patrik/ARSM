@@ -1,6 +1,6 @@
 /** Payload builders for the part/labor-type create/edit forms, plus the save-error mapping both forms share. */
 import { isAxiosError } from 'axios';
-import type { CreateLaborTypeRequest, CreatePartRequest } from '../../../types/catalog/catalog.types';
+import { isAllowedVatRate, type CreateLaborTypeRequest, type CreatePartRequest } from '../../../types/catalog/catalog.types';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
@@ -25,12 +25,19 @@ interface CatalogProblemBody {
   errors?: ServerFieldErrors;
 }
 
+/** i18n key of the reason a form's VAT rate cannot be saved (a legacy stored 0 is not preselected as valid). */
+const INVALID_VAT_RATE_KEY = 'common.validation.invalidVatRate';
+
 /** Builds a validated part payload from modal form state, or a field error if numeric parsing fails. */
 export function buildPartRequest(form: PartFormState): CatalogRequestResult<CreatePartRequest> {
   const netUnitPrice = Number(form.netUnitPrice);
 
   if (Number.isNaN(netUnitPrice)) {
     return { payload: null, fieldError: 'inventory.errors.invalidMoney' };
+  }
+
+  if (!isAllowedVatRate(form.vatRatePercent)) {
+    return { payload: null, fieldError: INVALID_VAT_RATE_KEY };
   }
 
   return {
@@ -50,6 +57,10 @@ export function buildLaborTypeRequest(form: LaborTypeFormState): CatalogRequestR
 
   if (Number.isNaN(hourlyNetRate)) {
     return { payload: null, fieldError: 'inventory.errors.invalidMoney' };
+  }
+
+  if (!isAllowedVatRate(form.vatRatePercent)) {
+    return { payload: null, fieldError: INVALID_VAT_RATE_KEY };
   }
 
   return {

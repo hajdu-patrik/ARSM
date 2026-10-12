@@ -3,6 +3,7 @@ import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { PROTECTED_DEMO_MECHANIC_EMAILS } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
+import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 /** Dispatches `/api/admin/*` mock requests: admin-only mechanic list and guarded delete. */
@@ -28,7 +29,20 @@ export async function tryHandleAdminRoute(
   }
 
   if (path === '/api/admin/mechanics' && method === 'GET') {
-    await fulfillJson(route, state.mechanics);
+    await fulfillPaged(route, state.mechanics, {
+      searchFields: (mechanic) => [
+        mechanic.firstName,
+        mechanic.middleName,
+        mechanic.lastName,
+        `${mechanic.firstName} ${mechanic.lastName}`,
+        mechanic.email,
+        mechanic.phoneNumber,
+        mechanic.specialization,
+      ],
+      compare: (left, right) => compareText(left.lastName, right.lastName)
+        || compareText(left.firstName, right.firstName)
+        || left.personId - right.personId,
+    });
     return true;
   }
 

@@ -1,24 +1,35 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace AutoService.ApiService.Customers;
 
 public static partial class CustomerEndpoints
 {
-    /** Returns customers with vehicle count/plates, capped at the shared list limit; plates are
-     * sorted in memory (kept on .NET string comparison, not DB collation). */
+    /** Returns one page of customers with vehicle count/plates; plates are sorted in memory
+     * (kept on .NET string comparison, not DB collation). */
     private static async Task<IResult> ListCustomersAsync(
-        int? limit,
+        [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
+        [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
+        [Description("Optional case-insensitive substring filter, trimmed, max 100 characters.")] string? search,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var customers = await db.Customers
-            .AsNoTracking()
-            .OrderBy(c => c.Name.LastName)
+        var request = ListQueryLimits.NormalizePage(page, pageSize);
+
+        var query = db.Customers.AsNoTracking();
+        var term = SearchTerm.Normalize(search);
+        if (term is not null)
+        {
+            query = query.Where(CustomerSearchPredicate(term));
+        }
+
+        var ordered = query.OrderBy(c => c.Name.LastName)
             .ThenBy(c => c.Name.FirstName)
-            .ThenBy(c => c.Id)
-            .Take(ListQueryLimits.Normalize(limit))
+            .ThenBy(c => c.Id);
+
+        var result = await ordered
             .Select(c => new
             {
                 c.Id,
@@ -29,9 +40,9 @@ public static partial class CustomerEndpoints
                 c.PhoneNumber,
                 LicensePlates = c.Vehicles.Select(v => v.LicensePlate).ToList(),
             })
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(request, cancellationToken);
 
-        var customerDtos = customers
+        var customerDtos = result.Items
             .Select(c => new CustomerDto(
                 c.Id,
                 c.FirstName,
@@ -45,7 +56,7 @@ public static partial class CustomerEndpoints
                     .ToList()))
             .ToList();
 
-        return Results.Ok(customerDtos);
+        return Results.Ok(new PagedResult<CustomerDto>(customerDtos, result.TotalCount, result.Page, result.PageSize));
     }
 
     /** Returns a single customer with vehicle summaries, projected straight into the DTO. */

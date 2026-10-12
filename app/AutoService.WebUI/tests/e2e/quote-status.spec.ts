@@ -15,6 +15,9 @@ async function prepareQuotesPage(page: Page): Promise<MockApiState> {
 }
 
 test.describe('Quotes - status flow', () => {
+  // Tall enough that the page-sized quote list shows every fixture row at once.
+  test.use({ viewport: { width: 1280, height: 1200 } });
+
   test('keeps send disabled while the draft has no line, and enables it once one exists', async ({ page }) => {
     await prepareQuotesPage(page);
     const customersPage = new CustomersPage(page);

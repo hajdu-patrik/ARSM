@@ -5,6 +5,7 @@ import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
 import { createAppointment, createVehicle, deleteAppointment, getLookupName } from './api-mock-data';
+import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 /** Dispatches `/api/customers` lookups and the nested customer/vehicle mock routes. */
@@ -22,7 +23,19 @@ export async function tryHandleCustomerRoute(
   }
 
   if (path === '/api/customers' && method === 'GET') {
-    await fulfillJson(route, state.customers);
+    await fulfillPaged(route, state.customers, {
+      searchFields: (customer) => [
+        customer.firstName,
+        customer.middleName,
+        customer.lastName,
+        `${customer.firstName} ${customer.lastName}`,
+        [customer.firstName, customer.middleName, customer.lastName].filter(Boolean).join(' '),
+        ...customer.vehicleLicensePlates,
+      ],
+      compare: (left, right) => compareText(left.lastName, right.lastName)
+        || compareText(left.firstName, right.firstName)
+        || left.id - right.id,
+    });
     return true;
   }
 
@@ -62,7 +75,11 @@ async function tryHandleCustomerNestedRoute(
   const customerVehiclesMatch = /^\/api\/customers\/(\d+)\/vehicles$/.exec(path);
   if (customerVehiclesMatch && method === 'GET') {
     const customerId = Number(customerVehiclesMatch[1]);
-    await fulfillJson(route, state.vehiclesByCustomerId[customerId] ?? []);
+    await fulfillPaged(route, state.vehiclesByCustomerId[customerId] ?? [], {
+      compare: (left, right) => compareText(left.brand, right.brand)
+        || compareText(left.model, right.model)
+        || left.id - right.id,
+    });
     return true;
   }
 

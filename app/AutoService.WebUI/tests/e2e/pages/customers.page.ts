@@ -1,10 +1,14 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { paginationControls, type PaginationControls } from '../support/pagination';
 
 const vehicleDetailsToggleLabelPattern = /Show vehicle history|Hide vehicle history|Járműelőzmények megjelenítése|Járműelőzmények elrejtése/i;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
+
+/** Anna's vehicle rows are ordered by brand like the API: the Hyundai PHE-220 first, the Volkswagen NXE-441 second. */
+export const ANNA_VEHICLE_ROW = { phe220: 0, nxe441: 1 } as const;
 
 /** Page object for the Customers page and its vehicle history panel. */
 export class CustomersPage {
@@ -18,6 +22,15 @@ export class CustomersPage {
 
   searchInput(): Locator {
     return this.page.getByTestId('customers-search-input');
+  }
+
+  pagination(): PaginationControls {
+    return paginationControls(this.page, 'customers-pagination');
+  }
+
+  /** The vehicle pager inside an expanded customer card. */
+  vehiclePagination(customerId: number): PaginationControls {
+    return paginationControls(this.customerCard(customerId), 'customer-vehicles-pagination');
   }
 
   customerCard(customerId: number): Locator {
@@ -45,8 +58,8 @@ export class CustomersPage {
     await expect(this.customerCard(customerId).getByRole('heading', { name: 'Vehicles', exact: true })).toBeVisible();
   }
 
-  async openFirstVehicleDetails(customerId: number): Promise<void> {
-    await this.vehicleDetailsToggle(customerId).click();
+  async openVehicleDetails(customerId: number, index = 0): Promise<void> {
+    await this.vehicleDetailsToggle(customerId, index).click();
     await expect(this.detailsPanel()).toBeVisible();
   }
 

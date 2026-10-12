@@ -1,5 +1,6 @@
 /** Admin service for mechanic management; all endpoints require admin authorization. */
 
+import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
 import { apiClient } from '../http/api.client';
 import type { SilentRequestOptions } from '../http/request-options';
 
@@ -66,9 +67,10 @@ export const adminService = {
     return response.data;
   },
 
-  /** Fetches all registered mechanics via {@code GET /api/admin/mechanics}. */
-  async listMechanics(options?: SilentRequestOptions): Promise<MechanicListItem[]> {
-    const response = await apiClient.get<MechanicListItem[]>('/api/admin/mechanics', {
+  /** Fetches one page of mechanics (always ascending by name) via {@code GET /api/admin/mechanics}. */
+  async listMechanics(query: PagedQuery, options?: SilentRequestOptions): Promise<PagedResult<MechanicListItem>> {
+    const response = await apiClient.get<PagedResult<MechanicListItem>>('/api/admin/mechanics', {
+      params: { page: query.page, pageSize: query.pageSize, search: query.search },
       skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;

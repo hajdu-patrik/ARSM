@@ -1,0 +1,202 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+
+### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
+# @name seedQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+
+{{
+  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Quotes] Create paging draft quote A (201 expected)
+# @name pagingA
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "title": "Paging Quote Alpha {{RunId}}"
+}
+
+?? status == 201
+
+###
+
+### [Setup][Quotes] Create paging draft quote B (201 expected)
+# @name pagingB
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "title": "Paging Quote Bravo {{RunId}}"
+}
+
+?? status == 201
+
+###
+
+### [Setup][Quotes] Create paging draft quote C (201 expected)
+# @name pagingC
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "title": "Paging Quote Charlie {{RunId}}"
+}
+
+?? status == 201
+
+###
+
+### [Setup][Quotes] Add a manual line to quote C so it can be sent (201 expected)
+# @name pagingCLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingC.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "lineKind": "Part",
+  "quantity": 1,
+  "description": "VAT rate manual line",
+  "netUnitPrice": 100,
+  "vatRatePercent": 27,
+  "version": {{pagingC.version}}
+}
+
+?? status == 201
+
+###
+
+### [Setup][Quotes] Send quote C (200 expected, the Sent fixture stays behind like the status-transition fixtures)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingC.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "status": "Sent",
+  "version": {{pagingCLine.version}}
+}
+
+?? status == 200
+
+###
+
+### [Positive][Quotes] Page 1 of 2 with pageSize 2 (200 expected, newest first, totalCount 3)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&page=1&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 2
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 2
+?? js response.parsedBody.items[0].title includes Charlie
+?? js response.parsedBody.items[1].title includes Bravo
+
+###
+
+### [Positive][Quotes] Page 2 of 2 holds the oldest quote (200 expected, same totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&page=2&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 2
+?? js response.parsedBody.items[0].title includes Alpha
+
+###
+
+### [Positive][Quotes] Page past the end returns no items but the real totalCount (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&page=99&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.page == 99
+
+###
+
+### [Positive][Quotes] page=0 is clamped to page 1 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&page=0&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.items.length == 2
+
+###
+
+### [Positive][Quotes] pageSize=0 is clamped to 1 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length == 1
+?? js response.parsedBody.totalCount == 3
+
+###
+
+### [Positive][Quotes] pageSize=100000 is clamped to 500 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length == 3
+
+###
+
+### [Cleanup][Quotes] Delete draft quote A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingA.id}}?version={{pagingA.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Quotes] Delete draft quote B (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingB.id}}?version={{pagingB.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###

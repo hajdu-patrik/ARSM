@@ -1,0 +1,190 @@
+# Parts, labor types and quotes share the paged contract {items,totalCount,page,pageSize}: page below 1 becomes 1, pageSize clamps to 1..500, page=abc fails model binding (400, never 500).
+# Signs in as admin (also a mechanic, so MechanicOnly passes).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+
+### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Authz] Login with the admin account (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+
+### [Case][Authz] GET /api/parts?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length <= 1
+
+###
+
+### [Case][Authz] GET /api/parts?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length <= 500
+
+###
+
+### [Case][Authz] GET /api/parts?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?page=0
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js (response.parsedBody.totalCount >= response.parsedBody.items.length) == true
+
+###
+
+### [Case][Authz] GET /api/parts?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?page=100000&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount >= 0
+
+###
+
+### [Case][Authz] GET /api/parts?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?page=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/parts?search=zzzzqqqqxxxx (200 expected, no match: empty items and totalCount 0)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=zzzzqqqqxxxx
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Case][Authz] GET /api/labor-types?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length <= 1
+
+###
+
+### [Case][Authz] GET /api/labor-types?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length <= 500
+
+###
+
+### [Case][Authz] GET /api/labor-types?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?page=0
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js (response.parsedBody.totalCount >= response.parsedBody.items.length) == true
+
+###
+
+### [Case][Authz] GET /api/labor-types?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?page=100000&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount >= 0
+
+###
+
+### [Case][Authz] GET /api/labor-types?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?page=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/labor-types?search=zzzzqqqqxxxx (200 expected, no match: empty items and totalCount 0)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search=zzzzqqqqxxxx
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Case][Authz] GET /api/quotes?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=0
+
+?? status == 200
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length <= 1
+
+###
+
+### [Case][Authz] GET /api/quotes?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=100000
+
+?? status == 200
+?? js response.parsedBody.pageSize == 500
+?? js response.parsedBody.items.length <= 500
+
+###
+
+### [Case][Authz] GET /api/quotes?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=0
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js (response.parsedBody.totalCount >= response.parsedBody.items.length) == true
+
+###
+
+### [Case][Authz] GET /api/quotes?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=100000&pageSize=5
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount >= 0
+
+###
+
+### [Case][Authz] GET /api/quotes?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=abc
+
+?? status == 400
+
+###
+
+### [Case][Authz] GET /api/quotes?search=zzzzqqqqxxxx (200 expected, no match: empty items and totalCount 0)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=zzzzqqqqxxxx
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###

@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { paginationControls, type PaginationControls, type PaginationPrefix } from '../support/pagination';
 
 export type CatalogTab = 'parts' | 'labor-types';
 export type CatalogItemKind = 'part' | 'laborType';
@@ -17,6 +18,10 @@ const DELETE_TITLE: Record<CatalogItemKind, string> = {
 };
 const EDIT_LABEL: Record<CatalogItemKind, string> = { part: 'Edit part', laborType: 'Edit labour type' };
 const DELETE_LABEL: Record<CatalogItemKind, string> = { part: 'Delete part', laborType: 'Delete labour type' };
+const PAGINATION_PREFIX: Record<CatalogItemKind, PaginationPrefix> = {
+  part: 'parts-pagination',
+  laborType: 'labor-types-pagination',
+};
 const TOOLBAR_TESTID_PREFIX: Record<CatalogItemKind, string> = {
   part: 'inventory-parts',
   laborType: 'inventory-labor-types',
@@ -47,8 +52,8 @@ export class CatalogPage {
     return this.page.getByTestId(`${TOOLBAR_TESTID_PREFIX[kind]}-search-clear`);
   }
 
-  sortToggle(kind: CatalogItemKind): Locator {
-    return this.page.getByTestId(`${TOOLBAR_TESTID_PREFIX[kind]}-sort-toggle`);
+  pagination(kind: CatalogItemKind): PaginationControls {
+    return paginationControls(this.page, PAGINATION_PREFIX[kind]);
   }
 
   createButton(kind: CatalogItemKind): Locator {

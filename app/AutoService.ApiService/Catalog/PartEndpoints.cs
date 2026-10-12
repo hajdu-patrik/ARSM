@@ -1,3 +1,4 @@
+using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Catalog;
@@ -11,7 +12,7 @@ public static partial class PartEndpoints
         var group = endpoints.MapGroup("/api/parts").WithTags("Parts").RequireAuthorization("MechanicOnly");
 
         group.MapGet("/", ListPartsAsync)
-            .Produces<List<PartDto>>(StatusCodes.Status200OK)
+            .Produces<PagedResult<PartDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 

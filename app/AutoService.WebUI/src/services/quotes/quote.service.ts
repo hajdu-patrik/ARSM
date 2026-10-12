@@ -9,8 +9,10 @@ import type {
   QuoteDetailDto,
   QuoteLineRequest,
   QuoteListItemDto,
+  QuoteListQuery,
   UpdateQuoteRequest,
 } from '../../types/quotes/quotes.types';
+import type { PagedResult } from '../../types/common/pagination.types';
 
 /** Reads the file name out of a Content-Disposition header, or null when absent/unparsable. */
 function parseContentDispositionFileName(disposition: unknown): string | null {
@@ -33,9 +35,17 @@ function parseContentDispositionFileName(disposition: unknown): string | null {
 /** Thin axios wrapper for {@code /api/quotes}; every write carries the version the client last saw, as a
  * query param on the two DELETE routes since a DELETE has no body. */
 export const quoteService = {
-  /** Returns every quote, newest first; status/expiry filtering stays client-side (`isExpired` is computed, see WebUI CLAUDE.md). */
-  async listQuotes(options?: SilentRequestOptions): Promise<QuoteListItemDto[]> {
-    const response = await apiClient.get<QuoteListItemDto[]>('/api/quotes', {
+  /** Returns one page of quotes, newest first; the server applies the search, status and expired filters. */
+  async listQuotes(query: QuoteListQuery, options?: SilentRequestOptions): Promise<PagedResult<QuoteListItemDto>> {
+    const response = await apiClient.get<PagedResult<QuoteListItemDto>>('/api/quotes', {
+      params: {
+        page: query.page,
+        pageSize: query.pageSize,
+        search: query.search,
+        status: query.status,
+        expired: query.expired,
+        vehicleId: query.vehicleId,
+      },
       skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;

@@ -9,9 +9,16 @@ import { Image } from '../components/common/Image';
 import { isSplashRoute } from '../router/appRoutes';
 import { consumeSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 import { removeLoginShell } from '../utils/loginShell';
+import { readStorage, writeStorage } from '../utils/safeStorage';
 
 /** Anti-flash minimum: a splash that is up for less than this would only flicker on a fast load. */
 const SPLASH_MIN_VISIBLE_MS = 250;
+
+/** Minimum for the first splash of a browser tab, so the branded intro is seen once per tab. */
+const FIRST_LOAD_SPLASH_MIN_VISIBLE_MS = 2500;
+
+/** sessionStorage flag that is set once a tab has shown its first splash. */
+const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
 
 /** Whether this boot shows the splash: not right after a server-error retry, and only on an app route. */
 function shouldShowSplash(): boolean {
@@ -22,25 +29,39 @@ function shouldShowSplash(): boolean {
   return isSplashRoute(globalThis.location.pathname);
 }
 
+/** Minimum visible time of this boot's splash, or null when the splash is not shown. */
+function resolveSplashMinVisibleMs(): number | null {
+  if (!shouldShowSplash()) {
+    return null;
+  }
+
+  return readStorage('session', SPLASH_SHOWN_STORAGE_KEY) === null
+    ? FIRST_LOAD_SPLASH_MIN_VISIBLE_MS
+    : SPLASH_MIN_VISIBLE_MS;
+}
+
 /** Splash lifetime: visible from the first render until the app is ready and the minimum has passed.
  * Once dismissed it never returns, whatever the readiness does later. */
 function useSplashVisible(isAppReady: boolean): boolean {
-  const [isDismissed, setIsDismissed] = useState(() => !shouldShowSplash());
+  const [minVisibleMs] = useState(resolveSplashMinVisibleMs);
+  const [isDismissed, setIsDismissed] = useState(minVisibleMs === null);
   const [hasMinimumPassed, setHasMinimumPassed] = useState(false);
 
   useEffect(() => {
-    if (isDismissed) {
+    if (isDismissed || minVisibleMs === null) {
       return;
     }
 
+    writeStorage('session', SPLASH_SHOWN_STORAGE_KEY, '1');
+
     const timer = setTimeout(() => {
       setHasMinimumPassed(true);
-    }, SPLASH_MIN_VISIBLE_MS);
+    }, minVisibleMs);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [isDismissed]);
+  }, [isDismissed, minVisibleMs]);
 
   const shouldDismiss = hasMinimumPassed && isAppReady;
 

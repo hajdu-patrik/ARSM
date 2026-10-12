@@ -43,22 +43,22 @@ Content-Type: application/json
 
 ### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
 # @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@CustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+@CustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
 # @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
-@CustomerVehicleId = {{seedVehicles[0].id}}
+@CustomerVehicleId = {{seedVehicles.items[0].id}}
 
 ### [Setup][Appointments] Register disposable secondary mechanic for the two-mechanic create case (200 expected)
 # @name secondaryMechanic

@@ -3,11 +3,11 @@
 import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
+import { Dropdown } from '../../../../components/common/Dropdown';
 import { FieldErrorText } from '../../../../components/common/FieldErrorText';
 import { EXPERTISE_OPTIONS, SPECIALIZATION_OPTIONS } from '../constants';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import {
-  compactSelectFullClass,
   hiddenCheckboxClass,
   labelClass,
   optionTileActiveClass,
@@ -42,6 +42,8 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
   const idPrefix = useId();
   const specializationErrorId = `${idPrefix}-specialization-error`;
   const expertiseErrorId = `${idPrefix}-expertise-error`;
+  const specializationA11y = fieldErrorA11yProps(specializationErrorId, fieldErrors.specialization);
+  const specializationOptions = SPECIALIZATION_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }));
 
   return (
     <>
@@ -50,26 +52,18 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
           {t('admin.specialization')} *
         </label>
         <div className={selectWrapperClass}>
-          <select
+          <Dropdown
             id="specialization"
             value={specialization}
-            onChange={(event) => {
-              onFieldChange('specialization', event.target.value);
+            options={specializationOptions}
+            onChange={(value) => {
+              onFieldChange('specialization', value);
             }}
-            className={compactSelectFullClass}
+            placeholder={t('admin.selectSpecialization')}
             disabled={isSubmitting}
-            required
-            {...fieldErrorA11yProps(specializationErrorId, fieldErrors.specialization)}
-          >
-            <option value="" disabled>
-              {t('admin.selectSpecialization')}
-            </option>
-            {SPECIALIZATION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </option>
-            ))}
-          </select>
+            ariaInvalid={specializationA11y['aria-invalid']}
+            ariaDescribedBy={specializationA11y['aria-describedby']}
+          />
         </div>
         <FieldErrorText id={specializationErrorId} messageKey={fieldErrors.specialization} />
       </div>

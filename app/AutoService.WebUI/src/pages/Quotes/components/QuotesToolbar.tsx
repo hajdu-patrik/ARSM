@@ -2,9 +2,9 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Search, X } from 'lucide-react';
+import { Dropdown } from '../../../components/common/Dropdown';
 import {
   cardClass,
-  compactSelectFullClass,
   defaultIconClass,
   inputGroupContainerClass,
   inputGroupIconClass,
@@ -42,6 +42,8 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
   onClearSearch,
   onStatusFilterChange,
 }: QuotesToolbarProps) {
+  const statusOptions = QUOTE_STATUS_FILTERS.map((filter) => ({ value: filter, label: t(STATUS_FILTER_I18N_KEY[filter]) }));
+
   return (
     <section className={cardClass}>
       <div className={toolbarRowLayoutClass}>
@@ -72,23 +74,17 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
         </div>
 
         <div className="min-w-0 max-w-full w-full sm:w-56 sm:shrink-0">
-          <select
+          <Dropdown
             data-testid="quotes-status-filter"
             value={statusFilter}
-            aria-label={t('quotes.filters.statusLabel')}
-            onChange={(event) => {
-              const { value } = event.target;
-
+            ariaLabel={t('quotes.filters.statusLabel')}
+            options={statusOptions}
+            onChange={(value) => {
               if (isQuoteStatusFilter(value)) {
                 onStatusFilterChange(value);
               }
             }}
-            className={compactSelectFullClass}
-          >
-            {QUOTE_STATUS_FILTERS.map((filter) => (
-              <option key={filter} value={filter}>{t(STATUS_FILTER_I18N_KEY[filter])}</option>
-            ))}
-          </select>
+          />
         </div>
       </div>
     </section>

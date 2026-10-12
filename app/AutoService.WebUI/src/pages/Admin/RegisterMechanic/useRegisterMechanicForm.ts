@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { adminService, type RegisterMechanicRequest } from '../../../services/admin/admin.service';
-import { adminQueries } from '../../../services/queries/admin.queries';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
 import {
@@ -87,7 +87,7 @@ export function useRegisterMechanicForm() {
       resetForm();
 
       if (scope !== null) {
-        void queryClient.invalidateQueries({ queryKey: adminQueries.mechanics(scope).queryKey });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.admin.mechanics(scope) });
       }
     },
     onError: handleSubmitError,

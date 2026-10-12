@@ -29,7 +29,10 @@ export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-ui-fie
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
 /** Compact select dedicated to filter toolbars (kept distinct from form/edit selects); reaches the 44px touch height below the lg breakpoint (1024px). */
-export const filterSelectCompactClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 pr-7 text-xs font-semibold leading-normal tracking-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:bg-arsm-input-dark`;
+export const filterSelectCompactSurfaceClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 text-xs font-semibold leading-normal tracking-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:bg-arsm-input-dark`;
+
+/** Native compact filter select: the surface plus right padding that clears the native arrow (the Dropdown trigger has an in-flow chevron instead). */
+export const filterSelectCompactClass = `${filterSelectCompactSurfaceClass} pr-7`;
 
 /** Width wrapper for compact filter selects in responsive toolbar rows. */
 export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
@@ -44,7 +47,8 @@ export const formFieldGridClass = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2
 /** Input group primitives used by search fields and password visibility toggles. */
 export const inputGroupContainerClass = 'relative min-w-0 max-w-full';
 
-export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ui-muted';
+/** z-10 keeps the icon above the input: the focus lift (translate) gives the input its own stacking layer that paints over a z-auto sibling. */
+export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-ui-muted';
 
 /** Search field: pl-10 clears the search icon and pr-12 the clear button; the compact line-height keeps it 44px tall. */
 export const searchInputClass = `${inputFieldBaseClass} pl-10 pr-12 text-ui-field leading-(--text-ui-small--line-height) max-[320px]:text-sm`;

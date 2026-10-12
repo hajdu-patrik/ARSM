@@ -2,16 +2,25 @@
  * clickable page behind - also when the user prefers reduced motion (an earlier regression broke that). */
 import { setTimeout as sleep } from 'node:timers/promises';
 import { expect, test, type Page } from '@playwright/test';
+import { installApiMocks } from './support/api-mocks';
 import { APP_ROUTE_CHECKS, CUSTOMERS_ROUTE, prepareAppRoute, type AppRouteCheck } from './support/app-routes';
-import { isReachableByPointer, readSplashTrace, splashDurationMs, traceSplash } from './support/splash-trace';
+import { primeBrowserState } from './support/browser-state';
+import {
+  FIRST_LOAD_SPLASH_MIN_MS,
+  isReachableByPointer,
+  readSplashTrace,
+  REPEAT_LOAD_SPLASH_MIN_MS,
+  splashDurationMs,
+  traceSplash,
+} from './support/splash-trace';
 
 const MOTION_PREFERENCES = ['no-preference', 'reduce'] as const;
 
 /** The old splash held every full load for a fixed 3000 ms; a fast load must clear it well before that. */
 const MAX_FAST_SPLASH_MS = 2000;
 
-/** Anti-flash minimum of the splash (150-300 ms by contract), with slack for timer granularity. */
-const MIN_SPLASH_MS = 150;
+/** Timer granularity slack for the splash minimums, which the app counts from its first render. */
+const TIMER_SLACK_MS = 100;
 
 /** Delay of the session check in the readiness test: long enough to tell "until ready" from any fixed time. */
 const SESSION_CHECK_DELAY_MS = 1200;
@@ -48,7 +57,7 @@ for (const motion of MOTION_PREFERENCES) {
         expect(trace.coversViewport, 'the splash must cover the viewport').toBe(true);
         expect(trace.hasSolidBackground, 'the splash must have a solid background').toBe(true);
         expect(visibleMs, 'a fast load still waited for the old fixed 3 s').toBeLessThan(MAX_FAST_SPLASH_MS);
-        expect(visibleMs, 'the splash only flickered').toBeGreaterThanOrEqual(MIN_SPLASH_MS);
+        expect(visibleMs, 'the splash only flickered').toBeGreaterThanOrEqual(REPEAT_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
       });
     }
 
@@ -72,3 +81,26 @@ for (const motion of MOTION_PREFERENCES) {
     });
   });
 }
+
+test.describe('Loading splash minimum per tab', () => {
+  test('the first load of a fresh tab holds the splash for 2500 ms, a reload only for the short minimum', async ({ page }) => {
+    // No splash-shown flag: this tab is fresh, and the app sets the flag itself once it showed the splash.
+    await primeBrowserState(page, { sessionHint: true, splashShown: false });
+    await installApiMocks(page, { profileEmail: 'route.check@example.test', isAuthenticated: true, isAdmin: true });
+    await traceSplash(page);
+
+    await page.goto(CUSTOMERS_ROUTE.path);
+    await expectSplashHandedOver(page, CUSTOMERS_ROUTE);
+    const firstLoadMs = splashDurationMs(await readSplashTrace(page));
+
+    expect(firstLoadMs, 'the first load of the tab left the splash too early').toBeGreaterThanOrEqual(FIRST_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
+
+    // The reload keeps the tab's sessionStorage, so it only waits for the anti-flash minimum.
+    await page.reload();
+    await expectSplashHandedOver(page, CUSTOMERS_ROUTE);
+    const reloadMs = splashDurationMs(await readSplashTrace(page));
+
+    expect(reloadMs, 'a reload in the same tab repeated the long first-load splash').toBeLessThan(MAX_FAST_SPLASH_MS);
+    expect(reloadMs, 'the reload splash only flickered').toBeGreaterThanOrEqual(REPEAT_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
+  });
+});

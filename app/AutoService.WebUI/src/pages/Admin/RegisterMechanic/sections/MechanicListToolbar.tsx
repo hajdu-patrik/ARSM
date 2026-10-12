@@ -1,43 +1,35 @@
-/** Mechanic list toolbar: name search and sort-direction toggle. */
+/** Mechanic list toolbar: the search field. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import {
 	defaultIconClass,
 	inputGroupContainerClass,
 	inputGroupIconClass,
-	referenceChipNeutralButtonClass,
 	searchClearButtonClass,
 	searchInputClass,
-	toolbarActionGrowClass,
-	toolbarActionsWrapperClass,
 	toolbarRowLayoutClass,
 	toolbarSearchFieldClass,
 } from '../../../../utils/formStyles';
 import { filterNameSearchInput } from '../../../../utils/validation';
-import type { SortDirection } from '../types';
 
 interface MechanicListToolbarProps {
 	readonly t: TFunction;
 	readonly searchTerm: string;
-	readonly sortDirection: SortDirection;
 	readonly onSearchChange: (value: string) => void;
 	readonly onClearSearch: () => void;
-	readonly onToggleSortDirection: () => void;
 }
 
 const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 	t,
 	searchTerm,
-	sortDirection,
 	onSearchChange,
 	onClearSearch,
-	onToggleSortDirection,
 }: MechanicListToolbarProps) {
 	return (
 		<div className={toolbarRowLayoutClass}>
 			<div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
-				<Search className={inputGroupIconClass} />
+				<Search className={inputGroupIconClass} aria-hidden="true" />
 				<input
 					data-testid="mechanic-search-input"
 					type="text"
@@ -46,6 +38,7 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 						onSearchChange(filterNameSearchInput(event.target.value));
 					}}
 					placeholder={t('admin.mechanicSearchPlaceholder')}
+					aria-label={t('admin.mechanicSearchPlaceholder')}
 					className={searchInputClass}
 				/>
 				{searchTerm.length > 0 && (
@@ -61,23 +54,11 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 					</button>
 				)}
 			</div>
-
-			<div className={toolbarActionsWrapperClass}>
-				<button
-					data-testid="mechanic-sort-toggle"
-					type="button"
-					onClick={onToggleSortDirection}
-					className={`${referenceChipNeutralButtonClass} ${toolbarActionGrowClass}`}
-				>
-					<ArrowUpDown className={defaultIconClass} />
-					<span>{sortDirection === 'asc' ? t('common.sort.ascending') : t('common.sort.descending')}</span>
-				</button>
-			</div>
 		</div>
 	);
 });
 
 MechanicListToolbarComponent.displayName = 'MechanicListToolbar';
 
-/** Search field with a clear button and the sort-direction toggle above the mechanic roster. */
+/** Search field with a clear button above the mechanic roster. */
 export const MechanicListToolbar = MechanicListToolbarComponent;

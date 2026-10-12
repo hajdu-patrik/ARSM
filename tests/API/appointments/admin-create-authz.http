@@ -36,16 +36,16 @@ Content-Type: application/json
 
 ### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected, GET /api/customers is plain-authenticated)
 # @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@CustomerId = {{seedCustomers.find(c => c.vehicleCount > 0).id}}
+@CustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
 # @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
@@ -59,7 +59,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles[0].id}},
+  "vehicleId": {{seedVehicles.items[0].id}},
   "scheduledDate": "2026-04-30T10:00:00",
   "dueDateTime": "2026-05-01T10:00:00",
   "taskDescription": "Non-admin create attempt — should be rejected with 403",
