@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from http.cookiejar import CookieJar
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 APPLICATION_JSON = "application/json"
@@ -22,6 +23,9 @@ CSRF_HEADER_NAME = "X-CSRF-Token"
 
 # urllib surfaces a server-side connection reset as an OSError rather than a status code.
 CONNECTION_RESET_STATUS = 0
+
+# Shared fixtures created by tests/API/_setup/ensure-test-fixtures.http (a fresh database holds no demo data).
+ANCHOR_QUOTE_TITLE = "ARSM fixture anchor quote"
 
 
 @dataclass(frozen=True)
@@ -180,3 +184,46 @@ def assert_condition(step: str, condition: bool, detail: str, results: list[Step
     results.append(StepResult(step=step, expected=[1], actual=1 if condition else 0, status=status))
     if status == "failed":
         raise RuntimeError(f"{step} failed: {detail}")
+
+
+def find_anchor_quote(client: HttpClient, results: list[StepResult]) -> dict[str, Any]:
+    """Returns the list item of the fixture anchor quote that the _setup suite creates."""
+    status, body = client.request_json("GET", f"/api/quotes?search={quote(ANCHOR_QUOTE_TITLE)}&pageSize=500")
+    assert_status("list-quotes", status, {200}, results)
+
+    quotes = (json.loads(body) if body else {}).get("items", [])
+    anchor = next((item for item in quotes if item.get("title") == ANCHOR_QUOTE_TITLE), None)
+    assert_condition(
+        "anchor-quote-available",
+        anchor is not None,
+        f"Fixture quote '{ANCHOR_QUOTE_TITLE}' is missing; run tests/API/_setup first.",
+        results,
+    )
+    assert anchor is not None
+
+    return anchor
+
+
+def read_fixture_customer_email() -> str:
+    """Read the email of the shared fixture customer that the _setup suite creates."""
+    email = os.getenv("ARSM_TEST_CUSTOMER_EMAIL", "").strip()
+    if email:
+        return email
+
+    raise RuntimeError("Missing ARSM_TEST_CUSTOMER_EMAIL environment variable.")
+
+
+def resolve_fixture_customer(client: HttpClient, results: list[StepResult]) -> dict[str, Any]:
+    """Returns the scheduler lookup payload (id and vehicles) of the shared fixture customer."""
+    status, body = client.request_json("GET", f"/api/customers/by-email?email={quote(read_fixture_customer_email())}")
+    assert_status("lookup-fixture-customer", status, {200}, results)
+
+    customer = json.loads(body) if body else {}
+    assert_condition(
+        "fixture-customer-has-vehicle",
+        bool(customer.get("vehicles")),
+        "The fixture customer has no vehicle; run tests/API/_setup first.",
+        results,
+    )
+
+    return customer

@@ -3,6 +3,7 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 
@@ -34,17 +35,17 @@ Content-Type: application/json
 
 # CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
-### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected, GET /api/customers is plain-authenticated)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Resolve the shared fixture customer (200 expected, GET /api/customers is plain-authenticated)
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@CustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
+@CustomerId = {{fixtureCustomer.id}}
+# @name fixtureVehicles
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
@@ -59,7 +60,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles.items[0].id}},
+  "vehicleId": {{fixtureVehicles.items[0].id}},
   "scheduledDate": "2026-04-30T10:00:00",
   "dueDateTime": "2026-05-01T10:00:00",
   "taskDescription": "Non-admin create attempt — should be rejected with 403",

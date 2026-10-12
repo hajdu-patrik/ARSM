@@ -75,7 +75,7 @@ Then update placeholder values in `appsettings.Local.json`, especially:
 
 - `JwtSettings.Secret`
 - `ConnectionStrings.AutoServiceDb`
-- `DemoData.MechanicPassword`
+- `Bootstrap.Admin.*` (optional: creates the first admin on an empty database; the API seeds no data, so a fresh database has no accounts, customers, vehicles or catalog rows)
 - `CompanyProfile.*` (name, address, postal code, city, tax number, phone, email)
 
 `CompanyProfile` is the workshop identity printed on the quote PDF letterhead. The API refuses to
@@ -190,7 +190,7 @@ python scripts/run-local-test-suite.py http sql
 Suite targets:
 
 - `playwright`: runs the WebUI Playwright E2E suite (`PORT=5173` default).
-- `http`: runs `tests/API/_setup` first (test-account provisioning), then all `tests/API/**/*.http` suites through HTTPYAC.
+- `http`: runs `tests/API/_setup` first (test-account and fixture provisioning), then all `tests/API/**/*.http` suites through HTTPYAC.
 - `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
 
 Before full-suite runs, start Aspire in another terminal:
@@ -219,6 +219,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - WebUI local env values belong in `app/AutoService.WebUI/.env.development` (template: `app/AutoService.WebUI/.env.development.template`).
 - API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
   - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
+  - `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD` are the first admin from `Bootstrap:Admin`; `ARSM_TEST_CUSTOMER_EMAIL` is the fixture customer that `tests/API/_setup/ensure-test-fixtures.http` creates, together with its vehicles, a catalog part and labor type and an anchor quote, on an empty database.
 - Playwright runtime secrets and the read-only SQL connection string belong in `.secrets` at repository root (gitignored; template: `.secrets.example`); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
 - MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
 - The MCP read-only PostgreSQL URI belongs in `.env` at repository root (gitignored; template: `.env.example`); the tracked MCP templates reference it as `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}`, while the local gitignored MCP configs hold the resolved URI.

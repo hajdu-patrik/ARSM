@@ -1,0 +1,241 @@
+# Idempotent shared fixtures for the HTTP suite (a fresh database holds no customers, vehicles, catalog rows or quotes): every create accepts 409 for "already there",
+# the anchor quote and its lines are created only while the quote is missing. Other files address these rows by email, plate or title and never change them.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@SecondFixtureCustomerEmail = fixture.second@example.test
+
+
+### [Setup][Fixtures] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Fixtures] Login as the bootstrap admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Ensure the primary fixture customer (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fixture", "middleName": null, "lastName": "Primary", "email": "{{FixtureCustomerEmail}}", "phoneNumber": "+36304445566" }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Ensure the second fixture customer (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fixture", "middleName": null, "lastName": "Second", "email": "{{SecondFixtureCustomerEmail}}", "phoneNumber": null }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Resolve the primary fixture customer (200 expected)
+# @name fixtureCustomerA
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Resolve the second fixture customer (200 expected)
+# @name fixtureCustomerB
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{SecondFixtureCustomerEmail}}
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Ensure primary vehicle ABC-101 (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomerA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ABC-101", "vin": "WVWZZZAUZJW123456", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Ensure primary customer's second vehicle ABC-102 (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomerA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ABC-102", "vin": "WVWZZZAUZJW123457", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Diesel" }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Ensure the second customer's vehicle ABC-201 (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomerB.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ABC-201", "vin": "WVWZZZAUZJW123458", "brand": "Peugeot", "model": "308", "year": 2019, "mileageKm": 80000, "enginePowerKw": 96, "drivetrainType": "Diesel" }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Ensure the catalog part OLF-1001 (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "OLF-1001", "name": "Fixture oil filter", "netUnitPrice": 4500, "vatRatePercent": 27 }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Ensure the labor type OLAJCSERE (201 created or 409 already there)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "OLAJCSERE", "name": "Fixture oil change", "hourlyNetRate": 12000, "vatRatePercent": 27 }
+
+?? js [201, 409].includes(response.statusCode) == true
+
+###
+
+### [Setup][Fixtures] Resolve the fixture part (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.some(p => p.partNumber === 'OLF-1001')) == true
+
+###
+
+### [Setup][Fixtures] Resolve the fixture labor type (200 expected)
+# @name fixtureLaborType
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search=OLAJCSERE&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.some(l => l.code === 'OLAJCSERE')) == true
+
+###
+
+### [Setup][Fixtures] Resolve the primary customer's vehicles after the creates above (200 expected)
+# @name fixtureVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
+
+{{
+  exports.AnchorVehicleId = fixtureVehicles.vehicles.find(v => v.licensePlate === 'ABC-101')?.id;
+}}
+
+?? status == 200
+?? js (response.parsedBody.vehicles.some(v => v.licensePlate === 'ABC-101')) == true
+?? js (response.parsedBody.vehicles.some(v => v.licensePlate === 'ABC-102')) == true
+
+###
+
+### [Setup][Fixtures] Probe for the anchor draft quote (200 expected)
+# @name anchorProbe
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Create the anchor draft quote on vehicle ABC-101 only while it is missing (201 expected)
+# @loop for missing of (anchorProbe.items.some(q => q.title === 'ARSM fixture anchor quote') ? [] : [1])
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "ARSM fixture anchor quote", "notes": "Shared fixture created by tests/API/_setup; never mutated by a suite" }
+
+?? status == 201
+
+###
+
+### [Setup][Fixtures] Re-read the anchor quote for its id and version (200 expected)
+# @name anchorBeforeLines
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+{{
+  exports.AnchorQuoteId = anchorBeforeLines.items.find(q => q.title === 'ARSM fixture anchor quote')?.id;
+  exports.AnchorQuoteVersion = anchorBeforeLines.items.find(q => q.title === 'ARSM fixture anchor quote')?.version;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Add the catalog part line to a newly created anchor quote (201 expected)
+# @loop for missing of (anchorProbe.items.some(q => q.title === 'ARSM fixture anchor quote') ? [] : [1])
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{AnchorQuoteId}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{fixturePart.items.find(p => p.partNumber === 'OLF-1001').id}}, "version": {{AnchorQuoteVersion}} }
+
+?? status == 201
+
+###
+
+### [Setup][Fixtures] Re-read the anchor quote for the version after its first line (200 expected)
+# @name anchorAfterPartLine
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+{{
+  exports.AnchorQuoteVersion = anchorAfterPartLine.items.find(q => q.title === 'ARSM fixture anchor quote')?.version;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Fixtures] Add the catalog labor line to a newly created anchor quote (201 expected)
+# @loop for missing of (anchorProbe.items.some(q => q.title === 'ARSM fixture anchor quote') ? [] : [1])
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{AnchorQuoteId}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "laborTypeId": {{fixtureLaborType.items.find(l => l.code === 'OLAJCSERE').id}}, "version": {{AnchorQuoteVersion}} }
+
+?? status == 201
+
+###
+
+### [Setup][Fixtures] The anchor quote exists with at least one line (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{AnchorQuoteId}}
+
+?? status == 200
+?? js response.parsedBody.lines.length >= 1

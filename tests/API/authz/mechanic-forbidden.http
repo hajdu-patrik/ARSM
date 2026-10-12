@@ -1,5 +1,5 @@
-# Verified against source: /api/admin/* (mechanics list/delete) is AdminOnly; only gabor.kovacs@example.com has
-# the Admin role (DemoDataInitializer), so ARSM_TEST_ADMIN_EMAIL/ARSM_TEST_MECHANIC_EMAIL must map accordingly. Assign/unassign and register 403-for-non-admin are covered elsewhere (not duplicated); /api/admin/* is repeated here to keep this authz suite complete.
+# Verified against source: /api/admin/* (mechanics list/delete) is AdminOnly; only the bootstrap admin has
+# the Admin role (Data/AdminBootstrapInitializer), so ARSM_TEST_ADMIN_EMAIL/ARSM_TEST_MECHANIC_EMAIL must map accordingly. Assign/unassign and register 403-for-non-admin are covered elsewhere (not duplicated); /api/admin/* is repeated here to keep this authz suite complete.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}

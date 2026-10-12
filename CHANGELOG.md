@@ -9,6 +9,16 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- No demo data (2026-10-12): the API seeds nothing anymore. `Data/DatabaseInitializer.EnsureDatabaseReadyAsync`
+  replaces the demo initializer and only migrates, clears the legacy backfill rows, checks appointment integrity
+  and normalizes data; the `DemoData` configuration is gone, so a fresh database holds no accounts or records and
+  the first admin comes from the `Bootstrap:Admin` configuration. The HTTP suite provisions its own idempotent
+  fixtures in `tests/API/_setup/ensure-test-fixtures.http` (customers, vehicles, catalog items, an anchor quote),
+  the SQL checks run on any data set, and CI starts the API with a per-run bootstrap admin.
+
+_Dev time: ~3h wall-clock (2026-10-12 17:00 to 20:02 +02:00, including the dev database reload and the mini-prod
+auto-deploy set-up outside the repository). cost: not measured._
+
 - List, search and dropdown polish (2026-10-12): one change set across API and WebUI.
   - VAT rates: parts, labor types and quote line snapshots accept only 5, 18 and 27 percent; 0 is rejected
     for new writes with the existing `InvalidVatRate` response. Stored rows keep their value; no migration.

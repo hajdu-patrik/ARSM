@@ -1,8 +1,9 @@
 # Every id here is resolved at runtime or created as a disposable fixture, never hardcoded: literal
-# mechanic ids drifted with the seed counter and once deleted the real ARSM_TEST_MECHANIC_EMAIL account.
+# mechanic ids drifted with the insert counter and once deleted the real ARSM_TEST_MECHANIC_EMAIL account.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
@@ -45,25 +46,25 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-# COVERAGE GAP: DeleteMechanicAsync's 403-on-admin-target branch needs a second seeded admin, which
-# would require mutating the shared demo seed (only gabor.kovacs@example.com is Admin); not executed.
+# COVERAGE GAP: DeleteMechanicAsync's 403-on-admin-target branch needs a second admin, which would require
+# promoting an account of the shared database (only the bootstrap admin is Admin); not executed.
 
-# COVERAGE GAP: the "last remaining mechanic" 422 needs the shared demo DB down to one mechanic, which
+# COVERAGE GAP: the "last remaining mechanic" 422 needs the shared test DB down to one mechanic, which
 # every other suite's login depends on staying intact; not executed.
 
 
-### [Setup][Admin] Resolve a seeded customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Admin] Resolve the shared fixture customer (200 expected)
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
 ###
 
-@SoleAssignmentCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
+@SoleAssignmentCustomerId = {{fixtureCustomer.id}}
 
 ### [Setup][Admin] Resolve one of that customer vehicles (200 expected)
-# @name seedVehicles
+# @name fixtureVehicles
 GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
@@ -101,7 +102,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles.items[0].id}},
+  "vehicleId": {{fixtureVehicles.items[0].id}},
   "scheduledDate": "2020-01-01T10:00:00",
   "taskDescription": "ARSM delete-invariants sole-assignment fixture",
   "mechanicIds": [{{soleAssignmentMechanic.personId}}]

@@ -63,7 +63,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=1&pageSize=5
 
 ### [Repair] Delete the plain mechanic test account only when its login failed (200 expected per delete)
 # Self-healing: a stale password left by an earlier non-idempotent test is fixed by deleting and
-# re-registering below, only when the probe login failed, and only for an '@example.test' address (never an admin or a demo '@example.com' account).
+# re-registering below, only when the probe login failed, and only for an '@example.test' address (never an admin or any other account).
 # @loop for staleMechanic of (mechanicProbe && mechanicProbe.personId ? [] : allMechanics.items.filter(m => !m.isAdmin && m.email.toLowerCase() === MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test")))
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{staleMechanic.personId}}
 Origin: {{WebUI_Origin}}
@@ -105,7 +105,7 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Positive] Plain mechanic test account logs in (200 expected)
-# After the repair step this should succeed. A persisting 401 means a demo '@example.com' mechanic (never
+# After the repair step this should succeed. A persisting 401 means an account outside '@example.test' (never
 # reset here) or an undeletable account (e.g. 422 sole appointment assignee) - fix tests/.env.
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}

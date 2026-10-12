@@ -4,8 +4,8 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
 @ValidPartNumber = ZZV{{RunId}}A
-@SeedPartNumber = OLF-1001
-@LowercaseSeedPartNumber = olf-1001
+@FixturePartNumber = OLF-1001
+@LowercaseFixturePartNumber = olf-1001
 @NonExistentPartId = 999999999
 @OverLengthPartNumber = P9999999999999999999999999999999999999999
 @OverLengthName = N999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
@@ -154,14 +154,14 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Parts] Create part with duplicate part number matching seeded key (409 expected)
+### [Negative][Parts] Create part with duplicate part number matching the shared fixture key (created by tests/API/_setup) (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "partNumber": "{{SeedPartNumber}}",
+  "partNumber": "{{FixturePartNumber}}",
   "name": "Duplicate Check",
   "netUnitPrice": 100,
   "vatRatePercent": 27
@@ -178,7 +178,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "partNumber": "{{LowercaseSeedPartNumber}}",
+  "partNumber": "{{LowercaseFixturePartNumber}}",
   "name": "Duplicate Lowercase Check",
   "netUnitPrice": 100,
   "vatRatePercent": 27

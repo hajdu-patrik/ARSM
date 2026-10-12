@@ -1,8 +1,9 @@
 # Both history routes sit under plain RequireAuthorization(), so any authenticated mechanic reaches them.
-# SeedCustomerId/SeedVehicleId resolve from a real customer at run time, never a literal id, since earlier suites may delete lower-numbered demo rows.
+# FixtureCustomerId and the vehicle id resolve from the shared fixture customer (tests/API/_setup) at run time, never a literal id.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonExistentCustomerId = 99999
@@ -36,46 +37,46 @@ Content-Type: application/json
 
 # CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
 
-### [Setup][Appointments] Resolve a seeded customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@SeedCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=500
+@FixtureCustomerId = {{fixtureCustomer.id}}
+# @name fixtureVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get customer repair history oldest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
 
 ?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get customer repair history newest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?descending=true
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments?descending=true
 
 ?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get vehicle repair history oldest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments
 
 ?? status == 200
 
 ###
 
 ### [Positive][Appointments] Get vehicle repair history newest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/appointments?descending=true
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?descending=true
 
 ?? status == 200
 
@@ -106,7 +107,7 @@ X-CSRF-Token: {{CsrfToken}}
 
 ### [Negative][Appointments] Unauthenticated customer history returns 401
 # @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
 
 ?? status == 401
 
@@ -114,6 +115,6 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appo
 
 ### [Negative][Appointments] Unauthenticated vehicle history returns 401
 # @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/appointments
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments
 
 ?? status == 401

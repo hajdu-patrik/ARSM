@@ -296,7 +296,7 @@ builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCl
 var app = builder.Build();
 
 // Maintenance entrypoint. The profile-picture verification needs the same DI graph as the API,
-// but must not start the web host or the demo-data seeder, so it short-circuits right after Build().
+// but must not start the web host or the database initializer, so it short-circuits right after Build().
 if (ProfilePictureStorageMigrator.IsRequested(args))
 {
     return await ProfilePictureStorageMigrator.RunAsync(app.Services, CancellationToken.None);
@@ -326,8 +326,8 @@ if (!app.Environment.IsDevelopment())
     InProcessLimiterTopologyGuard.Validate(app.Configuration, app.Environment);
 }
 
-// Ensure the database is created and seeded with demo data at startup.
-await app.EnsureSeededAsync();
+// Migrate and normalize the database at startup; no data is seeded.
+await app.EnsureDatabaseReadyAsync();
 
 // First-admin bootstrap from Bootstrap:Admin, after migrations; a no-op once any admin exists.
 await app.EnsureBootstrapAdminAsync();

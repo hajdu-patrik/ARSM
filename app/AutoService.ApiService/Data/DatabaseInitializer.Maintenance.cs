@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.DataInitialization;
 
-public static partial class DemoDataInitializer
+public static partial class DatabaseInitializer
 {
     private static async Task EnsureNoAppointmentsWithoutMechanicsAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {

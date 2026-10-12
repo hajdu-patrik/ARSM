@@ -26,13 +26,13 @@ Content-Type: application/json
 
 ###
 
-### [Setup][QuotesAuthz] Resolve the demo quote and vehicle anchors from the seeded quotes (200 expected)
-# @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+### [Setup][QuotesAuthz] Resolve the fixture anchor quote and its vehicle (200 expected)
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
 
 {{
-  exports.SomeVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
-  exports.SomeQuoteId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').id;
+  exports.SomeVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
+  exports.SomeQuoteId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').id;
 }}
 
 ?? status == 200
@@ -40,11 +40,11 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
 ###
 
 ### [Setup][QuotesAuthz] Resolve that quote's first line id (200 expected)
-# @name seedQuoteDetail
+# @name anchorQuoteDetail
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}
 
 {{
-  exports.SomeQuoteLineId = seedQuoteDetail.lines[0].id;
+  exports.SomeQuoteLineId = anchorQuoteDetail.lines[0].id;
 }}
 
 ?? status == 200

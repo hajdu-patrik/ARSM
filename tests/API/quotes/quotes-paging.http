@@ -29,12 +29,12 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
-# @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
 
 {{
-  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
 }}
 
 ?? status == 200

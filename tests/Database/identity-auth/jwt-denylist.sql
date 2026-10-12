@@ -2,7 +2,7 @@
 -- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
 
 -- 9. JWT DENYLIST (revokedjwttokens) — after logout, the access token jti appears here until expiry.
---    Expected after fresh seed with no prior logins: 0 rows.
+--    Expected before any logout has happened: 0 rows.
 SELECT rjt."Id",
     rjt."JwtId",
        rjt."ExpiresAtUtc",

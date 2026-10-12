@@ -1,5 +1,5 @@
 # PrimaryMechanicId is the admin's own person_id; SecondaryMechanicId is a disposable mechanic registered
-# and deleted here. CustomerId/CustomerVehicleId resolve from a real customer/vehicle; both appointments created are deleted at the end.
+# and deleted here. CustomerId/CustomerVehicleId come from a disposable customer and vehicle created and deleted here; both appointments created are deleted at the end. The 404 cases for a missing appointment live in admin-create-update-validation.http (file-size limit).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -7,8 +7,12 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
+# Disposable owner and vehicle: the vehicle edits persist, so the shared fixture vehicles stay untouched.
+@FixtureCustomerEmail = fixture.appt.create.happy.{{RunId}}@example.test
+@OwnLicensePlate = OWH-{{RunId}}
+@OwnVehicleVin = TST{{RunId.toString().slice(-10)}}0800
 @SecondaryMechanicEmail = appt.create.happy.{{RunId}}@example.test
-# Freshly generated plate/VIN: a real seeded one could collide with whichever demo vehicle owns it
+# Freshly generated plate/VIN: reusing a shared fixture one would collide with the vehicle that owns it
 # (UpdateAppointmentVehicleAsync 409s on a plate/VIN already used by a different vehicle).
 @UpdatedLicensePlate = UPD-{{RunId}}
 @UpdatedVehicleVin = TST{{RunId.toString().slice(-10)}}0801
@@ -41,24 +45,34 @@ Content-Type: application/json
 
 @PrimaryMechanicId = {{adminLogin.personId}}
 
-### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Create a disposable customer, because the vehicle edits below persist (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 200
+{ "firstName": "Appointment", "middleName": null, "lastName": "Happy", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@CustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
+?? status == 201
 
 ###
 
-@CustomerVehicleId = {{seedVehicles.items[0].id}}
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name ownVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "{{OwnLicensePlate}}", "vin": "{{OwnVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+@CustomerId = {{fixtureCustomer.id}}
+@CustomerVehicleId = {{ownVehicle.id}}
 
 ### [Setup][Appointments] Register disposable secondary mechanic for the two-mechanic create case (200 expected)
 # @name secondaryMechanic
@@ -160,21 +174,6 @@ Content-Type: application/json
 
 @PastDateApptId = {{pastDateApptCreate.id}}
 
-### [Negative][Appointments] Admin update fails when appointment does not exist (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "dueDateTime": "2026-04-22T16:15:00",
-  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez"
-}
-
-?? status == 404
-
-###
-
 ### [Negative][Appointments] Admin update cannot change ScheduledDate (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
 Origin: {{WebUI_Origin}}
@@ -188,27 +187,6 @@ Content-Type: application/json
 }
 
 ?? status == 422
-
-###
-
-### [Negative][Appointments] Admin vehicle update fails when appointment does not exist (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/vehicle
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "licensePlate": "{{UpdatedLicensePlate}}",
-  "vin": "{{UpdatedVehicleVin}}",
-  "brand": "Volkswagen",
-  "model": "Golf",
-  "year": 2018,
-  "mileageKm": 124500,
-  "enginePowerKw": 82,
-  "drivetrainType": "Petrol"
-}
-
-?? status == 404
 
 ###
 
@@ -237,3 +215,12 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
+
+###
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

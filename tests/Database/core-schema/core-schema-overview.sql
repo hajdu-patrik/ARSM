@@ -1,9 +1,9 @@
--- AutoService DB — Validation Queries: run after seeding demo data.
+-- AutoService DB — Overview queries: read-only inspection that runs on any data set, an empty database included.
 -- AI SQL policy (ai_agent_test_user, SELECT-only) — see tests/CLAUDE.md.
 
 
--- 1. ROW COUNTS — quick seed sanity check (fresh seed: people=8, vehicles=5, appointments>=35,
---    AspNetUsers=3, AspNetRoles=1, AspNetUserRoles=1, refreshtokens=0).
+-- 1. ROW COUNTS — quick sanity check; the counts depend on the data set and have no fixed expectation
+--    (an empty database reports zeros, the first-admin bootstrap alone adds one mechanic and one account).
 SELECT 'people' AS tbl, COUNT(*) AS cnt FROM people
 UNION ALL
 SELECT 'vehicles', COUNT(*) FROM vehicles
@@ -67,7 +67,7 @@ ORDER BY p."Id";
 
 
 -- 6. IDENTITY INTEGRITY — customers must have NULL IdentityUserId
---    Expected: 5
+--    Expected: every customer counted here (customers never receive an account); the count follows the data set.
 SELECT COUNT(*) AS customers_without_account
 FROM people
 WHERE "PersonType" = 'Customer'

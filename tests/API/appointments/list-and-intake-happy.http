@@ -1,5 +1,5 @@
 # CustomerVehicleId resolves from the known customer; the appointment created here is deleted at the end
-# via admin, but the seed customer/vehicle are never touched. New-customer/mechanic-linked coverage is the sibling intake-new-customer-and-linked-happy.http.
+# via admin, but the shared fixture customer/vehicle are never changed. New-customer/mechanic-linked coverage is the sibling intake-new-customer-and-linked-happy.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}

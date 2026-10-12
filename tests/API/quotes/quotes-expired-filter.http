@@ -32,6 +32,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=1&pageSize=1
 ###
 
 ### [Positive][Quotes] expired=true keeps only expired quotes (200 expected)
+# COVERAGE GAP: a Sent quote can only expire as time passes (ValidUntil cannot be created in the past), so on a fresh database this holds vacuously.
 # @name expiredQuotes
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=true&page=1&pageSize=500
 
@@ -46,6 +47,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=false&page=1&pageS
 
 ?? status == 200
 ?? js (response.parsedBody.items.every(q => !q.isExpired)) == true
+?? js response.parsedBody.totalCount >= 1
 
 ###
 

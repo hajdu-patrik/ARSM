@@ -17,6 +17,7 @@ from http_check_support import (  # noqa: E402
     StepResult,
     assert_condition,
     assert_status,
+    find_anchor_quote,
     read_allowed_origin,
     read_credentials,
 )
@@ -27,28 +28,6 @@ VEHICLES_PATH = "/api/vehicles"
 # QuoteValidation.MaxLineCount. Kept as a literal rather than parsed out of the C# source:
 # the point of the check is to fail loudly when the API's cap and this expectation diverge.
 MAX_LINE_COUNT = 200
-
-# The demo quote whose vehicle anchors the fixture (D12/D13). Addressed by its stable
-# QuoteNumber because vehicle identity ids depend on the local database's insert history.
-ANCHOR_QUOTE_NUMBER = "ARSM-2026-0001"
-
-
-def resolve_anchor_vehicle_id(client: HttpClient, results: list[StepResult]) -> int:
-    """Finds the vehicle the seeded anchor quote is attached to."""
-    status, body = client.request_json("GET", f"{QUOTES_PATH}?pageSize=500")
-    assert_status("list-quotes", status, {200}, results)
-
-    quotes = (json.loads(body) if body else {}).get("items", [])
-    anchor = next((quote for quote in quotes if quote.get("quoteNumber") == ANCHOR_QUOTE_NUMBER), None)
-    assert_condition(
-        "anchor-quote-available",
-        anchor is not None,
-        f"Demo quote {ANCHOR_QUOTE_NUMBER} is missing; seed demo data first.",
-        results,
-    )
-    assert anchor is not None
-
-    return int(anchor["vehicleId"])
 
 
 def create_fixture_quote(client: HttpClient, vehicle_id: int, results: list[StepResult]) -> dict:
@@ -80,7 +59,7 @@ def add_line(client: HttpClient, quote_id: int, version: int, ordinal: int) -> t
 
 def run_checks(client: HttpClient, results: list[StepResult]) -> None:
     """Fills a fresh quote to the cap, asserts the next add is refused, then cleans up."""
-    vehicle_id = resolve_anchor_vehicle_id(client, results)
+    vehicle_id = int(find_anchor_quote(client, results)["vehicleId"])
     quote = create_fixture_quote(client, vehicle_id, results)
     quote_id = int(quote["id"])
     version = int(quote["version"])

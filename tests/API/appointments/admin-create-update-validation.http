@@ -1,18 +1,22 @@
 # POST negative-validation coverage moved to the sibling admin-create-validation.http (file-size limit).
-# PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId are created and deleted here (admin create allows any ScheduledDate, including past).
+# PrimaryMechanicId is the admin's own person_id; PastScheduledApptId/ApptId and a disposable customer with its vehicle are created and deleted here (admin create allows any ScheduledDate, including past).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-# Freshly generated, never-before-seen plate/VIN for the positive vehicle update below: reusing a real
-# seeded plate/VIN would collide with whichever demo vehicle actually owns it (409 instead of 200).
+# Disposable owner and vehicle: the vehicle edits persist, so the shared fixture vehicles stay untouched.
+@FixtureCustomerEmail = fixture.appt.create.validation.{{RunId}}@example.test
+@OwnLicensePlate = OWV-{{RunId}}
+@OwnVehicleVin = TST{{RunId.toString().slice(-10)}}0600
+# Freshly generated, never-before-seen plate/VIN for the positive vehicle update below: reusing a shared
+# fixture plate/VIN would collide with the vehicle that owns it (409 instead of 200).
 @PastLicensePlate = PST-{{RunId}}
 @PastVehicleVin = TST{{RunId.toString().slice(-10)}}0701
-# SeedVehicleVin only appears in a negative test whose mileageKm/enginePowerKw violation is caught
-# before the handler ever reaches VIN validation, so a real seeded VIN here is harmless.
-@SeedVehicleVin = WVWZZZAUZJW123456
+# FixtureVehicleVin only appears in a negative test whose mileageKm/enginePowerKw violation is caught
+# before the handler ever reaches VIN validation, so the shared fixture VIN here is harmless.
+@FixtureVehicleVin = WVWZZZAUZJW123456
 
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -42,24 +46,34 @@ Content-Type: application/json
 
 @PrimaryMechanicId = {{adminLogin.personId}}
 
-### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Create a disposable customer, because the vehicle edits below persist (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 200
+{ "firstName": "Appointment", "middleName": null, "lastName": "Validation", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@CustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
+?? status == 201
 
 ###
 
-@CustomerVehicleId = {{seedVehicles.items[0].id}}
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name ownVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "{{OwnLicensePlate}}", "vin": "{{OwnVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+@CustomerId = {{fixtureCustomer.id}}
+@CustomerVehicleId = {{ownVehicle.id}}
 
 ### [Setup][Appointments] Create an appointment with a past scheduled date (201 expected)
 # @name pastScheduledApptCreate
@@ -146,7 +160,7 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "vin": "{{FixtureVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
@@ -156,6 +170,42 @@ Content-Type: application/json
 }
 
 ?? status == 422
+
+###
+
+### [Negative][Appointments] Admin update fails when appointment does not exist (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "dueDateTime": "2026-04-22T16:15:00",
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez"
+}
+
+?? status == 404
+
+###
+
+### [Negative][Appointments] Admin vehicle update fails when appointment does not exist (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "licensePlate": "{{PastLicensePlate}}",
+  "vin": "{{PastVehicleVin}}",
+  "brand": "Volkswagen",
+  "model": "Golf",
+  "year": 2018,
+  "mileageKm": 124500,
+  "enginePowerKw": 82,
+  "drivetrainType": "Petrol"
+}
+
+?? status == 404
 
 ###
 
@@ -169,6 +219,15 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

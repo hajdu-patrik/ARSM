@@ -73,7 +73,7 @@ Ezután töltsd ki a helyőrző értékeket az `appsettings.Local.json` fájlban
 
 - `JwtSettings.Secret`
 - `ConnectionStrings.AutoServiceDb`
-- `DemoData.MechanicPassword`
+- `Bootstrap.Admin.*` (opcionális: üres adatbázison létrehozza az első admint; az API nem tölt fel adatot, ezért a friss adatbázisban nincs fiók, ügyfél, jármű vagy katalógussor)
 - `CompanyProfile.*` (név, cím, irányítószám, város, adószám, telefon, e-mail)
 
 A `CompanyProfile` a szerviz azonosító adata, amit az ajánlat PDF fejléce kinyomtat. Az API nem indul el,
@@ -188,7 +188,7 @@ python scripts/run-local-test-suite.py http sql
 Suite célok:
 
 - `playwright`: futtatja a WebUI Playwright E2E suite-ot (`PORT=5173` alapérték).
-- `http`: először a `tests/API/_setup` fájlokat futtatja (tesztfiók-létrehozás), utána az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
+- `http`: először a `tests/API/_setup` fájlokat futtatja (tesztfiók- és fixture-létrehozás), utána az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
 - `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
 
 Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:
@@ -217,6 +217,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 - Frontend lokális env értékek: `app/AutoService.WebUI/.env.development` (sablon: `app/AutoService.WebUI/.env.development.template`).
 - API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
   - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
+  - Az `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD` a `Bootstrap:Admin` első adminja; az `ARSM_TEST_CUSTOMER_EMAIL` a fixture ügyfél, amelyet a `tests/API/_setup/ensure-test-fixtures.http` hoz létre üres adatbázison a járműveivel, egy katalógus alkatrésszel és munkadíjjal, valamint egy horgony árajánlattal együtt.
 - Playwright futtatási titkok és a read-only SQL connection string: repo gyökérbeli `.secrets` (gitignored; sablon: `.secrets.example`); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
 - MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
 - Az MCP read-only PostgreSQL URI a repo gyökérbeli `.env` fájlban van (gitignored; sablon: `.env.example`); a trackelt MCP sablonok `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}` formában hivatkoznak rá, a lokális gitignore-olt MCP configok pedig a feloldott URI-t tartalmazzák.

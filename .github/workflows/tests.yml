@@ -65,8 +65,8 @@ jobs:
           app/AutoService.WebUI/test-results
         retention-days: 7
 
-  # HTTP and SQL suites against PostgreSQL + RustFS containers and the demo-seeded API (Development);
-  # every credential is generated per run and masked, so no repository secret is needed.
+  # HTTP and SQL suites against PostgreSQL + RustFS containers and the API (Development) on an empty database:
+  # a per-run admin is bootstrapped, the _setup step creates the fixtures, and every credential is generated per run and masked.
   api-http-sql:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -99,7 +99,7 @@ jobs:
       run: |
         # Upper, lower, digit and symbol so every value passes the Identity password policy.
         gen() { echo "Ci$(openssl rand -hex 12)Aa1!"; }
-        for name in POSTGRES_PASSWORD S3_SECRET_KEY DEMO_PASSWORD \
+        for name in POSTGRES_PASSWORD S3_SECRET_KEY ADMIN_PASSWORD \
                     MECHANIC_PASSWORD MECHANIC_NEW_PASSWORD TEST_PASSWORD WRONG_PASSWORD SQL_READER_PASSWORD; do
           value="$(gen)"
           echo "::add-mask::$value"
@@ -137,13 +137,18 @@ jobs:
         sudo update-ca-certificates
         rm -f "$RUNNER_TEMP/aspnet-dev.key"
 
-    - name: Start the API (Development, demo seed)
+    - name: Start the API (Development, empty database, bootstrap admin)
       shell: bash
       working-directory: app
       env:
         ConnectionStrings__AutoServiceDb: Host=localhost;Port=50000;Database=AutoServiceDb;Username=postgres;Password=${{ env.POSTGRES_PASSWORD }}
         JwtSettings__Secret: ${{ env.JWT_SECRET }}
-        DemoData__MechanicPassword: ${{ env.DEMO_PASSWORD }}
+        Bootstrap__Admin__Email: ci.admin@example.test
+        Bootstrap__Admin__Password: ${{ env.ADMIN_PASSWORD }}
+        Bootstrap__Admin__FirstName: CI
+        Bootstrap__Admin__LastName: Admin
+        Bootstrap__Admin__Specialization: All
+        Bootstrap__Admin__Expertise__0: Engine
         ObjectStorage__ServiceUrl: http://localhost:9000
         ObjectStorage__AccessKeyId: ${{ env.S3_ACCESS_KEY }}
         ObjectStorage__SecretAccessKey: ${{ env.S3_SECRET_KEY }}
@@ -181,10 +186,11 @@ jobs:
       env:
         AutoService_ApiService_HostAddress: ${{ env.API_URL }}
         ARSM_TEST_WEBUI_ORIGIN: ${{ env.WEBUI_ORIGIN }}
-        # Demo dataset (Data/DemoDataInitializer.cs): gabor.kovacs holds the Admin role.
-        ARSM_TEST_ADMIN_EMAIL: gabor.kovacs@example.com
-        ARSM_TEST_ADMIN_PASSWORD: ${{ env.DEMO_PASSWORD }}
-        ARSM_TEST_CUSTOMER_EMAIL: anna.toth@example.com
+        # The bootstrap admin of the API step above (Data/AdminBootstrapInitializer).
+        ARSM_TEST_ADMIN_EMAIL: ci.admin@example.test
+        ARSM_TEST_ADMIN_PASSWORD: ${{ env.ADMIN_PASSWORD }}
+        # Fixture customer; tests/API/_setup/ensure-test-fixtures.http creates it with its vehicles, catalog rows and anchor quote.
+        ARSM_TEST_CUSTOMER_EMAIL: ci.customer@example.test
         # Plain mechanic account, provisioned by tests/API/_setup/ensure-test-accounts.http.
         ARSM_TEST_MECHANIC_EMAIL: ci.mechanic@example.test
         ARSM_TEST_MECHANIC_PASSWORD: ${{ env.MECHANIC_PASSWORD }}

@@ -3,6 +3,7 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
@@ -36,18 +37,18 @@ Content-Type: application/json
 
 @AdminMechanicId = {{adminLogin.personId}}
 
-### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
 ###
 
 ### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@SeedCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=500
+@FixtureCustomerId = {{fixtureCustomer.id}}
+# @name fixtureVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
@@ -55,13 +56,13 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 
 ### [Setup][Appointments] Create appointment assigned only to the admin (201 expected)
 # @name apptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles.items[0].id}},
+  "vehicleId": {{fixtureVehicles.items[0].id}},
   "scheduledDate": "2026-04-18T10:30:00",
   "taskDescription": "Assign/unassign authz fixture",
   "mechanicIds": [{{AdminMechanicId}}]

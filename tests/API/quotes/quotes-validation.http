@@ -5,6 +5,7 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
 
 ### [Setup][QuotesValidation] Login as admin (MechanicOnly prerequisite)
@@ -26,32 +27,53 @@ Content-Type: application/json
 
 ###
 
-### [Setup][QuotesValidation] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
-# Vehicle ids depend on the local DB's insert history, so this resolves the demo vehicle anchor via the
-# seeded quote's stable QuoteNumber (D13) instead of a literal id that would 404 on another machine.
-# @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+### [Setup][QuotesValidation] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
+# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
 
 {{
-  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
-  exports.OtherVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0002').vehicleId;
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
 }}
 
 ?? status == 200
 
 ###
 
-### [Setup][QuotesValidation] Resolve an appointment that belongs to the anchor vehicle (200 expected)
-# Used below against a different vehicle for the D42 mismatch case; descending is spelled out because
-# the handler binds it as a non-nullable bool with no default, so omitting it would 400, not default-sort.
-# @name anchorAppointments
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/appointments?descending=false
+### [Setup][QuotesValidation] Resolve the shared fixture customer and a second vehicle of it (200 expected)
+# The second vehicle is a vehicle other than the anchor's, used below for the D42 appointment mismatch case.
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 {{
-  exports.ForeignAppointmentId = anchorAppointments[0].id;
+  exports.OtherVehicleId = fixtureCustomer.vehicles.find(v => v.id !== AnchorVehicleId).id;
 }}
 
 ?? status == 200
+
+###
+
+### [Setup][QuotesValidation] Create an appointment on the anchor vehicle (201 expected, deleted at the end)
+# Used below against the other vehicle for the D42 mismatch case; an admin-created appointment may carry any scheduled date.
+# @name anchorAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{AnchorVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Quote validation foreign-appointment fixture",
+  "mechanicIds": [{{csrfSource1.personId}}]
+}
+
+{{
+  exports.ForeignAppointmentId = anchorAppointment.id;
+}}
+
+?? status == 201
 
 ###
 
@@ -135,3 +157,10 @@ Content-Type: application/json
 ?? status == 422
 
 ###
+
+### [Cleanup][QuotesValidation] Delete the fixture appointment created above (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ForeignAppointmentId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

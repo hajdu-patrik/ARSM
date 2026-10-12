@@ -34,7 +34,7 @@ Content-Type: application/json
 
 
 ### [Setup][Authz] Read every customer to derive search inputs (200 expected)
-# @name seedList
+# @name allCustomers
 GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ?? status == 200
@@ -42,8 +42,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
 
 ###
 
-@SeedLast = {{seedList.items[0].lastName}}
-@SeedPlate = {{seedList.items.find(c => c.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]}}
+@FirstListedLastName = {{allCustomers.items[0].lastName}}
+@ListedPlate = {{allCustomers.items.find(c => c.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]}}
 
 ### [Case][Authz] GET /api/customers (200 expected, default page 1 and pageSize 20)
 GET {{AutoService_ApiService_HostAddress}}/api/customers
@@ -106,7 +106,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?page=100000&pageSize=5
 ?? status == 200
 ?? js response.parsedBody.page == 100000
 ?? js response.parsedBody.items.length == 0
-?? js (response.parsedBody.totalCount == seedList.items.length) == true
+?? js (response.parsedBody.totalCount == allCustomers.items.length) == true
 
 ###
 
@@ -114,9 +114,9 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?page=100000&pageSize=5
 GET {{AutoService_ApiService_HostAddress}}/api/customers?page=2&pageSize=1
 
 ?? status == 200
-?? js (response.parsedBody.items.length == (seedList.items.length > 1 ? 1 : 0)) == true
-?? js (response.parsedBody.items.length == 0 || response.parsedBody.items[0].id == seedList.items[1].id) == true
-?? js (response.parsedBody.totalCount == seedList.items.length) == true
+?? js (response.parsedBody.items.length == (allCustomers.items.length > 1 ? 1 : 0)) == true
+?? js (response.parsedBody.items.length == 0 || response.parsedBody.items[0].id == allCustomers.items[1].id) == true
+?? js (response.parsedBody.totalCount == allCustomers.items.length) == true
 
 ###
 
@@ -143,16 +143,16 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?limit=1&pageSize=5
 ###
 
 ### [Case][Authz] GET /api/customers?search=<last name, lower case> (200 expected, case-insensitive name match)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedLast.toLowerCase()}}&pageSize=500
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{FirstListedLastName.toLowerCase()}}&pageSize=500
 
 ?? status == 200
 ?? js response.parsedBody.totalCount >= 1
-?? js (response.parsedBody.items.some(c => c.lastName == seedList.items[0].lastName)) == true
+?? js (response.parsedBody.items.some(c => c.lastName == allCustomers.items[0].lastName)) == true
 
 ###
 
 ### [Case][Authz] GET /api/customers?search=<last name, upper case> (200 expected, same matches as lower case)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedLast.toUpperCase()}}&pageSize=500
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{FirstListedLastName.toUpperCase()}}&pageSize=500
 
 ?? status == 200
 ?? js response.parsedBody.totalCount >= 1
@@ -160,11 +160,11 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedLast.toUpp
 ###
 
 ### [Case][Authz] GET /api/customers?search=<license plate, lower case> (200 expected, plate match, plates still exposed)
-GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{SeedPlate.toLowerCase()}}&pageSize=500
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{ListedPlate.toLowerCase()}}&pageSize=500
 
 ?? status == 200
 ?? js response.parsedBody.totalCount >= 1
-?? js (response.parsedBody.items.some(c => c.vehicleLicensePlates.includes(seedList.items.find(x => x.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]))) == true
+?? js (response.parsedBody.items.some(c => c.vehicleLicensePlates.includes(allCustomers.items.find(x => x.vehicleLicensePlates.length > 0).vehicleLicensePlates[0]))) == true
 
 ###
 
@@ -181,7 +181,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?search=zzzzqqqqxxxx
 GET {{AutoService_ApiService_HostAddress}}/api/customers?search=%20%20&pageSize=1
 
 ?? status == 200
-?? js (response.parsedBody.totalCount == seedList.items.length) == true
+?? js (response.parsedBody.totalCount == allCustomers.items.length) == true
 
 ###
 

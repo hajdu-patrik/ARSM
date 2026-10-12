@@ -3,6 +3,7 @@
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 
@@ -30,19 +31,19 @@ Content-Type: application/json
 ###
 
 
-### [Setup][Authz] Resolve a seeded customer that owns a vehicle (200 expected)
+### [Setup][Authz] Resolve the shared fixture customer (200 expected)
 # Resolved at run time: earlier suites delete fixture rows, so a hardcoded id can disappear.
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
 ###
 
 ### [Setup][Authz] Resolve one of that customer's vehicles (200 expected)
-@SeedCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=500
+@FixtureCustomerId = {{fixtureCustomer.id}}
+# @name fixtureVehicles
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
 
 ?? status == 200
 
@@ -52,8 +53,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 # ── Smoke checks (limit=0, limit=abc) for the remaining shared-clamp endpoints ──
 
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?pageSize=0 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?pageSize=0
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?pageSize=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?pageSize=0
 
 ?? status == 200
 ?? js response.parsedBody.pageSize == 1
@@ -61,8 +62,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?pageSize=100000 (200 expected, clamped to 500 rows)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?pageSize=100000
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?pageSize=100000 (200 expected, clamped to 500 rows)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?pageSize=100000
 
 ?? status == 200
 ?? js response.parsedBody.pageSize == 500
@@ -70,8 +71,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?page=0 (200 expected, page below 1 becomes 1)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=0
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?page=0 (200 expected, page below 1 becomes 1)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=0
 
 ?? status == 200
 ?? js response.parsedBody.page == 1
@@ -80,8 +81,8 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?page=100000 (200 expected, past the end: no items, real totalCount)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=100000&pageSize=5
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?page=100000 (200 expected, past the end: no items, real totalCount)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=100000&pageSize=5
 
 ?? status == 200
 ?? js response.parsedBody.items.length == 0
@@ -89,61 +90,61 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehi
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?page=abc (400 expected, a non-numeric page fails model binding - never 500)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=abc
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?page=abc (400 expected, a non-numeric page fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=abc
 
 ?? status == 400
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/vehicles?pageSize=1&page=1 (200 expected, totalCount covers every page)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=1
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/vehicles?pageSize=1&page=1 (200 expected, totalCount covers every page)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=1
 
 ?? status == 200
 ?? js response.parsedBody.items.length == 1
-?? js (response.parsedBody.totalCount == seedVehicles.totalCount) == true
+?? js (response.parsedBody.totalCount == fixtureVehicles.totalCount) == true
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/appointments?limit=0 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?limit=0
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/appointments?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments?limit=0
 
 ?? status == 200
 ?? js response.parsedBody.length <= 1
 
 ###
 
-### [Case][Authz] GET /api/customers/{{SeedCustomerId}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments?limit=abc
+### [Case][Authz] GET /api/customers/{{FixtureCustomerId}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments?limit=abc
 
 ?? status == 400
 
 ###
 
-### [Case][Authz] GET /api/vehicles/{{seedVehicles.items[0].id}}/appointments?limit=0 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/appointments?limit=0
+### [Case][Authz] GET /api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?limit=0
 
 ?? status == 200
 ?? js response.parsedBody.length <= 1
 
 ###
 
-### [Case][Authz] GET /api/vehicles/{{seedVehicles.items[0].id}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/appointments?limit=abc
+### [Case][Authz] GET /api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?limit=abc
 
 ?? status == 400
 
 ###
 
-### [Case][Authz] GET /api/vehicles/{{seedVehicles.items[0].id}}/quotes?limit=0 (200 expected, clamped to 1 row)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/quotes?limit=0
+### [Case][Authz] GET /api/vehicles/{{fixtureVehicles.items[0].id}}/quotes?limit=0 (200 expected, clamped to 1 row)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes?limit=0
 
 ?? status == 200
 ?? js response.parsedBody.length <= 1
 
 ###
 
-### [Case][Authz] GET /api/vehicles/{{seedVehicles.items[0].id}}/quotes?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{seedVehicles.items[0].id}}/quotes?limit=abc
+### [Case][Authz] GET /api/vehicles/{{fixtureVehicles.items[0].id}}/quotes?limit=abc (400 expected, a non-numeric limit fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes?limit=abc
 
 ?? status == 400

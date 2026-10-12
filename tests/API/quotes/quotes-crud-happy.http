@@ -23,14 +23,14 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Quotes] Resolve the demo vehicle anchor from the seeded quotes (200 expected)
-# Vehicle ids depend on the local DB's insert history, so this resolves the demo vehicle anchor via the
-# seeded quote's stable QuoteNumber (D13) instead of a literal id that would 404 on another machine.
-# @name seedQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?pageSize=500
+### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
+# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
 
 {{
-  exports.AnchorVehicleId = seedQuotes.items.find(q => q.quoteNumber === 'ARSM-2026-0001').vehicleId;
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
 }}
 
 ?? status == 200

@@ -9,7 +9,7 @@
 @NonExistentCustomerId = 99999
 @KnownCustomerPlate = ABC-101
 @UnknownCustomerPlate = ZZZ-{{RunId}}
-@KnownCustomerName = Anna
+@KnownCustomerName = Fixture
 @FixtureCustomerEmail = list.lookup.{{RunId}}@example.test
 
 ### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)

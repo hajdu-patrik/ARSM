@@ -8,7 +8,7 @@
 @InvalidPlateVehicleVin = TST{{RunId.toString().slice(-10)}}0103
 @InvalidMileageVehicleVin = TST{{RunId.toString().slice(-10)}}0104
 @DuplicatePlateVehicleVin = TST{{RunId.toString().slice(-10)}}0105
-@SeedVehicleVin = WVWZZZAUZJW123456
+@FixtureVehicleVin = WVWZZZAUZJW123456
 @FixtureCustomerEmail = vehicles.create.validation.{{RunId}}@example.test
 
 ### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -210,7 +210,7 @@ Content-Type: application/json
 
 {
   "licensePlate": "VIN-{{RunId}}",
-  "vin": "{{SeedVehicleVin}}",
+  "vin": "{{FixtureVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,

@@ -21,6 +21,7 @@ from http_check_support import (  # noqa: E402
     assert_status,
     read_allowed_origin,
     read_credentials,
+    resolve_fixture_customer,
 )
 
 APPOINTMENTS_PATH = "/api/appointments"
@@ -33,17 +34,22 @@ STREAM_SETTLE_SECONDS = 2.0
 EVENT_WAIT_SECONDS = 15.0
 
 
-def find_appointment(client: HttpClient, person_id: int | None) -> dict | None:
-    """Returns an appointment the signed-in mechanic is assigned to; only they may change its status."""
-    now = time.gmtime()
-    for year in (now.tm_year, now.tm_year - 1):
-        for month in range(1, 13):
-            status, body = client.request_json("GET", f"{APPOINTMENTS_PATH}?year={year}&month={month}")
-            if status == 200 and body:
-                for appointment in json.loads(body):
-                    if any(mechanic.get("id") == person_id for mechanic in appointment.get("mechanics", [])):
-                        return appointment
-    return None
+def create_fixture_appointment(client: HttpClient, person_id: int | None, results: list[StepResult]) -> dict:
+    """Creates a disposable appointment assigned to the signed-in admin; only an assignee may change its status."""
+    assert_condition("signed-in-person-known", person_id is not None, "The login response carried no personId.", results)
+    customer = resolve_fixture_customer(client, results)
+    status, body = client.request_json(
+        "POST",
+        f"/api/customers/{customer['id']}/appointments",
+        {
+            "vehicleId": customer["vehicles"][0]["id"],
+            "scheduledDate": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()),
+            "taskDescription": "ARSM live update check fixture",
+            "mechanicIds": [person_id],
+        },
+    )
+    assert_status("create-fixture-appointment", status, {201}, results)
+    return json.loads(body)
 
 
 def collect_stream_frames(client: HttpClient, base_url: str, frames: list[str]) -> None:
@@ -68,15 +74,16 @@ def collect_stream_frames(client: HttpClient, base_url: str, frames: list[str]) 
 
 def run_checks(client: HttpClient, base_url: str, person_id: int | None, results: list[StepResult]) -> None:
     """Runs the live update round trip and records each assertion."""
-    appointment = find_appointment(client, person_id)
-    assert_condition(
-        "appointment-available",
-        appointment is not None,
-        "No appointment is assigned to the signed-in mechanic; seed demo data first.",
-        results,
-    )
-    assert appointment is not None
+    appointment = create_fixture_appointment(client, person_id, results)
+    try:
+        run_stream_round_trip(client, base_url, appointment, results)
+    finally:
+        delete_status, _ = client.request_json("DELETE", f"{APPOINTMENTS_PATH}/{appointment['id']}")
+        assert_status("delete-fixture-appointment", delete_status, {204}, results)
 
+
+def run_stream_round_trip(client: HttpClient, base_url: str, appointment: dict, results: list[StepResult]) -> None:
+    """Subscribes to the update stream, changes the status, and asserts the pushed event."""
     original_status = appointment["status"]
     next_status = "Cancelled" if original_status != "Cancelled" else "InProgress"
 

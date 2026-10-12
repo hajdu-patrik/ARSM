@@ -5,7 +5,7 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@SeededYear = 2026
+@ReportYear = 2026
 @EmptyYear = 2001
 @InvalidMonth = 13
 @OutOfRangeYear = 1999
@@ -21,7 +21,7 @@ Origin: {{WebUI_Origin}}
 
 ### [Negative][Reporting] Company results require authentication (401 expected)
 # @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ReportYear}}
 
 ?? status == 401
 
@@ -47,7 +47,7 @@ Content-Type: application/json
 ###
 
 ### [Positive][Reporting] Whole-year report returns the four status rows (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ReportYear}}
 
 ?? status == 200
 
@@ -61,7 +61,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results
 ###
 
 ### [Positive][Reporting] Single-month report narrows the same period (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month=9
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ReportYear}}&month=9
 
 ?? status == 200
 
@@ -75,14 +75,14 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{EmptyYear}
 ###
 
 ### [Negative][Reporting] Month above 12 is rejected (400 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month={{InvalidMonth}}
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ReportYear}}&month={{InvalidMonth}}
 
 ?? status == 400
 
 ###
 
 ### [Negative][Reporting] Month below 1 is rejected (400 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{SeededYear}}&month=0
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ReportYear}}&month=0
 
 ?? status == 400
 

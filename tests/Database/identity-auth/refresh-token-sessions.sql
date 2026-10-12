@@ -2,7 +2,7 @@
 -- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
 
 -- 1. REFRESH TOKEN SESSIONS — list with mechanic owner
---    Expected after fresh seed: 0 rows (until first login)
+--    Expected on a database without any login yet: 0 rows.
 SELECT rt."Id",
        rt."MechanicId",
        p."Email" AS mechanic_email,

@@ -19,7 +19,7 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Profile] Login as admin to seed profile conflict identity
+### [Setup][Profile] Login as admin to provision the profile conflict identity
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}

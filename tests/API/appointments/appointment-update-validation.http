@@ -1,11 +1,16 @@
-# ApptId is created here so field validation is reached instead of 404; AdminMechanicId is the admin's
-# own person_id. SeedVehicleVin only needs to pass VIN format (drivetrain parsing runs before the uniqueness check); ApptId is deleted at the end.
+# ApptId is created here (on a disposable customer and vehicle, deleted at the end) so field validation is reached instead of 404;
+# AdminMechanicId is the admin's own person_id. FixtureVehicleVin only needs to pass VIN format (drivetrain parsing runs before the uniqueness check); ApptId is deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@SeedVehicleVin = WVWZZZAUZJW123456
+# Disposable owner and vehicle: the vehicle edits persist, so the shared fixture vehicles stay untouched.
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = fixture.appt.update.validation.{{RunId}}@example.test
+@OwnLicensePlate = OWU-{{RunId}}
+@OwnVehicleVin = TST{{RunId.toString().slice(-10)}}0900
+@FixtureVehicleVin = WVWZZZAUZJW123456
 
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -35,32 +40,43 @@ Content-Type: application/json
 
 @AdminMechanicId = {{adminLogin.personId}}
 
-### [Setup][Appointments] Resolve a customer that owns a vehicle (200 expected)
-# @name seedCustomers
-GET {{AutoService_ApiService_HostAddress}}/api/customers?page=1&pageSize=500
+### [Setup][Appointments] Create a disposable customer, because the vehicle edits below persist (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 200
+{ "firstName": "Appointment", "middleName": null, "lastName": "FieldValidation", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name ownVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "{{OwnLicensePlate}}", "vin": "{{OwnVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
 
 ###
 
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@SeedCustomerId = {{seedCustomers.items.find(c => c.vehicleCount > 0).id}}
-# @name seedVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
+@FixtureCustomerId = {{fixtureCustomer.id}}
 
 ### [Setup][Appointments] Create the appointment under field-level validation test (201 expected)
 # @name apptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SeedCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "vehicleId": {{seedVehicles.items[0].id}},
+  "vehicleId": {{ownVehicle.id}},
   "scheduledDate": "2026-04-18T10:30:00",
   "taskDescription": "Update-field-validation fixture",
   "mechanicIds": [{{AdminMechanicId}}]
@@ -162,7 +178,7 @@ Content-Type: application/json
 
 {
   "licensePlate": "ABC-101",
-  "vin": "{{SeedVehicleVin}}",
+  "vin": "{{FixtureVehicleVin}}",
   "brand": "Volkswagen",
   "model": "Golf",
   "year": 2018,
@@ -177,6 +193,15 @@ Content-Type: application/json
 
 ### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

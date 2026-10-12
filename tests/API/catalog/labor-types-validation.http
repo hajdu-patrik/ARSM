@@ -4,8 +4,8 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
 @ValidLaborTypeCode = ZZV{{RunId}}A
-@SeedLaborTypeCode = OLAJCSERE
-@LowercaseSeedLaborTypeCode = olajcsere
+@FixtureLaborTypeCode = OLAJCSERE
+@LowercaseFixtureLaborTypeCode = olajcsere
 @NonExistentLaborTypeId = 999999999
 @OverLengthCode = C9999999999999999999999999999999999999999
 @OverLengthName = N999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
@@ -154,14 +154,14 @@ Content-Type: application/json
 
 ###
 
-### [Negative][LaborTypes] Create labor type with duplicate code matching seeded key (409 expected)
+### [Negative][LaborTypes] Create labor type with duplicate code matching the shared fixture key (created by tests/API/_setup) (409 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "code": "{{SeedLaborTypeCode}}",
+  "code": "{{FixtureLaborTypeCode}}",
   "name": "Duplicate Check",
   "hourlyNetRate": 100,
   "vatRatePercent": 27
@@ -178,7 +178,7 @@ X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
 {
-  "code": "{{LowercaseSeedLaborTypeCode}}",
+  "code": "{{LowercaseFixtureLaborTypeCode}}",
   "name": "Duplicate Lowercase Check",
   "hourlyNetRate": 100,
   "vatRatePercent": 27

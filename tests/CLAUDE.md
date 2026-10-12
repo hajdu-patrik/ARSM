@@ -78,6 +78,23 @@
 - Use `tests/.artifacts/test-suite-summary.json` as sanitized AI-readable source.
 - Never publish raw `.env`, `.secrets`, tokens, cookies, absolute paths, or unsanitized logs.
 
+## Fixtures (no demo data)
+
+- The API seeds nothing (user decision 2026-10-12): a fresh database holds only the bootstrap admin
+  (`Bootstrap__Admin__*`, matched by `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD`), so every
+  suite provisions what it reads. `tests/API/_setup/ensure-test-accounts.http` creates the plain mechanic;
+  `tests/API/_setup/ensure-test-fixtures.http` creates the shared, idempotent fixtures (every create accepts `409`
+  for "already there"): the customer with `ARSM_TEST_CUSTOMER_EMAIL` (phone `+36304445566`) owning
+  `ABC-101` (VIN `WVWZZZAUZJW123456`) and `ABC-102`, a second customer (`fixture.second@example.test`) owning `ABC-201`,
+  the part `OLF-1001`, the labor type `OLAJCSERE`, and the draft quote titled `ARSM fixture anchor quote` with one
+  catalog part line and one catalog labor line (created only while it is missing).
+- Shared fixtures are read-only for the suites: address them by email, plate or title (a quote number is generated, never
+  a stable key) and never edit or delete them. A file that mutates a customer's vehicle creates its own disposable customer
+  and vehicle with run-unique identifiers and deletes them at the end.
+- `scripts/run-local-test-suite.py` runs the `_setup` files on their own first, and the Python checks (they read the same fixtures through
+  `http_check_support.find_anchor_quote` / `resolve_fixture_customer`) after that. The SQL suite makes no assumption about
+  rows or counts, so every file passes on an empty database too.
+
 ## Coverage Anchors
 
 - VIN/kW/drivetrain contract (no HP/torque fields).
@@ -108,9 +125,9 @@
 - Quote API coverage in `tests/API/quotes/`: `quotes-crud-happy.http`, `quotes-validation.http`, `quotes-authz.http` (all 11 routes under the `MechanicOnly` policy), `quote-lines.http`, `quote-status-transitions.http`, and `quotes-expired-filter.http` (`expired=true|false` keeps or excludes expired quotes, both counts add up to the whole list, `status=Sent&expired=false` is the Sent chip, a non-boolean is 400).
 - Python HTTP checks cover behaviour HTTPYAC cannot express (multipart upload contracts, streaming SSE, a per-quote line cap that only shows up after 200 successful additions, and a binary PDF response whose text has to be read back). They share `tests/API/http_check_support.py` for the cookie-aware client, credentials and assertions; `tests/API/profile/profile_picture_check_support.py` now holds only the profile-picture fixtures and re-exports the shared helpers.
 - The runner drives them from `PYTHON_HTTP_CHECKS` in `scripts/run-local-test-suite.py`; each one reports under its own key in the sanitized summary (`profilePictureUploadCheck`, `appointmentUpdatesCheck`, `quoteLineLimitCheck`, `quotePdfCheck`). Add a new check to that tuple rather than copying the invocation.
-- `appointment-updates-check.py` asserts the SSE payload keys are camelCase. That contract is easy to break silently, because the payload is serialized by a static `JsonSerializer` call that does not pick up the ASP.NET Core JSON options, and the browser parsers drop anything they cannot read.
-- `quote-pdf-check.py` downloads the seeded quote as a PDF and asserts the content type, the quote number in `Content-Disposition`, the `%PDF-` signature, a size floor, 404 for a missing quote and 401 without authentication. It extracts the text with `pypdf` and asserts the accented word `Árajánlat` is in it; that one assertion reports as skipped when `pypdf` is not installed, rather than failing the machine.
-- `quote-line-limit-check.py` fills a dedicated draft quote to the 200-line cap (`QuoteValidation.MaxLineCount`), asserts the 201st add is refused with 422, and deletes the fixture afterwards so the demo seed the SQL integrity suite asserts against stays untouched.
+- `appointment-updates-check.py` creates (as the admin, on the fixture customer's first vehicle) and deletes its own appointment, and asserts the SSE payload keys are camelCase. That contract is easy to break silently, because the payload is serialized by a static `JsonSerializer` call that does not pick up the ASP.NET Core JSON options, and the browser parsers drop anything they cannot read.
+- `quote-pdf-check.py` downloads the fixture anchor quote as a PDF and asserts the content type, the quote number in `Content-Disposition`, the `%PDF-` signature, a size floor, 404 for a missing quote and 401 without authentication. It extracts the text with `pypdf` and asserts the accented word `Árajánlat` is in it; that one assertion reports as skipped when `pypdf` is not installed, rather than failing the machine.
+- `quote-line-limit-check.py` fills a dedicated draft quote on the anchor quote's vehicle to the 200-line cap (`QuoteValidation.MaxLineCount`), asserts the 201st add is refused with 422, and deletes the fixture afterwards so the shared fixtures stay untouched.
 - Scheduler intake and customer details/history split-view E2E behavior.
 - Company result coverage: `tests/API/reporting/company-results.http` (whole year, single month, default year, empty period answering 200 with zeros, out-of-range year and month, 401 unauthenticated), `tests/Database/feature-flow/company-result-aggregation.sql` (monthly totals add up to the yearly one, accepted quote totals agree with their lines, no sent quote in both the pending and the expired row) and `app/AutoService.WebUI/tests/e2e/company-results.spec.ts` (status rows, the created-month rule, month narrowing, VAT and line-kind breakdown, empty period).
 - The company result mock derives the report from the same mock quotes the other specs mutate, so accepting a quote in one step really moves money into the accepted row in the next.
