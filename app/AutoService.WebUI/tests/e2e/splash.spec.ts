@@ -82,25 +82,39 @@ for (const motion of MOTION_PREFERENCES) {
   });
 }
 
-test.describe('Loading splash minimum per tab', () => {
-  test('the first load of a fresh tab holds the splash for 2500 ms, a reload only for the short minimum', async ({ page }) => {
-    // No splash-shown flag: this tab is fresh, and the app sets the flag itself once it showed the splash.
+test.describe('Loading splash minimum per browser', () => {
+  test('only the first load ever holds the splash for 2500 ms; a reload and a new tab use the short minimum', async ({ page }) => {
+    // No splash-shown flag: the browser is fresh, and the app sets the flag itself once it showed the splash.
+    const mocks = { profileEmail: 'route.check@example.test', isAuthenticated: true, isAdmin: true };
     await primeBrowserState(page, { sessionHint: true, splashShown: false });
-    await installApiMocks(page, { profileEmail: 'route.check@example.test', isAuthenticated: true, isAdmin: true });
+    await installApiMocks(page, mocks);
     await traceSplash(page);
 
     await page.goto(CUSTOMERS_ROUTE.path);
     await expectSplashHandedOver(page, CUSTOMERS_ROUTE);
     const firstLoadMs = splashDurationMs(await readSplashTrace(page));
 
-    expect(firstLoadMs, 'the first load of the tab left the splash too early').toBeGreaterThanOrEqual(FIRST_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
+    expect(firstLoadMs, 'the first load of the browser left the splash too early').toBeGreaterThanOrEqual(FIRST_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
 
-    // The reload keeps the tab's sessionStorage, so it only waits for the anti-flash minimum.
+    // The reload keeps the browser's localStorage, so it only waits for the anti-flash minimum.
     await page.reload();
     await expectSplashHandedOver(page, CUSTOMERS_ROUTE);
     const reloadMs = splashDurationMs(await readSplashTrace(page));
 
-    expect(reloadMs, 'a reload in the same tab repeated the long first-load splash').toBeLessThan(MAX_FAST_SPLASH_MS);
+    expect(reloadMs, 'a reload repeated the long first-load splash').toBeLessThan(MAX_FAST_SPLASH_MS);
     expect(reloadMs, 'the reload splash only flickered').toBeGreaterThanOrEqual(REPEAT_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
+
+    // A new tab has a fresh sessionStorage but shares localStorage, so it is not a first load either.
+    const newTab = await page.context().newPage();
+    await primeBrowserState(newTab, { sessionHint: true, splashShown: false });
+    await installApiMocks(newTab, mocks);
+    await traceSplash(newTab);
+
+    await newTab.goto(CUSTOMERS_ROUTE.path);
+    await expectSplashHandedOver(newTab, CUSTOMERS_ROUTE);
+    const newTabMs = splashDurationMs(await readSplashTrace(newTab));
+
+    expect(newTabMs, 'a new tab repeated the long first-load splash').toBeLessThan(MAX_FAST_SPLASH_MS);
+    expect(newTabMs, 'the new tab splash only flickered').toBeGreaterThanOrEqual(REPEAT_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
   });
 });

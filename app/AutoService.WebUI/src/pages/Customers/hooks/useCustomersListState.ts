@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
-import { useFittingPageSize } from '../../../hooks/useFittingPageSize';
+import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
 import { useListPaging } from '../../../hooks/useListPaging';
 import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
@@ -14,7 +14,25 @@ const NO_CUSTOMERS: CustomerListItem[] = [];
 
 /** A collapsed card is the unit the page size is measured on; an expanded one is taller on purpose. */
 const COLLAPSED_CARD_SELECTOR = 'article[data-expanded="false"]';
-const CARD_FALLBACK_HEIGHT_PX = 80;
+const CARD_FALLBACK_HEIGHT_PX = 78;
+
+/** The list's `gap-3`, added to a measured card height to get the row pitch. */
+const CARD_GAP_PX = 12;
+
+/** Collapsed card heights measured per list width: the title and the meta pills wrap onto more rows as it narrows. */
+const CARD_HEIGHT_BY_MIN_WIDTH: readonly (readonly [minWidthPx: number, heightPx: number])[] = [
+  [976, 78],
+  [500, 134],
+  [330, 168],
+];
+const NARROWEST_CARD_HEIGHT_PX = 202;
+
+/** Row pitch (card height plus gap) for the list's current width, used until a collapsed card is rendered. */
+function estimateCardPitch(list: HTMLElement): number {
+  const width = list.clientWidth;
+  const match = CARD_HEIGHT_BY_MIN_WIDTH.find(([minWidthPx]) => width >= minWidthPx);
+  return (match?.[1] ?? NARROWEST_CARD_HEIGHT_PX) + CARD_GAP_PX;
+}
 
 /** Space below the cards: pagination bar, end-of-list divider, their gaps and the page padding. */
 const LIST_RESERVED_BOTTOM_PX = 136;
@@ -46,11 +64,15 @@ export function useCustomersListState() {
   const pageSize = useFittingPageSize({
     listRef,
     fallbackItemHeightPx: CARD_FALLBACK_HEIGHT_PX,
+    estimateItemHeightPx: estimateCardPitch,
     itemSelector: COLLAPSED_CARD_SELECTOR,
     reservedBottomPx: isNarrow ? NARROW_LIST_RESERVED_BOTTOM_PX : LIST_RESERVED_BOTTOM_PX,
   });
   const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
-  const customersQuery = useQuery(customersQueries.listPage(scope, { page, pageSize, search: debouncedSearch }));
+  const customersQuery = useQuery({
+    ...customersQueries.listPage(scope, { page, pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE, search: debouncedSearch }),
+    enabled: pageSize !== null,
+  });
   const showErrorToast = useToastStore((state) => state.showError);
   useReadFailureToast({
     failureMessageKey: customersQuery.isError && customersQuery.data === undefined ? 'customers.errors.loadFailed' : null,
@@ -65,7 +87,7 @@ export function useCustomersListState() {
 
   const customers = customersQuery.data?.items ?? NO_CUSTOMERS;
   const totalCount = customersQuery.data?.totalCount ?? 0;
-  const lastPage = Math.max(1, Math.ceil(totalCount / pageSize));
+  const lastPage = Math.max(1, Math.ceil(totalCount / (pageSize ?? DEFAULT_MIN_PAGE_SIZE)));
   // A deleted last row of the last page leaves an empty page: step back to the new last one.
   if (customersQuery.isSuccess && !customersQuery.isPlaceholderData && page > lastPage) {
     setPage(lastPage);
@@ -105,7 +127,7 @@ export function useCustomersListState() {
     customers,
     totalCount,
     page: Math.min(page, lastPage),
-    pageSize,
+    pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE,
     setPage,
     isPageLoading: customersQuery.isPlaceholderData,
     expandedCustomerIds,

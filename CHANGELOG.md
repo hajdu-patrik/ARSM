@@ -8,6 +8,16 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Changed
+- Splash and list loading (2026-10-12): the splash keeps its 2500 ms minimum only on the very first load in a
+  browser (localStorage flag `arsm-splash-shown`); later loads and new tabs keep 250 ms. The Customers, Inventory
+  and Quotes lists measure their page size before the first request (`useFittingPageSize` is `null` until
+  known, the query stays disabled until then), so each page entry sends one request, a blank search is omitted
+  from the params and an unmeasurable list falls back to the minimum page size. New spec
+  `list-single-request.spec.ts` covers the one-request-per-entry rule.
+
+_Dev time: ~51m wall-clock (2026-10-12 20:52 to 21:43 +02:00, two arsm-chain runs plus the measurements). Cost: ~$22.6 output-token-only estimate (2.26M output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+
 ### Added
 - No demo data (2026-10-12): the API seeds nothing anymore. `Data/DatabaseInitializer.EnsureDatabaseReadyAsync`
   replaces the demo initializer and only migrates, clears the legacy backfill rows, checks appointment integrity

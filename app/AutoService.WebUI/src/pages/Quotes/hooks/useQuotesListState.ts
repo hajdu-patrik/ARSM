@@ -1,7 +1,7 @@
 /** Quote list-state hook: one server-paged, server-searched read sized to the rows that fit; the status chip maps to the stored status. */
 import { useCallback, useRef, useState, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useFittingPageSize } from '../../../hooks/useFittingPageSize';
+import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
 import { useListPaging } from '../../../hooks/useListPaging';
 import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { quotesQueries } from '../../../services/queries/quotes.queries';
@@ -9,8 +9,25 @@ import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { QuoteListItemDto, QuoteListQuery } from '../../../types/quotes/quotes.types';
 import { toQuoteListFilter, type QuoteStatusFilter } from '../helpers';
 
-/** Height of one list row in the table layout; used until a rendered row can be measured. */
-const FALLBACK_ROW_HEIGHT_PX = 80;
+/** Measured pitch (row plus divider) of one table-layout row; used until a rendered row can be measured. */
+const FALLBACK_ROW_HEIGHT_PX = 69;
+
+/** Measured tile-layout pitches: the list switches to tiles below 56rem, and below ~356px the tile text wraps onto more lines. */
+const TILE_ROW_HEIGHT_PX = 229;
+const NARROW_TILE_ROW_HEIGHT_PX = 245;
+const TABLE_MIN_WIDTH_PX = 896;
+const NARROW_TILE_MAX_WIDTH_PX = 356;
+
+/** Row pitch estimate from the list width (table or tile layout), used before a row is rendered. */
+function estimateRowHeight(list: HTMLElement): number {
+  const width = list.getBoundingClientRect().width;
+
+  if (width >= TABLE_MIN_WIDTH_PX) {
+    return FALLBACK_ROW_HEIGHT_PX;
+  }
+
+  return width < NARROW_TILE_MAX_WIDTH_PX ? NARROW_TILE_ROW_HEIGHT_PX : TILE_ROW_HEIGHT_PX;
+}
 
 /** Room under the list: table header strip, gap, 44px pagination bar and the page shell bottom padding. */
 const RESERVED_BOTTOM_PX = 140;
@@ -55,18 +72,20 @@ export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams)
   const pageSize = useFittingPageSize({
     listRef,
     fallbackItemHeightPx: FALLBACK_ROW_HEIGHT_PX,
+    estimateItemHeightPx: estimateRowHeight,
     itemSelector: ROW_SELECTOR,
     reservedBottomPx: RESERVED_BOTTOM_PX,
   });
   const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
   const [statusFilter, setStatusFilterState] = useState<QuoteStatusFilter>('All');
 
-  const query: QuoteListQuery = { page, pageSize, search: debouncedSearch, ...toQuoteListFilter(statusFilter) };
-  const { data, isLoading, isFetching, isPlaceholderData, isLoadingError, isSuccess, errorUpdatedAt } = useQuery(
-    quotesQueries.listPage(scope, query),
-  );
+  const query: QuoteListQuery = { page, pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE, search: debouncedSearch, ...toQuoteListFilter(statusFilter) };
+  const { data, isLoading, isFetching, isPlaceholderData, isLoadingError, isSuccess, errorUpdatedAt } = useQuery({
+    ...quotesQueries.listPage(scope, query),
+    enabled: pageSize !== null,
+  });
   const totalCount = data?.totalCount ?? 0;
-  const lastPage = Math.max(1, Math.ceil(totalCount / pageSize));
+  const lastPage = Math.max(1, Math.ceil(totalCount / (pageSize ?? DEFAULT_MIN_PAGE_SIZE)));
 
   // A delete or a wider window can leave the page past the end: step back to the last page.
   if (data !== undefined && !isPlaceholderData && page > lastPage) {
@@ -104,7 +123,7 @@ export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams)
     setStatusFilter,
     page: Math.min(page, lastPage),
     setPage,
-    pageSize,
+    pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE,
     totalCount,
   };
 

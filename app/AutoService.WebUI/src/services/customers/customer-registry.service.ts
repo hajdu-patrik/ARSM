@@ -1,6 +1,7 @@
 /** API service for customer registry, vehicles, and repair-history queries. */
 
 import { apiClient } from '../http/api.client';
+import { toPageParams } from '../http/page-params';
 import type { SilentRequestOptions } from '../http/request-options';
 import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
@@ -12,12 +13,6 @@ import type {
   UpdateVehicleRequest,
   VehicleDetailDto,
 } from '../../types/customers/customers.types';
-
-/** Query parameters of a paged list read; a blank search is left out and no sort direction exists. */
-function toPageParams({ page, pageSize, search }: PagedQuery): Record<string, number | string> {
-  const term = search?.trim() ?? '';
-  return term.length > 0 ? { page, pageSize, search: term } : { page, pageSize };
-}
 
 /** Customer-registry API service: customer CRUD, vehicle CRUD, and customer/vehicle history queries. */
 export const customerRegistryService = {

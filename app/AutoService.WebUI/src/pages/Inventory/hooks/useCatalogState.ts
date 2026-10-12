@@ -1,15 +1,32 @@
 /** Catalog list-state hooks: one server-paged, server-searched read per tab, sized to the rows that fit. */
 import { useEffect, useRef, type RefObject } from 'react';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { useFittingPageSize } from '../../../hooks/useFittingPageSize';
+import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
 import { useListPaging } from '../../../hooks/useListPaging';
 import { catalogQueries } from '../../../services/queries/catalog.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
 import type { PagedQuery, PagedResult } from '../../../types/common/pagination.types';
 
-/** Height of one list row in the table layout; used until a rendered row can be measured. */
-const FALLBACK_ROW_HEIGHT_PX = 72;
+/** Measured pitch (row plus divider) of one table-layout row; used until a rendered row can be measured. */
+const FALLBACK_ROW_HEIGHT_PX = 69;
+
+/** Measured tile-layout pitches: the list switches to tiles below 48rem, and below ~357px the tile text wraps one px less. */
+const TILE_ROW_HEIGHT_PX = 193;
+const NARROW_TILE_ROW_HEIGHT_PX = 192;
+const TABLE_MIN_WIDTH_PX = 768;
+const NARROW_TILE_MAX_WIDTH_PX = 357;
+
+/** Row pitch estimate from the list width (table or tile layout), used before a row is rendered. */
+function estimateRowHeight(list: HTMLElement): number {
+  const width = list.getBoundingClientRect().width;
+
+  if (width >= TABLE_MIN_WIDTH_PX) {
+    return FALLBACK_ROW_HEIGHT_PX;
+  }
+
+  return width < NARROW_TILE_MAX_WIDTH_PX ? NARROW_TILE_ROW_HEIGHT_PX : TILE_ROW_HEIGHT_PX;
+}
 
 /** Room under the list: table header strip, gap and 44px pagination bar, and the page shell bottom padding. */
 const RESERVED_BOTTOM_PX = 128;
@@ -39,7 +56,7 @@ export interface CatalogEntityList<TDto> {
 
 /** Dependencies of one catalog tab list. */
 interface UseCatalogEntityListParams<TDto> {
-  readonly usePageQuery: (query: PagedQuery) => UseQueryResult<PagedResult<TDto>>;
+  readonly usePageQuery: (query: PagedQuery, isEnabled: boolean) => UseQueryResult<PagedResult<TDto>>;
   readonly loadErrorToastKey: string;
   readonly showErrorToast: (key: string) => void;
 }
@@ -56,13 +73,14 @@ function useCatalogEntityList<TDto>({
   const pageSize = useFittingPageSize({
     listRef,
     fallbackItemHeightPx: FALLBACK_ROW_HEIGHT_PX,
+    estimateItemHeightPx: estimateRowHeight,
     itemSelector: ROW_SELECTOR,
     reservedBottomPx: RESERVED_BOTTOM_PX,
   });
   const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
-  const query = usePageQuery({ page, pageSize, search: debouncedSearch });
+  const query = usePageQuery({ page, pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE, search: debouncedSearch }, pageSize !== null);
   const totalCount = query.data?.totalCount ?? 0;
-  const lastPage = Math.max(1, Math.ceil(totalCount / pageSize));
+  const lastPage = Math.max(1, Math.ceil(totalCount / (pageSize ?? DEFAULT_MIN_PAGE_SIZE)));
 
   // A delete or a wider window can leave the page past the end: step back to the last page.
   if (query.data !== undefined && !query.isPlaceholderData && page > lastPage) {
@@ -89,7 +107,7 @@ function useCatalogEntityList<TDto>({
     },
     page: Math.min(page, lastPage),
     setPage,
-    pageSize,
+    pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE,
     totalCount,
   };
 
@@ -102,13 +120,13 @@ interface UseCatalogListParams {
 }
 
 /** Page read of the parts tab. */
-function usePartsPageQuery(query: PagedQuery) {
-  return useQuery(catalogQueries.partsPage(useAuthQueryScope(), query));
+function usePartsPageQuery(query: PagedQuery, isEnabled: boolean) {
+  return useQuery({ ...catalogQueries.partsPage(useAuthQueryScope(), query), enabled: isEnabled });
 }
 
 /** Page read of the labor types tab. */
-function useLaborTypesPageQuery(query: PagedQuery) {
-  return useQuery(catalogQueries.laborTypesPage(useAuthQueryScope(), query));
+function useLaborTypesPageQuery(query: PagedQuery, isEnabled: boolean) {
+  return useQuery({ ...catalogQueries.laborTypesPage(useAuthQueryScope(), query), enabled: isEnabled });
 }
 
 /** Parts tab list: server-paged and server-searched. */

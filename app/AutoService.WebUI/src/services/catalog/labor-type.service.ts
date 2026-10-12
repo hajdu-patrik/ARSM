@@ -4,13 +4,14 @@ import { apiClient } from '../http/api.client';
 import type { SilentRequestOptions } from '../http/request-options';
 import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } from '../../types/catalog/catalog.types';
 import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
+import { toPageParams } from '../http/page-params';
 
 /** Labor-type-catalog API service; a thin axios wrapper for `/api/labor-types`. */
 export const laborTypeService = {
   /** Returns one page of labor types; the server applies the search. */
   async listLaborTypes(query: PagedQuery, options?: SilentRequestOptions): Promise<PagedResult<LaborTypeDto>> {
     const response = await apiClient.get<PagedResult<LaborTypeDto>>('/api/labor-types', {
-      params: { page: query.page, pageSize: query.pageSize, search: query.search },
+      params: toPageParams(query),
       skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;

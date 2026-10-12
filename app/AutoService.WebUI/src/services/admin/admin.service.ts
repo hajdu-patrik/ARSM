@@ -2,6 +2,7 @@
 
 import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
 import { apiClient } from '../http/api.client';
+import { toPageParams } from '../http/page-params';
 import type { SilentRequestOptions } from '../http/request-options';
 
 /** Request payload for registering a new mechanic via {@code POST /api/auth/register}. */
@@ -70,7 +71,7 @@ export const adminService = {
   /** Fetches one page of mechanics (always ascending by name) via {@code GET /api/admin/mechanics}. */
   async listMechanics(query: PagedQuery, options?: SilentRequestOptions): Promise<PagedResult<MechanicListItem>> {
     const response = await apiClient.get<PagedResult<MechanicListItem>>('/api/admin/mechanics', {
-      params: { page: query.page, pageSize: query.pageSize, search: query.search },
+      params: toPageParams(query),
       skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;

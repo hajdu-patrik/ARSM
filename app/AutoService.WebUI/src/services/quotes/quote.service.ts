@@ -13,6 +13,7 @@ import type {
   UpdateQuoteRequest,
 } from '../../types/quotes/quotes.types';
 import type { PagedResult } from '../../types/common/pagination.types';
+import { toPageParams } from '../http/page-params';
 
 /** Reads the file name out of a Content-Disposition header, or null when absent/unparsable. */
 function parseContentDispositionFileName(disposition: unknown): string | null {
@@ -39,9 +40,7 @@ export const quoteService = {
   async listQuotes(query: QuoteListQuery, options?: SilentRequestOptions): Promise<PagedResult<QuoteListItemDto>> {
     const response = await apiClient.get<PagedResult<QuoteListItemDto>>('/api/quotes', {
       params: {
-        page: query.page,
-        pageSize: query.pageSize,
-        search: query.search,
+        ...toPageParams(query),
         status: query.status,
         expired: query.expired,
         vehicleId: query.vehicleId,
