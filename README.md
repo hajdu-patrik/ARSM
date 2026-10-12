@@ -127,6 +127,34 @@ Cloudflare R2 additionally needs `ObjectStorage:DisablePayloadSigning` and
 SigV4 implementation or the CRC32 checksum that AWSSDK.S3 v4 sends by default, and uploads fail
 without them. RustFS (like MinIO before it) keeps both `false`.
 
+## Temporary Public Test Link
+
+A Cloudflare quick tunnel makes an instance running on your own machine reachable from the internet for a short test, without a Cloudflare account. It is for temporary testing only, never for production.
+
+### Requirements
+
+The development stack started by the AppHost cannot be shared this way: the dev WebUI calls the API at its local `VITE_API_URL` (a `localhost` address), which a remote browser cannot reach. Share a setup where the built WebUI and the API answer on one origin:
+
+- a reverse proxy serves the production build of the WebUI and forwards `/api` to the ApiService, and the tunnel points at that proxy;
+- the WebUI is built with `VITE_API_URL` and `VITE_SITE_URL` set to the tunnel URL; the build pins that origin in the Content-Security-Policy `connect-src`, so every new tunnel URL needs a rebuild;
+- the API lists the tunnel URL in `Cors:AllowedOrigins` (cookie-bearing mutations from any other `Origin` are rejected) and trusts the proxy through `ForwardedHeaders:KnownProxies` or `ForwardedHeaders:KnownNetworks`, so it sees the original `https` scheme that the `__Host-` session cookies need.
+
+### Steps
+
+1. Install `cloudflared` from [Cloudflare's downloads page](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
+2. Start the tunnel: `cloudflared tunnel --url http://localhost:<proxy port>`. It prints a random `https://<name>.trycloudflare.com` URL.
+3. Set that URL in `Cors:AllowedOrigins` and restart the API, then rebuild and restart the WebUI with the URL as described above.
+4. Accounts: on an empty database the first admin can be created from the `Bootstrap:Admin` configuration (`Email`, `Password`, `FirstName`, `LastName`, `Specialization`, `Expertise` array; optional `MiddleName`, `PhoneNumber`; environment form `Bootstrap__Admin__*`). It runs only while no admin exists, never touches existing accounts, and the `Bootstrap__Admin__Password` setting should be removed once the admin exists. Further users are registered in the app by the admin; share each user's credentials privately.
+
+### Limits
+
+| Limit | Detail |
+| ----- | ------ |
+| Changing URL | The quick-tunnel URL is random and changes on every `cloudflared` restart (then repeat step 3). |
+| Availability | The link works only while your machine, Docker and `cloudflared` are running. |
+| Access | Anyone who has the link can reach the app's sign-in page. |
+| Stopping | Stop `cloudflared` and the link stops working. |
+
 ## Useful Commands
 
 | Task | Command |

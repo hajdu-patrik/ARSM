@@ -125,6 +125,34 @@ A Cloudflare R2-höz ezen felül az `ObjectStorage:DisablePayloadSigning` és az
 támogatja az AWSSDK.S3 v4 alapértelmezett streaming SigV4 aláírását és CRC32 ellenőrzőösszegét,
 ezek nélkül a feltöltés hibára fut. RustFS (és korábban MinIO) esetén mindkettő `false` marad.
 
+## Ideiglenes nyilvános teszt link
+
+A Cloudflare quick tunnel a saját gépeden futó példányt rövid tesztelésre elérhetővé teszi az internetről, Cloudflare-fiók nélkül. Csak ideiglenes tesztelésre való, éles üzemre soha.
+
+### Feltételek
+
+Az AppHost által indított fejlesztői stack így nem osztható meg: a fejlesztői WebUI az API-t a helyi `VITE_API_URL` címen (`localhost`) hívja, amit egy távoli böngésző nem ér el. Olyan felállást oszd meg, ahol a buildelt WebUI és az API egy originen válaszol:
+
+- egy reverse proxy szolgálja ki a WebUI production buildjét, és a `/api` kéréseket továbbítja az ApiService-nek; a tunnel erre a proxyra mutat;
+- a WebUI-t úgy buildeld, hogy a `VITE_API_URL` és a `VITE_SITE_URL` a tunnel URL legyen; a build ezt az origint rögzíti a Content-Security-Policy `connect-src` részében, ezért minden új tunnel URL újrabuildelést igényel;
+- az API `Cors:AllowedOrigins` listájában szerepeljen a tunnel URL (más `Origin`-ről érkező, cookie-t hordozó módosító kéréseket elutasít), és a proxyt a `ForwardedHeaders:KnownProxies` vagy a `ForwardedHeaders:KnownNetworks` beállítással fogadja el, hogy lássa az eredeti `https` sémát, amit a `__Host-` session cookie-k megkövetelnek.
+
+### Lépések
+
+1. Telepítsd a `cloudflared`-et a [Cloudflare letöltési oldaláról](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
+2. Indítsd a tunnelt: `cloudflared tunnel --url http://localhost:<proxy port>`. Kiír egy véletlenszerű `https://<név>.trycloudflare.com` URL-t.
+3. Állítsd be ezt az URL-t a `Cors:AllowedOrigins`-ban, indítsd újra az API-t, majd a fentiek szerint buildeld újra és indítsd újra a WebUI-t.
+4. Fiókok: üres adatbázison az első admin a `Bootstrap:Admin` konfigurációból hozható létre (`Email`, `Password`, `FirstName`, `LastName`, `Specialization`, `Expertise` tömb; opcionális `MiddleName`, `PhoneNumber`; környezeti változóként `Bootstrap__Admin__*`). Csak akkor fut, ha még nincs admin, meglévő fiókhoz nem nyúl, és a `Bootstrap__Admin__Password` beállítást az admin létrejötte után érdemes eltávolítani. A további felhasználókat az admin regisztrálja az alkalmazásban; mindenkinek a saját belépési adatait add át privát csatornán.
+
+### Korlátok
+
+| Korlát | Részletek |
+| ------ | --------- |
+| Változó URL | A quick tunnel URL véletlenszerű, és minden `cloudflared` újraindításkor megváltozik (ilyenkor ismételd meg a 3. lépést). |
+| Elérhetőség | A link csak addig működik, amíg a géped, a Docker és a `cloudflared` fut. |
+| Hozzáférés | Akinél megvan a link, eléri az alkalmazás bejelentkező oldalát. |
+| Leállítás | Állítsd le a `cloudflared`-et, és a link megszűnik. |
+
 ## Hasznos parancsok
 
 | Feladat | Parancs |
