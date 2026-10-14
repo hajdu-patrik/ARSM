@@ -8,6 +8,13 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Removed
+- Quick-tunnel docs (2026-10-14): the "Temporary Public Test Link" (random trycloudflare.com URL) section is gone
+  from README.md and README(HU).md; its Requirements and the first-admin Accounts step now live in the fixed
+  named-tunnel section, which is the only documented way to share a test instance.
+
+_Dev time: ~2m wall-clock (2026-10-14 23:08 to 23:09 +02:00, one arsm-chain run plus a restored step). Cost: ~$0.85 output-token-only estimate (85k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+
 ### Changed
 - Splash and list loading (2026-10-12): the splash keeps its 2500 ms minimum only on the very first load in a
   browser (localStorage flag `arsm-splash-shown`); later loads and new tabs keep 250 ms. The Customers, Inventory
@@ -20,7 +27,7 @@ _Dev time: ~51m wall-clock (2026-10-12 20:52 to 21:43 +02:00, two arsm-chain run
 
 ### Added
 - Fixed public test hostname docs (2026-10-14): README.md and README(HU).md gain a "Fixed Public Test Hostname
-  (Cloudflare Named Tunnel)" section after the quick-tunnel one - domain onto Cloudflare, `cloudflared tunnel
+  (Cloudflare Named Tunnel)" section - domain onto Cloudflare, `cloudflared tunnel
   login` with one origin cert per zone, named tunnel + DNS route, ingress config, a single WebUI build for the
   fixed URL, windowless logon autostart, and a Limits table. Placeholders only; no code changes.
 
