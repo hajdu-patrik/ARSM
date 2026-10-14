@@ -19,6 +19,13 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 _Dev time: ~51m wall-clock (2026-10-12 20:52 to 21:43 +02:00, two arsm-chain runs plus the measurements). Cost: ~$22.6 output-token-only estimate (2.26M output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
 
 ### Added
+- Fixed public test hostname docs (2026-10-14): README.md and README(HU).md gain a "Fixed Public Test Hostname
+  (Cloudflare Named Tunnel)" section after the quick-tunnel one - domain onto Cloudflare, `cloudflared tunnel
+  login` with one origin cert per zone, named tunnel + DNS route, ingress config, a single WebUI build for the
+  fixed URL, windowless logon autostart, and a Limits table. Placeholders only; no code changes.
+
+_Dev time: ~3m wall-clock (2026-10-14 21:58 to 22:01 +02:00, one arsm-chain run). Cost: ~$0.65 output-token-only estimate (65k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+
 - No demo data (2026-10-12): the API seeds nothing anymore. `Data/DatabaseInitializer.EnsureDatabaseReadyAsync`
   replaces the demo initializer and only migrates, clears the legacy backfill rows, checks appointment integrity
   and normalizes data; the `DemoData` configuration is gone, so a fresh database holds no accounts or records and

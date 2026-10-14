@@ -153,6 +153,40 @@ Az AppHost által indított fejlesztői stack így nem osztható meg: a fejleszt
 | Hozzáférés | Akinél megvan a link, eléri az alkalmazás bejelentkező oldalát. |
 | Leállítás | Állítsd le a `cloudflared`-et, és a link megszűnik. |
 
+## Fix nyilvános teszt hosztnév (Cloudflare named tunnel)
+
+A Cloudflare named tunnel ugyanazt a reverse proxy felállást a saját domained egy fix hosztnevén teszi elérhetővé. A quick tunnel [Feltételei](#feltételek) változatlanul érvényesek; csak az URL állandó, így a WebUI-t elég egyszer buildelni. Csak tesztelésre való, éles üzemre soha.
+
+### Lépések
+
+1. Hozz létre Cloudflare-fiókot, és add hozzá a `<domain>` domaint (Free csomag). Ellenőrizd, hogy az importált DNS rekordok, az MX és az SPF is megvannak.
+2. A regisztrárnál állítsd át a névszervereket a két Cloudflare névszerverre, és várj, amíg a zóna Active lesz (percek vagy órák; közben a resolverek eltérhetnek).
+3. Futtasd: `cloudflared tunnel login`. Létrehozza a `~/.cloudflared/cert.pem` origin tanúsítványt, ami egy zónára szól. Ha egy gépen több domaint használsz, zónánként tarts egy tanúsítványt, és add meg: `--origincert <file>`; különben a `route dns` rossz zónába teszi a rekordot.
+4. Hozd létre a tunnelt: `cloudflared tunnel create --credentials-file <path> <tunnel-name>`. A credentials fájlt tartsd privátban.
+5. Irányítsd rá a hosztnevet: `cloudflared tunnel route dns <tunnel-name> <hostname>`.
+6. Írj konfigurációs fájlt, és ellenőrizd: `cloudflared tunnel --config <file> ingress validate`:
+
+   ```yaml
+   tunnel: <tunnel-name>
+   credentials-file: <path>
+   ingress:
+     - hostname: <hostname>
+       service: http://127.0.0.1:<proxy port>
+     - service: http_status:404
+   ```
+
+7. Indítsd a tunnelt: `cloudflared tunnel --no-autoupdate --config <file> run`.
+8. Buildeld a WebUI-t úgy, hogy a `VITE_API_URL` és a `VITE_SITE_URL` `https://<hostname>` legyen, és ugyanezt állítsd be a `Cors:AllowedOrigins`-ban. Ez csak egyszer kell: az URL fix, ezért újraindításkor nem kell újrabuildelni.
+9. Opcionális automatikus indítás Windowson: regisztrálj ütemezett feladatot, ami bejelentkezéskor lefuttatja a 7. lépés parancsát (`Register-ScheduledTask` interaktív bejelentkezéssel, `conhost.exe --headless` alatt, hogy ne nyíljon konzolablak, és újraindítással hiba esetén; rendszergazdai jog nem kell), vagy futtasd a `cloudflared service install` parancsot (rendszergazdai shell kell).
+
+### Korlátok
+
+| Korlát | Részletek |
+| ------ | --------- |
+| Elérhetőség | A link csak addig működik, amíg a géped, a Docker és a `cloudflared` fut. |
+| Hozzáférés | Akinél megvan a link, eléri az alkalmazás bejelentkező oldalát. |
+| Leállítás | Állítsd le a tunnelt, és a link megszűnik. Soha ne állítsd le az összes `cloudflared.exe` folyamatot, ha a gépen más tunnelek is futnak; csak ezt állítsd le. |
+
 ## Hasznos parancsok
 
 | Feladat | Parancs |

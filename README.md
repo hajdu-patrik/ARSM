@@ -155,6 +155,40 @@ The development stack started by the AppHost cannot be shared this way: the dev 
 | Access | Anyone who has the link can reach the app's sign-in page. |
 | Stopping | Stop `cloudflared` and the link stops working. |
 
+## Fixed Public Test Hostname (Cloudflare Named Tunnel)
+
+A Cloudflare named tunnel exposes the same reverse-proxy setup on a fixed hostname of your own domain. The [Requirements](#requirements) of the quick tunnel apply unchanged; only the URL is stable, so the WebUI is built once. It is for testing only, never for production.
+
+### Steps
+
+1. Create a Cloudflare account and add `<domain>` (Free plan). Check that the imported DNS records, including MX and SPF, survived.
+2. At the registrar, switch the nameservers to the two Cloudflare ones and wait until the zone is Active (minutes to hours; resolvers may disagree meanwhile).
+3. Run `cloudflared tunnel login`. It creates the origin certificate `~/.cloudflared/cert.pem`, which is scoped to one zone. When several domains are used on one machine, keep one certificate per zone and pass `--origincert <file>`; otherwise `route dns` puts the record into the wrong zone.
+4. Create the tunnel: `cloudflared tunnel create --credentials-file <path> <tunnel-name>`. Keep the credentials file private.
+5. Point the hostname at it: `cloudflared tunnel route dns <tunnel-name> <hostname>`.
+6. Write a config file and check it with `cloudflared tunnel --config <file> ingress validate`:
+
+   ```yaml
+   tunnel: <tunnel-name>
+   credentials-file: <path>
+   ingress:
+     - hostname: <hostname>
+       service: http://127.0.0.1:<proxy port>
+     - service: http_status:404
+   ```
+
+7. Run the tunnel: `cloudflared tunnel --no-autoupdate --config <file> run`.
+8. Build the WebUI with `VITE_API_URL` and `VITE_SITE_URL` set to `https://<hostname>` and set `Cors:AllowedOrigins` to the same value. This is needed only once: the URL is fixed, so a restart needs no rebuild.
+9. Optional autostart on Windows: register a scheduled task that runs the command of step 7 at logon (`Register-ScheduledTask` with an interactive logon, wrapped in `conhost.exe --headless` so no console window opens, and restart on failure; no administrator rights needed), or run `cloudflared service install` (needs an administrator shell).
+
+### Limits
+
+| Limit | Detail |
+| ----- | ------ |
+| Availability | The link works only while your machine, Docker and `cloudflared` are running. |
+| Access | Anyone who has the link can reach the app's sign-in page. |
+| Stopping | Stop the tunnel and the link stops working. Never kill every `cloudflared.exe` when other tunnels run on the machine; stop only this one. |
+
 ## Useful Commands
 
 | Task | Command |
