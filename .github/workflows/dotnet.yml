@@ -6,17 +6,34 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Repository-wide size and no-shadow checks; build and lint run in the jobs below.
+  repo-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.14'
+
+    - name: Run repository gate
+      run: python scripts/validate.py --all --skip-build
+
   backend-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: app
@@ -28,6 +45,8 @@ jobs:
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
+        cache: true
+        cache-dependency-path: app/**/packages.lock.json
 
     - name: Restore dependencies
       run: dotnet restore --locked-mode
@@ -52,12 +71,7 @@ jobs:
         ! grep -qi 'has the following vulnerable packages' vuln-report.txt
 
   frontend-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: app/AutoService.WebUI

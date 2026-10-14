@@ -1,2 +1,4 @@
 # Workflow scripts must stay LF: the Workflow tool rejects CRLF ("control characters").
 .claude/workflows/*.js text eol=lf
+# The pre-push hook is POSIX sh and must keep LF endings on Windows checkouts.
+.githooks/* text eol=lf

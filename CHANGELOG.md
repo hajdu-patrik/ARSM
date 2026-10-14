@@ -8,6 +8,24 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Added
+- Mandatory pre-push gate (2026-10-14): `python scripts/pre-push.py` (helpers in `scripts/prepush/`) runs from the
+  tracked `.githooks/pre-push` hook (`git config core.hooksPath .githooks`) and mirrors CI: `validate.py --all
+  --security`, the dotnet restore/build/test/EF gate, the frontend audit/tsc/lint/build/spec-compile/audit steps,
+  the diff-selected E2E specs, and the HTTP + SQL suites on a throwaway `arsm-prepush-postgres` + `arsm-prepush-s3`
+  stack with the developer's local secrets, removed afterwards. `.github/dependabot.yml` opens weekly npm, NuGet
+  and GitHub Actions update PRs.
+
+### Changed
+- CI hardening (2026-10-14): both workflows run with `permissions: contents: read`; `dotnet.yml` builds on
+  `ubuntu-latest` only, cancels superseded runs and gains a `repo-gate` job (`validate.py --all --skip-build`);
+  `setup-dotnet` caches NuGet by the lock files. `.actrc` maps only `ubuntu-latest`.
+- Intake endpoint split (2026-10-14): `AppointmentEndpoints.Intake.cs` (a 400-line type span, over the 300-line
+  limit the new repo gate enforces) is split into the handler plus `IntakeCustomer`/`IntakeVehicle` partials with
+  the same checks, order and messages; the unused `AddDefaultTokenProviders()` Identity registration is removed.
+
+_Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one arsm-chain run, the intake split and two full pre-push gate runs). Cost: ~$2.2 output-token-only estimate (220k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+
 ### Removed
 - Quick-tunnel docs (2026-10-14): the "Temporary Public Test Link" (random trycloudflare.com URL) section is gone
   from README.md and README(HU).md; its Requirements and the first-admin Accounts step now live in the fixed

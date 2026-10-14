@@ -4,9 +4,6 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Validation;
-using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
@@ -23,77 +20,14 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Intake");
 
-        if (request.Status is not null)
+        var validationError = ValidateIntakeRequest(
+            request, logger, out var normalizedEmail, out var taskDescription, out var scheduledDateUtc, out var dueDateTimeUtc);
+        if (validationError is not null)
         {
-            logger.LogWarning("Intake rejected because status was provided by caller.");
-            return Results.Problem(
-                detail: "Status cannot be provided for intake creation. New appointments always start as InProgress.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!ContactNormalization.TryNormalizeEmail(request.CustomerEmail, out var normalizedEmail))
-        {
-            logger.LogWarning("Intake rejected due to invalid customer email format.");
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var taskDescription = request.TaskDescription?.Trim();
-        if (string.IsNullOrWhiteSpace(taskDescription))
-        {
-            return Results.Problem(
-                detail: "TaskDescription is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (taskDescription.Length > 200)
-        {
-            return Results.Problem(
-                detail: "TaskDescription must be at most 200 characters.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (request.ScheduledDate == default)
-        {
-            return Results.Problem(
-                detail: "ScheduledDate is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (request.DueDateTime == default)
-        {
-            return Results.Problem(
-                detail: "DueDateTime is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
-        var dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
-
-        if (dueDateTimeUtc < scheduledDateUtc)
-        {
-            return Results.Problem(
-                detail: "DueDateTime must be greater than or equal to ScheduledDate.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return validationError;
         }
 
         var usesExistingVehicle = request.VehicleId.HasValue;
-        var createsVehicle = request.Vehicle is not null;
-
-        if (usesExistingVehicle == createsVehicle)
-        {
-            return Results.Problem(
-                detail: "Provide either VehicleId or Vehicle, but not both.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (usesExistingVehicle && request.VehicleId <= 0)
-        {
-            return Results.Problem(
-                detail: "VehicleId must be a positive integer.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
 
         var personIdClaim = user.FindFirst("person_id")?.Value;
         if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
@@ -129,223 +63,25 @@ public static partial class AppointmentEndpoints
         var creatingCustomer = customer is null;
         if (creatingCustomer)
         {
-            var emailInUseByAnotherPersonType = linkedMechanicForEmail is null && await db.People
-                .AnyAsync(p => p.Email == normalizedEmail, cancellationToken);
-
-            if (emailInUseByAnotherPersonType)
+            var (customerError, newCustomer) = await CreateIntakeCustomerAsync(
+                request, linkedMechanicForEmail, normalizedEmail, db, logger, cancellationToken);
+            if (customerError is not null)
             {
-                logger.LogWarning("Intake rejected due to customer email conflict with non-customer account.");
-                return Results.Problem(
-                    detail: "Email is already used by a non-customer account.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return customerError;
             }
 
-            if (usesExistingVehicle)
-            {
-                return Results.Problem(
-                    detail: "VehicleId can only be used for an existing customer.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (linkedMechanicForEmail is null &&
-                (string.IsNullOrWhiteSpace(request.CustomerFirstName) ||
-                 string.IsNullOrWhiteSpace(request.CustomerLastName)))
-            {
-                return Results.Problem(
-                    detail: "CustomerFirstName and CustomerLastName are required when customer is created.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var firstName = linkedMechanicForEmail?.Name.FirstName ?? request.CustomerFirstName!.Trim();
-            var lastName = linkedMechanicForEmail?.Name.LastName ?? request.CustomerLastName!.Trim();
-            var middleName = linkedMechanicForEmail?.Name.MiddleName ?? ContactNormalization.NormalizeOptional(request.CustomerMiddleName);
-
-            var firstNameError = NameFieldsValidator.GetNameError(firstName, "FirstName");
-            if (firstNameError is not null)
-            {
-                return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var lastNameError = NameFieldsValidator.GetNameError(lastName, "LastName");
-            if (lastNameError is not null)
-            {
-                return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (middleName is not null)
-            {
-                var middleNameError = NameFieldsValidator.GetNameError(middleName, "MiddleName");
-                if (middleNameError is not null)
-                {
-                    return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-                }
-            }
-
-            var normalizedPhone = ContactNormalization.NormalizeOptional(request.CustomerPhoneNumber);
-            if (normalizedPhone is not null &&
-                !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
-            {
-                return Results.Problem(
-                    detail: ValidationMessages.InvalidPhone,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var customerFirstName = firstName;
-            var customerMiddleName = middleName;
-            var customerLastName = lastName;
-
-            if (normalizedPhone is not null)
-            {
-                var phoneInUse = await db.People
-                    .AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken);
-
-                if (phoneInUse)
-                {
-                    return Results.Problem(
-                        detail: "A person with this phone number already exists.",
-                        statusCode: StatusCodes.Status409Conflict);
-                }
-            }
-
-            customer = new Customer(
-                new FullName(customerFirstName, customerMiddleName, customerLastName),
-                normalizedEmail,
-                normalizedPhone);
+            customer = newCustomer;
         }
 
-        Vehicle vehicle;
-        if (usesExistingVehicle)
+        var (vehicleError, resolvedVehicle) = usesExistingVehicle
+            ? await FindIntakeVehicleAsync(request.VehicleId.GetValueOrDefault(), customer, db, logger, cancellationToken)
+            : await CreateIntakeVehicleAsync(request.Vehicle!, customer!, db, cancellationToken);
+        if (vehicleError is not null)
         {
-            var requestedVehicleId = request.VehicleId.GetValueOrDefault();
-            Vehicle? existingVehicle = await db.Vehicles
-                .Where(v => v.Id == requestedVehicleId)
-                .Select(v => (Vehicle?)v)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (existingVehicle is null)
-            {
-                logger.LogInformation("Intake failed: requested vehicle {VehicleId} not found.", requestedVehicleId);
-                return Results.Problem(
-                    detail: "Vehicle not found.",
-                    statusCode: StatusCodes.Status404NotFound);
-            }
-
-            if (customer is null || existingVehicle.CustomerId != customer.Id)
-            {
-                logger.LogWarning("Intake rejected: vehicle {VehicleId} does not belong to selected customer.", requestedVehicleId);
-                return Results.Problem(
-                    detail: "Vehicle does not belong to the selected customer.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            vehicle = existingVehicle;
+            return vehicleError;
         }
-        else
-        {
-            var newVehicle = request.Vehicle!;
 
-            if (string.IsNullOrWhiteSpace(newVehicle.LicensePlate) ||
-                string.IsNullOrWhiteSpace(newVehicle.Vin) ||
-                string.IsNullOrWhiteSpace(newVehicle.Brand) ||
-                string.IsNullOrWhiteSpace(newVehicle.Model) ||
-                string.IsNullOrWhiteSpace(newVehicle.DrivetrainType))
-            {
-                return Results.Problem(
-                    detail: "Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var vehicleLengthValidationError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
-                newVehicle.LicensePlate,
-                newVehicle.Brand,
-                newVehicle.Model,
-                fieldPrefix: "Vehicle.");
-
-            if (vehicleLengthValidationError is not null)
-            {
-                return Results.Problem(
-                    detail: vehicleLengthValidationError,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (newVehicle.Year is < 1886 or > 2100)
-            {
-                return Results.Problem(
-                    detail: "Vehicle.Year must be between 1886 and 2100.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
-                newVehicle.MileageKm,
-                newVehicle.EnginePowerKw,
-                fieldPrefix: "Vehicle.");
-
-            if (vehicleNumericValidationError is not null)
-            {
-                return Results.Problem(
-                    detail: vehicleNumericValidationError,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(newVehicle.LicensePlate, out var normalizedPlate, out var plateValidationError))
-            {
-                return Results.Problem(
-                    detail: plateValidationError,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (!VinNormalization.TryNormalizeVin(newVehicle.Vin, out var normalizedVin, out var vinValidationError))
-            {
-                return Results.Problem(
-                    detail: vinValidationError,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            if (!VehicleDrivetrainValidation.TryParse(newVehicle.DrivetrainType, out var drivetrainType, out var drivetrainValidationError, "Vehicle.DrivetrainType"))
-            {
-                return Results.Problem(
-                    detail: drivetrainValidationError,
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-
-            var plateExists = await db.Vehicles
-                .AnyAsync(v => v.LicensePlate == normalizedPlate, cancellationToken);
-
-            if (plateExists)
-            {
-                return Results.Problem(
-                    detail: "A vehicle with this license plate already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-
-            var vinExists = await db.Vehicles
-                .AnyAsync(v => v.Vin == normalizedVin, cancellationToken);
-
-            if (vinExists)
-            {
-                return Results.Problem(
-                    detail: "A vehicle with this VIN already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-
-            vehicle = new Vehicle(
-                normalizedPlate,
-                normalizedVin,
-                newVehicle.Brand.Trim(),
-                newVehicle.Model.Trim(),
-                newVehicle.Year,
-                newVehicle.MileageKm,
-                newVehicle.EnginePowerKw,
-                drivetrainType)
-            {
-                Customer = customer!
-            };
-
-            if (customer!.Id > 0)
-            {
-                vehicle.CustomerId = customer.Id;
-            }
-        }
+        var vehicle = resolvedVehicle!;
 
         var appointment = new Appointment
         {

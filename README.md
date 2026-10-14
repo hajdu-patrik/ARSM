@@ -179,12 +179,14 @@ The development stack started by the AppHost cannot be shared this way: the dev 
 | Lint frontend | `cd app/AutoService.WebUI && npm run lint` |
 | Run all local tests | `python scripts/run-local-test-suite.py` |
 | Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
+| Install the pre-push hook (once) | `git config core.hooksPath .githooks` |
+| Run the pre-push gate | `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <stage>]` |
 
 NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
 
-GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux, Windows and macOS; `.github/workflows/tests.yml` runs the Playwright suite against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials.
+GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux (`ubuntu-latest`) and runs the repository gate (`python scripts/validate.py --all --skip-build`) in its `repo-gate` job; `.github/workflows/tests.yml` runs the Playwright suite against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials.
 
-Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest`, `windows-latest`, and `macos-latest` to the Linux act container so `act -j backend-build` and `act -j frontend-build` exercise every matrix row locally. GitHub-hosted runners remain authoritative for real Windows and macOS behavior.
+Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest` to the Linux act container so `act -j backend-build`, `act -j frontend-build` and `act -j repo-gate` run locally.
 
 ## Running Tests
 
@@ -216,6 +218,10 @@ dotnet run --project AutoService.AppHost
 ```
 
 Reports under `tests/.artifacts/` are gitignored and intended to remain sanitized for local debugging and AI review.
+
+### Pre-push Gate
+
+Every push runs `python scripts/pre-push.py` through the tracked `.githooks/pre-push` hook; enable it once with `git config core.hooksPath .githooks`. It mirrors CI (stages `validate`, `backend`, `frontend`, `e2e`, `api-suites`, fail fast) and runs the HTTP and SQL suites on throwaway `arsm-prepush-postgres` and `arsm-prepush-s3` containers with your local secrets, removing them afterwards. Stop the Aspire stack first (the API port must be free), and trust the ASP.NET development certificate once (`dotnet dev-certs https --trust`) because the HTTP checks verify TLS. `--skip-e2e`, `--skip-api-suites` and `--only <stage>` are for local debugging; `git push --no-verify` is an exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 
 ### AI Test Workflow
 

@@ -75,6 +75,7 @@
 - Playwright runs with 3 workers by default (`PLAYWRIGHT_WORKERS` overrides it). For a change, prefer
   `python scripts/select-e2e-specs.py --run`: it runs only the specs the diff affects through the runner
   and falls back to the full suite for any shared file.
+- `python scripts/pre-push.py` (pre-push hook, installed with `git config core.hooksPath .githooks`) runs the HTTP and SQL suites through this runner on a disposable stack; `git push --no-verify` is an exception only.
 - Use `tests/.artifacts/test-suite-summary.json` as sanitized AI-readable source.
 - Never publish raw `.env`, `.secrets`, tokens, cookies, absolute paths, or unsanitized logs.
 

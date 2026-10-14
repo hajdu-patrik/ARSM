@@ -46,6 +46,19 @@
   only when a manifest or lockfile changed or with `--security`.
   Exit 0 pass, 1 fail, 2 git error; report `tests/.artifacts/validate-summary.json`. Timeout per command:
   `ARSM_VALIDATE_TIMEOUT_SECONDS` (default 300).
+- `pre-push.py` (helpers in `scripts/prepush/`): the local pre-push gate run by `.githooks/pre-push`
+  (install: `git config core.hooksPath .githooks`; the hook always runs every stage). Usage:
+  `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <validate|backend|frontend|e2e|api-suites>]`.
+  Stages, fail fast: validate (`validate.py --all --security`), backend (locked restore, build, test, EF
+  pending-model check), frontend (`npm ci` only when the lockfile differs from upstream, audit, tsc, lint,
+  build), e2e (`select-e2e-specs.py --run`, diffed against the upstream ref), api-suites
+  (`run-local-test-suite.py http sql` on throwaway `arsm-prepush-postgres` (port 55432) and
+  `arsm-prepush-s3` (port 59000) with local secrets; always cleaned up). The suites run in-process so
+  `.secrets` cannot override the throwaway stack; the stage needs `ARSM_TEST_ADMIN_EMAIL` and
+  `ARSM_TEST_ADMIN_PASSWORD` in the local secrets, and aborts on a Bootstrap section in
+  `appsettings.Local.json` and on an in-use https launch-profile port. It never touches the dev database
+  or `arsm-tunnel-*`. Prints a summary table; non-zero exit on failure. `git push --no-verify` is an
+  exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
   changed specs, and the specs that import a changed page object); any file outside those rules selects
   the full suite. Prints the selection, or runs it through the canonical runner with `--run`.

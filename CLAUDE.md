@@ -62,6 +62,9 @@
 - Without the Workflow tool, run the same steps by hand in the same order and with the same parallelism.
 - Whatever the answer, run `python scripts/validate.py` before committing a source change: it is
   deterministic, takes seconds, and costs no tokens.
+- Every push must pass `python scripts/pre-push.py` via the `.githooks/pre-push` hook before CI runs.
+  Install it once with `git config core.hooksPath .githooks`; `git push --no-verify` is an exception
+  only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 - Skipping the workflow never waives Decision Ownership, Security and Secrets, Engineering
   Guardrails, Core Invariants, or Version Control Attribution. Those apply to every task.
 
@@ -97,6 +100,10 @@
 - Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]`.
 - Runner loads local secrets (`.secrets`, `tests/.env`) and writes sanitized summary to `tests/.artifacts/test-suite-summary.json`.
 - Runner child commands default to a 300-second timeout; use `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` only for slower local runs.
+- `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <validate|backend|frontend|e2e|api-suites>]`
+  is the mandatory pre-push gate (hook install: `git config core.hooksPath .githooks`; the hook runs every
+  stage). Its HTTP and SQL stage runs this runner on a disposable stack
+  (`arsm-prepush-postgres`, `arsm-prepush-s3`) with the local secrets; it never touches the dev database or `arsm-tunnel-*`.
 - Never publish raw `.env`, `.secrets`, tokens, cookies, or unsanitized logs.
 
 ## Engineering Guardrails

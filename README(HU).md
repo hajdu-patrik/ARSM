@@ -177,12 +177,14 @@ Az AppHost által indított fejlesztői stack így nem osztható meg: a fejleszt
 | Frontend lint | `cd app/AutoService.WebUI && npm run lint` |
 | Összes lokális teszt futtatása | `python scripts/run-local-test-suite.py` |
 | Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
+| Pre-push hook telepítése (egyszer) | `git config core.hooksPath .githooks` |
+| Pre-push kapu futtatása | `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <stage>]` |
 
 A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a locked restore-t, az AppHost Linux és macOS alatt RID-specifikus lock fájlokat használ az Aspire Dashboard/DCP csomagokhoz, a CI pedig `dotnet restore --locked-mode` módban fut.
 
-GitHub Actions: a `.github/workflows/dotnet.yml` Linuxon, Windowson és macOS-en buildeli és ellenőrzi a backendet és a frontendet; a `.github/workflows/tests.yml` a Playwright suite-ot mockolt API-val, a HTTP és SQL suite-okat PostgreSQL és RustFS konténerekkel, futásonként generált titkokkal futtatja.
+GitHub Actions: a `.github/workflows/dotnet.yml` Linuxon (`ubuntu-latest`) buildeli és ellenőrzi a backendet és a frontendet, a `repo-gate` jobban pedig lefuttatja a repó kapuját (`python scripts/validate.py --all --skip-build`); a `.github/workflows/tests.yml` a Playwright suite-ot mockolt API-val, a HTTP és SQL suite-okat PostgreSQL és RustFS konténerekkel, futásonként generált titkokkal futtatja.
 
-A lokális GitHub Actions smoke ellenőrzésekhez a [.actrc](.actrc) tartozik: az `ubuntu-latest`, `windows-latest` és `macos-latest` matrix címkéket Linux act konténerre mapeli, így az `act -j backend-build` és az `act -j frontend-build` minden matrix sort lefuttat lokálisan. A valódi Windows és macOS viselkedésben továbbra is a GitHub-hosted runner a mérvadó.
+A lokális GitHub Actions smoke ellenőrzésekhez a [.actrc](.actrc) tartozik: az `ubuntu-latest` címkét Linux act konténerre mapeli, így az `act -j backend-build`, az `act -j frontend-build` és az `act -j repo-gate` lokálisan is lefut.
 
 ## Tesztek futtatása
 
@@ -214,6 +216,10 @@ dotnet run --project AutoService.AppHost
 ```
 
 A `tests/.artifacts/` alatti generált riportok gitignore alatt vannak, és lokális hibakereséshez/AI review-hoz csak maszkolt összefoglalóként szolgálnak.
+
+### Pre-push kapu
+
+Minden push lefuttatja a `python scripts/pre-push.py` parancsot a tracked `.githooks/pre-push` hookon keresztül; egyszer kapcsold be: `git config core.hooksPath .githooks`. A CI-t tükrözi (`validate`, `backend`, `frontend`, `e2e`, `api-suites` lépések, az első hibánál megáll), a HTTP és SQL suite-okat eldobható `arsm-prepush-postgres` és `arsm-prepush-s3` konténereken futtatja a lokális titkokkal, majd törli őket. Előtte állítsd le az Aspire stacket (az API portjának szabadnak kell lennie), és egyszer bízz meg az ASP.NET fejlesztői tanúsítványban (`dotnet dev-certs https --trust`), mert a HTTP ellenőrzések a TLS-t is ellenőrzik. A `--skip-e2e`, `--skip-api-suites` és `--only <stage>` lokális hibakereséshez való; a `git push --no-verify` csak kivétel. A CI repo kapuja a `python scripts/validate.py --all --skip-build`.
 
 ### AI teszt workflow
 
