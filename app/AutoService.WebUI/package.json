@@ -47,7 +47,7 @@
     "postcss": "^8.5.29",
     "tailwindcss": "^4.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.71.0",
+    "typescript-eslint": "^8.71.1",
     "vite": "^8.3.3",
     "vite-plugin-mkcert": "^2.1.0"
   },
