@@ -9,6 +9,8 @@ const localWorkers = Number.isFinite(parsedWorkers) && parsedWorkers > 0 ? parse
 /** See https://playwright.dev/docs/test-configuration. */
 export default defineConfig({
   testDir: './tests/e2e',
+  /* Runs after the web server is up: a cold dev server would time out the first spec on each worker. */
+  globalSetup: './tests/e2e/support/warm-dev-server.ts',
   /* Keep browser-driven workflows deterministic while the suite is small. */
   fullyParallel: false,
   timeout: 120_000,

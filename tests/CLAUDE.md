@@ -22,6 +22,9 @@
 - SQL policy: `ai_agent_test_user`, `SELECT` only, no DML/DDL.
 - Test agents own create, update, and delete inside their own scope paths; delete only obsolete or relocated coverage, never to make a run pass.
 - E2E specs are type-checked through `app/AutoService.WebUI/tsconfig.e2e.json` in the `tsc -b` chain; Playwright itself transpiles with esbuild and never type-checks them.
+- The Playwright `globalSetup` (`app/AutoService.WebUI/tests/e2e/support/warm-dev-server.ts`) loads every
+  `APP_ROUTE_CHECKS` route once before the specs: after a fresh `npm ci` the cold Vite dev server took over
+  10 s per first load and failed the first spec of each worker in the pre-push gate.
 - CSRF double-submit pattern (httpyac): every login/refresh/password-change request carries a
   post-response script that exports the `__Host-autoservice_csrf` value from that response's `Set-Cookie`
   header, and every later unsafe request that carries the auth cookie echoes it back as
