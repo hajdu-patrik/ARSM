@@ -32,7 +32,7 @@
 - API endpoint auto-assigned by Aspire (default `https://localhost:5200`).
 - Keep AppHost NuGet lock files aligned per build host RID; Linux and macOS use the RID-specific `packages.lock.*.json` files for Aspire Dashboard/DCP packages.
   After an Aspire bump regenerate all four: `dotnet restore --force-evaluate`, then once per RID (`linux-x64`, `osx-arm64`,
-  `osx-x64`) with `-p:NETCoreSdkRuntimeIdentifier=<rid>`; Dependabot updates only the default file (CI fails NU1004).
+  `osx-x64`) with `-p:NETCoreSdkRuntimeIdentifier=<rid>`; updating only the default file fails CI with NU1004.
 - Dashboard/DCP stay NuGet-restored and lock-pinned (`AspireUseCliBundle=false`); `ASPIRE010` is suppressed in the csproj as a deliberate opt-out because the CLI bundle resolves from machine-local `~/.aspire` and is absent on clean CI runners.
 
 ## Validation

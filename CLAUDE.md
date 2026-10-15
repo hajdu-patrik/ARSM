@@ -156,8 +156,8 @@
 - The remote holds only `main` and `deprecated/github-copilot`. Never push a work, backup or scratch branch:
   work happens on a local branch, lands on `main` as owner commits through the pre-push gate, and the local
   branch is deleted right after.
-- Dependabot PRs are never merged on GitHub (that records `dependabot[bot]` as author): apply the change
-  locally as owner commits, close the PR with a note naming the main commit, then delete its branch at once.
+- Dependency updates run only on explicit request, with no update bot: bump, regenerate the lock files with the
+  repo tooling, and land the result on `main` as owner commits through the pre-push gate.
 - Before deleting a branch, take over anything still useful from it into `main`; never merge back content
   that was removed on purpose.
 

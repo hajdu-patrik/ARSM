@@ -13,8 +13,7 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   tracked `.githooks/pre-push` hook (`git config core.hooksPath .githooks`) and mirrors CI: `validate.py --all
   --security`, the dotnet restore/build/test/EF gate, the frontend audit/tsc/lint/build/spec-compile/audit steps,
   the diff-selected E2E specs, and the HTTP + SQL suites on a throwaway `arsm-prepush-postgres` + `arsm-prepush-s3`
-  stack with the developer's local secrets, removed afterwards. `.github/dependabot.yml` opens weekly npm, NuGet
-  and GitHub Actions update PRs.
+  stack with the developer's local secrets, removed afterwards.
 
 ### Changed
 - CI hardening (2026-10-14): both workflows run with `permissions: contents: read`; `dotnet.yml` builds on
@@ -25,12 +24,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   the same checks, order and messages; the unused `AddDefaultTokenProviders()` Identity registration is removed.
 
 _Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one arsm-chain run, the intake split and two full pre-push gate runs). Cost: ~$2.2 output-token-only estimate (220k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
-- First Dependabot round (2026-10-15): Azure.Storage.Blobs, libphonenumber-csharp, AWSSDK.S3, react-i18next,
-  @vitejs/plugin-react, vite and postcss patch bumps; the Aspire SDK and both hosting packages move to 13.6.1
-  together with every AppHost lock file (default and per-RID) regenerated, and Dependabot now groups `Aspire.*`.
-  `@babel/core` stays on 7.x: its major updates are ignored in `dependabot.yml`. Second round: ASP.NET Core
-  (JwtBearer, Identity.EntityFrameworkCore, OpenApi) and EF Core Design/Tools 10.0.13, Http.Resilience 10.11.0,
-  react-easy-crop, @playwright/test 1.64, libphonenumber-js, lucide-react and typescript-eslint.
+- Dependency updates (2026-10-15): Azure.Storage.Blobs, libphonenumber-csharp, AWSSDK.S3, react-i18next,
+  @vitejs/plugin-react, vite 8.3.4 and postcss patch bumps; the Aspire SDK and both hosting packages move to 13.6.1
+  together with every AppHost lock file (default and per-RID) regenerated. `@babel/core` stays on 7.x. Also ASP.NET
+  Core (JwtBearer, Identity.EntityFrameworkCore, OpenApi) and EF Core Design/Tools 10.0.13, Http.Resilience and
+  ServiceDiscovery 10.11.0, Scalar.AspNetCore 2.18.0, react-easy-crop, @playwright/test 1.64, libphonenumber-js,
+  lucide-react and typescript-eslint. Dependency updates now run only on request, with no update bot.
 
 ### Fixed
 - Cold E2E start (2026-10-15): a Playwright `globalSetup` loads every app route once before the specs, because a
