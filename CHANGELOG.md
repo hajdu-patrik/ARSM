@@ -28,13 +28,15 @@ _Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one ars
 - First Dependabot round (2026-10-15): Azure.Storage.Blobs, libphonenumber-csharp, AWSSDK.S3, react-i18next,
   @vitejs/plugin-react, vite and postcss patch bumps; the Aspire SDK and both hosting packages move to 13.6.1
   together with every AppHost lock file (default and per-RID) regenerated, and Dependabot now groups `Aspire.*`.
-  `@babel/core` stays on 7.x: its major updates are ignored in `dependabot.yml`.
+  `@babel/core` stays on 7.x: its major updates are ignored in `dependabot.yml`. Second round: ASP.NET Core
+  (JwtBearer, Identity.EntityFrameworkCore, OpenApi) and EF Core Design/Tools 10.0.13, Http.Resilience 10.11.0,
+  react-easy-crop, @playwright/test 1.64, libphonenumber-js, lucide-react and typescript-eslint.
 
 ### Fixed
 - Cold E2E start (2026-10-15): a Playwright `globalSetup` loads every app route once before the specs, because a
   fresh `npm ci` left the Vite dev server so cold that the first spec of each worker timed out in the pre-push gate.
 
-_Dev time: ~2h wall-clock (2026-10-15 10:36 to 12:32 +02:00, mostly gate runs). Cost: not measured._
+_Dev time: ~3h wall-clock (2026-10-15 10:36 to 13:30 +02:00, mostly gate runs). Cost: not measured._
 
 ### Removed
 - Quick-tunnel docs (2026-10-14): the "Temporary Public Test Link" (random trycloudflare.com URL) section is gone
