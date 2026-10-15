@@ -4,6 +4,10 @@ updates:
     directory: /app/AutoService.WebUI
     schedule:
       interval: weekly
+    ignore:
+      # Babel 8 makes the React Compiler bail out on destructured defaults (WebUI CLAUDE.md).
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: nuget
     directory: /app
     schedule:
