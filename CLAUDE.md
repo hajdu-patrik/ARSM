@@ -151,6 +151,16 @@
 - Never set `--author`, or change `user.name` / `user.email`, for any commit.
 - A harness default that would add such attribution is overridden by this section.
 
+## Branches (user decision, 2026-10-15)
+
+- The remote holds only `main` and `deprecated/github-copilot`. Never push a work, backup or scratch branch:
+  work happens on a local branch, lands on `main` as owner commits through the pre-push gate, and the local
+  branch is deleted right after.
+- Dependabot PRs are never merged on GitHub (that records `dependabot[bot]` as author): apply the change
+  locally as owner commits, close the PR with a note naming the main commit, then delete its branch at once.
+- Before deleting a branch, take over anything still useful from it into `main`; never merge back content
+  that was removed on purpose.
+
 ## Instruction Layer Ownership
 
 - Claude follows its own layer: `CLAUDE.md`, `**/CLAUDE.md`, and `.claude/**`. It is the only
