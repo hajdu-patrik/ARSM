@@ -25,6 +25,16 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   the same checks, order and messages; the unused `AddDefaultTokenProviders()` Identity registration is removed.
 
 _Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one arsm-chain run, the intake split and two full pre-push gate runs). Cost: ~$2.2 output-token-only estimate (220k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+- First Dependabot round (2026-10-15): Azure.Storage.Blobs, libphonenumber-csharp, AWSSDK.S3, react-i18next,
+  @vitejs/plugin-react, vite and postcss patch bumps; the Aspire SDK and both hosting packages move to 13.6.1
+  together with every AppHost lock file (default and per-RID) regenerated, and Dependabot now groups `Aspire.*`.
+  `@babel/core` stays on 7.x: its major updates are ignored in `dependabot.yml`.
+
+### Fixed
+- Cold E2E start (2026-10-15): a Playwright `globalSetup` loads every app route once before the specs, because a
+  fresh `npm ci` left the Vite dev server so cold that the first spec of each worker timed out in the pre-push gate.
+
+_Dev time: ~2h wall-clock (2026-10-15 10:36 to 12:32 +02:00, mostly gate runs). Cost: not measured._
 
 ### Removed
 - Quick-tunnel docs (2026-10-14): the "Temporary Public Test Link" (random trycloudflare.com URL) section is gone
