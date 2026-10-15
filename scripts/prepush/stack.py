@@ -91,7 +91,9 @@ class DisposableStack:
         raise StepFailure("PostgreSQL or RustFS did not become ready.", logs[-20:])
 
     def start_api(self, environment: dict[str, str], endpoint: LaunchEndpoint) -> None:
-        command = [shutil.which("dotnet") or "dotnet", "run", "--project", "AutoService.ApiService", "--launch-profile", "https"]
+        # --urls (after --, for the app) beats the profile's applicationUrl, so the gate API never takes the dev port.
+        command = [shutil.which("dotnet") or "dotnet", "run", "--project", "AutoService.ApiService", "--launch-profile", "https",
+                   "--", "--urls", endpoint.url]
         flags = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
         with self.log_path.open("wb") as log:
             self.api_process = subprocess.Popen(command, cwd=APP, env=environment, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, **flags)

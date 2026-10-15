@@ -221,7 +221,7 @@ Reports under `tests/.artifacts/` are gitignored and intended to remain sanitize
 
 ### Pre-push Gate
 
-Every push runs `python scripts/pre-push.py` through the tracked `.githooks/pre-push` hook; enable it once with `git config core.hooksPath .githooks`. It mirrors CI (stages `validate`, `backend`, `frontend`, `e2e`, `api-suites`, fail fast) and runs the HTTP and SQL suites on throwaway `arsm-prepush-postgres` and `arsm-prepush-s3` containers with your local secrets, removing them afterwards. Stop the Aspire stack first (the API port must be free), and trust the ASP.NET development certificate once (`dotnet dev-certs https --trust`) because the HTTP checks verify TLS. `--skip-e2e`, `--skip-api-suites` and `--only <stage>` are for local debugging; `git push --no-verify` is an exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
+Every push runs `python scripts/pre-push.py` through the tracked `.githooks/pre-push` hook; enable it once with `git config core.hooksPath .githooks`. It mirrors CI (stages `validate`, `backend`, `frontend`, `e2e`, `api-suites`, fail fast) and runs the HTTP and SQL suites on throwaway `arsm-prepush-postgres` and `arsm-prepush-s3` containers with your local secrets, removing them afterwards. The gate uses its own ports (PostgreSQL 15432, RustFS 19000, API 15200), so a running Aspire stack can stay up; trust the ASP.NET development certificate once (`dotnet dev-certs https --trust`) because the HTTP checks verify TLS. `--skip-e2e`, `--skip-api-suites` and `--only <stage>` are for local debugging; `git push --no-verify` is an exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 
 ### AI Test Workflow
 

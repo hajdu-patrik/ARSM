@@ -52,11 +52,13 @@
   Stages, fail fast: validate (`validate.py --all --security`), backend (locked restore, build, test, EF
   pending-model check), frontend (`npm ci` only when the lockfile differs from upstream, audit, tsc, lint,
   build), e2e (`select-e2e-specs.py --run`, diffed against the upstream ref), api-suites
-  (`run-local-test-suite.py http sql` on throwaway `arsm-prepush-postgres` (port 55432) and
-  `arsm-prepush-s3` (port 59000) with local secrets; always cleaned up). The suites run in-process so
+  (`run-local-test-suite.py http sql` on throwaway `arsm-prepush-postgres` (port 15432) and
+  `arsm-prepush-s3` (port 19000), with the API on its own `https://localhost:15200`, local secrets; always
+  cleaned up). These ports sit below the Windows dynamic range (49152+), where outbound sockets once took the
+  old 59000, and apart from the dev stack, so the gate runs beside a running AppHost. The suites run in-process so
   `.secrets` cannot override the throwaway stack; the stage needs `ARSM_TEST_ADMIN_EMAIL` and
   `ARSM_TEST_ADMIN_PASSWORD` in the local secrets, and aborts on a Bootstrap section in
-  `appsettings.Local.json` and on an in-use https launch-profile port. It never touches the dev database
+  `appsettings.Local.json` and on an in-use gate API port. It never touches the dev database
   or `arsm-tunnel-*`. Prints a summary table; non-zero exit on failure. `git push --no-verify` is an
   exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,

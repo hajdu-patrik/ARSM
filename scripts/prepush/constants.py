@@ -6,8 +6,11 @@ POSTGRES_CONTAINER = "arsm-prepush-postgres"
 S3_CONTAINER = "arsm-prepush-s3"
 POSTGRES_IMAGE = "postgres:18.6"
 S3_IMAGE = "rustfs/rustfs:1.0.1"
-POSTGRES_HOST_PORT = 55432
-S3_HOST_PORT = 59000
+# The gate's own ports, below the Windows dynamic range (49152+) and apart from the dev stack, so neither an
+# outbound socket nor a running AppHost can hold them.
+POSTGRES_HOST_PORT = 15432
+S3_HOST_PORT = 19000
+API_HOST_PORT = 15200
 INFRA_HOST = "127.0.0.1"
 DATABASE_NAME = "AutoServiceDb"
 READER_ROLE = "ai_agent_test_user"

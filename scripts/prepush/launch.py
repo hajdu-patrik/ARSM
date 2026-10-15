@@ -9,7 +9,7 @@ import socket
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from .constants import BLOCKING_LOCAL_SECTIONS, REQUIRED_LOCAL_SECRETS
+from .constants import API_HOST_PORT, BLOCKING_LOCAL_SECTIONS, REQUIRED_LOCAL_SECRETS
 from .environment import API_PROJECT_DIR, Context
 from .steps import StepFailure
 
@@ -27,11 +27,12 @@ class LaunchEndpoint:
 
 
 def read_launch_endpoint() -> LaunchEndpoint:
+    """The https launch profile's host on the gate's own API_HOST_PORT, so the dev API on 5200 may keep running."""
     try:
         profile = json.loads(LAUNCH_SETTINGS.read_text(encoding="utf-8-sig"))["profiles"]["https"]
         urls = [item.strip() for item in profile["applicationUrl"].split(";") if item.strip().startswith("https://")]
         parsed = urlparse(urls[0])
-        return LaunchEndpoint(f"{parsed.scheme}://{parsed.netloc}", parsed.port or 443)
+        return LaunchEndpoint(f"{parsed.scheme}://{parsed.hostname}:{API_HOST_PORT}", API_HOST_PORT)
     except (OSError, ValueError, KeyError, IndexError) as error:
         raise StepFailure(f"The https launch profile in {LAUNCH_SETTINGS.name} cannot be read ({type(error).__name__}).") from error
 
@@ -84,8 +85,8 @@ def preflight(ctx: Context) -> LaunchEndpoint:
     endpoint = read_launch_endpoint()
     if port_in_use(endpoint.port):
         raise StepFailure(
-            f"Port {endpoint.port} (API https launch profile) is already in use, probably by the dev AppHost. "
-            "Stop it and run the gate again; nothing was killed.",
+            f"Port {endpoint.port} (the gate's own API port) is already in use, probably by an earlier gate run. "
+            "Stop that process and run the gate again; nothing was killed.",
         )
     docker = shutil.which("docker")
     if docker is None:
