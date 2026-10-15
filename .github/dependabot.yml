@@ -8,6 +8,10 @@ updates:
     directory: /app
     schedule:
       interval: weekly
+    groups:
+      aspire:
+        patterns:
+          - "Aspire.*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
