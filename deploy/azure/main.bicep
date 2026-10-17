@@ -130,11 +130,12 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
-resource containerEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource containerEnv 'Microsoft.App/managedEnvironments@2026-07-01' = {
   name: '${namePrefix}-env'
   location: location
   properties: {
-    // Without a workload profile Azure creates an express environment: no static IP, sidecars or allowInsecure.
+    // Without an explicit mode Azure creates an Express environment: no static IP, custom domain or allowInsecure.
+    environmentMode: 'WorkloadProfiles'
     workloadProfiles: [ { name: 'Consumption', workloadProfileType: 'Consumption' } ]
     appLogsConfiguration: {
       destination: 'log-analytics'
