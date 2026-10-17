@@ -96,7 +96,7 @@ Optional:
 
 | Key | Meaning |
 | --- | --- |
-| `ARSM_AZURE_LOCATION` | Azure region, default `swedencentral`. Student subscriptions only allow some regions; on a `RequestDisallowedByAzure` error pick another one. |
+| `ARSM_AZURE_LOCATION` | Azure region, default `swedencentral`. Student subscriptions only allow some regions; on a `RequestDisallowedByAzure` error pick another one. PostgreSQL Flexible Server can still be restricted in an allowed region (`ParameterOutOfRange` on `Version`); `az postgres flexible-server list-skus -l <region>` shows it. |
 | `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start and migration check). |
 | `ARSM_WEB_ALWAYS_ON` | Default `false`: the web app (gate + Nginx) scales to zero when idle, a cold start of about 2 s. `true` keeps one replica running (more credit used). |
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |

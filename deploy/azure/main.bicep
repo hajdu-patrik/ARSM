@@ -134,6 +134,8 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: '${namePrefix}-env'
   location: location
   properties: {
+    // Without a workload profile Azure creates an express environment: no static IP, sidecars or allowInsecure.
+    workloadProfiles: [ { name: 'Consumption', workloadProfileType: 'Consumption' } ]
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
