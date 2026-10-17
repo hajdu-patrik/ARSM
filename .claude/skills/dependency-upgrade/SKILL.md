@@ -32,8 +32,8 @@ scope (user decision, 2026-10-11). Nothing is upgraded without a web check of th
 | NuGet | every `*.csproj` (ApiService, AppHost, ServiceDefaults), `app/Directory.Build.props` (lock files on), `packages.lock*.json` including the RID-specific AppHost locks | `dotnet list package --outdated`, NuGet API |
 | Aspire | AppHost SDK (`Aspire.AppHost.Sdk/<v>`), `Aspire.Hosting.*` packages, `dotnet-tools.json` (`aspire.cli`, `dotnet-ef`) | NuGet, GitHub releases |
 | .NET SDK / runtime | `global.json` if present, `net10.0` target, `dotnet-version` in `.github/workflows/*.yml`, Docker `dotnet/sdk` and `aspnet` tags | endoflife.date, dotnet releases |
-| Node | `node-version` in `.github/workflows/*.yml`, Docker `node` tag in `deploy/web.Dockerfile` (local-only, gitignored) | endoflife.date, nodejs.org |
-| GitHub Actions | `uses:` in `.github/workflows/*.yml`; also the gitignored, local-only `deploy/` files (for example `deploy/github/publish-images.yml`, `deploy/web.Dockerfile`, `deploy/api.Dockerfile`), edited in place and never committed | each action's GitHub releases |
+| Node | `node-version` in `.github/workflows/*.yml`, Docker `node` tag in `deploy/web.Dockerfile` | endoflife.date, nodejs.org |
+| GitHub Actions | `uses:` in `.github/workflows/*.yml`; also any workflow-style files under the tracked `deploy/` kit | each action's GitHub releases |
 | Playwright | `@playwright/test` in `package.json` and the browsers (`npx playwright install`, also in CI) | npm, release notes |
 | Container images | tags pinned in `app/AutoService.AppHost/AppHost.cs` (PostgreSQL, RustFS) and `POSTGRES_IMAGE`/`S3_IMAGE` in `tests.yml`, `deploy/` Dockerfiles (nginx) | Docker Hub / registry tags |
 | Python and CLI tooling | requirements files if any under `scripts/` or `tests/`, `python-version` in `tests.yml`, httpyac and other CLI tools the scripts call | PyPI, npm, `pip index versions` |

@@ -123,8 +123,9 @@ __pycache__/
 
 # Living local project overview (kept out of version control on purpose)
 docs/PROJECT-OVERVIEW.md
-# Local production deployment kit (images, Nginx, Bicep, publish workflow, plan, security checklist); kept off GitHub on purpose
-/deploy/
+# Deploy kit is tracked; these two local-only files were removed from history on purpose
+/deploy/docs/deployment-security-checklist.md
+/deploy/docs/arsm-deploy-plan.html
 /.dockerignore
 
 # Impeccable design-hook local detector config

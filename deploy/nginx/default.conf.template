@@ -1,0 +1,84 @@
+# Real client IP: only private-range hops (the platform ingress) may set X-Forwarded-For; recursive mode
+# takes the rightmost untrusted address, so a client-forged entry is never used as the client IP.
+set_real_ip_from 10.0.0.0/8;
+set_real_ip_from 172.16.0.0/12;
+set_real_ip_from 192.168.0.0/16;
+set_real_ip_from 100.64.0.0/10;
+# The Azure gate sidecar shares this network namespace and connects from loopback.
+set_real_ip_from 127.0.0.1;
+real_ip_header X-Forwarded-For;
+real_ip_recursive on;
+
+# Keep the ingress's original scheme (https); fall back to this hop's scheme when there is none.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+}
+
+# The container's own DNS server (filled in by the image entrypoint), so the API address is re-resolved.
+resolver ${NGINX_LOCAL_RESOLVERS} valid=30s;
+
+server {
+    listen ${PORT};
+    server_tokens off;
+    root /usr/share/nginx/html;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json application/manifest+json image/svg+xml text/plain;
+    # The build writes level-9 .gz siblings of the text assets, served as they are. No brotli_static:
+    # nginxinc/nginx-unprivileged ships no ngx_brotli module.
+    gzip_static on;
+
+    # API and liveness go to the internal API; the API sets its own security headers.
+    location ~ ^/(api/|alive$) {
+        set $api_upstream ${API_UPSTREAM};
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        # Server-sent events must stream unbuffered; uploads allow the 4 MB profile picture limit.
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        client_max_body_size 5m;
+    }
+
+    # Cache policy (checklist 1.4): hashed build output is immutable, images 30 days, manifest/robots a day.
+    location ^~ /assets/ {
+        include /etc/nginx/snippets/static-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Fonts keep their name (public/ is not hashed) and woff2 is already compressed: cached for a year,
+    # never gzipped. A changed font therefore needs a new file name.
+    location ~ ^/fonts/.+\.woff2$ {
+        include /etc/nginx/snippets/static-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        gzip off;
+        gzip_static off;
+        try_files $uri =404;
+    }
+
+    location ~* \.(webp|png|ico|svg)$ {
+        include /etc/nginx/snippets/static-headers.conf;
+        add_header Cache-Control "public, max-age=2592000" always;
+        try_files $uri =404;
+    }
+
+    location ~ ^/(site\.webmanifest|robots\.txt)$ {
+        include /etc/nginx/snippets/static-headers.conf;
+        add_header Cache-Control "public, max-age=86400" always;
+        try_files $uri =404;
+    }
+
+    # index.html and every SPA route revalidate on each load.
+    location / {
+        include /etc/nginx/snippets/static-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        try_files $uri /index.html;
+    }
+}

@@ -61,6 +61,19 @@
   `appsettings.Local.json` and on an in-use gate API port. It never touches the dev database
   or `arsm-tunnel-*`. Prints a summary table; non-zero exit on failure. `git push --no-verify` is an
   exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
+- `deploy-azure.py` (helpers in `scripts/azure_deploy/`): the manual, local production deploy to Azure, driven by
+  the `ARSM_*` keys of the root `.env`. Usage: `python scripts/deploy-azure.py <subcommand> [--commit REF] [--dry-run] [--yes]`.
+  Subcommands: `check` (validates the keys, min lengths, https public URL, enum names read from the C# files,
+  distinctness from the teszt `GATE_TOKEN` and the dev `ADMIN_*` keys, and the az/docker/git tools),
+  `registry` (account set, resource group, `registry.bicep`, `az acr login`), `images` (`git archive` of the
+  commit into a temp dir, then build and push `arsm-api`, `arsm-web` with `PUBLIC_URL`, `arsm-gate`, tag = first
+  12 sha characters), `infra` (`main.bicep` + `main.bicepparam`, outputs printed), `dns` (static IP, asuid id and
+  the exact Cloudflare DNS-only records), `bind-domain` (hostname add + bind, managed certificate, HTTP
+  validation), `release` (registry, images, infra, dns). `images`, `infra` and `release` ask for confirmation
+  unless `--yes`; `--dry-run` prints the commands without running them. Exit 0 ok, 1 failed step, 2 bad config or
+  usage. Never printed: secret values (loaded values, Postgres URIs and secret-shaped assignments are masked in
+  every line); az receives them only through the child process environment, docker and git never do, and the
+  temp directory is removed in a `finally` block. Nothing deletes Azure resources.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
   changed specs, and the specs that import a changed page object); any file outside those rules selects
   the full suite. Prints the selection, or runs it through the canonical runner with `--run`.

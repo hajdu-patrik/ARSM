@@ -1,0 +1,416 @@
+// ARSM on Azure Container Apps: web app (token gate + Nginx, public ingress), internal API app, PostgreSQL
+// Flexible Server, Blob Storage, images from ACR. Walkthrough: deploy/docs/deployment-azure.md.
+
+targetScope = 'resourceGroup'
+
+@description('Azure region for every resource.')
+param location string = resourceGroup().location
+
+@description('Short lowercase prefix for resource names.')
+@maxLength(12)
+param namePrefix string = 'arsm'
+
+@description('Name of the Azure Container Registry created by registry.bicep (same resource group).')
+param acrName string
+
+@description('API image, e.g. <acr>.azurecr.io/arsm-api:<tag>.')
+param apiImage string
+
+@description('Web image built with PUBLIC_URL equal to publicUrl, e.g. <acr>.azurecr.io/arsm-web:<tag>.')
+param webImage string
+
+@description('Token gate image, e.g. <acr>.azurecr.io/arsm-gate:<tag>.')
+param gateImage string
+
+@description('Public https origin of the app, no trailing slash. Empty: the default Container Apps URL of the web app.')
+param publicUrl string = ''
+
+@description('PostgreSQL major version offered by Flexible Server in the region.')
+param postgresVersion string = '17'
+
+@description('PostgreSQL administrator login.')
+param postgresAdminLogin string = 'arsmadmin'
+
+@secure()
+@description('PostgreSQL administrator password.')
+param postgresAdminPassword string
+
+@secure()
+@description('JWT signing secret, at least 32 bytes, no template markers.')
+param jwtSecret string
+
+@description('Private blob container for profile pictures (created here).')
+param objectStorageContainer string = 'arsm-profile-pictures'
+
+@description('Company data printed on the quote PDF letterhead.')
+param companyName string
+param companyAddressLine string
+param companyPostalCode string
+param companyCity string
+param companyTaxNumber string
+param companyPhoneNumber string
+param companyEmail string
+
+@description('Bootstrap administrator created on the first start of an empty database.')
+param bootstrapAdminEmail string
+param bootstrapAdminFirstName string
+param bootstrapAdminLastName string
+param bootstrapAdminMiddleName string = ''
+param bootstrapAdminPhoneNumber string = ''
+
+@description('SpecializationType enum name of the bootstrap administrator.')
+param bootstrapAdminSpecialization string
+
+@description('ExpertiseType enum names of the bootstrap administrator (1..10 unique).')
+param bootstrapAdminExpertise array
+
+@secure()
+@description('Password of the bootstrap administrator.')
+param bootstrapAdminPassword string
+
+@secure()
+@description('Access token of the web gate, at least 32 characters.')
+param gateToken string
+
+@description('Keep one API replica running (default); false lets it scale to zero (cold start of roughly 10-20 s). Never more than one replica.')
+param apiAlwaysOn bool = true
+
+@description('Keep one web (gate + Nginx) replica running; false (default) scales it to zero when idle, a cold start of about 2 s.')
+param webAlwaysOn bool = false
+
+var suffix = uniqueString(resourceGroup().id)
+var apiAppName = '${namePrefix}-api'
+var webAppName = '${namePrefix}-web'
+var effectivePublicUrl = empty(publicUrl) ? 'https://${webAppName}.${containerEnv.properties.defaultDomain}' : publicUrl
+var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+var apiMinReplicas = apiAlwaysOn ? 1 : 0
+var webMinReplicas = webAlwaysOn ? 1 : 0
+var pullIdentities = { '${pullIdentity.id}': {} }
+var registries = [
+  {
+    server: acr.properties.loginServer
+    identity: pullIdentity.id
+  }
+]
+var bootstrapOptionalEnv = concat(
+  empty(bootstrapAdminMiddleName) ? [] : [ { name: 'Bootstrap__Admin__MiddleName', value: bootstrapAdminMiddleName } ],
+  empty(bootstrapAdminPhoneNumber) ? [] : [ { name: 'Bootstrap__Admin__PhoneNumber', value: bootstrapAdminPhoneNumber } ]
+)
+var bootstrapExpertiseEnv = [for (expertise, i) in bootstrapAdminExpertise: {
+  name: 'Bootstrap__Admin__Expertise__${i}'
+  value: string(expertise)
+}]
+
+// Registry created by registry.bicep; both apps pull from it with the managed identity below.
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: acrName
+}
+
+resource pullIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: '${namePrefix}-pull-id'
+  location: location
+}
+
+resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: acr
+  name: guid(acr.id, pullIdentity.id, acrPullRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+    principalId: pullIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: '${namePrefix}-logs-${suffix}'
+  location: location
+  properties: {
+    sku: { name: 'PerGB2018' }
+    retentionInDays: 30
+  }
+}
+
+resource containerEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: '${namePrefix}-env'
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logs.properties.customerId
+        sharedKey: logs.listKeys().primarySharedKey
+      }
+    }
+  }
+}
+
+resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
+  name: '${namePrefix}-pg-${suffix}'
+  location: location
+  sku: {
+    name: 'Standard_B1ms'
+    tier: 'Burstable'
+  }
+  properties: {
+    version: postgresVersion
+    administratorLogin: postgresAdminLogin
+    administratorLoginPassword: postgresAdminPassword
+    storage: { storageSizeGB: 32 }
+    backup: {
+      backupRetentionDays: 7
+      geoRedundantBackup: 'Disabled'
+    }
+    highAvailability: { mode: 'Disabled' }
+    network: { publicNetworkAccess: 'Enabled' }
+  }
+}
+
+// The migrations create the pg_trgm extension (customer search); Flexible Server only allows
+// extensions that are listed here.
+resource postgresExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
+  parent: postgres
+  name: 'azure.extensions'
+  properties: {
+    value: 'PG_TRGM'
+    source: 'user-override'
+  }
+}
+
+// Consumption Container Apps have no fixed outbound address; this rule admits Azure services only.
+resource postgresAzureAccess 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = {
+  parent: postgres
+  name: 'AllowAzureServices'
+  properties: {
+    startIpAddress: '0.0.0.0'
+    endIpAddress: '0.0.0.0'
+  }
+}
+
+// Profile pictures: Azure Blob Storage (5 GB LRS is on the student free list), private container, HTTPS only.
+resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: take(toLower('${namePrefix}st${suffix}'), 24)
+  location: location
+  sku: { name: 'Standard_LRS' }
+  kind: 'StorageV2'
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: false
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+  parent: storage
+  name: 'default'
+}
+
+resource pictureContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: objectStorageContainer
+  properties: { publicAccess: 'None' }
+}
+
+resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
+  parent: postgres
+  name: 'AutoServiceDb'
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
+// The API is reached only through the web app's Nginx, which calls it as http://<apiAppName>; the
+// platform routes by that host name, so AllowedHosts and the probe Host header both name it.
+resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: apiAppName
+  location: location
+  dependsOn: [ database, postgresExtensions, postgresAzureAccess, pictureContainer, acrPullAssignment ]
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: pullIdentities
+  }
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: false
+        targetPort: 8080
+        transport: 'http'
+        allowInsecure: true
+      }
+      registries: registries
+      secrets: [
+        {
+          name: 'db-connection'
+          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require'
+        }
+        { name: 'jwt-secret', value: jwtSecret }
+        {
+          name: 'blob-connection'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+        }
+        { name: 'bootstrap-admin-password', value: bootstrapAdminPassword }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'api'
+          image: apiImage
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: concat([
+            { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
+            { name: 'AllowedHosts', value: apiAppName }
+            { name: 'Cors__AllowedOrigins__0', value: effectivePublicUrl }
+            // Nginx overwrites X-Forwarded-For with the resolved client address, and the platform
+            // ingress in front of the API appends Nginx's address: two private hops, no public one.
+            { name: 'ForwardedHeaders__ForwardLimit', value: '2' }
+            { name: 'ForwardedHeaders__KnownNetworks__0', value: '10.0.0.0/8' }
+            { name: 'ForwardedHeaders__KnownNetworks__1', value: '172.16.0.0/12' }
+            { name: 'ForwardedHeaders__KnownNetworks__2', value: '192.168.0.0/16' }
+            { name: 'ForwardedHeaders__KnownNetworks__3', value: '100.64.0.0/10' }
+            { name: 'Deployment__RateLimiterTopology', value: 'SingleInstance' }
+            { name: 'ConnectionStrings__AutoServiceDb', secretRef: 'db-connection' }
+            { name: 'JwtSettings__Secret', secretRef: 'jwt-secret' }
+            { name: 'ObjectStorage__Provider', value: 'AzureBlob' }
+            { name: 'ObjectStorage__ConnectionString', secretRef: 'blob-connection' }
+            { name: 'ObjectStorage__BucketName', value: objectStorageContainer }
+            { name: 'ObjectStorage__AutoCreateBucket', value: 'false' }
+            { name: 'CompanyProfile__Name', value: companyName }
+            { name: 'CompanyProfile__AddressLine', value: companyAddressLine }
+            { name: 'CompanyProfile__PostalCode', value: companyPostalCode }
+            { name: 'CompanyProfile__City', value: companyCity }
+            { name: 'CompanyProfile__TaxNumber', value: companyTaxNumber }
+            { name: 'CompanyProfile__PhoneNumber', value: companyPhoneNumber }
+            { name: 'CompanyProfile__Email', value: companyEmail }
+            { name: 'Bootstrap__Admin__Email', value: bootstrapAdminEmail }
+            { name: 'Bootstrap__Admin__FirstName', value: bootstrapAdminFirstName }
+            { name: 'Bootstrap__Admin__LastName', value: bootstrapAdminLastName }
+            { name: 'Bootstrap__Admin__Specialization', value: bootstrapAdminSpecialization }
+            { name: 'Bootstrap__Admin__Password', secretRef: 'bootstrap-admin-password' }
+          ], bootstrapOptionalEnv, bootstrapExpertiseEnv)
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/alive'
+                port: 8080
+                httpHeaders: [ { name: 'Host', value: apiAppName } ]
+              }
+              initialDelaySeconds: 20
+              periodSeconds: 30
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/alive'
+                port: 8080
+                httpHeaders: [ { name: 'Host', value: apiAppName } ]
+              }
+              periodSeconds: 10
+            }
+          ]
+        }
+      ]
+      // Login rate limits and bans are process-local: never more than one replica.
+      scale: {
+        minReplicas: apiMinReplicas
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+// Two containers share one network namespace: the gate is the ingress target on 8080 and forwards to
+// Nginx on 127.0.0.1:18080. Only TCP probes on the gate, an HTTP probe would get the lock page.
+resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: webAppName
+  location: location
+  dependsOn: [ acrPullAssignment ]
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: pullIdentities
+  }
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        allowInsecure: false
+      }
+      registries: registries
+      secrets: [
+        { name: 'gate-token', value: gateToken }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'gate'
+          image: gateImage
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: [
+            { name: 'GATE_MODE', value: 'azure' }
+            { name: 'GATE_HOST', value: '0.0.0.0' }
+            { name: 'GATE_PORT', value: '8080' }
+            { name: 'UPSTREAM_PORT', value: '18080' }
+            { name: 'GATE_TOKEN', secretRef: 'gate-token' }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              tcpSocket: { port: 8080 }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+            }
+            {
+              type: 'Readiness'
+              tcpSocket: { port: 8080 }
+              periodSeconds: 10
+            }
+          ]
+        }
+        {
+          name: 'web'
+          image: webImage
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: [
+            { name: 'PORT', value: '18080' }
+            { name: 'API_UPSTREAM', value: 'http://${apiApp.name}' }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: webMinReplicas
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+@description('Public https origin; the web image must be built with exactly this PUBLIC_URL.')
+output publicUrl string = effectivePublicUrl
+
+@description('Default Container Apps host name of the web app (CNAME target for a custom domain).')
+output webDefaultHost string = webApp.properties.configuration.ingress.fqdn
+
+@description('Static inbound IP of the Container Apps environment (A record of the apex domain).')
+output environmentStaticIp string = containerEnv.properties.staticIp
+
+@description('Value of the asuid TXT record that proves ownership of the custom domain.')
+output customDomainVerificationId string = webApp.properties.customDomainVerificationId
+
+output postgresHost string = postgres.properties.fullyQualifiedDomainName

@@ -9,6 +9,18 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Azure production kit (2026-10-16): the deploy kit under `deploy/` is now tracked (only the local security checklist
+  and deploy plan stay ignored). `registry.bicep` creates an Azure Container Registry (Basic, admin user disabled) and
+  `main.bicep` pulls from it with a user-assigned managed identity (AcrPull). The web app runs the token gate
+  (`deploy/gate/`, `GATE_MODE=azure`) as a sidecar in front of Nginx with the client IP chain kept end to end; the API
+  gets the bootstrap admin from the `ARSM_PROD_ADMIN_*` keys and the demo-seed parameters are gone. Scaling is hybrid for
+  the student credit: the API stays on (`ARSM_API_ALWAYS_ON`, default true), the web app scales to zero
+  (`ARSM_WEB_ALWAYS_ON`, default false); the prod gate page uses neutral "ARSM" wording.
+  `python scripts/deploy-azure.py` (`check`, `registry`, `images`, `infra`, `dns`, `bind-domain`, `release`) reads the
+  root `.env`, builds from a clean `git archive` of a chosen commit and deploys; `deployment-azure.md` is rewritten
+  (arsm.hu on Azure, teszt.arsm.hu stays the Cloudflare tunnel view). `deploy/github/publish-images.yml` is removed.
+
+_Dev time: ~18m wall-clock (2026-10-16 11:27 to 11:45 +02:00, one arsm-chain run plus hand-run review, docs-sync and gate). Cost: ~$1.2 output-token-only estimate (124k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
 - Mandatory pre-push gate (2026-10-14): `python scripts/pre-push.py` (helpers in `scripts/prepush/`) runs from the
   tracked `.githooks/pre-push` hook (`git config core.hooksPath .githooks`) and mirrors CI: `validate.py --all
   --security`, the dotnet restore/build/test/EF gate, the frontend audit/tsc/lint/build/spec-compile/audit steps,
