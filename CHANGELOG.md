@@ -44,6 +44,10 @@ _Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one ars
   lucide-react and typescript-eslint. Dependency updates now run only on request, with no update bot.
 
 ### Fixed
+- MessagePack advisory (2026-10-17): the AppHost pins `MessagePack` 2.5.307 over the 2.5.302 that Aspire 13.6.1
+  pulls in transitively (GHSA-qhrr-8q5h-9q3h, moderate); all four AppHost lock files are regenerated.
+
+_Dev time: ~5m wall-clock (2026-10-17 17:04 to 17:09 +02:00). Cost: not measured._
 - Pre-push ports (2026-10-15): the gate's throwaway PostgreSQL, RustFS and API moved to their own ports (15432,
   19000, 15200), below the Windows dynamic range where an outbound socket had taken the old 59000, and off the dev
   API's 5200, so the gate no longer needs the Aspire stack stopped.
