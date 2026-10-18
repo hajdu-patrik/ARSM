@@ -4,9 +4,8 @@ Target: an Azure for Students subscription. This is the **production** instance 
 Everything lives in one resource group and is created by `deploy/azure/registry.bicep` (the
 container registry) and `deploy/azure/main.bicep` (everything else), driven from your Windows
 machine by `python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
-root `.env`. The security requirements behind these choices are in
-`deployment-security-checklist.md` (a local-only, gitignored file that is not in the repository);
-read its section 2.6 (one host name for WebUI and API) before changing the topology.
+root `.env`. Keep one host name for the WebUI and the API when changing the topology: the CSRF cookie
+is host-only.
 
 ## 1. What gets deployed
 

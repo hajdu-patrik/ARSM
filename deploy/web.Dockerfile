@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# WebUI image: Nginx serves the Vite build and proxies /api/* (one host name; the CSRF cookie is host-only,
-# see deploy/docs/deployment-security-checklist.md 2.6). PUBLIC_URL is baked in at build time.
+# WebUI image: Nginx serves the Vite build and proxies /api/* (one host name, because the CSRF cookie is
+# host-only). PUBLIC_URL is baked in at build time.
 
 FROM node:26-bookworm-slim AS build
 WORKDIR /src

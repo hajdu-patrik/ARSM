@@ -72,6 +72,11 @@ _Dev time: ~5m wall-clock (2026-10-17 17:04 to 17:09 +02:00). Cost: not measured
 _Dev time: ~3h wall-clock (2026-10-15 10:36 to 13:30 +02:00, mostly gate runs). Cost: not measured._
 
 ### Removed
+- Local deploy plan and security checklist (2026-10-18): with prod live, the gitignored
+  `deploy/docs/arsm-deploy-plan.html` and `deployment-security-checklist.md` are deleted and dropped from `.gitignore`;
+  the comments and the Azure deploy doc that cited checklist sections now state the rule itself.
+
+_Dev time: ~5m wall-clock. Cost: not measured._
 - Quick-tunnel docs (2026-10-14): the "Temporary Public Test Link" (random trycloudflare.com URL) section is gone
   from README.md and README(HU).md; its Requirements and the first-admin Accounts step now live in the fixed
   named-tunnel section, which is the only documented way to share a test instance.

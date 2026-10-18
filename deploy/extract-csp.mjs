@@ -1,4 +1,4 @@
-/** Prints an Nginx CSP add_header line for a built index.html, appending frame-ancestors 'none' (checklist 1.1). */
+/** Prints an Nginx CSP add_header line for a built index.html, appending frame-ancestors 'none'. */
 import { readFileSync } from 'node:fs';
 
 const html = readFileSync(process.argv[2], 'utf8');

@@ -46,7 +46,7 @@ server {
         client_max_body_size 5m;
     }
 
-    # Cache policy (checklist 1.4): hashed build output is immutable, images 30 days, manifest/robots a day.
+    # Cache policy: hashed build output is immutable, images 30 days, manifest/robots a day.
     location ^~ /assets/ {
         include /etc/nginx/snippets/static-headers.conf;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
