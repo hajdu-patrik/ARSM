@@ -1,0 +1,220 @@
+# Every case changes one field of an otherwise valid body; errors are keyed by camelCase field name.
+# Max-length cases use 300 characters, above every column cap, so they hold if a cap is tuned.
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+### [Setup][CompanyProfile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][CompanyProfile] Login as admin (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][CompanyProfile] All seven fields blank (400 expected, one error per field)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "", "addressLine": "", "postalCode": "", "city": "", "taxNumber": "", "phoneNumber": "", "email": "" }
+
+?? status == 400
+?? js (["name","addressLine","postalCode","city","taxNumber","phoneNumber","email"].every(k => response.parsedBody.errors[k]?.length >= 1)) == true
+
+###
+
+### [Negative][CompanyProfile] Whitespace-only name (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "   ", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.name.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Tax number without hyphens (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678112", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.taxNumber.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Tax number with a short first group (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "1234567-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.taxNumber.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Postal code with 3 digits (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.postalCode.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Postal code with 5 digits (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "11111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.postalCode.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Postal code with letters (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "11A1", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.postalCode.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Invalid phone number (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "not-a-phone", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.phoneNumber.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Invalid email (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "not-an-email" }
+
+?? status == 400
+?? js (response.parsedBody.errors.email.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Name over the length cap (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.name.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Address line over the length cap (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.addressLine.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] City over the length cap (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.city.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Phone number over the length cap (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301111111111111111111111111111111111111111", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.phoneNumber.length >= 1) == true
+
+###
+
+### [Negative][CompanyProfile] Email over the length cap (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.email.length >= 1) == true
+
+###
+
+### [Setup][CompanyProfile] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -76,10 +76,13 @@ Ezután töltsd ki a helyőrző értékeket az `appsettings.Local.json` fájlban
 - `Bootstrap.Admin.*` (opcionális: üres adatbázison létrehozza az első admint; az API nem tölt fel adatot, ezért a friss adatbázisban nincs fiók, ügyfél, jármű vagy katalógussor)
 - `CompanyProfile.*` (név, cím, irányítószám, város, adószám, telefon, e-mail)
 
-A `CompanyProfile` a szerviz azonosító adata, amit az ajánlat PDF fejléce kinyomtat. Az API nem indul el,
-amíg bármelyik mező hiányzik vagy még helyőrzőt tartalmaz: az ügyfélnek átadott ajánlat nem mehet ki
-félkész fejléccel. Valódi cégadat nem kerül a repóba; a gitignore-olt lokális fájl vagy a
-`CompanyProfile__*` környezeti változók valók erre.
+A `CompanyProfile` a szerviz azonosító adata, amit az ajánlat PDF fejléce kinyomtat. Az adatbázisban él
+(egysoros `companyprofiles` tábla), és Adminként a WebUI Beállítások oldalán szerkeszthető
+(`GET`/`PUT /api/admin/company-profile`). A konfigurációs szekció csak egyszeri kezdőérték: induláskor,
+ha a táblában nincs sor, a `CompanyProfile.*` / `CompanyProfile__*` értékekből töltődik fel; ha már van
+sor, a konfigurációt figyelmen kívül hagyja. Amíg a tábla és a konfiguráció is üres (vagy egy mező
+hiányzik, illetve helyőrző), az API nem indul el. Valódi cégadat nem kerül a repóba; a gitignore-olt
+lokális fájl vagy a `CompanyProfile__*` környezeti változók valók erre.
 
 Az ajánlat PDF beágyazott Noto Sans betűtípust használ (SIL Open Font License 1.1, a licencszöveg az
 `app/AutoService.ApiService/Assets/Fonts/OFL.txt` fájlban), hogy a magyar ékezetek olyan konténerben is

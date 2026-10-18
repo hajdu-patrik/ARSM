@@ -147,6 +147,8 @@ export const enCore = {
     pictureInvalidType: 'Only PNG, JPG, JPEG, and WebP images are allowed.',
     profileDeleted: 'Profile deleted successfully.',
     profileDeleteFailed: 'Failed to delete profile.',
+    companyProfileUpdated: 'Company data updated successfully.',
+    companyProfileUpdateFailed: 'Failed to update company data.',
   },
   vehicle: {
     drivetrain: {

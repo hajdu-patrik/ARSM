@@ -45,3 +45,6 @@ export const PROFILE_STALE_TIME_MS = MINUTE_MS;
 
 /** Stale time for the admin mechanic roster read. */
 export const ADMIN_MECHANICS_STALE_TIME_MS = MINUTE_MS;
+
+/** Stale time for the admin company profile (quote letterhead) read. */
+export const ADMIN_COMPANY_PROFILE_STALE_TIME_MS = MINUTE_MS;

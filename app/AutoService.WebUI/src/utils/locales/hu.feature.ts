@@ -214,6 +214,23 @@ export const huFeature = {
     confirmPictureRemoveTitle: 'Profilkép eltávolításának megerősítése',
     confirmPictureRemoveMessage: 'Biztosan eltávolítja a jelenlegi profilképét?',
     confirmPictureRemove: 'Profilkép eltávolítása',
+    company: {
+      title: 'Cégadatok',
+      name: 'Cégnév',
+      postalCode: 'Irányítószám',
+      city: 'Város',
+      addressLine: 'Utca, házszám',
+      taxNumber: 'Adószám',
+      taxNumberPlaceholder: 'pl. 12345678-1-12',
+      loadError: 'Nem sikerült betölteni a cégadatokat.',
+      saveRequiresChanges: 'A mentés engedélyezéséhez módosítson legalább egy cégadatot.',
+      confirmSaveMessage: 'Menti az árajánlatokon szereplő cégadatok módosításait?',
+      errors: {
+        taxNumberInvalid: 'Az adószámnak a 12345678-1-12 formátumúnak kell lennie.',
+        postalCodeInvalid: 'Az irányítószámnak pontosan 4 számjegyből kell állnia.',
+        tooLong: 'Ez az érték túl hosszú.',
+      },
+    },
     errors: {
       currentPasswordInvalid: 'A jelenlegi jelszó hibás.',
     },

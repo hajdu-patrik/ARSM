@@ -84,7 +84,7 @@ Required:
 | `ARSM_PROD_ADMIN_LAST_NAME` | Last name of the bootstrap admin. |
 | `ARSM_PROD_ADMIN_SPECIALIZATION` | A `SpecializationType` name: `GasolineAndDiesel`, `HybridAndElectric` or `All`. |
 | `ARSM_PROD_ADMIN_EXPERTISE` | Comma separated `ExpertiseType` names, 1 to 10 unique: `Engine`, `Transmission`, `Brakes`, `Suspension`, `ElectricalSystem`, `AirConditioning`, `ExhaustSystem`, `FuelSystem`, `CoolingSystem`, `Bodywork`. |
-| `ARSM_COMPANY_NAME` | Quote PDF letterhead: company name. |
+| `ARSM_COMPANY_NAME` | Quote PDF letterhead: company name. The `ARSM_COMPANY_*` values only seed the `companyprofiles` table on the first start; afterwards an Admin edits it in Settings. |
 | `ARSM_COMPANY_ADDRESS_LINE` | Letterhead: street and number. |
 | `ARSM_COMPANY_POSTAL_CODE` | Letterhead: postal code. |
 | `ARSM_COMPANY_CITY` | Letterhead: city. |

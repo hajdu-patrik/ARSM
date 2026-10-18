@@ -1,0 +1,106 @@
+# Reads the original row first and restores it at the end, so the run leaves the profile as found.
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+
+### [Setup][CompanyProfile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][CompanyProfile] Login as admin (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][CompanyProfile] Read the original profile (200 expected, seven non-empty strings)
+# @name originalProfile
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 200
+?? js (["name","addressLine","postalCode","city","taxNumber","phoneNumber","email"].every(k => typeof response.parsedBody[k] == "string" && response.parsedBody[k].length > 0)) == true
+
+###
+
+### [Positive][CompanyProfile] Update with raw phone and mixed-case email (200 expected, normalized echo)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "name": "ARSM Test Kft.",
+  "addressLine": "Teszt utca 1.",
+  "postalCode": "1111",
+  "city": "Budapest",
+  "taxNumber": "12345678-1-12",
+  "phoneNumber": "30 123 4567",
+  "email": "  Company.Test@Example.Test "
+}
+
+?? status == 200
+?? js (response.parsedBody.name == "ARSM Test Kft.") == true
+?? js (response.parsedBody.addressLine == "Teszt utca 1.") == true
+?? js (response.parsedBody.postalCode == "1111") == true
+?? js (response.parsedBody.city == "Budapest") == true
+?? js (response.parsedBody.taxNumber == "12345678-1-12") == true
+?? js (response.parsedBody.phoneNumber == "+36301234567") == true
+?? js (response.parsedBody.email == "company.test@example.test") == true
+
+###
+
+### [Positive][CompanyProfile] Read back the stored profile (200 expected, same as the normalized echo)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 200
+?? js (response.parsedBody.name == "ARSM Test Kft.") == true
+?? js (response.parsedBody.taxNumber == "12345678-1-12") == true
+?? js (response.parsedBody.phoneNumber == "+36301234567") == true
+?? js (response.parsedBody.email == "company.test@example.test") == true
+
+###
+
+### [Positive][CompanyProfile] Restore the original profile (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "name": "{{originalProfile.name}}",
+  "addressLine": "{{originalProfile.addressLine}}",
+  "postalCode": "{{originalProfile.postalCode}}",
+  "city": "{{originalProfile.city}}",
+  "taxNumber": "{{originalProfile.taxNumber}}",
+  "phoneNumber": "{{originalProfile.phoneNumber}}",
+  "email": "{{originalProfile.email}}"
+}
+
+?? status == 200
+?? js (response.parsedBody.name == originalProfile.name) == true
+?? js (response.parsedBody.taxNumber == originalProfile.taxNumber) == true
+
+###
+
+### [Setup][CompanyProfile] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

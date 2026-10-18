@@ -24,6 +24,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public DbSet<LaborType> LaborTypes => Set<LaborType>();
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
+    public DbSet<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity> CompanyProfiles => Set<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity>();
 
     /** Configures entity mappings, constraints, and relationships. */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -204,6 +205,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
 
         ConfigurePricingModel(modelBuilder);
         ConfigureQuotesModel(modelBuilder);
+        ConfigureCompanyProfileModel(modelBuilder);
     }
 
     /** Validates mechanic expertise constraints and quote totals before persisting changes. */

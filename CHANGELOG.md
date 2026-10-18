@@ -9,6 +9,14 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Company profile in the database (2026-10-18): the quote letterhead data now lives in the single-row `companyprofiles` table
+  (`CK_CompanyProfiles_SingleRow`), seeded once from the `CompanyProfile` configuration when empty and read by the quote PDF.
+  Admins read and replace it through `GET`/`PUT /api/admin/company-profile` (`CompanyProfileDto`, field-keyed 400 validation,
+  CSRF like other mutating calls); migration `AddCompanyProfile` creates the table without inserting a row. Settings gains an
+  Admin-only "Company data" section (HU/EN) with the same rules client-side: all seven fields required, tax number
+  `12345678-1-12`, 4-digit postal code, phone and e-mail as on the profile, name and address up to 150 characters.
+
+_Dev time: ~33m wall-clock (2026-10-18 20:03 to 20:36 +02:00, two arsm-chain runs plus hand-run gate and docs-sync). Cost: ~$1.7-3.4 output-token-only estimate (168k output tokens, sonnet and one opus plan; excludes input tokens and cache, so a lower bound)._
 - Azure production kit (2026-10-16): the deploy kit under `deploy/` is now tracked (only the local security checklist
   and deploy plan stay ignored). `registry.bicep` creates an Azure Container Registry (Basic, admin user disabled) and
   `main.bicep` pulls from it with a user-assigned managed identity (AcrPull). The web app runs the token gate

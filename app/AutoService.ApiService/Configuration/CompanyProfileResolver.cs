@@ -1,6 +1,6 @@
 namespace AutoService.ApiService.Configuration;
 
-/** Service company identity printed on the quote PDF header (D18). One workshop per deployment, so this is configuration rather than a table. */
+/** Service company identity printed on the quote PDF header (D18). Stored in the single-row company profile table. */
 public sealed record CompanyProfile(
     string Name,
     string AddressLine,
@@ -10,8 +10,8 @@ public sealed record CompanyProfile(
     string PhoneNumber,
     string Email);
 
-/** Resolves the company profile from config, preferring 'CompanyProfile__*' environment variables;
-    throws at startup (D26) on a missing field or template placeholder, before a quote can print with a half-empty letterhead. */
+/** Resolves the one-time seed from config, preferring 'CompanyProfile__*' environment variables; throws at
+    startup (D26) on a missing field or template placeholder when the table is empty. */
 public static class CompanyProfileResolver
 {
     private const string SectionName = "CompanyProfile";

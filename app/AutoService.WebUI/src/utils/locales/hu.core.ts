@@ -147,6 +147,8 @@ export const huCore = {
     pictureInvalidType: 'Csak PNG, JPG, JPEG és WebP képek engedélyezettek.',
     profileDeleted: 'Profil sikeresen törölve.',
     profileDeleteFailed: 'Nem sikerült törölni a profilt.',
+    companyProfileUpdated: 'Cégadatok sikeresen frissítve.',
+    companyProfileUpdateFailed: 'Nem sikerült frissíteni a cégadatokat.',
   },
   vehicle: {
     drivetrain: {

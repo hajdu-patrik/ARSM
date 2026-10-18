@@ -1,5 +1,6 @@
 /** Admin service for mechanic management; all endpoints require admin authorization. */
 
+import type { CompanyProfileDto } from '../../types/admin/companyProfile.types';
 import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
 import { apiClient } from '../http/api.client';
 import { toPageParams } from '../http/page-params';
@@ -80,5 +81,19 @@ export const adminService = {
   /** Deletes a mechanic via {@code DELETE /api/admin/mechanics/{id}}; may 422 (invariant) or 409 (contention). */
   async deleteMechanic(personId: number): Promise<void> {
     await apiClient.delete(`/api/admin/mechanics/${String(personId)}`);
+  },
+
+  /** Fetches the quote-PDF letterhead data via {@code GET /api/admin/company-profile}. */
+  async getCompanyProfile(options?: SilentRequestOptions): Promise<CompanyProfileDto> {
+    const response = await apiClient.get<CompanyProfileDto>('/api/admin/company-profile', {
+      skipErrorRedirect: options?.skipErrorRedirect,
+    });
+    return response.data;
+  },
+
+  /** Saves the letterhead data via {@code PUT /api/admin/company-profile}; returns the normalized stored row. */
+  async updateCompanyProfile(data: CompanyProfileDto): Promise<CompanyProfileDto> {
+    const response = await apiClient.put<CompanyProfileDto>('/api/admin/company-profile', data);
+    return response.data;
   },
 };

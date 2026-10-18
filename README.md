@@ -78,10 +78,13 @@ Then update placeholder values in `appsettings.Local.json`, especially:
 - `Bootstrap.Admin.*` (optional: creates the first admin on an empty database; the API seeds no data, so a fresh database has no accounts, customers, vehicles or catalog rows)
 - `CompanyProfile.*` (name, address, postal code, city, tax number, phone, email)
 
-`CompanyProfile` is the workshop identity printed on the quote PDF letterhead. The API refuses to
-start while any of its fields is missing or still holds a placeholder, because a quote handed to a
-customer must not carry a half-empty letterhead. Real company data stays out of the repository; use
-the gitignored local file or `CompanyProfile__*` environment variables.
+`CompanyProfile` is the workshop identity printed on the quote PDF letterhead. It lives in the
+database (single-row `companyprofiles` table) and an Admin edits it in the WebUI Settings page
+(`GET`/`PUT /api/admin/company-profile`). The configuration section is only a one-time seed: on
+startup, when the table has no row, it is filled from `CompanyProfile.*` / `CompanyProfile__*`;
+once a row exists the configuration is ignored. While the table and the configuration are both
+empty (or a field is missing or a placeholder) the API refuses to start. Real company data stays
+out of the repository; use the gitignored local file or `CompanyProfile__*` environment variables.
 
 The quote PDF embeds Noto Sans (SIL Open Font License 1.1, licence text in
 `app/AutoService.ApiService/Assets/Fonts/OFL.txt`) so Hungarian accents render in containers that

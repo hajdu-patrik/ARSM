@@ -14,7 +14,6 @@ public static partial class QuoteEndpoints
      * the paper before it's sent, and the document names its own status so nobody is misled. */
     private static async Task<IResult> GetQuotePdfAsync(
         int id,
-        CompanyProfile company,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -30,9 +29,12 @@ public static partial class QuoteEndpoints
             return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
         }
 
+        var company = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException("Company profile row is missing.");
+
         var identifiers = await LoadCatalogIdentifiersAsync(quote, db, cancellationToken);
         var model = ToQuoteDocumentModel(quote, identifiers, DateTime.UtcNow);
-        var pdfBytes = new QuoteDocument(model, company).GeneratePdf();
+        var pdfBytes = new QuoteDocument(model, company.ToProfile()).GeneratePdf();
 
         return Results.File(pdfBytes, "application/pdf", $"{quote.QuoteNumber}.pdf");
     }

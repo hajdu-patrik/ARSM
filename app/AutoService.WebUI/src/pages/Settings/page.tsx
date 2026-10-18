@@ -9,10 +9,12 @@ import { ProfilePictureCropModal } from '../../components/common/ProfilePictureC
 import { ProfilePictureSection } from './sections/ProfilePictureSection';
 import { PersonalInfoSection } from './sections/PersonalInfoSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
+import { CompanyDataSection } from './sections/CompanyDataSection';
 import { DeleteProfileSection } from './sections/DeleteProfileSection';
 import { SettingsActionModals } from './SettingsActionModals';
 import { loadingSpinnerClass, pageHeaderClass, pageShellClass, pageShellNarrowClass, pageTitleClass, sectionStackClass } from '../../utils/formStyles';
 import { getAvatarInitials, getDeterministicAvatarColor } from '../../utils/avatar';
+import { useCompanyProfileSettings } from './hooks/useCompanyProfileSettings';
 import { useDeleteProfileSettings } from './hooks/useDeleteProfileSettings';
 import { usePasswordChangeSettings } from './hooks/usePasswordChangeSettings';
 import { useProfileFormSettings } from './hooks/useProfileFormSettings';
@@ -26,6 +28,7 @@ const SettingsPageComponent = memo(function SettingsPage() {
   const showErrorToast = useToastStore((state) => state.showError);
 
   const profileForm = useProfileFormSettings({ showSuccessToast, showErrorToast });
+  const companyData = useCompanyProfileSettings({ isEnabled: Boolean(user?.isAdmin), showSuccessToast, showErrorToast });
   const passwordChange = usePasswordChangeSettings({ showSuccessToast, showErrorToast });
   const deleteProfile = useDeleteProfileSettings({ clearAuth, showSuccessToast, showErrorToast });
 
@@ -43,6 +46,20 @@ const SettingsPageComponent = memo(function SettingsPage() {
     handleProfileSaveConfirmed,
     closeProfileSaveConfirm,
   } = profileForm;
+
+  const {
+    isLoading: isLoadingCompanyData,
+    values: companyValues,
+    fieldErrors: companyFieldErrors,
+    isSaving: isSavingCompanyData,
+    hasChanges: hasCompanyChanges,
+    saveDisabledReasonKey: companySaveDisabledReasonKey,
+    isSaveConfirmOpen: isCompanySaveConfirmOpen,
+    setField: setCompanyField,
+    handleSaveRequest: handleCompanySaveRequest,
+    handleSaveConfirmed: handleCompanySaveConfirmed,
+    closeSaveConfirm: closeCompanySaveConfirm,
+  } = companyData;
 
   const {
     currentPassword,
@@ -148,6 +165,24 @@ const SettingsPageComponent = memo(function SettingsPage() {
               onSubmit={handleProfileSaveRequest}
             />
           </section>
+
+          {user?.isAdmin && (
+            <section aria-label={t('settings.company.title')}>
+              <CompanyDataSection
+                values={companyValues}
+                fieldErrors={companyFieldErrors}
+                isLoading={isLoadingCompanyData}
+                isSaveEnabled={hasCompanyChanges}
+                saveDisabledReasonKey={companySaveDisabledReasonKey}
+                isSubmitting={isSavingCompanyData}
+                isConfirmOpen={isCompanySaveConfirmOpen}
+                onFieldChange={setCompanyField}
+                onSubmit={handleCompanySaveRequest}
+                onConfirm={handleCompanySaveConfirmed}
+                onCloseConfirm={closeCompanySaveConfirm}
+              />
+            </section>
+          )}
 
           <section aria-label={t('settings.changePassword')}>
             <ChangePasswordSection

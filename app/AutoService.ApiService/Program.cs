@@ -4,6 +4,7 @@ using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Catalog;
+using AutoService.ApiService.CompanyProfiles;
 using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
@@ -65,9 +66,7 @@ builder.Services.AddProblemDetails();
 var connectionString = ConnectionStringResolver.Resolve(builder.Configuration);
 
 /** Quote PDF runtime setup, resolved here (not the handler); see Quote Anchors in
-    ApiService/CLAUDE.md (QuestPDF license, fonts, fail-fast fields). */
-var companyProfile = CompanyProfileResolver.Resolve(builder.Configuration);
-builder.Services.AddSingleton(companyProfile);
+    ApiService/CLAUDE.md (QuestPDF license, fonts); the letterhead lives in the database. */
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 QuestPDF.Settings.UseSystemFonts = false;
 QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
@@ -328,6 +327,9 @@ if (!app.Environment.IsDevelopment())
 // Migrate and normalize the database at startup; no data is seeded.
 await app.EnsureDatabaseReadyAsync();
 
+// One-time letterhead seed from CompanyProfile config; fails fast when the table and config are empty.
+await app.EnsureCompanyProfileAsync();
+
 // First-admin bootstrap from Bootstrap:Admin, after migrations; a no-op once any admin exists.
 await app.EnsureBootstrapAdminAsync();
 
@@ -388,6 +390,7 @@ app.MapVehicleEndpoints();
 app.MapPartEndpoints();
 app.MapLaborTypeEndpoints();
 app.MapQuoteEndpoints();
+app.MapCompanyProfileEndpoints();
 app.MapCompanyResultEndpoints();
 
 app.MapDefaultEndpoints();

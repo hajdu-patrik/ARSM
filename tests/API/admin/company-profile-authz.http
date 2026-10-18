@@ -1,0 +1,94 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+# The valid body keeps every rejection on policy (AdminOnly gates before validation).
+
+### [Setup][CompanyProfile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][CompanyProfile] Login as non-admin mechanic (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{NonAdminEmail}}",
+  "password": "{{NonAdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][CompanyProfile] Non-admin cannot read the company profile (403 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 403
+
+###
+
+### [Negative][CompanyProfile] Non-admin cannot update the company profile (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "name": "Forbidden Kft.",
+  "addressLine": "Teszt utca 1.",
+  "postalCode": "1111",
+  "city": "Budapest",
+  "taxNumber": "12345678-1-12",
+  "phoneNumber": "+36301234567",
+  "email": "forbidden@example.test"
+}
+
+?? status == 403
+
+###
+
+### [Setup][CompanyProfile] Logout non-admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][CompanyProfile] Unauthenticated read (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 401
+
+###
+
+### [Negative][CompanyProfile] Unauthenticated update (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "name": "Forbidden Kft.",
+  "addressLine": "Teszt utca 1.",
+  "postalCode": "1111",
+  "city": "Budapest",
+  "taxNumber": "12345678-1-12",
+  "phoneNumber": "+36301234567",
+  "email": "forbidden@example.test"
+}
+
+?? status == 401

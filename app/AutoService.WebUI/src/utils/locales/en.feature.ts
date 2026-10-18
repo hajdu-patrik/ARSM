@@ -214,6 +214,23 @@ export const enFeature = {
     confirmPictureRemoveTitle: 'Confirm picture removal',
     confirmPictureRemoveMessage: 'Remove your current profile picture?',
     confirmPictureRemove: 'Remove picture',
+    company: {
+      title: 'Company data',
+      name: 'Company name',
+      postalCode: 'Postal code',
+      city: 'City',
+      addressLine: 'Street and house number',
+      taxNumber: 'Tax number',
+      taxNumberPlaceholder: 'e.g. 12345678-1-12',
+      loadError: 'Failed to load company data.',
+      saveRequiresChanges: 'Change at least one company data field to enable saving.',
+      confirmSaveMessage: 'Save changes to the company data printed on quotes?',
+      errors: {
+        taxNumberInvalid: 'Tax number must look like 12345678-1-12.',
+        postalCodeInvalid: 'Postal code must be exactly 4 digits.',
+        tooLong: 'This value is too long.',
+      },
+    },
     errors: {
       currentPasswordInvalid: 'Current password is invalid.',
     },

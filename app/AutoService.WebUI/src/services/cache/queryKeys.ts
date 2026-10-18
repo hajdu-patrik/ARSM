@@ -148,5 +148,6 @@ export const queryKeys = {
       ...scope, 'admin', 'mechanics', PAGE_SEGMENT, query,
     ] as const,
     mechanicOptions: (scope: AuthQueryScope) => [...scope, 'admin', 'mechanics', OPTIONS_SEGMENT] as const,
+    companyProfile: (scope: AuthQueryScope) => [...scope, 'admin', 'company-profile'] as const,
   },
 };
