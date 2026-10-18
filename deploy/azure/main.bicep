@@ -78,6 +78,9 @@ param apiAlwaysOn bool = true
 @description('Keep one web (gate + Nginx) replica running; false (default) scales it to zero when idle, a cold start of about 2 s.')
 param webAlwaysOn bool = false
 
+@description('Managed certificate already issued for the publicUrl host (bind-domain); empty before the first bind.')
+param customDomainCertificateName string = ''
+
 var suffix = uniqueString(resourceGroup().id)
 var apiAppName = '${namePrefix}-api'
 var webAppName = '${namePrefix}-web'
@@ -349,6 +352,14 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
         allowInsecure: false
+        // Redeploying without this would drop the custom domain that bind-domain added.
+        customDomains: empty(customDomainCertificateName) || empty(publicUrl) ? [] : [
+          {
+            name: replace(publicUrl, 'https://', '')
+            certificateId: '${containerEnv.id}/managedCertificates/${customDomainCertificateName}'
+            bindingType: 'SniEnabled'
+          }
+        ]
       }
       registries: registries
       secrets: [

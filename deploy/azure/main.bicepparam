@@ -9,6 +9,7 @@ param gateImage = readEnvironmentVariable('ARSM_GATE_IMAGE')
 param publicUrl = readEnvironmentVariable('ARSM_PUBLIC_URL')
 param apiAlwaysOn = bool(readEnvironmentVariable('ARSM_API_ALWAYS_ON', 'true'))
 param webAlwaysOn = bool(readEnvironmentVariable('ARSM_WEB_ALWAYS_ON', 'false'))
+param customDomainCertificateName = readEnvironmentVariable('ARSM_CUSTOM_DOMAIN_CERT', '')
 
 param postgresAdminPassword = readEnvironmentVariable('ARSM_POSTGRES_PASSWORD')
 param jwtSecret = readEnvironmentVariable('ARSM_JWT_SECRET')

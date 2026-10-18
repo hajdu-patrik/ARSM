@@ -38,6 +38,7 @@ def infra(runner: CommandRunner, config: DeployConfig, commit_sha: str, tag: str
     """Deploy main.bicep + main.bicepparam; the bicepparam reads its values from the child environment."""
     use_subscription(runner, config)
     verify_images_exist(runner, config, tag)
+    environment = {**config.az_environment(tag), "ARSM_CUSTOM_DOMAIN_CERT": managed_certificate_name(runner, config)}
     with exported_commit(runner, commit_sha) as source:
         result = runner.run(
             [
@@ -45,12 +46,29 @@ def infra(runner: CommandRunner, config: DeployConfig, commit_sha: str, tag: str
                 "--name", MAIN_DEPLOYMENT, "--parameters", f"{source.as_posix()}/{BICEP_DIR}/main.bicepparam",
                 "--query", "properties.outputs", "--output", "json",
             ],
-            env_extra=config.az_environment(tag),
+            env_extra=environment,
             capture=True,
         )
     outputs = parse_outputs(result.stdout) if not runner.dry_run else {}
     print_outputs(runner, outputs)
     return outputs
+
+
+def managed_certificate_name(runner: CommandRunner, config: DeployConfig) -> str:
+    """Managed certificate already issued for the public hostname, so infra keeps the binding; '' before bind-domain."""
+    query = f"[?properties.subjectName=='{config.hostname}'].name | [0]"
+    try:
+        result = runner.run(
+            [
+                "az", "containerapp", "env", "certificate", "list", "--resource-group", config.resource_group,
+                "--name", ENVIRONMENT_NAME, "--managed-certificates-only", "--query", query, "--output", "tsv",
+            ],
+            capture=True,
+            read_only=True,
+        )
+    except StepFailure:
+        return ""
+    return result.stdout.strip()
 
 
 def parse_outputs(text: str) -> dict[str, str]:

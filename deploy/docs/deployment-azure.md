@@ -181,7 +181,7 @@ ARSM_COMPANY_EMAIL=info@example.com
 | `images` | `git archive` of `--commit` (default `HEAD`) into a temp dir; builds and pushes `arsm-api`, `arsm-web` (with `PUBLIC_URL`) and `arsm-gate`, tagged with the 12-character commit sha. |
 | `infra` | `az deployment group create` with `main.bicep` and `main.bicepparam`; prints the outputs. |
 | `dns` | Prints the environment static IP, the verification id and the exact Cloudflare records. |
-| `bind-domain` | Adds `arsm.hu` to `arsm-web` and binds the free managed certificate (HTTP validation, apex). |
+| `bind-domain` | Adds `arsm.hu` to `arsm-web` and binds the free managed certificate (HTTP validation, apex). Run once; later `infra`/`release` runs find the issued certificate and keep the binding. |
 | `release` | `registry` + `images` + `infra` + `dns`. |
 
 Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images are built from a

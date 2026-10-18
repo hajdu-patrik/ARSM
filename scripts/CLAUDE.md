@@ -67,7 +67,8 @@
   distinctness from the teszt `GATE_TOKEN` (the prod admin may reuse the dev `ADMIN_*` login), and the az/docker/git tools),
   `registry` (account set, resource group, `registry.bicep`, `az acr login`), `images` (`git archive` of the
   commit into a temp dir, then build and push `arsm-api`, `arsm-web` with `PUBLIC_URL`, `arsm-gate`, tag = first
-  12 sha characters), `infra` (`main.bicep` + `main.bicepparam`, outputs printed), `dns` (static IP, asuid id and
+  12 sha characters), `infra` (`main.bicep` + `main.bicepparam`, outputs printed; passes the managed certificate already issued for the
+  public host so a redeploy keeps the custom domain), `dns` (static IP, asuid id and
   the exact Cloudflare DNS-only records), `bind-domain` (hostname add + bind, managed certificate, HTTP
   validation), `release` (registry, images, infra, dns). `images`, `infra` and `release` ask for confirmation
   unless `--yes`; `--dry-run` prints the commands without running them. Exit 0 ok, 1 failed step, 2 bad config or

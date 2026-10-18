@@ -44,6 +44,13 @@ _Dev time: ~29m wall-clock (2026-10-14 23:34 to 2026-10-15 00:03 +02:00, one ars
   lucide-react and typescript-eslint. Dependency updates now run only on request, with no update bot.
 
 ### Fixed
+- Azure first release (2026-10-17 to 2026-10-18): the Container Apps environment is created on API 2026-07-01 with
+  `environmentMode: 'WorkloadProfiles'` (older API versions now get an Express environment with no static IP, custom
+  domain or `allowInsecure`); Nginx reaches the API at its internal FQDN because its resolver ignores the search
+  domains; `infra` passes the issued managed certificate to the Bicep so a release keeps the `arsm.hu` binding; the
+  prod admin may reuse the dev admin login (user decision). The deploy doc notes the per-region PostgreSQL restriction.
+
+_Dev time: ~1h wall-clock of fixes (2026-10-17 18:30 to 18:40 and 2026-10-18 19:50 to 20:15 +02:00), plus waits on Azure and DNS. Cost: not measured._
 - MessagePack advisory (2026-10-17): the AppHost pins `MessagePack` 2.5.307 over the 2.5.302 that Aspire 13.6.1
   pulls in transitively (GHSA-qhrr-8q5h-9q3h, moderate); all four AppHost lock files are regenerated.
 
