@@ -19,11 +19,10 @@ from .masking import SecretMasker, secret_values_of
 from .validators import KEY_CHECKS
 
 TEMPLATE_MARKERS = ("CHANGE_ME", "CHANGEME", "SET_UNIQUE_LOCAL")
-# Dev and teszt keys of the same .env that production must never share a value with.
+# Teszt keys of the same .env that production must never share a value with; the prod admin may reuse
+# the dev admin login (user decision, 2026-10-18).
 DISTINCT_FROM = {
     "ARSM_PROD_GATE_TOKEN": ("GATE_TOKEN",),
-    "ARSM_PROD_ADMIN_EMAIL": ("ADMIN_EMAIL", "ARSM_TEST_ADMIN_EMAIL"),
-    "ARSM_PROD_ADMIN_PASSWORD": ("ADMIN_PASSWORD", "ARSM_TEST_ADMIN_PASSWORD"),
 }
 
 

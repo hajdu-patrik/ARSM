@@ -64,7 +64,7 @@
 - `deploy-azure.py` (helpers in `scripts/azure_deploy/`): the manual, local production deploy to Azure, driven by
   the `ARSM_*` keys of the root `.env`. Usage: `python scripts/deploy-azure.py <subcommand> [--commit REF] [--dry-run] [--yes]`.
   Subcommands: `check` (validates the keys, min lengths, https public URL, enum names read from the C# files,
-  distinctness from the teszt `GATE_TOKEN` and the dev `ADMIN_*` keys, and the az/docker/git tools),
+  distinctness from the teszt `GATE_TOKEN` (the prod admin may reuse the dev `ADMIN_*` login), and the az/docker/git tools),
   `registry` (account set, resource group, `registry.bicep`, `az acr login`), `images` (`git archive` of the
   commit into a temp dir, then build and push `arsm-api`, `arsm-web` with `PUBLIC_URL`, `arsm-gate`, tag = first
   12 sha characters), `infra` (`main.bicep` + `main.bicepparam`, outputs printed), `dns` (static IP, asuid id and
