@@ -81,6 +81,8 @@ param webAlwaysOn bool = false
 var suffix = uniqueString(resourceGroup().id)
 var apiAppName = '${namePrefix}-api'
 var webAppName = '${namePrefix}-web'
+// Nginx's resolver ignores resolv.conf search domains, so it needs the documented internal FQDN.
+var apiInternalHost = '${apiAppName}.internal.${containerEnv.properties.defaultDomain}'
 var effectivePublicUrl = empty(publicUrl) ? 'https://${webAppName}.${containerEnv.properties.defaultDomain}' : publicUrl
 var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 var apiMinReplicas = apiAlwaysOn ? 1 : 0
@@ -222,8 +224,8 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-0
   }
 }
 
-// The API is reached only through the web app's Nginx, which calls it as http://<apiAppName>; the
-// platform routes by that host name, so AllowedHosts and the probe Host header both name it.
+// The API is reached only through the web app's Nginx at http://<apiInternalHost>; the platform routes
+// by host name, so AllowedHosts admits it and the <apiAppName> Host header the probes send.
 resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: apiAppName
   location: location
@@ -267,7 +269,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
           env: concat([
             { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
-            { name: 'AllowedHosts', value: apiAppName }
+            { name: 'AllowedHosts', value: '${apiAppName};${apiInternalHost}' }
             { name: 'Cors__AllowedOrigins__0', value: effectivePublicUrl }
             // Nginx overwrites X-Forwarded-For with the resolved client address, and the platform
             // ingress in front of the API appends Nginx's address: two private hops, no public one.
@@ -392,7 +394,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
           env: [
             { name: 'PORT', value: '18080' }
-            { name: 'API_UPSTREAM', value: 'http://${apiApp.name}' }
+            { name: 'API_UPSTREAM', value: 'http://${apiInternalHost}' }
           ]
         }
       ]
