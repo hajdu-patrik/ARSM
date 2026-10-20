@@ -15,6 +15,8 @@ const LOG_DIR = join(HERE, 'logs');
 const LOG_FILE = join(LOG_DIR, 'gate.log');
 const MAX_LOG_BYTES = 256 * 1024;
 const AZURE = process.env.GATE_MODE === 'azure';
+// The kit's run.cmd already writes the console into logs\gate.log, so it sets GATE_LOG_FILE=off.
+const FILE_LOG = !AZURE && process.env.GATE_LOG_FILE !== 'off';
 const UPSTREAM_HOST = '127.0.0.1';
 const HOST = AZURE ? (process.env.GATE_HOST ?? '127.0.0.1') : UPSTREAM_HOST;
 const GATE_PORT = portFrom('GATE_PORT', 18081);
@@ -56,11 +58,11 @@ const failuresByClient = new Map();
 
 process.on('uncaughtException', (error) => fatal(error?.stack ?? String(error)));
 
-/** Echoes a 'yyyy-MM-dd HH:mm:ss message' line; outside Azure mode it also goes to logs\gate.log. */
+/** Echoes a 'yyyy-MM-dd HH:mm:ss message' line; outside Azure mode and without GATE_LOG_FILE=off also into logs\gate.log. */
 function log(message) {
   const line = `${timestamp(new Date())} ${message}`;
   console.log(line);
-  if (AZURE) return;
+  if (!FILE_LOG) return;
   try {
     mkdirSync(LOG_DIR, { recursive: true });
     if (logBytes < 0) logBytes = statSync(LOG_FILE, { throwIfNoEntry: false })?.size ?? 0;

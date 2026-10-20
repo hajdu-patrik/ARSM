@@ -1,27 +1,35 @@
-# ARSM local test instance: one-command setup of the fixed hostname, token gate, tunnel, autostart and auto-deploy.
-# Idempotent: safe to re-run; see deploy/docs/deployment-local-test.md for what each step does.
+# ARSM teszt: idempotent one-command setup (tunnel, DNS, gate token, tasks, auto-deploy), no admin needed; ends with teszt.ps1 on (-Off: off).
+# powershell -ExecutionPolicy Bypass -File <kit>\setup.ps1 [-Off] [-RepoPath <repo>] [-HostName <host>] [-TunnelName <name>] [-OriginCert <pem>]
 param(
     [string]$HostName = "teszt.arsm.hu",
     [string]$TunnelName = "arsm-teszt",
     [string]$OriginCert = "$env:USERPROFILE\.cloudflared\cert-arsm.pem",
-    [string]$RepoPath = ""
+    [string]$RepoPath = "",
+    # Register and configure everything but leave the kit off (every task disabled, containers stopped).
+    [switch]$Off
 )
 $ErrorActionPreference = "Stop"
 $Here = $PSScriptRoot
+$Run = Join-Path $Here "run.cmd"   # cmd supervisor (~4 MB each), the same as in the MaKoncert kit
+$Switch = Join-Path $Here "teszt.ps1"
 $Cloudflared = Join-Path $Here "bin\cloudflared.exe"
 $Config = Join-Path $Here "cloudflared.yml"
 $Credentials = Join-Path $Here "$TunnelName.json"
-$TunnelLog = Join-Path $Here "cloudflared.log"
+# Task Scheduler folder \Automations\, names "ARSM teszt - <What>" (kit.psd1 names the same ones for teszt.ps1)
 $TaskPath = "\Automations\"
-$TunnelTask = "ARSM teszt - Tunnel"
-$GateTask = "ARSM teszt - Gate"
+$Tasks = [ordered]@{ gate = "ARSM teszt - Gate"; tunnel = "ARSM teszt - Tunnel" }
 $DeployTask = "ARSM teszt - Deploy"
 # Names used before 2026-10-20 (task root folder); removed when this account is allowed to.
 $LegacyTasks = @("ARSM teszt tunnel", "ARSM teszt gate", "ARSM mini-prod deploy")
+$Descriptions = @{
+    gate   = "ARSM teszt: token gate (gate.mjs) on 127.0.0.1:18081 -> web container on 18080; run.cmd restarts it. On/off: teszt.ps1."
+    tunnel = "ARSM teszt: Cloudflare tunnel $TunnelName (https://$HostName -> gate on 18081); run.cmd restarts it. On/off: teszt.ps1."
+    deploy = "ARSM teszt: every 5 minutes deploys origin/main (green CI) into the arsm-tunnel-* containers and takes the daily pg_dump backup (deploy.py). On/off: teszt.ps1."
+}
 $GateUrl = "http://127.0.0.1:18081"
 $PublicUrl = "https://$HostName"
 $EnvFile = Join-Path $Here "tunnel.env"
-# Holds only GATE_ENV_FILE (a path); node loads it with --env-file so the gate finds the project .env.
+# Holds only GATE_ENV_FILE (a path); run.cmd passes it to node with --env-file so the gate finds the project .env.
 $GatePointerFile = Join-Path $Here "gate.env"
 $Utf8 = New-Object System.Text.UTF8Encoding $false
 
@@ -77,25 +85,21 @@ function Resolve-RepoPath {
     throw "Unknown repository path: pass -RepoPath <ARSM repository> once (it is saved as ARSM_REPO in tunnel.env)."
 }
 
-# The kit's own copy next to this script, else the tracked gate in the repository (deploy/gate).
-function Resolve-GateScript {
-    $local = Join-Path $Here "gate.mjs"
-    if (Test-Path $local) { return $local }
-    return (Join-Path $Repo "deploy\gate\gate.mjs")
+# run.cmd starts the kit's own gate copy, else ..\gate\gate.mjs (a kit inside the repository's deploy\local-test).
+function Ensure-Gate {
+    Step "Token gate script"
+    if ((Test-Path (Join-Path $Here "gate.mjs")) -or (Test-Path (Join-Path $Here "..\gate\gate.mjs"))) { return }
+    $source = Join-Path $Repo "deploy\gate"
+    if (-not (Test-Path (Join-Path $source "gate.mjs"))) { throw "Missing $source\gate.mjs (the token gate)." }
+    Copy-Item (Join-Path $source "gate*.mjs") $Here
+    Copy-Item (Join-Path $source "gate-assets") $Here -Recurse -Force
+    Write-Host "Copied the gate from $source into the kit."
 }
 
 # Returns the HTTP status of a GET; on Windows PowerShell 5.1 a 401 throws, so read the code from the exception.
 function Get-StatusCode($url) {
     try { return [int](Invoke-WebRequest $url -UseBasicParsing -TimeoutSec 10).StatusCode }
     catch { if ($_.Exception.Response) { return [int]$_.Exception.Response.StatusCode } else { return 0 } }
-}
-
-function Wait-Url($url, $expected, $seconds) {
-    for ($i = 0; $i -lt $seconds / 5; $i++) {
-        if ((Get-StatusCode $url) -eq $expected) { return $true }
-        Start-Sleep 5
-    }
-    return $false
 }
 
 function Test-Docker { cmd /c "docker info >nul 2>&1"; return $LASTEXITCODE -eq 0 }
@@ -168,48 +172,35 @@ function Ensure-GateToken {
         Write-Host "GATE_TOKEN: generated"
     }
     if ($null -ne $legacy) { Remove-EnvValue $EnvFile "GATE_TOKEN" }
-}
-
-function Register-KitTask($name, $description, $action, $trigger, $settings, $principal) {
-    $task = New-ScheduledTask -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description $description
-    Register-ScheduledTask -TaskPath $TaskPath -TaskName $name -InputObject $task -Force | Out-Null
-}
-
-function Register-GateTask($principal, $settings) {
-    $node = (Get-Command node -ErrorAction SilentlyContinue).Source
-    if (-not $node) { throw "node.exe not found on PATH; the token gate needs Node.js." }
-    if (-not (Test-Path $GateScript)) { throw "Missing $GateScript (the token gate)." }
     [IO.File]::WriteAllText($GatePointerFile, "GATE_ENV_FILE=$GateEnvFile`n", $Utf8)
-    $arguments = "--headless `"$node`" --env-file=`"$GatePointerFile`" `"$GateScript`""
-    $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument $arguments -WorkingDirectory $Here
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-    $description = "ARSM local test instance ($HostName): at logon starts the token gate (node gate.mjs, headless) on 127.0.0.1:18081 in front of arsm-tunnel-web."
-    Register-KitTask $GateTask $description $action $trigger $settings $principal
 }
 
-function Ensure-Tasks {
-    Step "Scheduled tasks in $TaskPath"
+# Registered disabled: teszt.ps1 on enables and starts them (persistently), teszt.ps1 off disables them again.
+function Settings() {
+    New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) `
+        -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -Disable
+}
+
+function Register-Service($name) {
     $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 `
-        -RestartInterval (New-TimeSpan -Minutes 1) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-    # conhost --headless keeps the console app windowless while the task still owns the process.
-    $arguments = "--headless `"$Cloudflared`" tunnel --no-autoupdate --config `"$Config`" --logfile `"$TunnelLog`" run"
+    # conhost --headless keeps the console windowless while the task still owns the process.
+    $arguments = "--headless cmd.exe /d /s /c `"`"$Run`" $name`""
     $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument $arguments -WorkingDirectory $Here
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-    $description = "ARSM local test instance ($HostName): at logon starts the Cloudflare named tunnel $TunnelName (cloudflared, headless) that forwards $HostName to the token gate."
-    Register-KitTask $TunnelTask $description $action $trigger $settings $principal
-    Register-GateTask $principal $settings
-    if (-not (Get-ScheduledTask -TaskPath $TaskPath -TaskName $DeployTask -ErrorAction SilentlyContinue)) {
-        $pythonw = Join-Path (Split-Path (Get-Command python).Source) "pythonw.exe"
-        $deployAction = New-ScheduledTaskAction -Execute $pythonw -Argument "`"$(Join-Path $Here 'deploy.py')`"" -WorkingDirectory $Here
-        $every5 = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
-        # Runs on battery, never overlaps itself, and is killed if it hangs for more than 30 minutes.
-        $deploySettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew `
-            -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
-        $description = "ARSM local test instance ($HostName): every 5 minutes runs deploy.py, which redeploys the arsm-tunnel-* Docker stack when origin/main has a new commit with green CI, and takes daily pg_dump backups."
-        $task = New-ScheduledTask -Action $deployAction -Trigger $every5 -Settings $deploySettings -Description $description
-        Register-ScheduledTask -TaskPath $TaskPath -TaskName $DeployTask -InputObject $task | Out-Null
-    }
+    Register-ScheduledTask -TaskPath $TaskPath -TaskName $Tasks[$name] -Description $Descriptions[$name] -Action $action -Trigger $trigger `
+        -Settings (Settings) -Principal $principal -Force | Out-Null
+}
+
+function Register-Deploy {
+    $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
+    # The real interpreter, not the WindowsApps alias; deploy.py starts git and docker with CREATE_NO_WINDOW.
+    $python = (& python -c "import sys; print(sys.executable)").Trim()
+    $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless `"$python`" `"$(Join-Path $Here 'deploy.py')`"" -WorkingDirectory $Here
+    $every5 = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 45) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+        -StartWhenAvailable -MultipleInstances IgnoreNew -Disable
+    Register-ScheduledTask -TaskPath $TaskPath -TaskName $DeployTask -Description $Descriptions.deploy -Action $action -Trigger $every5 `
+        -Settings $settings -Principal $principal -Force | Out-Null
 }
 
 # An old-name task registered from an elevated shell can only be removed from an elevated shell.
@@ -221,39 +212,10 @@ function Remove-LegacyTasks {
     }
 }
 
-# Kills only this kit's processes and their conhost hosts: the MaKoncert gate and tunnel run on this machine too.
-function Stop-KitProcess($exe, $marker) {
-    $mine = "*$([WildcardPattern]::Escape($marker))*"
-    Get-CimInstance Win32_Process | Where-Object { $_.Name -in @($exe, "conhost.exe") -and $_.CommandLine -like $mine } |
-        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-}
-
-function Restart-Gate {
-    Step "Starting the gate"
-    $task = Get-ScheduledTask -TaskPath $TaskPath -TaskName $GateTask
-    if ($task.State -eq "Running") { Stop-ScheduledTask -TaskPath $TaskPath -TaskName $GateTask }
-    Stop-KitProcess "node.exe" $GateScript
-    Start-Sleep 2
-    Start-ScheduledTask -TaskPath $TaskPath -TaskName $GateTask
-    if (-not (Wait-Url "$GateUrl/alive" 200 60)) {
-        Write-Warning "$GateUrl/alive did not answer 200 within a minute; see $(Join-Path (Split-Path $GateScript) 'logs\gate.log'). Continuing."
-    }
-}
-
-function Restart-Tunnel {
-    Step "Starting the tunnel"
-    Stop-KitProcess "cloudflared.exe" $Config
-    Start-ScheduledTask -TaskPath $TaskPath -TaskName $TunnelTask
-}
-
-function Test-Site {
-    Step "Checking $GateUrl/ and /alive (locally through the gate, 200)"
-    $local = (Wait-Url "$GateUrl/" 200 60) -and (Wait-Url "$GateUrl/alive" 200 30)
-    if ($local) { Write-Host "OK: the gate answers locally." -ForegroundColor Green }
-    else { Write-Warning "The gate did not answer 200 locally; see the gate log and $(Join-Path $Here 'deploy.log')." }
-    Step "Checking $PublicUrl/ (401 = tunnel up, gate closed without the token)"
-    if (Wait-Url "$PublicUrl/" 401 120) { Write-Host "OK: $PublicUrl is up behind the gate." -ForegroundColor Green }
-    else { Write-Warning "$PublicUrl/ did not answer 401 within 2 minutes; see $TunnelLog, the gate log and deploy.log." }
+function Invoke-Switch($action, [string[]]$extra = @()) {
+    Step "teszt.ps1 $action $extra"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Switch $action @extra
+    if ($LASTEXITCODE -ne 0) { throw "teszt.ps1 $action failed." }
 }
 
 function Show-LoginLink {
@@ -264,10 +226,11 @@ function Show-LoginLink {
 }
 
 $Repo = Resolve-RepoPath
-# GATE_TOKEN lives in the project's gitignored root .env (like MaKoncert's app\web\.env.local).
+# GATE_TOKEN lives in the project's gitignored root .env (like MaKoncert's app\web\.env).
 $GateEnvFile = Join-Path $Repo ".env"
-$GateScript = Resolve-GateScript
 Wait-Docker
+if (Get-ScheduledTask -TaskPath $TaskPath -TaskName $Tasks.gate -ErrorAction SilentlyContinue) { Invoke-Switch "off" }
+Ensure-Gate
 $tunnelId = Ensure-Tunnel
 Write-Config $tunnelId
 $urlChanged = Ensure-PublicUrl
@@ -276,9 +239,10 @@ if ($urlChanged) {
     python (Join-Path $Here "deploy.py") --force
 }
 Ensure-GateToken
-Ensure-Tasks
+Step "Scheduled tasks in $TaskPath (registered disabled; teszt.ps1 switches them)"
+foreach ($name in $Tasks.Keys) { Register-Service $name }
+Register-Deploy
 Remove-LegacyTasks
-Restart-Gate
-Restart-Tunnel
-Test-Site
+if ($Off) { Invoke-Switch "off"; return }
+Invoke-Switch "on"
 Show-LoginLink

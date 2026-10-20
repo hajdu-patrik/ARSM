@@ -7,12 +7,13 @@ instances share no database, storage or token.
 
 ## 1. Current state
 
-**Off since 2026-10-20.** Production moved to Azure, so the local instance was stopped reversibly:
-the three scheduled tasks are disabled, the gate and tunnel processes are stopped and the four
-containers are stopped (restart policy `unless-stopped`, so they stay stopped across reboots).
-Kept: the Docker volumes (`arsm-tunnel-pgdata`, `arsm-tunnel-rustfs`), the `pg_dump` backups, the
-Cloudflare tunnel `arsm-teszt` and its DNS record. While it is off, `teszt.arsm.hu` answers with a
-Cloudflare tunnel error page (530 / error 1033). Section 3 turns it back on.
+**Off since 2026-10-20.** Production moved to Azure, so the local instance was switched off with
+`teszt.ps1 off` (section 4): the three scheduled tasks are disabled, the gate and tunnel processes are
+stopped and the four containers are stopped with restart policy `no`, so nothing of it starts again at
+logon, on the deploy trigger or after a Docker or PC restart until `teszt.ps1 on`. Kept: the Docker
+volumes (`arsm-tunnel-pgdata`, `arsm-tunnel-rustfs`), the `pg_dump` backups, the Cloudflare tunnel
+`arsm-teszt` and its DNS record. While it is off, `teszt.arsm.hu` answers with a Cloudflare tunnel
+error page (530 / error 1033). Section 3 turns it back on.
 
 ## 2. How it works
 
@@ -24,14 +25,24 @@ Browser --https--> Cloudflare --> cloudflared (tunnel arsm-teszt, cloudflared.ym
           --> arsm-tunnel-rustfs (S3 store for profile pictures, volume arsm-tunnel-rustfs)
 ```
 
+The kit has the same structure as the owner's other local test kit (MaKoncert): `README.txt`,
+`setup.ps1`, `run.cmd`, `teszt.ps1` with `kit.psd1`, the deploy script and `logs\`; only the app
+runtime differs (here Docker containers).
+
 | Piece | Where | Notes |
 | --- | --- | --- |
 | Kit folder | `%USERPROFILE%\.arsm\tunnel` | Working copy of [deploy/local-test](../local-test) plus a copy of the gate, `bin\cloudflared.exe` and the real secret files. |
-| Containers | Docker network `arsm-tunnel-net` | `arsm-tunnel-postgres` (`postgres:18.6`), `arsm-tunnel-rustfs` (`rustfs/rustfs:1.0.1`), `arsm-tunnel-api`, `arsm-tunnel-web`; `--restart unless-stopped`. |
-| Token gate | `gate.mjs` in the kit (copy of [deploy/gate](../gate)) | Reads `GATE_TOKEN` from the repository-root `.env`, re-reads it when it changes; log `logs\gate.log` (rotated at 256 KiB). A request without `cf-connecting-ip` (local) passes untouched. `deploy/gate/gate.mjs` takes that `.env` path from `GATE_ENV_FILE`, which the setup's gate task supplies (`node --env-file=gate.env`); the copy in the current kit has the path built in. After copying a newer gate into the kit, re-run the setup. |
-| Task `\Automations\ARSM teszt - Gate` | Task Scheduler | At logon: `conhost --headless node gate.mjs`, restart on failure. |
-| Task `\Automations\ARSM teszt - Tunnel` | Task Scheduler | At logon: `conhost --headless cloudflared tunnel ... run`, restart on failure. |
-| Task `\Automations\ARSM teszt - Deploy` | Task Scheduler | Every 5 minutes: `pythonw deploy.py`. |
+| Containers | Docker network `arsm-tunnel-net` | `arsm-tunnel-postgres` (`postgres:18.6`), `arsm-tunnel-rustfs` (`rustfs/rustfs:1.0.1`), `arsm-tunnel-api`, `arsm-tunnel-web`; restart policy `unless-stopped` while on, `no` while off. |
+| Token gate | `gate.mjs` in the kit (copy of [deploy/gate](../gate)) | Reads `GATE_TOKEN` from the repository-root `.env` named by `GATE_ENV_FILE` in `gate.env` (written by the setup, passed as `node --env-file=gate.env`), re-reads it when it changes. A request without `cf-connecting-ip` (local) passes untouched. `run.cmd` sets `GATE_LOG_FILE=off`, so the gate logs only to its console, which `run.cmd` writes into `logs\gate.log`. |
+| Task `\Automations\ARSM teszt - Gate` | Task Scheduler | At logon: `conhost.exe --headless cmd.exe /d /s /c ""<kit>\run.cmd" gate"`, restart on failure, no time limit. |
+| Task `\Automations\ARSM teszt - Tunnel` | Task Scheduler | At logon: the same with `run.cmd tunnel` (`cloudflared tunnel --no-autoupdate --config cloudflared.yml run`). |
+| Task `\Automations\ARSM teszt - Deploy` | Task Scheduler | Every 5 minutes: `conhost.exe --headless python.exe deploy.py`, at most 45 minutes, never overlapping itself. |
+
+`run.cmd` restarts its process 3 seconds after it exits, doubling the wait up to 60 seconds while
+the process dies within 30 seconds. It writes the console output into `logs\gate.log` or
+`logs\tunnel.log` with `===== <time> start: <command>` and `===== <time> exited with <code>; restarting
+in <n> s` lines, and moves a log over 20 MB to `*.1` on a restart. cloudflared writes the same
+messages it used to write with `--logfile`, in its text format.
 
 Auto-deploy: `deploy.py` fetches `origin/main` of the repository (`ARSM_REPO` in `tunnel.env`).
 When the commit differs from `deployed-sha.txt` and both GitHub Actions push workflows (`.NET`,
@@ -47,64 +58,52 @@ python deploy.py --force --ignore-ci   # emergency only
 python deploy.py --backup-only         # one backup now (postgres must be running)
 ```
 
-The scheduled tasks run windowless: `conhost.exe --headless` for the console apps and `pythonw`
-for `deploy.py`. Docker Desktop starts only at sign-in, so the site needs a logged-in user.
+Everything runs windowless: the tasks start `conhost.exe --headless`, and `deploy.py` starts git
+and docker with `CREATE_NO_WINDOW`. Docker Desktop starts only at sign-in, so the site needs a
+logged-in user.
 
 ## 3. Turn it on
 
 Docker Desktop must be running (`docker info` succeeds). In PowerShell:
 
 ```powershell
-docker start arsm-tunnel-postgres arsm-tunnel-rustfs
-docker start arsm-tunnel-api arsm-tunnel-web
-# wait until the web and the API answer locally (200)
-curl.exe -s -o NUL -w "%{http_code}`n" http://127.0.0.1:18080/alive
-
-$t = '\Automations\'
-'ARSM teszt - Gate', 'ARSM teszt - Tunnel', 'ARSM teszt - Deploy' |
-    ForEach-Object { Enable-ScheduledTask -TaskPath $t -TaskName $_ | Out-Null }
-Start-ScheduledTask -TaskPath $t -TaskName 'ARSM teszt - Gate'
-curl.exe -s -o NUL -w "%{http_code}`n" http://127.0.0.1:18081/alive   # 200
-Start-ScheduledTask -TaskPath $t -TaskName 'ARSM teszt - Tunnel'
-curl.exe -s -o NUL -w "%{http_code}`n" https://teszt.arsm.hu/         # 401 = up, gate closed without the token
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.arsm\tunnel\teszt.ps1" on
 ```
 
-Once enabled, the deploy task catches up with the newest green `main` commit on its next run (a
-backup is taken first). Re-running `setup-tunnel.ps1` (section 7) also turns the gate and the tunnel
-on and checks both, but it neither starts the containers nor enables an existing deploy task.
+It sets the containers to restart `unless-stopped` and starts `arsm-tunnel-postgres` and
+`arsm-tunnel-rustfs`, then `arsm-tunnel-api` and `arsm-tunnel-web`, waits until
+`http://127.0.0.1:18080/alive` answers 200, enables and starts the gate and tunnel tasks, enables the
+deploy task, and waits for `http://127.0.0.1:18081/alive` (200) and `https://teszt.arsm.hu/` (401 = up,
+gate closed without the token). The switch is persistent: from then on the instance also comes back
+after a logon, a reboot or a Docker restart, until `teszt.ps1 off`. The deploy task catches up with
+the newest green `main` commit on its next run (a backup is taken first).
 
 ## 4. Turn it off
 
 ```powershell
-$t = '\Automations\'
-'ARSM teszt - Deploy', 'ARSM teszt - Gate', 'ARSM teszt - Tunnel' | ForEach-Object {
-    Disable-ScheduledTask -TaskPath $t -TaskName $_ | Out-Null
-    Stop-ScheduledTask -TaskPath $t -TaskName $_
-}
-# Stop-ScheduledTask can leave the conhost-hosted children running: stop only this kit's processes.
-Get-CimInstance Win32_Process |
-    Where-Object { $_.Name -in 'node.exe', 'cloudflared.exe', 'conhost.exe' -and
-        ($_.CommandLine -like '*\.arsm\tunnel\gate.mjs*' -or $_.CommandLine -like '*\.arsm\tunnel\cloudflared.yml*') } |
-    ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-docker stop arsm-tunnel-web arsm-tunnel-api
-docker stop -t 60 arsm-tunnel-postgres arsm-tunnel-rustfs
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.arsm\tunnel\teszt.ps1" off
 ```
 
-Never stop every `node.exe` or `cloudflared.exe`: other gates and tunnels (MaKoncert) run on the
-same machine. Check that nothing of the kit is left: the query below prints nothing, and
-`https://teszt.arsm.hu/` answers 530 (Cloudflare error 1033, tunnel offline).
+It disables the three tasks (no start at logon, no 5-minute deploy), kills each process tree of the
+kit (found by the kit folder in the command line, because `Stop-ScheduledTask` alone leaves the
+children of `conhost` running; a killed deploy run's `deploy.lock` is removed), stops
+`arsm-tunnel-web` and `arsm-tunnel-api`, then `arsm-tunnel-postgres` and `arsm-tunnel-rustfs` (60 s
+timeout), and sets their restart policy to `no`. The switch is persistent: nothing of the instance
+starts again, not at logon, not on the deploy trigger and not after a Docker or PC restart, until
+`teszt.ps1 on`. It never stops every `node.exe` or `cloudflared.exe`: other gates and tunnels run on
+the same machine.
 
-```powershell
-Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='cloudflared.exe' OR Name='conhost.exe'" |
-    Where-Object CommandLine -like '*\.arsm\tunnel\*'
-```
+Check it with `teszt.ps1 status`: tasks (enabled / running), process trees per service, containers
+(state and restart policy) and the three health checks, ending with `State: ON`, `OFF` or `PARTIAL`.
+Off means every task disabled, no process, every container stopped with restart `no`.
 
-To pause only the auto-deploy: `Disable-ScheduledTask -TaskPath '\Automations\' -TaskName 'ARSM teszt - Deploy'`.
+To pause only the auto-deploy: `Disable-ScheduledTask -TaskPath '\Automations\' -TaskName 'ARSM teszt - Deploy'`
+(`teszt.ps1 on` enables it again).
 
 ## 5. Token gate
 
 - Token: `GATE_TOKEN` in the repository-root `.env` (gitignored), at least 32 characters, different
-  from the production `ARSM_PROD_GATE_TOKEN`. `setup-tunnel.ps1` generates one when it is missing.
+  from the production `ARSM_PROD_GATE_TOKEN`. `setup.ps1` generates one when it is missing.
 - Access: open `https://teszt.arsm.hu/?access=<token>` once per browser (or use the form on the gate
   page); it sets the `__Host-arsm_gate` cookie for 30 days. Print the link in PowerShell from the
   repository root: `"https://teszt.arsm.hu/?access=" + (Select-String .env '^GATE_TOKEN=(.+)$').Matches[0].Groups[1].Value`.
@@ -130,36 +129,39 @@ docker start arsm-tunnel-api
 
 ## 7. First-time setup
 
-Prerequisites: Docker Desktop, Node.js 20.6 or newer (the gate task uses `node --env-file`), Python 3,
+Prerequisites: Docker Desktop, Node.js 20.6 or newer (the gate uses `node --env-file`), Python 3,
 Git, a clone of this repository with its local `/.dockerignore` (the build-context allow-list that
 `deploy.py` copies), and a Cloudflare zone that is Active.
 
-1. Create the kit folder `%USERPROFILE%\.arsm\tunnel` and copy into it `deploy/local-test/deploy.py`,
-   `deploy/local-test/setup-tunnel.ps1` and the gate (`deploy/gate/gate.mjs`, `gate-page.mjs`,
-   `gate-style.mjs`, `gate-assets/`). Without a `gate.mjs` in the kit the setup uses the repository's
-   `deploy/gate/gate.mjs` directly. Put `cloudflared.exe` into `bin\`.
+1. Create the kit folder `%USERPROFILE%\.arsm\tunnel` and copy into it `deploy.py`, `setup.ps1`,
+   `run.cmd`, `teszt.ps1` and `kit.psd1` from `deploy/local-test`. The setup copies the gate
+   (`deploy/gate/gate.mjs`, `gate-page.mjs`, `gate-style.mjs`, `gate-assets/`) into the kit when it
+   has none. Put `cloudflared.exe` into `bin\`.
 2. Copy each `*.env.example` of `deploy/local-test` into the kit as `tunnel.env`, `api.env`,
    `postgres.env` and `rustfs.env`, and fill in real values (the passwords and keys must match across
    the files, as the placeholders say). Never commit them.
 3. `cloudflared tunnel login` and keep the origin certificate of the zone as
    `%USERPROFILE%\.cloudflared\cert-arsm.pem` (one file per zone: `cert.pem` is overwritten by every login).
 4. In PowerShell (no administrator rights needed):
-   `powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.arsm\tunnel\setup-tunnel.ps1" -RepoPath <repository path>`
-   (optional: `-HostName`, `-TunnelName`, `-OriginCert`). It starts Docker Desktop if needed, creates
-   the tunnel when `<tunnel>.json` is missing, (re)points the DNS record at it, writes and validates
-   `cloudflared.yml`, saves `ARSM_REPO` and `PUBLIC_URL` in `tunnel.env` (running `deploy.py --force`
-   when the URL changed), ensures `GATE_TOKEN`, registers the three tasks in `\Automations\` (the
-   deploy task only when missing), removes tasks with the pre-2026-10-20 names (`ARSM teszt gate`,
-   `ARSM teszt tunnel`, `ARSM mini-prod deploy` in the root folder; one registered from an elevated
-   shell needs an elevated `Unregister-ScheduledTask`), restarts only this gate and this tunnel,
-   checks `http://127.0.0.1:18081/` (200) and `https://<host>/` (401), and prints the secret login link.
-5. When the containers do not exist yet, run `python deploy.py --force` once in the kit folder: it
-   creates the network, volumes and containers and bootstraps the admin from `ADMIN_PASSWORD` on
-   the empty database. Further users are registered by the admin in the app.
+   `powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.arsm\tunnel\setup.ps1" -RepoPath <repository path>`
+   (optional: `-HostName`, `-TunnelName`, `-OriginCert`, `-Off`). It starts Docker Desktop if needed,
+   turns the kit off while it works, creates the tunnel when `<tunnel>.json` is missing, (re)points the
+   DNS record at it, writes and validates `cloudflared.yml`, saves `ARSM_REPO` and `PUBLIC_URL` in
+   `tunnel.env` (running `deploy.py --force` when the URL changed), ensures `GATE_TOKEN` and `gate.env`,
+   registers the three tasks in `\Automations\` (disabled; same settings as the MaKoncert kit), removes
+   tasks with the pre-2026-10-20 names (`ARSM teszt gate`, `ARSM teszt tunnel`, `ARSM mini-prod deploy`
+   in the root folder; one registered from an elevated shell needs an elevated
+   `Unregister-ScheduledTask`), runs `teszt.ps1 on` (or `teszt.ps1 off` with `-Off`) and prints the
+   secret login link.
+5. On a fresh machine `PUBLIC_URL` is new, so the setup runs `deploy.py --force` (green CI required),
+   which creates the network, volumes and containers and bootstraps the admin from `ADMIN_PASSWORD` on
+   the empty database; further users are registered by the admin in the app. If that deploy failed,
+   `teszt.ps1 on` stops at the missing containers: fix the cause (`deploy.log`), run
+   `python deploy.py --force` in the kit folder, then `teszt.ps1 on`.
 
-Changing the hostname: re-run the setup with `-HostName <host>`; it updates `cloudflared.yml`, the DNS
-route and `PUBLIC_URL`, and redeploys (the web image bakes the URL into its CSP, the API gets it as
-CORS origin).
+Changing the hostname: re-run the setup with `-HostName <host>` (and the matching `Health` URL in
+`kit.psd1`); it updates `cloudflared.yml`, the DNS route and `PUBLIC_URL`, and redeploys (the web
+image bakes the URL into its CSP, the API gets it as CORS origin).
 
 ## 8. Removing it completely
 

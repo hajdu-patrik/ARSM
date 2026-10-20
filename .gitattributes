@@ -2,3 +2,5 @@
 .claude/workflows/*.js text eol=lf
 # The pre-push hook is POSIX sh and must keep LF endings on Windows checkouts.
 .githooks/* text eol=lf
+# cmd.exe needs CRLF batch files: goto and labels misbehave with LF endings.
+deploy/local-test/*.cmd text eol=crlf

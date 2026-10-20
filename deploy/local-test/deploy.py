@@ -27,7 +27,7 @@ KEEP_BACKUPS = 20
 DAILY_BACKUP_SECONDS = 24 * 3600
 NETWORK = "arsm-tunnel-net"
 DATABASE = "AutoServiceDb"
-# pythonw has no console: without this flag every git/docker call pops up its own terminal window.
+# The task runs python.exe under conhost --headless; this flag keeps every git/docker call windowless in any host.
 NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 

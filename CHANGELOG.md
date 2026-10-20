@@ -9,6 +9,19 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Local test instance switch (2026-10-20): `deploy/local-test/teszt.ps1 on|off|status` turns the `teszt.arsm.hu` kit on or
+  off persistently and shows its state; it reads the kit definition from `deploy/local-test/kit.psd1` (tasks, containers in
+  start order, health checks) and is identical to the owner's MaKoncert test kit. `off` disables the three tasks, kills
+  the kit's process trees by command line, stops the containers and sets their restart policy to `no`, so nothing starts
+  again until `on`, which restores `unless-stopped`, enables and starts everything and waits for the health checks. The gate
+  and the tunnel now run under `deploy/local-test/run.cmd` (restart with 3-60 s backoff, `logs\<service>.log` with 20 MB
+  rotation; cloudflared logs there instead of `--logfile`), the deploy task runs `python.exe deploy.py` under
+  `conhost --headless` with the MaKoncert deploy task's settings, and `setup-tunnel.ps1` is renamed to `setup.ps1`
+  (registers the tasks disabled, ends with `teszt.ps1 on`, or `off` with `-Off`). `deploy/gate/gate.mjs` skips its own
+  log file with `GATE_LOG_FILE=off`. `.gitattributes` keeps `deploy/local-test/*.cmd` CRLF; the kit README and
+  `deployment-local-test.md` describe the switch.
+
+_Dev time: ~31m wall-clock (2026-10-20 14:30 to 15:01 +02:00, direct work). Cost: not measured._
 - Local test instance kit and guide (2026-10-20): the `teszt.arsm.hu` kit is tracked without secrets in
   `deploy/local-test/`: `deploy.py` (auto-deploy of green-CI `main`, now locating the repository through `ARSM_REPO` or
   its own location), `setup-tunnel.ps1` (registers the tasks in the Task Scheduler folder `\Automations\` as
