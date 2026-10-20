@@ -23,7 +23,7 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
 | --- | --- | --- |
 | API image | `deploy/api.Dockerfile` | Debian-based ASP.NET runtime (QuestPDF needs glibc), port 8080, `Production`. |
 | Web image | `deploy/web.Dockerfile` + `deploy/nginx/` | `PUBLIC_URL` is baked into the bundle and its CSP; the CSP is repeated as a header with `frame-ancestors 'none'`. Inside the app it runs with `PORT=18080`. |
-| Gate image | `deploy/gate/` | Copy of the teszt token gate; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
+| Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
 | Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
 | Driver | `scripts/deploy-azure.py` (helpers in `scripts/azure_deploy/`) | Validates `.env`, builds from a clean `git archive`, pushes, deploys, prints the DNS records. |
@@ -41,12 +41,13 @@ password anywhere.
 | | `teszt.arsm.hu` | `arsm.hu` |
 | --- | --- | --- |
 | Role | Pre-release view where you experiment | Production, the live version handed to the tester |
-| Runs on | Your machine behind a Cloudflare tunnel (mini-prod) | Azure Container Apps |
-| Deployed | Automatically from `main` by the tunnel's own `deploy.py` | Manually, from a commit you choose, with `deploy-azure.py` |
-| Database | The mini-prod database on your machine | A new empty Flexible Server database with only the bootstrap admin |
+| Runs on | Your machine behind a Cloudflare tunnel (local test instance, currently off) | Azure Container Apps |
+| Deployed | Automatically from `main` by `deploy/local-test/deploy.py` | Manually, from a commit you choose, with `deploy-azure.py` |
+| Database | The local test database on your machine | A new empty Flexible Server database with only the bootstrap admin |
 | Protection | Token gate on the tunnel (`GATE_TOKEN` in `.env`) | The same gate as a sidecar, token `ARSM_PROD_GATE_TOKEN` |
 
-The two tokens must differ. `teszt.arsm.hu` is not touched by anything in this document.
+The two tokens must differ. `teszt.arsm.hu` is not touched by anything in this document; it is
+described, with how to turn it on and off, in [deployment-local-test.md](deployment-local-test.md).
 
 ## 3. Client IP chain
 
@@ -247,8 +248,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://arsm.hu/alive
 Without the token both answer `401` with the gate lock page. After unlocking in the browser,
 `/alive` answers `Healthy` (the gate sets the cookie; with curl, pass it with `-b`). Then check
 the headers on `/`: the CSP ends in `frame-ancestors 'none'`, HSTS is present and `Cache-Control:
-no-cache`. Run section 3 of the security checklist (local-only file) against the public URL, then
-log in, upload a profile picture and download a quote PDF.
+no-cache`. Then log in, upload a profile picture and download a quote PDF.
 
 ## 8. Operations
 

@@ -1,8 +1,8 @@
 // ARSM token gate: cloudflared -> gate (127.0.0.1:18081) -> nginx web (127.0.0.1:18080) -> API; cf-connecting-ip requests need GATE_TOKEN.
 // GATE_MODE=azure gates every request, reads GATE_TOKEN from the environment and takes the last X-Forwarded-For entry as the client.
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { appendFileSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { appendFileSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
 import { connect } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
@@ -13,6 +13,7 @@ import { GATE_PREFIX, LOGIN_PATH, loadGateAssets, renderGatePage } from './gate-
 const HERE = dirname(fileURLToPath(import.meta.url));
 const LOG_DIR = join(HERE, 'logs');
 const LOG_FILE = join(LOG_DIR, 'gate.log');
+const MAX_LOG_BYTES = 256 * 1024;
 const AZURE = process.env.GATE_MODE === 'azure';
 const UPSTREAM_HOST = '127.0.0.1';
 const HOST = AZURE ? (process.env.GATE_HOST ?? '127.0.0.1') : UPSTREAM_HOST;
@@ -48,6 +49,7 @@ const MISSING = 'missing';
 // In Azure mode the token is read once from the environment and never changes.
 let tokenState = AZURE ? describeToken(process.env.GATE_TOKEN ?? '', 'env') : describeToken('', undefined);
 let logTokenChanges = false;
+let logBytes = -1;
 let upstreamDown = false;
 let overallFailures = [];
 const failuresByClient = new Map();
@@ -61,7 +63,13 @@ function log(message) {
   if (AZURE) return;
   try {
     mkdirSync(LOG_DIR, { recursive: true });
+    if (logBytes < 0) logBytes = statSync(LOG_FILE, { throwIfNoEntry: false })?.size ?? 0;
+    if (logBytes > MAX_LOG_BYTES) {
+      renameSync(LOG_FILE, `${LOG_FILE}.1`); // one previous generation
+      logBytes = 0;
+    }
     appendFileSync(LOG_FILE, `${line}\n`, 'utf8');
+    logBytes += Buffer.byteLength(line) + 1;
   } catch {
     // The console copy remains when the log file cannot be written.
   }
@@ -147,11 +155,11 @@ function logTokenChange(previous, next) {
   }
 }
 
-/** Constant-time comparison: a length check (it leaks only the length), then timingSafeEqual. */
+/** Constant-time comparison of SHA-256 digests, so even the length does not leak. */
 function sameSecret(a, b) {
-  const x = Buffer.from(String(a));
-  const y = Buffer.from(String(b));
-  return x.length > 0 && x.length === y.length && timingSafeEqual(x, y);
+  const x = createHash('sha256').update(String(a)).digest();
+  const y = createHash('sha256').update(String(b)).digest();
+  return String(a).length > 0 && timingSafeEqual(x, y);
 }
 
 function readCookie(header, name) {

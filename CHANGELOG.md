@@ -9,6 +9,17 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Local test instance kit and guide (2026-10-20): the `teszt.arsm.hu` kit is tracked without secrets in
+  `deploy/local-test/`: `deploy.py` (auto-deploy of green-CI `main`, now locating the repository through `ARSM_REPO` or
+  its own location), `setup-tunnel.ps1` (registers the tasks in the Task Scheduler folder `\Automations\` as
+  `ARSM teszt - Deploy`, `- Gate` and `- Tunnel` with descriptions, removes the old-named ones, passes `GATE_ENV_FILE`
+  to the gate through `node --env-file`), placeholder `*.example` templates and a folder `.gitignore` for the real
+  secret and state files. `deploy/docs/deployment-local-test.md` covers how it works, turning it on and off, backups and
+  restore and first-time setup; both READMEs, the Azure guide and `CLAUDE.md` link it. The instance is off since
+  2026-10-20 (production is `arsm.hu` on Azure). `deploy/gate/gate.mjs` takes over the kit gate's SHA-256 constant-time
+  token comparison (no length leak) and its `logs/gate.log` rotation at 256 KiB (not used with `GATE_MODE=azure`).
+
+_Dev time: ~16m wall-clock (2026-10-20 13:17 to 13:34 +02:00, direct work). Cost: not measured._
 - Company profile in the database (2026-10-18): the quote letterhead data now lives in the single-row `companyprofiles` table
   (`CK_CompanyProfiles_SingleRow`), seeded once from the `CompanyProfile` configuration when empty and read by the quote PDF.
   Admins read and replace it through `GET`/`PUT /api/admin/company-profile` (`CompanyProfileDto`, field-keyed 400 validation,

@@ -45,6 +45,8 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - `tests/API`: HTTP endpoint test suites (`.http`)
 - `tests/Database`: SQL validation suites (`.sql`, read-only policy)
 - `docs`: additional technical and UI/UX documentation
+- `scripts`: automation (local test runner, `validate.py` gate, pre-push gate, `deploy-azure.py`)
+- `deploy`: deployment kits: the Azure production kit (`deploy/azure`, images, `deploy/gate` token gate) and the local test instance kit (`deploy/local-test`); guides in `deploy/docs`
 
 ---
 
@@ -133,6 +135,8 @@ without them. RustFS (like MinIO before it) keeps both `false`.
 ## Fixed Public Test Hostname (Cloudflare Named Tunnel)
 
 A Cloudflare named tunnel exposes the same reverse-proxy setup on a fixed hostname of your own domain. The URL is stable, so the WebUI is built once. It is for testing only, never for production.
+
+This project's own instances: production is `https://arsm.hu` on Azure ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); the local test instance `https://teszt.arsm.hu` is this setup with auto-deploy and a token gate, kit in [deploy/local-test](deploy/local-test), currently off. How it works and how to turn it on and off: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md).
 
 ### Requirements
 

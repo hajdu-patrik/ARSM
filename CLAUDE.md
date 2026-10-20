@@ -8,6 +8,9 @@
 - Shared defaults: `app/AutoService.ServiceDefaults`
 - Tests: `tests`
 - Automation scripts: `scripts`
+- Deployment kits: `deploy` (Azure production `https://arsm.hu`: `deploy/docs/deployment-azure.md`; local test
+  instance `https://teszt.arsm.hu`, kit `deploy/local-test`, currently off: `deploy/docs/deployment-local-test.md`).
+  Only placeholder `*.example` templates of the kit's secret files are tracked.
 
 ## Model Selection (Auto)
 

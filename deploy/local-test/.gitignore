@@ -1,0 +1,22 @@
+# Real kit files hold secrets or machine state; only the scripts and the *.example templates are tracked.
+*.env
+cloudflared.yml
+*.json
+*.pem
+*.dump
+bin/
+backups/
+logs/
+*.log
+*.log.*
+*.bak
+deployed-sha.txt
+ci-state.txt
+deploy.lock
+error-state.txt
+backup-try.txt
+# The live kit's own notes name the tunnel id.
+README.txt
+# The gate is tracked once, in deploy/gate; a copied kit gate stays local.
+gate*.mjs
+gate-assets/

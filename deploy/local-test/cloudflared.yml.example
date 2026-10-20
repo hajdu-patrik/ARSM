@@ -1,0 +1,7 @@
+# setup-tunnel.ps1 writes cloudflared.yml in this shape; the real file names the tunnel id and the credentials file.
+tunnel: <tunnel id, printed by cloudflared tunnel create>
+credentials-file: <kit folder>\arsm-teszt.json
+ingress:
+  - hostname: teszt.example.com
+    service: http://127.0.0.1:18081
+  - service: http_status:404
