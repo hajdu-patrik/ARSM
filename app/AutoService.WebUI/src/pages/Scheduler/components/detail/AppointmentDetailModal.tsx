@@ -182,7 +182,7 @@ function AppointmentDetailDialog({
 }
 
 /** Detail modal; the dialog mounts only while an appointment is open and is keyed by its id. */
-const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
+export const AppointmentDetailModal = memo(function AppointmentDetailModal({
   appointment,
   isOpen,
   ...dialogProps
@@ -193,7 +193,3 @@ const AppointmentDetailModalComponent = memo(function AppointmentDetailModal({
 
   return <AppointmentDetailDialog key={appointment.id} appointment={appointment} {...dialogProps} />;
 });
-
-AppointmentDetailModalComponent.displayName = 'AppointmentDetailModal';
-
-export const AppointmentDetailModal = AppointmentDetailModalComponent;

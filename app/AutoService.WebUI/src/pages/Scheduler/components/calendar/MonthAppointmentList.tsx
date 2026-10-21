@@ -43,7 +43,7 @@ function resolveEmptyMessageKey(selectedDay: number | null, hasActiveFilter: boo
 }
 
 /** Displays the current month's appointments with status, mechanic, day, and date-sort controls. */
-const MonthAppointmentListComponent = memo(function MonthAppointmentList({
+export const MonthAppointmentList = memo(function MonthAppointmentList({
   appointments,
   isLoading,
   currentMechanicId,
@@ -196,6 +196,3 @@ const MonthAppointmentListComponent = memo(function MonthAppointmentList({
     </section>
   );
 });
-
-MonthAppointmentListComponent.displayName = 'MonthAppointmentList';
-export const MonthAppointmentList = MonthAppointmentListComponent;

@@ -24,7 +24,7 @@ interface HistoryAppointmentModalProps {
 }
 
 /** Shows one history appointment read-only, with a shortcut that opens it in the scheduler. */
-const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
+export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
   appointment,
   locale,
   isOpen,
@@ -108,7 +108,3 @@ const HistoryAppointmentModalComponent = memo(function HistoryAppointmentModal({
     </Modal>
   );
 });
-
-HistoryAppointmentModalComponent.displayName = 'HistoryAppointmentModal';
-
-export const HistoryAppointmentModal = HistoryAppointmentModalComponent;

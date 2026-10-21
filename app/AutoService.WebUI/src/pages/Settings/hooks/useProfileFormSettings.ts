@@ -2,13 +2,13 @@
 
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { profileService } from '../../../services/profile/profile.service';
 import { profileQueries } from '../../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { UpdateProfileRequest } from '../../../types/profile/profile.types';
-import { getFirstFieldErrorMessage } from '../../../utils/serverValidation';
-import { extractProfileSaveErrors, fieldHasRequiredError } from '../handlers';
+import { getFirstFieldErrorMessage, hasRequiredFieldError } from '../../../utils/serverValidation';
+import { extractProfileSaveErrors } from '../handlers';
 import {
   NO_PROFILE_FIELD_ERRORS,
   REQUIRED_PROFILE_FIELDS,
@@ -55,12 +55,7 @@ export function useProfileFormSettings({
   const values = applyProfileDraft(baseline, draft);
   const hasProfileChanges = hasProfileFieldChanges(baseline, values);
 
-  useReadFailureToast({
-    failureMessageKey: isError && data === undefined ? 'settings.loadError' : null,
-    errorUpdatedAt,
-    isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast({ data, isError, isSuccess, errorUpdatedAt }, 'settings.loadError', showErrorToast);
 
   const handleProfileSaveFailure = useCallback((error: unknown) => {
     const serverErrors = extractProfileSaveErrors(error);
@@ -70,7 +65,7 @@ export function useProfileFormSettings({
     }
 
     const restoredFields = REQUIRED_PROFILE_FIELDS.filter(
-      (field) => values[field].trim() === '' && fieldHasRequiredError(serverErrors, field),
+      (field) => values[field].trim() === '' && hasRequiredFieldError(serverErrors, field),
     );
     setDraft((previous) => withoutDraftFields(previous, restoredFields));
     setFieldErrors(pickProfileFieldErrors(serverErrors, restoredFields));

@@ -7,7 +7,7 @@ import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { Modal } from '../../../components/common/Modal';
 import { MAX_CATALOG_IDENTIFIER_LENGTH, MAX_CATALOG_NAME_LENGTH, VAT_RATE_OPTIONS } from '../../../types/catalog/catalog.types';
 import { formatHufUnitPrice } from '../../../utils/currency';
-import { fieldErrorA11yProps, type FieldErrorA11yProps } from '../../../utils/fieldA11y';
+import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   buttonClass,
   defaultIconClass,
@@ -23,6 +23,7 @@ import {
   computeLiveGrossPreview,
   type CatalogFieldErrors,
   type CatalogFieldName,
+  type CatalogFormState,
   type CatalogModalMode,
 } from '../helpers';
 
@@ -32,31 +33,23 @@ const VAT_DROPDOWN_OPTIONS: readonly DropdownOption[] = VAT_RATE_OPTIONS.map((ra
   label: `${String(rate)}%`,
 }));
 
-/** Maps the shared field a11y attributes to the camelCase props of the Dropdown. */
-function toDropdownA11yProps(a11y: FieldErrorA11yProps) {
-  return {
-    ...(a11y['aria-invalid'] === undefined ? {} : { ariaInvalid: a11y['aria-invalid'] }),
-    ...(a11y['aria-describedby'] === undefined ? {} : { ariaDescribedBy: a11y['aria-describedby'] }),
-  };
-}
-
-interface CatalogFormModalProps<TForm extends { name: string; vatRatePercent: number }> {
+interface CatalogFormModalProps {
   readonly isOpen: boolean;
   readonly mode: CatalogModalMode;
   readonly isSaving: boolean;
   readonly isSaveEnabled: boolean;
-  readonly form: TForm;
+  readonly form: CatalogFormState;
   readonly fieldErrors: CatalogFieldErrors;
   readonly locale: string;
   readonly t: TFunction;
   readonly onClose: () => void;
   readonly onSubmit: (event: SyntheticEvent) => void;
-  readonly setForm: Dispatch<SetStateAction<TForm>>;
-  readonly config: CatalogFormModalConfig<TForm>;
+  readonly setForm: Dispatch<SetStateAction<CatalogFormState>>;
+  readonly config: CatalogFormModalConfig;
 }
 
-/** Create/edit modal shared by parts and labor types; ids, labels and field accessors come from `config`. */
-function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }>({
+/** Create/edit modal shared by parts and labor types; ids and labels come from `config`. */
+export function CatalogFormModal({
   isOpen,
   mode,
   isSaving,
@@ -69,10 +62,11 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
   onSubmit,
   setForm,
   config,
-}: CatalogFormModalProps<TForm>) {
+}: CatalogFormModalProps) {
   const errorIdPrefix = useId();
   const errorId = (field: CatalogFieldName) => `${errorIdPrefix}-${field}-error`;
-  const grossPreview = computeLiveGrossPreview(Number(config.rate.get(form)), form.vatRatePercent);
+  const vatRateA11y = fieldErrorA11yProps(errorId('vatRate'), fieldErrors.vatRate);
+  const grossPreview = computeLiveGrossPreview(Number(form.rate), form.vatRatePercent);
 
   return (
     <Modal
@@ -105,14 +99,13 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
             <label htmlFor={config.identifier.elementId} className={labelClass}>{t(config.identifier.labelKey)}</label>
             <input
               id={config.identifier.elementId}
-              data-testid={config.identifier.testId}
               type="text"
-              value={config.identifier.get(form)}
+              value={form.identifier}
               onChange={(event) => {
-                setForm((prev) => config.identifier.set(prev, event.target.value));
+                setForm((prev) => ({ ...prev, identifier: event.target.value.toUpperCase() }));
               }}
               className={`${inputClass} uppercase`}
-              placeholder={config.identifier.placeholderKey ? t(config.identifier.placeholderKey) : undefined}
+              placeholder={t(config.identifier.placeholderKey)}
               maxLength={MAX_CATALOG_IDENTIFIER_LENGTH}
               disabled={isSaving}
               {...fieldErrorA11yProps(errorId('identifier'), fieldErrors.identifier)}
@@ -144,17 +137,16 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
             <label htmlFor={config.rate.elementId} className={labelClass}>{t(config.rate.labelKey)}</label>
             <input
               id={config.rate.elementId}
-              data-testid={config.rate.testId}
               type="number"
               min="0"
               max="100000000"
               step="0.01"
-              value={config.rate.get(form)}
+              value={form.rate}
               onChange={(event) => {
-                setForm((prev) => config.rate.set(prev, event.target.value));
+                setForm((prev) => ({ ...prev, rate: event.target.value }));
               }}
               className={inputClass}
-              placeholder={config.rate.placeholderKey ? t(config.rate.placeholderKey) : undefined}
+              placeholder={t(config.rate.placeholderKey)}
               disabled={isSaving}
               {...fieldErrorA11yProps(errorId('rate'), fieldErrors.rate)}
             />
@@ -174,7 +166,8 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
                 setForm((prev) => ({ ...prev, vatRatePercent: Number(value) }));
               }}
               disabled={isSaving}
-              {...toDropdownA11yProps(fieldErrorA11yProps(errorId('vatRate'), fieldErrors.vatRate))}
+              ariaInvalid={vatRateA11y['aria-invalid']}
+              ariaDescribedBy={vatRateA11y['aria-describedby']}
             />
             <FieldErrorText id={errorId('vatRate')} messageKey={fieldErrors.vatRate} />
           </div>
@@ -194,7 +187,3 @@ function CatalogFormModal<TForm extends { name: string; vatRatePercent: number }
     </Modal>
   );
 }
-
-CatalogFormModal.displayName = 'CatalogFormModal';
-
-export { CatalogFormModal };

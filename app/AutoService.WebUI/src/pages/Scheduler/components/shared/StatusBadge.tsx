@@ -21,7 +21,8 @@ const STATUS_I18N_KEY: Record<AppointmentStatus, string> = {
   Cancelled: 'scheduler.status.cancelled',
 };
 
-const StatusBadgeComponent = memo(function StatusBadge({ status, className = '' }: StatusBadgeProps) {
+/** Memoized colored status pill badge. */
+export const StatusBadge = memo(function StatusBadge({ status, className = '' }: StatusBadgeProps) {
   const { t } = useTranslation();
   const tone = APPOINTMENT_STATUS_TONE[status];
 
@@ -35,8 +36,3 @@ const StatusBadgeComponent = memo(function StatusBadge({ status, className = '' 
     />
   );
 });
-
-StatusBadgeComponent.displayName = 'StatusBadge';
-
-/** Memoized colored status pill badge. */
-export const StatusBadge = StatusBadgeComponent;

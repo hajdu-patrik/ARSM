@@ -3,9 +3,9 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, Save, Trash2 } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { DeleteProfileConfirmModal } from './DeleteProfileConfirmModal';
-import { buttonClass, dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../utils/formStyles';
+import { mutedBodyTextClass } from '../../utils/formStyles';
 
 interface SettingsActionModalsProps {
   readonly isPictureRemoveConfirmOpen: boolean;
@@ -31,7 +31,8 @@ interface SettingsActionModalsProps {
   readonly onConfirmDeleteProfile: () => void;
 }
 
-const SettingsActionModalsComponent = memo(function SettingsActionModals({
+/** The picture-remove, profile-save and password-change confirmations plus the delete-profile modal. */
+export const SettingsActionModals = memo(function SettingsActionModals({
   isPictureRemoveConfirmOpen,
   isUploadingPicture,
   onClosePictureRemoveConfirm,
@@ -58,110 +59,45 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
 
   return (
     <>
-      <Modal
+      <ConfirmModal
         isOpen={isPictureRemoveConfirmOpen}
-        onClose={() => {
-          if (!isUploadingPicture) {
-            onClosePictureRemoveConfirm();
-          }
-        }}
         title={t('settings.confirmPictureRemoveTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onClosePictureRemoveConfirm}
-              disabled={isUploadingPicture}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmPictureRemove}
-              disabled={isUploadingPicture}
-              aria-busy={isUploadingPicture}
-              className={dangerButtonClass}
-            >
-              <Trash2 className={defaultIconClass} />
-              <span>{isUploadingPicture ? t('settings.uploading') : t('settings.confirmPictureRemove')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isUploadingPicture}
+        onClose={onClosePictureRemoveConfirm}
+        onConfirm={onConfirmPictureRemove}
+        confirmLabel={t('settings.confirmPictureRemove')}
+        busyLabel={t('settings.uploading')}
+        icon={Trash2}
+        tone="danger"
       >
         <p className={mutedBodyTextClass}>{t('settings.confirmPictureRemoveMessage')}</p>
-      </Modal>
+      </ConfirmModal>
 
-      <Modal
+      <ConfirmModal
         isOpen={isProfileSaveConfirmOpen}
-        onClose={() => {
-          if (!isUpdatingProfile) {
-            onCloseProfileSaveConfirm();
-          }
-        }}
         title={t('settings.confirmSaveTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseProfileSaveConfirm}
-              disabled={isUpdatingProfile}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmProfileSave}
-              disabled={isUpdatingProfile}
-              aria-busy={isUpdatingProfile}
-              className={buttonClass}
-            >
-              <Save className={defaultIconClass} />
-              <span>{isUpdatingProfile ? t('common.actions.saving') : t('common.actions.save')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isUpdatingProfile}
+        onClose={onCloseProfileSaveConfirm}
+        onConfirm={onConfirmProfileSave}
+        confirmLabel={t('common.actions.save')}
+        busyLabel={t('common.actions.saving')}
+        icon={Save}
       >
         <p className={mutedBodyTextClass}>{t('settings.confirmSaveMessage')}</p>
-      </Modal>
+      </ConfirmModal>
 
-      <Modal
+      <ConfirmModal
         isOpen={isPasswordChangeConfirmOpen}
-        onClose={() => {
-          if (!isChangingPassword) {
-            onClosePasswordChangeConfirm();
-          }
-        }}
         title={t('settings.confirmPasswordChangeTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onClosePasswordChangeConfirm}
-              disabled={isChangingPassword}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmPasswordChange}
-              disabled={isChangingPassword}
-              aria-busy={isChangingPassword}
-              className={buttonClass}
-            >
-              <KeyRound className={defaultIconClass} />
-              <span>{isChangingPassword ? t('settings.changingCredentials') : t('settings.changePassword')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isChangingPassword}
+        onClose={onClosePasswordChangeConfirm}
+        onConfirm={onConfirmPasswordChange}
+        confirmLabel={t('settings.changePassword')}
+        busyLabel={t('settings.changingCredentials')}
+        icon={KeyRound}
       >
         <p className={mutedBodyTextClass}>{t('settings.confirmPasswordChangeMessage')}</p>
-      </Modal>
+      </ConfirmModal>
 
       <DeleteProfileConfirmModal
         isOpen={isDeleteModalOpen}
@@ -178,7 +114,3 @@ const SettingsActionModalsComponent = memo(function SettingsActionModals({
   );
 });
 
-SettingsActionModalsComponent.displayName = 'SettingsActionModals';
-
-/** The picture-remove, profile-save and password-change confirmations plus the delete-profile modal. */
-export const SettingsActionModals = SettingsActionModalsComponent;

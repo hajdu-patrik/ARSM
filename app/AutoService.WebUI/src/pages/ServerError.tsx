@@ -25,7 +25,8 @@ function getReturnTarget(): string | null {
   return rawReturnTo;
 }
 
-const ServerErrorComponent = memo(function ServerError() {
+/** 500 server error page component with countdown-based page reload. */
+export const ServerError = memo(function ServerError() {
   const { t } = useTranslation();
   const [remainingMs, setRemainingMs] = useState(REDIRECT_DURATION_MS);
   const returnTarget = getReturnTarget();
@@ -76,8 +77,3 @@ const ServerErrorComponent = memo(function ServerError() {
     />
   );
 });
-
-ServerErrorComponent.displayName = 'ServerError';
-
-/** 500 server error page component with countdown-based page reload. */
-export const ServerError = ServerErrorComponent;

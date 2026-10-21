@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { adminService, type MechanicListItem } from '../../../services/admin/admin.service';
 import { PROFILE_PICTURE_UPDATED_EVENT } from '../../../services/profile/profile-picture-live.service';
 import { adminQueries } from '../../../services/queries/admin.queries';
@@ -89,12 +89,7 @@ export function useMechanicListState({
     setPage(lastPage);
   }
 
-  useReadFailureToast({
-    failureMessageKey: isError && data === undefined ? 'admin.mechanicListError' : null,
-    errorUpdatedAt,
-    isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast({ data, isError, isSuccess, errorUpdatedAt }, 'admin.mechanicListError', showErrorToast);
 
   /** Marks every roster read (pages and option list) stale, so the mounted list refetches it. */
   const refreshRoster = useCallback(() => {

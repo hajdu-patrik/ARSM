@@ -15,7 +15,7 @@ interface ProfilePictureSectionProps {
 	readonly onRemove: () => void;
 }
 
-const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
+export const ProfilePictureSection = memo(function ProfilePictureSection({
 	hasProfilePicture,
 	pictureUrl,
 	initials,
@@ -109,7 +109,3 @@ const ProfilePictureSectionComponent = memo(function ProfilePictureSection({
 		</div>
 	);
 });
-
-ProfilePictureSectionComponent.displayName = 'ProfilePictureSection';
-
-export const ProfilePictureSection = ProfilePictureSectionComponent;

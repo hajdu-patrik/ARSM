@@ -7,7 +7,7 @@ interface MobileColumnStripProps {
   readonly columns: readonly DataListColumn[];
 }
 
-const MobileColumnStripComponent = memo(function MobileColumnStrip({ columns }: MobileColumnStripProps) {
+export const MobileColumnStrip = memo(function MobileColumnStrip({ columns }: MobileColumnStripProps) {
   return (
     <div className={mobileHeaderStripClass}>
       {columns.map((col, index) => (
@@ -21,7 +21,3 @@ const MobileColumnStripComponent = memo(function MobileColumnStrip({ columns }: 
     </div>
   );
 });
-
-MobileColumnStripComponent.displayName = 'MobileColumnStrip';
-
-export const MobileColumnStrip = MobileColumnStripComponent;

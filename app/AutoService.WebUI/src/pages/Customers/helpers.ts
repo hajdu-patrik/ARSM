@@ -3,10 +3,7 @@
 import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
-import { normalizeSearchValue } from '../../utils/textSearch';
 import type { SortDirection } from './page.types';
-
-export { normalizeSearchValue };
 
 /** Structured numeric values extracted from vehicle form inputs. */
 export interface VehicleNumericValues {
@@ -115,17 +112,6 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   }
 
   return 'customers.errors.vehicleSaveFailed';
-}
-
-/** Returns true when the server field-error dictionary has at least one non-empty entry. */
-export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
-  return Object.values(errors).some((messages) => messages.length > 0);
-}
-
-/** True when the server marked the field as required, whichever letter case its dictionary key uses. */
-export function hasRequiredFieldError(errors: ServerFieldErrors, fieldName: string): boolean {
-  const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
-  return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
 }
 
 /** Parses numeric vehicle form inputs into numbers for payload construction. */

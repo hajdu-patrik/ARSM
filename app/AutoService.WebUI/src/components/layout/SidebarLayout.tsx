@@ -64,7 +64,8 @@ function useSidebarCollapsed() {
   return { collapsed, toggleCollapse };
 }
 
-const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems }: SidebarLayoutProps) {
+/** Authenticated page shell with the collapsible sidebar, mobile drawer and header controls. */
+export const SidebarLayout = memo(function SidebarLayout({ children, navItems }: SidebarLayoutProps) {
   const { t: translate } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -164,8 +165,3 @@ const SidebarLayoutComponent = memo(function SidebarLayout({ children, navItems 
     </div>
   );
 });
-
-SidebarLayoutComponent.displayName = 'SidebarLayout';
-
-/** Authenticated page shell with the collapsible sidebar, mobile drawer and header controls. */
-export const SidebarLayout = SidebarLayoutComponent;

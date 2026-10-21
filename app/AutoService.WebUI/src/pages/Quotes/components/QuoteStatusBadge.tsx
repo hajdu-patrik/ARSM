@@ -31,7 +31,8 @@ const QUOTE_STATUS_I18N_KEY: Record<QuoteDisplayStatus, string> = {
   Rejected: 'quotes.status.rejected',
 };
 
-const QuoteStatusBadgeComponent = memo(function QuoteStatusBadge({ status, className = '' }: QuoteStatusBadgeProps) {
+/** Memoized colored quote status pill. */
+export const QuoteStatusBadge = memo(function QuoteStatusBadge({ status, className = '' }: QuoteStatusBadgeProps) {
   const { t } = useTranslation();
   const tone = QUOTE_STATUS_TONE[status];
 
@@ -45,8 +46,3 @@ const QuoteStatusBadgeComponent = memo(function QuoteStatusBadge({ status, class
     />
   );
 });
-
-QuoteStatusBadgeComponent.displayName = 'QuoteStatusBadge';
-
-/** Memoized colored quote status pill. */
-export const QuoteStatusBadge = QuoteStatusBadgeComponent;

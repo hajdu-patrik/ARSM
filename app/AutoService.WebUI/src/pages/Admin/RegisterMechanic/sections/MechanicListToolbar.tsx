@@ -1,16 +1,8 @@
 /** Mechanic list toolbar: the search field. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Search, X } from 'lucide-react';
-import {
-	defaultIconClass,
-	inputGroupContainerClass,
-	inputGroupIconClass,
-	searchClearButtonClass,
-	searchInputClass,
-	toolbarRowLayoutClass,
-	toolbarSearchFieldClass,
-} from '../../../../utils/formStyles';
+import { ToolbarSearchField } from '../../../../components/common/ToolbarSearchField';
+import { toolbarRowLayoutClass } from '../../../../utils/formStyles';
 import { filterNameSearchInput } from '../../../../utils/validation';
 
 interface MechanicListToolbarProps {
@@ -20,7 +12,8 @@ interface MechanicListToolbarProps {
 	readonly onClearSearch: () => void;
 }
 
-const MechanicListToolbarComponent = memo(function MechanicListToolbar({
+/** Search field with a clear button above the mechanic roster. */
+export const MechanicListToolbar = memo(function MechanicListToolbar({
 	t,
 	searchTerm,
 	onSearchChange,
@@ -28,37 +21,14 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 }: MechanicListToolbarProps) {
 	return (
 		<div className={toolbarRowLayoutClass}>
-			<div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
-				<Search className={inputGroupIconClass} aria-hidden="true" />
-				<input
-					data-testid="mechanic-search-input"
-					type="text"
-					value={searchTerm}
-					onChange={(event) => {
-						onSearchChange(filterNameSearchInput(event.target.value));
-					}}
-					placeholder={t('admin.mechanicSearchPlaceholder')}
-					aria-label={t('admin.mechanicSearchPlaceholder')}
-					className={searchInputClass}
-				/>
-				{searchTerm.length > 0 && (
-					<button
-						data-testid="mechanic-search-clear"
-						type="button"
-						onClick={onClearSearch}
-						title={t('common.actions.clearSearch')}
-						aria-label={t('common.actions.clearSearch')}
-						className={searchClearButtonClass}
-					>
-						<X className={defaultIconClass} aria-hidden="true" />
-					</button>
-				)}
-			</div>
+			<ToolbarSearchField
+				testIdPrefix="mechanic"
+				value={searchTerm}
+				placeholder={t('admin.mechanicSearchPlaceholder')}
+				ariaLabel={t('admin.mechanicSearchPlaceholder')}
+				onChange={(value) => { onSearchChange(filterNameSearchInput(value)); }}
+				onClear={onClearSearch}
+			/>
 		</div>
 	);
 });
-
-MechanicListToolbarComponent.displayName = 'MechanicListToolbar';
-
-/** Search field with a clear button above the mechanic roster. */
-export const MechanicListToolbar = MechanicListToolbarComponent;

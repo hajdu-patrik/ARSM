@@ -4,12 +4,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AuthQueryScope } from '../../services/cache/queryKeys';
-import { isRecord } from '../../services/http/record-guard';
 import { profileService } from '../../services/profile/profile.service';
 import {
   PROFILE_PICTURE_UPDATED_EVENT,
+  readProfilePictureUpdate,
   startProfilePictureLiveUpdates,
-  type ProfilePictureUpdatedDetail,
 } from '../../services/profile/profile-picture-live.service';
 import { profileQueries } from '../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../services/queries/useAuthQueryScope';
@@ -19,29 +18,6 @@ import type { SidebarProfileViewModel } from './SidebarContent';
 
 /** Picture version of this page load; a live picture update replaces it, so a changed picture is fetched again. */
 const PAGE_LOAD_PICTURE_VERSION = Date.now();
-
-/** Reads the payload of a profile-picture update event, or null when the event carries no valid one. */
-function readPictureUpdate(event: Event): ProfilePictureUpdatedDetail | null {
-  if (!(event instanceof CustomEvent)) {
-    return null;
-  }
-
-  const detail: unknown = event.detail;
-  if (
-    !isRecord(detail) ||
-    typeof detail.personId !== 'number' ||
-    typeof detail.hasProfilePicture !== 'boolean' ||
-    typeof detail.cacheBuster !== 'number'
-  ) {
-    return null;
-  }
-
-  return {
-    personId: detail.personId,
-    hasProfilePicture: detail.hasProfilePicture,
-    cacheBuster: detail.cacheBuster,
-  };
-}
 
 /** Keeps the picture channel open while the sidebar is mounted; returns the newest live picture version
  * of this person (null before any update) and refetches the shared profile on each update. */
@@ -53,7 +29,7 @@ function useLivePictureVersion(personId: number | null, scope: AuthQueryScope | 
 
   useEffect(() => {
     const handlePictureUpdated = (event: Event) => {
-      const update = readPictureUpdate(event);
+      const update = readProfilePictureUpdate(event);
       if (update === null || update.personId !== personId) {
         return;
       }

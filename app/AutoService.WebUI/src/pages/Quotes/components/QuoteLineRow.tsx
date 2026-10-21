@@ -62,7 +62,7 @@ function QuoteLineActions({ t, isSaving, onStartEdit, onDelete }: QuoteLineActio
   );
 }
 
-const QuoteLineRowComponent = memo(function QuoteLineRow({
+export const QuoteLineRow = memo(function QuoteLineRow({
   t,
   locale,
   line,
@@ -113,7 +113,3 @@ const QuoteLineRowComponent = memo(function QuoteLineRow({
     </DataListRow>
   );
 });
-
-QuoteLineRowComponent.displayName = 'QuoteLineRow';
-
-export const QuoteLineRow = QuoteLineRowComponent;

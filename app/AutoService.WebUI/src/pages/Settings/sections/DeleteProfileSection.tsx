@@ -8,7 +8,7 @@ interface DeleteProfileSectionProps {
 	readonly onDeleteRequest: () => void;
 }
 
-const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
+export const DeleteProfileSection = memo(function DeleteProfileSection({
 	onDeleteRequest,
 }: DeleteProfileSectionProps) {
 	const { t: translate } = useTranslation();
@@ -32,7 +32,3 @@ const DeleteProfileSectionComponent = memo(function DeleteProfileSection({
 		</div>
 	);
 });
-
-DeleteProfileSectionComponent.displayName = 'DeleteProfileSection';
-
-export const DeleteProfileSection = DeleteProfileSectionComponent;

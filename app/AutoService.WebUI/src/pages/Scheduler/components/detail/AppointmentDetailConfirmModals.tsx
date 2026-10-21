@@ -1,15 +1,10 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Save, Trash2, UserPlus } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import { Modal } from '../../../../components/common/Modal';
-import {
-  buttonClass,
-  dangerButtonClass,
-  defaultIconClass,
-  mutedBodyTextClass,
-  secondaryButtonClass,
-} from '../../../../utils/formStyles';
+import { ConfirmModal } from '../../../../components/common/ConfirmModal';
+import { mutedBodyTextClass } from '../../../../utils/formStyles';
+import { AppointmentCardActionModals } from '../shared/AppointmentCardActionModals';
 
 interface AppointmentDetailConfirmModalsProps {
   readonly pendingStatusChange: AppointmentStatus | null;
@@ -34,7 +29,7 @@ interface AppointmentDetailConfirmModalsProps {
   readonly onConfirmDelete: () => void;
 }
 
-const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailConfirmModals({
+export const AppointmentDetailConfirmModals = memo(function AppointmentDetailConfirmModals({
   pendingStatusChange,
   isUpdating,
   onCloseStatusConfirm,
@@ -60,169 +55,62 @@ const AppointmentDetailConfirmModalsComponent = memo(function AppointmentDetailC
 
   return (
     <>
-      <Modal
+      <ConfirmModal
         isOpen={pendingStatusChange !== null}
-        onClose={onCloseStatusConfirm}
         title={t('scheduler.detail.statusChangeConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseStatusConfirm}
-              disabled={isUpdating}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmStatusChange}
-              disabled={isUpdating || pendingStatusChange === null}
-              aria-busy={isUpdating}
-              className={buttonClass}
-            >
-              <Save className={defaultIconClass} />
-              <span>{isUpdating ? t('common.actions.saving') : t('scheduler.detail.confirmStatusChange')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isUpdating}
+        onClose={onCloseStatusConfirm}
+        onConfirm={onConfirmStatusChange}
+        confirmLabel={t('scheduler.detail.confirmStatusChange')}
+        busyLabel={t('common.actions.saving')}
+        icon={Save}
+        confirmDisabled={pendingStatusChange === null}
       >
         <p className={mutedBodyTextClass}>
           {t('scheduler.detail.statusChangeConfirmMessage', {
             status: pendingStatusChange ? t(`scheduler.status.${pendingStatusChange.toLowerCase()}`) : '',
           })}
         </p>
-      </Modal>
+      </ConfirmModal>
 
-      <Modal
-        isOpen={isClaimConfirmOpen}
-        onClose={onCloseClaimConfirm}
-        title={t('scheduler.detail.claimConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseClaimConfirm}
-              disabled={isClaiming}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmClaim}
-              disabled={isClaiming}
-              aria-busy={isClaiming}
-              className={buttonClass}
-            >
-              <UserPlus className={defaultIconClass} />
-              <span>{isClaiming ? t('common.actions.saving') : t('scheduler.claim')}</span>
-            </button>
-          </>
-        )}
-      >
-        <p className={mutedBodyTextClass}>{t('scheduler.detail.claimConfirmMessage')}</p>
-      </Modal>
+      <AppointmentCardActionModals
+        isClaimConfirmOpen={isClaimConfirmOpen}
+        isUnclaimConfirmOpen={isUnclaimConfirmOpen}
+        isClaiming={isClaiming}
+        isUnclaiming={isUnclaiming}
+        onCloseClaimConfirm={onCloseClaimConfirm}
+        onCloseUnclaimConfirm={onCloseUnclaimConfirm}
+        onConfirmClaim={onConfirmClaim}
+        onConfirmUnclaim={onConfirmUnclaim}
+      />
 
-      <Modal
-        isOpen={isUnclaimConfirmOpen}
-        onClose={onCloseUnclaimConfirm}
-        title={t('scheduler.detail.unassignConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseUnclaimConfirm}
-              disabled={isUnclaiming}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmUnclaim}
-              disabled={isUnclaiming}
-              aria-busy={isUnclaiming}
-              className={dangerButtonClass}
-            >
-              <LogOut className={defaultIconClass} />
-              <span>{isUnclaiming ? t('common.actions.saving') : t('scheduler.detail.confirmUnassign')}</span>
-            </button>
-          </>
-        )}
-      >
-        <p className={mutedBodyTextClass}>{t('scheduler.detail.unassignConfirmMessage')}</p>
-      </Modal>
-
-      <Modal
+      <ConfirmModal
         isOpen={isSaveConfirmOpen}
-        onClose={onCloseSaveConfirm}
         title={t('scheduler.detail.saveConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseSaveConfirm}
-              disabled={isSaving}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmSave}
-              disabled={isSaving}
-              aria-busy={isSaving}
-              className={buttonClass}
-            >
-              <Save className={defaultIconClass} />
-              <span>{isSaving ? t('common.actions.saving') : t('common.actions.save')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isSaving}
+        onClose={onCloseSaveConfirm}
+        onConfirm={onConfirmSave}
+        confirmLabel={t('common.actions.save')}
+        busyLabel={t('common.actions.saving')}
+        icon={Save}
       >
         <p className={mutedBodyTextClass}>{t('scheduler.detail.saveConfirmMessage')}</p>
-      </Modal>
+      </ConfirmModal>
 
-      <Modal
+      <ConfirmModal
         isOpen={isDeleteConfirmOpen}
-        onClose={onCloseDeleteConfirm}
         title={t('scheduler.detail.deleteConfirmTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={onCloseDeleteConfirm}
-              disabled={isDeleting}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              data-testid="appointment-detail-delete-confirm"
-              onClick={onConfirmDelete}
-              disabled={isDeleting}
-              aria-busy={isDeleting}
-              className={dangerButtonClass}
-            >
-              <Trash2 className={defaultIconClass} />
-              <span>{isDeleting ? t('common.actions.deleting') : t('scheduler.detail.delete')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isDeleting}
+        onClose={onCloseDeleteConfirm}
+        onConfirm={onConfirmDelete}
+        confirmLabel={t('scheduler.detail.delete')}
+        busyLabel={t('common.actions.deleting')}
+        icon={Trash2}
+        tone="danger"
+        confirmTestId="appointment-detail-delete-confirm"
       >
         <p className={mutedBodyTextClass}>{t('scheduler.detail.deleteConfirmMessage')}</p>
-      </Modal>
+      </ConfirmModal>
     </>
   );
 });
-
-AppointmentDetailConfirmModalsComponent.displayName = 'AppointmentDetailConfirmModals';
-
-export const AppointmentDetailConfirmModals = AppointmentDetailConfirmModalsComponent;

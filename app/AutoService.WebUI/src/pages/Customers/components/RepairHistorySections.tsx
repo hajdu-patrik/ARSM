@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, History } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
@@ -94,7 +94,8 @@ interface CustomerRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-const CustomerRepairHistoryComponent = memo(function CustomerRepairHistory({
+/** Repair history of every appointment of one customer. */
+export const CustomerRepairHistory = memo(function CustomerRepairHistory({
   t,
   locale,
   customerId,
@@ -105,12 +106,7 @@ const CustomerRepairHistoryComponent = memo(function CustomerRepairHistory({
   const scope = useAuthQueryScope();
   const historyQuery = useQuery(customersQueries.customerHistory(scope, customerId));
   const showErrorToast = useToastStore((state) => state.showError);
-  useReadFailureToast({
-    failureMessageKey: historyQuery.isError && historyQuery.data === undefined ? 'customers.errors.historyLoadFailed' : null,
-    errorUpdatedAt: historyQuery.errorUpdatedAt,
-    isSuccess: historyQuery.isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast(historyQuery, 'customers.errors.historyLoadFailed', showErrorToast);
 
   return (
     <RepairHistoryView
@@ -129,11 +125,6 @@ const CustomerRepairHistoryComponent = memo(function CustomerRepairHistory({
   );
 });
 
-CustomerRepairHistoryComponent.displayName = 'CustomerRepairHistory';
-
-/** Repair history of every appointment of one customer. */
-export const CustomerRepairHistory = CustomerRepairHistoryComponent;
-
 interface VehicleRepairHistoryProps {
   readonly t: TFunction;
   readonly locale: string;
@@ -143,7 +134,8 @@ interface VehicleRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-const VehicleRepairHistoryComponent = memo(function VehicleRepairHistory({
+/** Repair history of every appointment of one vehicle. */
+export const VehicleRepairHistory = memo(function VehicleRepairHistory({
   t,
   locale,
   vehicle,
@@ -155,13 +147,7 @@ const VehicleRepairHistoryComponent = memo(function VehicleRepairHistory({
   const historyQuery = useQuery(customersQueries.vehicleHistory(scope, vehicle.id));
   const showErrorToast = useToastStore((state) => state.showError);
   // The panel reuses this component for the next vehicle, so each vehicle's history is its own read.
-  useReadFailureToast({
-    failureMessageKey: historyQuery.isError && historyQuery.data === undefined ? 'customers.errors.historyLoadFailed' : null,
-    errorUpdatedAt: historyQuery.errorUpdatedAt,
-    isSuccess: historyQuery.isSuccess,
-    readKey: String(vehicle.id),
-    showErrorToast,
-  });
+  useQueryReadFailureToast(historyQuery, 'customers.errors.historyLoadFailed', showErrorToast, String(vehicle.id));
 
   return (
     <RepairHistoryView
@@ -180,8 +166,3 @@ const VehicleRepairHistoryComponent = memo(function VehicleRepairHistory({
     />
   );
 });
-
-VehicleRepairHistoryComponent.displayName = 'VehicleRepairHistory';
-
-/** Repair history of every appointment of one vehicle. */
-export const VehicleRepairHistory = VehicleRepairHistoryComponent;

@@ -20,7 +20,7 @@ interface CompanyResultMonthListProps {
 /** Column grid shared by the header row and every month row via CSS subgrid. */
 const monthColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(3.5rem,auto)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
 
-const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
+export const CompanyResultMonthList = memo(function CompanyResultMonthList({
   t,
   locale,
   months,
@@ -72,7 +72,3 @@ const CompanyResultMonthListComponent = memo(function CompanyResultMonthList({
     </section>
   );
 });
-
-CompanyResultMonthListComponent.displayName = 'CompanyResultMonthList';
-
-export const CompanyResultMonthList = CompanyResultMonthListComponent;

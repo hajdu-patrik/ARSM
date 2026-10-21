@@ -18,7 +18,7 @@ interface MobileStackedValuesProps {
   readonly values: readonly MobileStackedValue[];
 }
 
-const MobileStackedValuesComponent = memo(function MobileStackedValues({ values }: MobileStackedValuesProps) {
+export const MobileStackedValues = memo(function MobileStackedValues({ values }: MobileStackedValuesProps) {
   return (
     <>
       {values.map((item) => {
@@ -41,7 +41,3 @@ const MobileStackedValuesComponent = memo(function MobileStackedValues({ values 
     </>
   );
 });
-
-MobileStackedValuesComponent.displayName = 'MobileStackedValues';
-
-export const MobileStackedValues = MobileStackedValuesComponent;

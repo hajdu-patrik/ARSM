@@ -29,7 +29,7 @@ function buildMonthNames(locale: string): string[] {
   return MONTHS.map((month) => formatMonthName(new Date(2000, month - 1, 15), locale));
 }
 
-const PeriodPickerComponent = memo(function PeriodPicker({
+export const PeriodPicker = memo(function PeriodPicker({
   t,
   locale,
   year,
@@ -82,7 +82,3 @@ const PeriodPickerComponent = memo(function PeriodPicker({
     </section>
   );
 });
-
-PeriodPickerComponent.displayName = 'PeriodPicker';
-
-export const PeriodPicker = PeriodPickerComponent;

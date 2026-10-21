@@ -20,7 +20,7 @@ interface CustomerListSectionProps {
 }
 
 /** Renders the loading, empty or paged customer card list, with its pagination and an end-of-list divider. */
-const CustomerListSectionComponent = memo(function CustomerListSection({
+export const CustomerListSection = memo(function CustomerListSection({
   t,
   data,
   actions,
@@ -88,6 +88,3 @@ const CustomerListSectionComponent = memo(function CustomerListSection({
     </section>
   );
 });
-
-CustomerListSectionComponent.displayName = 'CustomerListSection';
-export const CustomerListSection = CustomerListSectionComponent;

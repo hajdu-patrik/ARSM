@@ -1,9 +1,9 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { mutedBodyTextClass } from '../../../utils/formStyles';
 
 interface DeleteVehicleTarget {
   customerId: number;
@@ -18,7 +18,7 @@ interface DeleteVehicleModalProps {
   onConfirm: () => void;
 }
 
-const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
+export const DeleteVehicleModal = memo(function DeleteVehicleModal({
   target,
   isDeleting,
   t,
@@ -26,47 +26,22 @@ const DeleteVehicleModalComponent = memo(function DeleteVehicleModal({
   onConfirm,
 }: DeleteVehicleModalProps) {
   return (
-    <Modal
+    <ConfirmModal
       isOpen={target !== null}
-      onClose={() => {
-        if (!isDeleting) {
-          onClose();
-        }
-      }}
       title={t('customers.deleteVehicleTitle')}
-      variant="confirm"
-      footer={(
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isDeleting}
-            className={secondaryButtonClass}
-          >
-            {t('common.actions.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            aria-busy={isDeleting}
-            className={dangerButtonClass}
-          >
-            <Trash2 className={defaultIconClass} />
-            <span>{isDeleting ? t('common.actions.deleting') : t('customers.deleteVehicle')}</span>
-          </button>
-        </>
-      )}
+      isBusy={isDeleting}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      confirmLabel={t('customers.deleteVehicle')}
+      busyLabel={t('common.actions.deleting')}
+      icon={Trash2}
+      tone="danger"
     >
       <p className={mutedBodyTextClass}>
         {t('customers.deleteVehicleConfirm', {
           plate: target?.vehicle.licensePlate ?? '',
         })}
       </p>
-    </Modal>
+    </ConfirmModal>
   );
 });
-
-DeleteVehicleModalComponent.displayName = 'DeleteVehicleModal';
-
-export const DeleteVehicleModal = DeleteVehicleModalComponent;

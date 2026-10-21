@@ -1,17 +1,11 @@
 /** Quotes toolbar: search plus status filter; Expired sits beside the four stored statuses since that's what a mechanic looks for. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Search, X } from 'lucide-react';
+import { ToolbarSearchField } from '../../../components/common/ToolbarSearchField';
 import { Dropdown } from '../../../components/common/Dropdown';
 import {
   cardClass,
-  defaultIconClass,
-  inputGroupContainerClass,
-  inputGroupIconClass,
-  searchClearButtonClass,
-  searchInputClass,
   toolbarRowLayoutClass,
-  toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
 import { isQuoteStatusFilter, QUOTE_STATUS_FILTERS, type QuoteStatusFilter } from '../helpers';
 
@@ -34,7 +28,7 @@ const STATUS_FILTER_I18N_KEY: Record<QuoteStatusFilter, string> = {
   Rejected: 'quotes.status.rejected',
 };
 
-const QuotesToolbarComponent = memo(function QuotesToolbar({
+export const QuotesToolbar = memo(function QuotesToolbar({
   t,
   searchTerm,
   statusFilter,
@@ -47,31 +41,13 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
   return (
     <section className={cardClass}>
       <div className={toolbarRowLayoutClass}>
-        <div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
-          <Search className={inputGroupIconClass} />
-          <input
-            data-testid="quotes-search-input"
-            type="text"
-            value={searchTerm}
-            onChange={(event) => {
-              onSearchChange(event.target.value);
-            }}
-            placeholder={t('quotes.searchPlaceholder')}
-            className={searchInputClass}
-          />
-          {searchTerm.length > 0 && (
-            <button
-              data-testid="quotes-search-clear"
-              type="button"
-              onClick={onClearSearch}
-              title={t('common.actions.clearSearch')}
-              aria-label={t('common.actions.clearSearch')}
-              className={searchClearButtonClass}
-            >
-              <X className={defaultIconClass} aria-hidden="true" />
-            </button>
-          )}
-        </div>
+        <ToolbarSearchField
+          testIdPrefix="quotes"
+          value={searchTerm}
+          placeholder={t('quotes.searchPlaceholder')}
+          onChange={onSearchChange}
+          onClear={onClearSearch}
+        />
 
         <div className="min-w-0 max-w-full w-full sm:w-56 sm:shrink-0">
           <Dropdown
@@ -90,7 +66,3 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
     </section>
   );
 });
-
-QuotesToolbarComponent.displayName = 'QuotesToolbar';
-
-export const QuotesToolbar = QuotesToolbarComponent;

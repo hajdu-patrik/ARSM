@@ -1,7 +1,16 @@
 /** Per-field validation messages of the customer and vehicle forms. An error is pinned to the value
  * it was raised for, so editing the field clears it without any extra state. */
 
-import { getServerFieldError, type ServerFieldErrors } from '../../utils/serverValidation';
+import { isAxiosError } from 'axios';
+import {
+  extractServerFieldErrors,
+  getFirstFieldErrorMessage,
+  getServerFieldError,
+  hasRequiredFieldError,
+  hasServerFieldErrors,
+  normalizeServerFieldErrors,
+  type ServerFieldErrors,
+} from '../../utils/serverValidation';
 
 /** Customer form fields that can carry a validation error. */
 export const CUSTOMER_FIELD_NAMES = ['firstName', 'middleName', 'lastName', 'email', 'phoneNumber'] as const;
@@ -95,4 +104,62 @@ export function currentFieldErrors<TField extends string>(
   }
 
   return current;
+}
+
+/** How a form reads a rejected save: its message mapper, fallback key, fields and the conflicts that concern one field. */
+export interface SaveErrorRules<TField extends string> {
+  readonly mapMessage: (message: string) => string;
+  readonly fallbackKey: string;
+  readonly fields: readonly TField[];
+  readonly messageFields: Readonly<Record<string, TField>>;
+}
+
+/** A rejected save: the key to toast, the errors to pin (null keeps the current ones) and the server field errors. */
+export interface RejectedSave<TField extends string> {
+  readonly messageKey: string;
+  readonly pinned: PinnedFieldErrors<TField> | null;
+  readonly fieldErrors: ServerFieldErrors | null;
+}
+
+/** Maps a rejected save to its message and pinned errors: a field dictionary first, else the detail message. */
+export function resolveRejectedSave<TField extends string>(
+  error: unknown,
+  rules: SaveErrorRules<TField>,
+  values: Readonly<Record<TField, string>>,
+): RejectedSave<TField> {
+  if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+    return { messageKey: rules.fallbackKey, pinned: null, fieldErrors: null };
+  }
+
+  const responseData = error.response?.data;
+  const fieldErrors = normalizeServerFieldErrors(extractServerFieldErrors(responseData), rules.mapMessage);
+
+  if (hasServerFieldErrors(fieldErrors)) {
+    return {
+      messageKey: getFirstFieldErrorMessage(fieldErrors) ?? rules.fallbackKey,
+      pinned: pinFieldErrors(fieldErrors, values, rules.fields),
+      fieldErrors,
+    };
+  }
+
+  const messageKey = responseData?.detail ? rules.mapMessage(responseData.detail) : rules.fallbackKey;
+  return { messageKey, pinned: pinMessageField(messageKey, rules.messageFields, values), fieldErrors: null };
+}
+
+/** Puts the saved value back into each listed field the user blanked and the server rejected as required. */
+export function restoreRequiredFields<TField extends string, TForm extends Readonly<Record<TField, string>>>(
+  form: TForm,
+  snapshot: Readonly<Record<TField, string>>,
+  errors: ServerFieldErrors,
+  fields: readonly TField[],
+): TForm {
+  const restored: Partial<Record<TField, string>> = {};
+
+  for (const field of fields) {
+    if (!form[field].trim() && hasRequiredFieldError(errors, field)) {
+      restored[field] = snapshot[field];
+    }
+  }
+
+  return { ...form, ...restored };
 }

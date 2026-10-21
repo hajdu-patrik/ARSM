@@ -11,7 +11,7 @@ interface AdminRouteProps {
 }
 
 /** Route guard that enforces admin access: redirects to `/login` if unauthenticated, to `/` if not admin. */
-const AdminRouteComponent = memo(function AdminRoute({ children }: AdminRouteProps) {
+export const AdminRoute = memo(function AdminRoute({ children }: AdminRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAdmin = useAuthStore((state) => state.user?.isAdmin);
@@ -30,7 +30,3 @@ const AdminRouteComponent = memo(function AdminRoute({ children }: AdminRoutePro
 
   return <>{children}</>;
 });
-
-AdminRouteComponent.displayName = 'AdminRoute';
-
-export const AdminRoute = AdminRouteComponent;

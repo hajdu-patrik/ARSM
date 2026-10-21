@@ -1,10 +1,9 @@
 /** Mechanic avatar: profile picture with live SSE updates, falling back to a deterministic initials avatar. */
 import { memo, useEffect, useMemo, useState } from 'react';
-import { isRecord } from '../../../../services/http/record-guard';
 import { profileService } from '../../../../services/profile/profile.service';
 import {
   PROFILE_PICTURE_UPDATED_EVENT,
-  type ProfilePictureUpdatedDetail,
+  readProfilePictureUpdate,
 } from '../../../../services/profile/profile-picture-live.service';
 import { useAuthStore } from '../../../../store/auth.store';
 import { getDeterministicAvatarColor } from '../../../../utils/avatar';
@@ -35,30 +34,8 @@ function getInitialsFromFullName(fullName: string): string {
   return initials.length > 0 ? initials : '??';
 }
 
-/** Reads the payload of a profile-picture update event, or null when the event carries no valid one. */
-function readUpdateDetail(event: Event): ProfilePictureUpdatedDetail | null {
-  if (!(event instanceof CustomEvent)) {
-    return null;
-  }
-
-  const detail: unknown = event.detail;
-  if (
-    !isRecord(detail) ||
-    typeof detail.personId !== 'number' ||
-    typeof detail.hasProfilePicture !== 'boolean' ||
-    typeof detail.cacheBuster !== 'number'
-  ) {
-    return null;
-  }
-
-  return {
-    personId: detail.personId,
-    hasProfilePicture: detail.hasProfilePicture,
-    cacheBuster: detail.cacheBuster,
-  };
-}
-
-const MechanicAvatarComponent = memo(function MechanicAvatar({
+/** Memoized mechanic avatar with live profile picture updates. */
+export const MechanicAvatar = memo(function MechanicAvatar({
   mechanicId,
   fullName,
   hasProfilePicture,
@@ -75,7 +52,7 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
 
   useEffect(() => {
     const handleProfilePictureUpdated = (event: Event) => {
-      const detail = readUpdateDetail(event);
+      const detail = readProfilePictureUpdate(event);
       if (detail === null || detail.personId !== mechanicId) {
         return;
       }
@@ -128,8 +105,3 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
     </div>
   );
 });
-
-MechanicAvatarComponent.displayName = 'MechanicAvatar';
-
-/** Memoized mechanic avatar with live profile picture updates. */
-export const MechanicAvatar = MechanicAvatarComponent;

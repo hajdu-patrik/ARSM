@@ -19,7 +19,7 @@ interface VatBreakdownListProps {
 /** Column grid shared by the header row and every VAT row via CSS subgrid. */
 const vatColumnsClass = '@lg:grid-cols-[minmax(6rem,1.4fr)_minmax(6.5rem,auto)_minmax(6.5rem,auto)]';
 
-const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, rows }: VatBreakdownListProps) {
+export const VatBreakdownList = memo(function VatBreakdownList({ t, locale, rows }: VatBreakdownListProps) {
   const rateColumn: DataListColumn = { key: 'vatRate', label: t('companyResults.vatRate') };
   const taxBaseColumn: DataListColumn = { key: 'taxBase', label: t('companyResults.taxBase'), align: 'right' };
   const taxColumn: DataListColumn = { key: 'tax', label: t('companyResults.tax'), align: 'right' };
@@ -59,7 +59,3 @@ const VatBreakdownListComponent = memo(function VatBreakdownList({ t, locale, ro
     </section>
   );
 });
-
-VatBreakdownListComponent.displayName = 'VatBreakdownList';
-
-export const VatBreakdownList = VatBreakdownListComponent;

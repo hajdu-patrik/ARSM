@@ -26,6 +26,17 @@ export function getServerFieldError(errors: ServerFieldErrors, field: string): s
   return undefined;
 }
 
+/** Returns true when the field-error dictionary has at least one non-empty entry. */
+export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
+  return Object.values(errors).some((messages) => messages.length > 0);
+}
+
+/** True when the server marked the field as required, whichever letter case its dictionary key uses. */
+export function hasRequiredFieldError(errors: ServerFieldErrors, field: string): boolean {
+  const variants = [field, field.toLowerCase(), toCapitalized(field)];
+  return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
+}
+
 /** Extracts the field errors dictionary from an Axios error response payload. */
 export function extractServerFieldErrors(
   data: { errors?: ServerFieldErrors; detail?: string } | undefined,

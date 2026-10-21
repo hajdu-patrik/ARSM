@@ -24,7 +24,8 @@ interface ProfilePictureCropModalProps {
   readonly onConfirm: (croppedImage: Blob) => void;
 }
 
-const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
+/** Crops the picked picture to a square and confirms it; a failed crop shows an error toast. */
+export const ProfilePictureCropModal = memo(function ProfilePictureCropModal({
   isOpen,
   imageSrc,
   isSubmitting,
@@ -130,8 +131,3 @@ const ProfilePictureCropModalComponent = memo(function ProfilePictureCropModal({
     </Modal>
   );
 });
-
-ProfilePictureCropModalComponent.displayName = 'ProfilePictureCropModal';
-
-/** Crops the picked picture to a square and confirms it; a failed crop shows an error toast. */
-export const ProfilePictureCropModal = ProfilePictureCropModalComponent;

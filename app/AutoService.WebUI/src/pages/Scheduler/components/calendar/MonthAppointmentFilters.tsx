@@ -41,7 +41,7 @@ function parseMechanicFilterValue(value: string): number | null {
 }
 
 /** Renders month-list sort and day-reset controls for the header row. */
-const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSortControls({
+export const MonthAppointmentSortControls = memo(function MonthAppointmentSortControls({
   selectedDay,
   sortAsc,
   onToggleSort,
@@ -67,7 +67,7 @@ const MonthAppointmentSortControlsComponent = memo(function MonthAppointmentSort
 });
 
 /** Renders month-list status and mechanic filters below the header row. */
-const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
+export const MonthAppointmentFilters = memo(function MonthAppointmentFilters({
   selectedStatuses,
   uniqueMechanics,
   selectedMechanicId,
@@ -123,9 +123,3 @@ const MonthAppointmentFiltersComponent = memo(function MonthAppointmentFilters({
     </div>
   );
 });
-
-MonthAppointmentSortControlsComponent.displayName = 'MonthAppointmentSortControls';
-MonthAppointmentFiltersComponent.displayName = 'MonthAppointmentFilters';
-
-export const MonthAppointmentSortControls = MonthAppointmentSortControlsComponent;
-export const MonthAppointmentFilters = MonthAppointmentFiltersComponent;

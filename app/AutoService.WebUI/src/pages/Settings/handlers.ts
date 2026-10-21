@@ -4,12 +4,11 @@ import { isAxiosError } from 'axios';
 import type { FieldErrors } from './types';
 import {
   getFirstFieldErrorMessage,
+  hasServerFieldErrors,
   mapSettingsValidationMessageToKey,
   normalizeServerFieldErrors,
 } from '../../utils/serverValidation';
 import { extractFieldErrors } from './helpers';
-
-const SETTINGS_REQUIRED_FIELD_KEY = 'common.validation.fieldRequired';
 
 /** Message key of a wrong current password, which belongs to the current-password field. */
 export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInvalid';
@@ -18,17 +17,6 @@ export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInva
 function mapSettingsMessageToToastKey(message: string, fallbackKey: string): string {
   const mappedMessage = mapSettingsValidationMessageToKey(message);
   return mappedMessage === message ? fallbackKey : mappedMessage;
-}
-
-/** Returns true when the field-error dictionary has at least one non-empty entry. */
-export function hasFieldErrors(errors: FieldErrors): boolean {
-  return Object.values(errors).some((messages) => messages.length > 0);
-}
-
-/** Returns whether a field has a required-field validation error under common server key casing variants. */
-export function fieldHasRequiredError(errors: FieldErrors, fieldName: string): boolean {
-  const variants = [fieldName, fieldName.toLowerCase(), fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
-  return variants.some((variant) => (errors[variant] ?? []).includes(SETTINGS_REQUIRED_FIELD_KEY));
 }
 
 /** Error body of a rejected settings request: a field-error dictionary and/or a single detail message. */
@@ -49,7 +37,7 @@ export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
     (message) => mapSettingsMessageToToastKey(message, 'toast.profileUpdateFailed'),
   );
 
-  if (hasFieldErrors(normalizedFieldErrors)) {
+  if (hasServerFieldErrors(normalizedFieldErrors)) {
     return normalizedFieldErrors;
   }
 
@@ -90,7 +78,7 @@ export function extractPasswordChangeErrors(err: unknown): FieldErrors | null {
   const data = err.response?.data;
   const mappedFieldErrors = mapPasswordErrors(extractFieldErrors(data));
 
-  if (hasFieldErrors(mappedFieldErrors)) {
+  if (hasServerFieldErrors(mappedFieldErrors)) {
     return mappedFieldErrors;
   }
 
@@ -120,7 +108,7 @@ export function extractDeleteProfileErrorKey(err: unknown): string | null {
     (message) => mapSettingsMessageToToastKey(message, 'toast.profileDeleteFailed'),
   );
 
-  if (hasFieldErrors(mappedFieldErrors)) {
+  if (hasServerFieldErrors(mappedFieldErrors)) {
     return getFirstFieldErrorMessage(mappedFieldErrors) ?? 'toast.profileDeleteFailed';
   }
 

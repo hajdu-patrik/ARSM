@@ -12,7 +12,6 @@ import {
   pageShellClass,
   pageShellNarrowClass,
   pageTitleClass,
-  secondaryButtonClass,
   sectionStackClass,
   sectionTitleClass,
 } from '../../../utils/formStyles';
@@ -20,10 +19,11 @@ import { BasicInfoSection } from './sections/BasicInfoSection';
 import { ProfessionalSection } from './sections/ProfessionalSection';
 import { SecuritySection } from './sections/SecuritySection';
 import { MechanicListSection } from './sections/MechanicListSection';
-import { Modal } from '../../../components/common/Modal';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { useRegisterMechanicForm } from './useRegisterMechanicForm';
 
-const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
+/** Admin-only route component for mechanic management and registration. */
+export const RegisterMechanicPage = memo(function RegisterMechanicPage() {
   const { t } = useTranslation();
   const {
     formValues,
@@ -110,43 +110,20 @@ const RegisterMechanicComponent = memo(function RegisterMechanicPage() {
         </div>
       </div>
 
-      <Modal
+      <ConfirmModal
         isOpen={isRegisterConfirmOpen}
-        onClose={closeRegisterConfirm}
         title={t('admin.confirmRegisterTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={closeRegisterConfirm}
-              disabled={isSubmitting}
-              className={secondaryButtonClass}
-            >
-              {t('common.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={handleRegisterConfirmed}
-              disabled={isSubmitting}
-              aria-busy={isSubmitting}
-              className={buttonClass}
-            >
-              <Save className={defaultIconClass} />
-              <span>{isSubmitting ? t('admin.submitting') : t('admin.confirmRegister')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isSubmitting}
+        onClose={closeRegisterConfirm}
+        onConfirm={handleRegisterConfirmed}
+        confirmLabel={t('admin.confirmRegister')}
+        busyLabel={t('admin.submitting')}
+        icon={Save}
       >
         <p className={mutedBodyTextClass}>
           {t('admin.confirmRegisterMessage', { email: pendingRegisterEmail })}
         </p>
-      </Modal>
+      </ConfirmModal>
     </section>
   );
 });
-
-RegisterMechanicComponent.displayName = 'RegisterMechanicPage';
-
-/** Admin-only route component for mechanic management and registration. */
-export const RegisterMechanicPage = RegisterMechanicComponent;

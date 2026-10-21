@@ -20,7 +20,8 @@ interface BasicInfoSectionProps {
   readonly onFieldChange: (field: RegisterTextFieldName, value: string) => void;
 }
 
-const BasicInfoSectionComponent = memo(function BasicInfoSection({
+/** Name and contact input section used by the mechanic registration form. */
+export const BasicInfoSection = memo(function BasicInfoSection({
   firstName,
   middleName,
   lastName,
@@ -144,8 +145,3 @@ const BasicInfoSectionComponent = memo(function BasicInfoSection({
     </>
   );
 });
-
-BasicInfoSectionComponent.displayName = 'BasicInfoSection';
-
-/** Name and contact input section used by the mechanic registration form. */
-export const BasicInfoSection = BasicInfoSectionComponent;

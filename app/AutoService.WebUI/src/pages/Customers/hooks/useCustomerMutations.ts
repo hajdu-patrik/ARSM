@@ -1,26 +1,18 @@
 import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
-import {
-  extractServerFieldErrors,
-  normalizeServerFieldErrors,
-  type ServerFieldErrors,
-} from '../../../utils/serverValidation';
+import type { ServerFieldErrors } from '../../../utils/serverValidation';
 import {
   CUSTOMER_FIELD_NAMES,
   CUSTOMER_MESSAGE_FIELDS,
   currentFieldErrors,
-  pinFieldErrors,
-  pinMessageField,
+  resolveRejectedSave,
+  restoreRequiredFields,
   type CustomerFieldName,
   type PinnedFieldErrors,
+  type SaveErrorRules,
 } from '../fieldErrors';
-import {
-  hasRequiredFieldError,
-  hasServerFieldErrors,
-  mapCustomerValidationMessageToKey,
-} from '../helpers';
+import { mapCustomerValidationMessageToKey } from '../helpers';
 import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
 import {
   buildNormalizedCustomerPayload,
@@ -47,6 +39,17 @@ const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   phoneNumber: '',
 };
 
+/** How a rejected customer save maps to a toast and pinned field errors. */
+const CUSTOMER_SAVE_ERROR_RULES: SaveErrorRules<CustomerFieldName> = {
+  mapMessage: mapCustomerValidationMessageToKey,
+  fallbackKey: 'customers.errors.saveFailed',
+  fields: CUSTOMER_FIELD_NAMES,
+  messageFields: CUSTOMER_MESSAGE_FIELDS,
+};
+
+/** Required customer fields an edit restores from the saved customer when the server rejects them blank. */
+const REQUIRED_CUSTOMER_FIELDS = ['firstName', 'lastName', 'email'] as const;
+
 /** Variables of the customer update mutation. */
 interface UpdateCustomerVariables {
   readonly customerId: number;
@@ -55,7 +58,6 @@ interface UpdateCustomerVariables {
 
 /** External dependencies required by customer mutation handlers. */
 interface UseCustomerMutationsParams extends CustomerMutationToastHandlersWithWarning {
-  getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   refreshAfterCustomerCreated: () => Promise<void>;
   refreshAfterCustomerUpdated: (customerId: number) => Promise<void>;
   refreshAfterCustomerDeleted: () => Promise<void>;
@@ -66,7 +68,6 @@ export function useCustomerMutations({
   showSuccessToast,
   showErrorToast,
   showWarningToast,
-  getFirstFieldErrorMessage,
   refreshAfterCustomerCreated,
   refreshAfterCustomerUpdated,
   refreshAfterCustomerDeleted,
@@ -111,45 +112,22 @@ export function useCustomerMutations({
       return;
     }
 
-    setCustomerForm((prev) => ({
-      ...prev,
-      firstName: !prev.firstName.trim() && hasRequiredFieldError(errors, 'firstName')
-        ? editingCustomerSnapshot.firstName
-        : prev.firstName,
-      lastName: !prev.lastName.trim() && hasRequiredFieldError(errors, 'lastName')
-        ? editingCustomerSnapshot.lastName
-        : prev.lastName,
-      email: !prev.email.trim() && hasRequiredFieldError(errors, 'email')
-        ? editingCustomerSnapshot.email
-        : prev.email,
-    }));
+    setCustomerForm((prev) => restoreRequiredFields(prev, editingCustomerSnapshot, errors, REQUIRED_CUSTOMER_FIELDS));
   }, [customerModalMode, editingCustomerSnapshot]);
 
   const handleSubmitCustomerError = useCallback((error: unknown) => {
-    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-      showErrorToast('customers.errors.saveFailed');
-      return;
+    const rejected = resolveRejectedSave(error, CUSTOMER_SAVE_ERROR_RULES, customerForm);
+
+    if (rejected.fieldErrors !== null) {
+      restoreRequiredCustomerFields(rejected.fieldErrors);
     }
 
-    const responseData = error.response?.data;
-    const mappedFieldErrors = normalizeServerFieldErrors(
-      extractServerFieldErrors(responseData),
-      mapCustomerValidationMessageToKey,
-    );
-
-    if (hasServerFieldErrors(mappedFieldErrors)) {
-      restoreRequiredCustomerFields(mappedFieldErrors);
-      setPinnedFieldErrors(pinFieldErrors(mappedFieldErrors, customerForm, CUSTOMER_FIELD_NAMES));
-      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.saveFailed');
-      return;
+    if (rejected.pinned !== null) {
+      setPinnedFieldErrors(rejected.pinned);
     }
 
-    const detailKey = responseData?.detail
-      ? mapCustomerValidationMessageToKey(responseData.detail)
-      : 'customers.errors.saveFailed';
-    setPinnedFieldErrors(pinMessageField(detailKey, CUSTOMER_MESSAGE_FIELDS, customerForm));
-    showErrorToast(detailKey);
-  }, [customerForm, getFirstFieldErrorMessage, restoreRequiredCustomerFields, showErrorToast]);
+    showErrorToast(rejected.messageKey);
+  }, [customerForm, restoreRequiredCustomerFields, showErrorToast]);
 
   const { mutate: createCustomer, isPending: isCreatingCustomer } = useMutation({
     mutationFn: (request: CreateCustomerRequest) => customerRegistryService.createCustomer(request),

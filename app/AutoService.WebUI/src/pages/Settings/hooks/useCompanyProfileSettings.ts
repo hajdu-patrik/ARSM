@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { adminService } from '../../../services/admin/admin.service';
 import { adminQueries } from '../../../services/queries/admin.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
@@ -59,12 +59,7 @@ export function useCompanyProfileSettings({
   const values = applyCompanyDraft(baseline, draft);
   const hasChanges = hasCompanyFieldChanges(baseline, values);
 
-  useReadFailureToast({
-    failureMessageKey: isError && data === undefined ? 'settings.company.loadError' : null,
-    errorUpdatedAt,
-    isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast({ data, isError, isSuccess, errorUpdatedAt }, 'settings.company.loadError', showErrorToast);
 
   const handleSaveFailure = useCallback((error: unknown) => {
     const serverErrors = extractCompanySaveErrors(error);

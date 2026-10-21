@@ -125,7 +125,8 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
   );
 }
 
-const LoadingPageComponent = memo(function LoadingPage() {
+/** Animated loading splash shown on a full browser load of an app route, until the app is ready. */
+export const LoadingPage = memo(function LoadingPage() {
   const { t: translate, ready: isI18nReady } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
   const isAuthLoading = useAuthStore((state) => state.isLoading);
@@ -150,8 +151,3 @@ const LoadingPageComponent = memo(function LoadingPage() {
     </div>
   );
 });
-
-LoadingPageComponent.displayName = 'LoadingPage';
-
-/** Animated loading splash shown on a full browser load of an app route, until the app is ready. */
-export const LoadingPage = LoadingPageComponent;

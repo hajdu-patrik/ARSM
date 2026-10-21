@@ -9,7 +9,8 @@ interface FieldErrorTextProps {
   readonly messageKey: string | undefined;
 }
 
-const FieldErrorTextComponent = memo(function FieldErrorText({ id, messageKey }: FieldErrorTextProps) {
+/** Renders the localized error under a field while the field has one, nothing otherwise. */
+export const FieldErrorText = memo(function FieldErrorText({ id, messageKey }: FieldErrorTextProps) {
   const { t } = useTranslation();
 
   if (messageKey === undefined) {
@@ -22,8 +23,3 @@ const FieldErrorTextComponent = memo(function FieldErrorText({ id, messageKey }:
     </p>
   );
 });
-
-FieldErrorTextComponent.displayName = 'FieldErrorText';
-
-/** Renders the localized error under a field while the field has one, nothing otherwise. */
-export const FieldErrorText = FieldErrorTextComponent;

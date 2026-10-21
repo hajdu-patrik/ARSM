@@ -20,7 +20,7 @@ const totalRowClass = 'flex min-w-0 items-baseline justify-between gap-3';
 // Financial figures wrap instead of truncating (shared [overflow-wrap:anywhere] convention, also used by CompanyResultSummary), so a large total's digits are never hidden.
 const grandTotalValueClass = 'min-w-0 [overflow-wrap:anywhere] text-right text-base font-semibold tabular-nums text-ui-text';
 
-const QuoteEditorTotalsSectionComponent = memo(function QuoteEditorTotalsSection({
+export const QuoteEditorTotalsSection = memo(function QuoteEditorTotalsSection({
   t,
   locale,
   quote,
@@ -46,7 +46,3 @@ const QuoteEditorTotalsSectionComponent = memo(function QuoteEditorTotalsSection
     </section>
   );
 });
-
-QuoteEditorTotalsSectionComponent.displayName = 'QuoteEditorTotalsSection';
-
-export const QuoteEditorTotalsSection = QuoteEditorTotalsSectionComponent;

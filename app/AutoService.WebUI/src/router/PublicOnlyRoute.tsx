@@ -11,7 +11,7 @@ interface PublicOnlyRouteProps {
 }
 
 /** Route guard that redirects authenticated users to `/`, showing content only for unauthenticated visitors. */
-const PublicOnlyRouteComponent = memo(function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
+export const PublicOnlyRoute = memo(function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
@@ -25,7 +25,3 @@ const PublicOnlyRouteComponent = memo(function PublicOnlyRoute({ children }: Pub
 
   return <>{children}</>;
 });
-
-PublicOnlyRouteComponent.displayName = 'PublicOnlyRoute';
-
-export const PublicOnlyRoute = PublicOnlyRouteComponent;

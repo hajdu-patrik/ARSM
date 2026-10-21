@@ -35,7 +35,7 @@ interface CustomerCardProps {
 }
 
 /** Renders a single customer card and, once expanded, its vehicle and history details. */
-const CustomerCardComponent = memo(function CustomerCard({
+export const CustomerCard = memo(function CustomerCard({
   t,
   searchTerm,
   customer,
@@ -147,7 +147,3 @@ const CustomerCardComponent = memo(function CustomerCard({
     </article>
   );
 });
-
-CustomerCardComponent.displayName = 'CustomerCard';
-
-export const CustomerCard = CustomerCardComponent;

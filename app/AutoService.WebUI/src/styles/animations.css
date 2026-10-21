@@ -26,20 +26,6 @@
   }
 }
 
-/* Toast notification slides out upward */
-@keyframes toast-slide-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.94);
-    filter: blur(2px);
-  }
-}
-
 /* General fade-in from below (used via .fade-in-up) */
 @keyframes fade-in-up {
   from {

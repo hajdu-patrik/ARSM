@@ -1,7 +1,8 @@
 /** Generic part/labor-type tab (toolbar plus list) driven by a `CatalogTabConfig`, shared by Parts and Labor types. */
 import type { RefObject } from 'react';
 import type { TFunction } from 'i18next';
-import { Plus, Search, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { ToolbarSearchField } from '../../../components/common/ToolbarSearchField';
 import { DataList, type DataListColumn } from '../../../components/common/DataList';
 import { Pagination } from '../../../components/common/Pagination';
 import type { CatalogTabConfig } from '../catalogTab.config';
@@ -9,15 +10,10 @@ import type { CatalogEntityListState } from '../hooks/useCatalogState';
 import {
   cardClass,
   defaultIconClass,
-  inputGroupContainerClass,
-  inputGroupIconClass,
   referenceChipPrimaryButtonClass,
-  searchClearButtonClass,
-  searchInputClass,
   toolbarActionGrowClass,
   toolbarActionsWrapperClass,
   toolbarRowLayoutClass,
-  toolbarSearchFieldClass,
 } from '../../../utils/formStyles';
 import { CatalogItemRow } from './CatalogItemRow';
 
@@ -59,29 +55,13 @@ function CatalogTab<TDto>({
     <div className="flex min-w-0 flex-col gap-4">
       <section className={cardClass}>
         <div className={toolbarRowLayoutClass}>
-          <div className={`${inputGroupContainerClass} ${toolbarSearchFieldClass}`}>
-            <Search className={inputGroupIconClass} />
-            <input
-              data-testid={`${config.testIdPrefix}-search-input`}
-              type="text"
-              value={searchTerm}
-              onChange={(event) => { list.setSearchTerm(event.target.value); }}
-              placeholder={t(config.searchPlaceholderKey)}
-              className={searchInputClass}
-            />
-            {searchTerm.length > 0 && (
-              <button
-                data-testid={`${config.testIdPrefix}-search-clear`}
-                type="button"
-                onClick={list.clearSearch}
-                title={t('common.actions.clearSearch')}
-                aria-label={t('common.actions.clearSearch')}
-                className={searchClearButtonClass}
-              >
-                <X className={defaultIconClass} aria-hidden="true" />
-              </button>
-            )}
-          </div>
+          <ToolbarSearchField
+            testIdPrefix={config.testIdPrefix}
+            value={searchTerm}
+            placeholder={t(config.searchPlaceholderKey)}
+            onChange={list.setSearchTerm}
+            onClear={list.clearSearch}
+          />
 
           <div className={toolbarActionsWrapperClass}>
             <button
