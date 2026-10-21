@@ -45,49 +45,36 @@ public static partial class AppointmentEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var error = ValidateIntakeVehicleFields(newVehicle);
-        if (error is not null)
+        var input = newVehicle.ToInput();
+        var fieldError = input.GetFieldError(prefix: "Vehicle.");
+        if (fieldError is not null)
         {
-            return (error, null);
+            return (ApiProblem.Unprocessable(fieldError), null);
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(newVehicle.LicensePlate, out var normalizedPlate, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var normalizedPlate, out var plateValidationError))
         {
             return (ApiProblem.Unprocessable(plateValidationError), null);
         }
 
-        if (!VinNormalization.TryNormalizeVin(newVehicle.Vin, out var normalizedVin, out var vinValidationError))
+        if (!VinNormalization.TryNormalizeVin(input.Vin, out var normalizedVin, out var vinValidationError))
         {
             return (ApiProblem.Unprocessable(vinValidationError), null);
         }
 
-        if (!VehicleDrivetrainValidation.TryParse(newVehicle.DrivetrainType, out var drivetrainType, out var drivetrainValidationError, "Vehicle.DrivetrainType"))
+        if (!VehicleDrivetrainValidation.TryParse(input.DrivetrainType, out var drivetrainType, out var drivetrainValidationError, "Vehicle.DrivetrainType"))
         {
             return (ApiProblem.Unprocessable(drivetrainValidationError), null);
         }
 
-        if (await db.Vehicles.AnyAsync(v => v.LicensePlate == normalizedPlate, cancellationToken))
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, null, cancellationToken);
+        if (conflict is not null)
         {
-            return (ApiProblem.Conflict("A vehicle with this license plate already exists."), null);
+            return (ApiProblem.Conflict(conflict), null);
         }
 
-        if (await db.Vehicles.AnyAsync(v => v.Vin == normalizedVin, cancellationToken))
-        {
-            return (ApiProblem.Conflict("A vehicle with this VIN already exists."), null);
-        }
-
-        var vehicle = new Vehicle(
-            normalizedPlate,
-            normalizedVin,
-            newVehicle.Brand.Trim(),
-            newVehicle.Model.Trim(),
-            newVehicle.Year,
-            newVehicle.MileageKm,
-            newVehicle.EnginePowerKw,
-            drivetrainType)
-        {
-            Customer = customer
-        };
+        var vehicle = input.ToEntity(normalizedPlate, normalizedVin, drivetrainType);
+        vehicle.Customer = customer;
 
         if (customer.Id > 0)
         {
@@ -95,40 +82,5 @@ public static partial class AppointmentEndpoints
         }
 
         return (null, vehicle);
-    }
-
-    private static IResult? ValidateIntakeVehicleFields(SchedulerNewVehicleRequest newVehicle)
-    {
-        if (string.IsNullOrWhiteSpace(newVehicle.LicensePlate) ||
-            string.IsNullOrWhiteSpace(newVehicle.Vin) ||
-            string.IsNullOrWhiteSpace(newVehicle.Brand) ||
-            string.IsNullOrWhiteSpace(newVehicle.Model) ||
-            string.IsNullOrWhiteSpace(newVehicle.DrivetrainType))
-        {
-            return ApiProblem.Unprocessable("Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.");
-        }
-
-        var lengthError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
-            newVehicle.LicensePlate,
-            newVehicle.Brand,
-            newVehicle.Model,
-            fieldPrefix: "Vehicle.");
-
-        if (lengthError is not null)
-        {
-            return ApiProblem.Unprocessable(lengthError);
-        }
-
-        if (newVehicle.Year is < 1886 or > 2100)
-        {
-            return ApiProblem.Unprocessable("Vehicle.Year must be between 1886 and 2100.");
-        }
-
-        var numericError = VehicleNumericValidation.GetValidationError(
-            newVehicle.MileageKm,
-            newVehicle.EnginePowerKw,
-            fieldPrefix: "Vehicle.");
-
-        return numericError is null ? null : ApiProblem.Unprocessable(numericError);
     }
 }

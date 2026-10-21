@@ -1,7 +1,6 @@
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 
@@ -9,91 +8,46 @@ namespace AutoService.ApiService.Vehicles;
 
 public static partial class VehicleEndpoints
 {
-    private const int MaxLicensePlateLength = 20;
-    private const int MaxBrandLength = 50;
-    private const int MaxModelLength = 50;
-
     private static async Task<IResult> CreateVehicleAsync(
         int customerId,
         CreateVehicleRequest request,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
-            string.IsNullOrWhiteSpace(request.Vin) ||
-            string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model) ||
-            string.IsNullOrWhiteSpace(request.DrivetrainType))
+        var input = request.ToInput();
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            return ApiProblem.Unprocessable("LicensePlate, Vin, Brand, Model, and DrivetrainType are required.");
+            return ApiProblem.Unprocessable(fieldError);
         }
 
-        var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
-        if (lengthValidationError is not null)
-        {
-            return ApiProblem.Unprocessable(lengthValidationError);
-        }
-
-        var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
-        if (yearError is not null)
-        {
-            return ApiProblem.Unprocessable(yearError);
-        }
-
-        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
-        if (numericError is not null)
-        {
-            return ApiProblem.Unprocessable(numericError);
-        }
-
-        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        if (!VinNormalization.TryNormalizeVin(input.Vin, out var normalizedVin, out var vinValidationError))
         {
             return ApiProblem.Unprocessable(vinValidationError);
         }
 
-        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        if (!VehicleDrivetrainValidation.TryParse(input.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
             return ApiProblem.Unprocessable(drivetrainValidationError);
         }
 
-        var customerExists = await db.Customers
-            .AnyAsync(c => c.Id == customerId, cancellationToken);
-
-        if (!customerExists)
+        if (!await db.Customers.AnyAsync(c => c.Id == customerId, cancellationToken))
         {
             return ApiProblem.NotFound("Customer not found.");
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        var plateExists = await db.Vehicles
-            .AnyAsync(v => v.LicensePlate == plateNormalized, cancellationToken);
-
-        if (plateExists)
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, plateNormalized, normalizedVin, null, cancellationToken);
+        if (conflict is not null)
         {
-            return ApiProblem.Conflict("A vehicle with this license plate already exists.");
+            return ApiProblem.Conflict(conflict);
         }
 
-        var vinExists = await db.Vehicles
-            .AnyAsync(v => v.Vin == normalizedVin, cancellationToken);
-
-        if (vinExists)
-        {
-            return ApiProblem.Conflict("A vehicle with this VIN already exists.");
-        }
-
-        var vehicle = new Vehicle(
-            plateNormalized,
-            normalizedVin,
-            request.Brand.Trim(),
-            request.Model.Trim(),
-            request.Year,
-            request.MileageKm,
-            request.EnginePowerKw,
-            drivetrainType);
+        var vehicle = input.ToEntity(plateNormalized, normalizedVin, drivetrainType);
         vehicle.CustomerId = customerId;
 
         db.Vehicles.Add(vehicle);
@@ -102,9 +56,7 @@ public static partial class VehicleEndpoints
         // Load customer for response DTO.
         await db.Entry(vehicle).Reference(v => v.Customer).LoadAsync(cancellationToken);
 
-        var dto = ToVehicleDetailDto(vehicle);
-
-        return Results.Created($"/api/vehicles/{vehicle.Id}", dto);
+        return Results.Created($"/api/vehicles/{vehicle.Id}", ToVehicleDetailDto(vehicle));
     }
 
     private static async Task<IResult> UpdateVehicleAsync(
@@ -113,39 +65,19 @@ public static partial class VehicleEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
-            string.IsNullOrWhiteSpace(request.Vin) ||
-            string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model) ||
-            string.IsNullOrWhiteSpace(request.DrivetrainType))
+        var input = request.ToInput();
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            return ApiProblem.Unprocessable("LicensePlate, Vin, Brand, Model, and DrivetrainType are required.");
+            return ApiProblem.Unprocessable(fieldError);
         }
 
-        var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
-        if (lengthValidationError is not null)
-        {
-            return ApiProblem.Unprocessable(lengthValidationError);
-        }
-
-        var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
-        if (yearError is not null)
-        {
-            return ApiProblem.Unprocessable(yearError);
-        }
-
-        var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
-        if (numericError is not null)
-        {
-            return ApiProblem.Unprocessable(numericError);
-        }
-
-        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        if (!VinNormalization.TryNormalizeVin(input.Vin, out var normalizedVin, out var vinValidationError))
         {
             return ApiProblem.Unprocessable(vinValidationError);
         }
 
-        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        if (!VehicleDrivetrainValidation.TryParse(input.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
             return ApiProblem.Unprocessable(drivetrainValidationError);
         }
@@ -158,36 +90,18 @@ public static partial class VehicleEndpoints
             return ApiProblem.NotFound("Vehicle not found.");
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        var plateConflict = await db.Vehicles
-            .AnyAsync(v => v.LicensePlate == plateNormalized && v.Id != id, cancellationToken);
-
-        if (plateConflict)
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, plateNormalized, normalizedVin, id, cancellationToken);
+        if (conflict is not null)
         {
-            return ApiProblem.Conflict("A vehicle with this license plate already exists.");
+            return ApiProblem.Conflict(conflict);
         }
 
-        var vinConflict = await db.Vehicles
-            .AnyAsync(v => v.Vin == normalizedVin && v.Id != id, cancellationToken);
-
-        if (vinConflict)
-        {
-            return ApiProblem.Conflict("A vehicle with this VIN already exists.");
-        }
-
-        vehicle.LicensePlate = plateNormalized;
-        vehicle.Vin = normalizedVin;
-        vehicle.Brand = request.Brand.Trim();
-        vehicle.Model = request.Model.Trim();
-        vehicle.Year = request.Year;
-        vehicle.MileageKm = request.MileageKm;
-        vehicle.EnginePowerKw = request.EnginePowerKw;
-        vehicle.DrivetrainType = drivetrainType;
-
+        input.ApplyTo(vehicle, plateNormalized, normalizedVin, drivetrainType);
         await db.SaveChangesAsync(cancellationToken);
 
         return Results.NoContent();
@@ -210,31 +124,5 @@ public static partial class VehicleEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         return Results.NoContent();
-    }
-
-    internal static string? GetVehicleFieldLengthValidationError(
-        string licensePlate,
-        string brand,
-        string model,
-        string? fieldPrefix = null)
-    {
-        var prefix = fieldPrefix ?? string.Empty;
-
-        if (licensePlate.Trim().Length > MaxLicensePlateLength)
-        {
-            return $"{prefix}LicensePlate must be at most {MaxLicensePlateLength} characters.";
-        }
-
-        if (brand.Trim().Length > MaxBrandLength)
-        {
-            return $"{prefix}Brand must be at most {MaxBrandLength} characters.";
-        }
-
-        if (model.Trim().Length > MaxModelLength)
-        {
-            return $"{prefix}Model must be at most {MaxModelLength} characters.";
-        }
-
-        return null;
     }
 }

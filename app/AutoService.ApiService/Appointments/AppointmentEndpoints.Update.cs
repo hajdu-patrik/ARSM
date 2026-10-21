@@ -132,81 +132,37 @@ public static partial class AppointmentEndpoints
             return Results.Forbid();
         }
 
-        if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
-            string.IsNullOrWhiteSpace(request.Vin) ||
-            string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model) ||
-            string.IsNullOrWhiteSpace(request.DrivetrainType))
+        var input = request.ToInput();
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            return ApiProblem.Unprocessable("LicensePlate, Vin, Brand, Model, and DrivetrainType are required.");
+            return ApiProblem.Unprocessable(fieldError);
         }
 
-        var vehicleLengthValidationError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
-            request.LicensePlate,
-            request.Brand,
-            request.Model);
-
-        if (vehicleLengthValidationError is not null)
-        {
-            return ApiProblem.Unprocessable(vehicleLengthValidationError);
-        }
-
-        var yearValidationError = VehicleNumericValidation.GetYearValidationError(request.Year);
-        if (yearValidationError is not null)
-        {
-            return ApiProblem.Unprocessable(yearValidationError);
-        }
-
-        var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
-            request.MileageKm,
-            request.EnginePowerKw);
-
-        if (vehicleNumericValidationError is not null)
-        {
-            return ApiProblem.Unprocessable(vehicleNumericValidationError);
-        }
-
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
+        if (!VinNormalization.TryNormalizeVin(input.Vin, out var normalizedVin, out var vinValidationError))
         {
             return ApiProblem.Unprocessable(vinValidationError);
         }
 
-        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
+        if (!VehicleDrivetrainValidation.TryParse(input.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
             return ApiProblem.Unprocessable(drivetrainValidationError);
         }
 
-        var plateConflict = await db.Vehicles
-            .AnyAsync(v => v.LicensePlate == plateNormalized && v.Id != appointment.VehicleId, cancellationToken);
-
-        if (plateConflict)
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(
+            db, plateNormalized, normalizedVin, appointment.VehicleId, cancellationToken);
+        if (conflict is not null)
         {
-            logger.LogInformation("Appointment vehicle update failed due to license plate conflict on appointment {AppointmentId}.", id);
-            return ApiProblem.Conflict("A vehicle with this license plate already exists.");
+            logger.LogInformation("Appointment vehicle update failed on appointment {AppointmentId}: {Conflict}", id, conflict);
+            return ApiProblem.Conflict(conflict);
         }
 
-        var vinConflict = await db.Vehicles
-            .AnyAsync(v => v.Vin == normalizedVin && v.Id != appointment.VehicleId, cancellationToken);
-
-        if (vinConflict)
-        {
-            logger.LogInformation("Appointment vehicle update failed due to VIN conflict on appointment {AppointmentId}.", id);
-            return ApiProblem.Conflict("A vehicle with this VIN already exists.");
-        }
-
-        appointment.Vehicle.LicensePlate = plateNormalized;
-        appointment.Vehicle.Vin = normalizedVin;
-        appointment.Vehicle.Brand = request.Brand.Trim();
-        appointment.Vehicle.Model = request.Model.Trim();
-        appointment.Vehicle.Year = request.Year;
-        appointment.Vehicle.MileageKm = request.MileageKm;
-        appointment.Vehicle.EnginePowerKw = request.EnginePowerKw;
-        appointment.Vehicle.DrivetrainType = drivetrainType;
+        input.ApplyTo(appointment.Vehicle, plateNormalized, normalizedVin, drivetrainType);
 
         await db.SaveChangesAsync(cancellationToken);
 
