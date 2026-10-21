@@ -33,15 +33,12 @@ public static partial class AppointmentEndpoints
             return Results.Unauthorized();
         }
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+        var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
 
         if (appointment is null)
         {
             logger.LogInformation("UpdateStatus failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
+            return AppointmentNotFound();
         }
 
         if (!appointment.Mechanics.Any(m => m.Id == mechanicId))

@@ -41,31 +41,14 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
-        if (!user.TryGetPersonId(out var mechanicId))
+        var (appointment, mechanicId, loadError) = await LoadEditableAppointmentAsync(
+            id, user, "Appointment update", db, logger, cancellationToken);
+        if (appointment is null)
         {
-            logger.LogWarning("Appointment update rejected: missing or invalid person_id claim.");
-            return Results.Unauthorized();
+            return loadError!;
         }
 
         var isAdmin = user.IsInRole("Admin");
-
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle)
-                .ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
-        {
-            logger.LogInformation("Appointment update failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
-        }
-
-        if (!isAdmin && !appointment.Mechanics.Any(m => m.Id == mechanicId))
-        {
-            logger.LogWarning("Appointment update forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
-            return Results.Forbid();
-        }
 
         if (request.ScheduledDate is not null)
         {
@@ -106,31 +89,14 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.UpdateVehicle");
 
-        if (!user.TryGetPersonId(out var mechanicId))
+        var (appointment, mechanicId, loadError) = await LoadEditableAppointmentAsync(
+            id, user, "Appointment vehicle update", db, logger, cancellationToken);
+        if (appointment is null)
         {
-            logger.LogWarning("Appointment vehicle update rejected: missing or invalid person_id claim.");
-            return Results.Unauthorized();
+            return loadError!;
         }
 
         var isAdmin = user.IsInRole("Admin");
-
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle)
-                .ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
-        {
-            logger.LogInformation("Appointment vehicle update failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
-        }
-
-        if (!isAdmin && !appointment.Mechanics.Any(m => m.Id == mechanicId))
-        {
-            logger.LogWarning("Appointment vehicle update forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
-            return Results.Forbid();
-        }
 
         var input = request.ToInput();
         var fieldError = input.GetFieldError();
