@@ -28,7 +28,10 @@ public static partial class VehicleEndpoints
         int Year,
         int MileageKm,
         int EnginePowerKw,
-        string DrivetrainType);
+        string DrivetrainType)
+    {
+        internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
+    }
 
     internal sealed record UpdateVehicleRequest(
         string LicensePlate,
@@ -38,5 +41,8 @@ public static partial class VehicleEndpoints
         int Year,
         int MileageKm,
         int EnginePowerKw,
-        string DrivetrainType);
+        string DrivetrainType)
+    {
+        internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
+    }
 }

@@ -1,12 +1,7 @@
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
-using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Customers;
 
@@ -17,79 +12,26 @@ public static partial class CustomerEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName) ||
-            string.IsNullOrWhiteSpace(request.LastName) ||
-            string.IsNullOrWhiteSpace(request.Email))
+        var input = request.ToInput();
+        var nameError = input.GetNameError();
+        if (nameError is not null)
         {
-            return Results.Problem(
-                detail: "FirstName, LastName, and Email are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(nameError);
         }
 
-        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
-        if (firstNameError is not null)
+        var contactError = input.NormalizeContact(out var normalizedEmail, out var normalizedPhone);
+        if (contactError is not null)
         {
-            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(contactError);
         }
 
-        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
-        if (lastNameError is not null)
+        var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, null, cancellationToken);
+        if (conflict is not null)
         {
-            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Conflict(conflict);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.MiddleName))
-        {
-            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
-            if (middleNameError is not null)
-            {
-                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
-        }
-
-        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
-        {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-        if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
-        {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidPhone,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var emailExists = await db.People
-            .AnyAsync(p => p.Email == normalizedEmail, cancellationToken);
-
-        if (emailExists)
-        {
-            return Results.Problem(
-                detail: "A person with this email already exists.",
-                statusCode: StatusCodes.Status409Conflict);
-        }
-
-        if (normalizedPhone is not null)
-        {
-            var phoneExists = await db.People
-                .AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken);
-
-            if (phoneExists)
-            {
-                return Results.Problem(
-                    detail: "A person with this phone number already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
-
-        var customer = new Customer(
-            new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim()),
-            normalizedEmail,
-            normalizedPhone);
+        var customer = new Customer(input.ToFullName(), normalizedEmail, normalizedPhone);
 
         db.Customers.Add(customer);
         await db.SaveChangesAsync(cancellationToken);
@@ -113,34 +55,11 @@ public static partial class CustomerEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName) ||
-            string.IsNullOrWhiteSpace(request.LastName) ||
-            string.IsNullOrWhiteSpace(request.Email))
+        var input = request.ToInput();
+        var nameError = input.GetNameError();
+        if (nameError is not null)
         {
-            return Results.Problem(
-                detail: "FirstName, LastName, and Email are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
-        if (firstNameError is not null)
-        {
-            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
-        if (lastNameError is not null)
-        {
-            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.MiddleName))
-        {
-            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
-            if (middleNameError is not null)
-            {
-                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
-            }
+            return ApiProblem.Unprocessable(nameError);
         }
 
         var customer = await db.Customers
@@ -148,51 +67,22 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
-        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
+        var contactError = input.NormalizeContact(out var normalizedEmail, out var normalizedPhone);
+        if (contactError is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(contactError);
         }
 
-        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-        if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
+        var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, id, cancellationToken);
+        if (conflict is not null)
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidPhone,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Conflict(conflict);
         }
 
-        var emailConflict = await db.People
-            .AnyAsync(p => p.Email == normalizedEmail && p.Id != id, cancellationToken);
-
-        if (emailConflict)
-        {
-            return Results.Problem(
-                detail: "A person with this email already exists.",
-                statusCode: StatusCodes.Status409Conflict);
-        }
-
-        if (normalizedPhone is not null)
-        {
-            var phoneConflict = await db.People
-                .AnyAsync(p => p.PhoneNumber == normalizedPhone && p.Id != id, cancellationToken);
-
-            if (phoneConflict)
-            {
-                return Results.Problem(
-                    detail: "A person with this phone number already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
-
-        customer.Name = new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim());
+        customer.Name = input.ToFullName();
         customer.Email = normalizedEmail;
         customer.PhoneNumber = normalizedPhone;
 
@@ -211,9 +101,7 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         db.Customers.Remove(customer);

@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -20,8 +21,7 @@ public static partial class ProfileEndpoints
         CancellationToken cancellationToken,
         bool trackChanges = true)
     {
-        var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        if (!int.TryParse(personIdClaim, out var personId))
+        if (!httpContext.User.TryGetPersonId(out var personId))
         {
             return null;
         }

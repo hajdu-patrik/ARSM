@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Customers;
 
@@ -42,21 +43,17 @@ public static partial class CustomerEndpoints
             })
             .ToPagedResultAsync(request, cancellationToken);
 
-        var customerDtos = result.Items
-            .Select(c => new CustomerDto(
-                c.Id,
-                c.FirstName,
-                c.MiddleName,
-                c.LastName,
-                c.Email,
-                c.PhoneNumber,
-                c.LicensePlates.Count,
-                c.LicensePlates
-                    .OrderBy(plate => plate)
-                    .ToList()))
-            .ToList();
-
-        return Results.Ok(new PagedResult<CustomerDto>(customerDtos, result.TotalCount, result.Page, result.PageSize));
+        return Results.Ok(result.Map(c => new CustomerDto(
+            c.Id,
+            c.FirstName,
+            c.MiddleName,
+            c.LastName,
+            c.Email,
+            c.PhoneNumber,
+            c.LicensePlates.Count,
+            c.LicensePlates
+                .OrderBy(plate => plate)
+                .ToList())));
     }
 
     /** Returns a single customer with vehicle summaries, projected straight into the DTO. */
@@ -85,9 +82,7 @@ public static partial class CustomerEndpoints
 
         if (dto is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         return Results.Ok(dto);

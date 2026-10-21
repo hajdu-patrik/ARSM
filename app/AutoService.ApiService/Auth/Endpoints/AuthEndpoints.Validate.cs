@@ -1,3 +1,6 @@
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
+
 namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
@@ -5,12 +8,9 @@ public static partial class AuthEndpoints
     /** Handles GET /api/auth/validate. Returns token-derived profile claims if the JWT is valid and authorized. */
     private static IResult ValidateTokenAsync(HttpContext httpContext)
     {
-        var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        if (!int.TryParse(personIdClaim, out var personId))
+        if (!httpContext.User.TryGetPersonId(out var personId))
         {
-            return Results.Problem(
-                detail: "Token claims are incomplete.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            return ApiProblem.Unauthorized("Token claims are incomplete.");
         }
 
         var isAdmin = httpContext.User.IsInRole("Admin");

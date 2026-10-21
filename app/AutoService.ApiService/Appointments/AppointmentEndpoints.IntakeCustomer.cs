@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -26,28 +27,24 @@ public static partial class AppointmentEndpoints
         {
             normalizedEmail = string.Empty;
             logger.LogWarning("Intake rejected because status was provided by caller.");
-            return Results.Problem(
-                detail: "Status cannot be provided for intake creation. New appointments always start as InProgress.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Status cannot be provided for intake creation. New appointments always start as InProgress.");
         }
 
         if (!ContactNormalization.TryNormalizeEmail(request.CustomerEmail, out normalizedEmail))
         {
             logger.LogWarning("Intake rejected due to invalid customer email format.");
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
         }
 
         var trimmedTask = request.TaskDescription?.Trim();
         if (string.IsNullOrWhiteSpace(trimmedTask))
         {
-            return IntakeProblem("TaskDescription is required.");
+            return ApiProblem.Unprocessable("TaskDescription is required.");
         }
 
         if (trimmedTask.Length > 200)
         {
-            return IntakeProblem("TaskDescription must be at most 200 characters.");
+            return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
         taskDescription = trimmedTask;
@@ -65,19 +62,19 @@ public static partial class AppointmentEndpoints
 
         if (request.ScheduledDate == default)
         {
-            return IntakeProblem("ScheduledDate is required.");
+            return ApiProblem.Unprocessable("ScheduledDate is required.");
         }
 
         if (request.DueDateTime == default)
         {
-            return IntakeProblem("DueDateTime is required.");
+            return ApiProblem.Unprocessable("DueDateTime is required.");
         }
 
-        scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
-        dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
+        scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate);
+        dueDateTimeUtc = DateTimeNormalization.ToUtc(request.DueDateTime);
 
         return dueDateTimeUtc < scheduledDateUtc
-            ? IntakeProblem("DueDateTime must be greater than or equal to ScheduledDate.")
+            ? ApiProblem.Unprocessable("DueDateTime must be greater than or equal to ScheduledDate.")
             : null;
     }
 
@@ -88,11 +85,11 @@ public static partial class AppointmentEndpoints
 
         if (usesExistingVehicle == createsVehicle)
         {
-            return IntakeProblem("Provide either VehicleId or Vehicle, but not both.");
+            return ApiProblem.Unprocessable("Provide either VehicleId or Vehicle, but not both.");
         }
 
         return usesExistingVehicle && request.VehicleId <= 0
-            ? IntakeProblem("VehicleId must be a positive integer.")
+            ? ApiProblem.Unprocessable("VehicleId must be a positive integer.")
             : null;
     }
 
@@ -111,21 +108,19 @@ public static partial class AppointmentEndpoints
         if (emailInUseByAnotherPersonType)
         {
             logger.LogWarning("Intake rejected due to customer email conflict with non-customer account.");
-            return (Results.Problem(
-                detail: "Email is already used by a non-customer account.",
-                statusCode: StatusCodes.Status409Conflict), null);
+            return (ApiProblem.Conflict("Email is already used by a non-customer account."), null);
         }
 
         if (request.VehicleId.HasValue)
         {
-            return (IntakeProblem("VehicleId can only be used for an existing customer."), null);
+            return (ApiProblem.Unprocessable("VehicleId can only be used for an existing customer."), null);
         }
 
         if (linkedMechanicForEmail is null &&
             (string.IsNullOrWhiteSpace(request.CustomerFirstName) ||
              string.IsNullOrWhiteSpace(request.CustomerLastName)))
         {
-            return (IntakeProblem("CustomerFirstName and CustomerLastName are required when customer is created."), null);
+            return (ApiProblem.Unprocessable("CustomerFirstName and CustomerLastName are required when customer is created."), null);
         }
 
         var name = new FullName(
@@ -143,15 +138,13 @@ public static partial class AppointmentEndpoints
         if (normalizedPhone is not null &&
             !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
         {
-            return (IntakeProblem(ValidationMessages.InvalidPhone), null);
+            return (ApiProblem.Unprocessable(ValidationMessages.InvalidPhone), null);
         }
 
         if (normalizedPhone is not null &&
             await db.People.AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken))
         {
-            return (Results.Problem(
-                detail: "A person with this phone number already exists.",
-                statusCode: StatusCodes.Status409Conflict), null);
+            return (ApiProblem.Conflict("A person with this phone number already exists."), null);
         }
 
         return (null, new Customer(name, normalizedEmail, normalizedPhone));
@@ -163,10 +156,6 @@ public static partial class AppointmentEndpoints
             ?? NameFieldsValidator.GetNameError(name.LastName, "LastName")
             ?? (name.MiddleName is null ? null : NameFieldsValidator.GetNameError(name.MiddleName, "MiddleName"));
 
-        return error is null ? null : IntakeProblem(error);
+        return error is null ? null : ApiProblem.Unprocessable(error);
     }
-
-    private static IResult IntakeProblem(string detail) => Results.Problem(
-        detail: detail,
-        statusCode: StatusCodes.Status422UnprocessableEntity);
 }

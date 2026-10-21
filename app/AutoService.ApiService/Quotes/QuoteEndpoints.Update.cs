@@ -2,6 +2,8 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -26,27 +28,22 @@ public static partial class QuoteEndpoints
         var titleError = QuoteValidation.GetTitleValidationError(request.Title);
         if (titleError is not null)
         {
-            return Results.Problem(detail: titleError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(titleError);
         }
 
         var notesError = GetNotesValidationError(request.Notes);
         if (notesError is not null)
         {
-            return Results.Problem(detail: notesError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(notesError);
         }
 
         quote!.Title = request.Title.Trim();
         quote.Notes = NormalizeOptionalNotes(request.Notes);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -60,22 +57,17 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         if (quote.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
         {
-            return Results.Problem(
-                detail: "Validity cannot be changed on a decided quote.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("Validity cannot be changed on a decided quote.");
         }
 
         var missingVersionError = GetMissingVersionError(request.Version);
@@ -84,7 +76,7 @@ public static partial class QuoteEndpoints
             return missingVersionError;
         }
 
-        var newValidUntil = NormalizeToUtc(request.ValidUntil);
+        var newValidUntil = DateTimeNormalization.ToUtc(request.ValidUntil);
         var nowUtc = DateTime.UtcNow;
 
         // A past date is rejected regardless of status (D22): matters on an already-expired Sent
@@ -92,29 +84,22 @@ public static partial class QuoteEndpoints
         var validUntilError = QuoteValidation.GetValidUntilValidationError(newValidUntil, nowUtc);
         if (validUntilError is not null)
         {
-            return Results.Problem(detail: validUntilError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(validUntilError);
         }
 
         // Sent additionally allows extension only (D23): the single exception
         // to the D7 lock, narrowed to strictly later dates.
         if (quote.Status == QuoteStatus.Sent && newValidUntil <= quote.ValidUntil)
         {
-            return Results.Problem(
-                detail: "ValidUntil can only be extended to a later date while the quote is sent.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("ValidUntil can only be extended to a later date while the quote is sent.");
         }
 
         quote.ValidUntil = newValidUntil;
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));

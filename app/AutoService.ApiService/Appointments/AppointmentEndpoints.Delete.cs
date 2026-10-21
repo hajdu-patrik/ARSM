@@ -23,7 +23,7 @@ public static partial class AppointmentEndpoints
         if (appointment is null)
         {
             logger.LogInformation("Appointment delete failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
+            return AppointmentNotFound();
         }
 
         db.Appointments.Remove(appointment);

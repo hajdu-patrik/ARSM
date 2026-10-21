@@ -5,6 +5,8 @@ using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -23,72 +25,44 @@ public static partial class AppointmentEndpoints
 
         if (request.DueDateTime == default)
         {
-            return Results.Problem(
-                detail: "DueDateTime is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("DueDateTime is required.");
         }
 
-        var dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
+        var dueDateTimeUtc = DateTimeNormalization.ToUtc(request.DueDateTime);
 
         var taskDescription = request.TaskDescription?.Trim();
         if (string.IsNullOrWhiteSpace(taskDescription))
         {
-            return Results.Problem(
-                detail: "TaskDescription is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("TaskDescription is required.");
         }
 
         if (taskDescription.Length > 200)
         {
-            return Results.Problem(
-                detail: "TaskDescription must be at most 200 characters.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        var (appointment, mechanicId, loadError) = await LoadEditableAppointmentAsync(
+            id, user, "Appointment update", db, logger, cancellationToken);
+        if (appointment is null)
         {
-            logger.LogWarning("Appointment update rejected: missing or invalid person_id claim.");
-            return Results.Unauthorized();
+            return loadError!;
         }
 
         var isAdmin = user.IsInRole("Admin");
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle)
-                .ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
-        {
-            logger.LogInformation("Appointment update failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
-        }
-
-        if (!isAdmin && !appointment.Mechanics.Any(m => m.Id == mechanicId))
-        {
-            logger.LogWarning("Appointment update forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
-            return Results.Forbid();
-        }
-
         if (request.ScheduledDate is not null)
         {
-            var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate.Value);
+            var scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate.Value);
             if (scheduledDateUtc != appointment.ScheduledDate)
             {
                 logger.LogWarning("Appointment update rejected: attempted ScheduledDate change for appointment {AppointmentId}.", id);
-                return Results.Problem(
-                    detail: "ScheduledDate cannot be changed.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable("ScheduledDate cannot be changed.");
             }
         }
 
         if (dueDateTimeUtc < appointment.ScheduledDate)
         {
-            return Results.Problem(
-                detail: "DueDateTime must be greater than or equal to ScheduledDate.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("DueDateTime must be greater than or equal to ScheduledDate.");
         }
 
         appointment.DueDateTime = dueDateTimeUtc;
@@ -115,126 +89,46 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.UpdateVehicle");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        var (appointment, mechanicId, loadError) = await LoadEditableAppointmentAsync(
+            id, user, "Appointment vehicle update", db, logger, cancellationToken);
+        if (appointment is null)
         {
-            logger.LogWarning("Appointment vehicle update rejected: missing or invalid person_id claim.");
-            return Results.Unauthorized();
+            return loadError!;
         }
 
         var isAdmin = user.IsInRole("Admin");
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle)
-                .ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
+        var input = request.ToInput();
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            logger.LogInformation("Appointment vehicle update failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
+            return ApiProblem.Unprocessable(fieldError);
         }
 
-        if (!isAdmin && !appointment.Mechanics.Any(m => m.Id == mechanicId))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
-            logger.LogWarning("Appointment vehicle update forbidden for mechanic {MechanicId} on appointment {AppointmentId}.", mechanicId, id);
-            return Results.Forbid();
+            return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        if (string.IsNullOrWhiteSpace(request.LicensePlate) ||
-            string.IsNullOrWhiteSpace(request.Vin) ||
-            string.IsNullOrWhiteSpace(request.Brand) ||
-            string.IsNullOrWhiteSpace(request.Model) ||
-            string.IsNullOrWhiteSpace(request.DrivetrainType))
+        if (!VinNormalization.TryNormalizeVin(input.Vin, out var normalizedVin, out var vinValidationError))
         {
-            return Results.Problem(
-                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vinValidationError);
         }
 
-        var vehicleLengthValidationError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
-            request.LicensePlate,
-            request.Brand,
-            request.Model);
-
-        if (vehicleLengthValidationError is not null)
+        if (!VehicleDrivetrainValidation.TryParse(input.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
-            return Results.Problem(
-                detail: vehicleLengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(drivetrainValidationError);
         }
 
-        var yearValidationError = VehicleNumericValidation.GetYearValidationError(request.Year);
-        if (yearValidationError is not null)
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(
+            db, plateNormalized, normalizedVin, appointment.VehicleId, cancellationToken);
+        if (conflict is not null)
         {
-            return Results.Problem(
-                detail: yearValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            logger.LogInformation("Appointment vehicle update failed on appointment {AppointmentId}: {Conflict}", id, conflict);
+            return ApiProblem.Conflict(conflict);
         }
 
-        var vehicleNumericValidationError = VehicleNumericValidation.GetValidationError(
-            request.MileageKm,
-            request.EnginePowerKw);
-
-        if (vehicleNumericValidationError is not null)
-        {
-            return Results.Problem(
-                detail: vehicleNumericValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
-        {
-            return Results.Problem(
-                detail: plateValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
-        {
-            return Results.Problem(
-                detail: vinValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
-        {
-            return Results.Problem(
-                detail: drivetrainValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
-
-        var plateConflict = await db.Vehicles
-            .AnyAsync(v => v.LicensePlate == plateNormalized && v.Id != appointment.VehicleId, cancellationToken);
-
-        if (plateConflict)
-        {
-            logger.LogInformation("Appointment vehicle update failed due to license plate conflict on appointment {AppointmentId}.", id);
-            return Results.Problem(
-                detail: "A vehicle with this license plate already exists.",
-                statusCode: StatusCodes.Status409Conflict);
-        }
-
-        var vinConflict = await db.Vehicles
-            .AnyAsync(v => v.Vin == normalizedVin && v.Id != appointment.VehicleId, cancellationToken);
-
-        if (vinConflict)
-        {
-            logger.LogInformation("Appointment vehicle update failed due to VIN conflict on appointment {AppointmentId}.", id);
-            return Results.Problem(
-                detail: "A vehicle with this VIN already exists.",
-                statusCode: StatusCodes.Status409Conflict);
-        }
-
-        appointment.Vehicle.LicensePlate = plateNormalized;
-        appointment.Vehicle.Vin = normalizedVin;
-        appointment.Vehicle.Brand = request.Brand.Trim();
-        appointment.Vehicle.Model = request.Model.Trim();
-        appointment.Vehicle.Year = request.Year;
-        appointment.Vehicle.MileageKm = request.MileageKm;
-        appointment.Vehicle.EnginePowerKw = request.EnginePowerKw;
-        appointment.Vehicle.DrivetrainType = drivetrainType;
+        input.ApplyTo(appointment.Vehicle, plateNormalized, normalizedVin, drivetrainType);
 
         await db.SaveChangesAsync(cancellationToken);
 

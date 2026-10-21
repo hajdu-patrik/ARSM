@@ -5,6 +5,9 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Linking;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -29,8 +32,7 @@ public static partial class AppointmentEndpoints
 
         var usesExistingVehicle = request.VehicleId.HasValue;
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Intake rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
@@ -121,9 +123,7 @@ public static partial class AppointmentEndpoints
         {
             await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Intake creation failed due to unique constraint conflict.");
-            return Results.Problem(
-                detail: "Unable to create intake due to conflicting customer or vehicle data.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("Unable to create intake due to conflicting customer or vehicle data.");
         }
 
         logger.LogInformation(
@@ -136,14 +136,4 @@ public static partial class AppointmentEndpoints
 
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
-
-    private static DateTime NormalizeToUtc(DateTime dateTime)
-        => dateTime.Kind switch
-        {
-            DateTimeKind.Utc => dateTime,
-            DateTimeKind.Local => dateTime.ToUniversalTime(),
-            // Treat Unspecified as UTC — JSON deserializers often strip kind info.
-            _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-        };
-
 }

@@ -4,6 +4,8 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -109,20 +111,17 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
         {
-            return (null, Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound));
+            return (null, ApiProblem.NotFound("Quote not found."));
         }
 
         if (quote.Status != QuoteStatus.Draft)
         {
-            return (null, Results.Problem(detail: lockedDetail, statusCode: StatusCodes.Status409Conflict));
+            return (null, ApiProblem.Conflict(lockedDetail));
         }
 
         var missingVersionError = GetMissingVersionError(version);
@@ -140,33 +139,38 @@ public static partial class QuoteEndpoints
     {
         if (version == 0)
         {
-            return Results.Problem(
-                detail: "Version is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Version is required.");
         }
 
         return null;
     }
 
-    /** The 409 response for a stale optimistic-concurrency version (D30, D38). */
-    private static IResult QuoteVersionConflictResult() =>
-        Results.Conflict(new ErrorCodeResponse("quote_version_conflict"));
-
-    /** Seeds the concurrency token's original value with the client-submitted version (D30/D38), so
-     * SaveChangesAsync compares against it instead of whatever was loaded; the only way to check the private-setter xmin-mapped Version. */
-    private static void SeedOriginalVersion(AutoServiceDbContext db, Quote quote, uint version)
+    /** Saves under optimistic concurrency (D30/D38): the client-submitted version becomes the original value of the
+     * xmin-mapped Version, so a stale one fails the save and returns the 409 quote_version_conflict body. */
+    private static async Task<IResult?> SaveWithVersionAsync(
+        AutoServiceDbContext db,
+        Quote quote,
+        uint version,
+        CancellationToken cancellationToken)
     {
         db.Entry(quote).Property(q => q.Version).OriginalValue = version;
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Results.Conflict(new ErrorCodeResponse("quote_version_conflict"));
+        }
     }
 
-    /** Normalizes a DateTime to UTC, the same rule AppointmentEndpoints uses: since JSON deserializers
-     * often strip Kind, Unspecified is treated as already UTC, not local time. */
-    private static DateTime NormalizeToUtc(DateTime dateTime) => dateTime.Kind switch
-    {
-        DateTimeKind.Utc => dateTime,
-        DateTimeKind.Local => dateTime.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-    };
+    /** The navigation set every quote detail response and write handler reads. */
+    private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes
+        .Include(q => q.Vehicle)
+        .Include(q => q.CreatedByMechanic)
+        .Include(q => q.Lines);
 
     /** Validates the optional quote notes field (D14). */
     private static string? GetNotesValidationError(string? notes)

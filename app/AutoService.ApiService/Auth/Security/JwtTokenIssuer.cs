@@ -50,7 +50,7 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
             new(JwtRegisteredClaimNames.Email, email),
             new(ClaimTypes.Email, email),
             new(ClaimTypes.Name, person.Name.ToString()),
-            new("person_id", person.Id.ToString()),
+            new(PersonIdClaim.Type, person.Id.ToString()),
             new("person_type", PersonTypeResolver.Resolve(person))
         };
 

@@ -7,6 +7,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
@@ -42,12 +43,12 @@ public static partial class AuthEndpoints
         string? email = null;
         string? phoneNumber = null;
 
-        var rawEmail = NormalizeOptional(request.Email);
-        var rawPhoneNumber = NormalizeOptional(request.PhoneNumber);
+        var rawEmail = ContactNormalization.NormalizeOptional(request.Email);
+        var rawPhoneNumber = ContactNormalization.NormalizeOptional(request.PhoneNumber);
 
         if (rawEmail is not null && rawEmail.Contains('@'))
         {
-            if (!TryNormalizeEmail(rawEmail, out var normalizedEmail))
+            if (!ContactNormalization.TryNormalizeEmail(rawEmail, out var normalizedEmail))
             {
                 logger.LogWarning("Login rejected due to invalid email format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -70,7 +71,7 @@ public static partial class AuthEndpoints
 
         if (rawPhoneNumber is not null)
         {
-            if (!TryNormalizeEuPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
+            if (!ContactNormalization.TryNormalizeEuPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
             {
                 logger.LogWarning("Login rejected due to invalid phone number format.");
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -90,7 +91,7 @@ public static partial class AuthEndpoints
         }
         else if (phoneNumber is not null)
         {
-            var phoneLookupCandidates = BuildPhoneLookupCandidates(phoneNumber);
+            var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
             identityUser = await userManager.Users
                 .FirstOrDefaultAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
         }
@@ -142,9 +143,7 @@ public static partial class AuthEndpoints
         {
             // Do not reveal that Identity user exists but domain record is missing.
             logger.LogWarning("Login failed: linked mechanic record missing for identity user {IdentityUserId}.", identityUser.Id);
-            return Results.Problem(
-                detail: "Invalid login credentials.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            return ApiProblem.Unauthorized("Invalid login credentials.");
         }
 
         var nowUtc = DateTime.UtcNow;

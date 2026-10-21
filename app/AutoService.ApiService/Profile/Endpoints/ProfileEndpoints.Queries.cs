@@ -4,6 +4,7 @@ using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Validation;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -18,9 +19,7 @@ public static partial class ProfileEndpoints
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (person is null)
         {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked person record not found.");
         }
 
         return Results.Ok(new ProfileResponse(

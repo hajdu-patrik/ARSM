@@ -1,3 +1,5 @@
+using AutoService.ApiService.Vehicles;
+
 namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
@@ -67,7 +69,10 @@ public static partial class AppointmentEndpoints
         int Year,
         int MileageKm,
         int EnginePowerKw,
-        string DrivetrainType);
+        string DrivetrainType)
+    {
+        internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
+    }
 
     /** Request payload for updating appointment scheduling and task details. */
     internal sealed record UpdateAppointmentRequest(
@@ -84,7 +89,10 @@ public static partial class AppointmentEndpoints
         int Year,
         int MileageKm,
         int EnginePowerKw,
-        string DrivetrainType);
+        string DrivetrainType)
+    {
+        internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
+    }
 
     /** Request payload for updating appointment lifecycle status. */
     internal sealed record UpdateStatusRequest(string Status);

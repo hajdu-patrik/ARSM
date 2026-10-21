@@ -5,6 +5,7 @@ using AutoService.ApiService.Profile.Realtime;
 using AutoService.ApiService.Storage;
 using AutoService.ApiService.Validation;
 using Microsoft.AspNetCore.Mvc;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -32,9 +33,7 @@ public static partial class ProfileEndpoints
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
         if (person is null)
         {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked person record not found.");
         }
 
         var fileBytes = await ReadProfilePictureFileBytesAsync(file, cancellationToken);
@@ -194,9 +193,7 @@ public static partial class ProfileEndpoints
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
         if (person is null)
         {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked person record not found.");
         }
 
         var removedObjectKey = person.ProfilePictureObjectKey;

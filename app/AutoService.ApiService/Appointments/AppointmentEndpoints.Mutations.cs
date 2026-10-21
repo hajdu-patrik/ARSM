@@ -2,9 +2,11 @@ using AutoService.ApiService.Appointments.Realtime;
 using System.Data;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -21,8 +23,7 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Claim");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Claim rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
@@ -35,55 +36,8 @@ public static partial class AppointmentEndpoints
             return Results.Unauthorized();
         }
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
-        {
-            logger.LogInformation("Claim failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
-        }
-
-        if (appointment.Status == ProgressStatus.Cancelled)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
-        }
-
-        if (appointment.Status == ProgressStatus.Completed)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_completed" });
-        }
-
-        if (appointment.Status != ProgressStatus.InProgress)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_not_in_progress" });
-        }
-
-        if (appointment.Mechanics.Any(m => m.Id == mechanicId))
-        {
-            logger.LogInformation("Claim conflict: mechanic {MechanicId} already assigned to appointment {AppointmentId}.", mechanicId, id);
-            return Results.Conflict(new { code = "already_claimed" });
-        }
-
-        appointment.Mechanics.Add(mechanic);
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
-        {
-            logger.LogInformation("Claim conflict from race condition on appointment {AppointmentId} for mechanic {MechanicId}.", id, mechanicId);
-            return Results.Conflict(new { code = "already_claimed" });
-        }
-
-        logger.LogInformation("Claim succeeded: mechanic {MechanicId} assigned to appointment {AppointmentId}.", mechanicId, id);
-
-        PublishAppointmentChanged(broadcaster, appointment.Id);
-
-        return Results.Ok(ToDto(appointment));
+        return await AssignMechanicAsync(
+            id, mechanic, "Claim", "already_claimed", requireInProgress: true, db, logger, broadcaster, cancellationToken);
     }
 
     /** Removes current mechanic assignment from an appointment. Endpoint: DELETE /api/appointments/{id}/claim. */
@@ -97,58 +51,13 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Unclaim");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Unclaim rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
-
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
-        if (appointment is null)
-        {
-            logger.LogInformation("Unclaim failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
-        }
-
-        if (appointment.Status == ProgressStatus.Cancelled)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
-        }
-
-        if (appointment.Status == ProgressStatus.Completed)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_completed" });
-        }
-
-        var mechanic = appointment.Mechanics.FirstOrDefault(m => m.Id == mechanicId);
-        if (mechanic is null)
-        {
-            logger.LogInformation("Unclaim conflict: mechanic {MechanicId} is not assigned to appointment {AppointmentId}.", mechanicId, id);
-            return Results.Conflict(new { code = "not_assigned" });
-        }
-
-        if (appointment.Mechanics.Count <= 1)
-        {
-            return Results.UnprocessableEntity(new { code = "last_assigned_mechanic" });
-        }
-
-        appointment.Mechanics.Remove(mechanic);
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        logger.LogInformation("Unclaim succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", mechanicId, id);
-
-        PublishAppointmentChanged(broadcaster, appointment.Id);
-
-        return Results.Ok(ToDto(appointment));
+        return await UnassignMechanicAsync(id, mechanicId, "Unclaim", db, logger, broadcaster, cancellationToken);
     }
 
     /** Assigns a mechanic to an appointment as admin. Endpoint: PUT /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
@@ -169,31 +78,62 @@ public static partial class AppointmentEndpoints
             return Results.NotFound(new { code = "mechanic_not_found" });
         }
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+        return await AssignMechanicAsync(
+            id, mechanic, "AdminAssign", "already_assigned", requireInProgress: false, db, logger, broadcaster, cancellationToken);
+    }
 
+    /** Removes a mechanic from an appointment as admin. Endpoint: DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
+    private static Task<IResult> AdminUnassignAsync(
+        int id,
+        int mechanicId,
+        AutoServiceDbContext db,
+        ILoggerFactory loggerFactory,
+        IAppointmentUpdateBroadcaster broadcaster,
+        CancellationToken cancellationToken)
+        => UnassignMechanicAsync(
+            id,
+            mechanicId,
+            "AdminUnassign",
+            db,
+            loggerFactory.CreateLogger("AppointmentEndpoints.AdminUnassign"),
+            broadcaster,
+            cancellationToken);
+
+    /** Shared by claim and admin assign: open appointment, not yet assigned; a unique-violation race reads as the same 409. */
+    private static async Task<IResult> AssignMechanicAsync(
+        int id,
+        Mechanic mechanic,
+        string operation,
+        string alreadyAssignedCode,
+        bool requireInProgress,
+        AutoServiceDbContext db,
+        ILogger logger,
+        IAppointmentUpdateBroadcaster broadcaster,
+        CancellationToken cancellationToken)
+    {
+        var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
         if (appointment is null)
         {
-            logger.LogInformation("AdminAssign failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
+            logger.LogInformation("{Operation} failed: appointment {AppointmentId} not found.", operation, id);
+            return AppointmentNotFound();
         }
 
-        if (appointment.Status == ProgressStatus.Cancelled)
+        var closedError = GetClosedAppointmentError(appointment);
+        if (closedError is not null)
         {
-            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
+            return closedError;
         }
 
-        if (appointment.Status == ProgressStatus.Completed)
+        if (requireInProgress && appointment.Status != ProgressStatus.InProgress)
         {
-            return Results.UnprocessableEntity(new { code = "appointment_completed" });
+            return Results.UnprocessableEntity(new { code = "appointment_not_in_progress" });
         }
 
-        if (appointment.Mechanics.Any(m => m.Id == mechanicId))
+        if (appointment.Mechanics.Any(m => m.Id == mechanic.Id))
         {
-            logger.LogInformation("AdminAssign conflict: mechanic {MechanicId} already assigned to appointment {AppointmentId}.", mechanicId, id);
-            return Results.Conflict(new { code = "already_assigned" });
+            logger.LogInformation(
+                "{Operation} conflict: mechanic {MechanicId} already assigned to appointment {AppointmentId}.", operation, mechanic.Id, id);
+            return Results.Conflict(new { code = alreadyAssignedCode });
         }
 
         appointment.Mechanics.Add(mechanic);
@@ -204,56 +144,50 @@ public static partial class AppointmentEndpoints
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
-            logger.LogInformation("AdminAssign conflict from race condition on appointment {AppointmentId} for mechanic {MechanicId}.", id, mechanicId);
-            return Results.Conflict(new { code = "already_assigned" });
+            logger.LogInformation(
+                "{Operation} conflict from race condition on appointment {AppointmentId} for mechanic {MechanicId}.", operation, id, mechanic.Id);
+            return Results.Conflict(new { code = alreadyAssignedCode });
         }
 
-        logger.LogInformation("AdminAssign succeeded: mechanic {MechanicId} assigned to appointment {AppointmentId}.", mechanicId, id);
+        logger.LogInformation(
+            "{Operation} succeeded: mechanic {MechanicId} assigned to appointment {AppointmentId}.", operation, mechanic.Id, id);
 
         PublishAppointmentChanged(broadcaster, appointment.Id);
 
         return Results.Ok(ToDto(appointment));
     }
 
-    /** Removes a mechanic from an appointment as admin. Endpoint: DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
-    private static async Task<IResult> AdminUnassignAsync(
+    /** Shared by unclaim and admin unassign: the row lock serializes concurrent removals, so the last mechanic always stays. */
+    private static async Task<IResult> UnassignMechanicAsync(
         int id,
         int mechanicId,
+        string operation,
         AutoServiceDbContext db,
-        ILoggerFactory loggerFactory,
+        ILogger logger,
         IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
-        var logger = loggerFactory.CreateLogger("AppointmentEndpoints.AdminUnassign");
-
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
 
-        var appointment = await db.Appointments
-            .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-
+        var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
         if (appointment is null)
         {
-            logger.LogInformation("AdminUnassign failed: appointment {AppointmentId} not found.", id);
-            return Results.NotFound(new { code = "appointment_not_found" });
+            logger.LogInformation("{Operation} failed: appointment {AppointmentId} not found.", operation, id);
+            return AppointmentNotFound();
         }
 
-        if (appointment.Status == ProgressStatus.Cancelled)
+        var closedError = GetClosedAppointmentError(appointment);
+        if (closedError is not null)
         {
-            return Results.UnprocessableEntity(new { code = "appointment_cancelled" });
-        }
-
-        if (appointment.Status == ProgressStatus.Completed)
-        {
-            return Results.UnprocessableEntity(new { code = "appointment_completed" });
+            return closedError;
         }
 
         var mechanic = appointment.Mechanics.FirstOrDefault(m => m.Id == mechanicId);
         if (mechanic is null)
         {
-            logger.LogInformation("AdminUnassign conflict: mechanic {MechanicId} is not assigned to appointment {AppointmentId}.", mechanicId, id);
+            logger.LogInformation(
+                "{Operation} conflict: mechanic {MechanicId} is not assigned to appointment {AppointmentId}.", operation, mechanicId, id);
             return Results.Conflict(new { code = "not_assigned" });
         }
 
@@ -266,10 +200,19 @@ public static partial class AppointmentEndpoints
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        logger.LogInformation("AdminUnassign succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", mechanicId, id);
+        logger.LogInformation(
+            "{Operation} succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", operation, mechanicId, id);
 
         PublishAppointmentChanged(broadcaster, appointment.Id);
 
         return Results.Ok(ToDto(appointment));
     }
+
+    /** Cancelled and completed appointments take no assignment changes. */
+    private static IResult? GetClosedAppointmentError(Appointment appointment) => appointment.Status switch
+    {
+        ProgressStatus.Cancelled => Results.UnprocessableEntity(new { code = "appointment_cancelled" }),
+        ProgressStatus.Completed => Results.UnprocessableEntity(new { code = "appointment_completed" }),
+        _ => null
+    };
 }

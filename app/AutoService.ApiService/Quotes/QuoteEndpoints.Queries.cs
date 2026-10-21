@@ -3,6 +3,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -28,9 +29,7 @@ public static partial class QuoteEndpoints
         {
             if (!Enum.TryParse<QuoteStatus>(status, ignoreCase: true, out var parsedStatus))
             {
-                return Results.Problem(
-                    detail: $"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
             }
 
             statusFilter = parsedStatus;
@@ -73,11 +72,7 @@ public static partial class QuoteEndpoints
             .ThenBy(q => q.Id)
             .ToPagedResultAsync(request, cancellationToken);
 
-        return Results.Ok(new PagedResult<QuoteListItemDto>(
-            result.Items.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList(),
-            result.TotalCount,
-            result.Page,
-            result.PageSize));
+        return Results.Ok(result.Map(q => ToQuoteListItemDto(q, nowUtc)));
     }
 
     /** Lists a vehicle's quotes, ordered by CreatedAt descending. */
@@ -92,7 +87,7 @@ public static partial class QuoteEndpoints
         var vehicleExists = await db.Vehicles.AnyAsync(v => v.Id == vehicleId, cancellationToken);
         if (!vehicleExists)
         {
-            return Results.Problem(detail: "Vehicle not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         var quotes = await db.Quotes
@@ -115,16 +110,12 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .AsNoTracking()
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes.AsNoTracking())
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));

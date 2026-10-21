@@ -4,6 +4,7 @@ using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Customers;
 
@@ -19,9 +20,7 @@ public static partial class CustomerEndpoints
     {
         if (!ContactNormalization.TryNormalizeEmail(email, out var normalizedEmail))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
         }
 
         var customer = await db.Customers
@@ -60,9 +59,7 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         return Results.Ok(ToSchedulerCustomerLookupDto(customer));
@@ -75,16 +72,12 @@ public static partial class CustomerEndpoints
     {
         if (string.IsNullOrWhiteSpace(licensePlate))
         {
-            return Results.Problem(
-                detail: "LicensePlate is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("LicensePlate is required.");
         }
 
         if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(licensePlate, out var normalizedPlate, out var plateValidationError))
         {
-            return Results.Problem(
-                detail: plateValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(plateValidationError);
         }
 
         var matchedVehicle = await db.Vehicles
@@ -95,9 +88,7 @@ public static partial class CustomerEndpoints
 
         if (matchedVehicle is null)
         {
-            return Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         var customer = await db.Customers
@@ -107,9 +98,7 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         return Results.Ok(ToSchedulerCustomerLookupDto(customer, matchedVehicle.Id));
@@ -124,9 +113,7 @@ public static partial class CustomerEndpoints
         var normalizedName = ContactNormalization.NormalizeOptional(name);
         if (normalizedName is null)
         {
-            return Results.Problem(
-                detail: "Name is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Name is required.");
         }
 
         var searchTerm = normalizedName.ToUpperInvariant();

@@ -2,7 +2,9 @@ using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Http;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -31,7 +33,7 @@ public static partial class AppointmentEndpoints
         if (!customerExists)
         {
             logger.LogInformation("CreateForCustomer failed: customer {CustomerId} not found.", customerId);
-            return AppointmentProblem("Customer not found.", StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         var vehicle = await db.Vehicles
@@ -41,13 +43,13 @@ public static partial class AppointmentEndpoints
         if (vehicle is null)
         {
             logger.LogInformation("CreateForCustomer failed: vehicle {VehicleId} not found.", request.VehicleId);
-            return AppointmentProblem("Vehicle not found.", StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         if (vehicle.CustomerId != customerId)
         {
             logger.LogWarning("CreateForCustomer rejected: vehicle {VehicleId} does not belong to customer {CustomerId}.", request.VehicleId, customerId);
-            return AppointmentProblem("Vehicle does not belong to the specified customer.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Vehicle does not belong to the specified customer.");
         }
 
         var mechanics = await db.Mechanics
@@ -57,10 +59,10 @@ public static partial class AppointmentEndpoints
         if (mechanics.Count != uniqueMechanicIds.Length)
         {
             logger.LogWarning("CreateForCustomer rejected: one or more mechanic IDs are invalid.");
-            return AppointmentProblem("One or more mechanicIds are invalid.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("One or more mechanicIds are invalid.");
         }
 
-        var scheduledDateUtc = NormalizeScheduledDateUtc(request.ScheduledDate);
+        var scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate);
         var appointment = CreateCustomerAppointment(vehicle, mechanics, taskDescription, scheduledDateUtc);
 
         db.Appointments.Add(appointment);
@@ -84,54 +86,42 @@ public static partial class AppointmentEndpoints
 
         if (request.VehicleId <= 0)
         {
-            return AppointmentProblem("VehicleId must be a positive integer.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("VehicleId must be a positive integer.");
         }
 
         if (string.IsNullOrWhiteSpace(taskDescription))
         {
-            return AppointmentProblem("TaskDescription is required.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("TaskDescription is required.");
         }
 
         if (taskDescription.Length > 200)
         {
-            return AppointmentProblem("TaskDescription must be at most 200 characters.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
         if (request.MechanicIds is null || request.MechanicIds.Count == 0)
         {
-            return AppointmentProblem("At least one mechanic must be assigned.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("At least one mechanic must be assigned.");
         }
 
         if (request.MechanicIds.Any(mechanicId => mechanicId <= 0))
         {
-            return AppointmentProblem("MechanicIds must contain positive values only.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("MechanicIds must contain positive values only.");
         }
 
         uniqueMechanicIds = request.MechanicIds.Distinct().ToArray();
         if (uniqueMechanicIds.Length != request.MechanicIds.Count)
         {
-            return AppointmentProblem("MechanicIds must be unique.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("MechanicIds must be unique.");
         }
 
         if (request.ScheduledDate == default)
         {
-            return AppointmentProblem("ScheduledDate is required.", StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("ScheduledDate is required.");
         }
 
         return null;
     }
-
-    private static IResult AppointmentProblem(string detail, int statusCode) => Results.Problem(
-        detail: detail,
-        statusCode: statusCode);
-
-    /** Normalizes request dates to UTC while preserving prior unspecified-kind semantics. */
-    private static DateTime NormalizeScheduledDateUtc(DateTime scheduledDate) => scheduledDate.Kind switch
-    {
-        DateTimeKind.Utc => scheduledDate,
-        DateTimeKind.Local => scheduledDate.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(scheduledDate, DateTimeKind.Utc)
-    };
 
     /** Creates the appointment aggregate for the validated customer/vehicle/mechanic inputs. */
     private static Appointment CreateCustomerAppointment(

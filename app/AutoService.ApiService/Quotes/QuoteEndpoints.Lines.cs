@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -26,7 +27,7 @@ public static partial class QuoteEndpoints
         var lineCountError = QuoteValidation.GetLineCountValidationError(quote!.Lines.Count);
         if (lineCountError is not null)
         {
-            return Results.Problem(detail: lineCountError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lineCountError);
         }
 
         var lineKindError = TryParseLineRequestBasics(request.LineKind, request.Quantity, out var lineKind);
@@ -68,15 +69,10 @@ public static partial class QuoteEndpoints
         quote.Lines.Add(line);
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -102,7 +98,7 @@ public static partial class QuoteEndpoints
         var line = quote!.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
         {
-            return Results.Problem(detail: "Quote line not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote line not found.");
         }
 
         var lineKindError = TryParseLineRequestBasics(request.LineKind, request.Quantity, out var lineKind);
@@ -136,15 +132,10 @@ public static partial class QuoteEndpoints
 
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -170,21 +161,16 @@ public static partial class QuoteEndpoints
         var line = quote!.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
         {
-            return Results.Problem(detail: "Quote line not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote line not found.");
         }
 
         quote.Lines.Remove(line);
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
