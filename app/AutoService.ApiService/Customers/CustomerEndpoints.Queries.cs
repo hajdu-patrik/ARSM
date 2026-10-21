@@ -43,21 +43,17 @@ public static partial class CustomerEndpoints
             })
             .ToPagedResultAsync(request, cancellationToken);
 
-        var customerDtos = result.Items
-            .Select(c => new CustomerDto(
-                c.Id,
-                c.FirstName,
-                c.MiddleName,
-                c.LastName,
-                c.Email,
-                c.PhoneNumber,
-                c.LicensePlates.Count,
-                c.LicensePlates
-                    .OrderBy(plate => plate)
-                    .ToList()))
-            .ToList();
-
-        return Results.Ok(new PagedResult<CustomerDto>(customerDtos, result.TotalCount, result.Page, result.PageSize));
+        return Results.Ok(result.Map(c => new CustomerDto(
+            c.Id,
+            c.FirstName,
+            c.MiddleName,
+            c.LastName,
+            c.Email,
+            c.PhoneNumber,
+            c.LicensePlates.Count,
+            c.LicensePlates
+                .OrderBy(plate => plate)
+                .ToList())));
     }
 
     /** Returns a single customer with vehicle summaries, projected straight into the DTO. */

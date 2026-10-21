@@ -56,7 +56,7 @@
 
 ## Catalog Anchors
 
-- 10 endpoints under the `MechanicOnly` policy: 5 each on `/api/parts` and `/api/labor-types` (list, get, create, update, delete). `Catalog/PartEndpoints*.cs` and `Catalog/LaborTypeEndpoints*.cs` are partial-file split the same way `Quotes/` is.
+- 10 endpoints under the `MechanicOnly` policy: 5 each on `/api/parts` and `/api/labor-types` (list, get, create, update, delete). Both run on `Catalog/CatalogItemHandlers` (Template Method: validation order, key normalization, paging and status codes); `Catalog/PartEndpoints*.cs` and `Catalog/LaborTypeEndpoints*.cs` keep the routes, the DTOs and a small subclass that names the key column and maps entity and DTO.
 - `Domain/Part.cs` and `Domain/LaborType.cs`: a net price/rate (`numeric(18,2)`) plus an int `VatRatePercent` — not an enum, because it is a number multiplied into a price, not a behavioral category — restricted for new writes to `5`, `18`, `27` by `Validation/PricingValidation.GetVatRateValidationError` (Part/LaborType create and update, quote line snapshots; `0` is rejected with 422 `InvalidVatRate`). The named check constraints `CK_Parts_VatRate` and `CK_LaborTypes_VatRate` still allow `0`, so stored rows are untouched. `PartNumber`/`Code` carry a unique index.
 - `PartDto.GrossUnitPrice` and `LaborTypeDto.GrossHourlyRate` come from `Pricing/PricingCalculator.GrossUnitPrice`, a **display-only** formula (`round(net * (1 + vat/100), 2)`) that never feeds quote line or total math — those always derive gross from addition (see Quote Anchors below). The WebUI's Inventory create/edit preview (`computeLiveGrossPreview`) is the one client-side place that mirrors this same formula.
 

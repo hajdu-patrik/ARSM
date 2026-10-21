@@ -72,11 +72,7 @@ public static partial class QuoteEndpoints
             .ThenBy(q => q.Id)
             .ToPagedResultAsync(request, cancellationToken);
 
-        return Results.Ok(new PagedResult<QuoteListItemDto>(
-            result.Items.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList(),
-            result.TotalCount,
-            result.Page,
-            result.PageSize));
+        return Results.Ok(result.Map(q => ToQuoteListItemDto(q, nowUtc)));
     }
 
     /** Lists a vehicle's quotes, ordered by CreatedAt descending. */
