@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -27,9 +28,7 @@ public static partial class QuoteEndpoints
     {
         if (!Enum.TryParse<QuoteStatus>(request.Status, ignoreCase: true, out var newStatus))
         {
-            return Results.Problem(
-                detail: $"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
         }
 
         var quote = await db.Quotes
@@ -40,14 +39,12 @@ public static partial class QuoteEndpoints
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         if (!IsAllowedQuoteStatusTransition(quote.Status, newStatus))
         {
-            return Results.Problem(
-                detail: $"Cannot transition a quote from {quote.Status} to {newStatus}.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict($"Cannot transition a quote from {quote.Status} to {newStatus}.");
         }
 
         var missingVersionError = GetMissingVersionError(request.Version);
@@ -58,9 +55,7 @@ public static partial class QuoteEndpoints
 
         if (newStatus == QuoteStatus.Sent && quote.Lines.Count == 0)
         {
-            return Results.Problem(
-                detail: "A quote must have at least one line before it can be sent.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A quote must have at least one line before it can be sent.");
         }
 
         ApplyQuoteStatusTransition(quote, newStatus);

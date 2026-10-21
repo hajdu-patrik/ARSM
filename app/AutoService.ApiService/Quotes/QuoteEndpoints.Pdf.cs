@@ -5,6 +5,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Quotes.Pdf;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -26,7 +27,7 @@ public static partial class QuoteEndpoints
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         var company = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken)

@@ -5,6 +5,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Vehicles;
 
@@ -41,9 +42,7 @@ public static partial class VehicleEndpoints
 
         if (!customerExists)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         var request = ListQueryLimits.NormalizePage(page, pageSize);
@@ -73,9 +72,7 @@ public static partial class VehicleEndpoints
 
         if (vehicle is null)
         {
-            return Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         return Results.Ok(vehicle);

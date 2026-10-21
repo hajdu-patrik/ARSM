@@ -3,6 +3,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -20,13 +21,13 @@ public static partial class QuoteEndpoints
         var titleError = QuoteValidation.GetTitleValidationError(request.Title);
         if (titleError is not null)
         {
-            return Results.Problem(detail: titleError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(titleError);
         }
 
         var notesError = GetNotesValidationError(request.Notes);
         if (notesError is not null)
         {
-            return Results.Problem(detail: notesError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(notesError);
         }
 
         var nowUtc = DateTime.UtcNow;
@@ -39,7 +40,7 @@ public static partial class QuoteEndpoints
             var validUntilError = QuoteValidation.GetValidUntilValidationError(validUntil, nowUtc);
             if (validUntilError is not null)
             {
-                return Results.Problem(detail: validUntilError, statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable(validUntilError);
             }
         }
 
@@ -58,7 +59,7 @@ public static partial class QuoteEndpoints
         var vehicleExists = await db.Vehicles.AnyAsync(v => v.Id == vehicleId, cancellationToken);
         if (!vehicleExists)
         {
-            return Results.Problem(detail: "Vehicle not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         if (request.AppointmentId is not null)
@@ -68,14 +69,12 @@ public static partial class QuoteEndpoints
 
             if (appointment is null)
             {
-                return Results.Problem(detail: "Appointment not found.", statusCode: StatusCodes.Status404NotFound);
+                return ApiProblem.NotFound("Appointment not found.");
             }
 
             if (appointment.VehicleId != vehicleId)
             {
-                return Results.Problem(
-                    detail: "Appointment does not belong to the specified vehicle.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable("Appointment does not belong to the specified vehicle.");
             }
         }
 

@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -26,7 +27,7 @@ public static partial class QuoteEndpoints
         var lineCountError = QuoteValidation.GetLineCountValidationError(quote!.Lines.Count);
         if (lineCountError is not null)
         {
-            return Results.Problem(detail: lineCountError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lineCountError);
         }
 
         var lineKindError = TryParseLineRequestBasics(request.LineKind, request.Quantity, out var lineKind);
@@ -102,7 +103,7 @@ public static partial class QuoteEndpoints
         var line = quote!.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
         {
-            return Results.Problem(detail: "Quote line not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote line not found.");
         }
 
         var lineKindError = TryParseLineRequestBasics(request.LineKind, request.Quantity, out var lineKind);
@@ -170,7 +171,7 @@ public static partial class QuoteEndpoints
         var line = quote!.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
         {
-            return Results.Problem(detail: "Quote line not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote line not found.");
         }
 
         quote.Lines.Remove(line);

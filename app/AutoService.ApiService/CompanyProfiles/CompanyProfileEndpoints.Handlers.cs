@@ -1,5 +1,6 @@
 using AutoService.ApiService.Data;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.CompanyProfiles;
 
@@ -11,7 +12,7 @@ public static partial class CompanyProfileEndpoints
         var row = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
         return row is null
-            ? Results.Problem(detail: "Company profile not found.", statusCode: StatusCodes.Status404NotFound)
+            ? ApiProblem.NotFound("Company profile not found.")
             : Results.Ok(ToDto(row));
     }
 

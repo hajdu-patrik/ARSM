@@ -4,6 +4,7 @@ using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -25,15 +26,13 @@ public static partial class AppointmentEndpoints
         if (existingVehicle is null)
         {
             logger.LogInformation("Intake failed: requested vehicle {VehicleId} not found.", requestedVehicleId);
-            return (Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound), null);
+            return (ApiProblem.NotFound("Vehicle not found."), null);
         }
 
         if (customer is null || existingVehicle.CustomerId != customer.Id)
         {
             logger.LogWarning("Intake rejected: vehicle {VehicleId} does not belong to selected customer.", requestedVehicleId);
-            return (IntakeProblem("Vehicle does not belong to the selected customer."), null);
+            return (ApiProblem.Unprocessable("Vehicle does not belong to the selected customer."), null);
         }
 
         return (null, existingVehicle);
@@ -54,31 +53,27 @@ public static partial class AppointmentEndpoints
 
         if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(newVehicle.LicensePlate, out var normalizedPlate, out var plateValidationError))
         {
-            return (IntakeProblem(plateValidationError), null);
+            return (ApiProblem.Unprocessable(plateValidationError), null);
         }
 
         if (!VinNormalization.TryNormalizeVin(newVehicle.Vin, out var normalizedVin, out var vinValidationError))
         {
-            return (IntakeProblem(vinValidationError), null);
+            return (ApiProblem.Unprocessable(vinValidationError), null);
         }
 
         if (!VehicleDrivetrainValidation.TryParse(newVehicle.DrivetrainType, out var drivetrainType, out var drivetrainValidationError, "Vehicle.DrivetrainType"))
         {
-            return (IntakeProblem(drivetrainValidationError), null);
+            return (ApiProblem.Unprocessable(drivetrainValidationError), null);
         }
 
         if (await db.Vehicles.AnyAsync(v => v.LicensePlate == normalizedPlate, cancellationToken))
         {
-            return (Results.Problem(
-                detail: "A vehicle with this license plate already exists.",
-                statusCode: StatusCodes.Status409Conflict), null);
+            return (ApiProblem.Conflict("A vehicle with this license plate already exists."), null);
         }
 
         if (await db.Vehicles.AnyAsync(v => v.Vin == normalizedVin, cancellationToken))
         {
-            return (Results.Problem(
-                detail: "A vehicle with this VIN already exists.",
-                statusCode: StatusCodes.Status409Conflict), null);
+            return (ApiProblem.Conflict("A vehicle with this VIN already exists."), null);
         }
 
         var vehicle = new Vehicle(
@@ -110,7 +105,7 @@ public static partial class AppointmentEndpoints
             string.IsNullOrWhiteSpace(newVehicle.Model) ||
             string.IsNullOrWhiteSpace(newVehicle.DrivetrainType))
         {
-            return IntakeProblem("Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.");
+            return ApiProblem.Unprocessable("Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.");
         }
 
         var lengthError = VehicleEndpoints.GetVehicleFieldLengthValidationError(
@@ -121,12 +116,12 @@ public static partial class AppointmentEndpoints
 
         if (lengthError is not null)
         {
-            return IntakeProblem(lengthError);
+            return ApiProblem.Unprocessable(lengthError);
         }
 
         if (newVehicle.Year is < 1886 or > 2100)
         {
-            return IntakeProblem("Vehicle.Year must be between 1886 and 2100.");
+            return ApiProblem.Unprocessable("Vehicle.Year must be between 1886 and 2100.");
         }
 
         var numericError = VehicleNumericValidation.GetValidationError(
@@ -134,6 +129,6 @@ public static partial class AppointmentEndpoints
             newVehicle.EnginePowerKw,
             fieldPrefix: "Vehicle.");
 
-        return numericError is null ? null : IntakeProblem(numericError);
+        return numericError is null ? null : ApiProblem.Unprocessable(numericError);
     }
 }

@@ -3,6 +3,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Vehicles;
 
@@ -24,43 +25,35 @@ public static partial class VehicleEndpoints
             string.IsNullOrWhiteSpace(request.Model) ||
             string.IsNullOrWhiteSpace(request.DrivetrainType))
         {
-            return Results.Problem(
-                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("LicensePlate, Vin, Brand, Model, and DrivetrainType are required.");
         }
 
         var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
         if (yearError is not null)
         {
-            return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(yearError);
         }
 
         var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
         if (numericError is not null)
         {
-            return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(numericError);
         }
 
         if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
         {
-            return Results.Problem(
-                detail: vinValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vinValidationError);
         }
 
         if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
-            return Results.Problem(
-                detail: drivetrainValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(drivetrainValidationError);
         }
 
         var customerExists = await db.Customers
@@ -68,16 +61,12 @@ public static partial class VehicleEndpoints
 
         if (!customerExists)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
-            return Results.Problem(
-                detail: plateValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(plateValidationError);
         }
 
         var plateExists = await db.Vehicles
@@ -85,9 +74,7 @@ public static partial class VehicleEndpoints
 
         if (plateExists)
         {
-            return Results.Problem(
-                detail: "A vehicle with this license plate already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A vehicle with this license plate already exists.");
         }
 
         var vinExists = await db.Vehicles
@@ -95,9 +82,7 @@ public static partial class VehicleEndpoints
 
         if (vinExists)
         {
-            return Results.Problem(
-                detail: "A vehicle with this VIN already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A vehicle with this VIN already exists.");
         }
 
         var vehicle = new Vehicle(
@@ -134,43 +119,35 @@ public static partial class VehicleEndpoints
             string.IsNullOrWhiteSpace(request.Model) ||
             string.IsNullOrWhiteSpace(request.DrivetrainType))
         {
-            return Results.Problem(
-                detail: "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("LicensePlate, Vin, Brand, Model, and DrivetrainType are required.");
         }
 
         var lengthValidationError = GetVehicleFieldLengthValidationError(request.LicensePlate, request.Brand, request.Model);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var yearError = VehicleNumericValidation.GetYearValidationError(request.Year);
         if (yearError is not null)
         {
-            return Results.Problem(detail: yearError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(yearError);
         }
 
         var numericError = VehicleNumericValidation.GetValidationError(request.MileageKm, request.EnginePowerKw);
         if (numericError is not null)
         {
-            return Results.Problem(detail: numericError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(numericError);
         }
 
         if (!VinNormalization.TryNormalizeVin(request.Vin, out var normalizedVin, out var vinValidationError))
         {
-            return Results.Problem(
-                detail: vinValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vinValidationError);
         }
 
         if (!VehicleDrivetrainValidation.TryParse(request.DrivetrainType, out var drivetrainType, out var drivetrainValidationError))
         {
-            return Results.Problem(
-                detail: drivetrainValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(drivetrainValidationError);
         }
 
         var vehicle = await db.Vehicles
@@ -178,16 +155,12 @@ public static partial class VehicleEndpoints
 
         if (vehicle is null)
         {
-            return Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(request.LicensePlate, out var plateNormalized, out var plateValidationError))
         {
-            return Results.Problem(
-                detail: plateValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(plateValidationError);
         }
 
         var plateConflict = await db.Vehicles
@@ -195,9 +168,7 @@ public static partial class VehicleEndpoints
 
         if (plateConflict)
         {
-            return Results.Problem(
-                detail: "A vehicle with this license plate already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A vehicle with this license plate already exists.");
         }
 
         var vinConflict = await db.Vehicles
@@ -205,9 +176,7 @@ public static partial class VehicleEndpoints
 
         if (vinConflict)
         {
-            return Results.Problem(
-                detail: "A vehicle with this VIN already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A vehicle with this VIN already exists.");
         }
 
         vehicle.LicensePlate = plateNormalized;
@@ -234,9 +203,7 @@ public static partial class VehicleEndpoints
 
         if (vehicle is null)
         {
-            return Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         db.Vehicles.Remove(vehicle);

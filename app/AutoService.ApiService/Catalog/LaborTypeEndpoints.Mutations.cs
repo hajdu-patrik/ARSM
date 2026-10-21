@@ -3,6 +3,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Catalog;
 
@@ -18,36 +19,30 @@ public static partial class LaborTypeEndpoints
     {
         if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
         {
-            return Results.Problem(
-                detail: "Code and Name are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Code and Name are required.");
         }
 
         var lengthValidationError = GetLaborTypeFieldLengthValidationError(request.Code, request.Name);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var moneyError = PricingValidation.GetMoneyAmountValidationError(request.HourlyNetRate);
         if (moneyError is not null)
         {
-            return Results.Problem(detail: moneyError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(moneyError);
         }
 
         var vatError = PricingValidation.GetVatRateValidationError(request.VatRatePercent);
         if (vatError is not null)
         {
-            return Results.Problem(detail: vatError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vatError);
         }
 
         if (!LaborTypeCodeNormalization.TryNormalize(request.Code, out var normalizedCode, out var codeError))
         {
-            return Results.Problem(
-                detail: codeError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(codeError);
         }
 
         var codeExists = await db.LaborTypes
@@ -55,9 +50,7 @@ public static partial class LaborTypeEndpoints
 
         if (codeExists)
         {
-            return Results.Problem(
-                detail: "A labor type with this code already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A labor type with this code already exists.");
         }
 
         var laborType = new LaborType(
@@ -80,36 +73,30 @@ public static partial class LaborTypeEndpoints
     {
         if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
         {
-            return Results.Problem(
-                detail: "Code and Name are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Code and Name are required.");
         }
 
         var lengthValidationError = GetLaborTypeFieldLengthValidationError(request.Code, request.Name);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var moneyError = PricingValidation.GetMoneyAmountValidationError(request.HourlyNetRate);
         if (moneyError is not null)
         {
-            return Results.Problem(detail: moneyError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(moneyError);
         }
 
         var vatError = PricingValidation.GetVatRateValidationError(request.VatRatePercent);
         if (vatError is not null)
         {
-            return Results.Problem(detail: vatError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vatError);
         }
 
         if (!LaborTypeCodeNormalization.TryNormalize(request.Code, out var normalizedCode, out var codeError))
         {
-            return Results.Problem(
-                detail: codeError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(codeError);
         }
 
         var laborType = await db.LaborTypes
@@ -117,9 +104,7 @@ public static partial class LaborTypeEndpoints
 
         if (laborType is null)
         {
-            return Results.Problem(
-                detail: "Labor type not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Labor type not found.");
         }
 
         var codeConflict = await db.LaborTypes
@@ -127,9 +112,7 @@ public static partial class LaborTypeEndpoints
 
         if (codeConflict)
         {
-            return Results.Problem(
-                detail: "A labor type with this code already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A labor type with this code already exists.");
         }
 
         laborType.Code = normalizedCode;
@@ -152,9 +135,7 @@ public static partial class LaborTypeEndpoints
 
         if (laborType is null)
         {
-            return Results.Problem(
-                detail: "Labor type not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Labor type not found.");
         }
 
         // Deletable even when referenced by quote lines: the F3 relationship is

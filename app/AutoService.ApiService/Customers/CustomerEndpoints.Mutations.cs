@@ -7,6 +7,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Customers;
 
@@ -21,21 +22,19 @@ public static partial class CustomerEndpoints
             string.IsNullOrWhiteSpace(request.LastName) ||
             string.IsNullOrWhiteSpace(request.Email))
         {
-            return Results.Problem(
-                detail: "FirstName, LastName, and Email are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("FirstName, LastName, and Email are required.");
         }
 
         var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
         if (firstNameError is not null)
         {
-            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(firstNameError);
         }
 
         var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
         if (lastNameError is not null)
         {
-            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lastNameError);
         }
 
         if (!string.IsNullOrWhiteSpace(request.MiddleName))
@@ -43,24 +42,20 @@ public static partial class CustomerEndpoints
             var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
             if (middleNameError is not null)
             {
-                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable(middleNameError);
             }
         }
 
         if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
         }
 
         var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
         if (normalizedPhone is not null &&
             !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidPhone,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidPhone);
         }
 
         var emailExists = await db.People
@@ -68,9 +63,7 @@ public static partial class CustomerEndpoints
 
         if (emailExists)
         {
-            return Results.Problem(
-                detail: "A person with this email already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A person with this email already exists.");
         }
 
         if (normalizedPhone is not null)
@@ -80,9 +73,7 @@ public static partial class CustomerEndpoints
 
             if (phoneExists)
             {
-                return Results.Problem(
-                    detail: "A person with this phone number already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ApiProblem.Conflict("A person with this phone number already exists.");
             }
         }
 
@@ -117,21 +108,19 @@ public static partial class CustomerEndpoints
             string.IsNullOrWhiteSpace(request.LastName) ||
             string.IsNullOrWhiteSpace(request.Email))
         {
-            return Results.Problem(
-                detail: "FirstName, LastName, and Email are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("FirstName, LastName, and Email are required.");
         }
 
         var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
         if (firstNameError is not null)
         {
-            return Results.Problem(detail: firstNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(firstNameError);
         }
 
         var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
         if (lastNameError is not null)
         {
-            return Results.Problem(detail: lastNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lastNameError);
         }
 
         if (!string.IsNullOrWhiteSpace(request.MiddleName))
@@ -139,7 +128,7 @@ public static partial class CustomerEndpoints
             var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
             if (middleNameError is not null)
             {
-                return Results.Problem(detail: middleNameError, statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable(middleNameError);
             }
         }
 
@@ -148,25 +137,19 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidEmail,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
         }
 
         var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
         if (normalizedPhone is not null &&
             !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
         {
-            return Results.Problem(
-                detail: ValidationMessages.InvalidPhone,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(ValidationMessages.InvalidPhone);
         }
 
         var emailConflict = await db.People
@@ -174,9 +157,7 @@ public static partial class CustomerEndpoints
 
         if (emailConflict)
         {
-            return Results.Problem(
-                detail: "A person with this email already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A person with this email already exists.");
         }
 
         if (normalizedPhone is not null)
@@ -186,9 +167,7 @@ public static partial class CustomerEndpoints
 
             if (phoneConflict)
             {
-                return Results.Problem(
-                    detail: "A person with this phone number already exists.",
-                    statusCode: StatusCodes.Status409Conflict);
+                return ApiProblem.Conflict("A person with this phone number already exists.");
             }
         }
 
@@ -211,9 +190,7 @@ public static partial class CustomerEndpoints
 
         if (customer is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         db.Customers.Remove(customer);

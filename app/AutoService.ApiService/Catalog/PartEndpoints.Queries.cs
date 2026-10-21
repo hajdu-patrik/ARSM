@@ -4,6 +4,7 @@ using AutoService.ApiService.Pagination;
 using AutoService.ApiService.Pricing;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Catalog;
 
@@ -51,9 +52,7 @@ public static partial class PartEndpoints
 
         if (part is null)
         {
-            return Results.Problem(
-                detail: "Part not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Part not found.");
         }
 
         return Results.Ok(ToPartDto(part));

@@ -5,6 +5,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Linking;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -121,9 +122,7 @@ public static partial class AppointmentEndpoints
         {
             await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Intake creation failed due to unique constraint conflict.");
-            return Results.Problem(
-                detail: "Unable to create intake due to conflicting customer or vehicle data.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("Unable to create intake due to conflicting customer or vehicle data.");
         }
 
         logger.LogInformation(

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -32,25 +33,19 @@ public static partial class ProfileEndpoints
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
         if (person?.IdentityUserId is null)
         {
-            return Results.Problem(
-                detail: "Linked identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked identity account not found.");
         }
 
         var identityUser = await userManager.FindByIdAsync(person.IdentityUserId);
         if (identityUser is null)
         {
-            return Results.Problem(
-                detail: "Identity account not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Identity account not found.");
         }
 
         var isAdmin = await userManager.IsInRoleAsync(identityUser, "Admin");
         if (isAdmin)
         {
-            return Results.Problem(
-                detail: "Administrator accounts cannot be deleted.",
-                statusCode: StatusCodes.Status403Forbidden);
+            return ApiProblem.Forbidden("Administrator accounts cannot be deleted.");
         }
 
         var validPassword = await userManager.CheckPasswordAsync(identityUser, request.CurrentPassword);

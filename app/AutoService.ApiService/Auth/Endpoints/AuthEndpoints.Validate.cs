@@ -1,3 +1,5 @@
+using AutoService.ApiService.Http;
+
 namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
@@ -8,9 +10,7 @@ public static partial class AuthEndpoints
         var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
         if (!int.TryParse(personIdClaim, out var personId))
         {
-            return Results.Problem(
-                detail: "Token claims are incomplete.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            return ApiProblem.Unauthorized("Token claims are incomplete.");
         }
 
         var isAdmin = httpContext.User.IsInRole("Admin");

@@ -3,6 +3,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Catalog;
 
@@ -18,36 +19,30 @@ public static partial class PartEndpoints
     {
         if (string.IsNullOrWhiteSpace(request.PartNumber) || string.IsNullOrWhiteSpace(request.Name))
         {
-            return Results.Problem(
-                detail: "PartNumber and Name are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("PartNumber and Name are required.");
         }
 
         var lengthValidationError = GetPartFieldLengthValidationError(request.PartNumber, request.Name);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var moneyError = PricingValidation.GetMoneyAmountValidationError(request.NetUnitPrice);
         if (moneyError is not null)
         {
-            return Results.Problem(detail: moneyError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(moneyError);
         }
 
         var vatError = PricingValidation.GetVatRateValidationError(request.VatRatePercent);
         if (vatError is not null)
         {
-            return Results.Problem(detail: vatError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vatError);
         }
 
         if (!PartNumberNormalization.TryNormalize(request.PartNumber, out var normalizedPartNumber, out var partNumberError))
         {
-            return Results.Problem(
-                detail: partNumberError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(partNumberError);
         }
 
         var partNumberExists = await db.Parts
@@ -55,9 +50,7 @@ public static partial class PartEndpoints
 
         if (partNumberExists)
         {
-            return Results.Problem(
-                detail: "A part with this part number already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A part with this part number already exists.");
         }
 
         var part = new Part(
@@ -80,36 +73,30 @@ public static partial class PartEndpoints
     {
         if (string.IsNullOrWhiteSpace(request.PartNumber) || string.IsNullOrWhiteSpace(request.Name))
         {
-            return Results.Problem(
-                detail: "PartNumber and Name are required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("PartNumber and Name are required.");
         }
 
         var lengthValidationError = GetPartFieldLengthValidationError(request.PartNumber, request.Name);
         if (lengthValidationError is not null)
         {
-            return Results.Problem(
-                detail: lengthValidationError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(lengthValidationError);
         }
 
         var moneyError = PricingValidation.GetMoneyAmountValidationError(request.NetUnitPrice);
         if (moneyError is not null)
         {
-            return Results.Problem(detail: moneyError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(moneyError);
         }
 
         var vatError = PricingValidation.GetVatRateValidationError(request.VatRatePercent);
         if (vatError is not null)
         {
-            return Results.Problem(detail: vatError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vatError);
         }
 
         if (!PartNumberNormalization.TryNormalize(request.PartNumber, out var normalizedPartNumber, out var partNumberError))
         {
-            return Results.Problem(
-                detail: partNumberError,
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(partNumberError);
         }
 
         var part = await db.Parts
@@ -117,9 +104,7 @@ public static partial class PartEndpoints
 
         if (part is null)
         {
-            return Results.Problem(
-                detail: "Part not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Part not found.");
         }
 
         var partNumberConflict = await db.Parts
@@ -127,9 +112,7 @@ public static partial class PartEndpoints
 
         if (partNumberConflict)
         {
-            return Results.Problem(
-                detail: "A part with this part number already exists.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("A part with this part number already exists.");
         }
 
         part.PartNumber = normalizedPartNumber;
@@ -152,9 +135,7 @@ public static partial class PartEndpoints
 
         if (part is null)
         {
-            return Results.Problem(
-                detail: "Part not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Part not found.");
         }
 
         // Deletable even when referenced by quote lines: the F3 relationship is

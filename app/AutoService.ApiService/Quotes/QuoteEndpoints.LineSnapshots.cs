@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -14,15 +15,13 @@ public static partial class QuoteEndpoints
     {
         if (!Enum.TryParse(lineKindRaw, ignoreCase: true, out lineKind))
         {
-            return Results.Problem(
-                detail: $"LineKind must be one of: {string.Join(", ", Enum.GetNames<QuoteLineKind>())}.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable($"LineKind must be one of: {string.Join(", ", Enum.GetNames<QuoteLineKind>())}.");
         }
 
         var quantityError = PricingValidation.GetQuantityValidationError(quantity);
         if (quantityError is not null)
         {
-            return Results.Problem(detail: quantityError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(quantityError);
         }
 
         return null;
@@ -34,16 +33,12 @@ public static partial class QuoteEndpoints
     {
         if (lineKind == QuoteLineKind.Part && laborTypeId is not null)
         {
-            return Results.Problem(
-                detail: "A part line cannot reference a labor type.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("A part line cannot reference a labor type.");
         }
 
         if (lineKind == QuoteLineKind.Labor && partId is not null)
         {
-            return Results.Problem(
-                detail: "A labor line cannot reference a part.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("A labor line cannot reference a part.");
         }
 
         return null;
@@ -62,7 +57,7 @@ public static partial class QuoteEndpoints
             var part = await db.Parts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == partId, cancellationToken);
             if (part is null)
             {
-                return (null, Results.Problem(detail: "Part not found.", statusCode: StatusCodes.Status404NotFound));
+                return (null, ApiProblem.NotFound("Part not found."));
             }
 
             return (new QuoteLineSnapshot(part.Name, part.NetUnitPrice, part.VatRatePercent), null);
@@ -73,7 +68,7 @@ public static partial class QuoteEndpoints
             var laborType = await db.LaborTypes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == laborTypeId, cancellationToken);
             if (laborType is null)
             {
-                return (null, Results.Problem(detail: "Labor type not found.", statusCode: StatusCodes.Status404NotFound));
+                return (null, ApiProblem.NotFound("Labor type not found."));
             }
 
             return (new QuoteLineSnapshot(laborType.Name, laborType.HourlyNetRate, laborType.VatRatePercent), null);
@@ -87,21 +82,19 @@ public static partial class QuoteEndpoints
     {
         if (description.Length > MaxLineDescriptionLength)
         {
-            return Results.Problem(
-                detail: $"Description must be at most {MaxLineDescriptionLength} characters.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable($"Description must be at most {MaxLineDescriptionLength} characters.");
         }
 
         var moneyError = PricingValidation.GetMoneyAmountValidationError(netUnitPrice);
         if (moneyError is not null)
         {
-            return Results.Problem(detail: moneyError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(moneyError);
         }
 
         var vatError = PricingValidation.GetVatRateValidationError(vatRatePercent);
         if (vatError is not null)
         {
-            return Results.Problem(detail: vatError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(vatError);
         }
 
         return null;
@@ -137,9 +130,7 @@ public static partial class QuoteEndpoints
 
         if (resolvedDescription is null || resolvedNetUnitPrice is null || resolvedVatRatePercent is null)
         {
-            return (default, Results.Problem(
-                detail: "Description, NetUnitPrice, and VatRatePercent are required when no catalog reference is provided.",
-                statusCode: StatusCodes.Status422UnprocessableEntity));
+            return (default, ApiProblem.Unprocessable("Description, NetUnitPrice, and VatRatePercent are required when no catalog reference is provided."));
         }
 
         var fieldError = GetLineSnapshotFieldError(resolvedDescription, resolvedNetUnitPrice.Value, resolvedVatRatePercent.Value);

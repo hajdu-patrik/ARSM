@@ -7,6 +7,7 @@ using Npgsql;
 using System.Security.Claims;
 using System.ComponentModel;
 using System.Data;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Admin;
 
@@ -85,9 +86,7 @@ public static partial class AdminEndpoints
         if (int.TryParse(callerPersonId, out var callerPid) && callerPid == id)
         {
             logger.LogWarning("DeleteMechanic forbidden: admin attempted self-deletion for person {PersonId}.", id);
-            return Results.Problem(
-                detail: "Administrators cannot delete their own account.",
-                statusCode: StatusCodes.Status403Forbidden);
+            return ApiProblem.Forbidden("Administrators cannot delete their own account.");
         }
 
         var mechanic = await db.Mechanics
@@ -96,9 +95,7 @@ public static partial class AdminEndpoints
         if (mechanic is null)
         {
             logger.LogInformation("DeleteMechanic failed: mechanic {MechanicId} not found.", id);
-            return Results.Problem(
-                detail: "Mechanic not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Mechanic not found.");
         }
 
         if (mechanic.IdentityUserId is not null)
@@ -110,9 +107,7 @@ public static partial class AdminEndpoints
                 if (isTargetAdmin)
                 {
                     logger.LogWarning("DeleteMechanic forbidden: target mechanic {MechanicId} has Admin role.", id);
-                    return Results.Problem(
-                        detail: "Cannot delete an administrator account.",
-                        statusCode: StatusCodes.Status403Forbidden);
+                    return ApiProblem.Forbidden("Cannot delete an administrator account.");
                 }
             }
         }
@@ -124,9 +119,7 @@ public static partial class AdminEndpoints
             var mechanicToDelete = await db.Mechanics.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
             if (mechanicToDelete is null)
             {
-                return Results.Problem(
-                    detail: "Mechanic not found.",
-                    statusCode: StatusCodes.Status404NotFound);
+                return ApiProblem.NotFound("Mechanic not found.");
             }
 
             var invariantViolation = await ValidateMechanicDeletionInvariantsAsync(mechanicToDelete.Id, db, cancellationToken);
@@ -173,9 +166,7 @@ public static partial class AdminEndpoints
         catch (Exception ex) when (IsMechanicDeleteConcurrencyConflict(ex))
         {
             logger.LogWarning("DeleteMechanic concurrency conflict for mechanic {MechanicId}.", id);
-            return Results.Problem(
-                detail: "Mechanic deletion conflicted with another concurrent update. Please retry the operation.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("Mechanic deletion conflicted with another concurrent update. Please retry the operation.");
         }
 
         return Results.Ok(new { message = "Mechanic deleted successfully." });
@@ -190,9 +181,7 @@ public static partial class AdminEndpoints
         var mechanicCount = await db.Mechanics.CountAsync(cancellationToken);
         if (mechanicCount <= 1)
         {
-            return Results.Problem(
-                detail: "Cannot delete the last remaining mechanic.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Cannot delete the last remaining mechanic.");
         }
 
         var wouldLeaveUnassignedAppointment = await db.Appointments
@@ -201,9 +190,7 @@ public static partial class AdminEndpoints
 
         if (wouldLeaveUnassignedAppointment)
         {
-            return Results.Problem(
-                detail: "Cannot delete this mechanic because one or more appointments would be left without assigned mechanics.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Cannot delete this mechanic because one or more appointments would be left without assigned mechanics.");
         }
 
         return null;

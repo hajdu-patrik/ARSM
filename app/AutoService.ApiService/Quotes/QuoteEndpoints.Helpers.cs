@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -117,12 +118,12 @@ public static partial class QuoteEndpoints
 
         if (quote is null)
         {
-            return (null, Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound));
+            return (null, ApiProblem.NotFound("Quote not found."));
         }
 
         if (quote.Status != QuoteStatus.Draft)
         {
-            return (null, Results.Problem(detail: lockedDetail, statusCode: StatusCodes.Status409Conflict));
+            return (null, ApiProblem.Conflict(lockedDetail));
         }
 
         var missingVersionError = GetMissingVersionError(version);
@@ -140,9 +141,7 @@ public static partial class QuoteEndpoints
     {
         if (version == 0)
         {
-            return Results.Problem(
-                detail: "Version is required.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("Version is required.");
         }
 
         return null;

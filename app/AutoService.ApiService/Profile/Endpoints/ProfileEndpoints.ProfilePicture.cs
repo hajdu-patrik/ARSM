@@ -4,6 +4,7 @@ using AutoService.ApiService.Realtime;
 using AutoService.ApiService.Storage;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -22,9 +23,7 @@ public static partial class ProfileEndpoints
         var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (person is null)
         {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked person record not found.");
         }
 
         return await RespondWithProfilePictureAsync(httpContext, storage, person, cancellationToken);
@@ -41,9 +40,7 @@ public static partial class ProfileEndpoints
         var currentPerson = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (currentPerson is null)
         {
-            return Results.Problem(
-                detail: "Linked person record not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Linked person record not found.");
         }
 
         var isAdmin = httpContext.User.IsInRole("Admin");

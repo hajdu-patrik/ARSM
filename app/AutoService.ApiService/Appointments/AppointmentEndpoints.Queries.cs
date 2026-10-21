@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -52,9 +53,7 @@ public static partial class AppointmentEndpoints
 
         if (!customerExists)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         var appointmentsQuery = db.Appointments
@@ -82,9 +81,7 @@ public static partial class AppointmentEndpoints
 
         if (!vehicleExists)
         {
-            return Results.Problem(
-                detail: "Vehicle not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         var appointmentsQuery = db.Appointments

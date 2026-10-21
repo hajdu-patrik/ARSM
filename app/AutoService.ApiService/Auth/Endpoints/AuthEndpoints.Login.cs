@@ -7,6 +7,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
@@ -142,9 +143,7 @@ public static partial class AuthEndpoints
         {
             // Do not reveal that Identity user exists but domain record is missing.
             logger.LogWarning("Login failed: linked mechanic record missing for identity user {IdentityUserId}.", identityUser.Id);
-            return Results.Problem(
-                detail: "Invalid login credentials.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            return ApiProblem.Unauthorized("Invalid login credentials.");
         }
 
         var nowUtc = DateTime.UtcNow;

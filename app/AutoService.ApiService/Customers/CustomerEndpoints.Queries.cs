@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Customers;
 
@@ -85,9 +86,7 @@ public static partial class CustomerEndpoints
 
         if (dto is null)
         {
-            return Results.Problem(
-                detail: "Customer not found.",
-                statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Customer not found.");
         }
 
         return Results.Ok(dto);

@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -26,13 +27,13 @@ public static partial class QuoteEndpoints
         var titleError = QuoteValidation.GetTitleValidationError(request.Title);
         if (titleError is not null)
         {
-            return Results.Problem(detail: titleError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(titleError);
         }
 
         var notesError = GetNotesValidationError(request.Notes);
         if (notesError is not null)
         {
-            return Results.Problem(detail: notesError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(notesError);
         }
 
         quote!.Title = request.Title.Trim();
@@ -68,14 +69,12 @@ public static partial class QuoteEndpoints
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         if (quote.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
         {
-            return Results.Problem(
-                detail: "Validity cannot be changed on a decided quote.",
-                statusCode: StatusCodes.Status409Conflict);
+            return ApiProblem.Conflict("Validity cannot be changed on a decided quote.");
         }
 
         var missingVersionError = GetMissingVersionError(request.Version);
@@ -92,16 +91,14 @@ public static partial class QuoteEndpoints
         var validUntilError = QuoteValidation.GetValidUntilValidationError(newValidUntil, nowUtc);
         if (validUntilError is not null)
         {
-            return Results.Problem(detail: validUntilError, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable(validUntilError);
         }
 
         // Sent additionally allows extension only (D23): the single exception
         // to the D7 lock, narrowed to strictly later dates.
         if (quote.Status == QuoteStatus.Sent && newValidUntil <= quote.ValidUntil)
         {
-            return Results.Problem(
-                detail: "ValidUntil can only be extended to a later date while the quote is sent.",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return ApiProblem.Unprocessable("ValidUntil can only be extended to a later date while the quote is sent.");
         }
 
         quote.ValidUntil = newValidUntil;

@@ -3,6 +3,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -28,9 +29,7 @@ public static partial class QuoteEndpoints
         {
             if (!Enum.TryParse<QuoteStatus>(status, ignoreCase: true, out var parsedStatus))
             {
-                return Results.Problem(
-                    detail: $"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.",
-                    statusCode: StatusCodes.Status422UnprocessableEntity);
+                return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
             }
 
             statusFilter = parsedStatus;
@@ -92,7 +91,7 @@ public static partial class QuoteEndpoints
         var vehicleExists = await db.Vehicles.AnyAsync(v => v.Id == vehicleId, cancellationToken);
         if (!vehicleExists)
         {
-            return Results.Problem(detail: "Vehicle not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Vehicle not found.");
         }
 
         var quotes = await db.Quotes
@@ -124,7 +123,7 @@ public static partial class QuoteEndpoints
 
         if (quote is null)
         {
-            return Results.Problem(detail: "Quote not found.", statusCode: StatusCodes.Status404NotFound);
+            return ApiProblem.NotFound("Quote not found.");
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
