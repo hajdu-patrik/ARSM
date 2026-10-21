@@ -1,5 +1,5 @@
-/** Per-field validation messages of the customer and vehicle forms. An error is pinned to the value
- * it was raised for, so editing the field clears it without any extra state. */
+/** Per-field validation messages of the customer and vehicle forms, and how a rejected save maps to them.
+ * An error is pinned to the value it was raised for, so editing the field clears it without any extra state. */
 
 import { isAxiosError } from 'axios';
 import {

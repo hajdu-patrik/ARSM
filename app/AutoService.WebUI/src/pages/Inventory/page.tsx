@@ -26,7 +26,7 @@ export const InventoryPage = memo(function InventoryPage() {
   const parts = useCatalogItemMutations(partCatalogItemConfig);
   const laborTypes = useCatalogItemMutations(laborTypeCatalogItemConfig);
   // A pending part deletion wins, as only one delete confirmation can be open at a time.
-  const deleting = parts.deleteTarget === null ? laborTypes : parts;
+  const activeDelete = parts.deleteTarget === null ? laborTypes : parts;
 
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
@@ -103,11 +103,11 @@ export const InventoryPage = memo(function InventoryPage() {
       ))}
 
       <DeleteCatalogItemModal
-        target={deleting.deleteTarget}
+        target={activeDelete.deleteTarget}
         isDeleting={parts.isDeleting || laborTypes.isDeleting}
         t={t}
-        onClose={deleting.closeDeleteModal}
-        onConfirm={deleting.handleDelete}
+        onClose={activeDelete.closeDeleteModal}
+        onConfirm={activeDelete.handleDelete}
       />
     </div>
   );

@@ -11,7 +11,7 @@ import {
 import { mapCatalogValidationMessageToKey, type CatalogFormState } from '../helpers';
 
 /** A request built from form state, or the i18n key of the reason it cannot be built. */
-export type CatalogRequestResult<TRequest> =
+type CatalogRequestResult<TRequest> =
   | { readonly payload: TRequest; readonly fieldError: null }
   | { readonly payload: null; readonly fieldError: string };
 
