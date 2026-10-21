@@ -2,8 +2,9 @@
 
 Target: an Azure for Students subscription. This is the **production** instance (`arsm.hu`).
 Everything lives in one resource group and is created by `deploy/azure/registry.bicep` (the
-container registry) and `deploy/azure/main.bicep` (everything else), driven from your Windows
-machine by `python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
+container registry) and `deploy/azure/main.bicep` (everything else; its `guardrails.bicep` module
+adds the optional budget and alerts), driven from your Windows machine by
+`python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
 root `.env`. Keep one host name for the WebUI and the API when changing the topology: the CSRF cookie
 is host-only.
 
@@ -25,7 +26,7 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
 | Web image | `deploy/web.Dockerfile` + `deploy/nginx/` | `PUBLIC_URL` is baked into the bundle and its CSP; the CSP is repeated as a header with `frame-ancestors 'none'`. Inside the app it runs with `PORT=18080`. |
 | Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
-| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
+| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
 | Driver | `scripts/deploy-azure.py` (helpers in `scripts/azure_deploy/`) | Validates `.env`, builds from a clean `git archive`, pushes, deploys, prints the DNS records. |
 
 Why the API has no public ingress: the CSRF cookie is host-only, so the browser must reach the
@@ -100,6 +101,9 @@ Optional:
 | `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start and migration check). |
 | `ARSM_WEB_ALWAYS_ON` | Default `false`: the web app (gate + Nginx) scales to zero when idle, a cold start of about 2 s. `true` keeps one replica running (more credit used). |
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |
+| `ARSM_ALERT_EMAIL` | Address for the budget and alert mails (see Guard rails in section 8). Empty (default): no budget, action group or alert rule is created. |
+| `ARSM_MONTHLY_BUDGET` | Monthly budget of the resource group in the subscription currency, a whole number, default `20`. Mails go out at 50, 80 and 100 percent of it; only used together with `ARSM_ALERT_EMAIL`. |
+| `ARSM_LOG_DAILY_QUOTA_GB` | Daily ingestion cap of the Log Analytics workspace in GB, a whole number from 1, default `1`. Always applied, with or without an alert address. |
 | `ARSM_PROD_ADMIN_MIDDLE_NAME` | Middle name of the bootstrap admin. |
 | `ARSM_PROD_ADMIN_PHONE` | Phone number of the bootstrap admin. |
 
@@ -124,6 +128,12 @@ ARSM_API_ALWAYS_ON=true
 ARSM_WEB_ALWAYS_ON=false
 # Blob container for profile pictures. Optional, default arsm-profile-pictures.
 ARSM_BLOB_CONTAINER=arsm-profile-pictures
+# E-mail for the budget and alert mails. Optional, empty creates no budget, action group or alert rule.
+ARSM_ALERT_EMAIL=
+# Monthly budget in the subscription currency, mails at 50, 80 and 100 percent. Optional, default 20.
+ARSM_MONTHLY_BUDGET=20
+# Daily Log Analytics ingestion cap in GB. Optional, default 1.
+ARSM_LOG_DAILY_QUOTA_GB=1
 
 # --- Production secrets and public address ---
 # Public https origin, no trailing slash; baked into the web image and used as the CORS origin.
@@ -194,13 +204,15 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
    credit card is needed; you get a yearly credit (check the current amount on the page) plus the
    free-service list, both visible in the portal's Education hub. When the credit runs out the
    subscription stops instead of billing you; renew it yearly while you are a student.
-2. Budget alert: in the portal, Cost Management -> Budgets -> create a small monthly budget with
-   e-mail alerts.
+2. Budget and alerts: set `ARSM_ALERT_EMAIL` in step 6. The deployment then creates the monthly
+   budget with its mails and the two alert rules (Guard rails in section 8), so there is nothing to
+   set up by hand in the portal.
 3. Register the resource providers once (check with
    `az provider show --namespace <name> --query registrationState -o tsv` until it says
    `Registered`): `az provider register --namespace Microsoft.App`, then the same for
    `Microsoft.OperationalInsights`, `Microsoft.DBforPostgreSQL`, `Microsoft.ContainerRegistry`
-   and `Microsoft.Storage`.
+   and `Microsoft.Storage`, plus `Microsoft.Insights` and `Microsoft.Consumption` for the alert
+   rules and the budget.
 4. Install the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and run `az login`; make
    the student subscription the active one (`az account list -o table`).
 5. Install Docker Desktop and start it (Linux containers). Git and Python are already there.
@@ -250,6 +262,10 @@ Without the token both answer `401` with the gate lock page. After unlocking in 
 the headers on `/`: the CSP ends in `frame-ancestors 'none'`, HSTS is present and `Cache-Control:
 no-cache`. Then log in, upload a profile picture and download a quote PDF.
 
+With `ARSM_ALERT_EMAIL` set, `az monitor metrics alert list --resource-group <rg> --output table`
+lists `arsm-api-5xx` and `arsm-api-restarts`, and the Budgets page of the resource group in the
+portal shows `arsm-monthly-budget`.
+
 ## 8. Operations
 
 - Logs: `az containerapp logs show --resource-group <rg> --name arsm-api --follow`, and
@@ -260,11 +276,84 @@ no-cache`. Then log in, upload a profile picture and download a quote PDF.
 - Cost: PostgreSQL B1ms (32 GB) is on the Azure for Students free list for the first 12 months.
   The always-on API replica, the Container Registry Basic SKU (a small daily fee) and the Log
   Analytics workspace draw from the credit; the web app scales to zero by default
-  (`ARSM_WEB_ALWAYS_ON=false`). Check current prices and keep the budget alert on.
+  (`ARSM_WEB_ALWAYS_ON=false`). Check current prices; the budget under Guard rails below watches
+  the spend.
 - The API must never run more than one replica (in-process rate limiter); the template pins
   `maxReplicas: 1`.
 - The registry admin user is disabled: only the managed identity (`AcrPull`) pulls images, and
   pushing uses your own `az acr login`.
+
+### Guard rails
+
+The log cap, the database pool cap and the Nginx limits are always on. The budget and the alert rules
+(`guardrails.bicep`) exist only when `ARSM_ALERT_EMAIL` is set: put your address there and run
+`python scripts/deploy-azure.py infra`. Emptying the key later only stops creating them; an incremental deployment
+deletes nothing, so remove the existing budget, action group and alert rules in the portal.
+
+- Log cap: the Log Analytics workspace takes in at most `ARSM_LOG_DAILY_QUOTA_GB` GB a day (default 1). At the cap
+  Azure stops collecting new logs until the workspace's own reset hour (shown under Usage and estimated costs of the
+  workspace, not configurable), so the console logs of that stretch are lost. The cap is approximate: some data
+  above it still arrives and is billed. The alert rules read platform metrics, so they keep working at the cap.
+- Budget: `arsm-monthly-budget` covers the resource group with `ARSM_MONTHLY_BUDGET` per month (default 20, in the
+  subscription currency) and mails `ARSM_ALERT_EMAIL` at 50, 80 and 100 percent of the actual cost. Cost data is
+  8-24 hours old and budgets are evaluated once a day, so a mail lags the spend; it only warns and stops nothing.
+  Add `azure-noreply@microsoft.com` to the approved senders so the mails stay out of the junk folder.
+- Alert rules (severity 2, mailed through the action group `arsm-alerts`): `arsm-api-5xx` fires when the API answers
+  more than 5 requests with a 5xx status within 5 minutes; `arsm-api-restarts` fires when the API's `RestartCount`
+  is above 0 over 15 minutes. Both are checked every 5 minutes. `RestartCount` counts the restarts of a replica
+  since it was created, so that rule stays active until the replica is replaced (the next deployment, a scale from
+  zero); a rule mails when it fires and when it resolves, not for every further restart.
+- Database connections: the API's connection string carries `Maximum Pool Size=20`. A B1ms server allows 50
+  connections by default, 15 of them reserved for the platform, so Npgsql's default pool of 100 exceeds it. Old and
+  new replica overlap briefly during a rollout, but a pool only grows with concurrent queries.
+- Nginx request limits (web image, `deploy/nginx/`): the two event streams (`GET /api/appointments/updates`,
+  `GET /api/profile/picture/updates`) run unbuffered with a read timeout of 1 hour; the picture upload
+  (`PUT /api/profile/picture`) accepts bodies up to 5 MB (the API allows 4 MB plus multipart overhead); every other
+  API call and `/alive` keeps the default 60 s read timeout and accepts bodies up to 64 KB, the API's JSON body
+  limit. A larger body gets Nginx's own 413. The directives the three locations share are in `api-proxy.conf`;
+  regex locations match in file order, so a new narrow API route goes above the catch-all in
+  `default.conf.template`.
+
+### Recommendations that are not implemented
+
+**Least-privilege database role.** The API connects as the server administrator, so a leaked connection string
+means control of the whole server. An application role would limit that to the data of `AutoServiceDb`. It is not
+set up because the API migrates the schema at every start (`MigrateAsync`: `pg_trgm` and every later schema
+change), and a data-only role fails the first time a migration is pending. Sketch, run once as the administrator
+in `AutoServiceDb`:
+
+```sql
+CREATE ROLE arsm_app LOGIN PASSWORD '<generated, not the administrator password>';
+GRANT CONNECT ON DATABASE "AutoServiceDb" TO arsm_app;
+GRANT USAGE ON SCHEMA public TO arsm_app;
+-- Includes "__EFMigrationsHistory": EF reads it for pending migrations and inserts a row per applied one.
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO arsm_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO arsm_app;
+-- Tables and sequences that the administrator's later migrations create get the same rights.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO arsm_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO arsm_app;
+```
+
+Migrations need DDL, so one of two things has to give. Either the administrator login runs them: the API takes a
+second connection string for `MigrateAsync` (a code change) and a release that adds a migration needs it applied
+before the new revision starts. Or `GRANT CREATE ON SCHEMA public TO arsm_app` and that role creates, and so owns,
+the tables: one connection string, but DDL rights stay in the application. Either way the template puts the
+`arsm_app` password into a secret (`db-connection` or a second one) and the connection string changes its login.
+
+**Narrower database firewall rule.** `AllowAzureServices` (0.0.0.0) lets every Azure service in any subscription
+reach the server's public endpoint; only the login, its password and TLS stand in the way. It is that wide because a
+Consumption Container Apps environment has no fixed outbound address, so there is no narrower address to allow. The
+alternatives are a virtual network for the environment with the database behind a private endpoint, or a NAT
+gateway that gives the environment one fixed outbound address to allow. Both mean a new environment (and so new DNS
+records) plus the network pieces and their price, which is out of scope for this kit.
+
+**Managed identity for Blob Storage.** The API reaches the container with the storage account key: the template
+builds `ObjectStorage__ConnectionString` from `listKeys()`, and `ObjectStorageRegistration` creates the
+`BlobContainerClient` for `AzureBlobProfilePictureStorage` from that string. Switching to a managed identity is a
+coordinated code and infrastructure change, so it stays a recommendation: the API needs the `Azure.Identity` package
+and a client built with `DefaultAzureCredential` from the blob endpoint of the account, and the template has to give
+an identity of the API app the `Storage Blob Data Contributor` role on the storage account and then drop
+`listKeys()` and the `blob-connection` secret. Either half alone breaks the profile pictures.
 
 ## 9. Local rehearsal of the production images
 
