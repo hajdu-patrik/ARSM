@@ -47,6 +47,18 @@ PYTHON_HTTP_CHECKS = (
         "tests/API/quotes/quote-pdf-check.py",
         "Quote PDF check",
     ),
+    (
+        "refreshReuseCheck",
+        "http-refresh-reuse-check",
+        "tests/API/auth/refresh-reuse-check.py",
+        "Refresh replay window check",
+    ),
+    (
+        "sessionRevocationCheck",
+        "http-session-revocation-check",
+        "tests/API/auth/session-revocation-check.py",
+        "Session revocation check",
+    ),
 )
 DEFAULT_COMMAND_TIMEOUT_SECONDS = 300
 

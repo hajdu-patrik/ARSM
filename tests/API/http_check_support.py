@@ -21,6 +21,9 @@ UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 CSRF_COOKIE_NAME = "__Host-autoservice_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 
+# Refresh-token cookie (Auth/Session/AuthCookieNames), rotated by every login, refresh and password change.
+REFRESH_COOKIE_NAME = "__Host-autoservice_rt"
+
 # urllib surfaces a server-side connection reset as an OSError rather than a status code.
 CONNECTION_RESET_STATUS = 0
 
@@ -51,10 +54,10 @@ class HttpClient:
         self.cookie_jar = CookieJar()
         self.opener = build_opener(HTTPCookieProcessor(self.cookie_jar))
 
-    def _csrf_token(self) -> str | None:
-        """Returns the current `__Host-autoservice_csrf` cookie value, or ``None`` before login."""
+    def cookie_value(self, name: str) -> str | None:
+        """Returns the current value of a cookie in the jar, or ``None`` when it is not set (before login)."""
         for cookie in self.cookie_jar:
-            if cookie.name == CSRF_COOKIE_NAME:
+            if cookie.name == name:
                 return cookie.value
         return None
 
@@ -124,7 +127,7 @@ class HttpClient:
             request_headers["Origin"] = self.allowed_origin
             # Double-submit CSRF proof: echo the cookie already in the jar (set by a prior
             # login/refresh/password-change) back as the header; missing before the first login is fine.
-            csrf_token = self._csrf_token()
+            csrf_token = self.cookie_value(CSRF_COOKIE_NAME)
             if csrf_token and CSRF_HEADER_NAME not in request_headers:
                 request_headers[CSRF_HEADER_NAME] = csrf_token
 
@@ -161,13 +164,23 @@ def read_credentials() -> list[Credentials]:
     )
 
 
+def read_required_env(name: str) -> str:
+    """Read a required environment variable, failing with its name when it is missing or blank."""
+    value = os.getenv(name, "").strip()
+    if value:
+        return value
+
+    raise RuntimeError(f"Missing {name} environment variable.")
+
+
+def read_admin_credentials() -> Credentials:
+    """Read the bootstrap admin login that the admin-only checks need (a mechanic login would answer 403)."""
+    return Credentials(read_required_env("ARSM_TEST_ADMIN_EMAIL"), read_required_env("ARSM_TEST_ADMIN_PASSWORD"))
+
+
 def read_allowed_origin() -> str:
     """Read the configured WebUI origin used by cookie-auth unsafe requests."""
-    origin = os.getenv("ARSM_TEST_WEBUI_ORIGIN", "").strip()
-    if origin:
-        return origin
-
-    raise RuntimeError("Missing ARSM_TEST_WEBUI_ORIGIN environment variable.")
+    return read_required_env("ARSM_TEST_WEBUI_ORIGIN")
 
 
 def assert_status(step: str, actual: int, expected: set[int], results: list[StepResult]) -> None:
@@ -206,11 +219,7 @@ def find_anchor_quote(client: HttpClient, results: list[StepResult]) -> dict[str
 
 def read_fixture_customer_email() -> str:
     """Read the email of the shared fixture customer that the _setup suite creates."""
-    email = os.getenv("ARSM_TEST_CUSTOMER_EMAIL", "").strip()
-    if email:
-        return email
-
-    raise RuntimeError("Missing ARSM_TEST_CUSTOMER_EMAIL environment variable.")
+    return read_required_env("ARSM_TEST_CUSTOMER_EMAIL")
 
 
 def resolve_fixture_customer(client: HttpClient, results: list[StepResult]) -> dict[str, Any]:
