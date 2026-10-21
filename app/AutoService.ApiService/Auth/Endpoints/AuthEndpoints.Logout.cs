@@ -3,6 +3,7 @@ using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Data;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Security;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
@@ -36,7 +37,7 @@ public static partial class AuthEndpoints
         }
 
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-        var tokenExpiresAtUtc = ParseTokenExpiry(httpContext.User);
+        var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
 
         if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
         {

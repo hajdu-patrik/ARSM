@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -84,9 +85,7 @@ public static partial class ProfileEndpoints
 
         if (!changeResult.Succeeded)
         {
-            var identityErrors = changeResult.Errors
-                .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "password" : e.Code)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
+            var identityErrors = changeResult.ToValidationErrors(fallbackKey: "password");
 
             if (identityErrors.Remove("PasswordMismatch", out var mismatchMessages))
             {

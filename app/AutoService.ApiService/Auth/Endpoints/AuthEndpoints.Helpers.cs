@@ -1,12 +1,5 @@
 using AutoService.ApiService.Auth.Session;
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
-using AutoService.ApiService.Domain;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -39,18 +32,6 @@ public static partial class AuthEndpoints
         }
     }
 
-    /** Converts an Identity error result into the RFC 7807 validation problem format used by Results.ValidationProblem(). */
-    private static Dictionary<string, string[]> ToValidationErrors(IdentityResult identityResult)
-    {
-        return identityResult.Errors
-            .GroupBy(x => string.IsNullOrWhiteSpace(x.Code) ? "identity" : x.Code)
-            .ToDictionary(group => group.Key, group => group.Select(x => x.Description).ToArray());
-    }
-
-    /** Returns null for blank/whitespace-only strings, or the trimmed value otherwise. Used to normalise optional fields such as middle name and phone number. */
-    private static string? NormalizeOptional(string? value)
-        => ContactNormalization.NormalizeOptional(value);
-
     /** Appends a "field is required" error entry if the value is null or whitespace. */
     private static void AddRequired(Dictionary<string, string[]> errors, string key, string? value)
     {
@@ -59,9 +40,6 @@ public static partial class AuthEndpoints
             errors[key] = [$"{key} is required."];
         }
     }
-
-    private static bool TryNormalizeEmail(string? rawValue, out string normalizedEmail)
-        => ContactNormalization.TryNormalizeEmail(rawValue, out normalizedEmail);
 
     /** Generates a cryptographically random refresh-token value. */
     internal static string GenerateRefreshTokenValue()
@@ -85,10 +63,6 @@ public static partial class AuthEndpoints
         MaxAge = ttl
     };
 
-    private static CookieOptions BuildAccessTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
-
-    private static CookieOptions BuildRefreshTokenCookieOptions(TimeSpan ttl) => BuildAuthCookieOptions(ttl);
-
     /** Builds the options that expire a __Host- session cookie: browsers ignore the expiry unless it repeats
         Secure and Path=/ (no Domain), and SameSite matches the issued cookie. */
     private static CookieOptions BuildAuthCookieDeletionOptions() => new()
@@ -102,8 +76,8 @@ public static partial class AuthEndpoints
         rotate auth cookies without keeping the CSRF cookie in sync; used by login, refresh, change-password. */
     internal static void IssueSessionCookies(HttpResponse response, string accessToken, string refreshTokenValue)
     {
-        response.Cookies.Append(AuthCookieNames.AccessToken, accessToken, BuildAccessTokenCookieOptions(AccessTokenTtl));
-        response.Cookies.Append(AuthCookieNames.RefreshToken, refreshTokenValue, BuildRefreshTokenCookieOptions(RefreshTokenTtl));
+        response.Cookies.Append(AuthCookieNames.AccessToken, accessToken, BuildAuthCookieOptions(AccessTokenTtl));
+        response.Cookies.Append(AuthCookieNames.RefreshToken, refreshTokenValue, BuildAuthCookieOptions(RefreshTokenTtl));
         CsrfTokenCookie.Issue(response, RefreshTokenTtl);
     }
 
@@ -114,9 +88,6 @@ public static partial class AuthEndpoints
         response.Cookies.Delete(AuthCookieNames.RefreshToken, BuildAuthCookieDeletionOptions());
         CsrfTokenCookie.Clear(response);
     }
-
-    private static DateTimeOffset? ParseTokenExpiry(ClaimsPrincipal user)
-        => TokenSecurity.ParseJwtExpiry(user);
 
     /** Resolves a privacy-preserving identifier for the caller's IP address by hashing it with SHA-256, so raw client IPs never appear in logs. */
     internal static string? ResolveClientIpAddress(HttpContext httpContext)

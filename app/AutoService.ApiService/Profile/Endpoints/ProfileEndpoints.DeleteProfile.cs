@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -82,11 +83,7 @@ public static partial class ProfileEndpoints
         {
             await transaction.RollbackAsync(cancellationToken);
 
-            var identityErrors = deleteIdentityResult.Errors
-                .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "identity" : e.Code)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
-
-            return Results.ValidationProblem(identityErrors);
+            return Results.ValidationProblem(deleteIdentityResult.ToValidationErrors());
         }
 
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;

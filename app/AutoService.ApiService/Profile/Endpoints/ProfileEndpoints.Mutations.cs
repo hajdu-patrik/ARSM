@@ -189,11 +189,7 @@ public static partial class ProfileEndpoints
             {
                 await transaction.RollbackAsync(cancellationToken);
 
-                var identityErrors = identityUpdateResult.Errors
-                    .GroupBy(e => string.IsNullOrWhiteSpace(e.Code) ? "identity" : e.Code)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
-
-                return Results.ValidationProblem(identityErrors);
+                return Results.ValidationProblem(identityUpdateResult.ToValidationErrors());
             }
         }
 

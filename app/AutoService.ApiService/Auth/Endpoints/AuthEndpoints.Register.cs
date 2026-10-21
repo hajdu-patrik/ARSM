@@ -34,10 +34,10 @@ public static partial class AuthEndpoints
             return Results.ValidationProblem(validationErrors);
         }
 
-        _ = TryNormalizeEmail(request.Email, out var email);
-        var phoneNumber = NormalizeOptional(request.PhoneNumber) is null
+        _ = ContactNormalization.TryNormalizeEmail(request.Email, out var email);
+        var phoneNumber = ContactNormalization.NormalizeOptional(request.PhoneNumber) is null
             ? null
-            : TryNormalizeEuPhoneNumber(request.PhoneNumber, out var normalizedPhone)
+            : ContactNormalization.TryNormalizeEuPhoneNumber(request.PhoneNumber, out var normalizedPhone)
                 ? normalizedPhone
                 : null;
 
@@ -59,7 +59,7 @@ public static partial class AuthEndpoints
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            var phoneLookupCandidates = BuildPhoneLookupCandidates(phoneNumber);
+            var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
             var phoneNumberInUse = await userManager.Users
                 .AnyAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
 
@@ -91,7 +91,7 @@ public static partial class AuthEndpoints
         {
             await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Registration failed while creating identity user. ErrorCount: {ErrorCount}.", createUserResult.Errors.Count());
-            return Results.ValidationProblem(ToValidationErrors(createUserResult));
+            return Results.ValidationProblem(createUserResult.ToValidationErrors());
         }
 
         People person;
@@ -158,12 +158,12 @@ public static partial class AuthEndpoints
 
         NameFieldsValidator.ValidateNames(request.FirstName, request.MiddleName, request.LastName, errors);
 
-        if (!string.IsNullOrWhiteSpace(request.Email) && !TryNormalizeEmail(request.Email, out _))
+        if (!string.IsNullOrWhiteSpace(request.Email) && !ContactNormalization.TryNormalizeEmail(request.Email, out _))
         {
             errors[nameof(request.Email)] = [ValidationMessages.InvalidEmail];
         }
 
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !TryNormalizeEuPhoneNumber(request.PhoneNumber, out _))
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !ContactNormalization.TryNormalizeEuPhoneNumber(request.PhoneNumber, out _))
         {
             errors[nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone];
         }
@@ -207,7 +207,7 @@ public static partial class AuthEndpoints
     /** Creates a domain entity from the registration payload. Only mechanics are allowed for public registration. */
     private static People CreatePerson(RegisterRequest request, string identityUserId, string email, string? phoneNumber)
     {
-        var fullName = new FullName(request.FirstName.Trim(), NormalizeOptional(request.MiddleName), request.LastName.Trim());
+        var fullName = new FullName(request.FirstName.Trim(), ContactNormalization.NormalizeOptional(request.MiddleName), request.LastName.Trim());
 
         if (!string.Equals(request.PersonType, "mechanic", StringComparison.OrdinalIgnoreCase))
         {
