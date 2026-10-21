@@ -53,6 +53,7 @@ FROM (
       AND i.indexname IN (
      'IX_people_Email',
      'IX_people_IdentityUserId',
+     'IX_people_PhoneNumber',
      'IX_vehicles_LicensePlate',
      'IX_vehicles_Vin',
      'IX_appointments_ScheduledDate',
@@ -84,3 +85,32 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name = 'people'
   AND column_name = 'ProfilePicture';
+
+-- 31. PEOPLE PHONE UNIQUE INDEX CONTRACT — IX_people_PhoneNumber must be unique and filtered to rows that carry
+--     a phone number (customers may have none). Expected: 0 rows.
+SELECT e.index_name,
+       i.indisunique,
+       pg_get_expr(i.indpred, i.indrelid) AS predicate
+FROM (VALUES ('people', 'IX_people_PhoneNumber')) AS e (table_name, index_name)
+LEFT JOIN pg_class ic ON ic.relname = e.index_name
+LEFT JOIN pg_index i ON i.indexrelid = ic.oid
+LEFT JOIN pg_class t ON t.oid = i.indrelid AND t.relname = e.table_name
+WHERE t.relname IS NULL
+   OR i.indisunique IS NOT TRUE
+   OR COALESCE(pg_get_expr(i.indpred, i.indrelid), '') NOT LIKE '%"PhoneNumber" IS NOT NULL%';
+
+-- 32. PEOPLE MUST-CHANGE-PASSWORD COLUMN CONTRACT — a nullable boolean that defaults to false (TPH column on
+--     people, only Mechanic rows use it). Expected: 0 rows.
+SELECT e.column_name,
+       c.data_type,
+       c.is_nullable,
+       c.column_default
+FROM (VALUES ('people', 'MustChangePassword')) AS e (table_name, column_name)
+LEFT JOIN information_schema.columns c
+       ON c.table_schema = 'public'
+      AND c.table_name = e.table_name
+      AND c.column_name = e.column_name
+WHERE c.column_name IS NULL
+   OR c.data_type <> 'boolean'
+   OR c.is_nullable <> 'YES'
+   OR c.column_default IS DISTINCT FROM 'false';
