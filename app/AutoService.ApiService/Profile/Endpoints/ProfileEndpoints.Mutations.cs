@@ -1,4 +1,5 @@
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Normalization;
@@ -30,145 +31,19 @@ public static partial class ProfileEndpoints
             ? await userManager.FindByIdAsync(person.IdentityUserId)
             : null;
 
-        var updatedEmail = person.Email;
-        var updatedPhoneNumber = person.PhoneNumber;
-        var emailChanged = false;
-        var phoneChanged = false;
-
-        // Email update.
-        if (request.Email is not null)
-        {
-            if (request.Email.Length > FieldLengthValidator.EmailMaxLength)
-            {
-                errors["Email"] = [$"Email must be at most {FieldLengthValidator.EmailMaxLength} characters."];
-            }
-            else if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
-            {
-                errors["Email"] = [ValidationMessages.InvalidEmail];
-            }
-            else if (!string.Equals(normalizedEmail, person.Email, StringComparison.OrdinalIgnoreCase))
-            {
-                var emailInUse = await db.People
-                    .AnyAsync(p => p.Email == normalizedEmail && p.Id != person.Id, cancellationToken);
-
-                if (emailInUse)
-                {
-                    errors["Email"] = ["An account already exists with this email address."];
-                }
-                else
-                {
-                    updatedEmail = normalizedEmail;
-                    emailChanged = true;
-                }
-            }
-        }
-
-        // Phone update.
-        if (request.PhoneNumber is not null)
-        {
-            if (request.PhoneNumber.Length > FieldLengthValidator.PhoneNumberMaxLength)
-            {
-                errors["PhoneNumber"] = [$"PhoneNumber must be at most {FieldLengthValidator.PhoneNumberMaxLength} characters."];
-            }
-            else
-            {
-                var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-                if (normalizedOptionalPhone is null)
-                {
-                    if (person.PhoneNumber is not null)
-                    {
-                        updatedPhoneNumber = null;
-                        phoneChanged = true;
-                    }
-                }
-                else
-                {
-                    if (!ContactNormalization.TryNormalizeEuPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
-                    {
-                        errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
-                    }
-                    else
-                    {
-                        var phoneInUse = await db.People
-                            .AnyAsync(p => p.PhoneNumber != null && p.PhoneNumber == normalizedPhone && p.Id != person.Id, cancellationToken);
-
-                        if (phoneInUse)
-                        {
-                            errors["PhoneNumber"] = ["An account already exists with this phone number."];
-                        }
-                        else if (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal))
-                        {
-                            updatedPhoneNumber = normalizedPhone;
-                            phoneChanged = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Name updates: validate provided fields, keep existing values when not provided.
-        string firstName = person.Name.FirstName;
-        if (request.FirstName is not null)
-        {
-            if (string.IsNullOrWhiteSpace(request.FirstName))
-            {
-                errors["FirstName"] = [ValidationMessages.FirstNameRequired];
-            }
-            else if (request.FirstName.Trim().Length > FieldLengthValidator.NameMaxLength)
-            {
-                errors["FirstName"] = [$"FirstName must be at most {FieldLengthValidator.NameMaxLength} characters."];
-            }
-            else
-            {
-                var nameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
-                if (nameError is not null) errors["FirstName"] = [nameError];
-                else firstName = request.FirstName.Trim();
-            }
-        }
-
-        string lastName = person.Name.LastName;
-        if (request.LastName is not null)
-        {
-            if (string.IsNullOrWhiteSpace(request.LastName))
-            {
-                errors["LastName"] = [ValidationMessages.LastNameRequired];
-            }
-            else if (request.LastName.Trim().Length > FieldLengthValidator.NameMaxLength)
-            {
-                errors["LastName"] = [$"LastName must be at most {FieldLengthValidator.NameMaxLength} characters."];
-            }
-            else
-            {
-                var nameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
-                if (nameError is not null) errors["LastName"] = [nameError];
-                else lastName = request.LastName.Trim();
-            }
-        }
-
-        string? middleName = person.Name.MiddleName;
-        if (request.MiddleName is not null)
-        {
-            var trimmed = request.MiddleName.Trim();
-            if (string.IsNullOrWhiteSpace(trimmed))
-            {
-                middleName = null;
-            }
-            else if (trimmed.Length > FieldLengthValidator.NameMaxLength)
-            {
-                errors["MiddleName"] = [$"MiddleName must be at most {FieldLengthValidator.NameMaxLength} characters."];
-            }
-            else
-            {
-                var nameError = NameFieldsValidator.GetNameError(trimmed, "MiddleName");
-                if (nameError is not null) errors["MiddleName"] = [nameError];
-                else middleName = trimmed;
-            }
-        }
+        var newEmail = await ResolveEmailChangeAsync(request.Email, person, errors, db, cancellationToken);
+        var phoneChange = await ResolvePhoneChangeAsync(request.PhoneNumber, person, errors, db, cancellationToken);
+        var firstName = ResolveRequiredName(request.FirstName, person.Name.FirstName, "FirstName", ValidationMessages.FirstNameRequired, errors);
+        var lastName = ResolveRequiredName(request.LastName, person.Name.LastName, "LastName", ValidationMessages.LastNameRequired, errors);
+        var middleName = ResolveMiddleName(request.MiddleName, person.Name.MiddleName, errors);
 
         if (errors.Count > 0)
         {
             return Results.ValidationProblem(errors);
         }
+
+        var updatedEmail = newEmail ?? person.Email;
+        var updatedPhoneNumber = phoneChange.Changed ? phoneChange.Value : person.PhoneNumber;
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -176,7 +51,7 @@ public static partial class ProfileEndpoints
         person.PhoneNumber = updatedPhoneNumber;
         person.Name = new FullName(firstName, middleName, lastName);
 
-        if (identityUser is not null && (emailChanged || phoneChanged))
+        if (identityUser is not null && (newEmail is not null || phoneChange.Changed))
         {
             identityUser.Email = updatedEmail;
             identityUser.UserName = updatedEmail;
@@ -205,5 +80,137 @@ public static partial class ProfileEndpoints
             person.Email,
             person.PhoneNumber,
             person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
+    }
+
+    /** The normalized new email when the request changes it, else null; invalid or taken values go into errors. */
+    private static async Task<string?> ResolveEmailChangeAsync(
+        string? requested,
+        People person,
+        Dictionary<string, string[]> errors,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (requested is null)
+        {
+            return null;
+        }
+
+        if (requested.Length > FieldLengthValidator.EmailMaxLength)
+        {
+            errors["Email"] = [$"Email must be at most {FieldLengthValidator.EmailMaxLength} characters."];
+            return null;
+        }
+
+        if (!ContactNormalization.TryNormalizeEmail(requested, out var normalizedEmail))
+        {
+            errors["Email"] = [ValidationMessages.InvalidEmail];
+            return null;
+        }
+
+        if (string.Equals(normalizedEmail, person.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (await db.People.AnyAsync(p => p.Email == normalizedEmail && p.Id != person.Id, cancellationToken))
+        {
+            errors["Email"] = ["An account already exists with this email address."];
+            return null;
+        }
+
+        return normalizedEmail;
+    }
+
+    /** Whether the request changes the phone and to what (null clears it); invalid or taken values go into errors. */
+    private static async Task<(bool Changed, string? Value)> ResolvePhoneChangeAsync(
+        string? requested,
+        People person,
+        Dictionary<string, string[]> errors,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (requested is null)
+        {
+            return (false, null);
+        }
+
+        if (requested.Length > FieldLengthValidator.PhoneNumberMaxLength)
+        {
+            errors["PhoneNumber"] = [$"PhoneNumber must be at most {FieldLengthValidator.PhoneNumberMaxLength} characters."];
+            return (false, null);
+        }
+
+        var normalizedOptionalPhone = ContactNormalization.NormalizeOptional(requested);
+        if (normalizedOptionalPhone is null)
+        {
+            return (person.PhoneNumber is not null, null);
+        }
+
+        if (!ContactNormalization.TryNormalizeEuPhoneNumber(normalizedOptionalPhone, out var normalizedPhone))
+        {
+            errors["PhoneNumber"] = [ValidationMessages.InvalidPhone];
+            return (false, null);
+        }
+
+        if (await db.People.AnyAsync(p => p.PhoneNumber != null && p.PhoneNumber == normalizedPhone && p.Id != person.Id, cancellationToken))
+        {
+            errors["PhoneNumber"] = ["An account already exists with this phone number."];
+            return (false, null);
+        }
+
+        return (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal), normalizedPhone);
+    }
+
+    /** First or last name: kept when not sent, otherwise required, length-capped and letters-only. */
+    private static string ResolveRequiredName(
+        string? requested,
+        string current,
+        string fieldName,
+        string requiredMessage,
+        Dictionary<string, string[]> errors)
+    {
+        if (requested is null)
+        {
+            return current;
+        }
+
+        if (string.IsNullOrWhiteSpace(requested))
+        {
+            errors[fieldName] = [requiredMessage];
+            return current;
+        }
+
+        return ValidateNameValue(requested.Trim(), fieldName, errors) ?? current;
+    }
+
+    /** Middle name: kept when not sent, cleared when blank, otherwise length-capped and letters-only. */
+    private static string? ResolveMiddleName(string? requested, string? current, Dictionary<string, string[]> errors)
+    {
+        if (requested is null)
+        {
+            return current;
+        }
+
+        var trimmed = requested.Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? null : ValidateNameValue(trimmed, "MiddleName", errors) ?? current;
+    }
+
+    /** The trimmed name when it fits the length cap and the letters-and-hyphens rule, else null with the error recorded. */
+    private static string? ValidateNameValue(string trimmed, string fieldName, Dictionary<string, string[]> errors)
+    {
+        if (trimmed.Length > FieldLengthValidator.NameMaxLength)
+        {
+            errors[fieldName] = [$"{fieldName} must be at most {FieldLengthValidator.NameMaxLength} characters."];
+            return null;
+        }
+
+        var nameError = NameFieldsValidator.GetNameError(trimmed, fieldName);
+        if (nameError is not null)
+        {
+            errors[fieldName] = [nameError];
+            return null;
+        }
+
+        return trimmed;
     }
 }
