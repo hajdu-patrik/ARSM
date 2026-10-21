@@ -7,8 +7,8 @@ import { profileService } from '../../../services/profile/profile.service';
 import { profileQueries } from '../../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { UpdateProfileRequest } from '../../../types/profile/profile.types';
-import { getFirstFieldErrorMessage } from '../../../utils/serverValidation';
-import { extractProfileSaveErrors, fieldHasRequiredError } from '../handlers';
+import { getFirstFieldErrorMessage, hasRequiredFieldError } from '../../../utils/serverValidation';
+import { extractProfileSaveErrors } from '../handlers';
 import {
   NO_PROFILE_FIELD_ERRORS,
   REQUIRED_PROFILE_FIELDS,
@@ -70,7 +70,7 @@ export function useProfileFormSettings({
     }
 
     const restoredFields = REQUIRED_PROFILE_FIELDS.filter(
-      (field) => values[field].trim() === '' && fieldHasRequiredError(serverErrors, field),
+      (field) => values[field].trim() === '' && hasRequiredFieldError(serverErrors, field),
     );
     setDraft((previous) => withoutDraftFields(previous, restoredFields));
     setFieldErrors(pickProfileFieldErrors(serverErrors, restoredFields));

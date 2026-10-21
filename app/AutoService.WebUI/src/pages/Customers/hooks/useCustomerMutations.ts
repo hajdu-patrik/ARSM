@@ -4,6 +4,8 @@ import { isAxiosError } from 'axios';
 import { customerRegistryService } from '../../../services/customers/customer-registry.service';
 import {
   extractServerFieldErrors,
+  hasRequiredFieldError,
+  hasServerFieldErrors,
   normalizeServerFieldErrors,
   type ServerFieldErrors,
 } from '../../../utils/serverValidation';
@@ -16,11 +18,7 @@ import {
   type CustomerFieldName,
   type PinnedFieldErrors,
 } from '../fieldErrors';
-import {
-  hasRequiredFieldError,
-  hasServerFieldErrors,
-  mapCustomerValidationMessageToKey,
-} from '../helpers';
+import { mapCustomerValidationMessageToKey } from '../helpers';
 import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
 import {
   buildNormalizedCustomerPayload,

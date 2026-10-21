@@ -1,7 +1,6 @@
 /** Inventory page helpers: validation mapping, field-error pinning, form-state types, and the one permitted gross preview. */
 
 import { DEFAULT_VAT_RATE_PERCENT } from '../../types/catalog/catalog.types';
-import type { ServerFieldErrors } from '../../utils/serverValidation';
 
 /** Mode for the part/labor-type create/edit modal. */
 export type CatalogModalMode = 'create' | 'edit';
@@ -83,11 +82,6 @@ export function currentCatalogFieldErrors(
   }
 
   return errors;
-}
-
-/** Returns true when the server field-error dictionary has at least one non-empty entry. */
-export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
-  return Object.values(errors).some((messages) => messages.length > 0);
 }
 
 /** Maps part/labor-type validation messages (from `Catalog/*.Mutations.cs`, `Validation/PricingValidation.cs`) to i18n keys. */

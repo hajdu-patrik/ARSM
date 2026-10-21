@@ -4,14 +4,11 @@ import { isAllowedVatRate } from '../../../types/catalog/catalog.types';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
+  hasServerFieldErrors,
   normalizeServerFieldErrors,
   type ServerFieldErrors,
 } from '../../../utils/serverValidation';
-import {
-  hasServerFieldErrors,
-  mapCatalogValidationMessageToKey,
-  type CatalogFormState,
-} from '../helpers';
+import { mapCatalogValidationMessageToKey, type CatalogFormState } from '../helpers';
 
 /** A request built from form state, or the i18n key of the reason it cannot be built. */
 export type CatalogRequestResult<TRequest> =

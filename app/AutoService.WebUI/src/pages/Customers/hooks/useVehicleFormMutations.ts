@@ -4,6 +4,8 @@ import { useMutation } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import {
   extractServerFieldErrors,
+  hasRequiredFieldError,
+  hasServerFieldErrors,
   normalizeServerFieldErrors,
   type ServerFieldErrors,
 } from '../../../utils/serverValidation';
@@ -24,8 +26,6 @@ import {
 } from '../fieldErrors';
 import {
   buildVehicleNumericFieldErrors,
-  hasRequiredFieldError,
-  hasServerFieldErrors,
   mapVehicleValidationMessageToKey,
   parseVehicleNumericValues,
   type VehicleFormState,
