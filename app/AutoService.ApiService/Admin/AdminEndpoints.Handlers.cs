@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.ComponentModel;
 using System.Data;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Admin;
 
@@ -82,8 +83,7 @@ public static partial class AdminEndpoints
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoints.DeleteMechanic");
 
-        var callerPersonId = httpContext.User.FindFirst("person_id")?.Value;
-        if (int.TryParse(callerPersonId, out var callerPid) && callerPid == id)
+        if (httpContext.User.TryGetPersonId(out var callerPid) && callerPid == id)
         {
             logger.LogWarning("DeleteMechanic forbidden: admin attempted self-deletion for person {PersonId}.", id);
             return ApiProblem.Forbidden("Administrators cannot delete their own account.");

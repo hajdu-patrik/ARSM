@@ -5,6 +5,7 @@ using AutoService.ApiService.Storage;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -100,8 +101,7 @@ public static partial class ProfileEndpoints
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
-        var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        var userId = int.TryParse(personIdClaim, out var parsedPersonId) ? parsedPersonId : 0;
+        var userId = httpContext.User.TryGetPersonId(out var parsedPersonId) ? parsedPersonId : 0;
 
         if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
         {

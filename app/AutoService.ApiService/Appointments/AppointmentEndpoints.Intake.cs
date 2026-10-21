@@ -6,6 +6,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Linking;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -30,8 +31,7 @@ public static partial class AppointmentEndpoints
 
         var usesExistingVehicle = request.VehicleId.HasValue;
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Intake rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();

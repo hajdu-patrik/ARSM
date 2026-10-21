@@ -5,6 +5,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -21,8 +22,7 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Claim");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Claim rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
@@ -97,8 +97,7 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.Unclaim");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Unclaim rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();

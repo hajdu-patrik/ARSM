@@ -6,6 +6,7 @@ using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -40,8 +41,7 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Appointment update rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
@@ -106,8 +106,7 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.UpdateVehicle");
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("Appointment vehicle update rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();

@@ -1,5 +1,6 @@
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Realtime;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -12,8 +13,7 @@ public static partial class AppointmentEndpoints
         IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
-        var personIdClaim = httpContext.User.FindFirst("person_id")?.Value;
-        var userId = int.TryParse(personIdClaim, out var parsedPersonId) ? parsedPersonId : 0;
+        var userId = httpContext.User.TryGetPersonId(out var parsedPersonId) ? parsedPersonId : 0;
 
         if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
         {

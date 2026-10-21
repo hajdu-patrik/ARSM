@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -44,8 +45,7 @@ public static partial class QuoteEndpoints
             }
         }
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             return Results.Unauthorized();
         }

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -26,8 +27,7 @@ public static partial class AppointmentEndpoints
             return Results.BadRequest(new { code = "invalid_status", error = $"Valid statuses: {string.Join(", ", Enum.GetNames<ProgressStatus>())}" });
         }
 
-        var personIdClaim = user.FindFirst("person_id")?.Value;
-        if (string.IsNullOrWhiteSpace(personIdClaim) || !int.TryParse(personIdClaim, out var mechanicId))
+        if (!user.TryGetPersonId(out var mechanicId))
         {
             logger.LogWarning("UpdateStatus rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();

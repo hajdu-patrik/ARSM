@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Middleware;
 
@@ -14,7 +15,7 @@ public class AuditAccessDeniedMiddleware(RequestDelegate next)
         if (context.Response.StatusCode is 401 or 403)
         {
             var logger = loggerFactory.CreateLogger("Auth.AccessDenied");
-            var mechanicId = context.User?.FindFirst("person_id")?.Value;
+            var mechanicId = context.User?.FindFirst(PersonIdClaim.Type)?.Value;
 
             logger.LogWarning(
                 "Access denied ({StatusCode}). MechanicId: {MechanicId}, Method: {Method}, Path: {Path}, IP: {ClientIp}.",
