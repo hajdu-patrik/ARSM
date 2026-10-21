@@ -15,8 +15,8 @@ internal readonly record struct CustomerInput(
     string Email,
     string? PhoneNumber)
 {
-    /** Required fields first, then the first, last and (when given) middle name. */
-    internal string? GetNameError()
+    /** Required fields (names and email) first, then the first, last and (when given) middle name. */
+    internal string? GetFieldError()
     {
         if (string.IsNullOrWhiteSpace(FirstName) ||
             string.IsNullOrWhiteSpace(LastName) ||

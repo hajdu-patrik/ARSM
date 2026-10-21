@@ -2,7 +2,6 @@ using AutoService.ApiService.Appointments.Realtime;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
-using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;

@@ -4,9 +4,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Vehicles;
-using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
-using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Appointments;
 

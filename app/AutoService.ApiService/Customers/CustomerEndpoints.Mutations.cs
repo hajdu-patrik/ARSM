@@ -13,10 +13,10 @@ public static partial class CustomerEndpoints
         CancellationToken cancellationToken)
     {
         var input = request.ToInput();
-        var nameError = input.GetNameError();
-        if (nameError is not null)
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            return ApiProblem.Unprocessable(nameError);
+            return ApiProblem.Unprocessable(fieldError);
         }
 
         var contactError = input.NormalizeContact(out var normalizedEmail, out var normalizedPhone);
@@ -56,10 +56,10 @@ public static partial class CustomerEndpoints
         CancellationToken cancellationToken)
     {
         var input = request.ToInput();
-        var nameError = input.GetNameError();
-        if (nameError is not null)
+        var fieldError = input.GetFieldError();
+        if (fieldError is not null)
         {
-            return ApiProblem.Unprocessable(nameError);
+            return ApiProblem.Unprocessable(fieldError);
         }
 
         var customer = await db.Customers

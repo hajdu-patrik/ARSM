@@ -1,7 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
-using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Quotes;

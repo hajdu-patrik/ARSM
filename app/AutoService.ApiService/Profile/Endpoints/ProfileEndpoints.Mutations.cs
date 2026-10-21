@@ -161,7 +161,7 @@ public static partial class ProfileEndpoints
         return (!string.Equals(normalizedPhone, person.PhoneNumber, StringComparison.Ordinal), normalizedPhone);
     }
 
-    /** First or last name: kept when not sent, otherwise required, length-capped and letters-only. */
+    /** First or last name: kept when not sent, otherwise required, length-capped and letters-and-hyphens. */
     private static string ResolveRequiredName(
         string? requested,
         string current,
@@ -183,7 +183,7 @@ public static partial class ProfileEndpoints
         return ValidateNameValue(requested.Trim(), fieldName, errors) ?? current;
     }
 
-    /** Middle name: kept when not sent, cleared when blank, otherwise length-capped and letters-only. */
+    /** Middle name: kept when not sent, cleared when blank, otherwise length-capped and letters-and-hyphens. */
     private static string? ResolveMiddleName(string? requested, string? current, Dictionary<string, string[]> errors)
     {
         if (requested is null)

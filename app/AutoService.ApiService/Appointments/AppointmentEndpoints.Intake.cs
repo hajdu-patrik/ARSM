@@ -7,7 +7,6 @@ using AutoService.ApiService.Linking;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
-using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Appointments;
 
