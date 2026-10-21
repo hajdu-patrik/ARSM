@@ -1,19 +1,13 @@
 /** Request-builder and form helper utilities for mechanic registration. */
 
 import type { MechanicListItem, RegisterMechanicRequest } from '../../../services/admin/admin.service';
-import type { FieldErrors, RegisterMechanicFormValues } from './types';
-import { getServerFieldError } from '../../../utils/serverValidation';
+import type { RegisterMechanicFormValues } from './types';
 
 /** Builds the full display name of a mechanic roster entry, skipping empty name parts. */
 export function buildMechanicDisplayName(mechanic: MechanicListItem): string {
   return [mechanic.firstName, mechanic.middleName, mechanic.lastName]
     .filter(Boolean)
     .join(' ');
-}
-
-/** Returns the first server validation error for a given field name. */
-export function getFieldError(fieldErrors: FieldErrors, field: string): string | undefined {
-  return getServerFieldError(fieldErrors, field);
 }
 
 /** Converts form values into a trimmed API request payload. */
