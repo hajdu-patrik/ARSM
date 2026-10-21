@@ -4,7 +4,7 @@ import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
-import { Modal } from '../../../components/common/Modal';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   buttonClass,
@@ -14,7 +14,6 @@ import {
   labelClass,
   mutedBodyTextClass,
   mutedMetaTextClass,
-  secondaryButtonClass,
   sectionTitleClass,
 } from '../../../utils/formStyles';
 import { filterPhoneInput } from '../../../utils/validation';
@@ -137,25 +136,18 @@ const CompanyDataSectionComponent = memo(function CompanyDataSection({
         ) : null}
       </form>
 
-      <Modal
+      <ConfirmModal
         isOpen={isConfirmOpen}
-        onClose={onCloseConfirm}
         title={t('settings.confirmSaveTitle')}
-        variant="confirm"
-        footer={(
-          <>
-            <button type="button" onClick={onCloseConfirm} disabled={isSubmitting} className={secondaryButtonClass}>
-              {t('common.actions.cancel')}
-            </button>
-            <button type="button" onClick={onConfirm} disabled={isSubmitting} aria-busy={isSubmitting} className={buttonClass}>
-              <Save className={defaultIconClass} />
-              <span>{isSubmitting ? t('common.actions.saving') : t('common.actions.save')}</span>
-            </button>
-          </>
-        )}
+        isBusy={isSubmitting}
+        onClose={onCloseConfirm}
+        onConfirm={onConfirm}
+        confirmLabel={t('common.actions.save')}
+        busyLabel={t('common.actions.saving')}
+        icon={Save}
       >
         <p className={mutedBodyTextClass}>{t('settings.company.confirmSaveMessage')}</p>
-      </Modal>
+      </ConfirmModal>
     </div>
   );
 });

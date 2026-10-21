@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { useToastStore } from '../../../../store/toast.store';
 import { HighlightedText } from '../../../../components/common/HighlightedText';
-import { Modal } from '../../../../components/common/Modal';
+import { ConfirmModal } from '../../../../components/common/ConfirmModal';
 import { Pagination } from '../../../../components/common/Pagination';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 import { buildMechanicDisplayName } from '../helpers';
@@ -15,14 +15,12 @@ import {
 	compactInputSurfaceClass,
 	compactListPrimaryWrapTextClass,
 	compactListSecondaryWrapTextClass,
-	dangerButtonClass,
 	defaultIconClass,
 	emptyStateBoxClass,
 	iconDangerButtonClass,
 	loadingSpinnerClass,
 	mutedBodyTextClass,
 	rowHoverMotionClass,
-	secondaryButtonClass,
 } from '../../../../utils/formStyles';
 
 /** Renders the admin mechanic roster: server-side search, fixed-size pages, and delete actions. */
@@ -135,33 +133,17 @@ export const MechanicListSection = memo(function MechanicListSection() {
 				</div>
 			)}
 
-			<Modal
+			<ConfirmModal
 				isOpen={deleteTarget !== null}
-				onClose={closeDeleteModal}
 				title={t('admin.deleteMechanicModalTitle')}
-				variant="confirm"
-				footer={(
-					<>
-						<button
-							type="button"
-							onClick={closeDeleteModal}
-							disabled={isDeleting}
-							className={secondaryButtonClass}
-						>
-							{t('common.actions.cancel')}
-						</button>
-						<button
-							type="button"
-							onClick={handleDelete}
-							disabled={isDeleting || !deleteTarget}
-							aria-busy={isDeleting}
-							className={dangerButtonClass}
-						>
-							<Trash2 className={defaultIconClass} aria-hidden="true" />
-							<span>{isDeleting ? t('common.actions.deleting') : t('admin.confirmDelete')}</span>
-						</button>
-					</>
-				)}
+				isBusy={isDeleting}
+				onClose={closeDeleteModal}
+				onConfirm={handleDelete}
+				confirmLabel={t('admin.confirmDelete')}
+				busyLabel={t('common.actions.deleting')}
+				icon={Trash2}
+				tone="danger"
+				confirmDisabled={!deleteTarget}
 			>
 				<p className={`break-words ${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
 					{t('admin.deleteMechanicWarning', {
@@ -169,7 +151,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 						email: deleteTarget?.email ?? '',
 					})}
 				</p>
-			</Modal>
+			</ConfirmModal>
 		</>
 	);
 });

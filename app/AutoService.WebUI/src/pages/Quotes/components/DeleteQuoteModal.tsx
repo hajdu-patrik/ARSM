@@ -2,8 +2,8 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal';
-import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
+import { mutedBodyTextClass } from '../../../utils/formStyles';
 import type { DeleteQuoteTarget } from '../hooks/useQuoteLifecycleMutations';
 
 interface DeleteQuoteModalProps {
@@ -14,7 +14,7 @@ interface DeleteQuoteModalProps {
   readonly onConfirm: () => void;
 }
 
-const DeleteQuoteModalComponent = memo(function DeleteQuoteModal({
+export const DeleteQuoteModal = memo(function DeleteQuoteModal({
   target,
   isDeleting,
   t,
@@ -22,33 +22,17 @@ const DeleteQuoteModalComponent = memo(function DeleteQuoteModal({
   onConfirm,
 }: DeleteQuoteModalProps) {
   return (
-    <Modal
+    <ConfirmModal
       isOpen={target !== null}
-      onClose={() => {
-        if (!isDeleting) {
-          onClose();
-        }
-      }}
       title={t('quotes.deleteQuoteTitle')}
-      variant="confirm"
-      footer={(
-        <>
-          <button type="button" onClick={onClose} disabled={isDeleting} className={secondaryButtonClass}>
-            {t('common.actions.cancel')}
-          </button>
-          <button
-            data-testid="quote-delete-confirm-button"
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            aria-busy={isDeleting}
-            className={dangerButtonClass}
-          >
-            <Trash2 className={defaultIconClass} />
-            <span>{isDeleting ? t('common.actions.deleting') : t('quotes.deleteQuote')}</span>
-          </button>
-        </>
-      )}
+      isBusy={isDeleting}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      confirmLabel={t('quotes.deleteQuote')}
+      busyLabel={t('common.actions.deleting')}
+      icon={Trash2}
+      tone="danger"
+      confirmTestId="quote-delete-confirm-button"
     >
       <p className={mutedBodyTextClass}>
         {t('quotes.deleteConfirm', {
@@ -56,10 +40,6 @@ const DeleteQuoteModalComponent = memo(function DeleteQuoteModal({
           title: target?.title ?? '',
         })}
       </p>
-    </Modal>
+    </ConfirmModal>
   );
 });
-
-DeleteQuoteModalComponent.displayName = 'DeleteQuoteModal';
-
-export const DeleteQuoteModal = DeleteQuoteModalComponent;

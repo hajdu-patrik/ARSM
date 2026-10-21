@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { buildCustomerDisplayName } from '../helpers';
-import { dangerButtonClass, defaultIconClass, mutedBodyTextClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { mutedBodyTextClass } from '../../../utils/formStyles';
 
 interface DeleteCustomerModalProps {
   target: CustomerListItem | null;
@@ -14,7 +14,7 @@ interface DeleteCustomerModalProps {
   onConfirm: () => void;
 }
 
-const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
+export const DeleteCustomerModal = memo(function DeleteCustomerModal({
   target,
   isDeleting,
   t,
@@ -22,47 +22,22 @@ const DeleteCustomerModalComponent = memo(function DeleteCustomerModal({
   onConfirm,
 }: DeleteCustomerModalProps) {
   return (
-    <Modal
+    <ConfirmModal
       isOpen={target !== null}
-      onClose={() => {
-        if (!isDeleting) {
-          onClose();
-        }
-      }}
       title={t('customers.deleteCustomerTitle')}
-      variant="confirm"
-      footer={(
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isDeleting}
-            className={secondaryButtonClass}
-          >
-            {t('common.actions.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            aria-busy={isDeleting}
-            className={dangerButtonClass}
-          >
-            <Trash2 className={defaultIconClass} />
-            <span>{isDeleting ? t('common.actions.deleting') : t('customers.deleteCustomer')}</span>
-          </button>
-        </>
-      )}
+      isBusy={isDeleting}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      confirmLabel={t('customers.deleteCustomer')}
+      busyLabel={t('common.actions.deleting')}
+      icon={Trash2}
+      tone="danger"
     >
       <p className={mutedBodyTextClass}>
         {t('customers.deleteCustomerConfirm', {
           name: target ? buildCustomerDisplayName(target) : '',
         })}
       </p>
-    </Modal>
+    </ConfirmModal>
   );
 });
-
-DeleteCustomerModalComponent.displayName = 'DeleteCustomerModal';
-
-export const DeleteCustomerModal = DeleteCustomerModalComponent;
