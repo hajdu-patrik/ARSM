@@ -28,7 +28,7 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("DueDateTime is required.");
         }
 
-        var dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
+        var dueDateTimeUtc = DateTimeNormalization.ToUtc(request.DueDateTime);
 
         var taskDescription = request.TaskDescription?.Trim();
         if (string.IsNullOrWhiteSpace(taskDescription))
@@ -69,7 +69,7 @@ public static partial class AppointmentEndpoints
 
         if (request.ScheduledDate is not null)
         {
-            var scheduledDateUtc = NormalizeToUtc(request.ScheduledDate.Value);
+            var scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate.Value);
             if (scheduledDateUtc != appointment.ScheduledDate)
             {
                 logger.LogWarning("Appointment update rejected: attempted ScheduledDate change for appointment {AppointmentId}.", id);

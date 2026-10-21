@@ -70,8 +70,8 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("DueDateTime is required.");
         }
 
-        scheduledDateUtc = NormalizeToUtc(request.ScheduledDate);
-        dueDateTimeUtc = NormalizeToUtc(request.DueDateTime);
+        scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate);
+        dueDateTimeUtc = DateTimeNormalization.ToUtc(request.DueDateTime);
 
         return dueDateTimeUtc < scheduledDateUtc
             ? ApiProblem.Unprocessable("DueDateTime must be greater than or equal to ScheduledDate.")

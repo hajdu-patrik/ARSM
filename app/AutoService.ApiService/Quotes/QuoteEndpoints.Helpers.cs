@@ -5,6 +5,7 @@ using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -157,15 +158,6 @@ public static partial class QuoteEndpoints
     {
         db.Entry(quote).Property(q => q.Version).OriginalValue = version;
     }
-
-    /** Normalizes a DateTime to UTC, the same rule AppointmentEndpoints uses: since JSON deserializers
-     * often strip Kind, Unspecified is treated as already UTC, not local time. */
-    private static DateTime NormalizeToUtc(DateTime dateTime) => dateTime.Kind switch
-    {
-        DateTimeKind.Utc => dateTime,
-        DateTimeKind.Local => dateTime.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-    };
 
     /** Validates the optional quote notes field (D14). */
     private static string? GetNotesValidationError(string? notes)

@@ -7,6 +7,7 @@ using AutoService.ApiService.Linking;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -135,14 +136,4 @@ public static partial class AppointmentEndpoints
 
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
-
-    private static DateTime NormalizeToUtc(DateTime dateTime)
-        => dateTime.Kind switch
-        {
-            DateTimeKind.Utc => dateTime,
-            DateTimeKind.Local => dateTime.ToUniversalTime(),
-            // Treat Unspecified as UTC — JSON deserializers often strip kind info.
-            _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-        };
-
 }

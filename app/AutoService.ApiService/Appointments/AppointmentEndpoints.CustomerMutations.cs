@@ -4,6 +4,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Http;
 using Microsoft.EntityFrameworkCore;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -61,7 +62,7 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("One or more mechanicIds are invalid.");
         }
 
-        var scheduledDateUtc = NormalizeScheduledDateUtc(request.ScheduledDate);
+        var scheduledDateUtc = DateTimeNormalization.ToUtc(request.ScheduledDate);
         var appointment = CreateCustomerAppointment(vehicle, mechanics, taskDescription, scheduledDateUtc);
 
         db.Appointments.Add(appointment);
@@ -121,14 +122,6 @@ public static partial class AppointmentEndpoints
 
         return null;
     }
-
-    /** Normalizes request dates to UTC while preserving prior unspecified-kind semantics. */
-    private static DateTime NormalizeScheduledDateUtc(DateTime scheduledDate) => scheduledDate.Kind switch
-    {
-        DateTimeKind.Utc => scheduledDate,
-        DateTimeKind.Local => scheduledDate.ToUniversalTime(),
-        _ => DateTime.SpecifyKind(scheduledDate, DateTimeKind.Utc)
-    };
 
     /** Creates the appointment aggregate for the validated customer/vehicle/mechanic inputs. */
     private static Appointment CreateCustomerAppointment(

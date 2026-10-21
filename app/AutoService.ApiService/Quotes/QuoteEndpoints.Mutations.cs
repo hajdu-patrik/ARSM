@@ -5,6 +5,7 @@ using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -33,7 +34,7 @@ public static partial class QuoteEndpoints
 
         var nowUtc = DateTime.UtcNow;
         var validUntil = request.ValidUntil is not null
-            ? NormalizeToUtc(request.ValidUntil.Value)
+            ? DateTimeNormalization.ToUtc(request.ValidUntil.Value)
             : nowUtc.AddDays(30);
 
         if (request.ValidUntil is not null)

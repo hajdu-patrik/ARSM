@@ -3,6 +3,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -83,7 +84,7 @@ public static partial class QuoteEndpoints
             return missingVersionError;
         }
 
-        var newValidUntil = NormalizeToUtc(request.ValidUntil);
+        var newValidUntil = DateTimeNormalization.ToUtc(request.ValidUntil);
         var nowUtc = DateTime.UtcNow;
 
         // A past date is rejected regardless of status (D22): matters on an already-expired Sent
