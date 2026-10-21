@@ -17,14 +17,20 @@ public static partial class CustomerEndpoints
         string? MiddleName,
         string LastName,
         string Email,
-        string? PhoneNumber);
+        string? PhoneNumber)
+    {
+        internal CustomerInput ToInput() => new(FirstName, MiddleName, LastName, Email, PhoneNumber);
+    }
 
     internal sealed record UpdateCustomerRequest(
         string FirstName,
         string? MiddleName,
         string LastName,
         string Email,
-        string? PhoneNumber);
+        string? PhoneNumber)
+    {
+        internal CustomerInput ToInput() => new(FirstName, MiddleName, LastName, Email, PhoneNumber);
+    }
 
     // Extended DTO for single-customer retrieval (includes vehicles).
     internal sealed record CustomerWithVehiclesDto(

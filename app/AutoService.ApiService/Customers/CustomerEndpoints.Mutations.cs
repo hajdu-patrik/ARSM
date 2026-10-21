@@ -1,11 +1,5 @@
-using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
-using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 
@@ -18,69 +12,26 @@ public static partial class CustomerEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName) ||
-            string.IsNullOrWhiteSpace(request.LastName) ||
-            string.IsNullOrWhiteSpace(request.Email))
+        var input = request.ToInput();
+        var nameError = input.GetNameError();
+        if (nameError is not null)
         {
-            return ApiProblem.Unprocessable("FirstName, LastName, and Email are required.");
+            return ApiProblem.Unprocessable(nameError);
         }
 
-        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
-        if (firstNameError is not null)
+        var contactError = input.NormalizeContact(out var normalizedEmail, out var normalizedPhone);
+        if (contactError is not null)
         {
-            return ApiProblem.Unprocessable(firstNameError);
+            return ApiProblem.Unprocessable(contactError);
         }
 
-        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
-        if (lastNameError is not null)
+        var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, null, cancellationToken);
+        if (conflict is not null)
         {
-            return ApiProblem.Unprocessable(lastNameError);
+            return ApiProblem.Conflict(conflict);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.MiddleName))
-        {
-            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
-            if (middleNameError is not null)
-            {
-                return ApiProblem.Unprocessable(middleNameError);
-            }
-        }
-
-        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
-        {
-            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
-        }
-
-        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-        if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
-        {
-            return ApiProblem.Unprocessable(ValidationMessages.InvalidPhone);
-        }
-
-        var emailExists = await db.People
-            .AnyAsync(p => p.Email == normalizedEmail, cancellationToken);
-
-        if (emailExists)
-        {
-            return ApiProblem.Conflict("A person with this email already exists.");
-        }
-
-        if (normalizedPhone is not null)
-        {
-            var phoneExists = await db.People
-                .AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken);
-
-            if (phoneExists)
-            {
-                return ApiProblem.Conflict("A person with this phone number already exists.");
-            }
-        }
-
-        var customer = new Customer(
-            new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim()),
-            normalizedEmail,
-            normalizedPhone);
+        var customer = new Customer(input.ToFullName(), normalizedEmail, normalizedPhone);
 
         db.Customers.Add(customer);
         await db.SaveChangesAsync(cancellationToken);
@@ -104,32 +55,11 @@ public static partial class CustomerEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName) ||
-            string.IsNullOrWhiteSpace(request.LastName) ||
-            string.IsNullOrWhiteSpace(request.Email))
+        var input = request.ToInput();
+        var nameError = input.GetNameError();
+        if (nameError is not null)
         {
-            return ApiProblem.Unprocessable("FirstName, LastName, and Email are required.");
-        }
-
-        var firstNameError = NameFieldsValidator.GetNameError(request.FirstName.Trim(), "FirstName");
-        if (firstNameError is not null)
-        {
-            return ApiProblem.Unprocessable(firstNameError);
-        }
-
-        var lastNameError = NameFieldsValidator.GetNameError(request.LastName.Trim(), "LastName");
-        if (lastNameError is not null)
-        {
-            return ApiProblem.Unprocessable(lastNameError);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.MiddleName))
-        {
-            var middleNameError = NameFieldsValidator.GetNameError(request.MiddleName.Trim(), "MiddleName");
-            if (middleNameError is not null)
-            {
-                return ApiProblem.Unprocessable(middleNameError);
-            }
+            return ApiProblem.Unprocessable(nameError);
         }
 
         var customer = await db.Customers
@@ -140,38 +70,19 @@ public static partial class CustomerEndpoints
             return ApiProblem.NotFound("Customer not found.");
         }
 
-        if (!ContactNormalization.TryNormalizeEmail(request.Email, out var normalizedEmail))
+        var contactError = input.NormalizeContact(out var normalizedEmail, out var normalizedPhone);
+        if (contactError is not null)
         {
-            return ApiProblem.Unprocessable(ValidationMessages.InvalidEmail);
+            return ApiProblem.Unprocessable(contactError);
         }
 
-        var normalizedPhone = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-        if (normalizedPhone is not null &&
-            !ContactNormalization.TryNormalizeEuPhoneNumber(normalizedPhone, out normalizedPhone))
+        var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, id, cancellationToken);
+        if (conflict is not null)
         {
-            return ApiProblem.Unprocessable(ValidationMessages.InvalidPhone);
+            return ApiProblem.Conflict(conflict);
         }
 
-        var emailConflict = await db.People
-            .AnyAsync(p => p.Email == normalizedEmail && p.Id != id, cancellationToken);
-
-        if (emailConflict)
-        {
-            return ApiProblem.Conflict("A person with this email already exists.");
-        }
-
-        if (normalizedPhone is not null)
-        {
-            var phoneConflict = await db.People
-                .AnyAsync(p => p.PhoneNumber == normalizedPhone && p.Id != id, cancellationToken);
-
-            if (phoneConflict)
-            {
-                return ApiProblem.Conflict("A person with this phone number already exists.");
-            }
-        }
-
-        customer.Name = new FullName(request.FirstName.Trim(), request.MiddleName?.Trim(), request.LastName.Trim());
+        customer.Name = input.ToFullName();
         customer.Email = normalizedEmail;
         customer.PhoneNumber = normalizedPhone;
 
