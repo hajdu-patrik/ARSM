@@ -40,15 +40,10 @@ public static partial class QuoteEndpoints
         quote!.Title = request.Title.Trim();
         quote.Notes = NormalizeOptionalNotes(request.Notes);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -62,10 +57,7 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
@@ -104,15 +96,10 @@ public static partial class QuoteEndpoints
 
         quote.ValidUntil = newValidUntil;
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));

@@ -115,15 +115,10 @@ public static partial class QuoteEndpoints
         }
 
         db.Quotes.Remove(quote!);
-        SeedOriginalVersion(db, quote!, version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote!, version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.NoContent();

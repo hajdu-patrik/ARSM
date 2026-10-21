@@ -110,11 +110,7 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .AsNoTracking()
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes.AsNoTracking())
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)

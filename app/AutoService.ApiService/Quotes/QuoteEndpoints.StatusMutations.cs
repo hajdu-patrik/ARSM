@@ -31,10 +31,7 @@ public static partial class QuoteEndpoints
             return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
         }
 
-        var quote = await db.Quotes
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
@@ -60,15 +57,10 @@ public static partial class QuoteEndpoints
 
         ApplyQuoteStatusTransition(quote, newStatus);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));

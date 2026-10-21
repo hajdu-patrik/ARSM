@@ -69,15 +69,10 @@ public static partial class QuoteEndpoints
         quote.Lines.Add(line);
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -137,15 +132,10 @@ public static partial class QuoteEndpoints
 
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, request.Version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, request.Version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
@@ -177,15 +167,10 @@ public static partial class QuoteEndpoints
         quote.Lines.Remove(line);
         RecomputeQuoteTotals(quote);
 
-        SeedOriginalVersion(db, quote, version);
-
-        try
+        var saveError = await SaveWithVersionAsync(db, quote, version, cancellationToken);
+        if (saveError is not null)
         {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return QuoteVersionConflictResult();
+            return saveError;
         }
 
         return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));

@@ -111,10 +111,7 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
@@ -148,16 +145,32 @@ public static partial class QuoteEndpoints
         return null;
     }
 
-    /** The 409 response for a stale optimistic-concurrency version (D30, D38). */
-    private static IResult QuoteVersionConflictResult() =>
-        Results.Conflict(new ErrorCodeResponse("quote_version_conflict"));
-
-    /** Seeds the concurrency token's original value with the client-submitted version (D30/D38), so
-     * SaveChangesAsync compares against it instead of whatever was loaded; the only way to check the private-setter xmin-mapped Version. */
-    private static void SeedOriginalVersion(AutoServiceDbContext db, Quote quote, uint version)
+    /** Saves under optimistic concurrency (D30/D38): the client-submitted version becomes the original value of the
+     * xmin-mapped Version, so a stale one fails the save and returns the 409 quote_version_conflict body. */
+    private static async Task<IResult?> SaveWithVersionAsync(
+        AutoServiceDbContext db,
+        Quote quote,
+        uint version,
+        CancellationToken cancellationToken)
     {
         db.Entry(quote).Property(q => q.Version).OriginalValue = version;
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Results.Conflict(new ErrorCodeResponse("quote_version_conflict"));
+        }
     }
+
+    /** The navigation set every quote detail response and write handler reads. */
+    private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes
+        .Include(q => q.Vehicle)
+        .Include(q => q.CreatedByMechanic)
+        .Include(q => q.Lines);
 
     /** Validates the optional quote notes field (D14). */
     private static string? GetNotesValidationError(string? notes)
