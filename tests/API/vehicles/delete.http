@@ -109,12 +109,12 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Vehicles] Authenticated non-admin delete keeps domain not-found semantics (404 expected)
+### [Negative][Vehicles] Non-admin delete is refused before any lookup (403 expected, AdminOnly)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
-?? status == 404
+?? status == 403
 
 ###
 

@@ -198,7 +198,8 @@ Content-Type: application/json
   "partNumber": "{{ValidPartNumber}}",
   "name": "Ghost Update",
   "netUnitPrice": 100,
-  "vatRatePercent": 27
+  "vatRatePercent": 27,
+  "version": 1
 }
 
 ?? status == 404

@@ -67,7 +67,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2026-05-01T10:00:00",
-  "taskDescription": "Unauthenticated update should be blocked"
+  "taskDescription": "Unauthenticated update should be blocked",
+  "version": 1
 }
 
 ?? status == 401
@@ -101,9 +102,7 @@ PUT {{AutoService_ApiService_HostAddress}}/api/appointments/1/status
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "status": "InProgress"
-}
+{ "status": "InProgress", "version": 1 }
 
 ?? status == 401
 

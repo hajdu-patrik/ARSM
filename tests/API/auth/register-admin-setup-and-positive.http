@@ -61,11 +61,12 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Admin Session] Validate authenticated admin session (200 expected, IsAdmin=true)
+### [Positive][Admin Session] Validate authenticated admin session (200 expected, IsAdmin=true, MustChangePassword=false)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200
 ?? js response.parsedBody.isAdmin == true
+?? js response.parsedBody.mustChangePassword == false
 
 ###
 

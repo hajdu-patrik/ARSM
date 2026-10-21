@@ -104,9 +104,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Completed"
-}
+{ "status": "Completed", "version": {{completedApptCreate.version}} }
 
 ?? status == 200
 
@@ -138,9 +136,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Cancelled"
-}
+{ "status": "Cancelled", "version": {{cancelledApptCreate.version}} }
 
 ?? status == 200
 

@@ -124,7 +124,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2030-01-03T16:15:00",
-  "taskDescription": "Past appointment due and task update allowed"
+  "taskDescription": "Past appointment due and task update allowed",
+  "version": {{pastScheduledApptCreate.version}}
 }
 
 ?? status == 200
@@ -181,7 +182,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2026-04-22T16:15:00",
-  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez"
+  "taskDescription": "Frissitett feladat leiras az admin szerkeszteshez",
+  "version": 1
 }
 
 ?? status == 404

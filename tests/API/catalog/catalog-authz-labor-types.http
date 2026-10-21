@@ -77,7 +77,8 @@ Content-Type: application/json
   "code": "UNAUTH-LT",
   "name": "Unauthenticated",
   "hourlyNetRate": 100,
-  "vatRatePercent": 27
+  "vatRatePercent": 27,
+  "version": 1
 }
 
 ?? status == 401

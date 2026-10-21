@@ -44,7 +44,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/labor-types
 
 ###
 
-### [Positive][LaborTypes] Admin creates labor type (201 expected, grossHourlyRate = 8000.00 * 1.27 = 10160.00)
+### [Positive][LaborTypes] Admin creates labor type (201 expected, grossHourlyRate = 8000.00 * 1.27 = 10160.00, version is a positive integer)
 # @name createdLaborType
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
@@ -59,6 +59,7 @@ Content-Type: application/json
 }
 
 ?? status == 201
+?? js response.parsedBody.version > 0
 
 ###
 
@@ -115,7 +116,8 @@ Content-Type: application/json
   "code": "{{NewLaborTypeCode}}",
   "name": "Catalog Happy Labor Updated",
   "hourlyNetRate": 9000.00,
-  "vatRatePercent": 18
+  "vatRatePercent": 18,
+  "version": {{createdLaborType.version}}
 }
 
 ?? status == 204

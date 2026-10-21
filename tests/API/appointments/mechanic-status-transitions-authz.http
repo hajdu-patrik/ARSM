@@ -102,9 +102,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Completed"
-}
+{ "status": "Completed", "version": {{nonAssignedApptCreate.version}} }
 
 ?? status == 403
 
@@ -118,7 +116,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2030-01-03T16:15:00",
-  "taskDescription": "Forbidden update attempt by non-assigned mechanic"
+  "taskDescription": "Forbidden update attempt by non-assigned mechanic",
+  "version": {{nonAssignedApptCreate.version}}
 }
 
 ?? status == 403

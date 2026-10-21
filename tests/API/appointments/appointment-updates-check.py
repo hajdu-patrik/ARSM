@@ -99,10 +99,10 @@ def run_stream_round_trip(client: HttpClient, base_url: str, appointment: dict, 
         results,
     )
 
-    status, _ = client.request_json(
+    status, changed_body = client.request_json(
         "PUT",
         f"{APPOINTMENTS_PATH}/{appointment['id']}/status",
-        {"status": next_status},
+        {"status": next_status, "version": appointment["version"]},
     )
     assert_status("status-change", status, {200}, results)
 
@@ -135,7 +135,7 @@ def run_stream_round_trip(client: HttpClient, base_url: str, appointment: dict, 
     restore_status, _ = client.request_json(
         "PUT",
         f"{APPOINTMENTS_PATH}/{appointment['id']}/status",
-        {"status": original_status},
+        {"status": original_status, "version": json.loads(changed_body)["version"]},
     )
     assert_status("status-restored", restore_status, {200}, results)
 

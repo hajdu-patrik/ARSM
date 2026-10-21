@@ -101,7 +101,8 @@ Content-Type: application/json
   "partNumber": "UNAUTH-PART",
   "name": "Unauthenticated",
   "netUnitPrice": 100,
-  "vatRatePercent": 27
+  "vatRatePercent": 27,
+  "version": {{authzPart.version}}
 }
 
 ?? status == 401
