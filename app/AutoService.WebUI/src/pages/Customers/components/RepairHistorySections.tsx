@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import { ArrowUpDown, History } from 'lucide-react';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
@@ -106,12 +106,7 @@ export const CustomerRepairHistory = memo(function CustomerRepairHistory({
   const scope = useAuthQueryScope();
   const historyQuery = useQuery(customersQueries.customerHistory(scope, customerId));
   const showErrorToast = useToastStore((state) => state.showError);
-  useReadFailureToast({
-    failureMessageKey: historyQuery.isError && historyQuery.data === undefined ? 'customers.errors.historyLoadFailed' : null,
-    errorUpdatedAt: historyQuery.errorUpdatedAt,
-    isSuccess: historyQuery.isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast(historyQuery, 'customers.errors.historyLoadFailed', showErrorToast);
 
   return (
     <RepairHistoryView
@@ -152,13 +147,7 @@ export const VehicleRepairHistory = memo(function VehicleRepairHistory({
   const historyQuery = useQuery(customersQueries.vehicleHistory(scope, vehicle.id));
   const showErrorToast = useToastStore((state) => state.showError);
   // The panel reuses this component for the next vehicle, so each vehicle's history is its own read.
-  useReadFailureToast({
-    failureMessageKey: historyQuery.isError && historyQuery.data === undefined ? 'customers.errors.historyLoadFailed' : null,
-    errorUpdatedAt: historyQuery.errorUpdatedAt,
-    isSuccess: historyQuery.isSuccess,
-    readKey: String(vehicle.id),
-    showErrorToast,
-  });
+  useQueryReadFailureToast(historyQuery, 'customers.errors.historyLoadFailed', showErrorToast, String(vehicle.id));
 
   return (
     <RepairHistoryView

@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { profileService } from '../../../services/profile/profile.service';
 import { profileQueries } from '../../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
@@ -55,12 +55,7 @@ export function useProfileFormSettings({
   const values = applyProfileDraft(baseline, draft);
   const hasProfileChanges = hasProfileFieldChanges(baseline, values);
 
-  useReadFailureToast({
-    failureMessageKey: isError && data === undefined ? 'settings.loadError' : null,
-    errorUpdatedAt,
-    isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast({ data, isError, isSuccess, errorUpdatedAt }, 'settings.loadError', showErrorToast);
 
   const handleProfileSaveFailure = useCallback((error: unknown) => {
     const serverErrors = extractProfileSaveErrors(error);

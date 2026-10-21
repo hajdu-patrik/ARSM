@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import { CarFront, Plus } from 'lucide-react';
 import type { CustomerListItem, VehicleDetailDto } from '../../../types/customers/customers.types';
 import { Pagination } from '../../../components/common/Pagination';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
@@ -77,12 +77,7 @@ export const CustomerCardDetails = memo(function CustomerCardDetails({
     customersQueries.vehiclesPage(scope, customer.id, { page: requestedPage, pageSize: VEHICLES_PAGE_SIZE }),
   );
   const showErrorToast = useToastStore((state) => state.showError);
-  useReadFailureToast({
-    failureMessageKey: vehiclesQuery.isError && vehiclesQuery.data === undefined ? 'customers.errors.vehiclesLoadFailed' : null,
-    errorUpdatedAt: vehiclesQuery.errorUpdatedAt,
-    isSuccess: vehiclesQuery.isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast(vehiclesQuery, 'customers.errors.vehiclesLoadFailed', showErrorToast);
 
   const vehicles = vehiclesQuery.data?.items ?? NO_VEHICLES;
   const totalVehicles = vehiclesQuery.data?.totalCount ?? 0;

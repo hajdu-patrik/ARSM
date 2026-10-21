@@ -54,3 +54,27 @@ export function useReadFailureToast({
     showErrorToast(failureMessageKey);
   }, [errorUpdatedAt, failureMessageKey, isSuccess, readKey, showErrorToast]);
 }
+
+/** The fields of a TanStack query result that {@link useQueryReadFailureToast} reads. */
+interface ReadQueryState {
+  readonly data: unknown;
+  readonly isError: boolean;
+  readonly isSuccess: boolean;
+  readonly errorUpdatedAt: number;
+}
+
+/** {@link useReadFailureToast} for one query that has nothing to show once it fails with no cached data. */
+export function useQueryReadFailureToast(
+  query: ReadQueryState,
+  messageKey: string,
+  showErrorToast: (messageKey: string) => void,
+  readKey: string = NO_READ_KEY,
+): void {
+  useReadFailureToast({
+    failureMessageKey: query.isError && query.data === undefined ? messageKey : null,
+    errorUpdatedAt: query.errorUpdatedAt,
+    isSuccess: query.isSuccess,
+    readKey,
+    showErrorToast,
+  });
+}

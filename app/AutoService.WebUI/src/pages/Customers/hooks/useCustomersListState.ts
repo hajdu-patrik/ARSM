@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { CustomerListItem } from '../../../types/customers/customers.types';
 import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
 import { useListPaging } from '../../../hooks/useListPaging';
-import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
@@ -74,12 +74,7 @@ export function useCustomersListState() {
     enabled: pageSize !== null,
   });
   const showErrorToast = useToastStore((state) => state.showError);
-  useReadFailureToast({
-    failureMessageKey: customersQuery.isError && customersQuery.data === undefined ? 'customers.errors.loadFailed' : null,
-    errorUpdatedAt: customersQuery.errorUpdatedAt,
-    isSuccess: customersQuery.isSuccess,
-    showErrorToast,
-  });
+  useQueryReadFailureToast(customersQuery, 'customers.errors.loadFailed', showErrorToast);
 
   const [expandedCustomerIds, setExpandedCustomerIds] = useState<Set<number>>(() => new Set());
   const [customerHistorySortByCustomerId, setCustomerHistorySortByCustomerId] = useState<Record<number, SortDirection>>({});
