@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Threading.Channels;
+using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Realtime;
 
@@ -26,8 +27,42 @@ internal static class ServerSentEventStream
         Closed
     }
 
+    /** Subscribes the caller, streams the channel until it ends and always releases the subscription; 503 once the caps are reached. */
+    public static async Task<IResult> ServeAsync<TEvent>(
+        HttpContext httpContext,
+        IUpdateBroadcaster<TEvent> broadcaster,
+        string eventName,
+        string readyComment,
+        string capacityExceededDetail,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.TryGetPersonId(out var personId) ? personId : 0;
+
+        if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
+        {
+            return Results.Problem(detail: capacityExceededDetail, statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        ConfigureResponse(httpContext.Response);
+
+        try
+        {
+            await WriteAsync(httpContext.Response, reader, eventName, readyComment, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Client disconnected.
+        }
+        finally
+        {
+            broadcaster.Unsubscribe(subscriptionId);
+        }
+
+        return Results.Empty;
+    }
+
     /** Applies the response headers an SSE stream needs before the first write. */
-    public static void ConfigureResponse(HttpResponse response)
+    private static void ConfigureResponse(HttpResponse response)
     {
         response.Headers.CacheControl = "no-cache";
         response.Headers.Append("X-Accel-Buffering", "no");
@@ -35,7 +70,7 @@ internal static class ServerSentEventStream
     }
 
     /** Streams events until the channel closes, the client disconnects, or the idle timeout expires. */
-    public static async Task WriteAsync<TEvent>(
+    private static async Task WriteAsync<TEvent>(
         HttpResponse response,
         ChannelReader<TEvent> reader,
         string eventName,

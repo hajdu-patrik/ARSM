@@ -5,7 +5,6 @@ using AutoService.ApiService.Storage;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
-using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
@@ -96,42 +95,17 @@ public static partial class ProfileEndpoints
     }
 
     /** Handles {@code GET /api/profile/picture/updates} SSE stream for real-time profile picture updates. */
-    private static async Task<IResult> StreamProfilePictureUpdatesAsync(
+    private static Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
-    {
-        var userId = httpContext.User.TryGetPersonId(out var parsedPersonId) ? parsedPersonId : 0;
-
-        if (!broadcaster.TrySubscribe(userId, out var subscriptionId, out var reader))
-        {
-            return Results.Problem(
-                detail: "Too many active profile picture update subscriptions. Please retry later.",
-                statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
-
-        ServerSentEventStream.ConfigureResponse(httpContext.Response);
-
-        try
-        {
-            await ServerSentEventStream.WriteAsync(
-                httpContext.Response,
-                reader,
-                "profile-picture-updated",
-                "profile picture updates stream ready",
-                cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Client disconnected.
-        }
-        finally
-        {
-            broadcaster.Unsubscribe(subscriptionId);
-        }
-
-        return Results.Empty;
-    }
+        => ServerSentEventStream.ServeAsync(
+            httpContext,
+            broadcaster,
+            "profile-picture-updated",
+            "profile picture updates stream ready",
+            "Too many active profile picture update subscriptions. Please retry later.",
+            cancellationToken);
 
     /** Appends private browser-cache headers used by both authenticated profile-picture GET endpoints. */
     private static void AppendProfilePictureCacheHeaders(HttpResponse response, string etag)
