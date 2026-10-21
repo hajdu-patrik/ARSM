@@ -19,7 +19,7 @@ interface QuoteListProps {
   readonly onDeleteQuote: (quote: QuoteListItemDto) => void;
 }
 
-const QuoteListComponent = memo(function QuoteList({
+export const QuoteList = memo(function QuoteList({
   t,
   locale,
   quotes,
@@ -65,7 +65,3 @@ const QuoteListComponent = memo(function QuoteList({
     </DataList>
   );
 });
-
-QuoteListComponent.displayName = 'QuoteList';
-
-export const QuoteList = QuoteListComponent;

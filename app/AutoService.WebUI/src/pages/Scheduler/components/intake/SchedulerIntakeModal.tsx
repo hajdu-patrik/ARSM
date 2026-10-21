@@ -147,7 +147,7 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
 }
 
 /** Intake modal; the dialog mounts only while open and is keyed by the selected day. */
-const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
+export const SchedulerIntakeModal = memo(function SchedulerIntakeModal({
   isOpen,
   selectedDate,
   onClose,
@@ -166,7 +166,3 @@ const SchedulerIntakeModalComponent = memo(function SchedulerIntakeModal({
     />
   );
 });
-
-SchedulerIntakeModalComponent.displayName = 'SchedulerIntakeModal';
-
-export const SchedulerIntakeModal = SchedulerIntakeModalComponent;

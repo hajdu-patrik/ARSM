@@ -44,7 +44,7 @@ interface VehicleFormModalProps {
 }
 
 /** Vehicle create/edit modal: identity, numeric and drivetrain fields with inline per-field validation errors. */
-const VehicleFormModalComponent = memo(function VehicleFormModal({
+export const VehicleFormModal = memo(function VehicleFormModal({
   isOpen,
   mode,
   isSaving,
@@ -240,7 +240,3 @@ const VehicleFormModalComponent = memo(function VehicleFormModal({
     </Modal>
   );
 });
-
-VehicleFormModalComponent.displayName = 'VehicleFormModal';
-
-export const VehicleFormModal = VehicleFormModalComponent;

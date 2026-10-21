@@ -53,7 +53,7 @@ const VAT_DROPDOWN_OPTIONS: readonly DropdownOption[] = VAT_RATE_OPTIONS.map((ra
 }));
 
 /** Quote line editor that shows bound field errors once a save was attempted. */
-const QuoteLineFormComponent = memo(function QuoteLineForm({
+export const QuoteLineForm = memo(function QuoteLineForm({
   t,
   locale,
   isSaving,
@@ -237,7 +237,3 @@ const QuoteLineFormComponent = memo(function QuoteLineForm({
     </div>
   );
 });
-
-QuoteLineFormComponent.displayName = 'QuoteLineForm';
-
-export const QuoteLineForm = QuoteLineFormComponent;

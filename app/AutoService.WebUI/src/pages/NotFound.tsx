@@ -10,7 +10,8 @@ import { APP_ROUTE_PATHS } from '../router/appRoutes';
 const REDIRECT_DURATION_MS = 3000;
 const TIMER_TICK_MS = 50;
 
-const NotFoundComponent = memo(function NotFound() {
+/** 404 page component with countdown-based redirect. */
+export const NotFound = memo(function NotFound() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -68,8 +69,3 @@ const NotFoundComponent = memo(function NotFound() {
     />
   );
 });
-
-NotFoundComponent.displayName = 'NotFound';
-
-/** 404 page component with countdown-based redirect. */
-export const NotFound = NotFoundComponent;

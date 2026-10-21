@@ -31,7 +31,7 @@ interface DeleteProfileConfirmModalProps {
 }
 
 /** Renders the destructive account-delete confirmation modal and credential fields. */
-const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmModal({
+export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal({
   isOpen,
   isDeleting,
   deletePassword,
@@ -251,7 +251,3 @@ const DeleteProfileConfirmModalComponent = memo(function DeleteProfileConfirmMod
     </Modal>
   );
 });
-
-DeleteProfileConfirmModalComponent.displayName = 'DeleteProfileConfirmModal';
-
-export const DeleteProfileConfirmModal = DeleteProfileConfirmModalComponent;

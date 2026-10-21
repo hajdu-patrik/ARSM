@@ -21,7 +21,8 @@ interface SecuritySectionProps {
   readonly onToggleShowConfirmPassword: () => void;
 }
 
-const SecuritySectionComponent = memo(function SecuritySection({
+/** Password and visibility-toggle section for registration. */
+export const SecuritySection = memo(function SecuritySection({
   password,
   confirmPassword,
   showPassword,
@@ -123,8 +124,3 @@ const SecuritySectionComponent = memo(function SecuritySection({
     </div>
   );
 });
-
-SecuritySectionComponent.displayName = 'SecuritySection';
-
-/** Password and visibility-toggle section for registration. */
-export const SecuritySection = SecuritySectionComponent;

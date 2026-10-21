@@ -20,7 +20,7 @@ interface QuoteEditorFooterProps {
   readonly onDelete: () => void;
 }
 
-const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
+export const QuoteEditorFooter = memo(function QuoteEditorFooter({
   t,
   quote,
   isSaving,
@@ -164,7 +164,3 @@ const QuoteEditorFooterComponent = memo(function QuoteEditorFooter({
     </>
   );
 });
-
-QuoteEditorFooterComponent.displayName = 'QuoteEditorFooter';
-
-export const QuoteEditorFooter = QuoteEditorFooterComponent;

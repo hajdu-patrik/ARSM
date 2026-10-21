@@ -52,7 +52,7 @@ function CatalogRowActions({ editLabel, deleteLabel, onEdit, onDelete }: Catalog
   );
 }
 
-const CatalogItemRowComponent = memo(function CatalogItemRow({
+export const CatalogItemRow = memo(function CatalogItemRow({
   locale,
   name,
   identifier,
@@ -103,7 +103,3 @@ const CatalogItemRowComponent = memo(function CatalogItemRow({
     </DataListRow>
   );
 });
-
-CatalogItemRowComponent.displayName = 'CatalogItemRow';
-
-export const CatalogItemRow = CatalogItemRowComponent;

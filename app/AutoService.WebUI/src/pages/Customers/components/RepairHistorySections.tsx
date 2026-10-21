@@ -94,7 +94,8 @@ interface CustomerRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-const CustomerRepairHistoryComponent = memo(function CustomerRepairHistory({
+/** Repair history of every appointment of one customer. */
+export const CustomerRepairHistory = memo(function CustomerRepairHistory({
   t,
   locale,
   customerId,
@@ -129,11 +130,6 @@ const CustomerRepairHistoryComponent = memo(function CustomerRepairHistory({
   );
 });
 
-CustomerRepairHistoryComponent.displayName = 'CustomerRepairHistory';
-
-/** Repair history of every appointment of one customer. */
-export const CustomerRepairHistory = CustomerRepairHistoryComponent;
-
 interface VehicleRepairHistoryProps {
   readonly t: TFunction;
   readonly locale: string;
@@ -143,7 +139,8 @@ interface VehicleRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-const VehicleRepairHistoryComponent = memo(function VehicleRepairHistory({
+/** Repair history of every appointment of one vehicle. */
+export const VehicleRepairHistory = memo(function VehicleRepairHistory({
   t,
   locale,
   vehicle,
@@ -180,8 +177,3 @@ const VehicleRepairHistoryComponent = memo(function VehicleRepairHistory({
     />
   );
 });
-
-VehicleRepairHistoryComponent.displayName = 'VehicleRepairHistory';
-
-/** Repair history of every appointment of one vehicle. */
-export const VehicleRepairHistory = VehicleRepairHistoryComponent;

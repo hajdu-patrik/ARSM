@@ -15,7 +15,8 @@ import { CompanyResultSummary } from './components/CompanyResultSummary';
 import { CompanyResultMonthList } from './components/CompanyResultMonthList';
 import { VatBreakdownList } from './components/VatBreakdownList';
 
-const CompanyResultsPageComponent = memo(function CompanyResultsPage() {
+/** Company results route component. */
+export const CompanyResultsPage = memo(function CompanyResultsPage() {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
   const { year, month, setYear, setMonth, result, isLoading } = useCompanyResults({ showErrorToast });
@@ -56,8 +57,3 @@ const CompanyResultsPageComponent = memo(function CompanyResultsPage() {
     </div>
   );
 });
-
-CompanyResultsPageComponent.displayName = 'CompanyResultsPage';
-
-/** Company results route component. */
-export const CompanyResultsPage = CompanyResultsPageComponent;

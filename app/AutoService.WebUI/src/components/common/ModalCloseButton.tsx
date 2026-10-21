@@ -10,7 +10,7 @@ interface ModalCloseButtonProps {
   readonly disabled?: boolean;
 }
 
-const ModalCloseButtonComponent = memo(function ModalCloseButton({
+export const ModalCloseButton = memo(function ModalCloseButton({
   onClick,
   disabled = false,
 }: ModalCloseButtonProps) {
@@ -29,7 +29,3 @@ const ModalCloseButtonComponent = memo(function ModalCloseButton({
     </button>
   );
 });
-
-ModalCloseButtonComponent.displayName = 'ModalCloseButton';
-
-export const ModalCloseButton = ModalCloseButtonComponent;

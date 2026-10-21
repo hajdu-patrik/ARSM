@@ -16,7 +16,8 @@ interface StatusPillBadgeProps {
   readonly className?: string;
 }
 
-const StatusPillBadgeComponent = memo(function StatusPillBadge({
+/** Memoized shared status-pill shell (color/dot/label resolved by the caller). */
+export const StatusPillBadge = memo(function StatusPillBadge({
   colorClassName,
   dotClassName,
   label,
@@ -33,8 +34,3 @@ const StatusPillBadgeComponent = memo(function StatusPillBadge({
     </span>
   );
 });
-
-StatusPillBadgeComponent.displayName = 'StatusPillBadge';
-
-/** Memoized shared status-pill shell (color/dot/label resolved by the caller). */
-export const StatusPillBadge = StatusPillBadgeComponent;

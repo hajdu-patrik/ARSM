@@ -31,7 +31,7 @@ interface VehicleItemProps {
 }
 
 /** Renders one vehicle row (plate highlighted by the search) with its quote, history, edit and delete actions above the specs grid. */
-const VehicleItemComponent = memo(function VehicleItem({
+export const VehicleItem = memo(function VehicleItem({
 	t,
 	locale,
 	customerId,
@@ -117,6 +117,3 @@ const VehicleItemComponent = memo(function VehicleItem({
 		</div>
 	);
 });
-
-VehicleItemComponent.displayName = 'VehicleItem';
-export const VehicleItem = VehicleItemComponent;

@@ -38,7 +38,7 @@ interface DataListProps {
 }
 
 /** List root: spinner while loading, empty box when empty, otherwise the header plus the rows on one grid. */
-const DataListComponent = memo(function DataList({
+export const DataList = memo(function DataList({
   breakpoint,
   columnsClassName,
   columns,
@@ -95,10 +95,6 @@ const DataListComponent = memo(function DataList({
   );
 });
 
-DataListComponent.displayName = 'DataList';
-
-export const DataList = DataListComponent;
-
 interface DataListRowProps {
   readonly testId?: string;
   /** First cell; in the tile layout it shares the header line with the actions cell. */
@@ -112,7 +108,7 @@ interface DataListRowProps {
 }
 
 /** One row, rendered once: a subgrid row in the table layout, a header line plus value tiles below it. */
-const DataListRowComponent = memo(function DataListRow({
+export const DataListRow = memo(function DataListRow({
   testId,
   lead,
   valuesClassName = '',
@@ -135,10 +131,6 @@ const DataListRowComponent = memo(function DataListRow({
   );
 });
 
-DataListRowComponent.displayName = 'DataListRow';
-
-export const DataListRow = DataListRowComponent;
-
 interface DataListCellProps {
   /** Column key of the list header; exposed as `data-column`. */
   readonly column: string;
@@ -155,7 +147,7 @@ interface DataListCellProps {
 }
 
 /** One cell, rendered once; table cell above the breakpoint, tile (with its label) below it. */
-const DataListCellComponent = memo(function DataListCell({
+export const DataListCell = memo(function DataListCell({
   column,
   label,
   tile = false,
@@ -184,10 +176,6 @@ const DataListCellComponent = memo(function DataListCell({
   );
 });
 
-DataListCellComponent.displayName = 'DataListCell';
-
-export const DataListCell = DataListCellComponent;
-
 interface DataListTextProps {
   readonly kind: DataListTextKind;
   /** Tooltip for the ellipsized table cell. */
@@ -197,22 +185,18 @@ interface DataListTextProps {
 }
 
 /** Value text of a cell: one text role, ellipsized in the table and wrapped or clamped in the tiles. */
-const DataListTextComponent = memo(function DataListText({ kind, title, className = '', children }: DataListTextProps) {
+export const DataListText = memo(function DataListText({ kind, title, className = '', children }: DataListTextProps) {
   const { breakpoint } = useDataListContext();
 
   return <p title={title} className={`${dataListTextClass(breakpoint, kind)} ${className}`}>{children}</p>;
 });
-
-DataListTextComponent.displayName = 'DataListText';
-
-export const DataListText = DataListTextComponent;
 
 interface DataListFullRowProps {
   readonly children: ReactNode;
 }
 
 /** Full-width row (for example an inline editor): one cell spanning every column in the table layout. */
-const DataListFullRowComponent = memo(function DataListFullRow({ children }: DataListFullRowProps) {
+export const DataListFullRow = memo(function DataListFullRow({ children }: DataListFullRowProps) {
   const { breakpoint, layout, columnCount } = useDataListContext();
   const isTable = layout === 'table';
 
@@ -222,7 +206,3 @@ const DataListFullRowComponent = memo(function DataListFullRow({ children }: Dat
     </div>
   );
 });
-
-DataListFullRowComponent.displayName = 'DataListFullRow';
-
-export const DataListFullRow = DataListFullRowComponent;

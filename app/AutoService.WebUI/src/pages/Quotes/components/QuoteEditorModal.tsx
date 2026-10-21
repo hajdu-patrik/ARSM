@@ -38,7 +38,7 @@ function resolveVehicleLabel(
   return vehicle ? `${vehicle.licensePlate} - ${vehicle.brand} ${vehicle.model}` : fallback;
 }
 
-const QuoteEditorModalComponent = memo(function QuoteEditorModal({
+export const QuoteEditorModal = memo(function QuoteEditorModal({
   t,
   locale,
   editor,
@@ -132,7 +132,3 @@ const QuoteEditorModalComponent = memo(function QuoteEditorModal({
     </Modal>
   );
 });
-
-QuoteEditorModalComponent.displayName = 'QuoteEditorModal';
-
-export const QuoteEditorModal = QuoteEditorModalComponent;

@@ -13,7 +13,8 @@ interface ThemeLanguageControlsProps {
 
 const DEFAULT_WRAPPER_CLASS = 'fixed left-1/2 top-5 z-30 flex min-w-0 -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-ui-border/45 bg-arsm-card/72 px-2.5 py-1.5 backdrop-blur-md max-[320px]:top-3.5 max-[320px]:gap-1 max-[320px]:px-2 max-[320px]:py-1 sm:left-auto sm:right-7 sm:top-6 sm:translate-x-0 sm:gap-2 dark:bg-arsm-card-dark/70';
 
-const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
+/** Language switch and theme toggle buttons; the wrapper class defaults to the floating pill. */
+export const ThemeLanguageControls = memo(function ThemeLanguageControls({
 	className = DEFAULT_WRAPPER_CLASS,
 }: ThemeLanguageControlsProps) {
 	const { i18n, t } = useTranslation();
@@ -60,8 +61,3 @@ const ThemeLanguageControlsComponent = memo(function ThemeLanguageControls({
 		</div>
 	);
 });
-
-ThemeLanguageControlsComponent.displayName = 'ThemeLanguageControls';
-
-/** Language switch and theme toggle buttons; the wrapper class defaults to the floating pill. */
-export const ThemeLanguageControls = ThemeLanguageControlsComponent;

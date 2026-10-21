@@ -27,7 +27,7 @@ const headlineValueClass = `[overflow-wrap:anywhere] tabular-nums ${displayHeadi
 const secondaryValueClass = `[overflow-wrap:anywhere] tabular-nums ${compactSectionHeadingTextClass}`;
 const countTextClass = `[overflow-wrap:anywhere] tabular-nums ${mutedMetaTextClass}`;
 
-const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
+export const CompanyResultSummary = memo(function CompanyResultSummary({
   t,
   locale,
   result,
@@ -86,7 +86,3 @@ const CompanyResultSummaryComponent = memo(function CompanyResultSummary({
     </section>
   );
 });
-
-CompanyResultSummaryComponent.displayName = 'CompanyResultSummary';
-
-export const CompanyResultSummary = CompanyResultSummaryComponent;

@@ -106,7 +106,7 @@ function useModalKeyboard(isOpen: boolean, onClose: () => void): RefObject<HTMLD
   return dialogRef;
 }
 
-const ModalComponent = memo(function Modal({
+export const Modal = memo(function Modal({
   isOpen,
   onClose,
   title,
@@ -175,6 +175,3 @@ const ModalComponent = memo(function Modal({
     document.body,
   );
 });
-
-ModalComponent.displayName = 'Modal';
-export const Modal = ModalComponent;

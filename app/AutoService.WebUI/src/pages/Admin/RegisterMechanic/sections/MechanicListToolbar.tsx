@@ -20,7 +20,8 @@ interface MechanicListToolbarProps {
 	readonly onClearSearch: () => void;
 }
 
-const MechanicListToolbarComponent = memo(function MechanicListToolbar({
+/** Search field with a clear button above the mechanic roster. */
+export const MechanicListToolbar = memo(function MechanicListToolbar({
 	t,
 	searchTerm,
 	onSearchChange,
@@ -57,8 +58,3 @@ const MechanicListToolbarComponent = memo(function MechanicListToolbar({
 		</div>
 	);
 });
-
-MechanicListToolbarComponent.displayName = 'MechanicListToolbar';
-
-/** Search field with a clear button above the mechanic roster. */
-export const MechanicListToolbar = MechanicListToolbarComponent;

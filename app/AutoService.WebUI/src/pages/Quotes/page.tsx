@@ -20,7 +20,8 @@ import { QuoteList } from './components/QuoteList';
 import { QuoteEditorModal } from './components/QuoteEditorModal';
 import { DeleteQuoteModal } from './components/DeleteQuoteModal';
 
-const QuotesPageComponent = memo(function QuotesPage() {
+/** Quotes route component. */
+export const QuotesPage = memo(function QuotesPage() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const showSuccessToast = useToastStore((state) => state.showSuccess);
@@ -116,8 +117,3 @@ const QuotesPageComponent = memo(function QuotesPage() {
     </div>
   );
 });
-
-QuotesPageComponent.displayName = 'QuotesPage';
-
-/** Quotes route component. */
-export const QuotesPage = QuotesPageComponent;

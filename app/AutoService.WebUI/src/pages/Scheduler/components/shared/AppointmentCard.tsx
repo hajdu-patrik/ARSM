@@ -33,7 +33,8 @@ interface AppointmentCardProps {
 /** Focus outline of the full-card overlay button, inset (-2px) because the card's overflow-hidden would clip an outer one. */
 const overlayFocusOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ui-focus';
 
-const AppointmentCardComponent = memo(function AppointmentCard({
+/** Memoized scheduler appointment card with inline claim/unassign actions and their confirm modals. */
+export const AppointmentCard = memo(function AppointmentCard({
   appointment,
   currentMechanicId,
   isAdmin,
@@ -205,8 +206,3 @@ const AppointmentCardComponent = memo(function AppointmentCard({
     </>
   );
 });
-
-AppointmentCardComponent.displayName = 'AppointmentCard';
-
-/** Memoized scheduler appointment card with inline claim/unassign actions and their confirm modals. */
-export const AppointmentCard = AppointmentCardComponent;

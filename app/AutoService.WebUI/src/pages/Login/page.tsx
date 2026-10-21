@@ -23,7 +23,8 @@ import {
 } from '../../utils/formStyles';
 import { useLoginForm } from './useLoginForm';
 
-const LoginComponent = memo(function Login() {
+/** Public login route component. */
+export const Login = memo(function Login() {
   const { t: translate } = useTranslation();
   const identifierErrorId = useId();
   const passwordErrorId = useId();
@@ -201,8 +202,3 @@ const LoginComponent = memo(function Login() {
     </main>
   );
 });
-
-LoginComponent.displayName = 'Login';
-
-/** Public login route component. */
-export const Login = LoginComponent;

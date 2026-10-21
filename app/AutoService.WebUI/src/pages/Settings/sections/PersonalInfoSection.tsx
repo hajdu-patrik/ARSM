@@ -20,7 +20,8 @@ interface PersonalInfoSectionProps {
   readonly onSubmit: (event: React.SyntheticEvent) => void;
 }
 
-const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
+/** Personal-information editor used on the settings page. */
+export const PersonalInfoSection = memo(function PersonalInfoSection({
   values,
   fieldErrors,
   isSaveEnabled,
@@ -169,8 +170,3 @@ const PersonalInfoSectionComponent = memo(function PersonalInfoSection({
     </div>
   );
 });
-
-PersonalInfoSectionComponent.displayName = 'PersonalInfoSection';
-
-/** Personal-information editor used on the settings page. */
-export const PersonalInfoSection = PersonalInfoSectionComponent;

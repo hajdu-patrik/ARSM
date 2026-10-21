@@ -163,7 +163,8 @@ const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedTex
 
 SidebarProfileSummary.displayName = 'SidebarProfileSummary';
 
-const SidebarContentComponent = memo(function SidebarContent({
+/** Sidebar body: logo, navigation, collapse toggle, profile summary, admin/settings links and logout. */
+export const SidebarContent = memo(function SidebarContent({
   collapsed,
   collapseControlsId,
   logoSrc,
@@ -247,8 +248,3 @@ const SidebarContentComponent = memo(function SidebarContent({
     </div>
   );
 });
-
-SidebarContentComponent.displayName = 'SidebarContent';
-
-/** Sidebar body: logo, navigation, collapse toggle, profile summary, admin/settings links and logout. */
-export const SidebarContent = SidebarContentComponent;

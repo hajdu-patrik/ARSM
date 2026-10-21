@@ -34,7 +34,7 @@ const STATUS_FILTER_I18N_KEY: Record<QuoteStatusFilter, string> = {
   Rejected: 'quotes.status.rejected',
 };
 
-const QuotesToolbarComponent = memo(function QuotesToolbar({
+export const QuotesToolbar = memo(function QuotesToolbar({
   t,
   searchTerm,
   statusFilter,
@@ -90,7 +90,3 @@ const QuotesToolbarComponent = memo(function QuotesToolbar({
     </section>
   );
 });
-
-QuotesToolbarComponent.displayName = 'QuotesToolbar';
-
-export const QuotesToolbar = QuotesToolbarComponent;

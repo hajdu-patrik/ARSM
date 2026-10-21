@@ -20,7 +20,8 @@ import { usePasswordChangeSettings } from './hooks/usePasswordChangeSettings';
 import { useProfileFormSettings } from './hooks/useProfileFormSettings';
 import { useProfilePictureSettings } from './hooks/useProfilePictureSettings';
 
-const SettingsPageComponent = memo(function SettingsPage() {
+/** Account settings route component for the authenticated user. */
+export const SettingsPage = memo(function SettingsPage() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
@@ -244,8 +245,3 @@ const SettingsPageComponent = memo(function SettingsPage() {
     </section>
   );
 });
-
-SettingsPageComponent.displayName = 'SettingsPage';
-
-/** Account settings route component for the authenticated user. */
-export const SettingsPage = SettingsPageComponent;

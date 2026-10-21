@@ -11,7 +11,7 @@ interface PrivateRouteProps {
 }
 
 /** Route guard that redirects to `/login` when the user is not authenticated. */
-const PrivateRouteComponent = memo(function PrivateRoute({ children }: PrivateRouteProps) {
+export const PrivateRoute = memo(function PrivateRoute({ children }: PrivateRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
@@ -25,7 +25,3 @@ const PrivateRouteComponent = memo(function PrivateRoute({ children }: PrivateRo
 
   return <>{children}</>;
 });
-
-PrivateRouteComponent.displayName = 'PrivateRoute';
-
-export const PrivateRoute = PrivateRouteComponent;

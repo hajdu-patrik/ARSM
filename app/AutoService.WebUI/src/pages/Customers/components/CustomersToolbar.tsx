@@ -26,7 +26,7 @@ interface CustomersToolbarProps {
 }
 
 /** Renders the search field with its clear button and the create-customer button. */
-const CustomersToolbarComponent = memo(function CustomersToolbar({
+export const CustomersToolbar = memo(function CustomersToolbar({
   t,
   searchTerm,
   onSearchChange,
@@ -77,6 +77,3 @@ const CustomersToolbarComponent = memo(function CustomersToolbar({
     </section>
   );
 });
-
-CustomersToolbarComponent.displayName = 'CustomersToolbar';
-export const CustomersToolbar = CustomersToolbarComponent;

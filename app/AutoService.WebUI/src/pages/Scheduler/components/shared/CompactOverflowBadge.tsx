@@ -14,7 +14,8 @@ interface CompactOverflowBadgeProps {
   readonly className?: string;
 }
 
-const CompactOverflowBadgeComponent = memo(function CompactOverflowBadge({
+/** Memoized decorative "+N" overflow counter (aria-hidden). */
+export const CompactOverflowBadge = memo(function CompactOverflowBadge({
   count,
   size = 'md',
   className,
@@ -28,8 +29,3 @@ const CompactOverflowBadgeComponent = memo(function CompactOverflowBadge({
     </span>
   );
 });
-
-CompactOverflowBadgeComponent.displayName = 'CompactOverflowBadge';
-
-/** Memoized decorative "+N" overflow counter (aria-hidden). */
-export const CompactOverflowBadge = CompactOverflowBadgeComponent;

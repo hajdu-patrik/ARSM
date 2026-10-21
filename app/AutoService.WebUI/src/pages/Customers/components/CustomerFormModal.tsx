@@ -31,7 +31,7 @@ interface CustomerFormModalProps {
 }
 
 /** Customer create/edit modal: name and contact fields with inline per-field validation errors. */
-const CustomerFormModalComponent = memo(function CustomerFormModal({
+export const CustomerFormModal = memo(function CustomerFormModal({
   isOpen,
   mode,
   isSaving,
@@ -167,7 +167,3 @@ const CustomerFormModalComponent = memo(function CustomerFormModal({
     </Modal>
   );
 });
-
-CustomerFormModalComponent.displayName = 'CustomerFormModal';
-
-export const CustomerFormModal = CustomerFormModalComponent;

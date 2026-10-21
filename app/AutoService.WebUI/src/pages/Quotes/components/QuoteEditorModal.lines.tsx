@@ -44,7 +44,7 @@ function isLineBeingEdited(target: QuoteLineEditingTarget, line: QuoteLineDto): 
   return target?.kind === 'existing' && target.lineId === line.id;
 }
 
-const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
+export const QuoteEditorLinesSection = memo(function QuoteEditorLinesSection({
   t,
   locale,
   quote,
@@ -153,7 +153,3 @@ const QuoteEditorLinesSectionComponent = memo(function QuoteEditorLinesSection({
     </section>
   );
 });
-
-QuoteEditorLinesSectionComponent.displayName = 'QuoteEditorLinesSection';
-
-export const QuoteEditorLinesSection = QuoteEditorLinesSectionComponent;

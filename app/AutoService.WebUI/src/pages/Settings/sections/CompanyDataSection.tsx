@@ -51,7 +51,8 @@ const TAX_NUMBER_FIELD: CompanyFieldDescriptor = { field: 'taxNumber', labelKey:
 const PHONE_FIELD: CompanyFieldDescriptor = { field: 'phoneNumber', labelKey: 'common.fields.phoneNumber', placeholderKey: 'common.placeholders.phone', type: 'tel', autoComplete: 'tel' };
 const EMAIL_FIELD: CompanyFieldDescriptor = { field: 'email', labelKey: 'common.fields.email', type: 'email', autoComplete: 'email' };
 
-const CompanyDataSectionComponent = memo(function CompanyDataSection({
+/** Company-data editor used on the settings page for the Admin role. */
+export const CompanyDataSection = memo(function CompanyDataSection({
   values,
   fieldErrors,
   isLoading,
@@ -151,8 +152,3 @@ const CompanyDataSectionComponent = memo(function CompanyDataSection({
     </div>
   );
 });
-
-CompanyDataSectionComponent.displayName = 'CompanyDataSection';
-
-/** Company-data editor used on the settings page for the Admin role. */
-export const CompanyDataSection = CompanyDataSectionComponent;

@@ -17,7 +17,7 @@ interface LabeledValueTileProps {
   readonly testId?: string;
 }
 
-const LabeledValueTileComponent = memo(function LabeledValueTile({
+export const LabeledValueTile = memo(function LabeledValueTile({
   label,
   value,
   valueClassName,
@@ -34,7 +34,3 @@ const LabeledValueTileComponent = memo(function LabeledValueTile({
     </div>
   );
 });
-
-LabeledValueTileComponent.displayName = 'LabeledValueTile';
-
-export const LabeledValueTile = LabeledValueTileComponent;

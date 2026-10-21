@@ -65,7 +65,7 @@ function resolveLockedNoticeKey(status: QuoteStatus): string {
 }
 
 /** Header fields of the quote editor, with an inline error bound to the title. */
-const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection({
+export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
   t,
   locale,
   quote,
@@ -210,7 +210,3 @@ const QuoteEditorHeaderSectionComponent = memo(function QuoteEditorHeaderSection
     </section>
   );
 });
-
-QuoteEditorHeaderSectionComponent.displayName = 'QuoteEditorHeaderSection';
-
-export const QuoteEditorHeaderSection = QuoteEditorHeaderSectionComponent;

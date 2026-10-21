@@ -84,7 +84,7 @@ function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRow
   );
 }
 
-const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, searchQuery, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
+export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
   const licensePlate = quote.vehicle.licensePlate;
   const validUntilText = formatShortDate(quote.validUntil, locale);
   const totalNetText = formatHuf(quote.totalNet, locale);
@@ -124,7 +124,3 @@ const QuoteCardComponent = memo(function QuoteCard({ t, locale, quote, searchQue
     </DataListRow>
   );
 });
-
-QuoteCardComponent.displayName = 'QuoteCard';
-
-export const QuoteCard = QuoteCardComponent;

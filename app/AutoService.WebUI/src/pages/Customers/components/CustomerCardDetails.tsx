@@ -54,7 +54,7 @@ function findTargetVehicle(
 }
 
 /** Renders the customer's vehicle list beside the inline details panel for the resolved target. */
-const CustomerCardDetailsComponent = memo(function CustomerCardDetails({
+export const CustomerCardDetails = memo(function CustomerCardDetails({
   id,
   t,
   customer,
@@ -164,7 +164,3 @@ const CustomerCardDetailsComponent = memo(function CustomerCardDetails({
     </div>
   );
 });
-
-CustomerCardDetailsComponent.displayName = 'CustomerCardDetails';
-
-export const CustomerCardDetails = CustomerCardDetailsComponent;

@@ -34,7 +34,8 @@ function getInitialsFromFullName(fullName: string): string {
   return initials.length > 0 ? initials : '??';
 }
 
-const MechanicAvatarComponent = memo(function MechanicAvatar({
+/** Memoized mechanic avatar with live profile picture updates. */
+export const MechanicAvatar = memo(function MechanicAvatar({
   mechanicId,
   fullName,
   hasProfilePicture,
@@ -104,8 +105,3 @@ const MechanicAvatarComponent = memo(function MechanicAvatar({
     </div>
   );
 });
-
-MechanicAvatarComponent.displayName = 'MechanicAvatar';
-
-/** Memoized mechanic avatar with live profile picture updates. */
-export const MechanicAvatar = MechanicAvatarComponent;

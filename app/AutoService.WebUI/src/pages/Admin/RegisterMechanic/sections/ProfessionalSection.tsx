@@ -30,7 +30,8 @@ interface ProfessionalSectionProps {
   readonly onToggleExpertise: (value: string) => void;
 }
 
-const ProfessionalSectionComponent = memo(function ProfessionalSection({
+/** Specialization and expertise picker section for registration. */
+export const ProfessionalSection = memo(function ProfessionalSection({
   specialization,
   expertise,
   fieldErrors,
@@ -110,8 +111,3 @@ const ProfessionalSectionComponent = memo(function ProfessionalSection({
     </>
   );
 });
-
-ProfessionalSectionComponent.displayName = 'ProfessionalSection';
-
-/** Specialization and expertise picker section for registration. */
-export const ProfessionalSection = ProfessionalSectionComponent;
