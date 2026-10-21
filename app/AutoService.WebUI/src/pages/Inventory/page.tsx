@@ -1,15 +1,13 @@
 /** Inventory page: Parts and Labor types tabs sharing create/edit/delete modals; active tab reflected in the URL. */
-import { memo, useCallback, useMemo } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToastStore } from '../../store/toast.store';
-import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
-import { useCatalogMutations } from './hooks/useCatalogMutations';
+import { useCatalogItemMutations } from './hooks/useCatalogItemMutations';
 import { INVENTORY_TAB_LABEL_KEYS, INVENTORY_TABS, useInventoryTabs } from './hooks/useInventoryTabs';
 import { LaborTypesCatalogTab, PartsCatalogTab } from './components/CatalogTabs';
 import { CatalogFormModal } from './components/CatalogFormModal';
 import { DeleteCatalogItemModal } from './components/DeleteCatalogItemModal';
-import { laborTypeCatalogFormConfig, partCatalogFormConfig } from './catalogForm.config';
-import type { DeleteCatalogItemTarget } from './helpers';
+import { laborTypeCatalogItemConfig, partCatalogItemConfig } from './catalogItem.config';
 import {
   getSegmentedControlOptionClass,
   pageHeaderWithSubtitleClass,
@@ -19,56 +17,16 @@ import {
   segmentedControlClass,
 } from '../../utils/formStyles';
 
-/** Maps whichever part or labor type awaits delete confirmation to the shared delete-modal target. */
-function resolveDeleteTarget(
-  partTarget: PartDto | null,
-  laborTypeTarget: LaborTypeDto | null,
-): DeleteCatalogItemTarget | null {
-  if (partTarget) {
-    return { kind: 'part', id: partTarget.id, name: partTarget.name, identifier: partTarget.partNumber };
-  }
-
-  if (laborTypeTarget) {
-    return { kind: 'laborType', id: laborTypeTarget.id, name: laborTypeTarget.name, identifier: laborTypeTarget.code };
-  }
-
-  return null;
-}
-
-const InventoryPageComponent = memo(function InventoryPage() {
+/** Inventory route component. */
+export const InventoryPage = memo(function InventoryPage() {
   const { t, i18n } = useTranslation();
-  const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
-  const showWarningToast = useToastStore((state) => state.showWarning);
 
   const tabs = useInventoryTabs();
-  const catalogMutations = useCatalogMutations({ showSuccessToast, showErrorToast, showWarningToast });
-
-  const deleteTarget = useMemo(
-    () => resolveDeleteTarget(catalogMutations.deletePartTarget, catalogMutations.deleteLaborTypeTarget),
-    [catalogMutations.deletePartTarget, catalogMutations.deleteLaborTypeTarget],
-  );
-  const isDeleting = catalogMutations.isDeletingPart || catalogMutations.isDeletingLaborType;
-
-  const handleCloseDeleteModal = useCallback(() => {
-    if (catalogMutations.deletePartTarget) {
-      catalogMutations.closeDeletePartModal();
-      return;
-    }
-
-    catalogMutations.closeDeleteLaborTypeModal();
-  }, [catalogMutations]);
-
-  const handleConfirmDelete = useCallback(() => {
-    if (catalogMutations.deletePartTarget) {
-      catalogMutations.handleDeletePart();
-      return;
-    }
-
-    if (catalogMutations.deleteLaborTypeTarget) {
-      catalogMutations.handleDeleteLaborType();
-    }
-  }, [catalogMutations]);
+  const parts = useCatalogItemMutations(partCatalogItemConfig);
+  const laborTypes = useCatalogItemMutations(laborTypeCatalogItemConfig);
+  // A pending part deletion wins, as only one delete confirmation can be open at a time.
+  const deleting = parts.deleteTarget === null ? laborTypes : parts;
 
   return (
     <div className={`${pageShellClass} flex flex-col gap-6`}>
@@ -110,64 +68,48 @@ const InventoryPageComponent = memo(function InventoryPage() {
             t={t}
             locale={i18n.language}
             showErrorToast={showErrorToast}
-            onOpenCreateModal={catalogMutations.openCreatePartModal}
-            onOpenEditModal={catalogMutations.openEditPartModal}
-            onOpenDeleteModal={catalogMutations.openDeletePartModal}
+            onOpenCreateModal={parts.openCreateModal}
+            onOpenEditModal={parts.openEditModal}
+            onOpenDeleteModal={parts.openDeleteModal}
           />
         ) : (
           <LaborTypesCatalogTab
             t={t}
             locale={i18n.language}
             showErrorToast={showErrorToast}
-            onOpenCreateModal={catalogMutations.openCreateLaborTypeModal}
-            onOpenEditModal={catalogMutations.openEditLaborTypeModal}
-            onOpenDeleteModal={catalogMutations.openDeleteLaborTypeModal}
+            onOpenCreateModal={laborTypes.openCreateModal}
+            onOpenEditModal={laborTypes.openEditModal}
+            onOpenDeleteModal={laborTypes.openDeleteModal}
           />
         )}
       </div>
 
-      <CatalogFormModal
-        isOpen={catalogMutations.partModalOpen}
-        mode={catalogMutations.partModalMode}
-        isSaving={catalogMutations.isSavingPart}
-        isSaveEnabled={catalogMutations.isPartSaveEnabled}
-        form={catalogMutations.partForm}
-        fieldErrors={catalogMutations.partFieldErrors}
-        locale={i18n.language}
-        t={t}
-        onClose={catalogMutations.closePartModal}
-        onSubmit={catalogMutations.handleSubmitPart}
-        setForm={catalogMutations.setPartForm}
-        config={partCatalogFormConfig}
-      />
-
-      <CatalogFormModal
-        isOpen={catalogMutations.laborTypeModalOpen}
-        mode={catalogMutations.laborTypeModalMode}
-        isSaving={catalogMutations.isSavingLaborType}
-        isSaveEnabled={catalogMutations.isLaborTypeSaveEnabled}
-        form={catalogMutations.laborTypeForm}
-        fieldErrors={catalogMutations.laborTypeFieldErrors}
-        locale={i18n.language}
-        t={t}
-        onClose={catalogMutations.closeLaborTypeModal}
-        onSubmit={catalogMutations.handleSubmitLaborType}
-        setForm={catalogMutations.setLaborTypeForm}
-        config={laborTypeCatalogFormConfig}
-      />
+      {[parts, laborTypes].map((mutations) => (
+        <CatalogFormModal
+          key={mutations.formConfig.formElementId}
+          isOpen={mutations.modalOpen}
+          mode={mutations.modalMode}
+          isSaving={mutations.isSaving}
+          isSaveEnabled={mutations.isSaveEnabled}
+          form={mutations.form}
+          fieldErrors={mutations.fieldErrors}
+          locale={i18n.language}
+          t={t}
+          onClose={mutations.closeModal}
+          onSubmit={mutations.handleSubmit}
+          setForm={mutations.setForm}
+          config={mutations.formConfig}
+        />
+      ))}
 
       <DeleteCatalogItemModal
-        target={deleteTarget}
-        isDeleting={isDeleting}
+        target={deleting.deleteTarget}
+        isDeleting={parts.isDeleting || laborTypes.isDeleting}
         t={t}
-        onClose={handleCloseDeleteModal}
-        onConfirm={handleConfirmDelete}
+        onClose={deleting.closeDeleteModal}
+        onConfirm={deleting.handleDelete}
       />
     </div>
   );
 });
 
-InventoryPageComponent.displayName = 'InventoryPage';
-
-/** Inventory route component. */
-export const InventoryPage = InventoryPageComponent;

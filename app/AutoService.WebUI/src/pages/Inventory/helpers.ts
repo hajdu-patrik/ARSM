@@ -9,19 +9,11 @@ export type CatalogModalMode = 'create' | 'edit';
 /** Which catalog entity a delete confirmation or form targets. */
 export type CatalogItemKind = 'part' | 'laborType';
 
-/** Part form state used by the create/edit modal. */
-export interface PartFormState {
-  partNumber: string;
+/** Create/edit modal form state of both kinds: `identifier` is the part number or code, `rate` the net price or hourly rate. */
+export interface CatalogFormState {
+  identifier: string;
   name: string;
-  netUnitPrice: string;
-  vatRatePercent: number;
-}
-
-/** Labor type form state used by the create/edit modal. */
-export interface LaborTypeFormState {
-  code: string;
-  name: string;
-  hourlyNetRate: string;
+  rate: string;
   vatRatePercent: number;
 }
 
@@ -33,19 +25,11 @@ export interface DeleteCatalogItemTarget {
   identifier: string;
 }
 
-/** Empty part form used when opening the create modal. */
-export const EMPTY_PART_FORM: PartFormState = {
-  partNumber: '',
+/** Empty form used when opening the create modal. */
+export const EMPTY_CATALOG_FORM: CatalogFormState = {
+  identifier: '',
   name: '',
-  netUnitPrice: '',
-  vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
-};
-
-/** Empty labor type form used when opening the create modal. */
-export const EMPTY_LABOR_TYPE_FORM: LaborTypeFormState = {
-  code: '',
-  name: '',
-  hourlyNetRate: '',
+  rate: '',
   vatRatePercent: DEFAULT_VAT_RATE_PERCENT,
 };
 
@@ -57,6 +41,11 @@ export type CatalogFieldErrors = Partial<Record<CatalogFieldName, string>>;
 
 /** The current value of every validated field as text, which a pinned message is compared with. */
 export type CatalogFieldValues = Readonly<Record<CatalogFieldName, string>>;
+
+/** Reads every validated field of the form as text. */
+export function readCatalogFieldValues(form: CatalogFormState): CatalogFieldValues {
+  return { identifier: form.identifier, name: form.name, rate: form.rate, vatRate: String(form.vatRatePercent) };
+}
 
 /** A validation message together with the field and the value it was raised for. */
 export interface PinnedCatalogFieldError {

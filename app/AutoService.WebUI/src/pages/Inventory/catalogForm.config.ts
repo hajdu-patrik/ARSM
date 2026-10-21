@@ -1,18 +1,14 @@
-/** Per-entity element ids, i18n keys, and field accessors consumed by the generic `CatalogFormModal`. */
-import type { CatalogFieldValues, LaborTypeFormState, PartFormState } from './helpers';
+/** Per-entity element ids and i18n keys consumed by the generic `CatalogFormModal`. */
 
-/** A single identifier/rate field: element id, i18n keys, and form get/set accessors. */
-export interface CatalogFormFieldConfig<TForm> {
+/** A single identifier/rate field: element id and i18n keys. */
+export interface CatalogFormFieldConfig {
   readonly elementId: string;
   readonly labelKey: string;
-  readonly placeholderKey?: string;
-  readonly testId?: string;
-  readonly get: (form: TForm) => string;
-  readonly set: (form: TForm, value: string) => TForm;
+  readonly placeholderKey: string;
 }
 
 /** Per-entity configuration consumed by the generic `CatalogFormModal` component. */
-export interface CatalogFormModalConfig<TForm extends { name: string; vatRatePercent: number }> {
+export interface CatalogFormModalConfig {
   readonly formElementId: string;
   readonly createTitleKey: string;
   readonly editTitleKey: string;
@@ -20,25 +16,12 @@ export interface CatalogFormModalConfig<TForm extends { name: string; vatRatePer
   readonly vatRateElementId: string;
   readonly grossPreviewElementId: string;
   readonly grossPreviewLabelKey: string;
-  readonly identifier: CatalogFormFieldConfig<TForm>;
-  readonly rate: CatalogFormFieldConfig<TForm>;
-}
-
-/** Reads every validated field of a form as text, through the config accessors of its entity. */
-export function readCatalogFieldValues<TForm extends { name: string; vatRatePercent: number }>(
-  config: CatalogFormModalConfig<TForm>,
-  form: TForm,
-): CatalogFieldValues {
-  return {
-    identifier: config.identifier.get(form),
-    name: form.name,
-    rate: config.rate.get(form),
-    vatRate: String(form.vatRatePercent),
-  };
+  readonly identifier: CatalogFormFieldConfig;
+  readonly rate: CatalogFormFieldConfig;
 }
 
 /** Part create/edit modal configuration. */
-export const partCatalogFormConfig: CatalogFormModalConfig<PartFormState> = {
+export const partCatalogFormConfig: CatalogFormModalConfig = {
   formElementId: 'inventory-part-form',
   createTitleKey: 'inventory.createPart',
   editTitleKey: 'inventory.editPart',
@@ -50,20 +33,16 @@ export const partCatalogFormConfig: CatalogFormModalConfig<PartFormState> = {
     elementId: 'part-number',
     labelKey: 'inventory.partNumber',
     placeholderKey: 'inventory.partNumberPlaceholder',
-    get: (form) => form.partNumber,
-    set: (form, value) => ({ ...form, partNumber: value.toUpperCase() }),
   },
   rate: {
     elementId: 'part-net-price',
     labelKey: 'common.fields.netUnitPrice',
     placeholderKey: 'inventory.netUnitPricePlaceholder',
-    get: (form) => form.netUnitPrice,
-    set: (form, value) => ({ ...form, netUnitPrice: value }),
   },
 };
 
 /** Labor type create/edit modal configuration. */
-export const laborTypeCatalogFormConfig: CatalogFormModalConfig<LaborTypeFormState> = {
+export const laborTypeCatalogFormConfig: CatalogFormModalConfig = {
   formElementId: 'inventory-labor-type-form',
   createTitleKey: 'inventory.createLaborType',
   editTitleKey: 'inventory.editLaborType',
@@ -75,14 +54,10 @@ export const laborTypeCatalogFormConfig: CatalogFormModalConfig<LaborTypeFormSta
     elementId: 'labor-type-code',
     labelKey: 'inventory.code',
     placeholderKey: 'inventory.codePlaceholder',
-    get: (form) => form.code,
-    set: (form, value) => ({ ...form, code: value.toUpperCase() }),
   },
   rate: {
     elementId: 'labor-type-hourly-rate',
     labelKey: 'common.fields.hourlyNetRate',
     placeholderKey: 'inventory.hourlyNetRatePlaceholder',
-    get: (form) => form.hourlyNetRate,
-    set: (form, value) => ({ ...form, hourlyNetRate: value }),
   },
 };
