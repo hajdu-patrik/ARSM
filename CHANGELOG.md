@@ -8,6 +8,19 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Changed
+- Internal refactor, behaviour unchanged (2026-10-21): about 1600 fewer lines. Backend: one `ApiProblem` factory, `PersonIdClaim`,
+  `DateTimeNormalization.ToUtc`, `ServerSentEventStream.ServeAsync`, `IdentityResultExtensions.ToValidationErrors`, a shared
+  `CatalogItemHandlers` base for parts and labour types, `VehicleInput` / `CustomerInput`, shared mechanic assign / unassign cores,
+  quote `SaveWithVersionAsync` / `IncludeDetails`, and `UpdateProfileAsync` split into per-field resolvers (routes, status codes,
+  JSON bodies, check order and the EF model unchanged). WebUI: one `ConfirmModal` for 17 dialogs, one generic
+  `useCatalogItemMutations` with per-kind config, shared server-validation, rejected-save, profile-picture and read-failure helpers,
+  one `ToolbarSearchField`, and the memo export boilerplate removed (texts, test ids and markup unchanged). Verified: backend build,
+  EF pending-model check, api-suites (1084 HTTP requests, 24/24 SQL), WebUI typecheck, lint, build and 164 E2E tests, plus an
+  independent Codex review of the backend diff.
+
+_Dev time: ~4h30m wall-clock across two parallel agents (2026-10-21 16:50 to 21:20 +02:00, including an interrupted session). Cost: not measured._
+
 ### Added
 - Local test instance switch (2026-10-20): `deploy/local-test/teszt.ps1 on|off|status` turns the `teszt.arsm.hu` kit on or
   off persistently and shows its state; it reads the kit definition from `deploy/local-test/kit.psd1` (tasks, containers in
