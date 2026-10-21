@@ -2,6 +2,7 @@
  * lives in {@link createLiveUpdateChannel}. */
 
 import { profileService } from './profile.service';
+import { isRecord } from '../http/record-guard';
 import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-channel';
 
 /** Custom event name dispatched on profile picture changes. */
@@ -17,23 +18,28 @@ export interface ProfilePictureUpdatedDetail {
   cacheBuster: number;
 }
 
-/** Parses a raw SSE data string into a typed profile picture update detail, or null if invalid. */
-function parseProfilePictureUpdate(data: string): ProfilePictureUpdatedDetail | null {
-  const parsed = parseJsonObject(data);
+/** Narrows an unknown payload to a profile picture update detail, or null if it is not one. */
+function toProfilePictureUpdate(value: unknown): ProfilePictureUpdatedDetail | null {
   if (
-    parsed === null ||
-    typeof parsed.personId !== 'number' ||
-    typeof parsed.hasProfilePicture !== 'boolean' ||
-    typeof parsed.cacheBuster !== 'number'
+    !isRecord(value) ||
+    typeof value.personId !== 'number' ||
+    typeof value.hasProfilePicture !== 'boolean' ||
+    typeof value.cacheBuster !== 'number'
   ) {
     return null;
   }
 
-  return {
-    personId: parsed.personId,
-    hasProfilePicture: parsed.hasProfilePicture,
-    cacheBuster: parsed.cacheBuster,
-  };
+  return { personId: value.personId, hasProfilePicture: value.hasProfilePicture, cacheBuster: value.cacheBuster };
+}
+
+/** Parses a raw SSE data string into a typed profile picture update detail, or null if invalid. */
+function parseProfilePictureUpdate(data: string): ProfilePictureUpdatedDetail | null {
+  return toProfilePictureUpdate(parseJsonObject(data));
+}
+
+/** Reads the payload of a profile-picture update DOM event, or null when the event carries no valid one. */
+export function readProfilePictureUpdate(event: Event): ProfilePictureUpdatedDetail | null {
+  return event instanceof CustomEvent ? toProfilePictureUpdate(event.detail) : null;
 }
 
 const channel = createLiveUpdateChannel<ProfilePictureUpdatedDetail>({
