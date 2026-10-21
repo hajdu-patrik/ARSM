@@ -1,12 +1,9 @@
 /** Vehicle create/update mutation hook: modal state, payload validation, server calls, and cache refresh. */
 import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import {
-  extractServerFieldErrors,
-  hasRequiredFieldError,
+  getFirstFieldErrorMessage,
   hasServerFieldErrors,
-  normalizeServerFieldErrors,
   type ServerFieldErrors,
 } from '../../../utils/serverValidation';
 import type {
@@ -20,8 +17,10 @@ import {
   VEHICLE_MESSAGE_FIELDS,
   currentFieldErrors,
   pinFieldErrors,
-  pinMessageField,
+  resolveRejectedSave,
+  restoreRequiredFields,
   type PinnedFieldErrors,
+  type SaveErrorRules,
   type VehicleFieldName,
 } from '../fieldErrors';
 import {
@@ -51,6 +50,17 @@ const EMPTY_VEHICLE_FORM: VehicleFormState = {
   drivetrainType: '',
 };
 
+/** How a rejected vehicle save maps to a toast and pinned field errors. */
+const VEHICLE_SAVE_ERROR_RULES: SaveErrorRules<VehicleFieldName> = {
+  mapMessage: mapVehicleValidationMessageToKey,
+  fallbackKey: 'customers.errors.vehicleSaveFailed',
+  fields: VEHICLE_FIELD_NAMES,
+  messageFields: VEHICLE_MESSAGE_FIELDS,
+};
+
+/** Required vehicle text fields an edit restores from the saved vehicle when the server rejects them blank. */
+const REQUIRED_VEHICLE_TEXT_FIELDS = ['licensePlate', 'vin', 'brand', 'model', 'drivetrainType'] as const;
+
 /** Variables of the vehicle create mutation. */
 interface CreateVehicleVariables {
   readonly customerId: number;
@@ -66,7 +76,6 @@ interface UpdateVehicleVariables {
 
 /** Dependencies required by vehicle create/edit mutation handlers. */
 interface UseVehicleFormMutationsParams extends CustomerMutationToastHandlersWithWarning {
-  getFirstFieldErrorMessage: (errors: ServerFieldErrors) => string | null;
   refreshAfterVehicleCreated: (customerId: number) => Promise<void>;
   refreshAfterVehicleUpdated: (customerId: number, vehicleId: number) => Promise<void>;
 }
@@ -76,7 +85,6 @@ export function useVehicleFormMutations({
   showSuccessToast,
   showErrorToast,
   showWarningToast,
-  getFirstFieldErrorMessage,
   refreshAfterVehicleCreated,
   refreshAfterVehicleUpdated,
 }: UseVehicleFormMutationsParams) {
@@ -126,51 +134,22 @@ export function useVehicleFormMutations({
       return;
     }
 
-    setVehicleForm((prev) => ({
-      ...prev,
-      licensePlate: !prev.licensePlate.trim() && hasRequiredFieldError(errors, 'licensePlate')
-        ? editingVehicleSnapshot.licensePlate
-        : prev.licensePlate,
-      vin: !prev.vin.trim() && hasRequiredFieldError(errors, 'vin')
-        ? editingVehicleSnapshot.vin
-        : prev.vin,
-      brand: !prev.brand.trim() && hasRequiredFieldError(errors, 'brand')
-        ? editingVehicleSnapshot.brand
-        : prev.brand,
-      model: !prev.model.trim() && hasRequiredFieldError(errors, 'model')
-        ? editingVehicleSnapshot.model
-        : prev.model,
-      drivetrainType: !prev.drivetrainType.trim() && hasRequiredFieldError(errors, 'drivetrainType')
-        ? editingVehicleSnapshot.drivetrainType
-        : prev.drivetrainType,
-    }));
+    setVehicleForm((prev) => restoreRequiredFields(prev, editingVehicleSnapshot, errors, REQUIRED_VEHICLE_TEXT_FIELDS));
   }, [editingVehicleSnapshot, vehicleModalMode]);
 
   const handleSubmitVehicleError = useCallback((error: unknown) => {
-    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
-      showErrorToast('customers.errors.vehicleSaveFailed');
-      return;
+    const rejected = resolveRejectedSave(error, VEHICLE_SAVE_ERROR_RULES, vehicleForm);
+
+    if (rejected.fieldErrors !== null) {
+      restoreRequiredVehicleFields(rejected.fieldErrors);
     }
 
-    const responseData = error.response?.data;
-    const mappedFieldErrors = normalizeServerFieldErrors(
-      extractServerFieldErrors(responseData),
-      mapVehicleValidationMessageToKey,
-    );
-
-    if (hasServerFieldErrors(mappedFieldErrors)) {
-      restoreRequiredVehicleFields(mappedFieldErrors);
-      setPinnedFieldErrors(pinFieldErrors(mappedFieldErrors, vehicleForm, VEHICLE_FIELD_NAMES));
-      showErrorToast(getFirstFieldErrorMessage(mappedFieldErrors) ?? 'customers.errors.vehicleSaveFailed');
-      return;
+    if (rejected.pinned !== null) {
+      setPinnedFieldErrors(rejected.pinned);
     }
 
-    const detailKey = responseData?.detail
-      ? mapVehicleValidationMessageToKey(responseData.detail)
-      : 'customers.errors.vehicleSaveFailed';
-    setPinnedFieldErrors(pinMessageField(detailKey, VEHICLE_MESSAGE_FIELDS, vehicleForm));
-    showErrorToast(detailKey);
-  }, [getFirstFieldErrorMessage, restoreRequiredVehicleFields, showErrorToast, vehicleForm]);
+    showErrorToast(rejected.messageKey);
+  }, [restoreRequiredVehicleFields, showErrorToast, vehicleForm]);
 
   const { mutate: createVehicle, isPending: isCreatingVehicle } = useMutation({
     mutationFn: ({ customerId, request }: CreateVehicleVariables) => (
@@ -256,7 +235,6 @@ export function useVehicleFormMutations({
     createVehicle,
     editingVehicleId,
     editingVehicleSnapshot,
-    getFirstFieldErrorMessage,
     showErrorToast,
     showWarningToast,
     updateVehicle,

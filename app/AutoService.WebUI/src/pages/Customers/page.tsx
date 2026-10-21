@@ -3,7 +3,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { getFirstFieldErrorMessage } from '../../utils/serverValidation';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
@@ -50,7 +49,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
     showSuccessToast,
     showErrorToast,
     showWarningToast,
-    getFirstFieldErrorMessage,
     refreshAfterCustomerCreated,
     refreshAfterCustomerUpdated,
     refreshAfterCustomerDeleted,
@@ -60,7 +58,6 @@ const CustomersPageComponent = memo(function CustomersPage() {
     showSuccessToast,
     showErrorToast,
     showWarningToast,
-    getFirstFieldErrorMessage,
     refreshAfterVehicleCreated,
     refreshAfterVehicleUpdated,
     refreshAfterVehicleDeleted,
