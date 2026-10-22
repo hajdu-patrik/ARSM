@@ -63,11 +63,11 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
   }, [config, queryClient, scope]);
 
   /** After a stale-version conflict: reloads the list and takes the item's current server state as the edit baseline,
-   * so the next save carries its version. */
+   * so the next save carries its version; a dialog that moved on to another item meanwhile keeps its own baseline. */
   const reloadAfterConflict = useCallback(async (id: number) => {
     try {
       const [latest] = await Promise.all([config.fetchItem(id), refreshList()]);
-      setEditingItem(latest);
+      setEditingItem((current) => (current !== null && config.tab.getId(current) === id ? latest : current));
     } catch {
       // A failed reload leaves the dialog as it was: saving again conflicts again and retries it.
     }
