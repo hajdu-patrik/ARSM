@@ -1,4 +1,3 @@
-using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
@@ -97,7 +96,6 @@ public static partial class QuoteEndpoints
             quote.Title,
             quote.Notes,
             QuoteDocumentFormatting.ResolveStatusLabel(quote.Status, isExpired),
-            isExpired,
             quote.CreatedAt,
             quote.ValidUntil,
             new QuoteDocumentCustomer(
@@ -141,7 +139,6 @@ public static partial class QuoteEndpoints
                     line.NetUnitPrice,
                     line.VatRatePercent,
                     line.NetAmount,
-                    line.VatAmount,
                     line.GrossAmount);
             })
             .ToList();

@@ -1,5 +1,3 @@
-using System;
-
 namespace AutoService.ApiService.Pagination;
 
 /** Shared row-cap convention for unbounded list endpoints (see app/AutoService.ApiService/CLAUDE.md Auth and Runtime Anchors). */

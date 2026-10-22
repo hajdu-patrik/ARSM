@@ -37,7 +37,7 @@ public static partial class CompanyResultEndpoints
             .Where(q => q.CreatedAt >= rangeStart && q.CreatedAt < rangeEnd);
 
         var statusTotals = await LoadStatusTotalsAsync(periodQuotes, nowUtc, cancellationToken);
-        var months = await LoadMonthsAsync(periodQuotes, resolvedYear, month, cancellationToken);
+        var months = await LoadMonthsAsync(periodQuotes, month, cancellationToken);
         var acceptedLines = db.QuoteLines
             .AsNoTracking()
             .Where(l => l.Quote.Status == QuoteStatus.Accepted
@@ -110,7 +110,6 @@ public static partial class CompanyResultEndpoints
      * so the frontend renders one list without branching on gaps. */
     private static async Task<List<CompanyResultMonthDto>> LoadMonthsAsync(
         IQueryable<Domain.Quote> periodQuotes,
-        int year,
         int? month,
         CancellationToken cancellationToken)
     {

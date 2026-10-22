@@ -1,5 +1,4 @@
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Domain;
 using AutoService.ApiService.Pagination;
 using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Identity;

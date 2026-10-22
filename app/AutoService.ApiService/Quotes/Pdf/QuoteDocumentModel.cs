@@ -9,7 +9,6 @@ internal sealed record QuoteDocumentLine(
     decimal NetUnitPrice,
     int VatRatePercent,
     decimal NetAmount,
-    decimal VatAmount,
     decimal GrossAmount);
 
 /** One VAT rate with the tax base and the tax charged on it. */
@@ -39,7 +38,6 @@ internal sealed record QuoteDocumentModel(
     string Title,
     string? Notes,
     string StatusLabel,
-    bool IsExpired,
     DateTime CreatedAt,
     DateTime ValidUntil,
     QuoteDocumentCustomer Customer,

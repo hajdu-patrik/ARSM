@@ -1,6 +1,5 @@
 using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 

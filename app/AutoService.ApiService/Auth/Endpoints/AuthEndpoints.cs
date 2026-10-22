@@ -1,5 +1,4 @@
 using AutoService.ApiService.Security;
-using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 

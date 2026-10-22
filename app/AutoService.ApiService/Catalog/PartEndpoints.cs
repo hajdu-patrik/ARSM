@@ -1,6 +1,5 @@
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Pagination;
-using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Catalog;
 

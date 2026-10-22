@@ -1,6 +1,5 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Identity;
-using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Validation;

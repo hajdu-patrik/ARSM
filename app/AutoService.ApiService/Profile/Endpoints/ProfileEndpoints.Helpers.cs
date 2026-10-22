@@ -1,7 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using AutoService.ApiService.Identity;
 
 namespace AutoService.ApiService.Profile.Endpoints;
