@@ -16,17 +16,25 @@ E2E_DIR = ROOT / "app" / "AutoService.WebUI" / "tests" / "e2e"
 
 # Feature folder (WebUI-relative prefix) -> spec file names that exercise it.
 FEATURE_SPECS: dict[str, tuple[str, ...]] = {
-    "src/pages/Admin/": ("admin-register-edge", "route-guards"),
+    "src/pages/Admin/": ("admin-register-edge", "admin-password-reset", "route-guards"),
+    "src/pages/ChangePassword/": ("forced-password-change", "route-guards"),
     "src/pages/CompanyResults/": ("company-results", "list-alignment"),
-    "src/pages/Customers/": ("customer-registry", "auth-session", "quote-editor", "quote-status"),
+    "src/pages/Customers/": ("customer-registry", "customer-delete-visibility", "auth-session", "quote-editor", "quote-status"),
     "src/pages/Inventory/": ("catalog-parts", "catalog-labor-types", "list-alignment"),
-    "src/pages/Login/": ("login-edge", "auth-session", "route-guards"),
+    "src/pages/Login/": ("login-edge", "auth-session", "forced-password-change", "route-guards"),
     "src/pages/Quotes/": ("quote-editor", "quote-status", "company-results", "list-alignment"),
-    "src/pages/Scheduler/": ("scheduler-intake", "scheduler-live-status", "scheduler-live-updates"),
+    "src/pages/Scheduler/": (
+        "scheduler-intake",
+        "scheduler-live-status",
+        "scheduler-live-updates",
+        "scheduler-appointment-delete",
+        "scheduler-concurrency",
+        "scheduler-reads",
+    ),
     "src/pages/Settings/": ("settings-edge",),
     "src/pages/NotFound.tsx": ("error-routes-edge",),
     "src/pages/ServerError.tsx": ("error-routes-edge",),
-    "src/router/": ("route-guards", "error-routes-edge", "auth-session"),
+    "src/router/": ("route-guards", "error-routes-edge", "auth-session", "forced-password-change"),
     "tests/e2e/support/list-alignment": ("list-alignment",),
 }
 PAGE_OBJECT_PATTERN = re.compile(r"^tests/e2e/pages/([\w-]+)\.page\.ts$")

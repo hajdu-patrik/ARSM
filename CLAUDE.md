@@ -6,7 +6,7 @@
 - Frontend: `app/AutoService.WebUI`
 - AppHost: `app/AutoService.AppHost`
 - Shared defaults: `app/AutoService.ServiceDefaults`
-- Tests: `tests`
+- Tests: `tests` (the HTTP and SQL suites, the Python checks and the xUnit project `tests/AutoService.UnitTests`)
 - Automation scripts: `scripts`
 - Deployment kits: `deploy` (Azure production `https://arsm.hu`: `deploy/docs/deployment-azure.md`; local test
   instance `https://teszt.arsm.hu`, kit `deploy/local-test`, currently off: `deploy/docs/deployment-local-test.md`).

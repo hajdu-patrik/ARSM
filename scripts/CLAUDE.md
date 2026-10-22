@@ -20,8 +20,8 @@
 
 - `run-local-test-suite.py`: canonical local test runner (`all|playwright|http|sql`). Behaviour that
   HTTPYAC cannot express is registered in `PYTHON_HTTP_CHECKS` (profile picture upload, appointment SSE,
-  quote line cap, quote PDF) rather than invoked separately; each entry reports under its own key in the
-  sanitized summary. Every captured line passes the sanitizer first: loaded secret values, Postgres URIs,
+  quote line cap, quote PDF, refresh replay window, session revocation) rather than invoked separately; each
+  entry reports under its own key in the sanitized summary. Every captured line passes the sanitizer first: loaded secret values, Postgres URIs,
   secret-shaped assignments and secret-named JSON fields (cookie, set-cookie, accessToken and friends) are
   replaced, and local paths are masked. `tests/API/_setup/*.http` runs as its own HTTPYAC command before the
   full suite (httpyac file order is not stable, and a fresh database has no plain test mechanic and no shared fixtures yet);
@@ -77,7 +77,8 @@
   temp directory is removed in a `finally` block. Nothing deletes Azure resources.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
   changed specs, and the specs that import a changed page object); any file outside those rules selects
-  the full suite. Prints the selection, or runs it through the canonical runner with `--run`.
+  the full suite. Prints the selection, or runs it through the canonical runner with `--run`. A new spec
+  that covers a page folder joins that folder's tuple, otherwise only a full-suite change ever runs it.
 
 ## Validation
 

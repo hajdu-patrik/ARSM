@@ -8,6 +8,37 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Security
+- Audit fixes (2026-10-21 to 2026-10-22). Sessions: the token denylist is warmed into memory at startup (no database read per
+  authenticated request), a per-person session cutoff ends every access token at once after an admin delete, an admin password
+  reset, a self password change (the other sessions) or a self profile delete, and closes the person's SSE streams; refresh
+  tolerates a replay inside a 30 s window (the same browser's parallel tab, 204 and nothing rotated) and the WebUI refreshes
+  one tab at a time through the Web Locks API; refresh refuses a locked-out identity; the hourly cleanup removes every expired
+  refresh row. `POST /api/profile/change-password` and `DELETE /api/profile` count wrong passwords toward the Identity lockout
+  (429 `lockout_active` like login) and are limited 5/min per person, the picture upload 10/min per person; the picture decode
+  guard drops from 50 to 20 megapixels (the WebUI check matches) behind a two-slot semaphore. Admin password reset:
+  `POST /api/admin/mechanics/{id}/password-reset` sets a temporary password, logs the actor and forces a change at the next
+  login (every other request answers 403 `password_change_required`; the WebUI keeps the account on the new `/change-password`
+  page, HU/EN). Data: `DELETE /api/customers/{id}` and `DELETE /api/vehicles/{id}` are admin-only with an audit line (the cascade
+  takes quotes with it; the WebUI shows the delete actions to admins only); Part, LaborType and Appointment edits carry an xmin
+  version like quotes (422 without, 409 `<entity>_version_conflict` with a stale one; the WebUI toasts, reloads and retries);
+  `people.PhoneNumber` gets a filtered unique index (migration `AddPhoneIndexPasswordResetAndRowVersions`, which also nulls
+  later duplicates) and a concurrent profile conflict is 409 instead of 500; the quote lists project on the server instead of
+  loading People rows. Platform: `EnableRetryOnFailure` with every explicit transaction as a retriable unit, a 64 KB Kestrel
+  body limit (the picture upload keeps 4 MB + 64 KB), `Cache-Control: no-store` on `/api` JSON, Nginx timeouts and body limits
+  per location (1 h only for the SSE streams, 5 MB only for the upload), the Npgsql pool capped at 20 on Azure, and in
+  `main.bicep` a Log Analytics daily cap, a monthly budget with 50/80/100 % mails and two alert rules (5xx, restarts), all
+  mailed to `ARSM_ALERT_EMAIL`. WebUI: the scheduler derives today from the month reads and polls every 10 minutes while the
+  SSE stream is open; a skip link, a named navigation, the app shell inert behind dialogs and an axe sweep over every route
+  (`@axe-core/playwright`). Tests: an xUnit project for the pricing calculators (`tests/AutoService.UnitTests`, run by
+  `dotnet test`), HTTP suites for the reset, the lockout, the concurrency and the admin-only deletes, Python checks for the
+  session revocation and the refresh replay window, and SQL contracts for the new index, column and xmin mappings. Not changed
+  (owner decisions, see the report): the refresh token's client-address binding, TOTP, the Blob managed identity, the
+  least-privilege database role and the firewall rule (documented in `deployment-azure.md`), the PostgreSQL major version
+  (Azure 17, local and CI 18.6).
+
+_Dev time: ~__DEV_TIME__ wall-clock (2026-10-21 22:27 to 2026-10-22 __END_TIME__ +02:00, across two sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand). Cost: not measured._
+
 ### Changed
 - Internal refactor, behaviour unchanged (2026-10-21): about 1600 fewer lines. Backend: one `ApiProblem` factory, `PersonIdClaim`,
   `DateTimeNormalization.ToUtc`, `ServerSentEventStream.ServeAsync`, `IdentityResultExtensions.ToValidationErrors`, a shared
