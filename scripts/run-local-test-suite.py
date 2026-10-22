@@ -15,7 +15,6 @@ from typing import Sequence
 from urllib.parse import unquote, urlparse
 
 from httpyac_summary import extract_failed_http_requests, extract_http_summary
-# Re-exported: migrate-profile-pictures-to-object-storage.py reaches these through this module.
 from test_suite_secrets import POSTGRES_URI_PATTERN, EnvironmentLoader, OutputSanitizer
 
 TARGET_ORDER = ("playwright", "http", "sql")

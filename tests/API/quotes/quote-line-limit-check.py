@@ -4,22 +4,19 @@
 from __future__ import annotations
 
 import json
-import os
-import ssl
 import sys
 import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from http_check_runner import run_check, sign_in_with_available_login  # noqa: E402
 from http_check_support import (  # noqa: E402
     HttpClient,
     StepResult,
     assert_condition,
     assert_status,
     find_anchor_quote,
-    read_allowed_origin,
-    read_credentials,
 )
 
 QUOTES_PATH = "/api/quotes"
@@ -57,8 +54,9 @@ def add_line(client: HttpClient, quote_id: int, version: int, ordinal: int) -> t
     )
 
 
-def run_checks(client: HttpClient, results: list[StepResult]) -> None:
-    """Fills a fresh quote to the cap, asserts the next add is refused, then cleans up."""
+def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
+    """Signs in, fills a fresh quote to the cap, asserts the next add is refused, then cleans up and signs out."""
+    client, _ = sign_in_with_available_login(base_url, origin, results)
     vehicle_id = int(find_anchor_quote(client, results)["vehicleId"])
     quote = create_fixture_quote(client, vehicle_id, results)
     quote_id = int(quote["id"])
@@ -100,54 +98,8 @@ def run_checks(client: HttpClient, results: list[StepResult]) -> None:
 
     delete_status, _ = client.request_json("DELETE", f"{QUOTES_PATH}/{quote_id}?version={version}")
     assert_status("delete-fixture-quote", delete_status, {204}, results)
-
-
-def main() -> int:
-    """Authenticates, runs the checks, and prints the sanitized report."""
-    base_url = os.getenv("AutoService_ApiService_HostAddress", "").strip()
-    if not base_url:
-        raise RuntimeError("Missing AutoService_ApiService_HostAddress environment variable.")
-
-    # The local API uses a development certificate.
-    ssl._create_default_https_context = ssl._create_unverified_context  # noqa: SLF001
-
-    results: list[StepResult] = []
-    login_attempt_statuses: list[int] = []
-
-    for credential in read_credentials():
-        results.clear()
-        client = HttpClient(base_url, read_allowed_origin())
-        login_status, _ = client.request_json(
-            "POST",
-            "/api/auth/login",
-            {"email": credential.email, "password": credential.password},
-        )
-        login_attempt_statuses.append(login_status)
-
-        if login_status == 429:
-            results.append(StepResult(step="login", expected=[200], actual=login_status, status="failed"))
-            continue
-
-        assert_status("login", login_status, {200}, results)
-        run_checks(client, results)
-        client.request_json("POST", "/api/auth/logout")
-        break
-    else:
-        if login_attempt_statuses and all(status == 429 for status in login_attempt_statuses):
-            print(json.dumps({
-                "status": "skipped",
-                "reason": "All available credentials were rate-limited during login.",
-                "checks": [result.__dict__ for result in results],
-            }, ensure_ascii=False))
-            return 0
-
-        raise RuntimeError(
-            f"Quote line limit checks could not authenticate. Login statuses: {login_attempt_statuses}",
-        )
-
-    print(json.dumps({"status": "passed", "checks": [result.__dict__ for result in results]}, ensure_ascii=False))
-    return 0
+    client.request_json("POST", "/api/auth/logout")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_check(run_checks))

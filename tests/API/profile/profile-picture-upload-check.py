@@ -3,26 +3,26 @@
 
 from __future__ import annotations
 
-import json
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from profile_picture_check_support import (  # noqa: E402
+from http_check_runner import run_check, sign_in_with_available_login  # noqa: E402
+from http_check_support import (  # noqa: E402
     CONNECTION_RESET_STATUS,
-    INVALID_TEXT_BYTES,
-    PROFILE_PICTURE_PATH,
-    VALID_PNG_BYTES,
     HttpClient,
     StepResult,
     assert_condition,
     assert_status,
+)
+from profile_picture_check_support import (  # noqa: E402
+    INVALID_TEXT_BYTES,
+    PROFILE_PICTURE_PATH,
+    VALID_PNG_BYTES,
     build_blank_png,
     build_png,
-    read_allowed_origin,
-    read_credentials,
 )
 
 # 4 MB upload cap plus the multipart framing allowance the endpoint adds on top of it.
@@ -37,8 +37,9 @@ OVER_JSON_LIMIT_CHARS = 70_000
 OVER_MEGAPIXEL_DIMENSIONS = (6000, 4000)
 
 
-def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
-    """Exercise the upload contract: accepted types, re-encoding, size cap, request limits, and deletion."""
+def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
+    """Sign in, then exercise the upload contract: accepted types, re-encoding, size cap, request limits, deletion."""
+    client, _ = sign_in_with_available_login(base_url, origin, results)
     larger_png = build_png(700, 500)
     assert_condition(
         "larger-png-exceeds-global-body-limit",
@@ -133,78 +134,5 @@ def run_request_limit_checks(client: HttpClient, results: list[StepResult]) -> N
     assert_condition("megapixel-limit-message", "20 megapixels" in body, f"unexpected rejection body: {body[:200]}", results)
 
 
-def main() -> int:
-    results: list[StepResult] = []
-
-    try:
-        base_url = os.getenv("AutoService_ApiService_HostAddress", "").strip()
-        if not base_url:
-            raise RuntimeError("Missing AutoService_ApiService_HostAddress environment variable.")
-
-        credentials = read_credentials()
-        allowed_origin = read_allowed_origin()
-        login_attempt_statuses: list[int] = []
-
-        for credential in credentials:
-            results.clear()
-            client = HttpClient(base_url, allowed_origin)
-            login_status, _ = client.request_json(
-                "POST",
-                "/api/auth/login",
-                {"email": credential.email, "password": credential.password},
-            )
-            login_attempt_statuses.append(login_status)
-
-            if login_status == 429:
-                results.append(StepResult(step="login", expected=[200], actual=login_status, status="failed"))
-                continue
-
-            assert_status("login", login_status, {200}, results)
-            run_upload_checks(client, results)
-            break
-        else:
-            if login_attempt_statuses and all(status == 429 for status in login_attempt_statuses):
-                print(
-                    json.dumps(
-                        {
-                            "status": "skipped",
-                            "reason": "All available credentials were rate-limited during login.",
-                            "loginStatuses": login_attempt_statuses,
-                            "checks": [result.__dict__ for result in results],
-                        },
-                        ensure_ascii=False,
-                    ),
-                )
-                return 0
-
-            raise RuntimeError(
-                "Profile picture upload checks could not authenticate. "
-                f"Login statuses: {login_attempt_statuses}",
-            )
-
-        print(
-            json.dumps(
-                {
-                    "status": "passed",
-                    "checks": [result.__dict__ for result in results],
-                },
-                ensure_ascii=False,
-            ),
-        )
-        return 0
-    except Exception as error:  # pylint: disable=broad-exception-caught
-        print(
-            json.dumps(
-                {
-                    "status": "failed",
-                    "error": str(error),
-                    "checks": [result.__dict__ for result in results],
-                },
-                ensure_ascii=False,
-            ),
-        )
-        return 1
-
-
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(run_check(run_checks))

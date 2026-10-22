@@ -1,45 +1,10 @@
 #!/usr/bin/env python3
-"""Profile-picture fixtures for the profile endpoint checks (re-exports shared helpers from http_check_support)."""
+"""Profile-picture fixtures for the profile endpoint checks: the picture route and structurally valid PNG builders."""
 
 from __future__ import annotations
 
 import struct
-import sys
 import zlib
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from http_check_support import (  # noqa: E402
-    APPLICATION_JSON,
-    CONNECTION_RESET_STATUS,
-    UNSAFE_HTTP_METHODS,
-    Credentials,
-    HttpClient,
-    StepResult,
-    assert_condition,
-    assert_status,
-    read_allowed_origin,
-    read_credentials,
-)
-
-__all__ = [
-    "APPLICATION_JSON",
-    "CONNECTION_RESET_STATUS",
-    "INVALID_TEXT_BYTES",
-    "PROFILE_PICTURE_PATH",
-    "UNSAFE_HTTP_METHODS",
-    "VALID_PNG_BYTES",
-    "Credentials",
-    "HttpClient",
-    "StepResult",
-    "assert_condition",
-    "assert_status",
-    "build_blank_png",
-    "build_png",
-    "read_allowed_origin",
-    "read_credentials",
-]
 
 PROFILE_PICTURE_PATH = "/api/profile/picture"
 

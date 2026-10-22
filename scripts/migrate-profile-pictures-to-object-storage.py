@@ -13,26 +13,13 @@ from typing import Sequence
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from importlib import util as importlib_util
+from test_suite_secrets import EnvironmentLoader, OutputSanitizer  # noqa: E402
 
 MIGRATE_ARGUMENT = "--migrate-profile-pictures"
 MODE_NAME = "verify"
 REPORT_FILE_NAME = "profile-picture-migration-summary.json"
 API_PROJECT = Path("app") / "AutoService.ApiService" / "AutoService.ApiService.csproj"
 DEFAULT_TIMEOUT_SECONDS = 1800
-
-
-def _load_runner_module():
-    """Load the canonical test runner module to reuse its secret loading and masking."""
-    runner_path = Path(__file__).resolve().parent / "run-local-test-suite.py"
-    spec = importlib_util.spec_from_file_location("arsm_local_test_runner", runner_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load the local test runner from {runner_path.name}.")
-
-    module = importlib_util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 def build_command(project_path: Path) -> list[str]:
@@ -99,10 +86,9 @@ def main(argv: Sequence[str]) -> int:
     root_dir = Path(__file__).resolve().parents[1]
     artifacts_dir = root_dir / "tests" / ".artifacts"
 
-    runner = _load_runner_module()
     environment = os.environ.copy()
-    secret_values = runner.EnvironmentLoader(root_dir).load(environment)
-    sanitizer = runner.OutputSanitizer(root_dir, secret_values)
+    secret_values = EnvironmentLoader(root_dir).load(environment)
+    sanitizer = OutputSanitizer(root_dir, secret_values)
 
     environment.setdefault("ASPNETCORE_ENVIRONMENT", "Development")
 
