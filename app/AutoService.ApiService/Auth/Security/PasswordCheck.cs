@@ -24,7 +24,7 @@ internal static class PasswordCheck
     }
 
     /** 429 with the seconds left of the lockout, so the client can show when a new attempt makes sense. */
-    internal static async Task<IResult> LockoutResultAsync(UserManager<IdentityUser> userManager, IdentityUser identityUser)
+    private static async Task<IResult> LockoutResultAsync(UserManager<IdentityUser> userManager, IdentityUser identityUser)
     {
         var lockoutEnd = await userManager.GetLockoutEndDateAsync(identityUser);
         var retryAfterSeconds = lockoutEnd.HasValue

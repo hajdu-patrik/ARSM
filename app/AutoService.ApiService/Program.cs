@@ -279,9 +279,8 @@ await app.EnsureCompanyProfileAsync();
 // First-admin bootstrap from Bootstrap:Admin, after migrations; a no-op once any admin exists.
 await app.EnsureBootstrapAdminAsync();
 
-/** Middleware order below is a security contract (exception handling wraps everything; origin/CSRF
-    checks precede auth; the per-person limits and the password gate need the authenticated user);
-    see app/AutoService.ApiService/CLAUDE.md. */
+/** Middleware order below is a security contract (errors wrap everything; origin/CSRF checks precede auth;
+    the per-person limits and the password gate need the user); see app/AutoService.ApiService/CLAUDE.md. */
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>

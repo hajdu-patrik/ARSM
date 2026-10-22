@@ -21,6 +21,6 @@ public static class InProcessLimiterTopologyGuard
         }
 
         throw new InvalidOperationException(
-            "Auth login/refresh rate limits and login bans are process-local. Set Deployment:RateLimiterTopology=SingleInstance only after confirming this ApiService deployment runs exactly one instance, or replace the limiter with a distributed implementation before scaling out.");
+            "Auth rate limits, login bans, the warmed token denylist and the session cutoffs are process-local. Set Deployment:RateLimiterTopology=SingleInstance only after confirming this ApiService deployment runs exactly one instance, or replace them with distributed implementations before scaling out.");
     }
 }

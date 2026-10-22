@@ -4,8 +4,8 @@ using AutoService.ApiService.Realtime;
 
 namespace AutoService.ApiService.Security;
 
-/** Per-person "tokens issued before X are invalid" cutoffs, so a deletion, lockout or password change
-    does not leave a 10-minute access token alive; process-local like the rate limits (single instance). */
+/** Per-person "tokens issued before X are invalid" cutoffs, so a deletion, password reset or change does not
+    leave a 10-minute access token alive; process-local (single instance), so a restart forgets them. */
 internal interface ISessionRevocationService
 {
     /** Invalidates every access token the person holds right now and closes their live streams. */

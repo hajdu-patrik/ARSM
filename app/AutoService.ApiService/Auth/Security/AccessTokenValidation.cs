@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace AutoService.ApiService.Auth.Security;
 
 /** The revocation checks a signature-valid access token still has to pass: a denylisted JTI (logout,
-    password change) or an issue time before the person's session cutoff (deletion, reset, lockout). */
+    password change) or an issue time before the person's session cutoff (admin delete, password reset or change). */
 internal static class AccessTokenValidation
 {
     internal static async Task OnTokenValidatedAsync(TokenValidatedContext context)

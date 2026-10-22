@@ -1,7 +1,6 @@
 using AutoService.ApiService.Appointments.Realtime;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Http;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Identity;
 
