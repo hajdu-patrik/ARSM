@@ -97,6 +97,7 @@ Content-Type: application/json
 ###
 
 ### [Positive][Appointments] Claim appointment by id (200 expected)
+# @name claimedAppt
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -115,14 +116,13 @@ X-CSRF-Token: {{CsrfToken}}
 ###
 
 ### [Setup][Appointments] Complete appointment (setup for unclaim-completed check, 200 expected)
+# @name completedAppt
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Completed"
-}
+{ "status": "Completed", "version": {{claimedAppt.version}} }
 
 ?? status == 200
 
@@ -154,9 +154,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "InProgress"
-}
+{ "status": "InProgress", "version": {{completedAppt.version}} }
 
 ?? status == 200
 

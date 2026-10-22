@@ -1,0 +1,121 @@
+# Optimistic concurrency on parts: PUT needs the version of the last response (missing or 0 is 422); a stale one is 409
+# with part_version_conflict, and the version of a fresh re-read succeeds. One disposable row, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZC{{RunId}}P
+
+### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Parts] Create the disposable part (201 expected)
+# @name concPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency Fixture", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Negative][Parts] Update without a version is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency No Version", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 422
+
+###
+
+### [Negative][Parts] Update with version 0 is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency Zero Version", "netUnitPrice": 100, "vatRatePercent": 27, "version": 0 }
+
+?? status == 422
+
+###
+
+### [Positive][Parts] Update with the version of the last response succeeds (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency Updated", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{concPart.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][Parts] Re-read carries a new version (200 expected)
+# @name rereadPart
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+
+?? status == 200
+?? js (response.parsedBody.version != concPart.version) == true
+
+###
+
+### [Negative][Parts] Replaying the old version is stale (409 expected, body {"code":"part_version_conflict"})
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency Stale", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{concPart.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == part_version_conflict
+
+###
+
+### [Positive][Parts] The re-read version updates again (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Concurrency Recovered", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{rereadPart.version}} }
+
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete the disposable part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automated multipart profile-picture edge checks for local HTTP suite."""
+"""Automated multipart profile-picture edge checks and request-size limit checks for local HTTP suite."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from profile_picture_check_support import (  # noqa: E402
     StepResult,
     assert_condition,
     assert_status,
+    build_blank_png,
     build_png,
     read_allowed_origin,
     read_credentials,
@@ -28,12 +29,27 @@ from profile_picture_check_support import (  # noqa: E402
 MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 OVERSIZE_PAYLOAD_BYTES = 5 * 1024 * 1024
 
+# Every other endpoint stops at this request body size (413); the picture upload must keep working above it.
+GLOBAL_BODY_LIMIT_BYTES = 64 * 1024
+OVER_JSON_LIMIT_CHARS = 70_000
+
+# 6000 x 4000 pixels are 24 megapixels, over the 20 MP decode guard of the picture processor.
+OVER_MEGAPIXEL_DIMENSIONS = (6000, 4000)
+
 
 def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
-    """Exercise the upload contract: accepted types, re-encoding, size cap, and deletion."""
+    """Exercise the upload contract: accepted types, re-encoding, size cap, request limits, and deletion."""
+    larger_png = build_png(700, 500)
+    assert_condition(
+        "larger-png-exceeds-global-body-limit",
+        len(larger_png) > GLOBAL_BODY_LIMIT_BYTES,
+        f"The {len(larger_png)} byte fixture no longer outgrows the {GLOBAL_BODY_LIMIT_BYTES} byte body limit.",
+        results,
+    )
+
     upload_cases = (
         ("upload-valid-png", "valid-profile.png", "image/png", VALID_PNG_BYTES, {200, 204}),
-        ("upload-larger-png", "portrait.png", "image/png", build_png(700, 500), {200, 204}),
+        ("upload-larger-png", "portrait.png", "image/png", larger_png, {200, 204}),
         ("upload-mime-mismatch", "mismatch.png", "image/jpeg", VALID_PNG_BYTES, {422}),
         ("upload-invalid-magic-bytes", "not-image.png", "image/png", INVALID_TEXT_BYTES, {422}),
     )
@@ -44,6 +60,7 @@ def run_upload_checks(client: HttpClient, results: list[StepResult]) -> None:
 
     run_stored_format_check(client, results)
     run_size_limit_checks(client, results)
+    run_request_limit_checks(client, results)
 
     delete_status, _ = client.request_json("DELETE", PROFILE_PICTURE_PATH)
     assert_status("delete-picture", delete_status, {200, 204}, results)
@@ -65,6 +82,14 @@ def run_stored_format_check(client: HttpClient, results: list[StepResult]) -> No
         "stored-picture-is-webp",
         content_type == "image/webp",
         f"expected image/webp, got {content_type!r}",
+        results,
+    )
+
+    cache_control = headers.get("Cache-Control", "")
+    assert_condition(
+        "picture-keeps-private-caching",
+        "private" in cache_control and "max-age=3600" in cache_control and "no-store" not in cache_control,
+        f"expected private, max-age=3600 and no no-store, got {cache_control!r}",
         results,
     )
 
@@ -94,6 +119,18 @@ def run_size_limit_checks(client: HttpClient, results: list[StepResult]) -> None
     oversize = build_png(600, 600).ljust(OVERSIZE_PAYLOAD_BYTES, b"\x00")
     status, _ = client.request_multipart("PUT", PROFILE_PICTURE_PATH, "file", "oversize.png", "image/png", oversize)
     assert_status("upload-oversize-body", status, {400, 413, CONNECTION_RESET_STATUS}, results)
+
+
+def run_request_limit_checks(client: HttpClient, results: list[StepResult]) -> None:
+    """JSON bodies stop at 64 KB (413); an image over 20 megapixels is refused by the decode guard (422)."""
+    status, _ = client.request_json("PUT", "/api/profile", {"middleName": "a" * OVER_JSON_LIMIT_CHARS})
+    assert_status("profile-json-over-body-limit", status, {413}, results)
+
+    status, body = client.request_multipart(
+        "PUT", PROFILE_PICTURE_PATH, "file", "huge.png", "image/png", build_blank_png(*OVER_MEGAPIXEL_DIMENSIONS),
+    )
+    assert_status("upload-over-megapixel-limit", status, {422}, results)
+    assert_condition("megapixel-limit-message", "20 megapixels" in body, f"unexpected rejection body: {body[:200]}", results)
 
 
 def main() -> int:

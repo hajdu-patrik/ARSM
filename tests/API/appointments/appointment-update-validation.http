@@ -96,7 +96,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2026-04-25T16:00:00",
-  "taskDescription": "   "
+  "taskDescription": "   ",
+  "version": {{apptCreate.version}}
 }
 
 ?? status == 422
@@ -111,7 +112,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2026-04-25T16:00:00",
-  "taskDescription": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"
+  "taskDescription": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX",
+  "version": {{apptCreate.version}}
 }
 
 ?? status == 422
@@ -127,7 +129,8 @@ Content-Type: application/json
 
 {
   "dueDateTime": "2000-01-01T00:00:00",
-  "taskDescription": "Due before scheduled date should be rejected"
+  "taskDescription": "Due before scheduled date should be rejected",
+  "version": {{apptCreate.version}}
 }
 
 ?? status == 422

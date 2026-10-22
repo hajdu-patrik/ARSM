@@ -1,0 +1,191 @@
+# Optimistic concurrency on appointments: update and status PUTs need the version of the last response (missing or 0 is
+# 422); a stale one is 409 appointment_version_conflict, and a status write also makes an earlier update version stale.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = fixture.appt.concurrency.{{RunId}}@example.test
+@OwnLicensePlate = OWC-{{RunId}}
+@OwnVehicleVin = TST{{RunId.toString().slice(-10)}}0902
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Appointments] Login as admin (the creator is also the assignee that may change the status, 200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Appointments] Create a disposable customer (201 expected)
+# @name fixtureCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Appointment", "middleName": null, "lastName": "Concurrency", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name ownVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "{{OwnLicensePlate}}", "vin": "{{OwnVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Appointments] Create the appointment, assigned to the admin (201 expected)
+# @name concAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{ownVehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Concurrency fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+###
+
+### [Negative][Appointments] Update without a version is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Concurrency no version" }
+
+?? status == 422
+
+###
+
+### [Negative][Appointments] Update with version 0 is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Concurrency zero version", "version": 0 }
+
+?? status == 422
+
+###
+
+### [Positive][Appointments] Update with the version of the last response succeeds and returns a new version (200 expected)
+# @name updatedAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Concurrency updated", "version": {{concAppt.version}} }
+
+?? status == 200
+?? js (response.parsedBody.version != concAppt.version) == true
+
+###
+
+### [Negative][Appointments] Replaying the old version is stale (409 expected, body {"code":"appointment_version_conflict"})
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-23T16:15:00", "taskDescription": "Concurrency stale", "version": {{concAppt.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_version_conflict
+
+###
+
+### [Negative][Appointments] Status change without a version is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed" }
+
+?? status == 422
+
+###
+
+### [Negative][Appointments] Status change with a stale version is rejected (409 expected, body {"code":"appointment_version_conflict"})
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{concAppt.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_version_conflict
+
+###
+
+### [Positive][Appointments] Status change with the version of the last response succeeds and returns a new version (200 expected)
+# @name statusAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{updatedAppt.version}} }
+
+?? status == 200
+?? js (response.parsedBody.version != updatedAppt.version) == true
+
+###
+
+### [Negative][Appointments] The status write made the earlier update version stale (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-24T16:15:00", "taskDescription": "Concurrency after status", "version": {{updatedAppt.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_version_conflict
+
+###
+
+### [Cleanup][Appointments] Delete the disposable appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

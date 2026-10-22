@@ -1,4 +1,4 @@
--- AutoService DB — Quote schema contracts (AddQuotes migration: quotes, quotelines).
+-- AutoService DB — Quote schema contracts (AddQuotes migration: quotes, quotelines) and the xmin version mapping.
 -- AI SQL policy: ai_agent_test_user, SELECT-only — see tests/CLAUDE.md.
 
 -- 22. QUOTE NUMERIC PRECISION CONTRACT — every money/quantity column must be numeric(18,2) exactly,
@@ -109,3 +109,16 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name = 'quotes'
   AND column_name = 'xmin';
+
+
+-- 33. CATALOG AND APPOINTMENT CONCURRENCY MAPPING — Part, LaborType and Appointment versions map onto xmin
+--     like Quote.Version: no physical xmin column on parts, labortypes or appointments. Expected: 0 in every row.
+SELECT t.table_name,
+       COUNT(c.column_name) AS physical_xmin_columns
+FROM (VALUES ('parts'), ('labortypes'), ('appointments')) AS t (table_name)
+LEFT JOIN information_schema.columns c
+       ON c.table_schema = 'public'
+      AND c.table_name = t.table_name
+      AND c.column_name = 'xmin'
+GROUP BY t.table_name
+ORDER BY t.table_name;

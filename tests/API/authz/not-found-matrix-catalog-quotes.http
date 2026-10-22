@@ -44,7 +44,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "partNumber": "GHOST-PART", "name": "Ghost", "netUnitPrice": 100, "vatRatePercent": 27 }
+{ "partNumber": "GHOST-PART", "name": "Ghost", "netUnitPrice": 100, "vatRatePercent": 27, "version": 1 }
 
 ?? status == 404
 
@@ -68,7 +68,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "code": "GHOST-LT", "name": "Ghost", "hourlyNetRate": 100, "vatRatePercent": 27 }
+{ "code": "GHOST-LT", "name": "Ghost", "hourlyNetRate": 100, "vatRatePercent": 27, "version": 1 }
 
 ?? status == 404
 

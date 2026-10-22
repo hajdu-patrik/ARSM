@@ -44,7 +44,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts
 
 ###
 
-### [Positive][Parts] Admin creates part (201 expected, grossUnitPrice = 4500.00 * 1.27 = 5715.00)
+### [Positive][Parts] Admin creates part (201 expected, grossUnitPrice = 4500.00 * 1.27 = 5715.00, version is a positive integer)
 # @name createdPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
@@ -59,6 +59,7 @@ Content-Type: application/json
 }
 
 ?? status == 201
+?? js response.parsedBody.version > 0
 
 ###
 
@@ -115,7 +116,8 @@ Content-Type: application/json
   "partNumber": "{{NewPartNumber}}",
   "name": "Catalog Happy Part Updated",
   "netUnitPrice": 5000.00,
-  "vatRatePercent": 18
+  "vatRatePercent": 18,
+  "version": {{createdPart.version}}
 }
 
 ?? status == 204

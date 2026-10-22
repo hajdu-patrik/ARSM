@@ -2,6 +2,7 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@TemporaryPassword = {{$processEnv ARSM_TEST_MECHANIC_NEW_PASSWORD}}
 @UnknownMechanicId = 999999
 
 # UnknownMechanicId never needs to resolve to a real mechanic: RequireAuthorization("AdminOnly") gates
@@ -48,6 +49,18 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
+### [Negative][Admin] Non-admin cannot reset a mechanic password (403 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}/password-reset
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "temporaryPassword": "{{TemporaryPassword}}" }
+
+?? status == 403
+
+###
+
 ### [Setup][Admin] Logout non-admin before unauthenticated checks (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
@@ -70,5 +83,18 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
+
+?? status == 401
+
+###
+
+### [Negative][Admin] Unauthenticated reset mechanic password (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}/password-reset
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "temporaryPassword": "{{TemporaryPassword}}" }
 
 ?? status == 401

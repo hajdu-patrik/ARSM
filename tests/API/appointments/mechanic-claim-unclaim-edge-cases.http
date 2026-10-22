@@ -93,9 +93,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Cancelled"
-}
+{ "status": "Cancelled", "version": {{pastCancelledApptCreate.version}} }
 
 ?? status == 200
 

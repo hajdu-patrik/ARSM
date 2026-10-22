@@ -1,0 +1,121 @@
+# Optimistic concurrency on labor types: PUT needs the version of the last response (missing or 0 is 422); a stale one is 409
+# with labor_type_version_conflict, and the version of a fresh re-read succeeds. One disposable row, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZC{{RunId}}L
+
+### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][LaborTypes] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][LaborTypes] Create the disposable labor type (201 expected)
+# @name concLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency Fixture", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Negative][LaborTypes] Update without a version is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency No Version", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 422
+
+###
+
+### [Negative][LaborTypes] Update with version 0 is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency Zero Version", "hourlyNetRate": 100, "vatRatePercent": 27, "version": 0 }
+
+?? status == 422
+
+###
+
+### [Positive][LaborTypes] Update with the version of the last response succeeds (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency Updated", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{concLaborType.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][LaborTypes] Re-read carries a new version (200 expected)
+# @name rereadLaborType
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+
+?? status == 200
+?? js (response.parsedBody.version != concLaborType.version) == true
+
+###
+
+### [Negative][LaborTypes] Replaying the old version is stale (409 expected, body {"code":"labor_type_version_conflict"})
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency Stale", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{concLaborType.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == labor_type_version_conflict
+
+###
+
+### [Positive][LaborTypes] The re-read version updates again (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Concurrency Recovered", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{rereadLaborType.version}} }
+
+?? status == 204
+
+###
+
+### [Cleanup][LaborTypes] Delete the disposable labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -112,7 +112,8 @@ Content-Type: application/json
   "partNumber": "{{Key}}A",
   "name": "Catalog VAT Rate Fixture",
   "netUnitPrice": 100,
-  "vatRatePercent": 0
+  "vatRatePercent": 0,
+  "version": {{vatA.version}}
 }
 
 ?? status == 422
@@ -130,7 +131,8 @@ Content-Type: application/json
   "partNumber": "{{Key}}A",
   "name": "Catalog VAT Rate Fixture",
   "netUnitPrice": 100,
-  "vatRatePercent": 27
+  "vatRatePercent": 27,
+  "version": {{vatA.version}}
 }
 
 ?? status == 204
@@ -147,7 +149,8 @@ Content-Type: application/json
   "partNumber": "{{Key}}B",
   "name": "Catalog VAT Rate Fixture",
   "netUnitPrice": 100,
-  "vatRatePercent": 5
+  "vatRatePercent": 5,
+  "version": {{vatB.version}}
 }
 
 ?? status == 204

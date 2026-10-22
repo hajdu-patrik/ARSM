@@ -113,7 +113,26 @@ Content-Type: application/json
 
 ###
 
-### [Cleanup][Customers] Delete the customer created by the non-admin session above (204 expected)
+### [Setup][Customers] Login as admin for the cleanup delete, because DELETE is AdminOnly (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Cleanup][Customers] Admin deletes the customer created by the non-admin session above (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{createdByNonAdmin.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
