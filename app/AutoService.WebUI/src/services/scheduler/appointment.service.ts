@@ -1,6 +1,5 @@
 /** Scheduler appointment API service. */
 
-import axios from 'axios';
 import { API_URL } from '../http/api-url';
 import { apiClient } from '../http/api.client';
 import type { SilentRequestOptions } from '../http/request-options';
@@ -13,50 +12,11 @@ import type {
   UpdateStatusRequest,
 } from '../../types/scheduler/scheduler.types';
 
-/** Checks whether an error is an HTTP 404 Not Found response. */
-function isNotFoundError(error: unknown): boolean {
-  return axios.isAxiosError(error) && error.response?.status === 404;
-}
-
 /** Appointment service object for all scheduler-related API operations. */
 export const appointmentService = {
   /** Returns the SSE endpoint URL for real-time appointment update events. */
   getAppointmentUpdatesUrl(): string {
     return `${API_URL}/api/appointments/updates`;
-  },
-
-  /** Looks up a customer by email via {@code GET /api/customers/by-email}; null when not found. */
-  async findCustomerByEmail(email: string): Promise<SchedulerCustomerLookupDto | null> {
-    try {
-      const response = await apiClient.get<SchedulerCustomerLookupDto>('/api/customers/by-email', {
-        params: { email },
-      });
-
-      return response.data;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        return null;
-      }
-
-      throw error;
-    }
-  },
-
-  /** Looks up a customer by exact vehicle license plate; null when not found. */
-  async findCustomerByLicensePlate(licensePlate: string): Promise<SchedulerCustomerLookupDto | null> {
-    try {
-      const response = await apiClient.get<SchedulerCustomerLookupDto>('/api/customers/by-license-plate', {
-        params: { licensePlate },
-      });
-
-      return response.data;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        return null;
-      }
-
-      throw error;
-    }
   },
 
   /** Searches customers with backend filtering by name and partial license-plate terms. */

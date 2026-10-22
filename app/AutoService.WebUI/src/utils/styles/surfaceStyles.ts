@@ -16,7 +16,7 @@ export const schedulerDetailPanelClass = 'rounded-2xl border border-ui-border bg
 export const schedulerDetailRowClass = 'rounded-xl border border-ui-border bg-ui-input px-3 py-2';
 
 /** Generic card and border primitives reused by Customers/Admin/Scheduler sections. */
-export const roundedOverflowBorderLayoutClass = 'overflow-hidden rounded-2xl border';
+const roundedOverflowBorderLayoutClass = 'overflow-hidden rounded-2xl border';
 export const relativeOverflowBorderLayoutClass = `relative ${roundedOverflowBorderLayoutClass}`;
 export const defaultBorderToneClass = 'border-ui-border';
 export const contentCardFrameClass = `${roundedOverflowBorderLayoutClass} ${defaultBorderToneClass} bg-ui-card`;

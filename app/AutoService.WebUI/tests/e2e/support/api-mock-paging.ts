@@ -33,7 +33,7 @@ export function compareText(left: string | null | undefined, right: string | nul
 }
 
 /** Slices and filters a seeded array by the page, pageSize and search query parameters of the URL. */
-export function buildPagedResult<T>(url: URL, source: readonly T[], options: PagedMockOptions<T> = {}): PagedResult<T> {
+function buildPagedResult<T>(url: URL, source: readonly T[], options: PagedMockOptions<T> = {}): PagedResult<T> {
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, readPositiveInteger(url.searchParams.get('pageSize'), DEFAULT_PAGE_SIZE)));
   const page = Math.max(1, readPositiveInteger(url.searchParams.get('page'), 1));
   const term = options.searchFields ? normalizeSearch(url.searchParams.get('search')) : null;

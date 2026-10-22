@@ -10,13 +10,11 @@ import { createCatalogFixtureState } from './test-data.catalog.fixtures';
 import { createQuoteFixtureState } from './test-data.quotes.fixtures';
 
 export {
-  MOCK_APPOINTMENT_IDS,
   MOCK_CUSTOMER_IDS,
   MOCK_LABOR_TYPE_IDS,
   MOCK_MECHANIC_IDS,
   MOCK_PART_IDS,
   MOCK_QUOTE_IDS,
-  MOCK_QUOTE_LINE_IDS,
   MOCK_VEHICLE_IDS,
   PROTECTED_DEMO_MECHANIC_EMAILS,
 } from './test-data.constants';

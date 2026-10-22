@@ -8,10 +8,6 @@ export const huCore = {
       cancel: 'Mégse',
       clearSearch: 'Keresés törlése',
     },
-    sort: {
-      ascending: 'Növekvő',
-      descending: 'Csökkenő',
-    },
     pagination: {
       previous: 'Előző oldal',
       next: 'Következő oldal',

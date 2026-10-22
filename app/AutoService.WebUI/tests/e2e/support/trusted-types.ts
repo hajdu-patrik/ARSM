@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 /** The Trusted Types directives of the production CSP (vite.config.ts); the dev server sends no CSP. */
-export const TRUSTED_TYPES_POLICY = "require-trusted-types-for 'script'; trusted-types 'none'";
+const TRUSTED_TYPES_POLICY = "require-trusted-types-for 'script'; trusted-types 'none'";
 
 /** Headers that describe the body encoding of the fetched response, not the body handed back. */
 const BODY_ENCODING_HEADERS: ReadonlySet<string> = new Set([

@@ -49,11 +49,6 @@ export const authService = {
     }
   },
 
-  /** Checks whether the user is currently authenticated based on store state. */
-  isAuthenticated(): boolean {
-    return useAuthStore.getState().isAuthenticated;
-  },
-
   /** Restores auth from the cookie session via {@code GET /api/auth/validate}; skips the call with no session hint.
    * A timeout, network error or 5xx keeps the hint and sends the browser to /500, whose reload retries. */
   async restoreAuth(): Promise<AuthUser | null> {

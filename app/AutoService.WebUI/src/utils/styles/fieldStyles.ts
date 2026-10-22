@@ -24,15 +24,12 @@ export const textareaClass = `min-h-[6.5rem] resize-y ${intakeFieldBaseClass}`;
 export const intakeDateTimeInputClass = `intake-datetime-input ${intakeInputClass}`;
 
 /** Select primitives for filter rows and compact form dropdowns. */
-export const compactSelectClass = `h-11 min-h-11 rounded-xl border border-ui-field-border bg-ui-input px-3 py-2 text-sm text-ui-text transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-ui-focus ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-50`;
+const compactSelectClass = `h-11 min-h-11 rounded-xl border border-ui-field-border bg-ui-input px-3 py-2 text-sm text-ui-text transition duration-200 focus-visible:-translate-y-px motion-reduce:focus-visible:translate-y-0 focus-visible:border-ui-focus ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-50`;
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
 /** Compact select dedicated to filter toolbars (kept distinct from form/edit selects); reaches the 44px touch height below the lg breakpoint (1024px). */
 export const filterSelectCompactSurfaceClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 text-xs font-semibold leading-normal tracking-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} max-lg:h-11 max-lg:min-h-11 max-lg:py-2 dark:bg-arsm-input-dark`;
-
-/** Native compact filter select: the surface plus right padding that clears the native arrow (the Dropdown trigger has an in-flow chevron instead). */
-export const filterSelectCompactClass = `${filterSelectCompactSurfaceClass} pr-7`;
 
 /** Width wrapper for compact filter selects in responsive toolbar rows. */
 export const filterSelectCompactWrapperClass = 'min-w-0 max-w-full basis-full sm:basis-auto sm:w-[9.125rem] sm:max-w-[9.125rem] sm:shrink-0';
@@ -53,7 +50,7 @@ export const inputGroupIconClass = 'pointer-events-none absolute left-3 top-1/2 
 /** Search field: pl-10 clears the search icon and pr-12 the clear button; the compact line-height keeps it 44px tall. */
 export const searchInputClass = `${inputFieldBaseClass} pl-10 pr-12 text-ui-field leading-(--text-ui-small--line-height) max-[320px]:text-sm`;
 
-export const inputGroupOverlayButtonClass = `absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-ui-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-ui-text motion-reduce:hover:scale-100 ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:text-ui-muted disabled:opacity-60 disabled:hover:scale-100 disabled:hover:text-ui-muted`;
+const inputGroupOverlayButtonClass = `absolute right-1 top-1/2 inline-flex h-11 w-11 shrink-0 -translate-y-1/2 items-center justify-center rounded-xl text-ui-label transition-[color,transform] duration-150 ease-out hover:scale-105 hover:text-ui-text motion-reduce:hover:scale-100 ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:text-ui-muted disabled:opacity-60 disabled:hover:scale-100 disabled:hover:text-ui-muted`;
 
 export const passwordToggleButtonClass = inputGroupOverlayButtonClass;
 

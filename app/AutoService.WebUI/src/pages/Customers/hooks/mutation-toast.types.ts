@@ -1,7 +1,7 @@
 /** Shared toast handler typings for Customers mutation hooks. */
 
 /** Minimal toast callback shape used by Customers mutation flows. */
-export type CustomerMutationToastHandler = (messageKey: string) => void;
+type CustomerMutationToastHandler = (messageKey: string) => void;
 
 /** Standard success+error toast handlers for mutation hooks. */
 export interface CustomerMutationToastHandlers {

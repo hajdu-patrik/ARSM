@@ -36,7 +36,7 @@ export type ParsedIdentifier =
 export type LoginMethod = 'email' | 'phone';
 
 /** Form fields of the login page that can carry a validation message. */
-export type LoginFieldName = 'identifier' | 'password';
+type LoginFieldName = 'identifier' | 'password';
 
 /** The validation message key of every field, undefined while the field has none. */
 export type LoginFieldErrors = Readonly<Record<LoginFieldName, string | undefined>>;

@@ -8,12 +8,12 @@ const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
 /** Maps the app language (`hu` | `en`) to its Intl locale; anything but English is Hungarian, the fallback language. */
-export function toIntlLocale(language: string): 'hu-HU' | 'en-GB' {
+function toIntlLocale(language: string): 'hu-HU' | 'en-GB' {
   return language.toLowerCase().startsWith('en') ? 'en-GB' : 'hu-HU';
 }
 
 /** Returns the memoized date formatter for a language and options. */
-export function getDateTimeFormat(language: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+function getDateTimeFormat(language: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
   const locale = toIntlLocale(language);
   const key = `${locale}|${JSON.stringify(options)}`;
   let format = dateTimeFormats.get(key);
@@ -83,11 +83,6 @@ export function formatShortDate(value: Date | string, language: string): string 
 /** Short date plus 24-hour time (HH:mm). */
 export function formatShortDateTime(value: Date | string, language: string): string {
   return formatPreset(SHORT_DATE_TIME_OPTIONS, value, language);
-}
-
-/** 24-hour time (HH:mm). */
-export function formatTime(value: Date | string, language: string): string {
-  return formatPreset(TIME_OPTIONS, value, language);
 }
 
 /** Full date with weekday and month name. */

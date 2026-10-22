@@ -200,5 +200,3 @@ apiClient.interceptors.response.use(
     return apiClient(originalRequest);
   },
 );
-
-export default apiClient;

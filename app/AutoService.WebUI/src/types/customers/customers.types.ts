@@ -35,7 +35,7 @@ export interface UpdateCustomerRequest {
 }
 
 /** Minimal customer summary embedded in a vehicle response. */
-export interface VehicleCustomerSummary {
+interface VehicleCustomerSummary {
   id: number;
   firstName: string;
   middleName: string | null;

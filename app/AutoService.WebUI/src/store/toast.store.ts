@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 
 /** Visual style variant for a toast notification. */
-export type ToastVariant = 'success' | 'error' | 'warning';
+type ToastVariant = 'success' | 'error' | 'warning';
 
 /** A single toast notification entry in the queue. */
 export interface ToastMessage {

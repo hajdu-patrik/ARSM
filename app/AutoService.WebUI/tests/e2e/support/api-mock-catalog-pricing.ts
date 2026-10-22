@@ -12,7 +12,7 @@ export function isAllowedVatRate(vatRatePercent: number): boolean {
 }
 
 /** Mirrors the backend's display-only gross formula (plan F1, `Pricing/PricingCalculator.GrossUnitPrice`). */
-export function computeGrossAmount(netAmount: number, vatRatePercent: number): number {
+function computeGrossAmount(netAmount: number, vatRatePercent: number): number {
   return Math.round(netAmount * (1 + vatRatePercent / 100) * 100) / 100;
 }
 

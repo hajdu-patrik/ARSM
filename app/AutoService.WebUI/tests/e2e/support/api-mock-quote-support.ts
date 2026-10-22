@@ -37,7 +37,7 @@ export function applyQuoteWrite(quote: QuoteDetailDto): QuoteDetailDto {
 }
 
 /** Expiry is computed per response, never stored, exactly like the API. */
-export function computeIsExpired(quote: QuoteDetailDto): boolean {
+function computeIsExpired(quote: QuoteDetailDto): boolean {
   return quote.status === 'Sent' && new Date(quote.validUntil).getTime() < Date.now();
 }
 

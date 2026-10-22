@@ -7,7 +7,7 @@ import type { CustomerDetailsPanelTarget } from '../hooks/useCustomerDetailsPane
 import type { SortDirection } from '../page.types';
 
 /** Paging of the customer list: the effective page, the fitted page size, the total and the page callback. */
-export interface CustomerListPaging {
+interface CustomerListPaging {
   readonly page: number;
   readonly pageSize: number;
   readonly totalCount: number;

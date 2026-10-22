@@ -6,7 +6,7 @@ import { Dropdown } from '../../../../components/common/Dropdown';
 import {
   compactPrimaryValueTextClass,
   equalWidthControlGroupClass,
-  mediumContextPrimaryButtonClass,
+  referenceChipPrimaryButtonClass,
   mutedMetaTextClass,
   mutedSecondaryTextClass,
   schedulerDetailPanelClass,
@@ -149,7 +149,7 @@ export const MechanicsSection = memo(function MechanicsSection({
               onClick={onAdminAssign}
               disabled={isMechanicMutationBusy || !selectedNewMechanicId}
               aria-busy={isAssigning}
-              className={mediumContextPrimaryButtonClass}
+              className={referenceChipPrimaryButtonClass}
             >
               <span>{isAssigning ? t('common.actions.saving') : t('scheduler.detail.addMechanic')}</span>
             </button>

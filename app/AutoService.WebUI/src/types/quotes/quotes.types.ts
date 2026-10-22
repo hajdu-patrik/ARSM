@@ -2,17 +2,11 @@
 
 import type { PagedQuery } from '../common/pagination.types';
 
-/** Stored quote statuses; `Expired` is never one of them (it is the computed `isExpired` flag). */
-export const QUOTE_STATUSES = ['Draft', 'Sent', 'Accepted', 'Rejected'] as const;
+/** Stored quote status; `Expired` is never one of them (it is the computed `isExpired` flag). */
+export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Rejected';
 
-/** Stored quote status as a string literal union. */
-export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
-
-/** Quote line kinds, matching the backend `QuoteLineKind` enum. */
-export const QUOTE_LINE_KINDS = ['Part', 'Labor'] as const;
-
-/** Quote line kind as a string literal union. */
-export type QuoteLineKind = (typeof QUOTE_LINE_KINDS)[number];
+/** Quote line kind, matching the backend `QuoteLineKind` enum. */
+export type QuoteLineKind = 'Part' | 'Labor';
 
 /** Maximum lines a single quote accepts, matching `QuoteValidation.MaxLineCount`. */
 export const MAX_QUOTE_LINE_COUNT = 200;
@@ -30,7 +24,7 @@ export const MAX_QUOTE_LINE_DESCRIPTION_LENGTH = 120;
 export const DEFAULT_QUOTE_VALIDITY_DAYS = 30;
 
 /** Vehicle the quote is anchored to. */
-export interface QuoteVehicleSummaryDto {
+interface QuoteVehicleSummaryDto {
   id: number;
   licensePlate: string;
   brand: string;
@@ -38,7 +32,7 @@ export interface QuoteVehicleSummaryDto {
 }
 
 /** Mechanic who created the quote; null once that mechanic is removed. */
-export interface QuoteMechanicSummaryDto {
+interface QuoteMechanicSummaryDto {
   id: number;
   fullName: string;
 }

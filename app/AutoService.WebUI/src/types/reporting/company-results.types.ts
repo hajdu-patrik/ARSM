@@ -25,7 +25,7 @@ export interface CompanyResultVatRowDto {
 }
 
 /** Parts against labor within the accepted quotes. */
-export interface CompanyResultLineKindRowDto {
+interface CompanyResultLineKindRowDto {
   lineKind: QuoteLineKind;
   net: number;
   gross: number;

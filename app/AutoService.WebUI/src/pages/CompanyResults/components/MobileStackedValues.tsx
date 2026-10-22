@@ -5,7 +5,7 @@ import { numericValueWrapTextClass } from '../../../utils/formStyles';
 import { mobileStackedCellClass, mobileStackedLabelClass } from './mobileColumns';
 
 /** One formatted figure of a row, with its column key and its below-360px label. */
-export interface MobileStackedValue {
+interface MobileStackedValue {
   readonly column: string;
   readonly label: string;
   readonly value: string;

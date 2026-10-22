@@ -4,7 +4,7 @@ import type { FetchStatus } from '@tanstack/react-query';
 import axios from 'axios';
 
 /** How a read failed, without holding on to the error object. */
-export type ReadFailure = 'none' | 'auth-expired' | 'failed';
+type ReadFailure = 'none' | 'auth-expired' | 'failed';
 
 /** The part of a query result that the helpers below read. */
 export interface ReadResult {

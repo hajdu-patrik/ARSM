@@ -7,8 +7,8 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 import {
   defaultIconClass,
   equalWidthControlGroupClass,
-  mediumContextDangerButtonClass,
-  mediumContextPrimaryButtonClass,
+  referenceChipDangerButtonClass,
+  referenceChipPrimaryButtonClass,
   selectWrapperClass,
 } from '../../../../utils/formStyles';
 
@@ -88,7 +88,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           type="button"
           data-testid="appointment-detail-edit"
           onClick={onStartEdit}
-          className={mediumContextPrimaryButtonClass}
+          className={referenceChipPrimaryButtonClass}
         >
           {t('scheduler.detail.edit')}
         </button>
@@ -100,7 +100,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           data-testid="appointment-detail-delete"
           onClick={onDeleteClick}
           disabled={isDeleting}
-          className={mediumContextDangerButtonClass}
+          className={referenceChipDangerButtonClass}
         >
           <Trash2 className={defaultIconClass} />
           <span>{t('scheduler.detail.delete')}</span>
@@ -114,7 +114,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
           onClick={onSave}
           disabled={isSaving || !isSaveEnabled}
           aria-busy={isSaving}
-          className={`${mediumContextPrimaryButtonClass} w-full`}
+          className={`${referenceChipPrimaryButtonClass} w-full`}
         >
           <Save className={defaultIconClass} />
           <span>{isSaving ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>

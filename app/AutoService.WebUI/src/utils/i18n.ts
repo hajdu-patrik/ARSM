@@ -87,5 +87,3 @@ export async function changeAppLanguage(language: AppLanguage): Promise<void> {
   await i18next.changeLanguage(language);
   writeStorage('local', LANGUAGE_STORAGE_KEY, language);
 }
-
-export default i18next;

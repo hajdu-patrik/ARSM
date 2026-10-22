@@ -8,10 +8,6 @@ export const enCore = {
       cancel: 'Cancel',
       clearSearch: 'Clear search',
     },
-    sort: {
-      ascending: 'Ascending',
-      descending: 'Descending',
-    },
     pagination: {
       previous: 'Previous page',
       next: 'Next page',

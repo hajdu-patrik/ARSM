@@ -3,7 +3,7 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import {
 	insetSurfaceClass,
-	mediumContextPrimaryButtonClass,
+	referenceChipPrimaryButtonClass,
 	mutedSecondaryTextClass,
 	sectionHeadingToneClass,
 	toolbarRowLayoutClass,
@@ -47,7 +47,7 @@ export const SchedulerQuickIntakeSection = memo(function SchedulerQuickIntakeSec
 					data-testid="scheduler-intake-open"
 					onClick={onOpenIntake}
 					disabled={selectedDate === null}
-					className={`${mediumContextPrimaryButtonClass} h-auto! self-start sm:shrink-0`}
+					className={`${referenceChipPrimaryButtonClass} h-auto! self-start sm:shrink-0`}
 				>
 					<span className="min-w-0 whitespace-normal text-center">{t('scheduler.intake.open')}</span>
 				</button>

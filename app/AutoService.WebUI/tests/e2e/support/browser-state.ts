@@ -4,7 +4,7 @@ export type TestLanguage = 'en' | 'hu';
 export type TestTheme = 'light' | 'dark';
 
 /** localStorage flag the app sets once the browser showed its first splash (the 2500 ms intro). */
-export const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
+const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
 
 interface PrimeBrowserStateOptions {
   readonly language?: TestLanguage;

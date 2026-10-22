@@ -27,7 +27,7 @@ const compactChipCoreClass = `inline-flex min-h-7 min-w-0 max-w-full shrink-0 it
 const compactChipNeutralToneClass = 'border-ui-field-border bg-arsm-card text-ui-label hover:bg-ui-toggle dark:bg-arsm-input-dark';
 
 /** Compact chip button base shared by Customers and Scheduler local chip variants (min-h-7, scales to a 44px target below the sm breakpoint (640px)). */
-export const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2`;
+const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2`;
 /** Compact chip variants; the neutral one matches the compact filter select surface (bg-card, field border) it sits beside. */
 export const compactChipNeutralButtonClass = `${compactChipActionBaseClass} ${compactChipNeutralToneClass}`;
 export const compactChipPrimaryButtonClass = `${compactChipActionBaseClass} ${primaryActionToneClass}`;
@@ -65,33 +65,22 @@ const segmentedControlOptionInactiveClass = 'bg-transparent text-ui-label hover:
 export const getSegmentedControlOptionClass = (isActive: boolean): string =>
   `${segmentedControlOptionBaseClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
 
-/** Canonical medium button family for contextual panel/card actions. */
-const mediumContextActionShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
-const mediumContextActionBaseClass = `${mediumContextActionShapeClass} h-11 min-h-11 whitespace-nowrap`;
-/** Same shape as the medium base, but the label may wrap and the button grows from the 44px minimum height. */
-const mediumContextActionWrapBaseClass = `${mediumContextActionShapeClass} min-h-11 whitespace-normal`;
+/** Reference chips, the medium button family for contextual panel/card actions (details panels, compact toolbars, history actions). */
+const referenceChipShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
+const referenceChipBaseClass = `${referenceChipShapeClass} h-11 min-h-11 whitespace-nowrap`;
+/** Same shape as the base, but the label may wrap (long localized labels at 320px) and the button grows from the 44px minimum height. */
+const referenceChipWrapBaseClass = `${referenceChipShapeClass} min-h-11 whitespace-normal`;
 
-const mediumContextNeutralToneClass = 'border-ui-border bg-ui-toggle text-ui-label hover:border-ui-accent/45 hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/90';
-export const mediumContextNeutralButtonClass = `${mediumContextActionBaseClass} ${mediumContextNeutralToneClass}`;
-export const mediumContextNeutralWrapButtonClass = `${mediumContextActionWrapBaseClass} ${mediumContextNeutralToneClass}`;
-export const mediumContextPrimaryButtonClass = `${mediumContextActionBaseClass} ${primaryActionToneClass}`;
-export const mediumContextPrimaryWrapButtonClass = `${mediumContextActionWrapBaseClass} ${primaryActionToneClass}`;
-export const mediumContextDangerButtonClass = `${mediumContextActionBaseClass} ${dangerActionToneClass}`;
+export const referenceChipNeutralWrapButtonClass = `${referenceChipWrapBaseClass} border-ui-border bg-ui-toggle text-ui-label hover:border-ui-accent/45 hover:bg-arsm-accent-wash dark:hover:bg-arsm-hover-dark/90`;
+export const referenceChipPrimaryButtonClass = `${referenceChipBaseClass} ${primaryActionToneClass}`;
+export const referenceChipPrimaryWrapButtonClass = `${referenceChipWrapBaseClass} ${primaryActionToneClass}`;
+export const referenceChipDangerButtonClass = `${referenceChipBaseClass} ${dangerActionToneClass}`;
 
-/** Canonical main CTA family for save/delete/edit and modal confirmation actions. */
+/** Main CTA family for save/delete/edit and modal confirmation actions. */
 const mainCtaActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
-
-export const mainCtaNeutralButtonClass = `${mainCtaActionBaseClass} border border-ui-border bg-ui-toggle font-medium text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark`;
-export const mainCtaPrimaryButtonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover`;
-export const mainCtaDangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
-
-/** Reference chips: canonical action sizes for details panels, compact toolbars, and history actions. */
-export const referenceChipNeutralButtonClass = mediumContextNeutralButtonClass;
-/** Neutral reference chip whose label wraps (long localized labels at 320px). */
-export const referenceChipNeutralWrapButtonClass = mediumContextNeutralWrapButtonClass;
-export const referenceChipPrimaryWrapButtonClass = mediumContextPrimaryWrapButtonClass;
-export const referenceChipPrimaryButtonClass = mediumContextPrimaryButtonClass;
-export const referenceChipDangerButtonClass = mediumContextDangerButtonClass;
+export const buttonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover`;
+export const secondaryButtonClass = `${mainCtaActionBaseClass} border border-ui-border bg-ui-toggle font-medium text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark`;
+export const dangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 
 /** Binary pill toggle helper used by compact on/off filter controls. */
 const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
@@ -101,8 +90,3 @@ const togglePillInactiveClass = 'border-ui-border bg-ui-toggle text-ui-label hov
 /** Resolves the binary toggle-pill classes for the on or off state. */
 export const getTogglePillClass = (isActive: boolean): string =>
   `${togglePillBaseClass} ${isActive ? togglePillActiveClass : togglePillInactiveClass}`;
-
-/** Legacy aliases kept so older components can migrate incrementally. */
-export const buttonClass = mainCtaPrimaryButtonClass;
-export const secondaryButtonClass = mainCtaNeutralButtonClass;
-export const dangerButtonClass = mainCtaDangerButtonClass;

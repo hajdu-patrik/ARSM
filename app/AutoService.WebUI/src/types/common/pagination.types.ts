@@ -10,5 +10,4 @@ export interface PagedQuery {
   page: number;
   pageSize: number;
   search?: string;
-  sortDirection?: 'asc' | 'desc';
 }

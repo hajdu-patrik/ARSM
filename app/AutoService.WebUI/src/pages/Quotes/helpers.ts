@@ -84,7 +84,7 @@ export const NO_QUOTE_HEADER_FIELD_ERRORS: QuoteHeaderFieldErrors = {};
 export const NO_QUOTE_LINE_FIELD_ERRORS: QuoteLineFieldErrors = {};
 
 /** Converts a server timestamp to the `yyyy-MM-dd` value a date input needs. */
-export function toDateInputValue(isoValue: string): string {
+function toDateInputValue(isoValue: string): string {
   const date = new Date(isoValue);
 
   if (Number.isNaN(date.getTime())) {

@@ -3,7 +3,7 @@
 import type { DrivetrainType } from '../customers/customers.types';
 
 /** Full vehicle representation including owner information; embedded in {@link AppointmentDto}. */
-export interface VehicleDto {
+interface VehicleDto {
   /** Unique vehicle identifier. */
   id: number;
   /** License plate number (e.g. {@code "ABC-123"}). */
@@ -23,7 +23,7 @@ export interface VehicleDto {
 }
 
 /** Summary of a mechanic assigned to an appointment, with professional details and profile-picture availability. */
-export interface MechanicSummaryDto {
+interface MechanicSummaryDto {
   /** Unique mechanic identifier. */
   id: number;
   fullName: string;

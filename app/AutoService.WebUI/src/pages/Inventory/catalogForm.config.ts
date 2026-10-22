@@ -1,7 +1,7 @@
 /** Per-entity element ids and i18n keys consumed by the generic `CatalogFormModal`. */
 
 /** A single identifier/rate field: element id and i18n keys. */
-export interface CatalogFormFieldConfig {
+interface CatalogFormFieldConfig {
   readonly elementId: string;
   readonly labelKey: string;
   readonly placeholderKey: string;

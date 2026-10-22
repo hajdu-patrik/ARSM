@@ -2,13 +2,8 @@ import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';
 import { ConfirmModal } from '../../../components/common/ConfirmModal';
-import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import { mutedBodyTextClass } from '../../../utils/formStyles';
-
-interface DeleteVehicleTarget {
-  customerId: number;
-  vehicle: VehicleDetailDto;
-}
+import type { DeleteVehicleTarget } from '../page.types';
 
 interface DeleteVehicleModalProps {
   target: DeleteVehicleTarget | null;

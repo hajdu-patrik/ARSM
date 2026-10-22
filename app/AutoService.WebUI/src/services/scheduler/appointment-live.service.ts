@@ -8,7 +8,7 @@ import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-ch
 export const APPOINTMENT_UPDATED_EVENT = 'autoservice:appointment-updated';
 
 /** Detail payload for the {@code autoservice:appointment-updated} custom event. */
-export interface AppointmentUpdatedDetail {
+interface AppointmentUpdatedDetail {
   /** Appointment that changed. */
   appointmentId: number;
   /** Unix milliseconds when the change was published. */

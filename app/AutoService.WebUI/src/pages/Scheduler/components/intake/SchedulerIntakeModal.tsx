@@ -7,13 +7,9 @@ import { useToastStore } from '../../../../store/toast.store';
 import { formatLongDate } from '../../utils/scheduler-datetime';
 import { useSchedulerIntakeForm } from '../../hooks/useSchedulerIntakeForm';
 import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
-import {
-  SchedulerIntakeCustomerForm,
-  SchedulerIntakeHeader,
-  SchedulerIntakeTaskSection,
-  SchedulerIntakeVehicleForm,
-  SchedulerIntakeVehicleModeSection,
-} from './SchedulerIntakeSections';
+import { SchedulerIntakeCustomerForm, SchedulerIntakeHeader } from './SchedulerIntakeBasics';
+import { SchedulerIntakeTaskSection } from './SchedulerIntakeTaskSection';
+import { SchedulerIntakeVehicleForm, SchedulerIntakeVehicleModeSection } from './SchedulerIntakeVehicleSections';
 import { SchedulerIntakeLookupSection } from './SchedulerIntakeLookupSection';
 
 interface SchedulerIntakeModalProps {

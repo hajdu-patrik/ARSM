@@ -59,7 +59,7 @@ function matchesAnyDetailTerm(detail: string, terms: readonly string[]): boolean
 }
 
 /** The selected day at the current local time, as a datetime-local value. */
-export function getDefaultScheduledDate(selectedDate: Date): string {
+function getDefaultScheduledDate(selectedDate: Date): string {
   const now = new Date();
   return toDatetimeLocalValue(
     buildSelectedDayIso(
@@ -108,12 +108,12 @@ export function mapIntakeErrorToKey(error: unknown): string {
   return 'scheduler.intake.errors.createFailed';
 }
 
-export function toIso(value: string): string {
+function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
 /** Converts the vehicle form into the new-vehicle request, trimming text and parsing numbers. */
-export function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehicleRequest {
+function buildVehiclePayload(vehicle: VehicleFormState): SchedulerNewVehicleRequest {
   return {
     licensePlate: vehicle.licensePlate.trim(),
     vin: vehicle.vin.trim(),
@@ -142,7 +142,7 @@ export function normalizeRangedNumberInput(rawValue: string, min: number, max: n
 }
 
 /** True when mileage and engine power are numbers within their limits. */
-export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean {
+function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean {
   const mileageKm = Number(vehicle.mileageKm);
   const enginePowerKw = Number(vehicle.enginePowerKw);
 
@@ -153,7 +153,7 @@ export function hasValidVehicleNumericValues(vehicle: VehicleFormState): boolean
 }
 
 /** True when every required vehicle text field is filled and the drivetrain is a known type. */
-export function hasRequiredVehicleTextValues(vehicle: VehicleFormState): boolean {
+function hasRequiredVehicleTextValues(vehicle: VehicleFormState): boolean {
   return vehicle.licensePlate.trim().length > 0
     && vehicle.vin.trim().length > 0
     && vehicle.brand.trim().length > 0
@@ -162,7 +162,7 @@ export function hasRequiredVehicleTextValues(vehicle: VehicleFormState): boolean
 }
 
 /** Validates intake form state before constructing the API request payload. */
-export function getCreateValidationError(params: {
+function getCreateValidationError(params: {
   lookupState: LookupState;
   normalizedEmail: string;
   dueDateTime: string;
@@ -204,7 +204,7 @@ export function getCreateValidationError(params: {
 }
 
 /** Enriches the base intake payload with lookup-dependent customer/vehicle data. */
-export function enrichPayloadByLookupState(params: {
+function enrichPayloadByLookupState(params: {
   basePayload: SchedulerCreateIntakeRequest;
   lookupState: LookupState;
   vehicleMode: VehicleMode;

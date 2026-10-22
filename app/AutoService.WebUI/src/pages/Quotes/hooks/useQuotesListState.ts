@@ -43,7 +43,7 @@ interface UseQuotesListStateParams {
 }
 
 /** State and actions exposed for the quote list. */
-export interface QuotesListState {
+interface QuotesListState {
   readonly quotes: QuoteListItemDto[];
   readonly isLoading: boolean;
   readonly isFetching: boolean;

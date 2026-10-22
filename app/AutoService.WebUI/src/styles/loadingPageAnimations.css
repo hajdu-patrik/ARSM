@@ -113,11 +113,6 @@
   animation: mobile-orb-float 2.2s ease-in-out infinite;
 }
 
-.mobile-logo {
-  animation: mobile-logo-pulse-spin 1.8s linear infinite;
-  transform-origin: center;
-}
-
 @media (max-width: 320px) {
   .logo-spin {
     animation: mobile-logo-pulse-spin 1.8s linear infinite;

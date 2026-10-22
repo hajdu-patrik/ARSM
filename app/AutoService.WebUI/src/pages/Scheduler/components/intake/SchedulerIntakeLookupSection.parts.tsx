@@ -13,7 +13,7 @@ import {
 	intakeFieldLabelClass,
 	intakeFieldWrapperClass,
 	intakeInputClass,
-	mediumContextPrimaryWrapButtonClass,
+	referenceChipPrimaryWrapButtonClass,
 	mutedMetaTextClass,
 	successNoticeSurfaceClass,
 	toneTextClasses,
@@ -174,7 +174,7 @@ export const NameLookupResults = memo(function NameLookupResults({
 							onClick={() => {
 								onSelect(result);
 							}}
-							className={`${mediumContextPrimaryWrapButtonClass} w-full sm:w-auto sm:shrink-0`}
+							className={`${referenceChipPrimaryWrapButtonClass} w-full sm:w-auto sm:shrink-0`}
 						>
 							<span className="min-w-0 text-center">{translate('scheduler.intake.selectCustomerResult')}</span>
 						</button>

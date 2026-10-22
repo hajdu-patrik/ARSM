@@ -40,7 +40,7 @@ export function getAuthQueryScope(user: Pick<AuthUser, 'personId' | 'isAdmin'> |
 }
 
 /** Checks whether a query key belongs to the private ARSM namespace. */
-export function isPrivateArsmQueryKey(queryKey: QueryKey): boolean {
+function isPrivateArsmQueryKey(queryKey: QueryKey): boolean {
   return queryKey[0] === QUERY_KEY_ROOT
     && queryKey[1] === QUERY_KEY_SCOPE
     && queryKey[2] === QUERY_KEY_VERSION;
