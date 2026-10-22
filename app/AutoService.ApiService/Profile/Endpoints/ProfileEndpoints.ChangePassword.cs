@@ -83,7 +83,7 @@ public static partial class ProfileEndpoints
             await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
         }
 
-        // Every other device loses its access token now; the replacement issued below is newer than the cutoff.
+        // Every other device loses its access token now; the issuer dates the replacement at the new cutoff.
         sessionRevocation.RevokeAll(mechanic.Id);
 
         var accessTokenExpiresAtUtc = nowUtc.Add(AuthEndpoints.AccessTokenTtl);

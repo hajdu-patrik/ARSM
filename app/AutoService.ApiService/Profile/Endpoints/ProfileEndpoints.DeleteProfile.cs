@@ -1,6 +1,5 @@
 using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Auth.Security;
-using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Identity;
@@ -68,7 +67,7 @@ public static partial class ProfileEndpoints
         }
 
         var deleteResult = await db.ExecuteInTransactionAsync(
-            (transaction, token) => DeleteAccountAsync(person.Id, identityUser.Id, httpContext, userManager, db, transaction, token),
+            (transaction, token) => DeleteAccountAsync(person.Id, identityUser.Id, userManager, db, transaction, token),
             cancellationToken);
 
         if (deleteResult is not null)
@@ -90,31 +89,16 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile deleted successfully." });
     }
 
-    /** The retriable unit: revoke the active refresh token, delete the person and the identity user, commit; null means done. */
+    /** The retriable unit: delete the person (the cascade takes every refresh token) and the identity user, commit; null means done. */
     private static async Task<IResult?> DeleteAccountAsync(
         int personId,
         string identityUserId,
-        HttpContext httpContext,
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         IDbContextTransaction transaction,
         CancellationToken cancellationToken)
     {
-        if (httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) &&
-            !string.IsNullOrWhiteSpace(refreshTokenValue))
-        {
-            var refreshTokenHash = TokenSecurity.HashSha256(refreshTokenValue);
-            var refreshToken = await db.RefreshTokens
-                .FirstOrDefaultAsync(x => x.TokenHash == refreshTokenHash, cancellationToken);
-
-            if (refreshToken is not null && refreshToken.RevokedAtUtc is null)
-            {
-                refreshToken.Revoke(DateTime.UtcNow);
-            }
-        }
-
         await db.People.Where(p => p.Id == personId).ExecuteDeleteAsync(cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
 
         var identityUser = await userManager.FindByIdAsync(identityUserId);
         if (identityUser is not null)

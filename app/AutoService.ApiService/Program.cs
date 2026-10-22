@@ -218,7 +218,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("MechanicOnly", policy => policy.RequireClaim("person_type", "mechanic"));
 });
-builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
+builder.Services.AddSingleton<IJwtTokenIssuer>(sp => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience, sp.GetRequiredService<ISessionRevocationService>()));
 
 // One denylist instance serves the requests and warms itself from the table as a hosted service.
 builder.Services.AddSingleton<TokenDenylistService>();

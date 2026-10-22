@@ -6,7 +6,7 @@ namespace AutoService.ApiService.Auth.Security;
     locked-out account answers the same 429 body on login, change-password and profile deletion. */
 internal static class PasswordCheck
 {
-    /** Verifies the password; returns null when it is correct, else the 429 lockout response or null-with-false. */
+    /** Verifies the password with lockout counting: whether it matched, and the 429 result to answer with when the account is locked out. */
     internal static async Task<(bool Succeeded, IResult? LockoutResult)> VerifyAsync(
         SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager,

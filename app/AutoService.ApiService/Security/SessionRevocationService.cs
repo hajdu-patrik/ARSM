@@ -13,18 +13,21 @@ internal interface ISessionRevocationService
 
     /** True when a token of the person was issued before the person's cutoff. */
     bool IsRevoked(int personId, DateTimeOffset issuedAt);
+
+    /** The issue time of a new token of the person: now, or the person's cutoff when that is later. */
+    DateTime IssueTimeUtc(int personId, DateTime nowUtc);
 }
 
 internal sealed class SessionRevocationService(IEnumerable<IUserSubscriptions> subscriptions) : ISessionRevocationService
 {
-    // Cutoffs are whole seconds like the JWT iat claim: a token issued in the cutoff's own second stays
-    // valid, which is what lets the handler that revoked issue the replacement token right away.
+    // Cutoffs are whole seconds like the JWT iat claim and climb with every revocation, so a token issued
+    // before it in the same second is gone while the next token (dated at the cutoff by IssueTimeUtc) stays.
     private readonly ConcurrentDictionary<int, long> cutoffUnixSeconds = new();
 
     public void RevokeAll(int personId)
     {
         var nowUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        cutoffUnixSeconds[personId] = nowUnixSeconds;
+        cutoffUnixSeconds.AddOrUpdate(personId, nowUnixSeconds + 1, (_, cutoff) => Math.Max(cutoff, nowUnixSeconds) + 1);
 
         foreach (var channel in subscriptions)
         {
@@ -36,6 +39,11 @@ internal sealed class SessionRevocationService(IEnumerable<IUserSubscriptions> s
 
     public bool IsRevoked(int personId, DateTimeOffset issuedAt)
         => cutoffUnixSeconds.TryGetValue(personId, out var cutoff) && issuedAt.ToUnixTimeSeconds() < cutoff;
+
+    public DateTime IssueTimeUtc(int personId, DateTime nowUtc)
+        => cutoffUnixSeconds.TryGetValue(personId, out var cutoff) && new DateTimeOffset(nowUtc).ToUnixTimeSeconds() < cutoff
+            ? DateTimeOffset.FromUnixTimeSeconds(cutoff).UtcDateTime
+            : nowUtc;
 
     /** A cutoff older than the longest-living token plus the clock skew can never match a token again. */
     private void PruneExpired(long nowUnixSeconds)

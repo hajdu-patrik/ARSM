@@ -100,13 +100,14 @@ public static partial class AppointmentEndpoints
             appointment.VehicleId = vehicle.Id;
         }
 
-        // The graph is built above; the retriable unit only attaches it again and saves, so a retry inserts it once.
+        // The graph is built above and attached inside the cleared tracker: the rows without a key (appointment,
+        // new customer and vehicle) are inserted, the loaded ones (mechanic, existing vehicle) stay unchanged.
         try
         {
             await db.ExecuteInTransactionAsync(
                 async (transaction, token) =>
                 {
-                    db.Appointments.Add(appointment);
+                    db.Appointments.Attach(appointment);
                     await db.SaveChangesAsync(token);
                     await transaction.CommitAsync(token);
                     return true;

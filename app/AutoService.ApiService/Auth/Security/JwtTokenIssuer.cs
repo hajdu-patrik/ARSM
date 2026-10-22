@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
@@ -21,13 +22,15 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
 {
     private readonly string issuer;
     private readonly string audience;
+    private readonly ISessionRevocationService sessionRevocation;
     private readonly SigningCredentials signingCredentials;
     private readonly JwtSecurityTokenHandler tokenHandler = new();
 
-    public JwtTokenIssuer(string secret, string issuer, string audience)
+    public JwtTokenIssuer(string secret, string issuer, string audience, ISessionRevocationService sessionRevocation)
     {
         this.issuer = issuer;
         this.audience = audience;
+        this.sessionRevocation = sessionRevocation;
         signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
             SecurityAlgorithms.HmacSha256);
@@ -39,7 +42,9 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
         IEnumerable<string> roles,
         DateTime expiresAtUtc)
     {
-        var nowUtc = DateTime.UtcNow;
+        // Dated at the person's cutoff when that is ahead (at most a few seconds, inside the clock skew),
+        // so the token a handler issues right after revoking is never caught by its own revocation.
+        var issuedAtUtc = sessionRevocation.IssueTimeUtc(person.Id, DateTime.UtcNow);
         var email = identityUser.Email ?? person.Email;
 
         var claims = new List<Claim>
@@ -47,7 +52,7 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
             new(JwtRegisteredClaimNames.Sub, identityUser.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             // The session cutoff compares this issue time; the handler does not add iat on its own.
-            new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(nowUtc).ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(issuedAtUtc).ToString(), ClaimValueTypes.Integer64),
             new(ClaimTypes.NameIdentifier, identityUser.Id),
             new(JwtRegisteredClaimNames.Email, email),
             new(ClaimTypes.Email, email),
@@ -70,7 +75,7 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
             issuer: issuer,
             audience: audience,
             claims: claims,
-            notBefore: nowUtc,
+            notBefore: issuedAtUtc,
             expires: expiresAtUtc,
             signingCredentials: signingCredentials);
 
