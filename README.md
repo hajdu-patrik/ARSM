@@ -44,6 +44,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - `app/AutoService.ServiceDefaults`: shared service defaults and resilience setup
 - `tests/API`: HTTP endpoint test suites (`.http`)
 - `tests/Database`: SQL validation suites (`.sql`, read-only policy)
+- `tests/AutoService.UnitTests`: xUnit tests of the pricing calculators and the session cutoffs (`dotnet test`)
 - `docs`: additional technical and UI/UX documentation
 - `scripts`: automation (local test runner, `validate.py` gate, pre-push gate, `deploy-azure.py`)
 - `deploy`: deployment kits: the Azure production kit (`deploy/azure`, images, `deploy/gate` token gate) and the local test instance kit (`deploy/local-test`); guides in `deploy/docs`
@@ -259,7 +260,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 
 - Vite/Aspire WebUI hosting is local-development only. The Vite dev server binds to `localhost` by default; use `VITE_DEV_HOST` only for an explicit local LAN/container debugging opt-in.
 - Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
-- Auth login/refresh rate limits and login bans are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use a distributed limiter before scaling out.
+- Auth rate limits, login bans, the warmed token denylist and the session cutoffs are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use distributed implementations before scaling out.
 - The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
 - The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files (content-hashed) are cached for one year with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and the manifest and `robots.txt` use a shorter one-day cache.
 
