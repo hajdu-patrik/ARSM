@@ -126,7 +126,7 @@
 
 - Every comment is at most 2 lines, doc comments included: a JSDoc-style `/** */` block carries one
   short summary and no `@param`/`@returns` lists (user decision, 2026-09-28). This applies to every
-  language in the repository; longer explanations belong in the area `CLAUDE.md` or `docs/`.
+  language in the repository; longer explanations belong in the area `CLAUDE.md` or a README.
 - Temporary files (throwaway specs and scripts, screenshots, dumps, logs, scratch worktrees) live only
   in the session scratchpad or the OS temp directory, never in the repository tree, are deleted when
   the work is done, and are never staged or committed.
@@ -178,6 +178,7 @@
 - ServiceDefaults: `app/AutoService.ServiceDefaults/CLAUDE.md`
 - Tests: `tests/CLAUDE.md`
 - Scripts: `scripts/CLAUDE.md`
+- Deployment kits: `deploy/CLAUDE.md`
 
 ## Changelog & Development Metrics
 

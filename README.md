@@ -1,7 +1,7 @@
 # ARSM - Appointment and Resource Scheduling Management
 
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/Language-C%23_15-239120?style=flat&logo=csharp&logoColor=white)
+![C#](https://img.shields.io/badge/Language-C%23_14-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=flat&logo=vite&logoColor=white)
@@ -45,7 +45,7 @@ ARSM is a workshop scheduling and operations app for auto service teams. It help
 - `tests/API`: HTTP endpoint test suites (`.http`)
 - `tests/Database`: SQL validation suites (`.sql`, read-only policy)
 - `tests/AutoService.UnitTests`: xUnit tests of the pricing calculators and the session cutoffs (`dotnet test`)
-- `docs`: additional technical and UI/UX documentation
+- `docs`: written deliverables (the AI documents in English and Hungarian, the laboratory report), as `docx` and `pdf`
 - `scripts`: automation (local test runner, `validate.py` gate, pre-push gate, `deploy-azure.py`)
 - `deploy`: deployment kits: the Azure production kit (`deploy/azure`, images, `deploy/gate` token gate) and the local test instance kit (`deploy/local-test`); guides in `deploy/docs`
 
@@ -279,7 +279,7 @@ Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching 
 - `python scripts/select-e2e-specs.py --run` runs only the Playwright specs affected by the diff.
 - Detailed policy files:
   - Root: `CLAUDE.md`
-  - Area-specific rules: `app/*/CLAUDE.md`
+  - Area-specific rules: `app/*/CLAUDE.md`, `tests/CLAUDE.md`, `scripts/CLAUDE.md`, `deploy/CLAUDE.md`
 
 ## SQL Read-Only Policy for AI Validation
 

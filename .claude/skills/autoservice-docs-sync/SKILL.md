@@ -18,6 +18,7 @@ Use this skill after any change that can affect documented behavior.
 - Area rules: `app/{AutoService.ApiService,AutoService.WebUI,AutoService.AppHost,AutoService.ServiceDefaults}/CLAUDE.md`.
 - Tests: `tests/CLAUDE.md`.
 - Scripts: `scripts/CLAUDE.md`.
+- Deployment kits: `deploy/CLAUDE.md`.
 
 ## Agent and Skill Coverage
 

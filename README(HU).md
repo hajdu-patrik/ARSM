@@ -1,7 +1,7 @@
 # ARSM - Appointment and Resource Scheduling Management
 
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/Language-C%23_15-239120?style=flat&logo=csharp&logoColor=white)
+![C#](https://img.shields.io/badge/Language-C%23_14-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=flat&logo=vite&logoColor=white)
@@ -45,7 +45,7 @@ Az ARSM egy autószervizeknek készült műhelyütemező és napi működést t�
 - `tests/API`: HTTP endpoint tesztek (`.http`)
 - `tests/Database`: SQL validációs lekérdezések (`.sql`, csak olvasási policy)
 - `tests/AutoService.UnitTests`: xUnit tesztek az árazási kalkulátorokhoz és a session-lezárásokhoz (`dotnet test`)
-- `docs`: kiegészítő technikai és UI/UX dokumentáció
+- `docs`: írásos beadandók (a mesterséges intelligenciás dokumentumok angolul és magyarul, a laborbeszámoló), `docx` és `pdf` formátumban
 - `scripts`: automatizálás (lokális tesztfuttató, `validate.py` kapu, pre-push kapu, `deploy-azure.py`)
 - `deploy`: deployment készletek: az Azure éles készlet (`deploy/azure`, image-ek, `deploy/gate` tokenes kapu) és a lokális tesztpéldány készlete (`deploy/local-test`); útmutatók a `deploy/docs` mappában
 
@@ -277,7 +277,7 @@ Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a me
 - A `python scripts/select-e2e-specs.py --run` csak a diff által érintett Playwright speceket futtatja.
 - Részletes policy fájlok:
   - Gyökér: `CLAUDE.md`
-  - Területi szabályok: `app/*/CLAUDE.md`
+  - Területi szabályok: `app/*/CLAUDE.md`, `tests/CLAUDE.md`, `scripts/CLAUDE.md`, `deploy/CLAUDE.md`
 
 ## SQL csak olvasható policy MI validációhoz
 

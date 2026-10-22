@@ -33,6 +33,7 @@ Keep documentation concise, correct, and aligned with the code.
 - `app/AutoService.ServiceDefaults/CLAUDE.md`
 - `tests/CLAUDE.md`
 - `scripts/CLAUDE.md`
+- `deploy/CLAUDE.md`
 
 ## Validation
 

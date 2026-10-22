@@ -110,76 +110,7 @@ Optional:
 The script exports these keys to the `az` subprocess environment only (never to the command line
 and never to a tracked file); `main.bicepparam` reads them with `readEnvironmentVariable`.
 
-Paste-ready block for `.env.example` (placeholders only):
-
-```
-# --- Azure production deploy (python scripts/deploy-azure.py) ---
-# Subscription id of the Azure for Students subscription (az account show --query id -o tsv).
-ARSM_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
-# Resource group the script creates and deploys into.
-ARSM_AZURE_RESOURCE_GROUP=arsm-rg
-# Azure region; student subscriptions allow only some regions. Optional, default swedencentral.
-ARSM_AZURE_LOCATION=swedencentral
-# Container registry name: 5-50 lowercase letters/digits, globally unique.
-ARSM_ACR_NAME=arsmexampleacr
-# Keep one API replica always running (true) or scale it to zero when idle (false). Optional, default true.
-ARSM_API_ALWAYS_ON=true
-# Keep one web (gate + Nginx) replica always running. Optional, default false (scale to zero, ~2 s cold start).
-ARSM_WEB_ALWAYS_ON=false
-# Blob container for profile pictures. Optional, default arsm-profile-pictures.
-ARSM_BLOB_CONTAINER=arsm-profile-pictures
-# E-mail for the alert and budget mails. Optional, empty creates no action group, alert rule or budget.
-ARSM_ALERT_EMAIL=
-# Monthly budget in the subscription currency, mails at 50, 80 and 100 percent; needs ARSM_ALERT_EMAIL.
-# Optional, default 0 (no budget): Azure for Students does not support budgets.
-ARSM_MONTHLY_BUDGET=0
-# Daily Log Analytics ingestion cap in GB. Optional, default 1.
-ARSM_LOG_DAILY_QUOTA_GB=1
-
-# --- Production secrets and public address ---
-# Public https origin, no trailing slash; baked into the web image and used as the CORS origin.
-ARSM_PUBLIC_URL=https://arsm.hu
-# PostgreSQL administrator password (openssl rand -base64 36).
-ARSM_POSTGRES_PASSWORD=change-me
-# JWT signing secret, at least 32 bytes (openssl rand -base64 48).
-ARSM_JWT_SECRET=change-me-at-least-32-bytes-long
-# Access token of the production gate, at least 32 chars and different from the teszt GATE_TOKEN.
-ARSM_PROD_GATE_TOKEN=change-me-at-least-32-characters-long
-
-# --- Bootstrap admin (the only account in the empty production database) ---
-# E-mail of the first admin.
-ARSM_PROD_ADMIN_EMAIL=admin@example.com
-# Password of the first admin; required on every deploy, used only on the first start.
-ARSM_PROD_ADMIN_PASSWORD=change-me
-# First name of the first admin.
-ARSM_PROD_ADMIN_FIRST_NAME=Example
-# Middle name of the first admin. Optional.
-ARSM_PROD_ADMIN_MIDDLE_NAME=
-# Last name of the first admin.
-ARSM_PROD_ADMIN_LAST_NAME=Admin
-# Phone number of the first admin. Optional.
-ARSM_PROD_ADMIN_PHONE=
-# SpecializationType name: GasolineAndDiesel, HybridAndElectric or All.
-ARSM_PROD_ADMIN_SPECIALIZATION=All
-# Comma separated ExpertiseType names, 1-10 unique (Engine, Brakes, Bodywork, ...).
-ARSM_PROD_ADMIN_EXPERTISE=Engine,Brakes
-
-# --- Company letterhead on quote PDFs ---
-# Company name.
-ARSM_COMPANY_NAME=Example Auto Kft.
-# Street and number.
-ARSM_COMPANY_ADDRESS_LINE=Example utca 1.
-# Postal code.
-ARSM_COMPANY_POSTAL_CODE=1111
-# City.
-ARSM_COMPANY_CITY=Budapest
-# Tax number.
-ARSM_COMPANY_TAX_NUMBER=00000000-0-00
-# Phone number.
-ARSM_COMPANY_PHONE=+36 1 000 0000
-# E-mail address.
-ARSM_COMPANY_EMAIL=info@example.com
-```
+`.env.example` in the repository root lists every key above with a placeholder value.
 
 ## 5. Commands
 
@@ -219,8 +150,8 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
 4. Install the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and run `az login`; make
    the student subscription the active one (`az account list -o table`).
 5. Install Docker Desktop and start it (Linux containers). Git and Python are already there.
-6. Fill the `.env` keys of section 4: add the `.env.example` block to the example file for the
-   record, then put real values into `.env`. Choose a new `ARSM_PROD_GATE_TOKEN`, not the teszt one.
+6. Put real values into the `.env` keys of section 4 (copy `.env.example` first if there is no
+   `.env` yet). Choose a new `ARSM_PROD_GATE_TOKEN`, not the teszt one.
 7. `python scripts/deploy-azure.py check` and fix whatever it reports as missing.
 8. Commit the state you want to ship, then
    `python scripts/deploy-azure.py release --commit <sha>`. It creates the registry, builds and
