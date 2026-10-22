@@ -6,14 +6,12 @@ import { useQuoteLineMutations } from './useQuoteLineMutations';
 import { useQuotePdfDownload } from './useQuotePdfDownload';
 import { useQuoteWriteOutcome } from './useQuoteWriteOutcome';
 
-/** External dependencies required by the quote mutation handlers. */
 interface UseQuoteMutationsParams {
   showSuccessToast: (messageKey: string) => void;
   showErrorToast: (messageKey: string) => void;
   editor: QuoteEditorState;
 }
 
-/** Wires the quote write operations to the editor state and the query cache. */
 export function useQuoteMutations({ showSuccessToast, showErrorToast, editor }: UseQuoteMutationsParams) {
   const outcome = useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQuote: editor.adoptQuote });
   const header = useQuoteHeaderMutations({ editor, outcome, showErrorToast });
@@ -24,5 +22,4 @@ export function useQuoteMutations({ showSuccessToast, showErrorToast, editor }: 
   return { ...header, ...lines, ...lifecycle, ...pdf };
 }
 
-/** Quote mutation actions returned by {@link useQuoteMutations}. */
 export type QuoteMutationsState = ReturnType<typeof useQuoteMutations>;

@@ -37,12 +37,10 @@ const ROW_SELECTOR = '[data-testid="quote-row"]';
 /** Rows shown while the list has not loaded; one shared array keeps the reference stable. */
 const NO_QUOTES: QuoteListItemDto[] = [];
 
-/** External dependencies for the quote list-state hook. */
 interface UseQuotesListStateParams {
   showErrorToast: (key: string) => void;
 }
 
-/** State and actions exposed for the quote list. */
 interface QuotesListState {
   readonly quotes: QuoteListItemDto[];
   readonly isLoading: boolean;
@@ -65,7 +63,6 @@ export interface QuotesList {
   readonly listRef: RefObject<HTMLDivElement | null>;
 }
 
-/** Loads one page of quotes; search and the stored status filter run on the server. */
 export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams): QuotesList {
   const scope = useAuthQueryScope();
   const listRef = useRef<HTMLDivElement | null>(null);

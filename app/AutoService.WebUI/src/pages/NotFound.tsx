@@ -10,7 +10,6 @@ import { APP_ROUTE_PATHS } from '../router/appRoutes';
 const REDIRECT_DURATION_MS = 3000;
 const TIMER_TICK_MS = 50;
 
-/** 404 page component with countdown-based redirect. */
 export const NotFound = memo(function NotFound() {
   const { t } = useTranslation();
   const navigate = useNavigate();

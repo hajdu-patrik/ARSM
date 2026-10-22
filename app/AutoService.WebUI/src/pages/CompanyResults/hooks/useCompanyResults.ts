@@ -4,12 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { companyResultsQueries } from '../../../services/queries/company-results.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 
-/** External dependencies for the company result hook. */
 interface UseCompanyResultsParams {
   showErrorToast: (key: string) => void;
 }
 
-/** Loads the revenue report for the selected period. */
 export function useCompanyResults({ showErrorToast }: UseCompanyResultsParams) {
   const scope = useAuthQueryScope();
   const [year, setYear] = useState(() => new Date().getUTCFullYear());

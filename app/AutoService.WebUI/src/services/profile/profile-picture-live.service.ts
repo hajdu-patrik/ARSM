@@ -5,20 +5,15 @@ import { profileService } from './profile.service';
 import { isRecord } from '../http/record-guard';
 import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-channel';
 
-/** Custom event name dispatched on profile picture changes. */
 export const PROFILE_PICTURE_UPDATED_EVENT = 'autoservice:profile-picture-updated';
 
-/** Detail payload for the {@code autoservice:profile-picture-updated} custom event. */
 export interface ProfilePictureUpdatedDetail {
-  /** Person ID whose profile picture changed. */
   personId: number;
-  /** Whether the person currently has a profile picture. */
   hasProfilePicture: boolean;
   /** Cache-busting timestamp to force image reload. */
   cacheBuster: number;
 }
 
-/** Narrows an unknown payload to a profile picture update detail, or null if it is not one. */
 function toProfilePictureUpdate(value: unknown): ProfilePictureUpdatedDetail | null {
   if (
     !isRecord(value) ||
@@ -32,7 +27,6 @@ function toProfilePictureUpdate(value: unknown): ProfilePictureUpdatedDetail | n
   return { personId: value.personId, hasProfilePicture: value.hasProfilePicture, cacheBuster: value.cacheBuster };
 }
 
-/** Parses a raw SSE data string into a typed profile picture update detail, or null if invalid. */
 function parseProfilePictureUpdate(data: string): ProfilePictureUpdatedDetail | null {
   return toProfilePictureUpdate(parseJsonObject(data));
 }

@@ -13,10 +13,8 @@ import {
   type ServerFieldErrors,
 } from '../../utils/serverValidation';
 
-/** Customer form fields that can carry a validation error. */
 export const CUSTOMER_FIELD_NAMES = ['firstName', 'middleName', 'lastName', 'email', 'phoneNumber'] as const;
 
-/** Vehicle form fields that can carry a validation error. */
 export const VEHICLE_FIELD_NAMES = [
   'licensePlate',
   'vin',

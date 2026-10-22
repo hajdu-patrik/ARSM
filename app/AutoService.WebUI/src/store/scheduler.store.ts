@@ -5,30 +5,21 @@ import { create } from 'zustand';
 import { isRecord } from '../services/http/record-guard';
 import { readStorage, removeStorage, writeStorage } from '../utils/safeStorage';
 
-/** Shape of the scheduler Zustand store. */
 interface SchedulerState {
-  /** Currently viewed calendar year. */
   calendarYear: number;
   /** Currently viewed calendar month (1-12). */
   calendarMonth: number;
-  /** Currently selected day-of-month, or {@code null} if no day is selected. */
   selectedDay: number | null;
   /** Navigates to a different calendar month, clearing the selected day. */
   setCalendarMonth: (year: number, month: number) => void;
-  /** Sets or clears the selected day within the current month. */
   setSelectedDay: (day: number | null) => void;
 }
 
-/** {@code sessionStorage} key for persisting the scheduler view state per tab. */
 const SCHEDULER_SESSION_KEY = 'scheduler-selected-view';
 
-/** Serializable scheduler view state stored in {@code sessionStorage}. */
 interface SchedulerSessionState {
-  /** Calendar year. */
   year: number;
-  /** Calendar month (1-12). */
   month: number;
-  /** Selected day-of-month, or {@code null}. */
   day: number | null;
 }
 
@@ -52,7 +43,7 @@ function parseSessionState(value: unknown, fallback: SchedulerSessionState): Sch
   };
 }
 
-/** Reads the persisted scheduler view state from {@code sessionStorage}, falling back to today's date. */
+/** Reads the persisted scheduler view state from `sessionStorage`, falling back to today's date. */
 function readSessionState(fallback: SchedulerSessionState): SchedulerSessionState {
   const raw = readStorage('session', SCHEDULER_SESSION_KEY);
   if (raw === null) {
@@ -66,12 +57,11 @@ function readSessionState(fallback: SchedulerSessionState): SchedulerSessionStat
   }
 }
 
-/** Persists the current scheduler view state to {@code sessionStorage}; a blocked storage is ignored. */
+/** Persists the current scheduler view state to `sessionStorage`; a blocked storage is ignored. */
 function writeSessionState(state: SchedulerSessionState): void {
   writeStorage('session', SCHEDULER_SESSION_KEY, JSON.stringify(state));
 }
 
-/** Zustand store for the scheduler view; initializes from {@code sessionStorage} (falls back to today). */
 export const useSchedulerStore = create<SchedulerState>((set, get) => {
   const initialState = readSessionState(viewOfDate(new Date()));
 

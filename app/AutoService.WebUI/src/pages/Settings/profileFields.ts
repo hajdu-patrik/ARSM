@@ -4,7 +4,6 @@
 import type { ProfileData } from '../../types/profile/profile.types';
 import { getFieldMessageKey, type ServerFieldErrors } from '../../utils/serverValidation';
 
-/** Fields of the personal-information form. */
 const PROFILE_FIELD_NAMES = ['firstName', 'middleName', 'lastName', 'email', 'phoneNumber'] as const;
 
 export type ProfileFieldName = (typeof PROFILE_FIELD_NAMES)[number];
@@ -12,7 +11,6 @@ export type ProfileFieldName = (typeof PROFILE_FIELD_NAMES)[number];
 /** Fields the server refuses to leave blank; a blank one is restored from the profile when a save fails. */
 export const REQUIRED_PROFILE_FIELDS: readonly ProfileFieldName[] = ['firstName', 'lastName', 'email'];
 
-/** The text of every field. */
 export type ProfileFieldValues = Readonly<Record<ProfileFieldName, string>>;
 
 /** The fields the user edited since the profile was read; a field not listed shows the server value. */

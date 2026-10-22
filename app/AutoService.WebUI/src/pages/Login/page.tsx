@@ -19,7 +19,6 @@ import {
 } from '../../utils/formStyles';
 import { useLoginForm } from './useLoginForm';
 
-/** Public login route component. */
 export const Login = memo(function Login() {
   const { t: translate } = useTranslation();
   const identifierErrorId = useId();

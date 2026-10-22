@@ -52,7 +52,6 @@ const VAT_DROPDOWN_OPTIONS: readonly DropdownOption[] = VAT_RATE_OPTIONS.map((ra
   label: `${String(rate)}%`,
 }));
 
-/** Quote line editor that shows bound field errors once a save was attempted. */
 export const QuoteLineForm = memo(function QuoteLineForm({
   t,
   locale,

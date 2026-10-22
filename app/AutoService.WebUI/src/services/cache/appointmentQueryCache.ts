@@ -16,7 +16,6 @@ function sortAppointments(appointments: AppointmentDto[]): AppointmentDto[] {
   ));
 }
 
-/** Replaces or inserts one appointment inside a cached appointment collection, date-sorted. */
 function upsertAppointment(appointments: AppointmentDto[], updated: AppointmentDto): AppointmentDto[] {
   const withoutUpdated = appointments.filter((appointment) => appointment.id !== updated.id);
   return sortAppointments([...withoutUpdated, updated]);
@@ -32,7 +31,6 @@ function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; 
   };
 }
 
-/** Checks whether a scheduler month query key targets a given year-month bucket. */
 function queryKeyMonthMatches(queryKey: QueryKey, year: number, month: number): boolean {
   const keyYear = queryKey.at(-2);
   const keyMonth = queryKey.at(-1);

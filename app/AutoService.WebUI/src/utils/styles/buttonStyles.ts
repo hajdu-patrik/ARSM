@@ -61,7 +61,6 @@ const segmentedControlOptionBaseClass = `inline-flex min-h-11 min-w-0 items-cent
 const segmentedControlOptionActiveClass = 'border border-arsm-accent/80 bg-ui-accent text-ui-on-accent outline-1 outline-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:outline-arsm-accent-dark/35';
 const segmentedControlOptionInactiveClass = 'bg-transparent text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark';
 
-/** Resolves the segmented-control option classes for the active or inactive state. */
 export const getSegmentedControlOptionClass = (isActive: boolean): string =>
   `${segmentedControlOptionBaseClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
 
@@ -87,6 +86,5 @@ const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items
 const togglePillActiveClass = 'border-arsm-accent/80 bg-ui-accent text-ui-on-accent outline-1 outline-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:outline-arsm-accent-dark/35';
 const togglePillInactiveClass = 'border-ui-border bg-ui-toggle text-ui-label hover:border-ui-accent/50 hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark';
 
-/** Resolves the binary toggle-pill classes for the on or off state. */
 export const getTogglePillClass = (isActive: boolean): string =>
   `${togglePillBaseClass} ${isActive ? togglePillActiveClass : togglePillInactiveClass}`;

@@ -8,7 +8,6 @@ import { useQuoteCache } from './useQuoteCache';
 import type { QuoteEditorState } from './useQuoteEditor';
 import type { QuoteWriteOutcome } from './useQuoteWriteOutcome';
 
-/** Success toast key per status transition. */
 const STATUS_TOAST_KEYS: Record<QuoteStatus, string> = {
   Draft: 'quotes.toasts.quoteUpdated',
   Sent: 'quotes.toasts.quoteSent',
@@ -24,13 +23,11 @@ export interface DeleteQuoteTarget {
   version: number;
 }
 
-/** Variables of a status change. */
 interface ChangeStatusVariables {
   quoteId: number;
   request: ChangeQuoteStatusRequest;
 }
 
-/** External dependencies for the lifecycle write hook. */
 interface UseQuoteLifecycleMutationsParams {
   editor: QuoteEditorState;
   outcome: QuoteWriteOutcome;

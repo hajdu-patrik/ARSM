@@ -13,7 +13,6 @@ import { useToastStore } from '../../store/toast.store';
 import { logError } from '../../utils/devLog';
 import { defaultIconClass, secondaryButtonClass } from '../../utils/formStyles';
 
-/** Route component that makes a signed-in user replace the temporary password before using the app. */
 export const ChangePasswordPage = memo(function ChangePasswordPage() {
   const { t } = useTranslation();
   const showSuccessToast = useToastStore((state) => state.showSuccess);

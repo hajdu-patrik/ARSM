@@ -17,7 +17,6 @@ interface AppointmentCardActionModalsProps {
   readonly onConfirmUnclaim: () => void;
 }
 
-/** Renders the claim and self-unassign confirmation modals. */
 export const AppointmentCardActionModals = memo(function AppointmentCardActionModals({
   isClaimConfirmOpen,
   isUnclaimConfirmOpen,

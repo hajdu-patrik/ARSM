@@ -20,7 +20,6 @@ import { QuoteList } from './components/QuoteList';
 import { QuoteEditorModal } from './components/QuoteEditorModal';
 import { DeleteQuoteModal } from './components/DeleteQuoteModal';
 
-/** Quotes route component. */
 export const QuotesPage = memo(function QuotesPage() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();

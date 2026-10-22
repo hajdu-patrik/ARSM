@@ -23,7 +23,6 @@ import {
 } from './schedulerMonthWindow';
 import { useIsAppointmentLiveConnected, useSchedulerLiveRefresh } from './useSchedulerLiveRefresh';
 
-/** Dependencies needed by the scheduler data hook. */
 interface UseSchedulerDataSyncArgs {
   readonly calendarYear: number;
   readonly calendarMonth: number;
@@ -34,7 +33,6 @@ interface UseSchedulerDataSyncArgs {
 interface SchedulerAppointments {
   /** Appointments scheduled for today, found in the loaded months. */
   readonly todayAppointments: AppointmentDto[];
-  /** Appointments of the viewed calendar month. */
   readonly monthAppointments: AppointmentDto[];
   /** Appointments of the calendar grid: the viewed month plus its leading and trailing overflow days. */
   readonly calendarAppointments: AppointmentDto[];

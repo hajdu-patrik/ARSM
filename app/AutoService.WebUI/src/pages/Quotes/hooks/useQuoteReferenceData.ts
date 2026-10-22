@@ -14,14 +14,12 @@ const NO_PARTS: PartDto[] = [];
 const NO_LABOR_TYPES: LaborTypeDto[] = [];
 const NO_APPOINTMENTS: AppointmentDto[] = [];
 
-/** External dependencies for the quote editor reference-data hook. */
 interface UseQuoteReferenceDataParams {
   isOpen: boolean;
   vehicleId: number | null;
   showErrorToast: (key: string) => void;
 }
 
-/** Catalog and appointment options offered by the quote editor. */
 export interface QuoteReferenceData {
   readonly parts: PartDto[];
   readonly laborTypes: LaborTypeDto[];
@@ -29,7 +27,6 @@ export interface QuoteReferenceData {
   readonly isLoadingCatalog: boolean;
 }
 
-/** Reads the catalog and the anchored vehicle's appointments while the editor is open. */
 export function useQuoteReferenceData({
   isOpen,
   vehicleId,

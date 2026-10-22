@@ -9,7 +9,6 @@ import { scopedQueryOptions } from './scopedQueryOptions';
 /** Page size of the option list: the server maximum, so one request returns every mechanic. */
 const OPTIONS_PAGE_SIZE = 500;
 
-/** Admin read factories; every one takes the scope of useAuthQueryScope() first. */
 export const adminQueries = {
   /** One page of the mechanic roster; the previous page stays shown while the next one loads. */
   mechanicsPage: (scope: AuthQueryScope | null, query: PagedQuery) =>

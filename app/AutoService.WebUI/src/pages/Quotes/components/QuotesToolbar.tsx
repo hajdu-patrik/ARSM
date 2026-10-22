@@ -18,7 +18,6 @@ interface QuotesToolbarProps {
   readonly onStatusFilterChange: (value: QuoteStatusFilter) => void;
 }
 
-/** i18n key for each toolbar status filter option. */
 const STATUS_FILTER_I18N_KEY: Record<QuoteStatusFilter, string> = {
   All: 'quotes.filters.all',
   Draft: 'quotes.status.draft',

@@ -99,7 +99,6 @@ function LoadingMobileOrb() {
   );
 }
 
-/** Props of {@link LoadingCenterLogo}: the theme-resolved logo asset and its translated alt text. */
 interface LoadingCenterLogoProps {
   readonly logoAlt: string;
   readonly logoSrc: string;
@@ -125,7 +124,6 @@ function LoadingCenterLogo({ logoAlt, logoSrc }: LoadingCenterLogoProps) {
   );
 }
 
-/** Animated loading splash shown on a full browser load of an app route, until the app is ready. */
 export const LoadingPage = memo(function LoadingPage() {
   const { t: translate, ready: isI18nReady } = useTranslation();
   const theme = useThemeStore((state) => state.theme);

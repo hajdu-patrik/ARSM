@@ -1,5 +1,3 @@
-/** Request-builder and form helper utilities for mechanic registration. */
-
 import type { MechanicListItem, RegisterMechanicRequest } from '../../../services/admin/admin.service';
 import { MIN_PASSWORD_LENGTH } from '../../../utils/validation';
 import type { RegisterMechanicFormValues } from './types';
@@ -40,7 +38,6 @@ export function canSubmitForm(values: RegisterMechanicFormValues, isSubmitting: 
   );
 }
 
-/** Returns a blank form values object for resetting the registration form. */
 export function emptyRegisterMechanicFormValues(): RegisterMechanicFormValues {
   return {
     firstName: '',

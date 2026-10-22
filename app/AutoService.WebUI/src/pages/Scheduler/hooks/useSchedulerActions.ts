@@ -21,7 +21,6 @@ import type {
 import { settle } from './settle';
 import { useAppointmentMutation } from './useAppointmentMutation';
 
-/** Variables of the admin assign and unassign mutations. */
 interface MechanicAssignment {
   readonly appointmentId: number;
   readonly mechanicId: number;
@@ -179,7 +178,6 @@ function useDeleteAction() {
   return useCallback((id: number) => settle(deleteAppointment(id)), [deleteAppointment]);
 }
 
-/** Returns memoized scheduler action handlers for appointment mutations. */
 export function useSchedulerActions() {
   const assignmentActions = useAssignmentActions();
   const editActions = useEditActions();

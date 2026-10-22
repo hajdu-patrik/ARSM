@@ -7,21 +7,18 @@ import { buildQuoteLineRequest, QUOTE_WRITE_NETWORK_MODE } from './quoteMutation
 import type { QuoteEditorState, QuoteLineEditingTarget } from './useQuoteEditor';
 import type { QuoteWriteOutcome } from './useQuoteWriteOutcome';
 
-/** Variables of a line save: the line being added or edited, and the payload for it. */
 interface SaveLineVariables {
   quoteId: number;
   target: NonNullable<QuoteLineEditingTarget>;
   request: QuoteLineRequest;
 }
 
-/** Variables of a line removal. */
 interface DeleteLineVariables {
   quoteId: number;
   lineId: number;
   version: number;
 }
 
-/** External dependencies for the line write hook. */
 interface UseQuoteLineMutationsParams {
   editor: QuoteEditorState;
   outcome: QuoteWriteOutcome;

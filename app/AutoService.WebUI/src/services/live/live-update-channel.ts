@@ -12,11 +12,9 @@ const RECONNECT_BASE_DELAY_MS = 2000;
 /** Upper bound of the reconnect delay, reached after a few failed attempts. */
 const RECONNECT_MAX_DELAY_MS = 30_000;
 
-/** Configuration for one live update channel. */
 export interface LiveUpdateChannelOptions<TDetail> {
   /** Resolves the SSE endpoint URL. Lazy, because it depends on runtime configuration. */
   readonly resolveUrl: () => string;
-  /** Event name the server writes in its SSE frames. */
   readonly sseEventName: string;
   /** Custom DOM event name this channel re-dispatches on `window`. */
   readonly domEventName: string;
@@ -24,7 +22,6 @@ export interface LiveUpdateChannelOptions<TDetail> {
   readonly parse: (data: string) => TDetail | null;
 }
 
-/** Public surface of a live update channel. */
 export interface LiveUpdateChannel<TDetail> {
   /** Starts the connection on the first subscriber; the returned function releases this subscriber. */
   readonly start: () => () => void;
@@ -53,7 +50,6 @@ function reconnectDelayMs(attempt: number): number {
   return nominalMs / 2 + Math.random() * (nominalMs / 2);
 }
 
-/** Creates an SSE-backed live update channel from its URL, event names and payload parser. */
 export function createLiveUpdateChannel<TDetail>(
   options: LiveUpdateChannelOptions<TDetail>,
 ): LiveUpdateChannel<TDetail> {
@@ -80,7 +76,6 @@ export function createLiveUpdateChannel<TDetail>(
     return token === lifecycleToken && subscriberCount > 0 && useAuthStore.getState().isAuthenticated;
   }
 
-  /** Cancels a pending reconnect timer. */
   function clearReconnectTimer(): void {
     if (reconnectTimer !== null) {
       clearTimeout(reconnectTimer);
@@ -88,7 +83,6 @@ export function createLiveUpdateChannel<TDetail>(
     }
   }
 
-  /** Closes the active connection if one exists. */
   function closeEventSource(): void {
     if (eventSource !== null) {
       eventSource.close();
@@ -108,7 +102,6 @@ export function createLiveUpdateChannel<TDetail>(
     }
   }
 
-  /** Re-dispatches a parsed detail as a DOM custom event. */
   function dispatch(detail: TDetail): void {
     globalThis.dispatchEvent(new CustomEvent(options.domEventName, { detail }));
   }
@@ -177,7 +170,6 @@ export function createLiveUpdateChannel<TDetail>(
     });
   }
 
-  /** Opens the SSE connection and wires event and error handling. */
   function connect(): void {
     if (!shouldKeepLiveUpdates(lifecycleToken) || eventSource !== null) {
       return;

@@ -6,12 +6,10 @@ import { customerRegistryService } from '../../../services/customers/customer-re
 import type { DeleteVehicleTarget } from '../page.types';
 import type { CustomerMutationToastHandlers } from './mutation-toast.types';
 
-/** Dependencies required by vehicle delete mutation handlers. */
 interface UseVehicleDeleteMutationsParams extends CustomerMutationToastHandlers {
   refreshAfterVehicleDeleted: (customerId: number) => Promise<void>;
 }
 
-/** Manages vehicle delete confirmation state and mutation side effects. */
 export function useVehicleDeleteMutations({
   showSuccessToast,
   showErrorToast,

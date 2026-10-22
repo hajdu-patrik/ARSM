@@ -61,7 +61,6 @@ const VEHICLE_SAVE_ERROR_RULES: SaveErrorRules<VehicleFieldName> = {
 /** Required vehicle text fields an edit restores from the saved vehicle when the server rejects them blank. */
 const REQUIRED_VEHICLE_TEXT_FIELDS = ['licensePlate', 'vin', 'brand', 'model', 'drivetrainType'] as const;
 
-/** Variables of the vehicle create mutation. */
 interface CreateVehicleVariables {
   readonly customerId: number;
   readonly request: CreateVehicleRequest;
@@ -74,13 +73,11 @@ interface UpdateVehicleVariables {
   readonly request: UpdateVehicleRequest;
 }
 
-/** Dependencies required by vehicle create/edit mutation handlers. */
 interface UseVehicleFormMutationsParams extends CustomerMutationToastHandlersWithWarning {
   refreshAfterVehicleCreated: (customerId: number) => Promise<void>;
   refreshAfterVehicleUpdated: (customerId: number, vehicleId: number) => Promise<void>;
 }
 
-/** Manages vehicle form modal state and create/update mutations. */
 export function useVehicleFormMutations({
   showSuccessToast,
   showErrorToast,

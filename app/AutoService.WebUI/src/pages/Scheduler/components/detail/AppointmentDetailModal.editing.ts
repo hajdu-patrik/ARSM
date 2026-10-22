@@ -17,7 +17,6 @@ import {
   normalizeEditFieldValue,
 } from './AppointmentDetailModal.edit';
 
-/** Inputs of {@link useAppointmentEditing}: the open appointment and the page-level update handler. */
 interface UseAppointmentEditingArgs {
   readonly appointment: AppointmentDto;
   readonly onUpdate: (

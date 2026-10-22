@@ -1,7 +1,6 @@
 /** Shared semantic color tones: one light+dark recipe per tone/surface family; components
  * choose a tone and never re-type palette classes (see app/AutoService.WebUI/CLAUDE.md). */
 
-/** Every semantic tone a recipe can cover. */
 export type SemanticTone = 'neutral' | 'info' | 'success' | 'warning' | 'error';
 
 /** The signal subset used by feedback surfaces, filter chips and status signals. */

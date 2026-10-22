@@ -2,7 +2,6 @@ import type { CustomerMutationToastHandlersWithWarning } from './mutation-toast.
 import { useVehicleDeleteMutations } from './useVehicleDeleteMutations';
 import { useVehicleFormMutations } from './useVehicleFormMutations';
 
-/** External dependencies required by vehicle mutation handlers. */
 interface UseVehicleMutationsParams extends CustomerMutationToastHandlersWithWarning {
   refreshAfterVehicleCreated: (customerId: number) => Promise<void>;
   refreshAfterVehicleUpdated: (customerId: number, vehicleId: number) => Promise<void>;

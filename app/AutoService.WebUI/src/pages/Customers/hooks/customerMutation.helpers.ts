@@ -12,14 +12,12 @@ export function buildNormalizedCustomerPayload(form: CustomerFormState): UpdateC
   };
 }
 
-/** True when every required customer field has a value. */
 export function hasRequiredCustomerFields(payload: UpdateCustomerRequest): boolean {
   return payload.firstName.length > 0
     && payload.lastName.length > 0
     && payload.email.length > 0;
 }
 
-/** True when at least one customer field has a value. */
 export function hasAnyCustomerFieldValue(payload: UpdateCustomerRequest): boolean {
   return payload.firstName.length > 0
     || (payload.middleName?.length ?? 0) > 0

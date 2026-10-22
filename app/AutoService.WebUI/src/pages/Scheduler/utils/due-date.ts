@@ -2,22 +2,16 @@
 
 import { toneTextClasses } from '../../../utils/formStyles';
 
-/** Computed due-state for an appointment's due datetime. */
 export interface DueState {
-  /** Whether the due datetime has already passed. */
   isOverdue: boolean;
-  /** Tailwind color class reflecting the urgency tone. */
   toneClassName: string;
-  /** i18n translation key describing the due state. */
   labelKey: string;
   /** Interpolation values (days, hours, minutes) for the label key; `count` is the days and picks the plural form. */
   labelValues?: Record<string, number>;
 }
 
-/** Milliseconds in one calendar day. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** Milliseconds in one minute. */
 const MS_PER_MINUTE = 60 * 1000;
 
 /** Splits a duration into whole days, hours and minutes, rounding up to the next minute. */

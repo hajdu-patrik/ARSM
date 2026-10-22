@@ -1,4 +1,4 @@
-/** Auth service: login, logout and session restore, using a {@code localStorage} hint to skip cold-start validate calls. */
+/** Auth service: login, logout and session restore, using a `localStorage` hint to skip cold-start validate calls. */
 
 import { apiClient } from '../http/api.client';
 import { isTransientRequestFailure, redirectToServerError } from '../http/server-error';
@@ -15,7 +15,6 @@ function toAuthUser({ personId, isAdmin, mustChangePassword }: ValidateTokenResp
   return { personId, isAdmin, mustChangePassword };
 }
 
-/** Updates the auth store with an authenticated user. */
 function setAuthenticatedUser(user: AuthUser): void {
   useAuthStore.setState({ user, isAuthenticated: true, error: null });
 }
@@ -25,9 +24,7 @@ function clearAuthState(): void {
   useAuthStore.getState().clearAuth();
 }
 
-/** Authentication service object providing login, logout, and session restore operations. */
 export const authService = {
-  /** Authenticates with email/phone and password via {@code POST /api/auth/login}. */
   async login(request: LoginRequest): Promise<AuthUser> {
     const response = await apiClient.post<LoginResponse>('/api/auth/login', request);
     const authUser = toAuthUser(response.data);
@@ -39,7 +36,7 @@ export const authService = {
     return authUser;
   },
 
-  /** Logs out via {@code POST /api/auth/logout}; clears local state in {@code finally} even when the request fails. */
+  /** Logs out via `POST /api/auth/logout`; clears local state in `finally` even when the request fails. */
   async logout(): Promise<void> {
     try {
       await apiClient.post('/api/auth/logout');
@@ -49,7 +46,7 @@ export const authService = {
     }
   },
 
-  /** Restores auth from the cookie session via {@code GET /api/auth/validate}; skips the call with no session hint.
+  /** Restores auth from the cookie session via `GET /api/auth/validate`; skips the call with no session hint.
    * A timeout, network error or 5xx keeps the hint and sends the browser to /500, whose reload retries. */
   async restoreAuth(): Promise<AuthUser | null> {
     if (!hasAuthSessionHint()) {

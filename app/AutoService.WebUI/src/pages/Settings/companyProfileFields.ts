@@ -19,7 +19,6 @@ export const COMPANY_FIELD_MAX_LENGTHS: Readonly<Record<CompanyFieldName, number
   email: 150,
 };
 
-/** The text of every field. */
 export type CompanyFieldValues = Readonly<Record<CompanyFieldName, string>>;
 
 /** The fields the user edited since the profile was read; a field not listed shows the stored value. */

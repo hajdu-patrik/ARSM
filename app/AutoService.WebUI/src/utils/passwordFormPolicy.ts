@@ -9,7 +9,6 @@ const CREDENTIALS_DISABLED_REASON_KEYS = {
   mismatch: 'common.validation.passwordMismatch',
 } as const;
 
-/** Fields of the password-change form. */
 export type PasswordFieldName = 'currentPassword' | 'newPassword' | 'confirmNewPassword';
 
 /** The server validation message key of every field, undefined while the field has none. */
@@ -56,7 +55,6 @@ interface CredentialsDisabledReasonInput {
   readonly isPasswordMismatch: boolean;
 }
 
-/** Resolves disabled-submit reason key for the password form. */
 export function getCredentialsDisabledReasonKey({
   isSubmitting,
   isPasswordFormIncomplete,

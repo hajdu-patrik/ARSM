@@ -6,7 +6,6 @@ import { readStorage, removeStorage, writeStorage } from './safeStorage';
 /** Session storage key of the one-shot marker; index.html's pre-paint script reads the same key. */
 const SKIP_LOADING_SPLASH_ON_NEXT_BOOT_KEY = 'autoservice-skip-loading-splash-on-next-boot';
 
-/** Marks that the next app boot should suppress the loading splash once. */
 export function markSkipLoadingSplashOnNextBoot(): void {
   writeStorage('session', SKIP_LOADING_SPLASH_ON_NEXT_BOOT_KEY, '1');
 }

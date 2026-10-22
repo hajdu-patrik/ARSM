@@ -1,5 +1,3 @@
-/** Customer page helper utilities: data transformation, validation mapping, and formatting for the registry page. */
-
 import { DRIVETRAIN_TYPES, type CustomerListItem, type DrivetrainType } from '../../types/customers/customers.types';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import type { ServerFieldErrors } from '../../utils/serverValidation';
@@ -12,7 +10,6 @@ export interface VehicleNumericValues {
   readonly enginePowerKw: number;
 }
 
-/** Vehicle form state shape for create/edit modals. */
 export interface VehicleFormState {
   licensePlate: string;
   vin: string;
@@ -36,7 +33,6 @@ export function orderRepairHistory(appointments: AppointmentDto[], direction: So
   return direction === 'asc' ? appointments : [...appointments].reverse();
 }
 
-/** Maps customer-validation messages to i18n keys. */
 export function mapCustomerValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -71,7 +67,6 @@ export function mapCustomerValidationMessageToKey(message: string): string {
   return 'customers.errors.saveFailed';
 }
 
-/** Maps vehicle-validation messages to i18n keys. */
 export function mapVehicleValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -114,7 +109,6 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   return 'customers.errors.vehicleSaveFailed';
 }
 
-/** Parses numeric vehicle form inputs into numbers for payload construction. */
 export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumericValues {
   return {
     year: Number(form.year),
@@ -123,7 +117,6 @@ export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumeri
   };
 }
 
-/** Narrows a form string to one of the known drivetrain types. */
 export function isDrivetrainType(value: string): value is DrivetrainType {
   return (DRIVETRAIN_TYPES as readonly string[]).includes(value);
 }

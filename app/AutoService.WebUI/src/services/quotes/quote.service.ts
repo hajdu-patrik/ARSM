@@ -1,5 +1,3 @@
-/** API service for quotes. */
-
 import { apiClient } from '../http/api.client';
 import type { SilentRequestOptions } from '../http/request-options';
 import type {
@@ -33,7 +31,7 @@ function parseContentDispositionFileName(disposition: unknown): string | null {
   }
 }
 
-/** Thin axios wrapper for {@code /api/quotes}; every write carries the version the client last saw, as a
+/** Thin axios wrapper for `/api/quotes`; every write carries the version the client last saw, as a
  * query param on the two DELETE routes since a DELETE has no body. */
 export const quoteService = {
   /** Returns one page of quotes, newest first; the server applies the search, status and expired filters. */
@@ -50,7 +48,6 @@ export const quoteService = {
     return response.data;
   },
 
-  /** Returns one quote with its lines and totals. */
   async getQuote(id: number, options?: SilentRequestOptions): Promise<QuoteDetailDto> {
     const response = await apiClient.get<QuoteDetailDto>(`/api/quotes/${String(id)}`, {
       skipErrorRedirect: options?.skipErrorRedirect,
@@ -95,7 +92,6 @@ export const quoteService = {
     return response.data;
   },
 
-  /** Transitions a quote to a new status. */
   async changeStatus(id: number, request: ChangeQuoteStatusRequest): Promise<QuoteDetailDto> {
     const response = await apiClient.post<QuoteDetailDto>(`/api/quotes/${String(id)}/status`, request);
     return response.data;
@@ -109,7 +105,6 @@ export const quoteService = {
     return { blob: response.data, fileName: parseContentDispositionFileName(disposition) };
   },
 
-  /** Extends a quote's validity deadline. */
   async extendValidity(id: number, request: ExtendQuoteValidityRequest): Promise<QuoteDetailDto> {
     const response = await apiClient.put<QuoteDetailDto>(`/api/quotes/${String(id)}/valid-until`, request);
     return response.data;

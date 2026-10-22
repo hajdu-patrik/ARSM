@@ -12,7 +12,6 @@ interface MechanicListToolbarProps {
 	readonly onClearSearch: () => void;
 }
 
-/** Search field with a clear button above the mechanic roster. */
 export const MechanicListToolbar = memo(function MechanicListToolbar({
 	t,
 	searchTerm,

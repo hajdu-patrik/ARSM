@@ -13,29 +13,19 @@ import { getCachedErrorIllustrationSource } from '../../utils/errorIllustrationC
 import { ThemeLanguageControls } from '../layout/ThemeLanguageControls';
 import { Image } from './Image';
 
-/** Props for the {@link ErrorPage} component. */
 interface ErrorPageProps {
-	/** Public path to the illustration image (e.g. `/Error-404.webp`). */
 	readonly imageSrc: string;
-	/** Accessible alt text for the illustration image. */
 	readonly imageAlt: string;
 	/** Large decorative background watermark text (e.g. `"404"`, `"500"`). */
 	readonly backgroundCode: string;
-	/** i18n key for the page heading. */
 	readonly titleKey: string;
-	/** i18n key for the subtitle paragraph. */
 	readonly subtitleKey: string;
-	/** i18n key for the primary CTA button label. */
 	readonly ctaTextKey: string;
-	/** Called when the CTA button is activated. */
 	readonly onCtaClick: () => void;
-	/** i18n key for the countdown label shown above remaining seconds. */
 	readonly countdownLabelKey?: string;
-	/** Remaining seconds for an optional countdown display. */
 	readonly secondsLeft?: number;
 }
 
-/** Props for the compact countdown block shown on timed redirects. */
 interface ErrorPageCountdownProps {
 	readonly label: string;
 	readonly secondsLeft: number;
@@ -43,7 +33,6 @@ interface ErrorPageCountdownProps {
 
 const errorPageCtaClass = `${buttonClass} mt-5 w-full sm:w-auto`;
 
-/** Displays the optional redirect countdown section in error states. */
 const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft }: ErrorPageCountdownProps) {
 	return (
 		<div className="mt-6 border-t border-ui-border pt-4 text-center">
@@ -59,7 +48,6 @@ const ErrorPageCountdown = memo(function ErrorPageCountdown({ label, secondsLeft
 
 ErrorPageCountdown.displayName = 'ErrorPageCountdown';
 
-/** Composes the shared error-page layout with decorative watermark and optional countdown. */
 const ErrorPageComponent = memo(function ErrorPage({
 	imageSrc,
 	imageAlt,
@@ -147,5 +135,4 @@ const ErrorPageComponent = memo(function ErrorPage({
 
 ErrorPageComponent.displayName = 'ErrorPage';
 
-/** Reusable full-page error component for 404, 500, and similar states. */
 export const ErrorPage = ErrorPageComponent;

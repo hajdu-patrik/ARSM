@@ -14,7 +14,6 @@ import type {
   VehicleDetailDto,
 } from '../../types/customers/customers.types';
 
-/** Customer-registry API service: customer CRUD, vehicle CRUD, and customer/vehicle history queries. */
 export const customerRegistryService = {
   /** Returns one page of customers (name ascending), optionally filtered by names and license plates. */
   async listCustomers(query: PagedQuery, options?: SilentRequestOptions): Promise<PagedResult<CustomerListItem>> {
@@ -25,18 +24,15 @@ export const customerRegistryService = {
     return response.data;
   },
 
-  /** Creates a customer. */
   async createCustomer(request: CreateCustomerRequest): Promise<CustomerListItem> {
     const response = await apiClient.post<CustomerListItem>('/api/customers', request);
     return response.data;
   },
 
-  /** Updates a customer. */
   async updateCustomer(id: number, request: UpdateCustomerRequest): Promise<void> {
     await apiClient.put(`/api/customers/${String(id)}`, request);
   },
 
-  /** Deletes a customer. */
   async deleteCustomer(id: number): Promise<void> {
     await apiClient.delete(`/api/customers/${String(id)}`);
   },
@@ -62,7 +58,6 @@ export const customerRegistryService = {
     return response.data;
   },
 
-  /** Creates a vehicle for a customer. */
   async createVehicle(customerId: number, request: CreateVehicleRequest): Promise<VehicleDetailDto> {
     const response = await apiClient.post<VehicleDetailDto>(
       `/api/customers/${String(customerId)}/vehicles`,
@@ -71,17 +66,14 @@ export const customerRegistryService = {
     return response.data;
   },
 
-  /** Updates an existing vehicle. */
   async updateVehicle(id: number, request: UpdateVehicleRequest): Promise<void> {
     await apiClient.put(`/api/vehicles/${String(id)}`, request);
   },
 
-  /** Deletes a vehicle. */
   async deleteVehicle(id: number): Promise<void> {
     await apiClient.delete(`/api/vehicles/${String(id)}`);
   },
 
-  /** Returns repair history for all appointments of a customer. */
   async getCustomerHistory(
     customerId: number,
     descending = false,
@@ -94,7 +86,6 @@ export const customerRegistryService = {
     return response.data;
   },
 
-  /** Returns repair history for all appointments of a vehicle. */
   async getVehicleHistory(
     vehicleId: number,
     descending = false,

@@ -19,7 +19,6 @@ import {
   type SeoConfig,
 } from './seoHead';
 
-/** Translation keys of one route's page title and meta description. */
 type RouteSeoKeys = { readonly title: string; readonly description: string };
 
 /** Known routes by normalized path (the route table's paths); their canonical path is the route itself. */
@@ -40,7 +39,6 @@ const ROUTE_SEO_KEYS: ReadonlyMap<string, RouteSeoKeys> = new Map([
 const NOT_FOUND_SEO_KEYS: RouteSeoKeys = { title: 'seo.pages.notFound.title', description: 'seo.pages.notFound.description' };
 const NOT_FOUND_CANONICAL_PATH = '/404';
 
-/** Renderless component that manages all SEO-related `<head>` tags based on the current route and language. */
 export function SeoManager() {
   const location = useLocation();
   const { t: translate, i18n } = useTranslation();

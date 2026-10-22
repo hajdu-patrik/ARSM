@@ -25,7 +25,6 @@ function getReturnTarget(): string | null {
   return rawReturnTo;
 }
 
-/** 500 server error page component with countdown-based page reload. */
 export const ServerError = memo(function ServerError() {
   const { t } = useTranslation();
   const [remainingMs, setRemainingMs] = useState(REDIRECT_DURATION_MS);

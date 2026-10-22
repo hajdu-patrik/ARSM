@@ -15,7 +15,6 @@ import {
 import { getFirstFieldErrorMessage } from '../utils/serverValidation';
 import { MIN_PASSWORD_LENGTH } from '../utils/validation';
 
-/** Dependencies of {@link usePasswordChange}: the toasts and what follows an accepted change. */
 export interface UsePasswordChangeParams {
   readonly showSuccessToast: (message: string, options?: Record<string, string | number>) => void;
   readonly showErrorToast: (message: string, options?: Record<string, string | number>) => void;
@@ -23,7 +22,6 @@ export interface UsePasswordChangeParams {
   readonly onChanged?: (() => void) | undefined;
 }
 
-/** Owns the field state, the frontend checks, the per-field server errors and the password-change request. */
 export function usePasswordChange({ showSuccessToast, showErrorToast, onChanged }: UsePasswordChangeParams) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

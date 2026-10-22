@@ -1,7 +1,6 @@
 /** Locale mapping, memoized Intl formatters and the canonical 24-hour date presets; feature code
  * never builds its own Intl objects. See app/AutoService.WebUI/CLAUDE.md. */
 
-/** Text shown when a date value cannot be parsed. */
 const INVALID_DATE_TEXT = '-';
 
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
@@ -12,7 +11,6 @@ function toIntlLocale(language: string): 'hu-HU' | 'en-GB' {
   return language.toLowerCase().startsWith('en') ? 'en-GB' : 'hu-HU';
 }
 
-/** Returns the memoized date formatter for a language and options. */
 function getDateTimeFormat(language: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
   const locale = toIntlLocale(language);
   const key = `${locale}|${JSON.stringify(options)}`;
@@ -26,7 +24,6 @@ function getDateTimeFormat(language: string, options: Intl.DateTimeFormatOptions
   return format;
 }
 
-/** Returns the memoized number formatter for a language and options. */
 export function getNumberFormat(language: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
   const locale = toIntlLocale(language);
   const key = `${locale}|${options === undefined ? '' : JSON.stringify(options)}`;
@@ -95,17 +92,14 @@ export function formatLongDateTime(value: Date | string, language: string): stri
   return formatPreset(LONG_DATE_TIME_OPTIONS, value, language);
 }
 
-/** Month name and year. */
 export function formatMonthYear(value: Date | string, language: string): string {
   return formatPreset(MONTH_YEAR_OPTIONS, value, language);
 }
 
-/** Month name only. */
 export function formatMonthName(value: Date | string, language: string): string {
   return formatPreset(MONTH_NAME_OPTIONS, value, language);
 }
 
-/** Abbreviated weekday name. */
 export function formatWeekdayShort(value: Date | string, language: string): string {
   return formatPreset(WEEKDAY_SHORT_OPTIONS, value, language);
 }

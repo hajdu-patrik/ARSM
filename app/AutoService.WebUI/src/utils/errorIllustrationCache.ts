@@ -31,17 +31,14 @@ async function openIllustrationCache(): Promise<Cache | null> {
   }
 }
 
-/** Converts an app-relative image path to an absolute URL. */
 function toAbsoluteUrl(path: string): string {
   return new URL(path, globalThis.location.origin).toString();
 }
 
-/** Builds the localStorage key used to track an image cache timestamp. */
 function getTimestampKey(imagePath: string): string {
   return `${ERROR_ILLUSTRATION_CACHE_TS_PREFIX}${imagePath}`;
 }
 
-/** Reads the cache timestamp (ms) for a given image path. */
 function readCacheTimestamp(imagePath: string): number | null {
   const rawValue = readStorage('local', getTimestampKey(imagePath));
   if (rawValue === null) {
@@ -67,7 +64,6 @@ function isCacheExpired(imagePath: string, nowMs: number = Date.now()): boolean 
   return nowMs - cachedAt > ERROR_ILLUSTRATION_CACHE_TTL_MS;
 }
 
-/** Caches one image if not already present in the named cache. */
 async function cacheImageIfMissing(cache: Cache, imagePath: string): Promise<void> {
   const request = new Request(toAbsoluteUrl(imagePath), { credentials: 'same-origin' });
   const cachedResponse = await cache.match(request, { ignoreSearch: true });

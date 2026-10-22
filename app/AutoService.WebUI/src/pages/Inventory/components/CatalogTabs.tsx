@@ -14,14 +14,12 @@ interface CatalogTabsProps<TDto> {
   readonly onOpenDeleteModal: (item: TDto) => void;
 }
 
-/** Parts tab. */
 export function PartsCatalogTab({ showErrorToast, ...tabProps }: CatalogTabsProps<PartDto>) {
   const { list, listRef } = usePartsList({ showErrorToast });
 
   return <CatalogTab {...tabProps} list={list} listRef={listRef} config={partCatalogTabConfig} />;
 }
 
-/** Labor types tab. */
 export function LaborTypesCatalogTab({ showErrorToast, ...tabProps }: CatalogTabsProps<LaborTypeDto>) {
   const { list, listRef } = useLaborTypesList({ showErrorToast });
 

@@ -6,13 +6,9 @@ import { buildIntakeRequest, mapIntakeErrorToKey } from '../components/intake/Sc
 import { useSchedulerIntakeFields } from './useSchedulerIntakeFields';
 import { useSchedulerIntakeLookup } from './useSchedulerIntakeLookup';
 
-/** Configuration for {@link useSchedulerIntakeForm}. */
 interface UseSchedulerIntakeFormArgs {
-  /** The calendar day selected for the new appointment. */
   readonly selectedDate: Date;
-  /** Callback to close the intake modal on successful submission. */
   readonly onClose: () => void;
-  /** Submits the built intake request to the backend via the parent page. */
   readonly onSubmit: (request: SchedulerCreateIntakeRequest) => Promise<void>;
 }
 

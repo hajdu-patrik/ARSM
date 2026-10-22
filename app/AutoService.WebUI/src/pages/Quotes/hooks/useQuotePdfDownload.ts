@@ -11,12 +11,10 @@ interface PdfDownloadTarget {
   quoteNumber: string;
 }
 
-/** External dependencies for the PDF download hook. */
 interface UseQuotePdfDownloadParams {
   showErrorToast: (messageKey: string) => void;
 }
 
-/** Downloads a quote PDF and hands it to the browser as a file. */
 export function useQuotePdfDownload({ showErrorToast }: UseQuotePdfDownloadParams) {
   const { mutate, isPending: isDownloadingPdf } = useMutation({
     networkMode: QUOTE_WRITE_NETWORK_MODE,

@@ -38,7 +38,6 @@ interface CatalogRowActionsProps {
   readonly onDelete: () => void;
 }
 
-/** Edit and delete icon actions of one catalog row. */
 function CatalogRowActions({ editLabel, deleteLabel, onEdit, onDelete }: CatalogRowActionsProps) {
   return (
     <div className={compactRowActionsClusterClass}>

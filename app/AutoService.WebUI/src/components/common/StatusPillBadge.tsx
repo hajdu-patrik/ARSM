@@ -2,21 +2,15 @@
  * See app/AutoService.WebUI/CLAUDE.md. */
 import { memo } from 'react';
 
-/** Props for the {@link StatusPillBadge} component. */
 interface StatusPillBadgeProps {
-  /** Resolved Tailwind classes for the pill's background/text/border tone. */
   readonly colorClassName: string;
   /** Resolved Tailwind classes for the leading dot's background tone. Omit to hide the dot. */
   readonly dotClassName?: string;
-  /** Localized status label to display. */
   readonly label: string;
-  /** Optional `data-testid` for the rendered element. */
   readonly testId?: string;
-  /** Additional CSS classes appended to the badge element. */
   readonly className?: string;
 }
 
-/** Memoized shared status-pill shell (color/dot/label resolved by the caller). */
 export const StatusPillBadge = memo(function StatusPillBadge({
   colorClassName,
   dotClassName,

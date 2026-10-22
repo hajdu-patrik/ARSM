@@ -4,13 +4,11 @@
 import { create } from 'zustand';
 import { readStorage, writeStorage } from '../utils/safeStorage';
 
-/** Supported application themes. */
 type Theme = 'light' | 'dark';
 
 /** Local storage key of the saved theme choice; index.html's pre-paint script reads the same key. */
 const THEME_STORAGE_KEY = 'preferred-theme';
 
-/** Media query that matches while the system color scheme is dark. */
 const SYSTEM_DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
 /** Applies the given theme to the DOM by toggling the `dark` class on the root element. */
@@ -28,14 +26,11 @@ function readSavedTheme(): Theme | null {
   return savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : null;
 }
 
-/** The theme that matches the system color scheme right now. */
 function readSystemTheme(): Theme {
   return globalThis.matchMedia(SYSTEM_DARK_SCHEME_QUERY).matches ? 'dark' : 'light';
 }
 
-/** Shape of the theme Zustand store. */
 interface ThemeState {
-  /** Currently active theme. */
   theme: Theme;
   /** Whether the user picked a theme; until then the system color scheme decides. */
   hasChosenTheme: boolean;
@@ -84,6 +79,5 @@ function followSystemColorScheme(): void {
   });
 }
 
-// Load theme on app start
 useThemeStore.getState().loadTheme();
 followSystemColorScheme();

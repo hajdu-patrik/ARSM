@@ -5,16 +5,13 @@ import { useSearchParams } from 'react-router';
 /** Inventory tabs in tab order; each id is also its `?tab=` value. */
 export const INVENTORY_TABS = ['parts', 'labor-types'] as const;
 
-/** One Inventory tab. */
 export type InventoryTab = (typeof INVENTORY_TABS)[number];
 
-/** i18n label key of each tab. */
 export const INVENTORY_TAB_LABEL_KEYS: Readonly<Record<InventoryTab, string>> = {
   parts: 'inventory.tabs.parts',
   'labor-types': 'inventory.tabs.laborTypes',
 };
 
-/** Tab state and ARIA wiring handed to the page. */
 export interface InventoryTabs {
   readonly activeTab: InventoryTab;
   /** Id of the page heading that labels the tab list. */
@@ -50,7 +47,6 @@ function resolveTabKeyTarget(key: string, current: InventoryTab): InventoryTab |
   }
 }
 
-/** Reads and writes the active tab in the URL and builds the ids and keyboard handler of the tabs pattern. */
 export function useInventoryTabs(): InventoryTabs {
   const [searchParams, setSearchParams] = useSearchParams();
   const idPrefix = useId();

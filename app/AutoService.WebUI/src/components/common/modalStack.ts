@@ -18,7 +18,6 @@ export function registerAppShell(element: HTMLElement | null): void {
   syncShellInert();
 }
 
-/** Registers a dialog that just opened as the topmost one. */
 export function pushDialog(dialog: HTMLElement): void {
   openDialogs.push(dialog);
   syncShellInert();
@@ -33,7 +32,6 @@ export function removeDialog(dialog: HTMLElement): void {
   }
 }
 
-/** Whether the dialog is the topmost open one. */
 export function isTopDialog(dialog: HTMLElement): boolean {
   return openDialogs.at(-1) === dialog;
 }

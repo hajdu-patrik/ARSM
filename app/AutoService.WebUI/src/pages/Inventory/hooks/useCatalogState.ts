@@ -33,7 +33,6 @@ const RESERVED_BOTTOM_PX = 128;
 
 const ROW_SELECTOR = '[data-testid="catalog-item-row"]';
 
-/** State and actions of one catalog tab's list. */
 export interface CatalogEntityListState<TDto> {
   readonly items: readonly TDto[];
   readonly isLoading: boolean;
@@ -54,7 +53,6 @@ export interface CatalogEntityList<TDto> {
   readonly listRef: RefObject<HTMLDivElement | null>;
 }
 
-/** Dependencies of one catalog tab list. */
 interface UseCatalogEntityListParams<TDto> {
   readonly usePageQuery: (query: PagedQuery, isEnabled: boolean) => UseQueryResult<PagedResult<TDto>>;
   readonly loadErrorToastKey: string;
@@ -114,22 +112,18 @@ function useCatalogEntityList<TDto>({
   return { list, listRef };
 }
 
-/** External dependencies of the catalog list hooks. */
 interface UseCatalogListParams {
   readonly showErrorToast: (key: string) => void;
 }
 
-/** Page read of the parts tab. */
 function usePartsPageQuery(query: PagedQuery, isEnabled: boolean) {
   return useQuery({ ...catalogQueries.partsPage(useAuthQueryScope(), query), enabled: isEnabled });
 }
 
-/** Page read of the labor types tab. */
 function useLaborTypesPageQuery(query: PagedQuery, isEnabled: boolean) {
   return useQuery({ ...catalogQueries.laborTypesPage(useAuthQueryScope(), query), enabled: isEnabled });
 }
 
-/** Parts tab list: server-paged and server-searched. */
 export function usePartsList({ showErrorToast }: UseCatalogListParams): CatalogEntityList<PartDto> {
   return useCatalogEntityList<PartDto>({
     usePageQuery: usePartsPageQuery,
@@ -138,7 +132,6 @@ export function usePartsList({ showErrorToast }: UseCatalogListParams): CatalogE
   });
 }
 
-/** Labor types tab list: server-paged and server-searched. */
 export function useLaborTypesList({ showErrorToast }: UseCatalogListParams): CatalogEntityList<LaborTypeDto> {
   return useCatalogEntityList<LaborTypeDto>({
     usePageQuery: useLaborTypesPageQuery,

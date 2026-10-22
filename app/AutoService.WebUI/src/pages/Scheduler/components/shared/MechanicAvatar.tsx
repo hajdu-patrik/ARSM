@@ -8,17 +8,13 @@ import {
 import { useAuthStore } from '../../../../store/auth.store';
 import { getDeterministicAvatarColor } from '../../../../utils/avatar';
 
-/** Props for the {@link MechanicAvatar} component. */
 interface MechanicAvatarProps {
   /** Unique mechanic identifier used for picture URL and deterministic color. */
   readonly mechanicId: number;
   /** Full display name used for alt text, title, and initials extraction. */
   readonly fullName: string;
-  /** Whether the mechanic has an uploaded profile picture. */
   readonly hasProfilePicture: boolean;
-  /** Tailwind size/text classes for the avatar element. */
   readonly sizeClassName?: string;
-  /** Additional CSS classes appended to the avatar element. */
   readonly className?: string;
 }
 
@@ -34,7 +30,6 @@ function getInitialsFromFullName(fullName: string): string {
   return initials.length > 0 ? initials : '??';
 }
 
-/** Memoized mechanic avatar with live profile picture updates. */
 export const MechanicAvatar = memo(function MechanicAvatar({
   mechanicId,
   fullName,

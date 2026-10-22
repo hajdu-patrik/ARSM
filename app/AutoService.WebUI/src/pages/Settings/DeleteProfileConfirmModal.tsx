@@ -30,7 +30,6 @@ interface DeleteProfileConfirmModalProps {
   readonly onConfirm: () => void;
 }
 
-/** Renders the destructive account-delete confirmation modal and credential fields. */
 export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal({
   isOpen,
   isDeleting,

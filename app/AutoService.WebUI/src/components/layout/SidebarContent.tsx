@@ -92,7 +92,6 @@ function isSidebarNavItemActive(item: NavItem, pathname: string, isActiveRoute: 
     ));
 }
 
-/** Resolves the nav link className for the active/idle visual state. */
 function getSidebarNavLinkClassName(item: NavItem, pathname: string, isActiveRoute: boolean): string {
   const stateClass = isSidebarNavItemActive(item, pathname, isActiveRoute)
     ? NAV_LINK_ACTIVE_CLASS

@@ -38,7 +38,6 @@ function findAppointmentById(
   return null;
 }
 
-/** Coordinates the scheduler page sections and modal flows. */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
@@ -205,5 +204,4 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
 
 SchedulerPageComponent.displayName = 'SchedulerPage';
 
-/** Memoized scheduler page component exported for lazy-loading in the router. */
 export const SchedulerPage = SchedulerPageComponent;

@@ -21,7 +21,6 @@ interface CustomersToolbarProps {
   onOpenCreateCustomerModal: () => void;
 }
 
-/** Renders the search field with its clear button and the create-customer button. */
 export const CustomersToolbar = memo(function CustomersToolbar({
   t,
   searchTerm,

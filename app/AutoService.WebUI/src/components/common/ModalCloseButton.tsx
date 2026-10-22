@@ -1,5 +1,3 @@
-/** Modal close button component. */
-
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';

@@ -12,13 +12,11 @@ import {
   type ServerErrorBody,
 } from '../../../utils/serverValidation';
 
-/** External dependencies for the password-reset hook. */
 interface UseMechanicPasswordResetParams {
   readonly showErrorToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
 }
 
-/** Variables of the reset mutation. */
 interface PasswordReset {
   readonly target: MechanicListItem;
   readonly temporaryPassword: string;
@@ -42,7 +40,6 @@ function getResetErrorKey(error: unknown): string {
   return getFirstFieldErrorMessage(fieldErrors) ?? 'admin.passwordResetFailed';
 }
 
-/** Owns the reset dialog of the roster: opening it for a mechanic, the temporary password with its server message, the request. */
 export function useMechanicPasswordReset({ showErrorToast, showSuccessToast }: UseMechanicPasswordResetParams) {
   const [resetTarget, setResetTarget] = useState<MechanicListItem | null>(null);
   const [temporaryPassword, setTemporaryPassword] = useState('');

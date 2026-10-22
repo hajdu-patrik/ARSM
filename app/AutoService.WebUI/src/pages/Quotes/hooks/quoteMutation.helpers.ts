@@ -20,7 +20,6 @@ type PayloadResult<TPayload> =
   | { readonly ok: true; readonly payload: TPayload }
   | { readonly ok: false; readonly fieldError: string };
 
-/** Parses the optional appointment link from the header form. */
 function parseAppointmentId(appointmentId: string): number | null {
   if (appointmentId.trim().length === 0) {
     return null;
@@ -30,7 +29,6 @@ function parseAppointmentId(appointmentId: string): number | null {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-/** Builds the draft-creation payload from header form state. */
 export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResult<CreateQuoteRequest> {
   const { title: titleError } = validateQuoteHeaderForm(form);
 

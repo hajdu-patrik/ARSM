@@ -8,16 +8,12 @@ import type { en } from './locales/en';
 import type { hu } from './locales/hu';
 import { readStorage, writeStorage } from './safeStorage';
 
-/** Languages the app ships translations for. */
 export type AppLanguage = 'hu' | 'en';
 
-/** The merged translation bundle of one language. */
 type LocaleBundle = typeof en | typeof hu;
 
-/** Local storage key of the saved language preference. */
 const LANGUAGE_STORAGE_KEY = 'preferred-language';
 
-/** Language used when no preference is saved. */
 const DEFAULT_LANGUAGE: AppLanguage = 'hu';
 
 /** i18next namespace that holds the merged bundle. */
@@ -53,7 +49,6 @@ async function initializeI18n(): Promise<void> {
 /** Resolves once i18next holds the active language bundle; the app renders only after it. */
 export const i18nReady: Promise<void> = initializeI18n();
 
-/** Adds the bundle of a language to i18next on first use. */
 async function ensureBundle(language: AppLanguage): Promise<void> {
   if (i18next.hasResourceBundle(language, TRANSLATION_NAMESPACE)) {
     return;

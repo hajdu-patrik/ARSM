@@ -2,7 +2,6 @@
 import type { AppointmentStatus } from '../../../types/scheduler/scheduler.types';
 import type { SignalTone } from '../../../utils/formStyles';
 
-/** Semantic tone of each appointment status. */
 export const APPOINTMENT_STATUS_TONE: Record<AppointmentStatus, SignalTone> = {
   InProgress: 'warning',
   Completed: 'success',

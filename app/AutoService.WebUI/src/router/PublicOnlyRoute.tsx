@@ -4,13 +4,10 @@ import { Navigate } from 'react-router';
 import { useAuthStore } from '../store/auth.store';
 import { APP_ROUTE_PATHS } from './appRoutes';
 
-/** Props for the {@link PublicOnlyRoute} component. */
 interface PublicOnlyRouteProps {
-  /** Public content rendered only when the user is not authenticated. */
   readonly children: ReactNode;
 }
 
-/** Route guard that redirects authenticated users to `/`, showing content only for unauthenticated visitors. */
 export const PublicOnlyRoute = memo(function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);

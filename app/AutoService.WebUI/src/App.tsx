@@ -59,7 +59,6 @@ function adminPage(page: ReactNode): ReactNode {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Login Route */}
       <Route
         path={APP_ROUTE_PATHS.login}
         element={(
@@ -79,7 +78,6 @@ function AppRoutes() {
         )}
       />
 
-      {/* Scheduler Route (Protected) */}
       <Route path={APP_ROUTE_PATHS.scheduler} element={privatePage(<SchedulerPage />)} />
       <Route path={APP_ROUTE_PATHS.schedulerAlias} element={<Navigate to={APP_ROUTE_PATHS.scheduler} replace />} />
       <Route path={APP_ROUTE_PATHS.dashboardAlias} element={<Navigate to={APP_ROUTE_PATHS.scheduler} replace />} />
@@ -88,15 +86,12 @@ function AppRoutes() {
       <Route path={APP_ROUTE_PATHS.inventory} element={privatePage(<InventoryPage />)} />
       <Route path={APP_ROUTE_PATHS.companyResults} element={privatePage(<CompanyResultsPage />)} />
 
-      {/* Admin Routes */}
       <Route path={APP_ROUTE_PATHS.adminRegister} element={adminPage(<RegisterMechanicPage />)} />
 
       <Route path={APP_ROUTE_PATHS.settings} element={privatePage(<SettingsPage />)} />
 
-      {/* Server Error */}
       <Route path={APP_ROUTE_PATHS.serverError} element={<ServerError />} />
 
-      {/* 404 Not Found */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -135,7 +130,6 @@ function useRestoreAuthOnBoot(): void {
   }, [setIsAuthenticated, setIsLoading]);
 }
 
-/** Root component that wires routing, auth restoration, SEO, error boundary, and toast system. */
 function App() {
   useRestoreAuthOnBoot();
 

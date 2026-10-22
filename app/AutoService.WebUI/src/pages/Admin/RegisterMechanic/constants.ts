@@ -2,7 +2,6 @@
 
 import type { OptionItem } from './types';
 
-/** Available specialization options for the mechanic registration form. */
 export const SPECIALIZATION_OPTIONS: OptionItem[] = [
   { value: 'GasolineAndDiesel', labelKey: 'admin.spec.gasolineAndDiesel' },
   { value: 'HybridAndElectric', labelKey: 'admin.spec.hybridAndElectric' },
@@ -12,7 +11,6 @@ export const SPECIALIZATION_OPTIONS: OptionItem[] = [
 /** Fixed number of mechanic rows per roster page. */
 export const MECHANIC_LIST_PAGE_SIZE = 5;
 
-/** Available expertise tag options for the mechanic registration form. */
 export const EXPERTISE_OPTIONS: OptionItem[] = [
   { value: 'Engine', labelKey: 'admin.expertise.engine' },
   { value: 'Transmission', labelKey: 'admin.expertise.transmission' },

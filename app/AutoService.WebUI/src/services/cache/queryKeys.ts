@@ -30,7 +30,6 @@ const AUTH_SCOPE_LENGTH: AuthQueryScope['length'] = 6;
 /** Key of every query observed while nobody is signed in; those run with skipToken, so nothing is fetched or persisted. */
 export const SIGNED_OUT_QUERY_KEY = [QUERY_KEY_ROOT, 'signed-out'] as const;
 
-/** Builds the authenticated query scope for the current user, or null when unauthenticated. */
 export function getAuthQueryScope(user: Pick<AuthUser, 'personId' | 'isAdmin'> | null): AuthQueryScope | null {
   if (!user) {
     return null;
@@ -39,7 +38,6 @@ export function getAuthQueryScope(user: Pick<AuthUser, 'personId' | 'isAdmin'> |
   return [QUERY_KEY_ROOT, QUERY_KEY_SCOPE, QUERY_KEY_VERSION, 'person', user.personId, user.isAdmin ? 'admin' : 'staff'];
 }
 
-/** Checks whether a query key belongs to the private ARSM namespace. */
 function isPrivateArsmQueryKey(queryKey: QueryKey): boolean {
   return queryKey[0] === QUERY_KEY_ROOT
     && queryKey[1] === QUERY_KEY_SCOPE
@@ -58,7 +56,6 @@ export function isPersistedArsmQueryKey(queryKey: QueryKey): boolean {
     && queryKey[AUTH_SCOPE_LENGTH + 2] === OPTIONS_SEGMENT;
 }
 
-/** Canonical query-key factory for authenticated read models. */
 export const queryKeys = {
   scheduler: {
     root: (scope: AuthQueryScope) => [...scope, 'scheduler'] as const,

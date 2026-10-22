@@ -14,7 +14,6 @@ export type PictureRejection = 'invalid-type' | 'dimensions-too-large';
 
 type PictureFormat = 'png' | 'jpeg' | 'webp';
 
-/** Pixel size read from a picture header. */
 interface PictureSize {
   readonly width: number;
   readonly height: number;
@@ -46,7 +45,6 @@ async function readView(file: Blob, offset: number, length: number): Promise<Dat
   return new DataView(await file.slice(offset, offset + length).arrayBuffer());
 }
 
-/** Reads `length` bytes at `offset` as ASCII text. */
 function readAscii(view: DataView, offset: number, length: number): string {
   let text = '';
 
@@ -62,7 +60,6 @@ function readUint24LittleEndian(view: DataView, offset: number): number {
   return view.getUint8(offset) | (view.getUint8(offset + 1) << 8) | (view.getUint8(offset + 2) << 16);
 }
 
-/** True when the view starts with the given bytes. */
 function startsWith(view: DataView, signature: readonly number[]): boolean {
   return view.byteLength >= signature.length && signature.every((byte, index) => view.getUint8(index) === byte);
 }
@@ -166,7 +163,6 @@ async function readJpegSize(file: Blob): Promise<PictureSize | null> {
   return null;
 }
 
-/** True when a side or the area is over the accepted limits. */
 function exceedsPictureLimits({ width, height }: PictureSize): boolean {
   return width > MAX_PICTURE_SIDE_PX
     || height > MAX_PICTURE_SIDE_PX

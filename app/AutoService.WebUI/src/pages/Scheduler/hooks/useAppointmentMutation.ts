@@ -20,11 +20,9 @@ const VERSION_CONFLICT_CODE = 'appointment_version_conflict';
 
 /** What differs between the appointment mutations. */
 interface AppointmentMutationSpec<TVariables> {
-  /** Calls the service and resolves with the changed appointment. */
   readonly mutationFn: (variables: TVariables) => Promise<AppointmentDto>;
-  /** i18n key of the success toast. */
   readonly successKey: string;
-  /** Failure toast, or {@code null} when the caller reports the failure itself. */
+  /** Failure toast, or `null` when the caller reports the failure itself. */
   readonly failureKey: FailureKey | null;
   /** Related read caches to invalidate beyond the scheduler lists. */
   readonly cacheOptions?: (variables: TVariables) => AppointmentMutationCacheOptions;

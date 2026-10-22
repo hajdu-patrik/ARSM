@@ -26,7 +26,6 @@ interface SchedulerIntakeVehicleModeProps {
   readonly onExistingVehicleIdChange: (value: string) => void;
 }
 
-/** Renders existing/new vehicle mode controls for scheduler intake. */
 export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVehicleModeSection({
   customerLookup,
   customerHasVehicles,
@@ -94,7 +93,6 @@ interface SchedulerIntakeVehicleFormProps {
   readonly onVehicleFieldChange: (field: keyof VehicleFormState, value: string) => void;
 }
 
-/** Renders new-vehicle fields for scheduler intake. */
 export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleForm({
   vehicle,
   translate,

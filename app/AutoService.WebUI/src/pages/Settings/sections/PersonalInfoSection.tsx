@@ -9,7 +9,6 @@ import { buttonClass, cardClass, defaultIconClass, inputClass, labelClass, muted
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 import type { ProfileFieldErrors, ProfileFieldName, ProfileFieldValues } from '../profileFields';
 
-/** Props for the PersonalInfoSection component. */
 interface PersonalInfoSectionProps {
   readonly values: ProfileFieldValues;
   readonly fieldErrors: ProfileFieldErrors;
@@ -20,7 +19,6 @@ interface PersonalInfoSectionProps {
   readonly onSubmit: (event: React.SyntheticEvent) => void;
 }
 
-/** Personal-information editor used on the settings page. */
 export const PersonalInfoSection = memo(function PersonalInfoSection({
   values,
   fieldErrors,

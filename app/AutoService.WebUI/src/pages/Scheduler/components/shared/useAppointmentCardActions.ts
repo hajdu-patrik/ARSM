@@ -5,7 +5,6 @@ import { useMutation } from '@tanstack/react-query';
 import { logError } from '../../../../utils/devLog';
 import { settle } from '../../hooks/settle';
 
-/** Inputs of {@link useAppointmentCardActions}: the card's appointment, its permissions and the page handlers. */
 interface UseAppointmentCardActionsParams {
   readonly appointmentId: number;
   readonly canClaimAppointment: boolean;

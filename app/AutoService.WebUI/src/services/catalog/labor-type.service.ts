@@ -6,7 +6,6 @@ import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } fro
 import type { PagedQuery, PagedResult } from '../../types/common/pagination.types';
 import { toPageParams } from '../http/page-params';
 
-/** Labor-type-catalog API service; a thin axios wrapper for `/api/labor-types`. */
 export const laborTypeService = {
   /** Returns one page of labor types; the server applies the search. */
   async listLaborTypes(query: PagedQuery, options?: SilentRequestOptions): Promise<PagedResult<LaborTypeDto>> {
@@ -17,7 +16,6 @@ export const laborTypeService = {
     return response.data;
   },
 
-  /** Creates a labor type. */
   async createLaborType(request: CreateLaborTypeRequest): Promise<LaborTypeDto> {
     const response = await apiClient.post<LaborTypeDto>('/api/labor-types', request);
     return response.data;
@@ -29,12 +27,10 @@ export const laborTypeService = {
     return response.data;
   },
 
-  /** Updates a labor type. */
   async updateLaborType(id: number, request: UpdateLaborTypeRequest): Promise<void> {
     await apiClient.put(`/api/labor-types/${String(id)}`, request);
   },
 
-  /** Deletes a labor type. */
   async deleteLaborType(id: number): Promise<void> {
     await apiClient.delete(`/api/labor-types/${String(id)}`);
   },

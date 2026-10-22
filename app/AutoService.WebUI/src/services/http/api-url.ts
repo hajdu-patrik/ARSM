@@ -1,4 +1,4 @@
-/** API base URL from {@code VITE_API_URL}; it has no fallback on purpose (see WebUI CLAUDE.md). */
+/** API base URL from `VITE_API_URL`; it has no fallback on purpose (see WebUI CLAUDE.md). */
 
 const configuredApiUrl: unknown = import.meta.env.VITE_API_URL;
 

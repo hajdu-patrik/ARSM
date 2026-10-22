@@ -27,17 +27,14 @@ export interface CatalogItemConfig<TDto> {
   readonly deleteFailedKey: string;
 }
 
-/** Maps the validated form values to a part request. */
 const toPartRequest = ({ identifier, name, rate, vatRatePercent }: CatalogItemValues) => (
   { partNumber: identifier, name, netUnitPrice: rate, vatRatePercent }
 );
 
-/** Maps the validated form values to a labor type request. */
 const toLaborTypeRequest = ({ identifier, name, rate, vatRatePercent }: CatalogItemValues) => (
   { code: identifier, name, hourlyNetRate: rate, vatRatePercent }
 );
 
-/** Part create/edit/delete configuration. */
 export const partCatalogItemConfig: CatalogItemConfig<PartDto> = {
   kind: 'part',
   tab: partCatalogTabConfig,
@@ -55,7 +52,6 @@ export const partCatalogItemConfig: CatalogItemConfig<PartDto> = {
   deleteFailedKey: 'inventory.errors.partDeleteFailed',
 };
 
-/** Labor type create/edit/delete configuration. */
 export const laborTypeCatalogItemConfig: CatalogItemConfig<LaborTypeDto> = {
   kind: 'laborType',
   tab: laborTypeCatalogTabConfig,

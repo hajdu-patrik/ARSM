@@ -4,18 +4,14 @@
 import { appointmentService } from './appointment.service';
 import { createLiveUpdateChannel, parseJsonObject } from '../live/live-update-channel';
 
-/** Custom event name dispatched when any appointment changes. */
 export const APPOINTMENT_UPDATED_EVENT = 'autoservice:appointment-updated';
 
-/** Detail payload for the {@code autoservice:appointment-updated} custom event. */
 interface AppointmentUpdatedDetail {
-  /** Appointment that changed. */
   appointmentId: number;
   /** Unix milliseconds when the change was published. */
   occurredAt: number;
 }
 
-/** Parses a raw SSE data string into a typed appointment update detail, or null if invalid. */
 function parseAppointmentUpdate(data: string): AppointmentUpdatedDetail | null {
   const parsed = parseJsonObject(data);
   if (parsed === null || typeof parsed.appointmentId !== 'number' || typeof parsed.occurredAt !== 'number') {

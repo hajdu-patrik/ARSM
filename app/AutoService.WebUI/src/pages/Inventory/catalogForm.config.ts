@@ -7,7 +7,6 @@ interface CatalogFormFieldConfig {
   readonly placeholderKey: string;
 }
 
-/** Per-entity configuration consumed by the generic `CatalogFormModal` component. */
 export interface CatalogFormModalConfig {
   readonly formElementId: string;
   readonly createTitleKey: string;
@@ -20,7 +19,6 @@ export interface CatalogFormModalConfig {
   readonly rate: CatalogFormFieldConfig;
 }
 
-/** Part create/edit modal configuration. */
 export const partCatalogFormConfig: CatalogFormModalConfig = {
   formElementId: 'inventory-part-form',
   createTitleKey: 'inventory.createPart',
@@ -41,7 +39,6 @@ export const partCatalogFormConfig: CatalogFormModalConfig = {
   },
 };
 
-/** Labor type create/edit modal configuration. */
 export const laborTypeCatalogFormConfig: CatalogFormModalConfig = {
   formElementId: 'inventory-labor-type-form',
   createTitleKey: 'inventory.createLaborType',

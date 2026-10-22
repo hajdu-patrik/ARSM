@@ -19,10 +19,8 @@ export function filterPhoneInput(value: string): string {
   return value.replaceAll(/[^\d+\-()\s]/g, '');
 }
 
-/** Set of allowed file extensions for profile picture uploads. */
 const ALLOWED_PICTURE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
 
-/** Check whether a filename has an allowed image extension. */
 export function isAllowedPictureExtension(fileName: string): boolean {
   const dotIndex = fileName.lastIndexOf('.');
   if (dotIndex === -1) return false;

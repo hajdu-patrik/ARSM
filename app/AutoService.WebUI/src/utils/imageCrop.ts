@@ -1,13 +1,11 @@
 /** Image loading and canvas crop-to-blob utilities for the profile picture crop workflow:
  * load a file, crop to a square region, produce a `Blob` for upload. */
 
-/** Expected prefix for data URL strings from `FileReader`. */
 const FILE_READER_DATA_URL_PREFIX = 'data:';
 
 /** Encoder quality for the cropped output blob. */
 const CROP_OUTPUT_QUALITY = 0.9;
 
-/** Loads an image from a source URL and resolves when fully loaded. */
 function createImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -22,7 +20,6 @@ function createImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Reads a `File` as a data URL string using `FileReader`. */
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

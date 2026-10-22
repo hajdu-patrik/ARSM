@@ -45,7 +45,6 @@ export function buildVehiclePayload(form: VehicleFormState): VehiclePayloadResul
   };
 }
 
-/** True when every vehicle form field has a value. */
 export function hasRequiredVehicleFields(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
     && form.vin.trim().length > 0
@@ -57,7 +56,6 @@ export function hasRequiredVehicleFields(form: VehicleFormState): boolean {
     && form.drivetrainType.trim().length > 0;
 }
 
-/** True when at least one vehicle form field has a value. */
 export function hasAnyVehicleFieldValue(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
     || form.vin.trim().length > 0

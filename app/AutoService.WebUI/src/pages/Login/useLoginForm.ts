@@ -50,7 +50,6 @@ function showLoginFailure(showErrorToast: ShowErrorToast, error: LoginError, met
   showErrorToast(error.key);
 }
 
-/** Owns the login form: values, per-field messages, the first-invalid-field focus and the login request. */
 export function useLoginForm() {
   const navigate = useNavigate();
   const showSuccessToast = useToastStore((state) => state.showSuccess);

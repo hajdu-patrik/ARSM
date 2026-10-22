@@ -1,4 +1,3 @@
-/** One option row of the Dropdown listbox. */
 import { Check } from 'lucide-react';
 import { dropdownOptionCheckClass, dropdownOptionLabelClass, getDropdownOptionClass, type DropdownSize } from '../../../utils/styles/dropdownStyles';
 import type { DropdownOption } from './dropdown.types';

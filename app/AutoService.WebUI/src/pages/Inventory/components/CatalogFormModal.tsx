@@ -48,7 +48,6 @@ interface CatalogFormModalProps {
   readonly config: CatalogFormModalConfig;
 }
 
-/** Create/edit modal shared by parts and labor types; ids and labels come from `config`. */
 export function CatalogFormModal({
   isOpen,
   mode,

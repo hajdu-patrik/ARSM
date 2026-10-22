@@ -8,7 +8,6 @@ import { inputClass, labelClass } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { RegisterFieldErrors, RegisterFieldName, RegisterTextFieldName } from '../types';
 
-/** Props for the BasicInfoSection component. */
 interface BasicInfoSectionProps {
   readonly firstName: string;
   readonly middleName: string;
@@ -20,7 +19,6 @@ interface BasicInfoSectionProps {
   readonly onFieldChange: (field: RegisterTextFieldName, value: string) => void;
 }
 
-/** Name and contact input section used by the mechanic registration form. */
 export const BasicInfoSection = memo(function BasicInfoSection({
   firstName,
   middleName,

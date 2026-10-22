@@ -1,7 +1,6 @@
 /** Browser storage access that never throws: privacy mode, blocked storage and a full quota
  * all degrade to "nothing stored". See app/AutoService.WebUI/CLAUDE.md. */
 
-/** The two browser storage areas the app uses. */
 export type StorageArea = 'local' | 'session';
 
 /** Resolves a storage area; merely reading the global throws when storage is blocked. */

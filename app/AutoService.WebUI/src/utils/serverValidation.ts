@@ -1,7 +1,6 @@
 /** Maps backend validation messages to i18n keys, normalizes field-error dictionaries,
  * and extracts errors from Axios payloads for admin/settings (see app/AutoService.WebUI/CLAUDE.md). */
 
-/** Dictionary of field names to their validation error messages. */
 export type ServerFieldErrors = Record<string, string[]>;
 
 /** Body of a rejected request: a field-error dictionary and/or one detail message. */
@@ -10,13 +9,11 @@ export interface ServerErrorBody {
   detail?: string;
 }
 
-/** Context discriminator for validation message mapping. */
 export type ValidationContext = 'admin' | 'settings';
 
 /** Message key of a wrong current password, which belongs to the current-password field. */
 export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInvalid';
 
-/** Capitalizes the first character of a string. */
 function toCapitalized(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -49,7 +46,6 @@ export function getFieldMessageKey(errors: ServerFieldErrors, field: string): st
   return messageKey !== undefined && isFieldMessageKey(messageKey) ? messageKey : undefined;
 }
 
-/** Returns true when the field-error dictionary has at least one non-empty entry. */
 export function hasServerFieldErrors(errors: ServerFieldErrors): boolean {
   return Object.values(errors).some((messages) => messages.length > 0);
 }
@@ -60,17 +56,14 @@ export function hasRequiredFieldError(errors: ServerFieldErrors, field: string):
   return variants.some((variant) => (errors[variant] ?? []).includes('common.validation.fieldRequired'));
 }
 
-/** Extracts the field errors dictionary from an Axios error response payload. */
 export function extractServerFieldErrors(data: ServerErrorBody | undefined): ServerFieldErrors {
   return data?.errors ?? {};
 }
 
-/** True when the text contains at least one of the fragments. */
 function containsAny(text: string, fragments: readonly string[]): boolean {
   return fragments.some((fragment) => text.includes(fragment));
 }
 
-/** True when the text contains every fragment. */
 function containsAll(text: string, fragments: readonly string[]): boolean {
   return fragments.every((fragment) => text.includes(fragment));
 }
@@ -143,12 +136,10 @@ const PASSWORD_VALIDATION_RULES: readonly ValidationMessageRule[] = [
   },
 ];
 
-/** Maps a uniqueness, format, name or required-field message to its shared key. */
 function mapCommonValidationMessageToKey(normalizedMessage: string): string | null {
   return findValidationRuleKey(COMMON_VALIDATION_RULES, normalizedMessage);
 }
 
-/** Maps the password-confirmation mismatch message to its shared key. */
 function mapPasswordMismatchMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('passwords do not match')) {
     return null;
@@ -157,7 +148,6 @@ function mapPasswordMismatchMessageToKey(normalizedMessage: string): string | nu
   return 'common.validation.passwordMismatch';
 }
 
-/** Maps a password-policy message to its shared key. */
 function mapPasswordValidationMessageToKey(normalizedMessage: string): string | null {
   if (!normalizedMessage.includes('password')) {
     return null;
@@ -205,7 +195,6 @@ function mapValidationMessageToKey(message: string, context: ValidationContext):
   return message;
 }
 
-/** Maps a validation message to an i18n key in the settings context. */
 export function mapSettingsValidationMessageToKey(message: string): string {
   return mapValidationMessageToKey(message, 'settings');
 }
@@ -216,7 +205,6 @@ export function mapValidationMessageOrFallback(message: string, context: Validat
   return mappedKey === message ? fallbackKey : mappedKey;
 }
 
-/** Normalizes all error messages in a field errors dictionary by applying a mapping function to each message. */
 export function normalizeServerFieldErrors(
   errors: ServerFieldErrors,
   mapMessage: (message: string) => string,
@@ -229,7 +217,6 @@ export function normalizeServerFieldErrors(
   );
 }
 
-/** Returns the first available message from a field-errors dictionary. */
 export function getFirstFieldErrorMessage(errors: ServerFieldErrors): string | null {
   for (const [firstMessage] of Object.values(errors)) {
     if (firstMessage !== undefined) {

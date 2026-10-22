@@ -39,7 +39,6 @@ function hasUpdateChanges<TDto>(config: CatalogItemConfig<TDto>, snapshot: TDto,
     || tab.getVat(snapshot) !== values.vatRatePercent;
 }
 
-/** Manages one catalog kind's form/delete modal state and create/update/delete mutations. */
 export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();

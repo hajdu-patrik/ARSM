@@ -34,7 +34,6 @@ interface CustomerCardProps {
   readonly history: CustomerHistoryState;
 }
 
-/** Renders a single customer card and, once expanded, its vehicle and history details. */
 export const CustomerCard = memo(function CustomerCard({
   t,
   searchTerm,

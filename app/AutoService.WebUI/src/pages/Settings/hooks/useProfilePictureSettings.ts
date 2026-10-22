@@ -25,7 +25,6 @@ interface UseProfilePictureSettingsParams {
   showErrorToast: (message: string, options?: Record<string, string | number>) => void;
 }
 
-/** Owns the picture pick checks, the crop modal source, the upload and removal mutations and their confirm flow. */
 export function useProfilePictureSettings({
   profile,
   showSuccessToast,

@@ -15,7 +15,6 @@ import { CompanyResultSummary } from './components/CompanyResultSummary';
 import { CompanyResultMonthList } from './components/CompanyResultMonthList';
 import { VatBreakdownList } from './components/VatBreakdownList';
 
-/** Company results route component. */
 export const CompanyResultsPage = memo(function CompanyResultsPage() {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);

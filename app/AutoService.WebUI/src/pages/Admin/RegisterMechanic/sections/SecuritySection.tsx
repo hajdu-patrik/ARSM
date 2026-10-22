@@ -9,7 +9,6 @@ import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, muted
 import { MIN_PASSWORD_LENGTH } from '../../../../utils/validation';
 import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
-/** Props for the SecuritySection component. */
 interface SecuritySectionProps {
   readonly password: string;
   readonly confirmPassword: string;
@@ -22,7 +21,6 @@ interface SecuritySectionProps {
   readonly onToggleShowConfirmPassword: () => void;
 }
 
-/** Password and visibility-toggle section for registration. */
 export const SecuritySection = memo(function SecuritySection({
   password,
   confirmPassword,

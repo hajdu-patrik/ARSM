@@ -17,7 +17,6 @@ import {
 } from '../../utils/passwordFormPolicy';
 import { PasswordInputWithToggle } from './PasswordInputWithToggle';
 
-/** Props for the ChangePasswordForm component. */
 export interface ChangePasswordFormProps {
   readonly currentPassword: string;
   readonly newPassword: string;
@@ -30,7 +29,6 @@ export interface ChangePasswordFormProps {
   readonly onSubmit: (event: SyntheticEvent) => void;
 }
 
-/** Renders the password-change form with accessibility-aware inputs. */
 export const ChangePasswordForm = memo(function ChangePasswordForm({
   currentPassword,
   newPassword,

@@ -33,7 +33,6 @@ function isAuthExpiredError(error: unknown): boolean {
   return error.response?.status === 401 || error.response?.status === 403;
 }
 
-/** Classifies the failure of one read. */
 function classifyFailure(result: ReadResult): ReadFailure {
   if (!result.isError) {
     return 'none';

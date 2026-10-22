@@ -4,13 +4,10 @@ import { Navigate } from 'react-router';
 import { useAuthStore } from '../store/auth.store';
 import { APP_ROUTE_PATHS } from './appRoutes';
 
-/** Props for the {@link PasswordChangeRoute} component. */
 interface PasswordChangeRouteProps {
-  /** The change-password page, shown only to a signed-in user who still has a temporary password. */
   readonly children: ReactNode;
 }
 
-/** Route guard that shows its content only while the signed-in user must replace a temporary password. */
 export const PasswordChangeRoute = memo(function PasswordChangeRoute({ children }: PasswordChangeRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);

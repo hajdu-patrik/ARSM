@@ -6,22 +6,17 @@ import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.ty
 import { toneBadgeClasses, toneDotClasses } from '../../../../utils/formStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
-/** Props for the {@link StatusBadge} component. */
 interface StatusBadgeProps {
-  /** The appointment status to display. */
   readonly status: AppointmentStatus;
-  /** Additional CSS classes appended to the badge element. */
   readonly className?: string;
 }
 
-/** i18n translation key for each appointment status label. */
 const STATUS_I18N_KEY: Record<AppointmentStatus, string> = {
   InProgress: 'scheduler.status.inprogress',
   Completed: 'scheduler.status.completed',
   Cancelled: 'scheduler.status.cancelled',
 };
 
-/** Memoized colored status pill badge. */
 export const StatusBadge = memo(function StatusBadge({ status, className = '' }: StatusBadgeProps) {
   const { t } = useTranslation();
   const tone = APPOINTMENT_STATUS_TONE[status];

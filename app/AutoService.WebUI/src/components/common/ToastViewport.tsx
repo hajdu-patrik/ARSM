@@ -7,7 +7,6 @@ import { SYSTEM_ERROR_TOAST_KEYS, WARNING_TOAST_KEYS } from '../../store/toast.k
 import { useToastStore, type ToastMessage } from '../../store/toast.store';
 import { defaultIconClass, feedbackFrameClass, focusVisibleOutlineClass, largeIconClass, toneFeedbackClasses } from '../../utils/formStyles';
 
-/** Props for a single toast row. */
 interface ToastItemProps {
   readonly toast: ToastMessage;
 }
@@ -156,5 +155,4 @@ const ToastViewportComponent = memo(function ToastViewport() {
 
 ToastViewportComponent.displayName = 'ToastViewport';
 
-/** Memoized global toast viewport; its live region is always mounted, empty while there are no toasts. */
 export const ToastViewport = ToastViewportComponent;

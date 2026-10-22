@@ -20,7 +20,6 @@ import {
 } from '../../../../utils/formStyles';
 import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
-/** Props for the ProfessionalSection component. */
 interface ProfessionalSectionProps {
   readonly specialization: string;
   readonly expertise: string[];
@@ -30,7 +29,6 @@ interface ProfessionalSectionProps {
   readonly onToggleExpertise: (value: string) => void;
 }
 
-/** Specialization and expertise picker section for registration. */
 export const ProfessionalSection = memo(function ProfessionalSection({
   specialization,
   expertise,

@@ -6,7 +6,6 @@ import { quoteService } from '../quotes/quote.service';
 import type { QuoteListQuery } from '../../types/quotes/quotes.types';
 import { scopedQueryOptions } from './scopedQueryOptions';
 
-/** Quote read factories; every one takes the scope of useAuthQueryScope() first. */
 export const quotesQueries = {
   /** One page of quotes, newest first; the previous page stays visible while the next loads. */
   listPage: (scope: AuthQueryScope | null, query: QuoteListQuery) =>
@@ -18,7 +17,6 @@ export const quotesQueries = {
       true,
     ),
 
-  /** One quote with its lines and totals. */
   detail: (scope: AuthQueryScope | null, quoteId: number) =>
     scopedQueryOptions(
       scope,

@@ -6,7 +6,6 @@ import { queryKeys, type AuthQueryScope } from '../cache/queryKeys';
 import { customerRegistryService } from '../customers/customer-registry.service';
 import { scopedQueryOptions } from './scopedQueryOptions';
 
-/** Customer read factories; every one takes the scope of useAuthQueryScope() first. */
 export const customersQueries = {
   /** One page of customers; the previous page stays shown while the next loads. */
   listPage: (scope: AuthQueryScope | null, query: PagedQuery) =>

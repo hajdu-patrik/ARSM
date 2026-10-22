@@ -26,7 +26,6 @@ import {
   pageTitleClass,
 } from '../../utils/formStyles';
 
-/** Customers registry page container: coordinates customer/vehicle CRUD, search state, and history panels. */
 const CustomersPageComponent = memo(function CustomersPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -223,5 +222,4 @@ const CustomersPageComponent = memo(function CustomersPage() {
 
 CustomersPageComponent.displayName = 'CustomersPage';
 
-/** Customers route component. */
 export const CustomersPage = CustomersPageComponent;

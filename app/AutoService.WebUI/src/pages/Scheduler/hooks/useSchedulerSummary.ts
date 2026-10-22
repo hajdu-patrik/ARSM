@@ -4,25 +4,17 @@ import type { TFunction } from 'i18next';
 import { formatLongDate, isPastCalendarDay, isScheduledOn } from '../utils/scheduler-datetime';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
-/** Configuration for {@link useSchedulerSummary}. */
 interface UseSchedulerSummaryArgs {
-  /** Currently selected day-of-month (1-based), or `null` if no day is selected. */
   readonly selectedDay: number | null;
-  /** Currently displayed calendar year. */
   readonly calendarYear: number;
-  /** Currently displayed calendar month (1-based). */
   readonly calendarMonth: number;
-  /** All appointments loaded for the current month. */
   readonly monthAppointments: AppointmentDto[];
   /** Number of today's appointments, derived from the loaded month reads. */
   readonly todayAppointmentsCount: number;
-  /** Active i18n locale code (e.g. "en", "hu"). */
   readonly locale: string;
-  /** i18next translation function. */
   readonly t: TFunction;
 }
 
-/** Computes display data for the scheduler summary strip. */
 export function useSchedulerSummary({
   selectedDay,
   calendarYear,

@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 
-/** Inputs of {@link useAppointmentDetailActions}: the open appointment with its version and the page-level handlers. */
 interface UseAppointmentDetailActionsArgs {
   readonly appointmentId: number;
   readonly appointmentVersion: number;

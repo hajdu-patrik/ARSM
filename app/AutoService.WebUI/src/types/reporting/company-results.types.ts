@@ -31,7 +31,7 @@ interface CompanyResultLineKindRowDto {
   gross: number;
 }
 
-/** Revenue report returned by {@code GET /api/company-results}. */
+/** Revenue report returned by `GET /api/company-results`. */
 export interface CompanyResultDto {
   year: number;
   month: number | null;

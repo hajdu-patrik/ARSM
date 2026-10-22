@@ -8,23 +8,15 @@ import { clearErrorIllustrationCache } from '../utils/errorIllustrationCache';
 import { clearSchedulerSession } from './scheduler.store';
 import { clearToasts } from './toast.store';
 
-/** Shape of the authentication Zustand store. */
 interface AuthState {
-  /** Currently authenticated user, or {@code null} when logged out. */
   user: AuthUser | null;
-  /** Whether the user has an active authenticated session. */
   isAuthenticated: boolean;
   /** Whether an auth operation (login, validate, refresh) is in progress. */
   isLoading: boolean;
-  /** Current auth error message key, or {@code null} if no error. */
   error: string | null;
-  /** Sets the authenticated user. Pass {@code null} to clear. */
   setUser: (user: AuthUser | null) => void;
-  /** Updates the authentication flag. */
   setIsAuthenticated: (value: boolean) => void;
-  /** Updates the loading state. */
   setIsLoading: (value: boolean) => void;
-  /** Sets or clears the error message. */
   setError: (error: string | null) => void;
   /** Marks whether the signed-in user still has to replace a temporary password; ignored while signed out. */
   setMustChangePassword: (value: boolean) => void;
@@ -41,7 +33,6 @@ function clearUserBrowserState(): void {
   });
 }
 
-/** Zustand store for auth status, the current user, and clearing private cache data on logout. */
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,

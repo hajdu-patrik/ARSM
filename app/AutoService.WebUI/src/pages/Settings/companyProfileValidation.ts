@@ -70,7 +70,6 @@ export async function validateCompanyValues(values: CompanyFieldValues): Promise
   return errors;
 }
 
-/** True when any field carries a message. */
 export function hasCompanyFieldErrors(errors: CompanyFieldErrors): boolean {
   return COMPANY_FIELD_NAMES.some((field) => errors[field] !== undefined);
 }

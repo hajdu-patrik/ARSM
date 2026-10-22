@@ -2,10 +2,8 @@
 
 import { DEFAULT_VAT_RATE_PERCENT } from '../../types/catalog/catalog.types';
 
-/** Mode for the part/labor-type create/edit modal. */
 export type CatalogModalMode = 'create' | 'edit';
 
-/** Which catalog entity a delete confirmation or form targets. */
 export type CatalogItemKind = 'part' | 'laborType';
 
 /** Create/edit modal form state of both kinds: `identifier` is the part number or code, `rate` the net price or hourly rate. */
@@ -16,7 +14,6 @@ export interface CatalogFormState {
   vatRatePercent: number;
 }
 
-/** Delete-confirmation target shared by both catalog entity kinds. */
 export interface DeleteCatalogItemTarget {
   kind: CatalogItemKind;
   id: number;
@@ -24,7 +21,6 @@ export interface DeleteCatalogItemTarget {
   identifier: string;
 }
 
-/** Empty form used when opening the create modal. */
 export const EMPTY_CATALOG_FORM: CatalogFormState = {
   identifier: '',
   name: '',
@@ -41,7 +37,6 @@ export type CatalogFieldErrors = Partial<Record<CatalogFieldName, string>>;
 /** The current value of every validated field as text, which a pinned message is compared with. */
 export type CatalogFieldValues = Readonly<Record<CatalogFieldName, string>>;
 
-/** Reads every validated field of the form as text. */
 export function readCatalogFieldValues(form: CatalogFormState): CatalogFieldValues {
   return { identifier: form.identifier, name: form.name, rate: form.rate, vatRate: String(form.vatRatePercent) };
 }

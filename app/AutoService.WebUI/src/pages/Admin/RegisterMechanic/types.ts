@@ -1,6 +1,5 @@
 /** Form model, field-error and list types of the mechanic registration page. */
 
-/** Client-side form values for the mechanic registration form. */
 export interface RegisterMechanicFormValues {
   firstName: string;
   middleName: string;

@@ -4,7 +4,6 @@ import { appointmentService } from '../../../services/scheduler/appointment.serv
 import type { SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
 import type { LookupMode, LookupState } from '../components/intake/SchedulerIntakeModal.types';
 
-/** Inputs of {@link useSchedulerIntakeLookup}: the form callbacks a lookup change drives. */
 interface UseSchedulerIntakeLookupParams {
   readonly onLookupReset: () => void;
   readonly onLookupFound: (lookup: SchedulerCustomerLookupDto) => void;
@@ -14,7 +13,6 @@ interface UseSchedulerIntakeLookupParams {
 /** Typing pause before the live lookup runs. */
 const LOOKUP_DEBOUNCE_MS = 280;
 
-/** Owns scheduler intake lookup state with live customer filtering by name and license plate. */
 export function useSchedulerIntakeLookup({
   onLookupReset,
   onLookupFound,

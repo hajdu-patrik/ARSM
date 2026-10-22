@@ -19,7 +19,6 @@ import {
 } from './cache-policy';
 import { isPersistedArsmQueryKey } from './queryKeys';
 
-/** Shared TanStack Query client for authenticated WebUI read models. */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -36,7 +35,6 @@ interface ThrottledPersister {
   readonly persistClient: (client: PersistedClient) => void;
   readonly restoreClient: () => PersistedClient | undefined;
   readonly removeClient: () => void;
-  /** Drops a queued write that has not reached storage yet. */
   readonly cancelPendingWrite: () => void;
 }
 
@@ -82,7 +80,6 @@ function createThrottledSessionPersister(): ThrottledPersister {
     }
   }
 
-  /** Drops the queued state and its timer. */
   function cancelPendingWrite(): void {
     if (writeTimer !== null) {
       clearTimeout(writeTimer);

@@ -11,7 +11,6 @@ import { useQuoteLineForm } from './useQuoteLineForm';
 
 export type { QuoteLineEditingTarget } from './useQuoteLineForm';
 
-/** External dependencies for the quote editor hook. */
 interface UseQuoteEditorParams {
   showErrorToast: (key: string) => void;
 }
@@ -27,7 +26,6 @@ function useCloseOnFailure(hasFailed: boolean, close: () => void): void {
   }, [hasFailed]);
 }
 
-/** Manages the quote editor: what is open, the reads behind it, and the header and line forms. */
 export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
   const scope = useAuthQueryScope();
   const [isOpen, setIsOpen] = useState(false);
@@ -131,5 +129,4 @@ export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
   };
 }
 
-/** Quote editor state and actions returned by useQuoteEditor. */
 export type QuoteEditorState = ReturnType<typeof useQuoteEditor>;

@@ -218,7 +218,6 @@ export const LookupNoMatch = memo(function LookupNoMatch({ id, lookupMode, trans
 	);
 });
 
-/** Picks the no-match title key for the lookup field that found nothing. */
 function getLookupNoMatchTitleKey(lookupMode: LookupMode): string {
 	switch (lookupMode) {
 		case 'licensePlate':

@@ -43,7 +43,6 @@ interface VehicleFormModalProps {
   setForm: React.Dispatch<React.SetStateAction<VehicleFormState>>;
 }
 
-/** Vehicle create/edit modal: identity, numeric and drivetrain fields with inline per-field validation errors. */
 export const VehicleFormModal = memo(function VehicleFormModal({
   isOpen,
   mode,

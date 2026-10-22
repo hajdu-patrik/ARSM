@@ -23,7 +23,6 @@ import {
 } from '../profileFields';
 import { useProfileCache } from './useProfileCache';
 
-/** External dependencies for the profile form hook. */
 interface UseProfileFormSettingsParams {
   readonly showSuccessToast: (message: string, options?: Record<string, string | number>) => void;
   readonly showErrorToast: (message: string, options?: Record<string, string | number>) => void;
@@ -38,7 +37,6 @@ function getSaveDisabledReasonKey(isUpdatingProfile: boolean, hasProfileChanges:
   return hasProfileChanges ? null : 'settings.saveRequiresChanges';
 }
 
-/** Owns the profile read, the edit draft laid over it, per-field server errors and the save confirmation flow. */
 export function useProfileFormSettings({
   showSuccessToast,
   showErrorToast,

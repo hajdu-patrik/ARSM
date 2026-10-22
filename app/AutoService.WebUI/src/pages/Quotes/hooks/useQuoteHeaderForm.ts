@@ -10,7 +10,6 @@ import {
   type QuoteHeaderFormState,
 } from '../helpers';
 
-/** Form key of a quote that does not exist yet. */
 const NEW_QUOTE_FORM_KEY = 'new';
 
 /** Header edits in progress, tied to the server state (the key) they started from, so a newer version drops them. */
@@ -33,7 +32,6 @@ function resolveHeaderForm(draft: HeaderDraft | null, key: string, quote: QuoteD
   return quote === null ? EMPTY_QUOTE_HEADER_FORM : buildQuoteHeaderForm(quote);
 }
 
-/** Holds the header form for the open quote (null while it is being created); a newer server version discards the edits. */
 export function useQuoteHeaderForm(quote: QuoteDetailDto | null) {
   const [draft, setDraft] = useState<HeaderDraft | null>(null);
   const [attemptedFormKey, setAttemptedFormKey] = useState<string | null>(null);

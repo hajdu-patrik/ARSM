@@ -94,7 +94,6 @@ interface CustomerRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-/** Repair history of every appointment of one customer. */
 export const CustomerRepairHistory = memo(function CustomerRepairHistory({
   t,
   locale,
@@ -134,7 +133,6 @@ interface VehicleRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
-/** Repair history of every appointment of one vehicle. */
 export const VehicleRepairHistory = memo(function VehicleRepairHistory({
   t,
   locale,

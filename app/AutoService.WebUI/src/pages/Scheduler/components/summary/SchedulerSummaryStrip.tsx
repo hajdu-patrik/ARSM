@@ -7,17 +7,13 @@ import {
 	insetSurfaceClass,
 } from '../../../../utils/formStyles';
 
-/** Props for the {@link SchedulerSummaryStrip} component. */
 interface SchedulerSummaryStripProps {
 	/** Localized date text describing the summary context (today or selected day). */
 	readonly summaryDateText: string;
-	/** Number of appointments scheduled for the summary date. */
 	readonly summaryCount: number;
-	/** i18next translation function. */
 	readonly t: TFunction;
 }
 
-/** Memoized summary strip showing date context and appointment count. */
 export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 	summaryDateText,
 	summaryCount,

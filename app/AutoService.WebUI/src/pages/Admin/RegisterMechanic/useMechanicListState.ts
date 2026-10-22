@@ -13,7 +13,6 @@ import type { PagedQuery, PagedResult } from '../../../types/common/pagination.t
 import type { ServerErrorBody } from '../../../utils/serverValidation';
 import { MECHANIC_LIST_PAGE_SIZE } from './constants';
 
-/** External dependencies for the mechanic list-state hook. */
 interface UseMechanicListStateParams {
   readonly showErrorToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
@@ -51,7 +50,6 @@ function getDeleteErrorKey(error: unknown): string {
   return status === 500 ? 'admin.mechanicDeleteIdentityFailed' : 'admin.mechanicDeleteFailed';
 }
 
-/** Manages the admin mechanic roster: the cached paged read, the delete flow and the server-side name search. */
 export function useMechanicListState({
   showErrorToast,
   showSuccessToast,

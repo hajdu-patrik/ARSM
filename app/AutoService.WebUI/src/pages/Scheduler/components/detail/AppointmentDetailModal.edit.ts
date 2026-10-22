@@ -16,7 +16,6 @@ export interface EditFormState {
   taskDescription: string;
 }
 
-/** Fills the edit form from an appointment. */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
     dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),

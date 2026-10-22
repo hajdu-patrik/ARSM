@@ -5,11 +5,8 @@ import { StatusPillBadge } from '../../../components/common/StatusPillBadge';
 import { toneBadgeClasses, toneDotClasses, type SemanticTone } from '../../../utils/formStyles';
 import type { QuoteDisplayStatus } from '../helpers';
 
-/** Props for the {@link QuoteStatusBadge} component. */
 interface QuoteStatusBadgeProps {
-  /** The status to display, expiry included. */
   readonly status: QuoteDisplayStatus;
-  /** Additional CSS classes appended to the badge element. */
   readonly className?: string;
 }
 
@@ -22,7 +19,6 @@ const QUOTE_STATUS_TONE: Record<QuoteDisplayStatus, SemanticTone> = {
   Rejected: 'error',
 };
 
-/** i18n translation key for each quote status label. */
 const QUOTE_STATUS_I18N_KEY: Record<QuoteDisplayStatus, string> = {
   Draft: 'quotes.status.draft',
   Sent: 'quotes.status.sent',
@@ -31,7 +27,6 @@ const QUOTE_STATUS_I18N_KEY: Record<QuoteDisplayStatus, string> = {
   Rejected: 'quotes.status.rejected',
 };
 
-/** Memoized colored quote status pill. */
 export const QuoteStatusBadge = memo(function QuoteStatusBadge({ status, className = '' }: QuoteStatusBadgeProps) {
   const { t } = useTranslation();
   const tone = QUOTE_STATUS_TONE[status];

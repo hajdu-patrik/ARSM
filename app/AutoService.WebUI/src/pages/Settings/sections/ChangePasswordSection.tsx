@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { ChangePasswordForm, type ChangePasswordFormProps } from '../../../components/common/ChangePasswordForm';
 import { cardClass, sectionTitleClass } from '../../../utils/formStyles';
 
-/** Password update section rendered on the settings page. */
 export const ChangePasswordSection = memo(function ChangePasswordSection(props: ChangePasswordFormProps) {
   const { t } = useTranslation();
 

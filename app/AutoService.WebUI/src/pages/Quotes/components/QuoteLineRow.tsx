@@ -32,7 +32,6 @@ interface QuoteLineActionsProps {
   readonly onDelete: () => void;
 }
 
-/** Edit and delete icon actions of one saved line. */
 function QuoteLineActions({ t, isSaving, onStartEdit, onDelete }: QuoteLineActionsProps) {
   return (
     <div className={compactRowActionsClusterClass}>

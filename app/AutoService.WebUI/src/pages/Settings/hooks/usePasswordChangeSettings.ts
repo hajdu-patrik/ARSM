@@ -3,7 +3,6 @@
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { usePasswordChange, type UsePasswordChangeParams } from '../../../hooks/usePasswordChange';
 
-/** Owns the shared password-change state and the confirm dialog that precedes the request. */
 export function usePasswordChangeSettings(params: UsePasswordChangeParams) {
   const { validatePasswordChange, submitPasswordChange, ...passwordChange } = usePasswordChange(params);
   const { isChangingPassword } = passwordChange;

@@ -4,7 +4,7 @@ export const DRIVETRAIN_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'PHEV', 'Electric
 
 export type DrivetrainType = (typeof DRIVETRAIN_TYPES)[number];
 
-/** Customer list item returned by {@code GET /api/customers}. */
+/** Customer list item returned by `GET /api/customers`. */
 export interface CustomerListItem {
   id: number;
   firstName: string;
@@ -16,7 +16,7 @@ export interface CustomerListItem {
   vehicleLicensePlates: string[];
 }
 
-/** Request payload for creating a customer via {@code POST /api/customers}. */
+/** Request payload for creating a customer via `POST /api/customers`. */
 export interface CreateCustomerRequest {
   firstName: string;
   middleName?: string | null;
@@ -25,7 +25,7 @@ export interface CreateCustomerRequest {
   phoneNumber?: string | null;
 }
 
-/** Request payload for updating a customer via {@code PUT /api/customers/{id}}. */
+/** Request payload for updating a customer via `PUT /api/customers/{id}`. */
 export interface UpdateCustomerRequest {
   firstName: string;
   middleName?: string | null;
@@ -56,7 +56,7 @@ export interface VehicleDetailDto {
   customer: VehicleCustomerSummary;
 }
 
-/** Request payload for creating a vehicle via {@code POST /api/customers/{customerId}/vehicles}. */
+/** Request payload for creating a vehicle via `POST /api/customers/{customerId}/vehicles`. */
 export interface CreateVehicleRequest {
   licensePlate: string;
   vin: string;
@@ -68,7 +68,7 @@ export interface CreateVehicleRequest {
   drivetrainType: DrivetrainType;
 }
 
-/** Request payload for updating a vehicle via {@code PUT /api/vehicles/{id}}. */
+/** Request payload for updating a vehicle via `PUT /api/vehicles/{id}`. */
 export interface UpdateVehicleRequest {
   licensePlate: string;
   vin: string;

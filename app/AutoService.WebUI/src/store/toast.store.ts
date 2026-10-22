@@ -2,36 +2,25 @@
 
 import { create } from 'zustand';
 
-/** Visual style variant for a toast notification. */
 type ToastVariant = 'success' | 'error' | 'warning';
 
-/** A single toast notification entry in the queue. */
 export interface ToastMessage {
-  /** Unique identifier for this toast instance. */
   id: string;
-  /** Visual variant (success, error, or warning). */
   variant: ToastVariant;
-  /** i18n translation key for the message text. */
   messageKey: string;
-  /** Optional interpolation values for the i18n key. */
   messageValues?: Record<string, string | number> | undefined;
   /** Auto-dismiss duration in milliseconds. */
   durationMs: number;
 }
 
-/** Shape of the toast Zustand store. */
 interface ToastState {
-  /** Active toast messages in display order. */
   toasts: ToastMessage[];
   /** Enqueues a toast with the given options. Returns the toast ID. */
   showToast: (toast: Omit<ToastMessage, 'id' | 'durationMs'> & { durationMs?: number | undefined }) => string;
-  /** Shorthand to show a success toast. Returns the toast ID. */
+  /** Shorthands for `showToast` with a fixed variant; each returns the toast ID. */
   showSuccess: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
-  /** Shorthand to show an error toast. Returns the toast ID. */
   showError: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
-  /** Shorthand to show a warning toast. Returns the toast ID. */
   showWarning: (messageKey: string, messageValues?: Record<string, string | number>, durationMs?: number) => string;
-  /** Removes a specific toast by ID. */
   removeToast: (id: string) => void;
 }
 

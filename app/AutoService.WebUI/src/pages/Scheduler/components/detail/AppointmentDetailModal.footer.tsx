@@ -29,13 +29,11 @@ interface AppointmentDetailFooterProps {
   readonly isUpdating: boolean;
   /** Whether the current user is an admin; only admins can delete an appointment. */
   readonly isAdmin: boolean;
-  /** Whether the delete request is in flight. */
   readonly isDeleting: boolean;
   readonly t: TFunction;
   readonly onStartEdit: () => void;
   readonly onSave: () => void;
   readonly onStatusChange: (status: AppointmentStatus) => void;
-  /** Opens the delete confirmation modal. */
   readonly onDeleteClick: () => void;
 }
 

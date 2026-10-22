@@ -5,9 +5,7 @@ import { queryKeys, type AuthQueryScope } from '../cache/queryKeys';
 import { profileService } from '../profile/profile.service';
 import { scopedQueryOptions } from './scopedQueryOptions';
 
-/** Profile read factories; every one takes the scope of useAuthQueryScope() first. */
 export const profileQueries = {
-  /** The profile of the signed-in user. */
   me: (scope: AuthQueryScope | null) =>
     scopedQueryOptions(
       scope,

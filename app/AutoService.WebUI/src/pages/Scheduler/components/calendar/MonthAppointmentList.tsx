@@ -28,7 +28,6 @@ interface MonthAppointmentListProps {
 /** Mechanic names that are placeholders, not real people (EN/HU "unknown", n/a, dashes). */
 const PLACEHOLDER_MECHANIC_NAME_PATTERN = /^(?:unknown|ismeretlen|n\/a|none|-+)$/i;
 
-/** Returns whether a mechanic name is placeholder text that should be hidden from filters. */
 function isPlaceholderMechanicName(fullName: string): boolean {
   return PLACEHOLDER_MECHANIC_NAME_PATTERN.test(fullName.trim());
 }
@@ -42,7 +41,6 @@ function resolveEmptyMessageKey(selectedDay: number | null, hasActiveFilter: boo
   return selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
 }
 
-/** Displays the current month's appointments with status, mechanic, day, and date-sort controls. */
 export const MonthAppointmentList = memo(function MonthAppointmentList({
   appointments,
   isLoading,

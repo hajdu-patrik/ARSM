@@ -10,7 +10,6 @@ import {
 import { formatShortDateTime } from '../../../utils/intlFormat';
 import { StatusBadge } from '../../Scheduler/components/shared/StatusBadge';
 
-/** Props for the {@link RepairHistoryList} component. */
 interface RepairHistoryListProps {
 	readonly appointments: AppointmentDto[];
 	readonly locale: string;

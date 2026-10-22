@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 /** Identity of a read that passes no `readKey`, so such a read forms one fixed identity. */
 const NO_READ_KEY = '';
 
-/** Inputs of {@link useReadFailureToast}. */
 export interface ReadFailureToastOptions {
   /** Message to toast while the read fails with nothing to show; null while it is not failing. */
   readonly failureMessageKey: string | null;

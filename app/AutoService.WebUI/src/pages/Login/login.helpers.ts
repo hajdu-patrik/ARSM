@@ -12,7 +12,6 @@ interface ApiErrorPayload {
   readonly retryAfterSeconds?: number;
 }
 
-/** Discriminated login error model used by the login page UI. */
 export type LoginError =
   | { key: 'login.invalidCredentials' }
   | { key: 'login.mechanicOnly' }
@@ -32,10 +31,8 @@ export type ParsedIdentifier =
   | { kind: 'phone'; phoneNumber: string }
   | { kind: 'invalid'; reason: InvalidIdentifierReason };
 
-/** Identifier login mode currently selected by the user. */
 export type LoginMethod = 'email' | 'phone';
 
-/** Form fields of the login page that can carry a validation message. */
 type LoginFieldName = 'identifier' | 'password';
 
 /** The validation message key of every field, undefined while the field has none. */
@@ -138,7 +135,6 @@ export async function parseIdentifierByMethod(value: string, method: LoginMethod
     : await parsePhoneIdentifier(trimmedValue);
 }
 
-/** The message key explaining why an identifier was refused. */
 export function getIdentifierErrorKey(reason: InvalidIdentifierReason): string {
   return IDENTIFIER_ERROR_KEYS[reason];
 }
@@ -151,7 +147,6 @@ export function collectLoginFieldErrors(identifier: ParsedIdentifier, password: 
   };
 }
 
-/** True when at least one field carries a validation message. */
 export function hasLoginFieldErrors(errors: LoginFieldErrors): boolean {
   return errors.identifier !== undefined || errors.password !== undefined;
 }
@@ -221,7 +216,6 @@ function buildNormalizedErrorText(
     .toLowerCase();
 }
 
-/** Maps unknown login errors to user-facing login error keys. */
 export function resolveLoginError(err: unknown): LoginError {
   if (!isAxiosError<ApiErrorPayload>(err)) {
     return { key: 'login.databaseUnavailable' };

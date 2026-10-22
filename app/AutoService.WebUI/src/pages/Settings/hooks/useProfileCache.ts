@@ -7,7 +7,6 @@ import { profileQueries } from '../../../services/queries/profile.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { ProfileData } from '../../../types/profile/profile.types';
 
-/** Cache writers behind the profile and picture mutations; each one does nothing while nobody is signed in. */
 export function useProfileCache() {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();

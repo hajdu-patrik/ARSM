@@ -39,7 +39,6 @@ interface QuoteEditorLinesSectionProps {
   readonly onCancelLineEditing: () => void;
 }
 
-/** Reports whether a saved line is the one currently open in the inline editor. */
 function isLineBeingEdited(target: QuoteLineEditingTarget, line: QuoteLineDto): boolean {
   return target?.kind === 'existing' && target.lineId === line.id;
 }

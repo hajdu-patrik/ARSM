@@ -16,7 +16,6 @@ import { CompactOverflowBadge } from '../shared/CompactOverflowBadge';
 import { schedulerNavIconButtonClass } from '../../utils/schedulerButtonStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
-/** Props for the {@link CalendarView} component. */
 interface CalendarViewProps {
   readonly appointments: AppointmentDto[];
   readonly year: number;
@@ -27,7 +26,6 @@ interface CalendarViewProps {
   readonly selectedDay?: number | null;
 }
 
-/** Props for one day cell inside a calendar week row. */
 interface CalendarDayCellProps {
   readonly day: CalendarDay;
   readonly year: number;
@@ -38,7 +36,6 @@ interface CalendarDayCellProps {
   readonly onDayClick?: ((day: number) => void) | undefined;
 }
 
-/** Props for the status dot and overflow count of one calendar day. */
 interface DayStatusIndicatorProps {
   readonly earliestAppointment: AppointmentDto | null;
   readonly extraCount: number;
@@ -349,5 +346,4 @@ const CalendarViewComponent = memo(function CalendarView({
 
 CalendarViewComponent.displayName = 'CalendarView';
 
-/** Memoized monthly scheduler calendar with per-day appointment status indicators. */
 export const CalendarView = CalendarViewComponent;

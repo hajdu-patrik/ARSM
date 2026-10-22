@@ -10,7 +10,6 @@ export function formatDueExactDateTime(isoValue: string, language: string): stri
   return formatShortDateTime(isoValue, language);
 }
 
-/** Returns a new Date set to midnight (00:00:00.000) of the given date. */
 function toStartOfDay(date: Date): Date {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);

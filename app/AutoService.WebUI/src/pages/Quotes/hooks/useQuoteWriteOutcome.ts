@@ -15,14 +15,12 @@ import { useQuoteCache } from './useQuoteCache';
 /** Error-code body the API returns when the submitted version is stale. */
 const VERSION_CONFLICT_CODE = 'quote_version_conflict';
 
-/** External dependencies for the write-outcome hook. */
 interface UseQuoteWriteOutcomeParams {
   showSuccessToast: (messageKey: string) => void;
   showErrorToast: (messageKey: string) => void;
   adoptQuote: (quoteId: number) => void;
 }
 
-/** Builds the success and failure handlers the quote writes call from their mutation callbacks. */
 export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQuote }: UseQuoteWriteOutcomeParams) {
   const { refreshQuote, storeQuote } = useQuoteCache();
 
@@ -78,5 +76,4 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
   return { adoptWrite, handleWriteError };
 }
 
-/** Success and failure handlers returned by {@link useQuoteWriteOutcome}. */
 export type QuoteWriteOutcome = ReturnType<typeof useQuoteWriteOutcome>;

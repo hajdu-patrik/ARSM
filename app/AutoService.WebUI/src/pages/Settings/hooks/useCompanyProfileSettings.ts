@@ -24,7 +24,6 @@ import {
   validateCompanyValues,
 } from '../companyProfileValidation';
 
-/** External dependencies for the company data hook. */
 interface UseCompanyProfileSettingsParams {
   readonly isEnabled: boolean;
   readonly showSuccessToast: (message: string) => void;

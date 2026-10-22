@@ -13,7 +13,6 @@ import { useQuoteCache } from './useQuoteCache';
 import type { QuoteEditorState } from './useQuoteEditor';
 import type { QuoteWriteOutcome } from './useQuoteWriteOutcome';
 
-/** External dependencies for the header write hook. */
 interface UseQuoteHeaderMutationsParams {
   editor: QuoteEditorState;
   outcome: QuoteWriteOutcome;

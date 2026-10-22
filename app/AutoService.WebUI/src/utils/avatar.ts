@@ -26,7 +26,6 @@ function hashSeed(seed: string): number {
   return Math.abs(hash);
 }
 
-/** Returns a deterministic Tailwind color class pair for an avatar based on a seed value; the same seed always produces the same color. */
 export function getDeterministicAvatarColor(seedValue: string | number | null | undefined): string {
   const seed = String(seedValue ?? 'anonymous');
   const hash = hashSeed(seed);

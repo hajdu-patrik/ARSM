@@ -17,7 +17,6 @@ import {
   segmentedControlClass,
 } from '../../utils/formStyles';
 
-/** Inventory route component. */
 export const InventoryPage = memo(function InventoryPage() {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);

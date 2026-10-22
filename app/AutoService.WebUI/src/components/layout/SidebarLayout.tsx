@@ -48,7 +48,6 @@ function subscribeToTabletViewport(onChange: () => void): () => void {
   };
 }
 
-/** Current snapshot of the tablet range media query. */
 function isTabletViewport(): boolean {
   return globalThis.matchMedia(TABLET_VIEWPORT_QUERY).matches;
 }
@@ -68,7 +67,6 @@ function useSidebarCollapsed() {
   return { collapsed, toggleCollapse };
 }
 
-/** Authenticated page shell with the collapsible sidebar, mobile drawer and header controls. */
 export const SidebarLayout = memo(function SidebarLayout({ children, navItems }: SidebarLayoutProps) {
   const { t: translate } = useTranslation();
   const navigate = useNavigate();

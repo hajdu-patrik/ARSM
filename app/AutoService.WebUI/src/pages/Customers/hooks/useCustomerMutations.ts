@@ -50,13 +50,11 @@ const CUSTOMER_SAVE_ERROR_RULES: SaveErrorRules<CustomerFieldName> = {
 /** Required customer fields an edit restores from the saved customer when the server rejects them blank. */
 const REQUIRED_CUSTOMER_FIELDS = ['firstName', 'lastName', 'email'] as const;
 
-/** Variables of the customer update mutation. */
 interface UpdateCustomerVariables {
   readonly customerId: number;
   readonly request: UpdateCustomerRequest;
 }
 
-/** External dependencies required by customer mutation handlers. */
 interface UseCustomerMutationsParams extends CustomerMutationToastHandlersWithWarning {
   refreshAfterCustomerCreated: () => Promise<void>;
   refreshAfterCustomerUpdated: (customerId: number) => Promise<void>;

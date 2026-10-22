@@ -17,10 +17,8 @@ export const IDLE_QUERY_ENTITY_ID = 0;
 /** Status chips offered by the toolbar: the four stored values, the computed expiry, and no filter. */
 export const QUOTE_STATUS_FILTERS = ['All', 'Draft', 'Sent', 'Expired', 'Accepted', 'Rejected'] as const;
 
-/** Selected toolbar status filter. */
 export type QuoteStatusFilter = (typeof QUOTE_STATUS_FILTERS)[number];
 
-/** Narrows a select value to a toolbar status filter. */
 export function isQuoteStatusFilter(value: string): value is QuoteStatusFilter {
   return QUOTE_STATUS_FILTERS.some((filter) => filter === value);
 }
@@ -49,7 +47,6 @@ export interface QuoteLineFormState {
   vatRatePercent: number;
 }
 
-/** Empty line form used when starting a new part line. */
 export const EMPTY_QUOTE_LINE_FORM: QuoteLineFormState = {
   lineKind: 'Part',
   catalogId: '',
@@ -112,7 +109,6 @@ export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   };
 }
 
-/** Builds the header form from a loaded quote. */
 export function buildQuoteHeaderForm(quote: QuoteDetailDto): QuoteHeaderFormState {
   return {
     title: quote.title,
@@ -242,7 +238,7 @@ export function sortAppointmentsNewestFirst(appointments: readonly AppointmentDt
   );
 }
 
-/** Live line-amount preview before the server line exists; mirrors `Pricing/QuoteLineCalculator` exactly (gross = net+vat, never a separate multiplication) — the only client-side amount calc (see CLAUDE.md). */
+/** Live line-amount preview before the server line exists; mirrors `Pricing/QuoteLineCalculator` (gross = net + vat, never a multiplication), the only client-side amount calculation. */
 export function computeQuoteLineAmountsPreview(
   quantity: number,
   netUnitPrice: number,

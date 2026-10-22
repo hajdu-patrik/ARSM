@@ -8,7 +8,6 @@ interface SchedulerIntakeTaskSectionProps {
   readonly onTaskDescriptionChange: (value: string) => void;
 }
 
-/** Renders task-description input for scheduler intake. */
 export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSection({
   taskDescription,
   translate,

@@ -1,7 +1,6 @@
 /** Per-entity i18n keys, labels, and DTO accessors consumed by the generic `CatalogTab` component. */
 import type { LaborTypeDto, PartDto } from '../../types/catalog/catalog.types';
 
-/** Per-entity configuration consumed by the generic `CatalogTab` component. */
 export interface CatalogTabConfig<TDto> {
   readonly testIdPrefix: 'inventory-parts' | 'inventory-labor-types';
   readonly paginationTestIdPrefix: 'parts-pagination' | 'labor-types-pagination';
@@ -23,7 +22,6 @@ export interface CatalogTabConfig<TDto> {
   readonly getVersion: (item: TDto) => number;
 }
 
-/** Parts tab configuration. */
 export const partCatalogTabConfig: CatalogTabConfig<PartDto> = {
   testIdPrefix: 'inventory-parts',
   paginationTestIdPrefix: 'parts-pagination',
@@ -45,7 +43,6 @@ export const partCatalogTabConfig: CatalogTabConfig<PartDto> = {
   getVersion: (part) => part.version,
 };
 
-/** Labor types tab configuration. */
 export const laborTypeCatalogTabConfig: CatalogTabConfig<LaborTypeDto> = {
   testIdPrefix: 'inventory-labor-types',
   paginationTestIdPrefix: 'labor-types-pagination',

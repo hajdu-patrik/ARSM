@@ -22,7 +22,6 @@ function mapAdminMessageToToastKey(message: string): string {
   return mapValidationMessageOrFallback(message, 'admin', 'admin.genericError');
 }
 
-/** Owns the registration form: values, server errors per field, the confirm modal and the register mutation. */
 export function useRegisterMechanicForm() {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();

@@ -22,7 +22,6 @@ import { MechanicListSection } from './sections/MechanicListSection';
 import { ConfirmModal } from '../../../components/common/ConfirmModal';
 import { useRegisterMechanicForm } from './useRegisterMechanicForm';
 
-/** Admin-only route component for mechanic management and registration. */
 export const RegisterMechanicPage = memo(function RegisterMechanicPage() {
   const { t } = useTranslation();
   const {
