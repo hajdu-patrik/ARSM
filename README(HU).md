@@ -215,7 +215,7 @@ Suite célok:
 - `http`: először a `tests/API/_setup` fájlokat futtatja (tesztfiók- és fixture-létrehozás), utána az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
 - `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
 
-A backend unit tesztekhez (`tests/AutoService.UnitTests`, xUnit, az árazási kalkulátorok) nem kell futó stack: az `app/` mappában a `dotnet test` futtatja őket, ahogy a pre-push kapu és a CI is.
+A backend unit tesztekhez (`tests/AutoService.UnitTests`, xUnit: az árazási kalkulátorok és a session-lezárások) nem kell futó stack: az `app/` mappában a `dotnet test` futtatja őket, ahogy a pre-push kapu és a CI is.
 
 Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:
 

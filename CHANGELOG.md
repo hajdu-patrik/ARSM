@@ -30,8 +30,8 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   `main.bicep` a Log Analytics daily cap, a monthly budget with 50/80/100 % mails and two alert rules (5xx, restarts), all
   mailed to `ARSM_ALERT_EMAIL`. WebUI: the scheduler derives today from the month reads and polls every 10 minutes while the
   SSE stream is open; a skip link, a named navigation, the app shell inert behind dialogs and an axe sweep over every route
-  (`@axe-core/playwright`). Tests: an xUnit project for the pricing calculators (`tests/AutoService.UnitTests`, run by
-  `dotnet test`), HTTP suites for the reset, the lockout, the concurrency and the admin-only deletes, Python checks for the
+  (`@axe-core/playwright`). Tests: an xUnit project for the pricing calculators and the session cutoffs (`tests/AutoService.UnitTests`,
+  run by `dotnet test`), HTTP suites for the reset, the lockout, the concurrency and the admin-only deletes, Python checks for the
   session revocation and the refresh replay window, and SQL contracts for the new index, column and xmin mappings. Not changed
   (owner decisions, see the report): the refresh token's client-address binding, TOTP, the Blob managed identity, the
   least-privilege database role and the firewall rule (documented in `deployment-azure.md`), the PostgreSQL major version

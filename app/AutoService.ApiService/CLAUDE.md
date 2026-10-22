@@ -106,7 +106,7 @@
 - `sql-database-test` only for explicit request or significant schema/persistence change.
 - `e2e-playwright-test` only for explicit request or significant frontend flow change.
 - Use `python scripts/run-local-test-suite.py http|sql|all` and review sanitized summary.
-- Unit tests: `tests/AutoService.UnitTests` (xUnit, part of `app/AutoService.slnx`, so `dotnet test` in `app/` runs it in the pre-push backend stage and CI) covers the pricing calculators (`MoneyRounding`, `QuoteLineCalculator`, `QuoteTotalsCalculator`, `PricingCalculator`) through `InternalsVisibleTo`; add a unit test only for pure domain logic, the HTTP and SQL suites stay the contract tests.
+- Unit tests: `tests/AutoService.UnitTests` (xUnit, part of `app/AutoService.slnx`, so `dotnet test` in `app/` runs it in the pre-push backend stage and CI) covers the pricing calculators (`MoneyRounding`, `QuoteLineCalculator`, `QuoteTotalsCalculator`, `PricingCalculator`) and the ordering rule of `SessionRevocationService` through `InternalsVisibleTo`; add a unit test only for pure in-process logic, the HTTP and SQL suites stay the contract tests.
 - Schema gate: `dotnet tool run dotnet-ef -- migrations has-pending-model-changes --project AutoService.ApiService` must pass; it runs offline (no database) and fails when entities changed without a matching migration. The EF CLI is pinned in `dotnet-tools.json`. `AutoServiceDbContextFactory` supplies the design-time context, so the gate never builds the application host and needs no secrets; CI runs it on every push.
 
 ## Always-On for Code Changes

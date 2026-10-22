@@ -217,7 +217,7 @@ Suite targets:
 - `http`: runs `tests/API/_setup` first (test-account and fixture provisioning), then all `tests/API/**/*.http` suites through HTTPYAC.
 - `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
 
-The backend unit tests (`tests/AutoService.UnitTests`, xUnit, the pricing calculators) need no stack: `dotnet test` in `app/` runs them, as the pre-push gate and CI do.
+The backend unit tests (`tests/AutoService.UnitTests`, xUnit: the pricing calculators and the session cutoffs) need no stack: `dotnet test` in `app/` runs them, as the pre-push gate and CI do.
 
 Before full-suite runs, start Aspire in another terminal:
 
