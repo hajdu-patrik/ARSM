@@ -9,7 +9,7 @@ public static partial class AuthEndpoints
     private static readonly Lock AccessTokenTtlLock = new();
     private static bool isAccessTokenTtlConfigured;
 
-    /** Access-token lifetime, used for both the JWT exp claim and the access-token cookie MaxAge. Starts at a 10-minute fallback and is set once at startup through ConfigureAccessTokenTtl from the resolved 'JwtSettings:ExpirationMinutes' value. */
+    /** Access-token lifetime (JWT exp claim and cookie MaxAge); set once at startup from 'JwtSettings:ExpirationMinutes' through ConfigureAccessTokenTtl. */
     internal static TimeSpan AccessTokenTtl { get; private set; } = TimeSpan.FromMinutes(10);
 
     internal static readonly TimeSpan RefreshTokenTtl = TimeSpan.FromDays(7);
@@ -17,7 +17,7 @@ public static partial class AuthEndpoints
     /** Tolerance the bearer validation allows on exp and nbf; the session cutoffs keep their entries that much longer. */
     internal static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
 
-    /** Sets the access-token lifetime from configuration. The composition root calls it once, before any request is served; a second call fails fast so no code path can change the lifetime at runtime. */
+    /** Called once by the composition root before any request is served; a second call fails fast. */
     internal static void ConfigureAccessTokenTtl(int expirationMinutes)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(expirationMinutes);
@@ -34,7 +34,6 @@ public static partial class AuthEndpoints
         }
     }
 
-    /** Appends a "field is required" error entry if the value is null or whitespace. */
     private static void AddRequired(Dictionary<string, string[]> errors, string key, string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -43,7 +42,6 @@ public static partial class AuthEndpoints
         }
     }
 
-    /** Generates a cryptographically random refresh-token value. */
     internal static string GenerateRefreshTokenValue()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);

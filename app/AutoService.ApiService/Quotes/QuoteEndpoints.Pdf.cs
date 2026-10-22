@@ -117,7 +117,6 @@ public static partial class QuoteEndpoints
             quote.TotalGross);
     }
 
-    /** Projects the lines of one kind, keeping their stored order. */
     private static List<QuoteDocumentLine> ToDocumentLines(
         IEnumerable<QuoteLine> lines,
         QuoteLineKind lineKind,
@@ -144,7 +143,6 @@ public static partial class QuoteEndpoints
             .ToList();
     }
 
-    /** Groups the stored line amounts per VAT rate. */
     private static List<QuoteDocumentVatRow> ToVatBreakdown(IEnumerable<QuoteLine> lines)
     {
         return lines

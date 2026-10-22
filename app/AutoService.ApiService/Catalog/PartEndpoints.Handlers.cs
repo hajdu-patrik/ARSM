@@ -9,7 +9,6 @@ public static partial class PartEndpoints
 {
     private static readonly PartCatalog Catalog = new();
 
-    /** Lists one page of parts ordered by part number, optionally searched by part number or name. */
     private static Task<IResult> ListPartsAsync(
         [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
         [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
@@ -18,7 +17,6 @@ public static partial class PartEndpoints
         CancellationToken cancellationToken)
         => Catalog.ListAsync(page, pageSize, search, db, cancellationToken);
 
-    /** Returns a single part by id. */
     private static Task<IResult> GetPartAsync(int id, AutoServiceDbContext db, CancellationToken cancellationToken)
         => Catalog.GetAsync(id, db, cancellationToken);
 

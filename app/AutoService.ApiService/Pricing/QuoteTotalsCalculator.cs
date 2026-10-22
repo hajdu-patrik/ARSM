@@ -1,6 +1,5 @@
 namespace AutoService.ApiService.Pricing;
 
-/** Net, VAT, and gross totals for a quote. */
 internal readonly record struct QuoteTotals(decimal TotalNet, decimal TotalVat, decimal TotalGross);
 
 /** Sums quote line amounts into quote-level totals (consumed by QuoteEndpoints.Helpers.cs, alongside QuoteLineCalculator). */

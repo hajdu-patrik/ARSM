@@ -38,7 +38,6 @@ public static partial class AppointmentEndpoints
         IReadOnlyList<MechanicSummaryDto> Mechanics,
         uint Version);
 
-    /** Request payload for creating a customer appointment via admin endpoint. */
     internal sealed record CreateCustomerAppointmentRequest(
         int VehicleId,
         DateTime ScheduledDate,
@@ -59,7 +58,6 @@ public static partial class AppointmentEndpoints
         string TaskDescription,
         string? Status);
 
-    /** New vehicle payload nested within scheduler intake request. */
     internal sealed record SchedulerNewVehicleRequest(
         string LicensePlate,
         string Vin,
@@ -73,14 +71,12 @@ public static partial class AppointmentEndpoints
         internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
     }
 
-    /** Request payload for updating appointment scheduling and task details under the submitted version. */
     internal sealed record UpdateAppointmentRequest(
         DateTime? ScheduledDate,
         DateTime DueDateTime,
         string TaskDescription,
         uint Version);
 
-    /** Request payload for updating vehicle details linked to an appointment. */
     internal sealed record UpdateAppointmentVehicleRequest(
         string LicensePlate,
         string Vin,
@@ -94,6 +90,5 @@ public static partial class AppointmentEndpoints
         internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
     }
 
-    /** Request payload for updating appointment lifecycle status under the submitted version. */
     internal sealed record UpdateStatusRequest(string Status, uint Version);
 }

@@ -155,7 +155,6 @@ public static partial class ProfileEndpoints
         return memoryStream.ToArray();
     }
 
-    /** Validates the uploaded image bytes against the declared profile-picture content type. */
     private static IResult? ValidateProfilePictureBytes(byte[] fileBytes, string normalizedContentType)
     {
         if (!ImageContentTypeDetector.TryDetect(fileBytes, out var detectedContentType))

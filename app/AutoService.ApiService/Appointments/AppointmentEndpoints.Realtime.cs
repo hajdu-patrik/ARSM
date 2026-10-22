@@ -5,7 +5,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Handles {@code GET /api/appointments/updates}, streaming changes as SSE so clients reflect
+    /** Handles `GET /api/appointments/updates`, streaming changes as SSE so clients reflect
         others' edits without polling; the minimal payload makes subscribers refresh, not patch state. */
     private static Task<IResult> StreamAppointmentUpdatesAsync(
         HttpContext httpContext,
@@ -19,7 +19,7 @@ public static partial class AppointmentEndpoints
             "Too many active appointment update subscriptions. Please retry later.",
             cancellationToken);
 
-    /** Publishes an appointment change to every live subscriber. Called from each mutation handler after its {@code SaveChangesAsync}, so a failed write never produces an event. */
+    /** Publishes an appointment change to every live subscriber. Called from each mutation handler after its `SaveChangesAsync`, so a failed write never produces an event. */
     private static void PublishAppointmentChanged(IAppointmentUpdateBroadcaster broadcaster, int appointmentId)
         => broadcaster.Publish(new AppointmentUpdatedEvent(
             appointmentId,

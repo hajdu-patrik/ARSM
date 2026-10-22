@@ -8,7 +8,6 @@ internal sealed record AppointmentUpdatedEvent(
     int AppointmentId,
     long OccurredAt);
 
-/** Fan-out channel for appointment changes. */
 internal interface IAppointmentUpdateBroadcaster : IUpdateBroadcaster<AppointmentUpdatedEvent>;
 
 /** Appointment channel over the shared bounded fan-out (concurrency lives in UpdateBroadcaster<TEvent>);

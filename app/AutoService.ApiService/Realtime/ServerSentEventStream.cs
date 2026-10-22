@@ -61,7 +61,6 @@ internal static class ServerSentEventStream
         return Results.Empty;
     }
 
-    /** Applies the response headers an SSE stream needs before the first write. */
     private static void ConfigureResponse(HttpResponse response)
     {
         response.Headers.CacheControl = "no-cache";

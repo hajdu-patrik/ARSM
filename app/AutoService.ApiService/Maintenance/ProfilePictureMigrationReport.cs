@@ -3,8 +3,7 @@ namespace AutoService.ApiService.Maintenance;
 /** A single row a profile-picture migration pass could not process. Only the person id is recorded; names, emails, and picture contents never enter the report, because the report is written to disk and read by tooling. */
 public sealed record ProfilePictureMigrationFailure(int PersonId, string Reason);
 
-/** Machine-readable result of one migration pass, matching the shape the local test runner writes
-    so tooling needs no reshaping; {@code Migrated}/{@code Failed} stay zero/empty (kept from the removed backfill pass). */
+/** Machine-readable result of one verification pass, shaped like the local test runner's report; Migrated and Failed stay zero/empty. */
 public sealed record ProfilePictureMigrationReport(
     int SchemaVersion,
     string Mode,

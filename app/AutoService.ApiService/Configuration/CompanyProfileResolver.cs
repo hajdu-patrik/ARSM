@@ -16,7 +16,6 @@ public static class CompanyProfileResolver
 {
     private const string SectionName = "CompanyProfile";
 
-    /** Resolves and validates every company profile field. */
     public static CompanyProfile Resolve(IConfiguration configuration)
     {
         var section = configuration.GetSection(SectionName);

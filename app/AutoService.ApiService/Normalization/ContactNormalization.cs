@@ -6,7 +6,6 @@ using PhoneNumbers;
 
 namespace AutoService.ApiService.Normalization;
 
-/** Provides normalization and validation helpers for contact information fields. */
 internal static partial class ContactNormalization
 {
     private static readonly PhoneNumberUtil PhoneUtil = PhoneNumberUtil.GetInstance();

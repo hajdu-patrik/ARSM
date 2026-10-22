@@ -32,7 +32,6 @@ public static partial class CustomerEndpoints
         internal CustomerInput ToInput() => new(FirstName, MiddleName, LastName, Email, PhoneNumber);
     }
 
-    // Extended DTO for single-customer retrieval (includes vehicles).
     internal sealed record CustomerWithVehiclesDto(
         int Id,
         string FirstName,
@@ -60,7 +59,6 @@ public static partial class CustomerEndpoints
         IReadOnlyList<SchedulerVehicleLookupDto> Vehicles,
         int? MatchedVehicleId = null);
 
-    /** Vehicle summary payload used by scheduler customer lookup responses. */
     internal sealed record SchedulerVehicleLookupDto(
         int Id,
         string LicensePlate,

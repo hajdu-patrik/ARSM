@@ -5,7 +5,6 @@ namespace AutoService.ApiService.Customers;
 /** Registers customer routes under /api/customers; handler logic is split into dedicated partial files. */
 public static partial class CustomerEndpoints
 {
-    /** Maps customer endpoints to the route builder. */
     public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/customers").WithTags("Customers").RequireAuthorization();

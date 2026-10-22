@@ -99,7 +99,6 @@ public static partial class QuoteEndpoints
         return Results.Ok(quotes);
     }
 
-    /** Returns a single quote with its lines and totals. */
     private static async Task<IResult> GetQuoteAsync(
         int id,
         AutoServiceDbContext db,

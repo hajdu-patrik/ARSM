@@ -5,7 +5,6 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/** Vehicle entity owned by a customer. */
 public class Vehicle
 {
     [Key]
@@ -32,17 +31,14 @@ public class Vehicle
 
     public required DrivetrainType DrivetrainType { get; set; }
 
-    // Relationship: each vehicle has exactly one owner.
     public int CustomerId { get; set; }
     public Customer Customer { get; set; } = null!;
 
-    // Appointments associated with this vehicle.
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
     /** Parameterless constructor required by EF Core. */
     public Vehicle() {}
 
-    /** Creates a vehicle with required technical fields. */
     [SetsRequiredMembers]
     public Vehicle(
         string licensePlate,

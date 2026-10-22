@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/** Partial class containing the registration endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
     private const string GenericRegistrationFailureMessage = "Registration failed. Please check your information, or the account may already exist.";
@@ -149,7 +148,6 @@ public static partial class AuthEndpoints
         return Results.Ok(new RegisterResponse(person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 
-    /** Validates required and mechanic-specific registration fields. */
     private static Dictionary<string, string[]> ValidateRegisterRequest(RegisterRequest request)
     {
         var errors = new Dictionary<string, string[]>();
@@ -231,7 +229,6 @@ public static partial class AuthEndpoints
         };
     }
 
-    /** Parses expertise strings to ExpertiseType values. */
     private static List<ExpertiseType> ParseExpertise(IReadOnlyCollection<string> expertiseValues)
     {
         var expertise = new List<ExpertiseType>();

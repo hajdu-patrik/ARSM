@@ -10,7 +10,6 @@ public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
 {
     private const string LoginPath = "/api/auth/login";
 
-    /** Validates the CSRF header against the CSRF cookie for unsafe cookie-bearing API requests. */
     public async Task InvokeAsync(HttpContext context)
     {
         if (!RequiresCsrfProof(context))

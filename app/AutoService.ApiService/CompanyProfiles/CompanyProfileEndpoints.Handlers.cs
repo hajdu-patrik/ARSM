@@ -6,7 +6,6 @@ namespace AutoService.ApiService.CompanyProfiles;
 
 public static partial class CompanyProfileEndpoints
 {
-    /** Returns the stored letterhead row. */
     private static async Task<IResult> GetCompanyProfileAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         var row = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken);

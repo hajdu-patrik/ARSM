@@ -35,7 +35,6 @@ public abstract class People
     /** Parameterless constructor required by EF Core. */
     protected People() { }
 
-    /** Creates a person with required fields. */
     [SetsRequiredMembers]
     protected People(FullName name, string email, string? phoneNumber)
     {

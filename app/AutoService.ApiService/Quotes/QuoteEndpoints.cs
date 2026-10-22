@@ -6,7 +6,6 @@ namespace AutoService.ApiService.Quotes;
 /** Registers quote routes under /api/quotes and the nested /api/vehicles/{vehicleId}/quotes routes; handler logic split into partial files. */
 public static partial class QuoteEndpoints
 {
-    /** Maps quote endpoints to the route builder. */
     public static IEndpointRouteBuilder MapQuoteEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/quotes")

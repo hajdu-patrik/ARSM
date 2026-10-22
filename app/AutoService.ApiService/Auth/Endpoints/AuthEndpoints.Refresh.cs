@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/** Partial class containing the token-refresh endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
     /** A rotated token replayed this soon after its rotation is the same browser's parallel request, not a theft. */
@@ -142,7 +141,6 @@ public static partial class AuthEndpoints
         return Results.Unauthorized();
     }
 
-    /** Revokes descendant refresh tokens that were issued by token replacement chain. */
     private static async Task RevokeRefreshTokenDescendantsAsync(
         RefreshToken rootToken,
         DateTime nowUtc,

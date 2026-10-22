@@ -2,7 +2,6 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /** Returned by GET /api/profile with the current mechanic's profile data. */
     internal sealed record ProfileResponse(
         int PersonId,
         string PersonType,

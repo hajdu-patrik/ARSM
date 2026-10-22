@@ -14,10 +14,8 @@ public sealed class WebUiOriginPolicy
         this.allowedOrigins = new HashSet<string>(normalizedAllowedOrigins, StringComparer.OrdinalIgnoreCase);
     }
 
-    /** Normalized origins allowed to call the API with browser credentials. */
     public IReadOnlyList<string> AllowedOrigins { get; }
 
-    /** Creates a validated origin policy from configuration. */
     public static WebUiOriginPolicy Create(IConfiguration configuration, IHostEnvironment environment)
     {
         var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -39,7 +37,6 @@ public sealed class WebUiOriginPolicy
         return new WebUiOriginPolicy(normalizedOrigins);
     }
 
-    /** Returns true when the supplied Origin header matches a configured WebUI origin. */
     public bool Allows(string? origin)
     {
         return !string.IsNullOrWhiteSpace(origin) && allowedOrigins.Contains(origin.Trim());

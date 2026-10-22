@@ -13,7 +13,6 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
     private const string CrossOriginResourcePolicy = "same-site";
     private const string ApiCacheControl = "no-store";
 
-    /** Registers the security-header injection on response start and forwards the request to the next middleware in the pipeline. */
     public async Task InvokeAsync(HttpContext context)
     {
         context.Response.OnStarting(static state =>
@@ -51,7 +50,6 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
         await next(context);
     }
 
-    /** Appends a response header only if it has not already been set. */
     private static void AppendIfMissing(IHeaderDictionary headers, string name, string value)
     {
         if (!headers.ContainsKey(name))

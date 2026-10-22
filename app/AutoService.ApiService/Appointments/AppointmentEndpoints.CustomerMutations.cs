@@ -10,7 +10,6 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Creates an appointment for an existing customer/vehicle pair. Endpoint: POST /api/customers/{customerId}/appointments (AdminOnly). */
     private static async Task<IResult> CreateForCustomerAsync(
         int customerId,
         CreateCustomerAppointmentRequest request,
@@ -75,7 +74,6 @@ public static partial class AppointmentEndpoints
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
 
-    /** Validates an admin-created customer appointment payload before entity loading. */
     private static IResult? ValidateCreateForCustomerRequest(
         CreateCustomerAppointmentRequest request,
         out string taskDescription,
@@ -123,7 +121,6 @@ public static partial class AppointmentEndpoints
         return null;
     }
 
-    /** Creates the appointment aggregate for the validated customer/vehicle/mechanic inputs. */
     private static Appointment CreateCustomerAppointment(
         Vehicle vehicle,
         List<Mechanic> mechanics,

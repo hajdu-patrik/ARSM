@@ -30,7 +30,6 @@ public class Part : IVersioned
     /** Parameterless constructor required by EF Core. */
     public Part() {}
 
-    /** Creates a part with required catalog fields. */
     [SetsRequiredMembers]
     public Part(
         string partNumber,

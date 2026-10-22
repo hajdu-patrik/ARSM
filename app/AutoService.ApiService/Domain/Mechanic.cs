@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace AutoService.ApiService.Domain;
 
-/** Mechanic entity derived from People. */
 public class Mechanic : People
 {
     public SpecializationType Specialization { get; set; }
@@ -15,7 +14,6 @@ public class Mechanic : People
     /** Parameterless constructor required by EF Core. */
     public Mechanic() {}
 
-    /** Creates a mechanic with specialization and expertise values. */
     [SetsRequiredMembers]
     public Mechanic(FullName name, string email, string? phoneNumber, SpecializationType specialization, List<ExpertiseType> expertise)
         : base(name, email, phoneNumber)
@@ -38,6 +36,5 @@ public class Mechanic : People
         Expertise = distinct;
     }
 
-    // Appointments handled by this mechanic.
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 }

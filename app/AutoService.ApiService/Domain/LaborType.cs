@@ -30,7 +30,6 @@ public class LaborType : IVersioned
     /** Parameterless constructor required by EF Core. */
     public LaborType() {}
 
-    /** Creates a labor type with required catalog fields. */
     [SetsRequiredMembers]
     public LaborType(
         string code,

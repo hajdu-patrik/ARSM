@@ -13,13 +13,10 @@ internal interface IUserSubscriptions
 /** Fan-out contract for server-sent update channels. */
 internal interface IUpdateBroadcaster<TEvent> : IUserSubscriptions
 {
-    /** Registers a subscriber unless a capacity limit is reached. */
     bool TrySubscribe(int userId, out Guid subscriptionId, out ChannelReader<TEvent> reader);
 
-    /** Releases a subscription and its channel. */
     void Unsubscribe(Guid subscriptionId);
 
-    /** Delivers an event to every current subscriber. */
     void Publish(TEvent updateEvent);
 }
 
@@ -75,7 +72,6 @@ internal abstract class UpdateBroadcaster<TEvent> : IUpdateBroadcaster<TEvent>
         return true;
     }
 
-    /** Releases a subscription and completes its channel. */
     public void Unsubscribe(Guid subscriptionId)
     {
         if (subscribers.TryRemove(subscriptionId, out var entry))
@@ -110,7 +106,6 @@ internal abstract class UpdateBroadcaster<TEvent> : IUpdateBroadcaster<TEvent>
         }
     }
 
-    /** Produces the rejected-subscription result shape. */
     private static bool Reject(out Guid subscriptionId, out ChannelReader<TEvent> reader)
     {
         subscriptionId = Guid.Empty;

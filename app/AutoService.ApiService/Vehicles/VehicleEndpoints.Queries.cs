@@ -58,7 +58,6 @@ public static partial class VehicleEndpoints
         return Results.Ok(vehicles);
     }
 
-    /** Returns a single vehicle with its owner summary. */
     private static async Task<IResult> GetVehicleAsync(
         int id,
         AutoServiceDbContext db,

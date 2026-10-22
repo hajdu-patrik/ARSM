@@ -2,7 +2,6 @@ namespace AutoService.ApiService.Reporting;
 
 public static partial class CompanyResultEndpoints
 {
-    /** One status row of the report: how many quotes it holds and what they are worth. */
     internal sealed record CompanyResultStatusRowDto(
         int QuoteCount,
         decimal Net,

@@ -58,7 +58,6 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /** Composes the document body in printing order. */
     internal static void ComposeContent(IContainer container, QuoteDocumentModel model)
     {
         container.Column(column =>
@@ -105,7 +104,6 @@ internal static partial class QuoteDocumentSections
         });
     }
 
-    /** Draws the customer and the vehicle side by side. */
     private static void ComposeParties(IContainer container, QuoteDocumentModel model)
     {
         container.Row(row =>
@@ -160,13 +158,11 @@ internal static partial class QuoteDocumentSections
         container.Text($"Készítette: {value}").FontSize(8).FontColor(MutedColor);
     }
 
-    /** Section heading shared by every block. */
     private static void ComposeSectionTitle(IContainer container, string title)
     {
         container.PaddingBottom(4).Text(title).FontSize(10).Bold().FontColor(SectionTitleColor);
     }
 
-    /** Small label above a value, used by the basics row. */
     private static void ComposeLabeledValue(IContainer container, string label, string value)
     {
         container.Column(column =>

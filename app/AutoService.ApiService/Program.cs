@@ -58,7 +58,6 @@ builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddNpgs
 // Optional local overrides for running EF CLI/API outside AppHost.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// Service registration section.
 builder.Services.AddOpenApi();
 
 // Backs the global exception handler registered below in the middleware pipeline.
@@ -80,7 +79,6 @@ builder.Services.AddDbContext<AutoServiceDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure());
 });
 
-/** Forwarded headers trust policy configuration. */
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -117,7 +115,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     }
 });
 
-// Identity and authentication configuration.
 var jwtSecret = JwtSettingsResolver.ResolveSecret(builder.Configuration);
 
 /** JwtSettings:ExpirationMinutes drives the access-token cookie lifetime and the JWT exp claim; set
@@ -189,8 +186,7 @@ builder.Services
 
 builder.Services.AddArsmRateLimiting(builder.Environment);
 
-/** Brotli/Gzip response compression (HTTPS included); safe from BREACH because tokens travel only
-    as HttpOnly cookies, never in JSON bodies (see docs/PROJECT-OVERVIEW.md). SSE stays uncompressed. */
+/** Brotli/Gzip response compression (HTTPS included); safe from BREACH because tokens travel only as HttpOnly cookies, never in JSON bodies. SSE stays uncompressed. */
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -236,7 +232,6 @@ builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProces
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();
 
-// Build.
 var app = builder.Build();
 
 // Maintenance entrypoint. The profile-picture verification needs the same DI graph as the API,
@@ -327,7 +322,6 @@ app.UseAuthorization();
 app.UseMiddleware<PasswordChangeRequiredMiddleware>();
 app.UseRateLimiter();
 
-/** Endpoint map groups by domain module. */
 app.MapAuthEndpoints();
 app.MapAppointmentEndpoints();
 app.MapProfileEndpoints();

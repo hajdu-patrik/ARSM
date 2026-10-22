@@ -11,19 +11,16 @@ internal sealed record QuoteDocumentLine(
     decimal NetAmount,
     decimal GrossAmount);
 
-/** One VAT rate with the tax base and the tax charged on it. */
 internal sealed record QuoteDocumentVatRow(
     int VatRatePercent,
     decimal NetAmount,
     decimal VatAmount);
 
-/** The customer the quote is addressed to. */
 internal sealed record QuoteDocumentCustomer(
     string Name,
     string? PhoneNumber,
     string? Email);
 
-/** The vehicle the quote is anchored to. */
 internal sealed record QuoteDocumentVehicle(
     string LicensePlate,
     string Vin,

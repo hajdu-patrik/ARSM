@@ -6,7 +6,6 @@ namespace AutoService.ApiService.Catalog;
 /** Registers part catalog routes under /api/parts; handler logic is split into dedicated partial files. */
 public static partial class PartEndpoints
 {
-    /** Maps part endpoints to the route builder. */
     public static IEndpointRouteBuilder MapPartEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/parts").WithTags("Parts").RequireAuthorization("MechanicOnly");

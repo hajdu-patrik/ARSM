@@ -2,7 +2,6 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    // ─── DTO contracts ────────────────────────────────────────────────────────
 
     /** POST /api/auth/register request body (Mechanic only); field limits enforced by
         FieldLengthValidator in ValidateRegisterRequest, not by attributes here. */
@@ -17,7 +16,6 @@ public static partial class AuthEndpoints
         string? Specialization,
         IReadOnlyList<string>? Expertise);
 
-    /** Returned after a successful registration with domain record ID. */
     internal sealed record RegisterResponse(int PersonId, string PersonType, string Email);
 
     /** POST /api/auth/login request body: supply Email or PhoneNumber, plus Password; length limits

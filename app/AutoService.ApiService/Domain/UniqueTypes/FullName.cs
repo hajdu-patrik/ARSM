@@ -10,7 +10,6 @@ public sealed class FullName
     /** Parameterless constructor required by EF Core. */
     private FullName() { }
 
-    /** Creates a full name value. */
     public FullName(string firstName, string? middleName, string lastName)
     {
         FirstName = firstName;
@@ -18,7 +17,6 @@ public sealed class FullName
         LastName = lastName;
     }
 
-    /** Converts the value object to a readable full-name string. */
     public override string ToString() => string.IsNullOrWhiteSpace(MiddleName)
         ? $"{FirstName} {LastName}"
         : $"{FirstName} {MiddleName} {LastName}";

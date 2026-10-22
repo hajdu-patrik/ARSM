@@ -9,10 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Data;
 
-/** Entity Framework Core DbContext for the AutoService domain. */
 public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
-    // Entity sets.
     public DbSet<People> People => Set<People>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
@@ -26,12 +24,10 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
     public DbSet<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity> CompanyProfiles => Set<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity>();
 
-    /** Configures entity mappings, constraints, and relationships. */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Shared People mapping (base for Customer and Mechanic).
         modelBuilder.Entity<People>(entity =>
         {
             entity.ToTable("people");
@@ -58,7 +54,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             });
         });
 
-        // Customer mapping.
         modelBuilder.Entity<Customer>(entity =>
         {
             entity.HasMany(x => x.Vehicles)
@@ -67,7 +62,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Mechanic mapping.
         modelBuilder.Entity<Mechanic>(entity =>
         {
             entity.ToTable(table =>
@@ -103,7 +97,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             entity.Property(x => x.MustChangePassword).HasDefaultValue(false);
         });
 
-        // Refresh token mapping.
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("refreshtokens");
@@ -129,7 +122,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Access-token JWT denylist mapping.
         modelBuilder.Entity<RevokedJwtToken>(entity =>
         {
             entity.ToTable("revokedjwttokens");
@@ -150,7 +142,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             entity.HasIndex(x => x.ExpiresAtUtc);
         });
 
-        // Vehicle mapping.
         modelBuilder.Entity<Vehicle>(entity =>
         {
             entity.ToTable("vehicles", table =>
@@ -179,7 +170,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Appointment mapping.
         modelBuilder.Entity<Appointment>(entity =>
         {
             entity.ToTable("appointments");
@@ -222,7 +212,6 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
-    /** Async variant of SaveChanges with mechanic expertise and quote totals validation. */
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         ValidateMechanicExpertise();

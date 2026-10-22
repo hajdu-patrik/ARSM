@@ -161,7 +161,6 @@ public static partial class CompanyResultEndpoints
             .ToList();
     }
 
-    /** Groups the accepted revenue per VAT rate. */
     private static async Task<List<CompanyResultVatRowDto>> LoadVatRowsAsync(
         IQueryable<Domain.QuoteLine> acceptedLines,
         CancellationToken cancellationToken)

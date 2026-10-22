@@ -2,7 +2,6 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /** Minimal vehicle identification for a quote's anchor (D1). */
     internal sealed record QuoteVehicleSummaryDto(
         int Id,
         string LicensePlate,
@@ -104,12 +103,10 @@ public static partial class QuoteEndpoints
         int? VatRatePercent,
         uint Version);
 
-    /** Status transition payload (D7). */
     internal sealed record ChangeQuoteStatusRequest(
         string Status,
         uint Version);
 
-    /** Validity-extension payload (D22, D23). */
     internal sealed record ExtendQuoteValidityRequest(
         DateTime ValidUntil,
         uint Version);

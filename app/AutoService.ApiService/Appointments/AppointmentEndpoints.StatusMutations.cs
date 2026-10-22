@@ -8,7 +8,6 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Updates appointment status for an assigned mechanic. Endpoint: PUT /api/appointments/{id}/status. */
     private static async Task<IResult> UpdateStatusAsync(
         int id,
         UpdateStatusRequest request,

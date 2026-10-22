@@ -5,10 +5,8 @@ namespace AutoService.ApiService.Vehicles;
 /** Registers vehicle routes under nested /api/customers/{customerId}/vehicles and flat /api/vehicles; handler logic split into partial files. */
 public static partial class VehicleEndpoints
 {
-    /** Maps vehicle endpoints to the route builder. */
     public static IEndpointRouteBuilder MapVehicleEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        // Nested routes scoped to a customer.
         var nested = endpoints.MapGroup("/api/customers/{customerId:int}/vehicles")
             .WithTags("Vehicles")
             .RequireAuthorization();
@@ -25,7 +23,6 @@ public static partial class VehicleEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        // Flat routes for single-vehicle operations.
         var flat = endpoints.MapGroup("/api/vehicles")
             .WithTags("Vehicles")
             .RequireAuthorization();

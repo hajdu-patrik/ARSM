@@ -12,7 +12,6 @@ public class QuoteLine
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; private set; }
 
-    // Relationship: each line belongs to exactly one quote.
     public int QuoteId { get; set; }
     public Quote Quote { get; set; } = null!;
 
@@ -53,7 +52,6 @@ public class QuoteLine
     /** Parameterless constructor required by EF Core. */
     public QuoteLine() {}
 
-    /** Creates a quote line with its snapshot fields and computed amounts. */
     [SetsRequiredMembers]
     public QuoteLine(
         QuoteLineKind lineKind,
@@ -79,7 +77,6 @@ public class QuoteLine
         LaborTypeId = laborTypeId;
     }
 
-    /** Assigns the server-computed display order for this line (D41). */
     public void AssignSortOrder(int sortOrder)
     {
         SortOrder = sortOrder;

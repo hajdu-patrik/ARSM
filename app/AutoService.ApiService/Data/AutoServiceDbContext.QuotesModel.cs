@@ -8,7 +8,6 @@ public sealed partial class AutoServiceDbContext
     /** Configures the quote entities (Quote, QuoteLine): mappings, constraints, indexes, and the xmin concurrency mapping; kept separate from PricingModel.cs (Part/LaborType catalog only). */
     private void ConfigureQuotesModel(ModelBuilder modelBuilder)
     {
-        // Quote mapping.
         modelBuilder.Entity<Quote>(entity =>
         {
             entity.ToTable("quotes", table =>
@@ -56,7 +55,6 @@ public sealed partial class AutoServiceDbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // QuoteLine mapping.
         modelBuilder.Entity<QuoteLine>(entity =>
         {
             entity.ToTable("quotelines", table =>

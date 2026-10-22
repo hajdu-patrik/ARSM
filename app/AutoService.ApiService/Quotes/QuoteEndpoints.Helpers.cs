@@ -153,7 +153,6 @@ public static partial class QuoteEndpoints
         .Include(q => q.CreatedByMechanic)
         .Include(q => q.Lines);
 
-    /** Validates the optional quote notes field (D14). */
     private static string? GetNotesValidationError(string? notes)
     {
         if (notes is not null && notes.Trim().Length > MaxNotesLength)

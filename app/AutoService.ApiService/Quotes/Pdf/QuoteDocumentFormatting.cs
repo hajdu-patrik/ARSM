@@ -22,7 +22,6 @@ internal static class QuoteDocumentFormatting
     internal static string FormatAmount(decimal amount) =>
         string.Create(Culture, $"{Math.Round(amount, 0, MidpointRounding.AwayFromZero):N0} Ft");
 
-    /** Formats a unit price or hourly rate with two decimals. */
     internal static string FormatUnitPrice(decimal amount) =>
         string.Create(Culture, $"{amount:N2} Ft");
 
@@ -40,7 +39,6 @@ internal static class QuoteDocumentFormatting
     /** Formats a date in the Hungarian long-numeric form (e.g. "2026. 09. 14."). */
     internal static string FormatDate(DateTime value) => value.ToString("yyyy. MM. dd.", Culture);
 
-    /** Formats a VAT rate for a column header or a breakdown row. */
     internal static string FormatVatRate(int vatRatePercent) => $"{vatRatePercent}%";
 
     /** Resolves the printed status label; an expired sent quote shows as expired so the paper cannot claim to be live (D29). */

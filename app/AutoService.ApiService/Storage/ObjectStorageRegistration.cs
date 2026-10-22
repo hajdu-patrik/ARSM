@@ -28,7 +28,6 @@ public static class ObjectStorageRegistration
         return services;
     }
 
-    /** Registers the Azure Blob container client, storage implementation and container check. */
     private static IServiceCollection AddAzureBlobProfilePictureStorage(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -43,7 +42,7 @@ public static class ObjectStorageRegistration
         return services;
     }
 
-    /** Creates an S3 client pointed at the configured endpoint, which may be MinIO, Cloudflare R2, or AWS S3. */
+    /** Creates an S3 client for the configured endpoint (RustFS, Cloudflare R2 or AWS S3). */
     private static IAmazonS3 CreateS3Client(ObjectStorageSettings settings)
     {
         var s3Config = new AmazonS3Config

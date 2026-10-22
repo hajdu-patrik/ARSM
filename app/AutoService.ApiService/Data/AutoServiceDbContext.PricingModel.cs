@@ -8,7 +8,6 @@ public sealed partial class AutoServiceDbContext
     /** Configures the pricing catalog entities (Part, LaborType): table names, money-column precision, VAT/amount check constraints, unique indexes and the xmin versions. */
     private void ConfigurePricingModel(ModelBuilder modelBuilder)
     {
-        // Part mapping.
         modelBuilder.Entity<Part>(entity =>
         {
             entity.ToTable("parts", table =>
@@ -26,7 +25,6 @@ public sealed partial class AutoServiceDbContext
             entity.Property(x => x.VatRatePercent).IsRequired();
         });
 
-        // LaborType mapping.
         modelBuilder.Entity<LaborType>(entity =>
         {
             entity.ToTable("labortypes", table =>

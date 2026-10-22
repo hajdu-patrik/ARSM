@@ -9,7 +9,6 @@ public static partial class LaborTypeEndpoints
 {
     private static readonly LaborTypeCatalog Catalog = new();
 
-    /** Lists one page of labor types ordered by code, optionally searched by code or name. */
     private static Task<IResult> ListLaborTypesAsync(
         [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
         [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
@@ -18,7 +17,6 @@ public static partial class LaborTypeEndpoints
         CancellationToken cancellationToken)
         => Catalog.ListAsync(page, pageSize, search, db, cancellationToken);
 
-    /** Returns a single labor type by id. */
     private static Task<IResult> GetLaborTypeAsync(int id, AutoServiceDbContext db, CancellationToken cancellationToken)
         => Catalog.GetAsync(id, db, cancellationToken);
 

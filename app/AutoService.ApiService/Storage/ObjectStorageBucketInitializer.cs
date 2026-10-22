@@ -4,8 +4,7 @@ using Amazon.S3.Util;
 
 namespace AutoService.ApiService.Storage;
 
-/** Verifies the profile-picture bucket at startup, creating it only when 'ObjectStorage:AutoCreateBucket'
-    opts in; enabled locally for a fresh MinIO volume, disabled in hosted environments by design. */
+/** Verifies the profile-picture bucket at startup, creating it only when 'ObjectStorage:AutoCreateBucket' opts in; enabled locally for a fresh object-store volume, disabled in hosted environments by design. */
 internal sealed class ObjectStorageBucketInitializer(
     IAmazonS3 s3Client,
     ObjectStorageSettings settings,

@@ -9,7 +9,6 @@ using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
-/** Partial class containing the login endpoint handler and its supporting helpers. */
 public static partial class AuthEndpoints
 {
     // Fixed dummy hash gives the user-not-found path a verification cost comparable to
@@ -17,7 +16,6 @@ public static partial class AuthEndpoints
     private static readonly Lazy<string> DummyPasswordHash = new(() =>
         new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
 
-    /** Handles POST /api/auth/login by validating the identifier/password pair and issuing access/refresh cookies for linked mechanic identities. */
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         HttpContext httpContext,
@@ -159,7 +157,6 @@ public static partial class AuthEndpoints
         return Results.Ok(new SessionResponse(mechanic.Id, isAdmin, mechanic.MustChangePassword));
     }
 
-    /** Validates presence of required login fields. */
     private static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
     {
         var errors = new Dictionary<string, string[]>();

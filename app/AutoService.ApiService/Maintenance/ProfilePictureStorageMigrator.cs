@@ -24,8 +24,7 @@ public static class ProfilePictureStorageMigrator
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    // Reports whether the process was started to run the verification instead of the web host.
-    // args: raw process arguments. Returns true when the maintenance command argument is present.
+    // True when the process was started to run the verification instead of the web host.
     public static bool IsRequested(string[] args)
         => args.Contains(CommandArgument, StringComparer.Ordinal);
 

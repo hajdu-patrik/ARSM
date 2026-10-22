@@ -7,7 +7,6 @@ namespace AutoService.ApiService.Quotes.Pdf;
  * a slim container ships no fonts/fontconfig and the logo folder isn't in a published image either. */
 internal static class QuoteDocumentAssets
 {
-    /** Font family every text style in the document names. */
     internal const string FontFamily = "Noto Sans";
 
     private const string RegularFontResource = "AutoService.ApiService.Assets.Fonts.NotoSans-Regular.ttf";
@@ -26,7 +25,6 @@ internal static class QuoteDocumentAssets
         FontManager.RegisterFontFromEmbeddedResource(BoldFontResource);
     }
 
-    /** Reads the embedded logo bytes. */
     private static byte[] LoadLogo()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(LogoResource)

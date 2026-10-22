@@ -9,7 +9,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Server-side projection mirroring {@code ToDto}, so EF Core fetches only mapped columns; name/enum
+    /** Server-side projection mirroring `ToDto`, so EF Core fetches only mapped columns; name/enum
         formatting runs through ProjectionFormat, which EF Core evaluates client-side, to keep exact domain formatting. */
     private static readonly Expression<Func<Appointment, AppointmentDto>> AppointmentDtoProjection = a => new AppointmentDto(
         a.Id,

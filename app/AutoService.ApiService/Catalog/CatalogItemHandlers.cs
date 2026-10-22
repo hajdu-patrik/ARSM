@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Catalog;
 
-/** The write fields every catalog entry shares: a unique key, a name, a net price and a VAT rate. */
 internal readonly record struct CatalogItemInput(string Key, string Name, decimal NetPrice, int VatRatePercent);
 
 /** CRUD for one catalog table (Template Method): this base owns the validation order, paging, status codes and the

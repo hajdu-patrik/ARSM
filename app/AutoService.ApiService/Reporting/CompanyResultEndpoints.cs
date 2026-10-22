@@ -4,7 +4,6 @@ namespace AutoService.ApiService.Reporting;
  * no service layer, the way AdminEndpoints lists mechanics (CLAUDE.md Company Result Anchors). */
 public static partial class CompanyResultEndpoints
 {
-    /** Maps the company result endpoint to the route builder. */
     public static IEndpointRouteBuilder MapCompanyResultEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/company-results")

@@ -10,7 +10,6 @@ internal sealed class S3ProfilePictureStorage(
     ObjectStorageSettings settings,
     ILogger<S3ProfilePictureStorage> logger) : IProfilePictureStorage
 {
-    /** Uploads the processed picture under a new key and returns that key for persistence. */
     public async Task<string> SaveAsync(
         int personId,
         byte[] content,
@@ -38,7 +37,6 @@ internal sealed class S3ProfilePictureStorage(
         return objectKey;
     }
 
-    /** Opens the stored object for streaming, mapping a missing object to null. */
     public async Task<Stream?> OpenReadAsync(string objectKey, CancellationToken cancellationToken)
     {
         try
@@ -75,7 +73,6 @@ internal sealed class S3ProfilePictureStorage(
             cancellationToken);
     }
 
-    /** Reads object metadata only, so verification never transfers picture bodies. */
     public async Task<long?> GetObjectSizeAsync(string objectKey, CancellationToken cancellationToken)
     {
         try
@@ -96,7 +93,6 @@ internal sealed class S3ProfilePictureStorage(
         }
     }
 
-    /** Detects the S3 error shapes that mean the requested object does not exist. */
     private static bool IsMissingObject(AmazonS3Exception exception)
         => exception.StatusCode == System.Net.HttpStatusCode.NotFound
            || string.Equals(exception.ErrorCode, "NoSuchKey", StringComparison.Ordinal);

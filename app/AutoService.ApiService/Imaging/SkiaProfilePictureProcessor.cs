@@ -144,7 +144,6 @@ internal sealed class SkiaProfilePictureProcessor : IProfilePictureProcessor
         return data?.ToArray() ?? throw new ProfilePictureProcessingException("Image could not be encoded.");
     }
 
-    /** Rewinds a seekable source so header inspection starts at byte zero. */
     private static void RewindSource(Stream source)
     {
         if (source.CanSeek)

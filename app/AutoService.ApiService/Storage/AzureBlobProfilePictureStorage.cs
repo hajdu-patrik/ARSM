@@ -9,7 +9,6 @@ internal sealed class AzureBlobProfilePictureStorage(
     BlobContainerClient containerClient,
     ILogger<AzureBlobProfilePictureStorage> logger) : IProfilePictureStorage
 {
-    /** Uploads the processed picture under a new key and returns that key for persistence. */
     public async Task<string> SaveAsync(
         int personId,
         byte[] content,
@@ -26,7 +25,6 @@ internal sealed class AzureBlobProfilePictureStorage(
         return objectKey;
     }
 
-    /** Opens the stored blob for streaming, mapping a missing blob to null. */
     public async Task<Stream?> OpenReadAsync(string objectKey, CancellationToken cancellationToken)
     {
         try
@@ -44,11 +42,9 @@ internal sealed class AzureBlobProfilePictureStorage(
         }
     }
 
-    /** Deletes the stored blob; a missing blob is not an error. */
     public async Task DeleteAsync(string objectKey, CancellationToken cancellationToken)
         => await containerClient.GetBlobClient(objectKey).DeleteIfExistsAsync(cancellationToken: cancellationToken);
 
-    /** Reads blob properties only, so verification never transfers picture bodies. */
     public async Task<long?> GetObjectSizeAsync(string objectKey, CancellationToken cancellationToken)
     {
         try

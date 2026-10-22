@@ -12,7 +12,6 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Assigns the current mechanic to an in-progress appointment. Endpoint: PUT /api/appointments/{id}/claim. */
     private static async Task<IResult> ClaimAsync(
         int id,
         ClaimsPrincipal user,
@@ -40,7 +39,6 @@ public static partial class AppointmentEndpoints
             id, mechanic, "Claim", "already_claimed", requireInProgress: true, db, logger, broadcaster, cancellationToken);
     }
 
-    /** Removes current mechanic assignment from an appointment. Endpoint: DELETE /api/appointments/{id}/claim. */
     private static async Task<IResult> UnclaimAsync(
         int id,
         ClaimsPrincipal user,
@@ -60,7 +58,6 @@ public static partial class AppointmentEndpoints
         return await UnassignMechanicAsync(id, mechanicId, "Unclaim", db, logger, broadcaster, cancellationToken);
     }
 
-    /** Assigns a mechanic to an appointment as admin. Endpoint: PUT /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
     private static async Task<IResult> AdminAssignAsync(
         int id,
         int mechanicId,
@@ -82,7 +79,6 @@ public static partial class AppointmentEndpoints
             id, mechanic, "AdminAssign", "already_assigned", requireInProgress: false, db, logger, broadcaster, cancellationToken);
     }
 
-    /** Removes a mechanic from an appointment as admin. Endpoint: DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly). */
     private static Task<IResult> AdminUnassignAsync(
         int id,
         int mechanicId,

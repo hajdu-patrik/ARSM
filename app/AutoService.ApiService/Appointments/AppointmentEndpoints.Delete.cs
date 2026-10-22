@@ -6,8 +6,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Hard-deletes an appointment and its mechanic assignments. Endpoint: DELETE /api/appointments/{id}
-        (AdminOnly); mechanic rows cascade and a linked quote's AppointmentId is set null (docs/PROJECT-OVERVIEW.md). */
+    /** Hard-deletes an appointment and its mechanic assignments; the mechanic rows cascade and a linked quote's AppointmentId is set null. */
     private static async Task<IResult> DeleteAppointmentAsync(
         int id,
         AutoServiceDbContext db,

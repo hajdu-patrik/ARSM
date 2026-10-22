@@ -12,14 +12,12 @@ internal sealed class QuoteDocument : IDocument
     private readonly QuoteDocumentModel model;
     private readonly CompanyProfile company;
 
-    /** Creates the document for one quote. */
     internal QuoteDocument(QuoteDocumentModel model, CompanyProfile company)
     {
         this.model = model;
         this.company = company;
     }
 
-    /** Builds the page layout. */
     public void Compose(IDocumentContainer container)
     {
         container.Page(page =>

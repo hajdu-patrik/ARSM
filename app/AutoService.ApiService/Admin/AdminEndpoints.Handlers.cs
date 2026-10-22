@@ -213,7 +213,6 @@ public static partial class AdminEndpoints
         return null;
     }
 
-    /** Determines whether an exception (or any of its inner exceptions) represents a concurrency conflict raised while deleting a mechanic. */
     private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)

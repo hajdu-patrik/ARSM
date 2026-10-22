@@ -13,7 +13,6 @@ public static partial class ProfileEndpoints
     private const int ProfilePictureCacheMaxAgeSeconds = 3600;
     private const string DefaultProfilePictureContentType = "image/webp";
 
-    /** Handles {@code GET /api/profile/picture} to retrieve the current user's profile picture. */
     private static async Task<IResult> GetProfilePictureAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -29,7 +28,6 @@ public static partial class ProfileEndpoints
         return await RespondWithProfilePictureAsync(httpContext, storage, person, cancellationToken);
     }
 
-    /** Handles {@code GET /api/profile/picture/{personId}} to retrieve a mechanic's profile picture. */
     private static async Task<IResult> GetMechanicProfilePictureAsync(
         int personId,
         HttpContext httpContext,
@@ -94,7 +92,6 @@ public static partial class ProfileEndpoints
         return Results.NotFound();
     }
 
-    /** Handles {@code GET /api/profile/picture/updates} SSE stream for real-time profile picture updates. */
     private static Task<IResult> StreamProfilePictureUpdatesAsync(
         HttpContext httpContext,
         IProfilePictureUpdateBroadcaster broadcaster,
@@ -115,7 +112,6 @@ public static partial class ProfileEndpoints
         response.Headers.Append("Vary", "Cookie, Authorization");
     }
 
-    /** Evaluates If-None-Match values and returns true when the current ETag matches. */
     private static bool IsNotModified(HttpRequest request, string currentEtag)
     {
         if (!request.Headers.TryGetValue("If-None-Match", out var incomingValues))

@@ -10,7 +10,6 @@ public static partial class AppointmentEndpoints
 {
     private const string VersionConflictCode = "appointment_version_conflict";
 
-    /** Maps an {@code Appointment} domain entity to its DTO representation. */
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
         appointment.ScheduledDate,

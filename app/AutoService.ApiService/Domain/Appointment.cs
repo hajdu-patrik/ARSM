@@ -24,7 +24,6 @@ public class Appointment : IVersioned
     [MaxLength(200)]
     public required string TaskDescription { get; set; }
 
-    // Defaults to InProgress on creation; updated as the appointment progresses.
     public ProgressStatus Status { get; set; } = ProgressStatus.InProgress;
 
     public DateTime? CompletedAt { get; set; }
@@ -33,10 +32,8 @@ public class Appointment : IVersioned
     // Optimistic-concurrency token mapped to Postgres xmin (Data/OptimisticConcurrency), not a real column.
     public uint Version { get; private set; }
 
-    // Relationship: each appointment belongs to exactly one vehicle.
     public int VehicleId { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 
-    // Mechanics assigned to this appointment (many-to-many).
     public List<Mechanic> Mechanics { get; set; } = new List<Mechanic>();
 }

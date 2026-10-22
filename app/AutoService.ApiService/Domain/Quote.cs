@@ -62,7 +62,6 @@ public class Quote : IVersioned
     /** Parameterless constructor required by EF Core. */
     public Quote() {}
 
-    /** Creates a draft quote anchored to a vehicle. */
     [SetsRequiredMembers]
     public Quote(
         string title,

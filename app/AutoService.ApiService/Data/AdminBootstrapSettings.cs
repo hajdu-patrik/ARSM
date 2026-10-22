@@ -106,7 +106,6 @@ internal sealed class AdminBootstrapSettings
     }
 }
 
-/** Validated, normalized first-admin data ready for persistence. */
 internal sealed record AdminBootstrapRequest(
     FullName Name,
     string Email,

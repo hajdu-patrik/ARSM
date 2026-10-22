@@ -1,6 +1,6 @@
 namespace AutoService.ApiService.Storage;
 
-/** Immutable S3-compatible object storage configuration resolved at startup. The same shape serves MinIO locally and Cloudflare R2 / AWS S3 in hosted environments; only the resolved values differ. */
+/** S3-compatible object storage configuration resolved at startup; the same shape serves RustFS locally and Cloudflare R2 / AWS S3 when hosted. */
 public sealed record ObjectStorageSettings(
     string ServiceUrl,
     string Region,

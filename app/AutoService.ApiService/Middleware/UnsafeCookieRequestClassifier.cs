@@ -6,7 +6,6 @@ namespace AutoService.ApiService.Middleware;
     Origin middlewares so the two independent proof layers agree on which requests to check. */
 internal static class UnsafeCookieRequestClassifier
 {
-    /** True when the request targets the API, uses an unsafe HTTP method, and carries the access-token or refresh-token cookie. */
     internal static bool IsUnsafeCookieBearingApiRequest(HttpContext context)
     {
         return context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
@@ -14,7 +13,6 @@ internal static class UnsafeCookieRequestClassifier
             && HasAuthCookie(context);
     }
 
-    /** True for the HTTP methods that can mutate state (POST/PUT/PATCH/DELETE). */
     internal static bool IsUnsafeMethod(string method)
     {
         return HttpMethods.IsPost(method)
@@ -23,7 +21,6 @@ internal static class UnsafeCookieRequestClassifier
             || HttpMethods.IsDelete(method);
     }
 
-    /** True when the request carries the access-token or refresh-token cookie. */
     internal static bool HasAuthCookie(HttpContext context)
     {
         return context.Request.Cookies.ContainsKey(AuthCookieNames.AccessToken)
