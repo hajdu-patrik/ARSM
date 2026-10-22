@@ -85,12 +85,12 @@ param customDomainCertificateName string = ''
 @description('Daily ingestion cap of the Log Analytics workspace in GB; at the cap collection pauses until the daily reset.')
 param logAnalyticsDailyQuotaGb int = 1
 
-@description('Address for the budget and alert e-mails; empty creates no budget, action group or alert rule.')
+@description('Address for the alert and budget e-mails; empty creates no action group, alert rule or budget.')
 param alertEmail string = ''
 
-@minValue(1)
-@description('Monthly budget of the resource group in the subscription currency; e-mails go out at 50, 80 and 100 percent.')
-param monthlyBudgetAmount int = 20
+@minValue(0)
+@description('Monthly budget of the resource group in the subscription currency, mailed at 50, 80 and 100 percent; 0 (default) creates none, because Azure for Students does not support budgets.')
+param monthlyBudgetAmount int = 0
 
 var suffix = uniqueString(resourceGroup().id)
 var apiAppName = '${namePrefix}-api'
@@ -430,13 +430,22 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// Budget and alert rules; created only when an alert e-mail is set.
+// Action group and alert rules; created only when an alert e-mail is set.
 module guardRails 'guardrails.bicep' = if (!empty(alertEmail)) {
   name: '${namePrefix}-guardrails'
   params: {
     namePrefix: namePrefix
     alertEmail: alertEmail
     apiAppId: apiApp.id
+  }
+}
+
+// Monthly budget in a module of its own, so an offer without budget support cannot take the alert rules down.
+module budget 'budget.bicep' = if (!empty(alertEmail) && monthlyBudgetAmount > 0) {
+  name: '${namePrefix}-budget'
+  params: {
+    namePrefix: namePrefix
+    alertEmail: alertEmail
     monthlyBudgetAmount: monthlyBudgetAmount
   }
 }

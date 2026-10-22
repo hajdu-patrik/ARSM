@@ -3,7 +3,7 @@
 Target: an Azure for Students subscription. This is the **production** instance (`arsm.hu`).
 Everything lives in one resource group and is created by `deploy/azure/registry.bicep` (the
 container registry) and `deploy/azure/main.bicep` (everything else; its `guardrails.bicep` module
-adds the optional budget and alerts), driven from your Windows machine by
+adds the optional alerts and its `budget.bicep` module the optional budget), driven from your Windows machine by
 `python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
 root `.env`. Keep one host name for the WebUI and the API when changing the topology: the CSRF cookie
 is host-only.
@@ -26,7 +26,7 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
 | Web image | `deploy/web.Dockerfile` + `deploy/nginx/` | `PUBLIC_URL` is baked into the bundle and its CSP; the CSP is repeated as a header with `frame-ancestors 'none'`. Inside the app it runs with `PORT=18080`. |
 | Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
-| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
+| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
 | Driver | `scripts/deploy-azure.py` (helpers in `scripts/azure_deploy/`) | Validates `.env`, builds from a clean `git archive`, pushes, deploys, prints the DNS records. |
 
 Why the API has no public ingress: the CSRF cookie is host-only, so the browser must reach the
@@ -101,8 +101,8 @@ Optional:
 | `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start and migration check). |
 | `ARSM_WEB_ALWAYS_ON` | Default `false`: the web app (gate + Nginx) scales to zero when idle, a cold start of about 2 s. `true` keeps one replica running (more credit used). |
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |
-| `ARSM_ALERT_EMAIL` | Address for the budget and alert mails (see Guard rails in section 8). Empty (default): no budget, action group or alert rule is created. |
-| `ARSM_MONTHLY_BUDGET` | Monthly budget of the resource group in the subscription currency, a whole number, default `20`. Mails go out at 50, 80 and 100 percent of it; only used together with `ARSM_ALERT_EMAIL`. |
+| `ARSM_ALERT_EMAIL` | Address for the alert and budget mails (see Guard rails in section 8). Empty (default): no action group, alert rule or budget is created. |
+| `ARSM_MONTHLY_BUDGET` | Monthly budget of the resource group in the subscription currency, a whole number, default `0` (no budget). Above 0 it mails at 50, 80 and 100 percent of the amount and needs `ARSM_ALERT_EMAIL`. Microsoft lists the Azure for Students offer (MS-AZR-0170P) as not supported by Cost Management, where budgets live, so keep `0` on a student subscription. |
 | `ARSM_LOG_DAILY_QUOTA_GB` | Daily ingestion cap of the Log Analytics workspace in GB, a whole number from 1, default `1`. Always applied, with or without an alert address. |
 | `ARSM_PROD_ADMIN_MIDDLE_NAME` | Middle name of the bootstrap admin. |
 | `ARSM_PROD_ADMIN_PHONE` | Phone number of the bootstrap admin. |
@@ -128,10 +128,11 @@ ARSM_API_ALWAYS_ON=true
 ARSM_WEB_ALWAYS_ON=false
 # Blob container for profile pictures. Optional, default arsm-profile-pictures.
 ARSM_BLOB_CONTAINER=arsm-profile-pictures
-# E-mail for the budget and alert mails. Optional, empty creates no budget, action group or alert rule.
+# E-mail for the alert and budget mails. Optional, empty creates no action group, alert rule or budget.
 ARSM_ALERT_EMAIL=
-# Monthly budget in the subscription currency, mails at 50, 80 and 100 percent. Optional, default 20.
-ARSM_MONTHLY_BUDGET=20
+# Monthly budget in the subscription currency, mails at 50, 80 and 100 percent; needs ARSM_ALERT_EMAIL.
+# Optional, default 0 (no budget): Azure for Students does not support budgets.
+ARSM_MONTHLY_BUDGET=0
 # Daily Log Analytics ingestion cap in GB. Optional, default 1.
 ARSM_LOG_DAILY_QUOTA_GB=1
 
@@ -186,7 +187,7 @@ ARSM_COMPANY_EMAIL=info@example.com
 
 | Subcommand | What it does |
 | --- | --- |
-| `check` | Validates the `.env` keys and the tools (`az`, `docker`, `git`); prints key names with ok/missing only. |
+| `check` | Validates the `.env` keys and the tools (`az`, `docker`, `git`); prints key names with ok/missing only. With `ARSM_ALERT_EMAIL` set it also asks `az` (read-only, needs `az login`) whether `Microsoft.Insights` (and `Microsoft.Consumption` for a budget) is registered and only warns when it is not. |
 | `registry` | `az account set`, ensures the resource group, deploys `registry.bicep`, runs `az acr login`. |
 | `images` | `git archive` of `--commit` (default `HEAD`) into a temp dir; builds and pushes `arsm-api`, `arsm-web` (with `PUBLIC_URL`) and `arsm-gate`, tagged with the 12-character commit sha. |
 | `infra` | `az deployment group create` with `main.bicep` and `main.bicepparam`; prints the outputs. |
@@ -204,15 +205,17 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
    credit card is needed; you get a yearly credit (check the current amount on the page) plus the
    free-service list, both visible in the portal's Education hub. When the credit runs out the
    subscription stops instead of billing you; renew it yearly while you are a student.
-2. Budget and alerts: set `ARSM_ALERT_EMAIL` in step 6. The deployment then creates the monthly
-   budget with its mails and the two alert rules (Guard rails in section 8), so there is nothing to
-   set up by hand in the portal.
+2. Alerts and budget: set `ARSM_ALERT_EMAIL` in step 6. The deployment then creates the action
+   group and the two alert rules (Guard rails in section 8), so there is nothing to set up by hand
+   in the portal. A budget is a separate opt-in (`ARSM_MONTHLY_BUDGET` above 0); Azure for Students
+   does not support budgets, so leave it at `0` on the student subscription.
 3. Register the resource providers once (check with
    `az provider show --namespace <name> --query registrationState -o tsv` until it says
    `Registered`): `az provider register --namespace Microsoft.App`, then the same for
    `Microsoft.OperationalInsights`, `Microsoft.DBforPostgreSQL`, `Microsoft.ContainerRegistry`
-   and `Microsoft.Storage`, plus `Microsoft.Insights` and `Microsoft.Consumption` for the alert
-   rules and the budget.
+   and `Microsoft.Storage`, plus `Microsoft.Insights` for the alert rules (and
+   `Microsoft.Consumption` only if you switch the budget on). `deploy-azure.py check` warns when a
+   provider of the guard rails you switched on is not registered; it needs `az login` for that.
 4. Install the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and run `az login`; make
    the student subscription the active one (`az account list -o table`).
 5. Install Docker Desktop and start it (Linux containers). Git and Python are already there.
@@ -263,8 +266,8 @@ the headers on `/`: the CSP ends in `frame-ancestors 'none'`, HSTS is present an
 no-cache`. Then log in, upload a profile picture and download a quote PDF.
 
 With `ARSM_ALERT_EMAIL` set, `az monitor metrics alert list --resource-group <rg> --output table`
-lists `arsm-api-5xx` and `arsm-api-restarts`, and the Budgets page of the resource group in the
-portal shows `arsm-monthly-budget`.
+lists `arsm-api-5xx` and `arsm-api-restarts`; with `ARSM_MONTHLY_BUDGET` above 0 as well, the Budgets
+page of the resource group in the portal shows `arsm-monthly-budget`.
 
 ## 8. Operations
 
@@ -285,19 +288,23 @@ portal shows `arsm-monthly-budget`.
 
 ### Guard rails
 
-The log cap, the database pool cap and the Nginx limits are always on. The budget and the alert rules
+The log cap, the database pool cap and the Nginx limits are always on. The action group and the alert rules
 (`guardrails.bicep`) exist only when `ARSM_ALERT_EMAIL` is set: put your address there and run
-`python scripts/deploy-azure.py infra`. Emptying the key later only stops creating them; an incremental deployment
+`python scripts/deploy-azure.py infra`. The budget (`budget.bicep`, a module of its own) also needs
+`ARSM_MONTHLY_BUDGET` above 0. Emptying or zeroing a key later only stops creating them; an incremental deployment
 deletes nothing, so remove the existing budget, action group and alert rules in the portal.
 
 - Log cap: the Log Analytics workspace takes in at most `ARSM_LOG_DAILY_QUOTA_GB` GB a day (default 1). At the cap
   Azure stops collecting new logs until the workspace's own reset hour (shown under Usage and estimated costs of the
   workspace, not configurable), so the console logs of that stretch are lost. The cap is approximate: some data
   above it still arrives and is billed. The alert rules read platform metrics, so they keep working at the cap.
-- Budget: `arsm-monthly-budget` covers the resource group with `ARSM_MONTHLY_BUDGET` per month (default 20, in the
-  subscription currency) and mails `ARSM_ALERT_EMAIL` at 50, 80 and 100 percent of the actual cost. Cost data is
-  8-24 hours old and budgets are evaluated once a day, so a mail lags the spend; it only warns and stops nothing.
-  Add `azure-noreply@microsoft.com` to the approved senders so the mails stay out of the junk folder.
+- Budget (opt-in): with `ARSM_MONTHLY_BUDGET` above 0, `arsm-monthly-budget` covers the resource group with that
+  amount per month (in the subscription currency) and mails `ARSM_ALERT_EMAIL` at 50, 80 and 100 percent of the actual
+  cost. Cost data is 8-24 hours old and budgets are evaluated once a day, so a mail lags the spend; it only warns and
+  stops nothing. Add `azure-noreply@microsoft.com` to the approved senders so the mails stay out of the junk folder.
+  Microsoft lists Azure for Students (MS-AZR-0170P) as an offer Cost Management does not support, so the default is
+  no budget. If a subscription cannot take one anyway, only the budget module fails (`infra` reports the error, the
+  alert rules are already in place): set the key back to `0` and run `infra` again.
 - Alert rules (severity 2, mailed through the action group `arsm-alerts`): `arsm-api-5xx` fires when the API answers
   more than 5 requests with a 5xx status within 5 minutes; `arsm-api-restarts` fires when the API's `RestartCount`
   is above 0 over 15 minutes. Both are checked every 5 minutes. `RestartCount` counts the restarts of a replica

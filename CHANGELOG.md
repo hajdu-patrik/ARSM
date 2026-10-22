@@ -27,10 +27,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   loading People rows. Platform: `EnableRetryOnFailure` with every explicit transaction as a retriable unit, a 64 KB Kestrel
   body limit (the picture upload keeps 4 MB + 64 KB), `Cache-Control: no-store` on `/api` JSON, Nginx timeouts and body limits
   per location (1 h only for the SSE streams, 5 MB only for the upload), the Npgsql pool capped at 20 on Azure, and in
-  `main.bicep` a Log Analytics daily cap, a monthly budget with 50/80/100 % mails and two alert rules (5xx, restarts), all
-  mailed to `ARSM_ALERT_EMAIL`. WebUI: the scheduler derives today from the month reads and polls every 10 minutes while the
-  SSE stream is open; a skip link, a named navigation, the app shell inert behind dialogs and an axe sweep over every route
-  (`@axe-core/playwright`). Tests: an xUnit project for the pricing calculators and the session cutoffs (`tests/AutoService.UnitTests`,
+  the Azure kit a Log Analytics daily cap, two alert rules (5xx, restarts) mailed to `ARSM_ALERT_EMAIL` and, opt-in with
+  `ARSM_MONTHLY_BUDGET` above 0 in a module of its own (Azure for Students does not support budgets, so the default is none),
+  a monthly budget with 50/80/100 % mails; `deploy-azure.py check` validates the three keys and warns about an unregistered
+  `Microsoft.Insights` or `Microsoft.Consumption` provider. WebUI: the scheduler derives today from the month reads and
+  polls every 10 minutes while the SSE stream is open; a skip link, a named navigation, the app shell inert behind dialogs
+  and an axe sweep over every route (`@axe-core/playwright`). Tests: an xUnit project for the pricing calculators and the session cutoffs (`tests/AutoService.UnitTests`,
   run by `dotnet test`), HTTP suites for the reset, the lockout, the concurrency and the admin-only deletes, Python checks for the
   session revocation and the refresh replay window, and SQL contracts for the new index, column and xmin mappings. Not changed
   (owner decisions, see the report): the refresh token's client-address binding, TOTP, the Blob managed identity, the

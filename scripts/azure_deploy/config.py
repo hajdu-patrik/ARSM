@@ -16,7 +16,7 @@ from .constants import (
 from .envfile import read_env_file
 from .errors import ConfigError
 from .masking import SecretMasker, secret_values_of
-from .validators import KEY_CHECKS
+from .validators import KEY_CHECKS, parse_whole_number
 
 TEMPLATE_MARKERS = ("CHANGE_ME", "CHANGEME", "SET_UNIQUE_LOCAL")
 # Teszt keys of the same .env that production must never share a value with; the prod admin may reuse
@@ -103,8 +103,17 @@ def collect_issues(raw: dict[str, str]) -> list[KeyIssue]:
         reason = check(value) if check else None
         if reason:
             issues.append(KeyIssue(key, reason))
+    issues.extend(_budget_issues(effective))
     issues.extend(_distinctness_issues(raw))
     return issues
+
+
+def _budget_issues(effective: dict[str, str]) -> list[KeyIssue]:
+    """A budget above 0 is mailed to the alert address, so it cannot exist without one."""
+    amount = parse_whole_number(effective.get("ARSM_MONTHLY_BUDGET", "")) or 0
+    if amount > 0 and not effective.get("ARSM_ALERT_EMAIL"):
+        return [KeyIssue("ARSM_MONTHLY_BUDGET", "needs ARSM_ALERT_EMAIL, the address its mails go to")]
+    return []
 
 
 def _distinctness_issues(raw: dict[str, str]) -> list[KeyIssue]:

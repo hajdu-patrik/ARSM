@@ -14,6 +14,7 @@ ACR_NAME = re.compile(r"^[a-z0-9]{5,50}$")
 LOCATION = re.compile(r"^[a-z0-9]{2,40}$")
 CONTAINER = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){2,62}$")
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+WHOLE_NUMBER = re.compile(r"^[0-9]{1,9}$")
 MIN_JWT_BYTES, MIN_GATE_TOKEN_CHARS = 32, 32
 MAX_EXPERTISE = 10
 
@@ -23,6 +24,11 @@ Check = Callable[[str], "str | None"]
 def parse_expertise(value: str) -> list[str]:
     """Split the comma separated expertise list, trimming blanks."""
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def parse_whole_number(value: str) -> int | None:
+    """The value as a whole number of at most 9 digits, or None when it is anything else."""
+    return int(value) if WHOLE_NUMBER.match(value) else None
 
 
 def check_subscription(value: str) -> str | None:
@@ -101,6 +107,15 @@ def check_container(value: str) -> str | None:
     return None if CONTAINER.match(value) else "3-63 lowercase letters, digits and single hyphens"
 
 
+def check_monthly_budget(value: str) -> str | None:
+    return None if parse_whole_number(value) is not None else "must be a whole number, 0 for no budget"
+
+
+def check_log_daily_quota(value: str) -> str | None:
+    quota = parse_whole_number(value)
+    return None if quota is not None and quota >= 1 else "must be a whole number from 1"
+
+
 KEY_CHECKS: dict[str, Check] = {
     "ARSM_AZURE_SUBSCRIPTION_ID": check_subscription,
     "ARSM_AZURE_RESOURCE_GROUP": check_resource_group,
@@ -117,4 +132,7 @@ KEY_CHECKS: dict[str, Check] = {
     "ARSM_API_ALWAYS_ON": check_always_on,
     "ARSM_WEB_ALWAYS_ON": check_always_on,
     "ARSM_BLOB_CONTAINER": check_container,
+    "ARSM_ALERT_EMAIL": check_email,
+    "ARSM_MONTHLY_BUDGET": check_monthly_budget,
+    "ARSM_LOG_DAILY_QUOTA_GB": check_log_daily_quota,
 }

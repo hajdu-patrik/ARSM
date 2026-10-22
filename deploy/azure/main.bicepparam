@@ -12,7 +12,7 @@ param webAlwaysOn = bool(readEnvironmentVariable('ARSM_WEB_ALWAYS_ON', 'false'))
 param customDomainCertificateName = readEnvironmentVariable('ARSM_CUSTOM_DOMAIN_CERT', '')
 
 param alertEmail = readEnvironmentVariable('ARSM_ALERT_EMAIL', '')
-param monthlyBudgetAmount = int(readEnvironmentVariable('ARSM_MONTHLY_BUDGET', '20'))
+param monthlyBudgetAmount = int(readEnvironmentVariable('ARSM_MONTHLY_BUDGET', '0'))
 param logAnalyticsDailyQuotaGb = int(readEnvironmentVariable('ARSM_LOG_DAILY_QUOTA_GB', '1'))
 
 param postgresAdminPassword = readEnvironmentVariable('ARSM_POSTGRES_PASSWORD')
