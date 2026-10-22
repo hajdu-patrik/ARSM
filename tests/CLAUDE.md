@@ -25,6 +25,9 @@
 - The Playwright `globalSetup` (`app/AutoService.WebUI/tests/e2e/support/warm-dev-server.ts`) loads every
   `APP_ROUTE_CHECKS` route once before the specs: after a fresh `npm ci` the cold Vite dev server took over
   10 s per first load and failed the first spec of each worker in the pre-push gate.
+- Shared E2E helpers: `signInWithMocks` (`support/sign-in.ts`) installs the API mocks and signs in as the mechanic,
+  `recordGetRequests` (`support/request-log.ts`) collects the GET URLs of one path and `getTokenLikeStorageKeys`
+  (`support/token-storage.ts`) lists token-looking storage keys; a spec uses them instead of declaring its own.
 - CSRF double-submit pattern (httpyac): every login/refresh/password-change request carries a
   post-response script that exports the `__Host-autoservice_csrf` value from that response's `Set-Cookie`
   header, and every later unsafe request that carries the auth cookie echoes it back as
