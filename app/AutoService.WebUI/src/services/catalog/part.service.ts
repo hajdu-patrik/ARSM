@@ -23,6 +23,12 @@ export const partService = {
     return response.data;
   },
 
+  /** Returns one part with its current version. */
+  async getPart(id: number): Promise<PartDto> {
+    const response = await apiClient.get<PartDto>(`/api/parts/${String(id)}`);
+    return response.data;
+  },
+
   /** Updates a part. */
   async updatePart(id: number, request: UpdatePartRequest): Promise<void> {
     await apiClient.put(`/api/parts/${String(id)}`, request);

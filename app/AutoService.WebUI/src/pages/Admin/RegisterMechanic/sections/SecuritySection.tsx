@@ -6,6 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { FieldErrorText } from '../../../../components/common/FieldErrorText';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../../utils/formStyles';
+import { MIN_PASSWORD_LENGTH } from '../../../../utils/validation';
 import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
 /** Props for the SecuritySection component. */
@@ -64,7 +65,7 @@ export const SecuritySection = memo(function SecuritySection({
             className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
             {...fieldErrorA11yProps(passwordErrorId, fieldErrors.password)}
             aria-describedby={passwordDescribedBy}
@@ -102,7 +103,7 @@ export const SecuritySection = memo(function SecuritySection({
             className={`${inputClass} pr-12`}
             disabled={isSubmitting}
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
             {...fieldErrorA11yProps(confirmPasswordErrorId, confirmPasswordErrorKey)}
           />

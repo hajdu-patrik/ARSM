@@ -1,9 +1,9 @@
-/** Password input with a visibility toggle used by Settings forms. */
+/** Password input with a visibility toggle, used by the change-password form and the admin reset dialog. */
 
 import { Eye, EyeOff } from 'lucide-react';
-import { FieldErrorText } from '../../../components/common/FieldErrorText';
-import type { FieldErrorA11yProps } from '../../../utils/fieldA11y';
-import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../utils/formStyles';
+import type { FieldErrorA11yProps } from '../../utils/fieldA11y';
+import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../utils/formStyles';
+import { FieldErrorText } from './FieldErrorText';
 
 interface PasswordInputWithToggleProps {
   readonly id: string;

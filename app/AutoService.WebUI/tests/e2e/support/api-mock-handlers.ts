@@ -2,14 +2,25 @@ import type { Route } from '@playwright/test';
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { tryHandleAdminRoute } from './api-mock-admin-handlers';
+import { isAuthenticated } from './api-mock-authz';
 import { tryHandleAuthRoute, tryHandleProfileRoute } from './api-mock-auth-profile-handlers';
-import { tryHandleAppointmentRoute, tryHandleCustomerRoute } from './api-mock-customer-appointment-handlers';
+import { tryHandleAppointmentRoute } from './api-mock-appointment-handlers';
+import { tryHandleCustomerRoute } from './api-mock-customer-handlers';
 import { tryHandleCatalogRoute } from './api-mock-catalog-handlers';
 import { tryHandleQuoteRoute } from './api-mock-quote-handlers';
 import { tryHandleCompanyResultRoute } from './api-mock-company-results';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 const unauthorizedOnceHits = new WeakMap<InstallApiMockOptions, Set<string>>();
+
+/** The only requests the API answers while the account's password is temporary (login is anonymous anyway). */
+const ALLOWED_WHILE_PASSWORD_TEMPORARY: ReadonlySet<string> = new Set([
+  'POST /api/profile/change-password',
+  'POST /api/auth/login',
+  'POST /api/auth/logout',
+  'POST /api/auth/refresh',
+  'GET /api/auth/validate',
+]);
 
 function normalizeApiPath(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith('/')) {
@@ -39,6 +50,11 @@ export async function handleApiRoute(
 
   if (shouldRejectOnce(options, routeKey)) {
     await fulfillJson(route, { detail: 'Unauthorized' }, 401);
+    return;
+  }
+
+  if (state.mustChangePassword && isAuthenticated(options) && !ALLOWED_WHILE_PASSWORD_TEMPORARY.has(routeKey)) {
+    await fulfillJson(route, { code: 'password_change_required' }, 403);
     return;
   }
 

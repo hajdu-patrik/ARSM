@@ -13,6 +13,27 @@ export async function fulfillNoContent(route: Route): Promise<void> {
   await route.fulfill({ status: 204, headers: corsHeaders(route) });
 }
 
+/** Answers a missing or stale concurrency version the way the API does: 422 for a missing one, 409 with the
+ * entity's machine-readable conflict code for a stale one. Returns true when it answered. */
+export async function rejectStaleVersion(
+  route: Route,
+  currentVersion: number,
+  submittedVersion: number | undefined,
+  conflictCode: string,
+): Promise<boolean> {
+  if (!submittedVersion) {
+    await fulfillJson(route, { detail: 'Version is required.' }, 422);
+    return true;
+  }
+
+  if (submittedVersion !== currentVersion) {
+    await fulfillJson(route, { code: conflictCode }, 409);
+    return true;
+  }
+
+  return false;
+}
+
 export function corsHeaders(route: Route): Record<string, string> {
   const origin = route.request().headers().origin ?? 'https://localhost:5173';
 

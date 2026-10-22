@@ -1,9 +1,10 @@
 /** Reusable modal dialog shell rendered via a portal. The topmost modal traps Tab, takes the initial focus,
- * hands it back to the opener on close and dismisses on overlay click or Escape. */
+ * hands it back to the opener on close and dismisses on overlay click or Escape; the app shell is inert meanwhile. */
 import { memo, useEffect, useEffectEvent, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { controlPanelFooterClass, feedbackFrameClass } from '../../utils/formStyles';
+import { isTopDialog, pushDialog, removeDialog } from './modalStack';
 import { ModalCloseButton } from './ModalCloseButton';
 
 interface ModalProps {
@@ -19,9 +20,6 @@ interface ModalProps {
   readonly fitViewport?: boolean;
   readonly variant?: 'default' | 'confirm';
 }
-
-/** Open dialogs, oldest first: only the last one reacts to Escape and Tab, so a confirm over a detail closes alone. */
-const openDialogs: HTMLElement[] = [];
 
 /** Elements that can take part in the Tab sequence. */
 const TABBABLE_SELECTOR = 'a[href], button, input, select, textarea, [tabindex]';
@@ -77,11 +75,11 @@ function useModalKeyboard(isOpen: boolean, onClose: () => void): RefObject<HTMLD
     }
 
     const opener = document.activeElement;
-    openDialogs.push(dialog);
+    pushDialog(dialog);
     (getTabbableElements(dialog)[0] ?? dialog).focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (openDialogs.at(-1) !== dialog) {
+      if (!isTopDialog(dialog)) {
         return;
       }
 
@@ -95,10 +93,7 @@ function useModalKeyboard(isOpen: boolean, onClose: () => void): RefObject<HTMLD
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      const index = openDialogs.lastIndexOf(dialog);
-      if (index !== -1) {
-        openDialogs.splice(index, 1);
-      }
+      removeDialog(dialog);
       returnFocus(opener, dialog);
     };
   }, [isOpen]);

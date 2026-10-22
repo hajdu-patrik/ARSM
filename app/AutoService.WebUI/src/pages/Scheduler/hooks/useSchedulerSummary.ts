@@ -1,7 +1,7 @@
 /** Computes summary-strip data for the scheduler page header: selected date, label, and appointment count. */
 import { useMemo } from 'react';
 import type { TFunction } from 'i18next';
-import { formatLongDate, isPastCalendarDay } from '../utils/scheduler-datetime';
+import { formatLongDate, isPastCalendarDay, isScheduledOn } from '../utils/scheduler-datetime';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
 /** Configuration for {@link useSchedulerSummary}. */
@@ -14,7 +14,7 @@ interface UseSchedulerSummaryArgs {
   readonly calendarMonth: number;
   /** All appointments loaded for the current month. */
   readonly monthAppointments: AppointmentDto[];
-  /** Number of today's appointments (from the dedicated today endpoint). */
+  /** Number of today's appointments, derived from the loaded month reads. */
   readonly todayAppointmentsCount: number;
   /** Active i18n locale code (e.g. "en", "hu"). */
   readonly locale: string;
@@ -78,12 +78,7 @@ export function useSchedulerSummary({
       return todayAppointmentsCount;
     }
 
-    return monthAppointments.filter((appointment) => {
-      const scheduled = new Date(appointment.scheduledDate);
-      return scheduled.getFullYear() === selectedDate.getFullYear() &&
-        scheduled.getMonth() === selectedDate.getMonth() &&
-        scheduled.getDate() === selectedDate.getDate();
-    }).length;
+    return monthAppointments.filter((appointment) => isScheduledOn(appointment, selectedDate)).length;
   }, [monthAppointments, selectedDate, todayAppointmentsCount]);
 
   return {

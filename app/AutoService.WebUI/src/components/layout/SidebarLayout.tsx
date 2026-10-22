@@ -1,6 +1,6 @@
-/** Authenticated app shell: the collapsible sidebar (a drawer below md), the header with the
+/** Authenticated app shell: the skip link, the collapsible sidebar (a drawer below md), the header with the
  * theme/language controls, and the page. */
-import { memo, useCallback, useId, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { memo, useCallback, useId, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 import { authService } from '../../services/auth/auth.service';
 import { APP_ROUTE_PATHS } from '../../router/appRoutes';
-import { largeIconClass, sidebarShellIconButtonClass } from '../../utils/formStyles';
+import { focusVisibleOutlineClass, largeIconClass, sidebarShellIconButtonClass } from '../../utils/formStyles';
 import { readStorage, writeStorage } from '../../utils/safeStorage';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { SidebarContent, type NavItem } from './SidebarContent';
@@ -20,6 +20,10 @@ interface SidebarLayoutProps {
 }
 
 const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
+/** Id of the `<main>` landmark, which the skip link jumps to. */
+const MAIN_CONTENT_ID = 'main-content';
+/** Hidden until it takes keyboard focus, then drawn over the top-left corner of the page. */
+const SKIP_LINK_CLASS = `sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[130] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-ui-border focus:bg-ui-card focus:px-4 focus:text-sm focus:font-medium focus:text-ui-text ${focusVisibleOutlineClass}`;
 /** Tablet range (md up to below lg, the Tailwind breakpoint thresholds), where the default is the icon rail. */
 const TABLET_VIEWPORT_QUERY = '(width >= 48rem) and (width < 64rem)';
 
@@ -76,6 +80,7 @@ export const SidebarLayout = memo(function SidebarLayout({ children, navItems }:
 
   const { collapsed, toggleCollapse } = useSidebarCollapsed();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   const handleLogout = useCallback(async () => {
     await authService.logout();
@@ -85,6 +90,12 @@ export const SidebarLayout = memo(function SidebarLayout({ children, navItems }:
   const requestLogout = useCallback(() => {
     void handleLogout();
   }, [handleLogout]);
+
+  // A plain `#main-content` link would write the hash into the router's URL, so the link moves focus itself.
+  const skipToContent = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    mainRef.current?.focus();
+  }, []);
 
   const toggleMobile = useCallback(() => {
     setMobileOpen((previous) => !previous);
@@ -111,6 +122,10 @@ export const SidebarLayout = memo(function SidebarLayout({ children, navItems }:
 
   return (
     <div className="relative flex h-screen h-dvh overflow-hidden bg-ui-surface">
+      <a href={`#${MAIN_CONTENT_ID}`} onClick={skipToContent} className={SKIP_LINK_CLASS}>
+        {translate('layout.skipToContent')}
+      </a>
+
       <div
         aria-hidden="true"
         className="arsm-shell-ambient pointer-events-none absolute inset-0"
@@ -160,7 +175,14 @@ export const SidebarLayout = memo(function SidebarLayout({ children, navItems }:
           <ThemeLanguageControls className="flex items-center gap-1.5 sm:gap-3" />
         </header>
 
-        <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain">{children}</main>
+        <main
+          ref={mainRef}
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain focus:outline-none"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

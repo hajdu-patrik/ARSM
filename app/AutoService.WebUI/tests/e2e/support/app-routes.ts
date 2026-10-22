@@ -7,6 +7,8 @@ export interface AppRouteCheck {
   readonly path: string;
   readonly name: string;
   readonly isSignedIn: boolean;
+  /** The signed-in account still has a temporary password, so this is the one page it can reach. */
+  readonly mustChangePassword?: boolean;
   readonly ready: (page: Page) => Locator;
 }
 
@@ -15,6 +17,14 @@ export const LOGIN_ROUTE: AppRouteCheck = {
   name: 'login',
   isSignedIn: false,
   ready: (page) => page.locator('#identifier'),
+};
+
+const CHANGE_PASSWORD_ROUTE: AppRouteCheck = {
+  path: '/change-password',
+  name: 'change password',
+  isSignedIn: true,
+  mustChangePassword: true,
+  ready: (page) => page.locator('#change-password-current'),
 };
 
 export const CUSTOMERS_ROUTE: AppRouteCheck = {
@@ -27,6 +37,7 @@ export const CUSTOMERS_ROUTE: AppRouteCheck = {
 /** Every route of the app shell that renders a page; the splash and Trusted Types specs visit them all. */
 export const APP_ROUTE_CHECKS: readonly AppRouteCheck[] = [
   LOGIN_ROUTE,
+  CHANGE_PASSWORD_ROUTE,
   { path: '/', name: 'scheduler', isSignedIn: true, ready: (page) => page.getByTestId('scheduler-intake-open') },
   CUSTOMERS_ROUTE,
   { path: '/quotes', name: 'quotes', isSignedIn: true, ready: (page) => page.getByTestId('quotes-search-input') },
@@ -43,5 +54,6 @@ export async function prepareAppRoute(page: Page, route: AppRouteCheck): Promise
     profileEmail: 'route.check@example.test',
     isAuthenticated: route.isSignedIn,
     isAdmin: true,
+    mustChangePassword: route.mustChangePassword === true,
   });
 }

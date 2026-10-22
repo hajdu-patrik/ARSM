@@ -21,12 +21,7 @@ test.describe('Scheduler live status propagation', () => {
     const taskDescription = 'Live status propagation check';
 
     await schedulerPage.goto();
-    const dialog = await schedulerPage.openIntakeForCurrentDay();
-    await schedulerPage.searchByLicensePlate('NXE-441');
-    await dialog.getByRole('button', { name: 'Select' }).first().click();
-    await dialog.getByTestId('scheduler-intake-task-description').fill(taskDescription);
-    await schedulerPage.createWithCurrentForm();
-    await expect(schedulerPage.intakeDialog()).toHaveCount(0);
+    await schedulerPage.createIntake('NXE-441', taskDescription);
 
     // A new intake is InProgress, so the calendar dot starts amber.
     const dayCell = page.getByTestId(currentDayTestId());

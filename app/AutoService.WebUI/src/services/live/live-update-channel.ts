@@ -2,7 +2,7 @@
  * logout teardown (see WebUI CLAUDE.md); a channel only supplies its URL, SSE event, DOM event and parser. */
 
 import axios from 'axios';
-import { apiClient } from '../http/api.client';
+import { refreshSession } from '../http/api.client';
 import { isRecord } from '../http/record-guard';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -30,6 +30,10 @@ export interface LiveUpdateChannel<TDetail> {
   readonly start: () => () => void;
   /** Dispatches a detail on the DOM event, bypassing the network (used after local mutations). */
   readonly dispatch: (detail: TDetail) => void;
+  /** Registers a listener for connection changes and returns its unsubscribe; the `useSyncExternalStore` subscribe. */
+  readonly subscribe: (listener: () => void) => () => void;
+  /** Whether the stream is open right now; the `useSyncExternalStore` snapshot. */
+  readonly isConnected: () => boolean;
 }
 
 /** Parses an SSE frame payload as a JSON object, or null when it is malformed or not an object. */
@@ -58,6 +62,18 @@ export function createLiveUpdateChannel<TDetail>(
   let reconnectAttempt = 0;
   let subscriberCount = 0;
   let lifecycleToken = 0;
+  let isStreamOpen = false;
+  const connectionListeners = new Set<() => void>();
+
+  /** Records whether the stream is open and tells the connection listeners when that changed. */
+  function setStreamOpen(isOpen: boolean): void {
+    if (isStreamOpen !== isOpen) {
+      isStreamOpen = isOpen;
+      connectionListeners.forEach((listener) => {
+        listener();
+      });
+    }
+  }
 
   /** Whether the connection is still wanted for the given lifecycle token. */
   function shouldKeepLiveUpdates(token: number): boolean {
@@ -77,6 +93,7 @@ export function createLiveUpdateChannel<TDetail>(
     if (eventSource !== null) {
       eventSource.close();
       eventSource = null;
+      setStreamOpen(false);
     }
   }
 
@@ -120,7 +137,7 @@ export function createLiveUpdateChannel<TDetail>(
     }
 
     try {
-      await apiClient.post('/api/auth/refresh', undefined, { skipErrorRedirect: true });
+      await refreshSession({ skipErrorRedirect: true });
       return shouldKeepLiveUpdates(tokenAtRequest);
     } catch (error) {
       const refreshStatus = axios.isAxiosError(error) ? error.response?.status : undefined;
@@ -141,6 +158,7 @@ export function createLiveUpdateChannel<TDetail>(
     source.close();
     if (eventSource === source) {
       eventSource = null;
+      setStreamOpen(false);
     }
 
     if (!shouldKeepLiveUpdates(connectionToken)) {
@@ -181,6 +199,7 @@ export function createLiveUpdateChannel<TDetail>(
 
     source.onopen = () => {
       reconnectAttempt = 0;
+      setStreamOpen(true);
     };
 
     source.onerror = () => {
@@ -219,5 +238,13 @@ export function createLiveUpdateChannel<TDetail>(
       };
     },
     dispatch,
+    subscribe(listener: () => void): () => void {
+      connectionListeners.add(listener);
+
+      return () => {
+        connectionListeners.delete(listener);
+      };
+    },
+    isConnected: () => isStreamOpen,
   };
 }

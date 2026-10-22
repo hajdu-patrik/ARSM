@@ -104,8 +104,10 @@ export const enCore = {
   },
   layout: {
     logout: 'Log out',
+    skipToContent: 'Skip to main content',
   },
   nav: {
+    main: 'Main navigation',
     scheduler: 'Scheduler',
     customers: 'Customers',
     quotes: 'Quotes',
@@ -173,8 +175,6 @@ export const enCore = {
     claimSuccess: 'Appointment claimed successfully.',
     statusUpdateError: 'Failed to update status.',
     statusUpdateSuccess: 'Appointment status updated successfully.',
-    todayLoadError: 'Failed to load today\'s appointments.',
-    todayAuthExpiredError: 'Your session has expired. Please log in again to load today\'s appointments.',
     monthLoadError: 'Failed to load monthly appointments.',
     monthAuthExpiredError: 'Your session has expired. Please log in again to load monthly appointments.',
     due: {
@@ -295,6 +295,7 @@ export const enCore = {
       saveConfirmMessage: 'Save the edited appointment data?',
       updateSuccess: 'Appointment updated successfully.',
       updateError: 'Failed to save appointment changes.',
+      versionConflict: 'Someone else changed this appointment in the meantime. The latest data has been reloaded, please try again.',
       unassignSuccess: 'You were unassigned successfully.',
       assignSuccess: 'Mechanic assigned successfully.',
       adminUnassignSuccess: 'Mechanic removed successfully.',

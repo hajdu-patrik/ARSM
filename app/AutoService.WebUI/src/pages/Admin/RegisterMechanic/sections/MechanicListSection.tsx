@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2 } from 'lucide-react';
+import { KeyRound, Trash2 } from 'lucide-react';
 import { useToastStore } from '../../../../store/toast.store';
 import { HighlightedText } from '../../../../components/common/HighlightedText';
 import { ConfirmModal } from '../../../../components/common/ConfirmModal';
@@ -8,8 +8,10 @@ import { Pagination } from '../../../../components/common/Pagination';
 import { MechanicAvatar } from '../../../Scheduler/components/shared/MechanicAvatar';
 import { buildMechanicDisplayName } from '../helpers';
 import { useMechanicListState } from '../useMechanicListState';
+import { useMechanicPasswordReset } from '../useMechanicPasswordReset';
 import { MECHANIC_LIST_PAGE_SIZE } from '../constants';
 import { MechanicListToolbar } from './MechanicListToolbar';
+import { MechanicPasswordResetModal } from './MechanicPasswordResetModal';
 import {
 	centeredLoadingWrapperClass,
 	compactInputSurfaceClass,
@@ -18,12 +20,13 @@ import {
 	defaultIconClass,
 	emptyStateBoxClass,
 	iconDangerButtonClass,
+	iconWarningButtonClass,
 	loadingSpinnerClass,
 	mutedBodyTextClass,
 	rowHoverMotionClass,
 } from '../../../../utils/formStyles';
 
-/** Renders the admin mechanic roster: server-side search, fixed-size pages, and delete actions. */
+/** Renders the admin mechanic roster: server-side search, fixed-size pages, and password reset and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection() {
 	const { t } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
@@ -50,6 +53,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 		showErrorToast,
 		showSuccessToast,
 	});
+	const passwordReset = useMechanicPasswordReset({ showErrorToast, showSuccessToast });
 
 	const highlightQuery = searchTerm.trim();
 
@@ -83,6 +87,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 								return (
 									<div
 										key={mechanic.personId}
+										data-testid={`mechanic-row-${String(mechanic.personId)}`}
 										className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
 									>
 										<MechanicAvatar
@@ -101,19 +106,35 @@ export const MechanicListSection = memo(function MechanicListSection() {
 											</p>
 										</div>
 
-										{canRemoveMechanic && (
-											<button
-												type="button"
-												onClick={() => {
-													openDeleteModal(mechanic);
-												}}
-												title={t('admin.deleteMechanic')}
-												aria-label={t('admin.deleteMechanic')}
-												className={`ml-auto ${iconDangerButtonClass}`}
-											>
-												<Trash2 className={defaultIconClass} aria-hidden="true" />
-											</button>
-										)}
+										<div className="ml-auto flex shrink-0 items-center gap-2 max-[350px]:flex-col">
+											{!mechanic.isAdmin && (
+												<button
+													type="button"
+													onClick={() => {
+														passwordReset.openPasswordReset(mechanic);
+													}}
+													title={t('admin.resetPassword')}
+													aria-label={t('admin.resetPassword')}
+													className={iconWarningButtonClass}
+												>
+													<KeyRound className={defaultIconClass} aria-hidden="true" />
+												</button>
+											)}
+
+											{canRemoveMechanic && (
+												<button
+													type="button"
+													onClick={() => {
+														openDeleteModal(mechanic);
+													}}
+													title={t('admin.deleteMechanic')}
+													aria-label={t('admin.deleteMechanic')}
+													className={iconDangerButtonClass}
+												>
+													<Trash2 className={defaultIconClass} aria-hidden="true" />
+												</button>
+											)}
+										</div>
 									</div>
 								);
 							})}
@@ -132,6 +153,16 @@ export const MechanicListSection = memo(function MechanicListSection() {
 					/>
 				</div>
 			)}
+
+			<MechanicPasswordResetModal
+				target={passwordReset.resetTarget}
+				temporaryPassword={passwordReset.temporaryPassword}
+				passwordError={passwordReset.passwordError}
+				isResetting={passwordReset.isResetting}
+				onPasswordChange={passwordReset.changeTemporaryPassword}
+				onClose={passwordReset.closePasswordReset}
+				onConfirm={passwordReset.confirmPasswordReset}
+			/>
 
 			<ConfirmModal
 				isOpen={deleteTarget !== null}

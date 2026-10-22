@@ -1,5 +1,5 @@
 /** Root application component: routing, lazy-loaded pages, auth restoration,
- * error boundaries, SEO, and the global toast viewport. */
+ * error boundaries, SEO, the inert-while-modal app shell and the global toast viewport. */
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router';
 import { useAuthStore } from './store/auth.store';
@@ -7,9 +7,11 @@ import { authService } from './services/auth/auth.service';
 import { LoadingPage } from './pages/LoadingPage';
 import { PrivateRoute } from './router/PrivateRoute';
 import { AdminRoute } from './router/AdminRoute';
+import { PasswordChangeRoute } from './router/PasswordChangeRoute';
 import { PublicOnlyRoute } from './router/PublicOnlyRoute';
 import { APP_ROUTE_PATHS } from './router/appRoutes';
 import { SidebarLayout } from './components/layout/SidebarLayout';
+import { registerAppShell } from './components/common/modalStack';
 import { ToastViewport } from './components/common/ToastViewport';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SeoManager } from './components/seo/SeoManager';
@@ -19,6 +21,7 @@ import { warmErrorIllustrationCache } from './utils/errorIllustrationCache';
 import { centeredLoadingWrapperClass, loadingSpinnerClass } from './utils/formStyles';
 
 const Login = lazy(() => import('./pages/Login/page').then((module) => ({ default: module.Login })));
+const ChangePasswordPage = lazy(() => import('./pages/ChangePassword/page').then((module) => ({ default: module.ChangePasswordPage })));
 const SchedulerPage = lazy(() => import('./pages/Scheduler/page').then((module) => ({ default: module.SchedulerPage })));
 const CustomersPage = lazy(() => import('./pages/Customers/page').then((module) => ({ default: module.CustomersPage })));
 const InventoryPage = lazy(() => import('./pages/Inventory/page').then((module) => ({ default: module.InventoryPage })));
@@ -63,6 +66,16 @@ function AppRoutes() {
           <PublicOnlyRoute>
             <Login />
           </PublicOnlyRoute>
+        )}
+      />
+
+      {/* Required password change: the one page a user with a temporary password can use */}
+      <Route
+        path={APP_ROUTE_PATHS.changePassword}
+        element={(
+          <PasswordChangeRoute>
+            <ChangePasswordPage />
+          </PasswordChangeRoute>
         )}
       />
 
@@ -131,16 +144,18 @@ function App() {
       {/* Splash on a full browser load of an app route, until the app is ready */}
       <LoadingPage />
 
-      {/* Main app */}
-      <ErrorBoundary>
-        <Router>
-          <SeoManager />
+      {/* Main app; it goes inert while a modal dialog is open, and the dialogs and toasts sit outside it */}
+      <div ref={registerAppShell} data-testid="app-shell" className="contents">
+        <ErrorBoundary>
+          <Router>
+            <SeoManager />
 
-          <Suspense fallback={ROUTE_LOADING_FALLBACK}>
-            <AppRoutes />
-          </Suspense>
-        </Router>
-      </ErrorBoundary>
+            <Suspense fallback={ROUTE_LOADING_FALLBACK}>
+              <AppRoutes />
+            </Suspense>
+          </Router>
+        </ErrorBoundary>
+      </div>
 
       <ToastViewport />
     </>

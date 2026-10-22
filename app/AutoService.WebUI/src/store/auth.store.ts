@@ -26,6 +26,8 @@ interface AuthState {
   setIsLoading: (value: boolean) => void;
   /** Sets or clears the error message. */
   setError: (error: string | null) => void;
+  /** Marks whether the signed-in user still has to replace a temporary password; ignored while signed out. */
+  setMustChangePassword: (value: boolean) => void;
   /** Resets auth state, the private query cache and the other per-user browser state to logged-out defaults. */
   clearAuth: () => void;
 }
@@ -57,6 +59,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   setError: (error) => {
     set({ error });
+  },
+  setMustChangePassword: (mustChangePassword) => {
+    set((state) => (state.user === null ? state : { user: { ...state.user, mustChangePassword } }));
   },
   clearAuth: () => {
     clearArsmQueryCache();

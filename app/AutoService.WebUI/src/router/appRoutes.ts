@@ -6,6 +6,7 @@ import { matchPath } from 'react-router';
 /** Path of every app route; `schedulerAlias` and `dashboardAlias` redirect to the scheduler at `scheduler`. */
 export const APP_ROUTE_PATHS = {
   login: '/login',
+  changePassword: '/change-password',
   scheduler: '/',
   schedulerAlias: '/scheduler',
   dashboardAlias: '/dashboard',

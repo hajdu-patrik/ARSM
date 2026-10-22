@@ -30,15 +30,16 @@ export interface CustomerListData {
   readonly locale: string;
 }
 
-/** Customer and vehicle row callbacks: expansion, details, modals and quote creation. */
+/** Customer and vehicle row callbacks: expansion, details, modals and quote creation. The two delete callbacks
+ * are undefined unless the viewer is an admin, the only role the API lets delete, and their buttons then stay away. */
 export interface CustomerListActions {
   readonly onToggleCustomerExpanded: (customerId: number) => void;
   readonly onOpenCustomerDetails: (customerId: number) => void;
   readonly onOpenEditCustomerModal: (customer: CustomerListItem) => void;
-  readonly onOpenDeleteCustomerModal: (customer: CustomerListItem) => void;
+  readonly onOpenDeleteCustomerModal: ((customer: CustomerListItem) => void) | undefined;
   readonly onOpenCreateVehicleModal: (customerId: number) => void;
   readonly onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
-  readonly onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
+  readonly onOpenDeleteVehicleModal: ((customerId: number, vehicle: VehicleDetailDto) => void) | undefined;
   readonly onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
   readonly onCreateQuoteForVehicle: (vehicleId: number) => void;
 }

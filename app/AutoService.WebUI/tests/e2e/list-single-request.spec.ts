@@ -47,13 +47,13 @@ function seedCustomers(state: MockApiState): void {
 
 function seedParts(state: MockApiState): void {
   state.parts.push(...SEEDED.map((index) => (
-    { id: 5000 + index, partNumber: `PRT-${pad(index)}`, name: `Seed part ${pad(index)}`, netUnitPrice: 1000, vatRatePercent: 27, grossUnitPrice: 1270 }
+    { id: 5000 + index, partNumber: `PRT-${pad(index)}`, name: `Seed part ${pad(index)}`, netUnitPrice: 1000, vatRatePercent: 27, grossUnitPrice: 1270, version: 1 }
   )));
 }
 
 function seedLaborTypes(state: MockApiState): void {
   state.laborTypes.push(...SEEDED.map((index) => (
-    { id: 6000 + index, code: `LAB-${pad(index)}`, name: `Seed labour ${pad(index)}`, hourlyNetRate: 5000, vatRatePercent: 27, grossHourlyRate: 6350 }
+    { id: 6000 + index, code: `LAB-${pad(index)}`, name: `Seed labour ${pad(index)}`, hourlyNetRate: 5000, vatRatePercent: 27, grossHourlyRate: 6350, version: 1 }
   )));
 }
 

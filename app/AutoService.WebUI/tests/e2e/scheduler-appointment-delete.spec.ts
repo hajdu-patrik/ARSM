@@ -5,16 +5,6 @@ import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
 import { toastMessage } from './support/toast';
 
-/** Creates one appointment through the intake flow so the delete flow has something to act on. */
-async function createAppointmentForDelete(schedulerPage: SchedulerPage, taskDescription: string): Promise<void> {
-  const dialog = await schedulerPage.openIntakeForCurrentDay();
-  await schedulerPage.searchByLicensePlate('NXE-441');
-  await dialog.getByRole('button', { name: 'Select' }).first().click();
-  await dialog.getByTestId('scheduler-intake-task-description').fill(taskDescription);
-  await schedulerPage.createWithCurrentForm();
-  await expect(schedulerPage.intakeDialog()).toHaveCount(0);
-}
-
 test.describe('Scheduler appointment delete (admin)', () => {
   test.beforeEach(async ({ page }) => {
     const env = getAppointmentFlowEnv();
@@ -27,7 +17,7 @@ test.describe('Scheduler appointment delete (admin)', () => {
     const taskDescription = 'Delete flow check';
 
     await schedulerPage.goto();
-    await createAppointmentForDelete(schedulerPage, taskDescription);
+    await schedulerPage.createIntake('NXE-441', taskDescription);
     await expect(page.getByText(taskDescription)).toBeVisible();
 
     const detailDialog = await schedulerPage.openFirstAppointmentDetail();
@@ -65,7 +55,7 @@ test.describe('Scheduler appointment delete (non-admin)', () => {
     const taskDescription = 'Delete visibility check';
 
     await schedulerPage.goto();
-    await createAppointmentForDelete(schedulerPage, taskDescription);
+    await schedulerPage.createIntake('NXE-441', taskDescription);
 
     await schedulerPage.openFirstAppointmentDetail();
     await expect(schedulerPage.deleteButton()).toHaveCount(0);

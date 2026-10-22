@@ -10,6 +10,11 @@ import { clearAuthSessionHint, hasAuthSessionHint, setAuthSessionHint } from './
 /** In-flight restore promise for single-flight deduplication. */
 let restorePromise: Promise<AuthUser | null> | null = null;
 
+/** The store's user for a login or validate response, which share one shape. */
+function toAuthUser({ personId, isAdmin, mustChangePassword }: ValidateTokenResponse): AuthUser {
+  return { personId, isAdmin, mustChangePassword };
+}
+
 /** Updates the auth store with an authenticated user. */
 function setAuthenticatedUser(user: AuthUser): void {
   useAuthStore.setState({ user, isAuthenticated: true, error: null });
@@ -25,12 +30,7 @@ export const authService = {
   /** Authenticates with email/phone and password via {@code POST /api/auth/login}. */
   async login(request: LoginRequest): Promise<AuthUser> {
     const response = await apiClient.post<LoginResponse>('/api/auth/login', request);
-    const { personId, isAdmin } = response.data;
-
-    const authUser: AuthUser = {
-      personId,
-      isAdmin,
-    };
+    const authUser = toAuthUser(response.data);
 
     clearArsmQueryCache();
     setAuthenticatedUser(authUser);
@@ -80,10 +80,7 @@ export const authService = {
           return null;
         }
 
-        const validatedUser: AuthUser = {
-          personId: response.data.personId,
-          isAdmin: response.data.isAdmin,
-        };
+        const validatedUser = toAuthUser(response.data);
 
         setAuthenticatedUser(validatedUser);
         setAuthSessionHint();

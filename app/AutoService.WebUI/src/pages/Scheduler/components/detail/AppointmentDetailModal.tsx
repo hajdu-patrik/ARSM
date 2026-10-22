@@ -26,7 +26,7 @@ interface AppointmentDetailModalProps {
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
   readonly onClaim: (id: number) => Promise<void>;
-  readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
+  readonly onStatusChange: (id: number, status: AppointmentStatus, version: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
@@ -60,6 +60,7 @@ function AppointmentDetailDialog({
   const { allMechanics } = useAdminMechanics(isAdmin);
   const actions = useAppointmentDetailActions({
     appointmentId: appointment.id,
+    appointmentVersion: appointment.version,
     onClaim,
     onStatusChange,
     onUnclaim,

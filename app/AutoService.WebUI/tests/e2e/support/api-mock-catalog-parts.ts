@@ -2,10 +2,10 @@ import type { Route } from '@playwright/test';
 import type { CreatePartRequest, PartDto, UpdatePartRequest } from '../../../src/types/catalog/catalog.types';
 import type { MockApiState } from './test-data';
 import { compareText, fulfillPaged } from './api-mock-paging';
-import { fulfillJson, fulfillNoContent } from './api-mock-response';
+import { fulfillJson, fulfillNoContent, rejectStaleVersion } from './api-mock-response';
 import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate, resolveGrossAmount } from './api-mock-catalog-pricing';
 
-/** Dispatches `/api/parts` mock requests (list, create, update, delete). */
+/** Dispatches `/api/parts` mock requests (list, get, create, update, delete); every write bumps the item's version. */
 export async function tryHandlePartRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
   if (path === '/api/parts' && method === 'GET') {
     await fulfillPaged(route, state.parts, {
@@ -26,6 +26,11 @@ export async function tryHandlePartRoute(route: Route, method: string, path: str
   }
 
   const id = Number(match[1]);
+  if (method === 'GET') {
+    await handleGetPart(route, state, id);
+    return true;
+  }
+
   if (method === 'PUT') {
     await handleUpdatePart(route, state, id);
     return true;
@@ -64,10 +69,21 @@ async function handleCreatePart(route: Route, state: MockApiState): Promise<void
     netUnitPrice,
     vatRatePercent,
     grossUnitPrice: resolveGrossAmount(state, netUnitPrice, vatRatePercent),
+    version: 1,
   };
 
   state.parts.push(created);
   await fulfillJson(route, created, 201);
+}
+
+async function handleGetPart(route: Route, state: MockApiState, id: number): Promise<void> {
+  const existing = state.parts.find((part) => part.id === id);
+  if (!existing) {
+    await fulfillJson(route, { detail: 'Part not found.' }, 404);
+    return;
+  }
+
+  await fulfillJson(route, existing);
 }
 
 async function handleUpdatePart(route: Route, state: MockApiState, id: number): Promise<void> {
@@ -77,7 +93,11 @@ async function handleUpdatePart(route: Route, state: MockApiState, id: number): 
     return;
   }
 
-  const payload = route.request().postDataJSON() as UpdatePartRequest;
+  const payload = route.request().postDataJSON() as Omit<UpdatePartRequest, 'version'> & { version?: number };
+  if (await rejectStaleVersion(route, existing.version, payload.version, 'part_version_conflict')) {
+    return;
+  }
+
   if (!isAllowedVatRate(payload.vatRatePercent)) {
     await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
     return;
@@ -96,6 +116,7 @@ async function handleUpdatePart(route: Route, state: MockApiState, id: number): 
     netUnitPrice: payload.netUnitPrice,
     vatRatePercent: payload.vatRatePercent,
     grossUnitPrice: resolveGrossAmount(state, payload.netUnitPrice, payload.vatRatePercent),
+    version: existing.version + 1,
   };
 
   // Real backend contract: PUT returns 204 No Content, not the updated resource.

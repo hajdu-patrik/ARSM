@@ -57,6 +57,7 @@ export const enPricing = {
       laborTypeNotFound: 'Labour type not found.',
       invalidMoney: 'Amount must be at least 0 and at most 100,000,000.',
       saveFailed: 'Failed to save changes.',
+      versionConflict: 'Someone else changed this item in the meantime. The list has been reloaded, please try again.',
     },
   },
   quotes: {

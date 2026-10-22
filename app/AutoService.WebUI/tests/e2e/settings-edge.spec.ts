@@ -1,13 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
-
-async function fillLockedPasswordField(page: Page, selector: string, value: string): Promise<void> {
-  const field = page.locator(selector);
-  await field.click();
-  await expect(field).not.toHaveAttribute('readonly', '');
-  await field.fill(value);
-}
+import { fillLockedPasswordField } from './support/password-fields';
 
 test.describe('Settings edge cases', () => {
   test.beforeEach(async ({ page }) => {
@@ -33,9 +27,9 @@ test.describe('Settings edge cases', () => {
   });
 
   test('shows mismatch validation when password confirmation differs', async ({ page }) => {
-    await fillLockedPasswordField(page, '#settings-currentPassword', 'CurrentPass1!');
-    await fillLockedPasswordField(page, '#settings-newPassword', 'NewPassWord1!');
-    await fillLockedPasswordField(page, '#settings-confirmPassword', 'DifferentPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-current'), 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'NewPassWord1!');
+    await fillLockedPasswordField(page.locator('#change-password-confirm'), 'DifferentPass1!');
 
     const submitButton = page.getByRole('button', { name: /Change Password|Jelszó módosítása/i });
     await expect(submitButton).toBeDisabled();
@@ -44,9 +38,9 @@ test.describe('Settings edge cases', () => {
   });
 
   test('changes password through confirmation modal', async ({ page }) => {
-    await fillLockedPasswordField(page, '#settings-currentPassword', 'CurrentPass1!');
-    await fillLockedPasswordField(page, '#settings-newPassword', 'NewPassWord1!');
-    await fillLockedPasswordField(page, '#settings-confirmPassword', 'NewPassWord1!');
+    await fillLockedPasswordField(page.locator('#change-password-current'), 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'NewPassWord1!');
+    await fillLockedPasswordField(page.locator('#change-password-confirm'), 'NewPassWord1!');
 
     await page.getByRole('button', { name: /Change Password|Jelszó módosítása/i }).click();
 
@@ -85,8 +79,8 @@ test.describe('Settings edge cases', () => {
     const deleteDialog = page.getByRole('dialog', { name: /Confirm profile deletion|Profil törlésének megerősítése/i });
     await expect(deleteDialog).toBeVisible();
 
-    await fillLockedPasswordField(page, '#delete-profile-password', 'CurrentPass1!');
-    await fillLockedPasswordField(page, '#delete-profile-password-confirm', 'DifferentPass1!');
+    await fillLockedPasswordField(page.locator('#delete-profile-password'), 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#delete-profile-password-confirm'), 'DifferentPass1!');
 
     await expect(deleteDialog.getByRole('button', { name: /Confirm Deletion|Törlés megerősítése/i })).toBeDisabled();
   });
@@ -95,8 +89,8 @@ test.describe('Settings edge cases', () => {
     await page.getByRole('button', { name: /Delete Profile|Profil törlése/i }).click();
 
     const deleteDialog = page.getByRole('dialog', { name: /Confirm profile deletion|Profil törlésének megerősítése/i });
-    await fillLockedPasswordField(page, '#delete-profile-password', 'CurrentPass1!');
-    await fillLockedPasswordField(page, '#delete-profile-password-confirm', 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#delete-profile-password'), 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#delete-profile-password-confirm'), 'CurrentPass1!');
     await deleteDialog.getByRole('button', { name: /Confirm Deletion|Törlés megerősítése/i }).click();
 
     await expect(page).toHaveURL(/\/login$/);

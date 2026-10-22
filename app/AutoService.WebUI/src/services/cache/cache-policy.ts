@@ -16,14 +16,14 @@ export const PERSISTED_QUERY_CACHE_MAX_AGE_MS = DAY_MS;
 /** Minimum gap between two writes of the persisted cache; the last state of a burst is still written. */
 export const PERSISTED_QUERY_CACHE_WRITE_THROTTLE_MS = SECOND_MS;
 
-/** Stale time for the scheduler today query, which refreshes more aggressively than month windows. */
-export const SCHEDULER_TODAY_STALE_TIME_MS = 30 * SECOND_MS;
-
 /** Stale time for scheduler month-window queries. */
 export const SCHEDULER_MONTH_STALE_TIME_MS = MINUTE_MS;
 
-/** Interval for visible-tab scheduler background refreshes. */
+/** Interval for visible-tab scheduler background refreshes while the live update stream is down. */
 export const SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS = MINUTE_MS;
+
+/** Interval for those refreshes while the live stream is open: its events do the work, this is only the safety net. */
+export const SCHEDULER_LIVE_REFRESH_INTERVAL_MS = 10 * MINUTE_MS;
 
 /** Stale time for customer list and vehicle-summary reads. */
 export const CUSTOMER_REGISTRY_STALE_TIME_MS = MINUTE_MS;

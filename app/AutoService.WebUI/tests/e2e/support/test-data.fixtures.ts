@@ -219,6 +219,7 @@ function appointmentForVehicle(vehicle: VehicleDetailDto): AppointmentDto {
       customerId: vehicle.customer.id,
     },
     mechanics: [],
+    version: 1,
   };
 }
 

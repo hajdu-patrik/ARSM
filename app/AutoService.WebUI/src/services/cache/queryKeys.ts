@@ -31,7 +31,7 @@ const AUTH_SCOPE_LENGTH: AuthQueryScope['length'] = 6;
 export const SIGNED_OUT_QUERY_KEY = [QUERY_KEY_ROOT, 'signed-out'] as const;
 
 /** Builds the authenticated query scope for the current user, or null when unauthenticated. */
-export function getAuthQueryScope(user: AuthUser | null): AuthQueryScope | null {
+export function getAuthQueryScope(user: Pick<AuthUser, 'personId' | 'isAdmin'> | null): AuthQueryScope | null {
   if (!user) {
     return null;
   }
@@ -62,7 +62,6 @@ export function isPersistedArsmQueryKey(queryKey: QueryKey): boolean {
 export const queryKeys = {
   scheduler: {
     root: (scope: AuthQueryScope) => [...scope, 'scheduler'] as const,
-    today: (scope: AuthQueryScope) => [...scope, 'scheduler', 'today'] as const,
     monthRoot: (scope: AuthQueryScope) => [...scope, 'scheduler', 'month'] as const,
     month: (scope: AuthQueryScope, year: number, month: number) => [
       ...scope,

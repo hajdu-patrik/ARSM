@@ -105,8 +105,9 @@ export function seedWorstCaseListData(state: MockApiState): void {
       netUnitPrice: 78740157.47,
       vatRatePercent: 27,
       grossUnitPrice: 99999999.99,
+      version: 1,
     },
-    { id: 39002, partNumber: 'A1', name: 'Izzo', netUnitPrice: 95, vatRatePercent: 5, grossUnitPrice: 99.75 },
+    { id: 39002, partNumber: 'A1', name: 'Izzo', netUnitPrice: 95, vatRatePercent: 5, grossUnitPrice: 99.75, version: 1 },
   );
 
   state.laborTypes.push(
@@ -117,7 +118,8 @@ export function seedWorstCaseListData(state: MockApiState): void {
       hourlyNetRate: 125000.5,
       vatRatePercent: 27,
       grossHourlyRate: 158750.64,
+      version: 1,
     },
-    { id: 49002, code: 'L', name: 'Mosas', hourlyNetRate: 0.5, vatRatePercent: 5, grossHourlyRate: 0.53 },
+    { id: 49002, code: 'L', name: 'Mosas', hourlyNetRate: 0.5, vatRatePercent: 5, grossHourlyRate: 0.53, version: 1 },
   );
 }

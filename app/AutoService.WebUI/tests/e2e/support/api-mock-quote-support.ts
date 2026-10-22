@@ -7,7 +7,7 @@ import type {
   QuoteListItemDto,
 } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';
-import { fulfillJson } from './api-mock-response';
+import { rejectStaleVersion } from './api-mock-response';
 
 /** Rounds to 2 decimals away from zero, matching `Pricing/MoneyRounding`. */
 function roundMoney(value: number): number {
@@ -85,18 +85,7 @@ export function sortedQuotes(state: MockApiState): QuoteDetailDto[] {
   );
 }
 
-/** Answers a missing or stale concurrency version the way the API does: 422 for missing,
- * 409 (machine-readable conflict body) for stale. */
-export async function rejectQuoteVersion(route: Route, quote: QuoteDetailDto, version: number): Promise<boolean> {
-  if (!version) {
-    await fulfillJson(route, { detail: 'Version is required.' }, 422);
-    return true;
-  }
-
-  if (version !== quote.version) {
-    await fulfillJson(route, { code: 'quote_version_conflict' }, 409);
-    return true;
-  }
-
-  return false;
+/** Answers a missing or stale quote version the way the API does (422 / 409 `quote_version_conflict`). */
+export function rejectQuoteVersion(route: Route, quote: QuoteDetailDto, version: number): Promise<boolean> {
+  return rejectStaleVersion(route, quote.version, version, 'quote_version_conflict');
 }

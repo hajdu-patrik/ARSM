@@ -7,7 +7,7 @@ import { isAllowedPictureExtension } from './validation';
 export const MAX_PICTURE_SIDE_PX = 8192;
 
 /** Largest accepted picture area, in megapixels (one megapixel is 1,000,000 pixels). */
-export const MAX_PICTURE_MEGAPIXELS = 25;
+export const MAX_PICTURE_MEGAPIXELS = 20;
 
 /** Why a picked picture is refused before it is decoded. */
 export type PictureRejection = 'invalid-type' | 'dimensions-too-large';

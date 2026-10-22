@@ -7,6 +7,8 @@ export interface InstallApiMockOptions {
   readonly profileEmail: string;
   readonly isAdmin?: boolean;
   readonly isAuthenticated?: boolean;
+  /** The account still has a temporary password: login and validate say so until the password is changed. */
+  readonly mustChangePassword?: boolean;
   readonly routeCallLog?: string[];
   readonly unauthorizedOnceRouteKeys?: readonly string[];
   readonly refreshShouldFail?: boolean;
@@ -17,6 +19,7 @@ export interface InstallApiMockOptions {
 /** Installs deterministic API route mocks and returns the mutable mock state. */
 export async function installApiMocks(page: Page, options: InstallApiMockOptions): Promise<MockApiState> {
   const state = createMockApiState(options.profileEmail);
+  state.mustChangePassword = options.mustChangePassword ?? false;
 
   await page.route('**/api/**', async (route) => {
     await handleApiRoute(route, state, options);

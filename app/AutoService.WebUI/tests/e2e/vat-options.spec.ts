@@ -68,8 +68,8 @@ test.describe('VAT options - catalog forms', () => {
 test.describe('VAT options - stored 0% rows', () => {
   test('a legacy 0% part and labour type are still listed with their rate', async ({ page }) => {
     await boot(page, (state) => {
-      state.parts.push({ id: 5901, partNumber: 'LEGACY-P', name: 'Legacy part', netUnitPrice: 1000, vatRatePercent: 0, grossUnitPrice: 1000 });
-      state.laborTypes.push({ id: 6901, code: 'LEGACY-L', name: 'Legacy labour', hourlyNetRate: 4000, vatRatePercent: 0, grossHourlyRate: 4000 });
+      state.parts.push({ id: 5901, partNumber: 'LEGACY-P', name: 'Legacy part', netUnitPrice: 1000, vatRatePercent: 0, grossUnitPrice: 1000, version: 1 });
+      state.laborTypes.push({ id: 6901, code: 'LEGACY-L', name: 'Legacy labour', hourlyNetRate: 4000, vatRatePercent: 0, grossHourlyRate: 4000, version: 1 });
     });
     const catalog = new CatalogPage(page);
     const rows = page.getByTestId('catalog-item-row');
@@ -105,8 +105,8 @@ test.describe('VAT options - quote pickers use the full catalog', () => {
   function seedLongCatalogs(state: MockApiState): void {
     for (let index = 1; index <= EXTRA_CATALOG_ROWS; index += 1) {
       const suffix = String(index).padStart(3, '0');
-      state.parts.push({ id: 5000 + index, partNumber: `PRT-${suffix}`, name: `Seed part ${suffix}`, netUnitPrice: 1000, vatRatePercent: 27, grossUnitPrice: 1270 });
-      state.laborTypes.push({ id: 6000 + index, code: `LAB-${suffix}`, name: `Seed labour ${suffix}`, hourlyNetRate: 5000, vatRatePercent: 27, grossHourlyRate: 6350 });
+      state.parts.push({ id: 5000 + index, partNumber: `PRT-${suffix}`, name: `Seed part ${suffix}`, netUnitPrice: 1000, vatRatePercent: 27, grossUnitPrice: 1270, version: 1 });
+      state.laborTypes.push({ id: 6000 + index, code: `LAB-${suffix}`, name: `Seed labour ${suffix}`, hourlyNetRate: 5000, vatRatePercent: 27, grossHourlyRate: 6350, version: 1 });
     }
   }
 

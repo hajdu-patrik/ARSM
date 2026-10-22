@@ -2,7 +2,7 @@
  * and the lookup of which server message belongs to which field. */
 
 import type { ProfileData } from '../../types/profile/profile.types';
-import { getFieldMessageKey } from './helpers';
+import { getFieldMessageKey } from '../../utils/serverValidation';
 import type { FieldErrors } from './types';
 
 /** Fields of the personal-information form. */

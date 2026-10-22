@@ -5,7 +5,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { clearAuthSessionHint } from '../../../services/auth/session-hint';
 import { profileService } from '../../../services/profile/profile.service';
-import { CURRENT_PASSWORD_INVALID_KEY, extractDeleteProfileErrorKey } from '../handlers';
+import { CURRENT_PASSWORD_INVALID_KEY } from '../../../utils/serverValidation';
+import { extractDeleteProfileErrorKey } from '../handlers';
 
 interface UseDeleteProfileSettingsParams {
   readonly clearAuth: () => void;

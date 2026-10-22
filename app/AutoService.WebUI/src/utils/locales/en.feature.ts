@@ -26,6 +26,10 @@ export const enFeature = {
         title: 'Company results',
         description: 'Accepted, sent, expired and rejected quote totals by period in ARSM.',
       },
+      changePassword: {
+        title: 'Set a new password',
+        description: 'Replace the temporary password set by an administrator to continue using ARSM.',
+      },
       settings: {
         title: 'Profile and security settings',
         description: 'Manage your ARSM account profile, password, and personal security preferences.',
@@ -169,6 +173,18 @@ export const enFeature = {
     confirmRegisterTitle: 'Confirm registration',
     confirmRegisterMessage: 'Register mechanic {{email}}?',
     confirmRegister: 'Register',
+    resetPassword: 'Reset password',
+    resetPasswordMessage: 'Set a temporary password for {{name}} ({{email}}). All of their sessions end, and they must change it at the next login.',
+    temporaryPassword: 'Temporary password',
+    temporaryPasswordPlaceholder: 'Enter temporary password.',
+    resettingPassword: 'Resetting...',
+    passwordResetSuccess: 'Temporary password set for {{email}}; it must be changed at the next login.',
+    passwordResetForbidden: 'You do not have permission to reset this mechanic\'s password.',
+    passwordResetFailed: 'Failed to reset the password.',
+  },
+  changePassword: {
+    title: 'Choose a new password',
+    message: 'An administrator set a temporary password for your account. Enter it as your current password, then choose a new one to continue.',
   },
   settings: {
     loadError: 'Failed to load profile data.',

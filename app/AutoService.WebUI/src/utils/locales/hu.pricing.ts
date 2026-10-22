@@ -57,6 +57,7 @@ export const huPricing = {
       laborTypeNotFound: 'A munkadíjtípus nem található.',
       invalidMoney: 'Az összegnek legalább 0 és legfeljebb 100 000 000 között kell lennie.',
       saveFailed: 'Nem sikerült menteni a módosításokat.',
+      versionConflict: 'Időközben valaki más módosította ezt a tételt. A lista újratöltődött, próbálja újra.',
     },
   },
   quotes: {

@@ -1,6 +1,7 @@
-/** Password field autofill and lock protection hooks for Settings forms. */
+/** Autofill and lock protection hooks of the password-change form. */
 
 import { useEffect, type Dispatch, type SetStateAction } from 'react';
+import { PASSWORD_FIELD_IDS } from '../utils/passwordFormPolicy';
 
 interface AutofillResetCallbacks {
   readonly onCurrentPasswordChange: (value: string) => void;
@@ -17,7 +18,7 @@ export function useLockFieldWhenEmpty(value: string, setLocked: Dispatch<SetStat
   }, [setLocked, value]);
 }
 
-/** Clears browser/password-manager autofill from the settings password form. */
+/** Clears browser/password-manager autofill from the change-password form. */
 export function useClearAutofilledCredentials({
   onCurrentPasswordChange,
   onNewPasswordChange,
@@ -37,9 +38,9 @@ export function useClearAutofilledCredentials({
     };
 
     const frameId = globalThis.requestAnimationFrame(() => {
-      clearAutofilledPasswordField('settings-currentPassword', onCurrentPasswordChange);
-      clearAutofilledPasswordField('settings-newPassword', onNewPasswordChange);
-      clearAutofilledPasswordField('settings-confirmPassword', onConfirmNewPasswordChange);
+      clearAutofilledPasswordField(PASSWORD_FIELD_IDS.currentPassword, onCurrentPasswordChange);
+      clearAutofilledPasswordField(PASSWORD_FIELD_IDS.newPassword, onNewPasswordChange);
+      clearAutofilledPasswordField(PASSWORD_FIELD_IDS.confirmNewPassword, onConfirmNewPasswordChange);
     });
 
     return () => {

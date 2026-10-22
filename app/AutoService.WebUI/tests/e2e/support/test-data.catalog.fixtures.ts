@@ -18,6 +18,7 @@ const timingBeltPart: PartDto = {
   netUnitPrice: 12000,
   vatRatePercent: 27,
   grossUnitPrice: 15240,
+  version: 1,
 };
 
 const brakePadPart: PartDto = {
@@ -27,6 +28,7 @@ const brakePadPart: PartDto = {
   netUnitPrice: 8000,
   vatRatePercent: 27,
   grossUnitPrice: 10160,
+  version: 1,
 };
 
 const diagnosticsLaborType: LaborTypeDto = {
@@ -36,6 +38,7 @@ const diagnosticsLaborType: LaborTypeDto = {
   hourlyNetRate: 9000,
   vatRatePercent: 27,
   grossHourlyRate: 11430,
+  version: 1,
 };
 
 const oilChangeLaborType: LaborTypeDto = {
@@ -45,6 +48,7 @@ const oilChangeLaborType: LaborTypeDto = {
   hourlyNetRate: 6000,
   vatRatePercent: 27,
   grossHourlyRate: 7620,
+  version: 1,
 };
 
 /** Returns a fresh copy of the catalog fixture data for one test's mock state. */

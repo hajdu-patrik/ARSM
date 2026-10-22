@@ -6,7 +6,7 @@ import { isAuthenticated } from './api-mock-authz';
 import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
-/** Dispatches `/api/admin/*` mock requests: admin-only mechanic list and guarded delete. */
+/** Dispatches `/api/admin/*` mock requests: admin-only mechanic list, guarded delete and password reset. */
 export async function tryHandleAdminRoute(
   route: Route,
   method: string,
@@ -46,6 +46,12 @@ export async function tryHandleAdminRoute(
     return true;
   }
 
+  const passwordResetMatch = /^\/api\/admin\/mechanics\/(\d+)\/password-reset$/.exec(path);
+  if (passwordResetMatch && method === 'POST') {
+    await handlePasswordReset(route, state, Number(passwordResetMatch[1]));
+    return true;
+  }
+
   const mechanicDeleteMatch = /^\/api\/admin\/mechanics\/(\d+)$/.exec(path);
   if (mechanicDeleteMatch && method === 'DELETE') {
     const personId = Number(mechanicDeleteMatch[1]);
@@ -77,4 +83,32 @@ export async function tryHandleAdminRoute(
   }
 
   return false;
+}
+
+/** `POST /api/admin/mechanics/{id}/password-reset`: 404 for an unknown mechanic, 403 for an admin, 400 with the
+ * Identity policy codes for a weak password, else 204. */
+async function handlePasswordReset(route: Route, state: MockApiState, personId: number): Promise<void> {
+  const target = state.mechanics.find((mechanic) => mechanic.personId === personId);
+  if (!target) {
+    await fulfillJson(route, { detail: 'Mechanic not found.' }, 404);
+    return;
+  }
+
+  if (target.isAdmin) {
+    await fulfillJson(route, { detail: 'The password of an administrator cannot be reset.' }, 403);
+    return;
+  }
+
+  const { temporaryPassword = '' } = route.request().postDataJSON() as { temporaryPassword?: string };
+  if (temporaryPassword.length < 8) {
+    await fulfillJson(route, { errors: { PasswordTooShort: ['Passwords must be at least 8 characters.'] } }, 400);
+    return;
+  }
+
+  if (!/[A-Z]/.test(temporaryPassword)) {
+    await fulfillJson(route, { errors: { PasswordRequiresUpper: ["Passwords must have at least one uppercase ('A'-'Z')."] } }, 400);
+    return;
+  }
+
+  await fulfillNoContent(route);
 }

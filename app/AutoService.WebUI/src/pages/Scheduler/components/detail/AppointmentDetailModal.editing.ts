@@ -41,9 +41,6 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
       setIsEditing(false);
       setEditForm(buildEditForm(buildUpdatedAppointmentSnapshot(appointment, { appointment: request })));
     },
-    onError: () => {
-      showErrorToast('scheduler.detail.updateError');
-    },
   });
 
   const isSaveEnabled = isEditing && canSaveEditForm(appointment, editForm);

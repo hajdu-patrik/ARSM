@@ -8,7 +8,7 @@ import {
   invalidateAppointmentReadCaches,
   removeAppointmentFromSchedulerCache,
 } from '../../../services/cache/appointmentQueryCache';
-import { isRecord } from '../../../services/http/record-guard';
+import { readErrorCode } from '../../../services/http/error-code';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
 import type {
@@ -27,10 +27,11 @@ interface MechanicAssignment {
   readonly mechanicId: number;
 }
 
-/** Variables of the status mutation. */
+/** Variables of the status mutation: the version the appointment was shown at travels with the new status. */
 interface StatusChange {
   readonly id: number;
   readonly status: AppointmentStatus;
+  readonly version: number;
 }
 
 /** Variables of the update mutation; the vehicle details are saved after the appointment fields. */
@@ -52,8 +53,7 @@ function resolveUnclaimErrorKey(error: unknown): string {
     return 'scheduler.detail.unassignError';
   }
 
-  const data = error.response?.data;
-  const code = isRecord(data) && typeof data.code === 'string' ? data.code : undefined;
+  const code = readErrorCode(error);
   const status = error.response?.status;
 
   if (code === 'appointment_cancelled') {
@@ -114,7 +114,7 @@ function useAssignmentActions() {
 /** Status, intake and update handlers; the status failure is toasted, the other two reject to their form. */
 function useEditActions() {
   const { mutateAsync: changeStatus } = useAppointmentMutation({
-    mutationFn: ({ id, status }: StatusChange) => appointmentService.updateStatus(id, { status }),
+    mutationFn: ({ id, status, version }: StatusChange) => appointmentService.updateStatus(id, { status, version }),
     successKey: 'scheduler.statusUpdateSuccess',
     failureKey: 'scheduler.statusUpdateError',
   });
@@ -127,12 +127,12 @@ function useEditActions() {
   const { mutateAsync: updateAppointment } = useAppointmentMutation({
     mutationFn: updateWithOptionalVehicle,
     successKey: 'scheduler.detail.updateSuccess',
-    failureKey: null,
+    failureKey: 'scheduler.detail.updateError',
     cacheOptions: ({ vehicleRequest }) => ({ invalidateCustomerRegistry: vehicleRequest !== undefined }),
   });
 
   const handleStatusChange = useCallback(
-    (id: number, status: AppointmentStatus) => settle(changeStatus({ id, status })),
+    (id: number, status: AppointmentStatus, version: number) => settle(changeStatus({ id, status, version })),
     [changeStatus],
   );
   const handleCreateIntake = useCallback(async (request: SchedulerCreateIntakeRequest) => {

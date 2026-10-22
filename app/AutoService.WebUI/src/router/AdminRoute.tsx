@@ -1,8 +1,9 @@
-/** Route guard for admin-only pages: redirects unauthenticated users to `/login`, non-admin to `/`. */
+/** Route guard for admin-only pages: the private-route checks, then non-admins go to `/`. */
 import { memo, type ReactNode } from 'react';
 import { Navigate } from 'react-router';
 import { useAuthStore } from '../store/auth.store';
 import { APP_ROUTE_PATHS } from './appRoutes';
+import { PrivateRoute } from './PrivateRoute';
 
 /** Props for the {@link AdminRoute} component. */
 interface AdminRouteProps {
@@ -10,23 +11,13 @@ interface AdminRouteProps {
   readonly children: ReactNode;
 }
 
-/** Route guard that enforces admin access: redirects to `/login` if unauthenticated, to `/` if not admin. */
+/** Route guard that enforces admin access: the {@link PrivateRoute} redirects first, then a non-admin goes to `/`. */
 export const AdminRoute = memo(function AdminRoute({ children }: AdminRouteProps) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isLoading = useAuthStore((state) => state.isLoading);
   const isAdmin = useAuthStore((state) => state.user?.isAdmin);
 
-  if (isLoading) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to={APP_ROUTE_PATHS.login} replace />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to={APP_ROUTE_PATHS.scheduler} replace />;
-  }
-
-  return <>{children}</>;
+  return (
+    <PrivateRoute>
+      {isAdmin ? children : <Navigate to={APP_ROUTE_PATHS.scheduler} replace />}
+    </PrivateRoute>
+  );
 });

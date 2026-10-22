@@ -43,6 +43,8 @@ export interface MockApiState {
   nextQuoteSequence: number;
   /** One-shot override consumed by the next mocked part/labor-type create or update response. */
   catalogGrossOverride: number | null;
+  /** Whether the signed-in account still has a temporary password; a password change clears it. */
+  mustChangePassword: boolean;
 }
 
 export function createMockApiState(profileEmail: string): MockApiState {
@@ -71,5 +73,6 @@ export function createMockApiState(profileEmail: string): MockApiState {
     nextPartId: 3100,
     nextLaborTypeId: 4100,
     catalogGrossOverride: null,
+    mustChangePassword: false,
   };
 }

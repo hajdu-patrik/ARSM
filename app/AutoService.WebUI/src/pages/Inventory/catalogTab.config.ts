@@ -20,6 +20,7 @@ export interface CatalogTabConfig<TDto> {
   readonly getNet: (item: TDto) => number;
   readonly getVat: (item: TDto) => number;
   readonly getGross: (item: TDto) => number;
+  readonly getVersion: (item: TDto) => number;
 }
 
 /** Parts tab configuration. */
@@ -41,6 +42,7 @@ export const partCatalogTabConfig: CatalogTabConfig<PartDto> = {
   getNet: (part) => part.netUnitPrice,
   getVat: (part) => part.vatRatePercent,
   getGross: (part) => part.grossUnitPrice,
+  getVersion: (part) => part.version,
 };
 
 /** Labor types tab configuration. */
@@ -62,4 +64,5 @@ export const laborTypeCatalogTabConfig: CatalogTabConfig<LaborTypeDto> = {
   getNet: (laborType) => laborType.hourlyNetRate,
   getVat: (laborType) => laborType.vatRatePercent,
   getGross: (laborType) => laborType.grossHourlyRate,
+  getVersion: (laborType) => laborType.version,
 };

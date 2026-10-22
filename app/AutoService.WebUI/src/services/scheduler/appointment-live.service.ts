@@ -36,3 +36,9 @@ const channel = createLiveUpdateChannel<AppointmentUpdatedDetail>({
 export function startAppointmentLiveUpdates(): () => void {
   return channel.start();
 }
+
+/** Subscribe half of the `useSyncExternalStore` pair that follows whether the appointment stream is open. */
+export const subscribeToAppointmentLiveConnection = channel.subscribe;
+
+/** Snapshot half of that pair: true while the appointment stream is open. */
+export const isAppointmentLiveConnected = channel.isConnected;

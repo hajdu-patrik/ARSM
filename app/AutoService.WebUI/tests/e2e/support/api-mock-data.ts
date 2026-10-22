@@ -54,6 +54,7 @@ export function createAppointment(state: MockApiState, request: SchedulerCreateI
       customerId: lookup?.id ?? 9999,
     },
     mechanics: [],
+    version: 1,
   };
 
   state.nextAppointmentId += 1;

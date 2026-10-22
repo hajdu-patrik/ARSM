@@ -3,6 +3,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 import { useCustomersListState } from './hooks/useCustomersListState';
@@ -32,6 +33,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   const showSuccessToast = useToastStore((state) => state.showSuccess);
   const showErrorToast = useToastStore((state) => state.showError);
   const showWarningToast = useToastStore((state) => state.showWarning);
+  const isAdmin = useAuthStore((state) => state.user?.isAdmin ?? false);
   const [historyAppointment, setHistoryAppointment] = useState<AppointmentDto | null>(null);
 
   const listState = useCustomersListState();
@@ -111,10 +113,10 @@ const CustomersPageComponent = memo(function CustomersPage() {
     onToggleCustomerExpanded: listState.toggleCustomerExpanded,
     onOpenCustomerDetails: detailsPanel.openCustomerPanel,
     onOpenEditCustomerModal: customerMutations.openEditCustomerModal,
-    onOpenDeleteCustomerModal: customerMutations.openDeleteCustomerModal,
+    onOpenDeleteCustomerModal: isAdmin ? customerMutations.openDeleteCustomerModal : undefined,
     onOpenCreateVehicleModal: vehicleMutations.openCreateVehicleModal,
     onOpenEditVehicleModal: vehicleMutations.openEditVehicleModal,
-    onOpenDeleteVehicleModal: vehicleMutations.openDeleteVehicleModal,
+    onOpenDeleteVehicleModal: isAdmin ? vehicleMutations.openDeleteVehicleModal : undefined,
     onOpenVehicleDetails: detailsPanel.openVehiclePanel,
     onCreateQuoteForVehicle: handleCreateQuoteForVehicle,
   }), [
@@ -123,6 +125,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
     detailsPanel.openCustomerPanel,
     detailsPanel.openVehiclePanel,
     handleCreateQuoteForVehicle,
+    isAdmin,
     listState.toggleCustomerExpanded,
     vehicleMutations.openCreateVehicleModal,
     vehicleMutations.openDeleteVehicleModal,

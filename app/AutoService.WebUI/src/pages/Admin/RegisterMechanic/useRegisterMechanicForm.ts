@@ -9,7 +9,7 @@ import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
 import {
   getFirstFieldErrorMessage,
-  mapAdminValidationMessageToKey,
+  mapValidationMessageOrFallback,
   normalizeServerFieldErrors,
 } from '../../../utils/serverValidation';
 import { NO_REGISTER_FIELD_ERRORS, pickConflictFieldError, pickRegisterFieldErrors } from './fieldErrors';
@@ -24,8 +24,7 @@ interface RegistrationErrorBody {
 
 /** Maps a server message to its message key, or to the generic admin error when no mapping exists. */
 function mapAdminMessageToToastKey(message: string): string {
-  const mappedMessage = mapAdminValidationMessageToKey(message);
-  return mappedMessage === message ? 'admin.genericError' : mappedMessage;
+  return mapValidationMessageOrFallback(message, 'admin', 'admin.genericError');
 }
 
 /** Owns the registration form: values, server errors per field, the confirm modal and the register mutation. */

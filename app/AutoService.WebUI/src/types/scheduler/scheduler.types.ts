@@ -51,12 +51,16 @@ export interface AppointmentDto {
   canceledAt?: string | null | undefined;
   vehicle: VehicleDto;
   mechanics: MechanicSummaryDto[];
+  /** Concurrency version that the next status change or update must echo. */
+  version: number;
 }
 
 /** Request payload for updating an appointment's lifecycle status ({@code PUT /api/appointments/{id}/status}). */
 export interface UpdateStatusRequest {
   /** Target status to transition to. */
   status: AppointmentStatus;
+  /** Version the appointment was shown at; a stale one is refused with a 409. */
+  version: number;
 }
 
 /** Client-side representation of a single calendar-grid day, built from monthly appointment data. */
@@ -140,6 +144,8 @@ export interface UpdateAppointmentRequest {
   scheduledDate?: string | undefined;
   dueDateTime: string;
   taskDescription: string;
+  /** Version the appointment was shown at; a stale one is refused with a 409. */
+  version: number;
 }
 
 /** Request payload for updating appointment vehicle details ({@code PUT /api/appointments/{id}/vehicle}). */

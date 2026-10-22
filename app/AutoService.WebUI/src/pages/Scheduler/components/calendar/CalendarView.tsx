@@ -172,7 +172,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
   const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start ${focusVisibleOutlineClass} ${
     day.isCurrentMonth
       ? 'text-ui-text hover:bg-ui-hover'
-      : 'text-arsm-muted/75 dark:text-arsm-muted-dark/70'
+      : 'text-ui-muted'
   } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${
     isSelected ? 'outline-2 outline-ui-accent bg-arsm-accent-wash/65 dark:bg-arsm-hover-dark/75' : ''
   }`;
