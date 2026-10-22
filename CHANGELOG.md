@@ -37,7 +37,7 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   least-privilege database role and the firewall rule (documented in `deployment-azure.md`), the PostgreSQL major version
   (Azure 17, local and CI 18.6).
 
-_Dev time: ~__DEV_TIME__ wall-clock (2026-10-21 22:27 to 2026-10-22 __END_TIME__ +02:00, across two sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand). Cost: not measured._
+_Dev time: ~12 h wall-clock (2026-10-21 22:27 to 2026-10-22 10:20 +02:00, across two sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand). Cost: not measured._
 
 ### Changed
 - Internal refactor, behaviour unchanged (2026-10-21): about 1600 fewer lines. Backend: one `ApiProblem` factory, `PersonIdClaim`,
