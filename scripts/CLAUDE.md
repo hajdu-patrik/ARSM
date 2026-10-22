@@ -78,7 +78,8 @@
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
   changed specs, and the specs that import a changed page object); any file outside those rules selects
   the full suite. Prints the selection, or runs it through the canonical runner with `--run`. A new spec
-  that covers a page folder joins that folder's tuple, otherwise only a full-suite change ever runs it.
+  that covers a page folder joins that folder's tuple, otherwise only a full-suite change ever runs it. A rule
+  hit under `src/` also selects the `accessibility` axe sweep, because it covers every route.
 
 ## Validation
 

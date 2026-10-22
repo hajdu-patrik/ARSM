@@ -37,6 +37,8 @@ FEATURE_SPECS: dict[str, tuple[str, ...]] = {
     "src/router/": ("route-guards", "error-routes-edge", "auth-session", "forced-password-change"),
     "tests/e2e/support/list-alignment": ("list-alignment",),
 }
+# The axe sweep covers every route, so a change under src/ that has a rule of its own selects it as well.
+AXE_SWEEP_SPEC = "accessibility"
 PAGE_OBJECT_PATTERN = re.compile(r"^tests/e2e/pages/([\w-]+)\.page\.ts$")
 SPEC_PATTERN = re.compile(r"^tests/e2e/([\w-]+)\.spec\.ts$")
 
@@ -74,6 +76,8 @@ def select_specs(files: list[str]) -> set[str] | None:
             if rule is None:
                 return None
             selected.update(rule)
+            if path.startswith("src/"):
+                selected.add(AXE_SWEEP_SPEC)
     return selected
 
 

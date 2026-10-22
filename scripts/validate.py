@@ -18,7 +18,12 @@ ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / "app"
 WEBUI = APP / "AutoService.WebUI"
 WEBUI_PREFIX = "app/AutoService.WebUI/"
-BACKEND_PREFIXES = ("app/AutoService.ApiService/", "app/AutoService.AppHost/", "app/AutoService.ServiceDefaults/")
+BACKEND_PREFIXES = (
+    "app/AutoService.ApiService/",
+    "app/AutoService.AppHost/",
+    "app/AutoService.ServiceDefaults/",
+    "tests/AutoService.UnitTests/",
+)
 BACKEND_ROOT_FILES = ("app/AutoService.slnx", "app/Directory.Build.props", "app/nuget.config")
 REPORT = ROOT / "tests" / ".artifacts" / "validate-summary.json"
 TIMEOUT = int(os.environ.get("ARSM_VALIDATE_TIMEOUT_SECONDS", "300"))
