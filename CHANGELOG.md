@@ -42,6 +42,22 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Clean-code pass, behaviour unchanged (2026-10-22): about 1,346 fewer lines over 357 files (+405 and -1,751); no route, status code,
+  JSON body or rendered text changed and the EF migrations are untouched. Backend: 18 redundant usings, the unused `year` parameter of
+  `LoadMonthsAsync` and two PDF model fields nobody read (`QuoteDocumentLine.VatAmount`, `QuoteDocumentModel.IsExpired`) removed, plus
+  about 140 comments that only repeated a name or signature (16 long ones shortened); every why, trap and invariant comment stays.
+  WebUI: one `ServerErrorBody` type with `extractServerFieldErrors` instead of nine declarations of the same shape, three pass-through
+  files gone (`pages/Settings/types.ts`, `pages/Settings/helpers.ts`, the intake barrel), about 35 exports that only their own module
+  used narrowed, the unused design tokens, the `.mobile-logo` rule, the `common.sort` keys (HU and EN) and the duplicate button-style
+  aliases removed (the built CSS differs by two dead rules only), and about 600 restating comments dropped. Tests: the E2E specs share
+  `signInWithMocks`, `recordGetRequests` and `getTokenLikeStorageKeys` instead of private copies, the four Python HTTP checks share one
+  rotating login (`sign_in_with_available_login`, `CheckSkipped`) and a failing check now always prints its report, and eight `.http`
+  variables no request read are gone. Docs: both READMEs say C# 14 and describe `docs`, the new `deploy/CLAUDE.md` holds the kit's
+  invariants (registered with `docs-sync`), the Azure guide lost the `.env.example` block that duplicated the tracked file. Verified: the
+  full pre-push gate (validate, backend build and tests, EF pending-model check, WebUI audit, typecheck, lint, build, diff-selected E2E,
+  api-suites with 1158/1158 HTTP requests, the six Python checks and 24/24 SQL suites) and the full Playwright suite (195 tests).
+
+_Dev time: ~1h23m wall-clock (2026-10-22 22:00 to 23:23 +02:00, direct work: analyzer, knip, clone and comment scans, the cleanup commits, the full gate and the full Playwright suite). Cost: not measured._
 - Internal refactor, behaviour unchanged (2026-10-21): about 1600 fewer lines. Backend: one `ApiProblem` factory, `PersonIdClaim`,
   `DateTimeNormalization.ToUtc`, `ServerSentEventStream.ServeAsync`, `IdentityResultExtensions.ToValidationErrors`, a shared
   `CatalogItemHandlers` base for parts and labour types, `VehicleInput` / `CustomerInput`, shared mechanic assign / unassign cores,
