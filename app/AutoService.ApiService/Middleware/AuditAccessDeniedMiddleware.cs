@@ -1,6 +1,5 @@
-using System.Security.Cryptography;
-using System.Text;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Security;
 
 namespace AutoService.ApiService.Middleware;
 
@@ -23,14 +22,7 @@ public class AuditAccessDeniedMiddleware(RequestDelegate next)
                 mechanicId,
                 context.Request.Method,
                 context.Request.Path,
-                HashClientIp(context.Connection.RemoteIpAddress?.ToString()));
+                ClientIpAddress.Hash(context) ?? "unknown");
         }
-    }
-
-    private static string HashClientIp(string? ip)
-    {
-        if (string.IsNullOrWhiteSpace(ip)) return "unknown";
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
-        return $"sha256:{Convert.ToHexString(hash)[..12]}";
     }
 }

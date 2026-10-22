@@ -2,4 +2,5 @@
   <Project Path="AutoService.ApiService/AutoService.ApiService.csproj" />
   <Project Path="AutoService.AppHost/AutoService.AppHost.csproj" />
   <Project Path="AutoService.ServiceDefaults/AutoService.ServiceDefaults.csproj" />
+  <Project Path="../tests/AutoService.UnitTests/AutoService.UnitTests.csproj" />
 </Solution>

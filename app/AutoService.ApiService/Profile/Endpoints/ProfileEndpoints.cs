@@ -1,3 +1,4 @@
+using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
@@ -18,20 +19,26 @@ public static partial class ProfileEndpoints
             .Produces<ProfileResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status401Unauthorized);
 
+        // Both verify the current password, so both count toward the lockout and share the per-person limit.
         group.MapDelete(string.Empty, DeleteProfileAsync)
+            .RequireRateLimiting(RateLimitPolicies.ProfileCredentials)
             .Produces<object>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<object>(StatusCodes.Status429TooManyRequests);
 
         group.MapPost("/change-password", ChangePasswordAsync)
+            .RequireRateLimiting(RateLimitPolicies.ProfileCredentials)
             .Produces<object>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<object>(StatusCodes.Status429TooManyRequests);
 
         group.MapGet("/picture", GetProfilePictureAsync)
             .Produces(StatusCodes.Status200OK, contentType: "image/jpeg")
@@ -55,10 +62,11 @@ public static partial class ProfileEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized);
 
-        // The size metadata makes Kestrel reject an oversized body while it is still on the wire.
-        // Without it the whole multipart payload is buffered before any validation code runs.
+        // The size metadata lifts the 64 KB global body limit for this route only and makes Kestrel reject an oversized
+        // body while it is still on the wire, before the multipart payload is buffered.
         group.MapPut("/picture", UploadProfilePictureAsync)
             .DisableAntiforgery()
+            .RequireRateLimiting(RateLimitPolicies.ProfilePictureUpload)
             .WithMetadata(new RequestSizeLimitAttribute(MaxProfilePictureRequestBytes))
             .WithMetadata(new RequestFormLimitsAttribute { MultipartBodyLengthLimit = MaxProfilePictureRequestBytes })
             .Produces<object>(StatusCodes.Status200OK)
@@ -66,7 +74,8 @@ public static partial class ProfileEndpoints
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
         group.MapDelete("/picture", DeleteProfilePictureAsync)
             .Produces<object>(StatusCodes.Status200OK)

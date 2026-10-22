@@ -43,9 +43,12 @@ public static partial class VehicleEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // Admin only, like appointment deletion: the cascade takes the vehicle's appointments and quotes with it.
         flat.MapDelete("/{id:int}", DeleteVehicleAsync)
+            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;

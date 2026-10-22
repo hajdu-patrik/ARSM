@@ -39,6 +39,12 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable("TaskDescription must be at most 200 characters.");
         }
 
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(request.Version);
+        if (missingVersionError is not null)
+        {
+            return missingVersionError;
+        }
+
         var (appointment, mechanicId, loadError) = await LoadEditableAppointmentAsync(
             id, user, "Appointment update", db, logger, cancellationToken);
         if (appointment is null)
@@ -66,7 +72,11 @@ public static partial class AppointmentEndpoints
         appointment.DueDateTime = dueDateTimeUtc;
         appointment.TaskDescription = taskDescription;
 
-        await db.SaveChangesAsync(cancellationToken);
+        var saveError = await SaveAppointmentWithVersionAsync(db, appointment, request.Version, cancellationToken);
+        if (saveError is not null)
+        {
+            return saveError;
+        }
 
         logger.LogInformation("Appointment {AppointmentId} updated by mechanic {MechanicId}. IsAdmin: {IsAdmin}.", id, mechanicId, isAdmin);
 

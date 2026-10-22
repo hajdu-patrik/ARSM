@@ -9,6 +9,9 @@ public class Mechanic : People
     public SpecializationType Specialization { get; set; }
     public List<ExpertiseType> Expertise { get; private set; } = new();
 
+    // Set by an admin password reset; cleared by the mechanic's own change-password, which the API then forces first.
+    public bool MustChangePassword { get; set; }
+
     /** Parameterless constructor required by EF Core. */
     public Mechanic() {}
 

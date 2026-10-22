@@ -8,6 +8,8 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    private const string VersionConflictCode = "appointment_version_conflict";
+
     /** Maps an {@code Appointment} domain entity to its DTO representation. */
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
@@ -35,7 +37,8 @@ public static partial class AppointmentEndpoints
                 m.Name.ToString(),
                 m.Specialization.ToString(),
                 m.ProfilePictureObjectKey is not null || m.ProfilePictureContentType is not null))
-            .ToList());
+            .ToList(),
+        appointment.Version);
 
     /** Loads an appointment tracked, with the mechanics, vehicle and owner that ToDto reads. */
     private static Task<Appointment?> LoadAppointmentAsync(AutoServiceDbContext db, int id, CancellationToken cancellationToken)
@@ -43,6 +46,14 @@ public static partial class AppointmentEndpoints
             .Include(a => a.Mechanics)
             .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+
+    /** Saves an edited appointment under the client's version; the shared rule answers 409 appointment_version_conflict when stale. */
+    private static Task<IResult?> SaveAppointmentWithVersionAsync(
+        AutoServiceDbContext db,
+        Appointment appointment,
+        uint version,
+        CancellationToken cancellationToken)
+        => OptimisticConcurrency.SaveWithVersionAsync(db, appointment, version, VersionConflictCode, cancellationToken);
 
     /** Loads an appointment the caller may edit, or the error when it is null: 401 without a person id,
         404 when missing, 403 unless admin or assigned. */

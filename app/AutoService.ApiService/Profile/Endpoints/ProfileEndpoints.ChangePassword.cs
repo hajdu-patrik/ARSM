@@ -13,15 +13,104 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
-    /** Handles the change-password mutation: validates the new password pair, verifies the current password, revokes the caller's existing refresh tokens and access token, and issues a fresh token pair. */
+    /** Handles the change-password mutation: validates the new password pair, verifies the current password (lockout-counted),
+        revokes every other session of the caller, clears a pending forced change and issues a fresh token pair. */
     private static async Task<IResult> ChangePasswordAsync(
         ChangePasswordRequest request,
         HttpContext httpContext,
         UserManager<IdentityUser> userManager,
+        SignInManager<IdentityUser> signInManager,
         AutoServiceDbContext db,
         IJwtTokenIssuer tokenIssuer,
         ITokenDenylistService tokenDenylistService,
+        ISessionRevocationService sessionRevocation,
         CancellationToken cancellationToken)
+    {
+        var errors = ValidateChangePasswordRequest(request);
+        if (errors.Count > 0)
+        {
+            return Results.ValidationProblem(errors);
+        }
+
+        // Resolved before the password changes, so a missing mechanic record can never leave the
+        // caller with a changed password but no replacement session.
+        var mechanic = await db.Mechanics
+            .FirstOrDefaultAsync(x => x.Id == httpContext.User.GetPersonIdOrDefault(), cancellationToken);
+        var identityUser = mechanic?.IdentityUserId is null ? null : await userManager.FindByIdAsync(mechanic.IdentityUserId);
+
+        if (mechanic is null || identityUser is null)
+        {
+            return ApiProblem.NotFound("Linked mechanic record not found.");
+        }
+
+        var (passwordAccepted, lockoutResult) = await PasswordCheck.VerifyAsync(signInManager, userManager, identityUser, request.CurrentPassword);
+        if (lockoutResult is not null)
+        {
+            return lockoutResult;
+        }
+
+        if (!passwordAccepted)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["CurrentPassword"] = ["Current password is invalid."]
+            });
+        }
+
+        var changeResult = await userManager.ChangePasswordAsync(identityUser, request.CurrentPassword, request.NewPassword);
+        if (!changeResult.Succeeded)
+        {
+            return Results.ValidationProblem(changeResult.ToValidationErrors(fallbackKey: "password"));
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        mechanic.MustChangePassword = false;
+
+        var activeRefreshTokens = await db.RefreshTokens
+            .Where(rt => rt.MechanicId == mechanic.Id && rt.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var activeRefreshToken in activeRefreshTokens)
+        {
+            activeRefreshToken.Revoke(nowUtc);
+        }
+
+        var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+        var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
+
+        if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
+        {
+            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
+        }
+
+        // Every other device loses its access token now; the replacement issued below is newer than the cutoff.
+        sessionRevocation.RevokeAll(mechanic.Id);
+
+        var accessTokenExpiresAtUtc = nowUtc.Add(AuthEndpoints.AccessTokenTtl);
+        var refreshTokenExpiresAtUtc = nowUtc.Add(AuthEndpoints.RefreshTokenTtl);
+
+        var roles = await userManager.GetRolesAsync(identityUser);
+        var newAccessToken = tokenIssuer.CreateToken(identityUser, mechanic, roles, accessTokenExpiresAtUtc);
+        var newRefreshTokenValue = AuthEndpoints.GenerateRefreshTokenValue();
+        var newRefreshTokenHash = AuthEndpoints.HashRefreshToken(newRefreshTokenValue);
+
+        db.RefreshTokens.Add(new RefreshToken(
+            mechanic.Id,
+            newRefreshTokenHash,
+            nowUtc,
+            refreshTokenExpiresAtUtc,
+            ClientIpAddress.Hash(httpContext),
+            httpContext.Request.Headers.UserAgent.ToString()));
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        AuthEndpoints.IssueSessionCookies(httpContext.Response, newAccessToken, newRefreshTokenValue);
+
+        return Results.Ok(new { message = "Password changed successfully." });
+    }
+
+    /** Presence, confirmation and length rules of the three password fields, before any hashing work runs. */
+    private static Dictionary<string, string[]> ValidateChangePasswordRequest(ChangePasswordRequest request)
     {
         var errors = new Dictionary<string, string[]>();
 
@@ -51,89 +140,6 @@ public static partial class ProfileEndpoints
         FieldLengthValidator.AddMaxLengthError(errors, "NewPassword", request.NewPassword, FieldLengthValidator.PasswordMaxLength);
         FieldLengthValidator.AddMaxLengthError(errors, "ConfirmNewPassword", request.ConfirmNewPassword, FieldLengthValidator.PasswordMaxLength);
 
-        if (errors.Count > 0)
-        {
-            return Results.ValidationProblem(errors);
-        }
-
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
-        if (person?.IdentityUserId is null)
-        {
-            return ApiProblem.NotFound("Linked identity account not found.");
-        }
-
-        var identityUser = await userManager.FindByIdAsync(person.IdentityUserId);
-        if (identityUser is null)
-        {
-            return ApiProblem.NotFound("Identity account not found.");
-        }
-
-        // Resolved before the password changes, so a missing mechanic record can never leave the
-        // caller with a changed password but no replacement session.
-        var mechanic = await db.Mechanics
-            .FirstOrDefaultAsync(x => x.IdentityUserId == identityUser.Id, cancellationToken);
-
-        if (mechanic is null)
-        {
-            return ApiProblem.NotFound("Linked mechanic record not found.");
-        }
-
-        var changeResult = await userManager.ChangePasswordAsync(
-            identityUser,
-            request.CurrentPassword,
-            request.NewPassword);
-
-        if (!changeResult.Succeeded)
-        {
-            var identityErrors = changeResult.ToValidationErrors(fallbackKey: "password");
-
-            if (identityErrors.Remove("PasswordMismatch", out var mismatchMessages))
-            {
-                identityErrors["CurrentPassword"] = mismatchMessages;
-            }
-
-            return Results.ValidationProblem(identityErrors);
-        }
-
-        var nowUtc = DateTime.UtcNow;
-
-        var activeRefreshTokens = await db.RefreshTokens
-            .Where(rt => rt.MechanicId == mechanic.Id && rt.RevokedAtUtc == null)
-            .ToListAsync(cancellationToken);
-
-        foreach (var activeRefreshToken in activeRefreshTokens)
-        {
-            activeRefreshToken.Revoke(nowUtc);
-        }
-
-        var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-        var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
-
-        if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
-        {
-            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
-        }
-
-        var accessTokenExpiresAtUtc = nowUtc.Add(AuthEndpoints.AccessTokenTtl);
-        var refreshTokenExpiresAtUtc = nowUtc.Add(AuthEndpoints.RefreshTokenTtl);
-
-        var roles = await userManager.GetRolesAsync(identityUser);
-        var newAccessToken = tokenIssuer.CreateToken(identityUser, mechanic, roles, accessTokenExpiresAtUtc);
-        var newRefreshTokenValue = AuthEndpoints.GenerateRefreshTokenValue();
-        var newRefreshTokenHash = AuthEndpoints.HashRefreshToken(newRefreshTokenValue);
-
-        db.RefreshTokens.Add(new RefreshToken(
-            mechanic.Id,
-            newRefreshTokenHash,
-            nowUtc,
-            refreshTokenExpiresAtUtc,
-            AuthEndpoints.ResolveClientIpAddress(httpContext),
-            httpContext.Request.Headers.UserAgent.ToString()));
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        AuthEndpoints.IssueSessionCookies(httpContext.Response, newAccessToken, newRefreshTokenValue);
-
-        return Results.Ok(new { message = "Password changed successfully." });
+        return errors;
     }
 }

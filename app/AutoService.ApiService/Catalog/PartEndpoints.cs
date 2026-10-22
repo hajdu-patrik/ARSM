@@ -1,3 +1,4 @@
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Pagination;
 using Microsoft.AspNetCore.Routing;
 
@@ -35,6 +36,7 @@ public static partial class PartEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapDelete("/{id:int}", DeletePartAsync)

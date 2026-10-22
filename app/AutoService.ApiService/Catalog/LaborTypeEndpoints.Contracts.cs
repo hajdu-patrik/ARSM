@@ -2,13 +2,15 @@ namespace AutoService.ApiService.Catalog;
 
 public static partial class LaborTypeEndpoints
 {
+    /** Version is the xmin the client must send back on an update (Data/OptimisticConcurrency). */
     internal sealed record LaborTypeDto(
         int Id,
         string Code,
         string Name,
         decimal HourlyNetRate,
         decimal GrossHourlyRate,
-        int VatRatePercent);
+        int VatRatePercent,
+        uint Version);
 
     internal sealed record CreateLaborTypeRequest(
         string Code,
@@ -20,5 +22,6 @@ public static partial class LaborTypeEndpoints
         string Code,
         string Name,
         decimal HourlyNetRate,
-        int VatRatePercent);
+        int VatRatePercent,
+        uint Version);
 }

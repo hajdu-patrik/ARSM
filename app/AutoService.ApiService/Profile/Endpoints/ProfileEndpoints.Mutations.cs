@@ -6,12 +6,16 @@ using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
+    /** The validated profile fields a PUT applies: null email or an unchanged phone means "keep". */
+    private sealed record ProfileChanges(string? NewEmail, (bool Changed, string? Value) Phone, FullName Name);
+
     /** Handles PUT profile updates by validating and applying changed contact/name fields to the current person and, when email/phone changed, the linked identity user, inside a single transaction. */
     private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
@@ -20,17 +24,13 @@ public static partial class ProfileEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken);
+        var person = await ResolveCurrentPersonAsync(httpContext, db, cancellationToken, trackChanges: false);
         if (person is null)
         {
             return ApiProblem.NotFound("Linked person record not found.");
         }
 
         var errors = new Dictionary<string, string[]>();
-        var identityUser = person.IdentityUserId is not null
-            ? await userManager.FindByIdAsync(person.IdentityUserId)
-            : null;
-
         var newEmail = await ResolveEmailChangeAsync(request.Email, person, errors, db, cancellationToken);
         var phoneChange = await ResolvePhoneChangeAsync(request.PhoneNumber, person, errors, db, cancellationToken);
         var firstName = ResolveRequiredName(request.FirstName, person.Name.FirstName, "FirstName", ValidationMessages.FirstNameRequired, errors);
@@ -42,28 +42,50 @@ public static partial class ProfileEndpoints
             return Results.ValidationProblem(errors);
         }
 
-        var updatedEmail = newEmail ?? person.Email;
-        var updatedPhoneNumber = phoneChange.Changed ? phoneChange.Value : person.PhoneNumber;
+        var changes = new ProfileChanges(newEmail, phoneChange, new FullName(firstName, middleName, lastName));
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        person.Email = updatedEmail;
-        person.PhoneNumber = updatedPhoneNumber;
-        person.Name = new FullName(firstName, middleName, lastName);
-
-        if (identityUser is not null && (newEmail is not null || phoneChange.Changed))
+        try
         {
-            identityUser.Email = updatedEmail;
-            identityUser.UserName = updatedEmail;
-            identityUser.NormalizedEmail = updatedEmail.ToUpperInvariant();
-            identityUser.NormalizedUserName = updatedEmail.ToUpperInvariant();
-            identityUser.PhoneNumber = updatedPhoneNumber;
+            return await db.ExecuteInTransactionAsync(
+                (transaction, token) => ApplyProfileChangesAsync(person.Id, changes, userManager, db, transaction, token),
+                cancellationToken);
+        }
+        catch (DbUpdateException exception) when (UniqueConstraintDetection.IsUniqueConstraintViolation(exception))
+        {
+            // The pre-checks above answer 400; this is the race in between, which the unique indexes decide.
+            return ApiProblem.Conflict("An account already exists with this email address or phone number.");
+        }
+    }
+
+    /** The retriable unit: reload the tracked person, apply the changes to it and the identity user, commit. */
+    private static async Task<IResult> ApplyProfileChangesAsync(
+        int personId,
+        ProfileChanges changes,
+        UserManager<IdentityUser> userManager,
+        AutoServiceDbContext db,
+        IDbContextTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        var person = await db.People.FirstAsync(p => p.Id == personId, cancellationToken);
+        var identityUser = person.IdentityUserId is not null
+            ? await userManager.FindByIdAsync(person.IdentityUserId)
+            : null;
+
+        person.Email = changes.NewEmail ?? person.Email;
+        person.PhoneNumber = changes.Phone.Changed ? changes.Phone.Value : person.PhoneNumber;
+        person.Name = changes.Name;
+
+        if (identityUser is not null && (changes.NewEmail is not null || changes.Phone.Changed))
+        {
+            identityUser.Email = person.Email;
+            identityUser.UserName = person.Email;
+            identityUser.NormalizedEmail = person.Email.ToUpperInvariant();
+            identityUser.NormalizedUserName = person.Email.ToUpperInvariant();
+            identityUser.PhoneNumber = person.PhoneNumber;
 
             var identityUpdateResult = await userManager.UpdateAsync(identityUser);
             if (!identityUpdateResult.Succeeded)
             {
-                await transaction.RollbackAsync(cancellationToken);
-
                 return Results.ValidationProblem(identityUpdateResult.ToValidationErrors());
             }
         }

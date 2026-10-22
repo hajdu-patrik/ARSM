@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
+using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
 /** Price quote for a vehicle: lines, status lifecycle, and totals kept in sync by AutoServiceDbContext.ValidateQuoteTotals (CLAUDE.md Quote Anchors). */
-public class Quote
+public class Quote : IVersioned
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -53,8 +54,7 @@ public class Quote
     public decimal TotalVat { get; set; }
     public decimal TotalGross { get; set; }
 
-    // Optimistic-concurrency token (D30) mapped to Postgres xmin in
-    // AutoServiceDbContext.QuotesModel.cs; not a real column (CLAUDE.md Quote Anchors).
+    // Optimistic-concurrency token (D30) mapped to Postgres xmin (Data/OptimisticConcurrency), not a real column.
     public uint Version { get; private set; }
 
     public ICollection<QuoteLine> Lines { get; set; } = new List<QuoteLine>();

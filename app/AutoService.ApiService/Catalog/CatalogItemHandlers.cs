@@ -9,14 +9,15 @@ namespace AutoService.ApiService.Catalog;
 /** The write fields every catalog entry shares: a unique key, a name, a net price and a VAT rate. */
 internal readonly record struct CatalogItemInput(string Key, string Name, decimal NetPrice, int VatRatePercent);
 
-/** CRUD for one catalog table (Template Method): this base owns the validation order, paging and status
-    codes; a subclass names its key column and messages and maps its entity and DTO. */
+/** CRUD for one catalog table (Template Method): this base owns the validation order, paging, status codes and the
+    optimistic concurrency of updates; a subclass names its key column and messages and maps its entity and DTO. */
 internal abstract class CatalogItemHandlers<TEntity, TDto>(
     string keyProperty,
     string routePrefix,
     string notFoundDetail,
-    string duplicateKeyDetail)
-    where TEntity : class
+    string duplicateKeyDetail,
+    string versionConflictCode)
+    where TEntity : class, IVersioned
 {
     private const int MaxKeyLength = 40;
     private const int MaxNameLength = 120;
@@ -81,9 +82,11 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
         return Results.Created($"{routePrefix}/{id}", ToDto(entity));
     }
 
+    /** Updates under the submitted version: 422 without one, 409 with the kind's conflict code when it is stale. */
     public async Task<IResult> UpdateAsync(
         int id,
         CatalogItemInput input,
+        uint version,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -91,6 +94,12 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
         if (inputError is not null)
         {
             return ApiProblem.Unprocessable(inputError);
+        }
+
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(version);
+        if (missingVersionError is not null)
+        {
+            return missingVersionError;
         }
 
         var normalized = Normalize(input);
@@ -106,9 +115,9 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
         }
 
         Apply(entity, normalized);
-        await db.SaveChangesAsync(cancellationToken);
 
-        return Results.NoContent();
+        var saveError = await OptimisticConcurrency.SaveWithVersionAsync(db, entity, version, versionConflictCode, cancellationToken);
+        return saveError ?? Results.NoContent();
     }
 
     /** Deletes even an entry that quote lines reference: that FK is SET NULL and the lines keep their snapshot. */

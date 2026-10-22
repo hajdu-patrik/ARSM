@@ -2,13 +2,15 @@ namespace AutoService.ApiService.Catalog;
 
 public static partial class PartEndpoints
 {
+    /** Version is the xmin the client must send back on an update (Data/OptimisticConcurrency). */
     internal sealed record PartDto(
         int Id,
         string PartNumber,
         string Name,
         decimal NetUnitPrice,
         decimal GrossUnitPrice,
-        int VatRatePercent);
+        int VatRatePercent,
+        uint Version);
 
     internal sealed record CreatePartRequest(
         string PartNumber,
@@ -20,5 +22,6 @@ public static partial class PartEndpoints
         string PartNumber,
         string Name,
         decimal NetUnitPrice,
-        int VatRatePercent);
+        int VatRatePercent,
+        uint Version);
 }

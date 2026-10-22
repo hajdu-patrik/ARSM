@@ -1,6 +1,7 @@
 using AutoService.ApiService.Appointments.Realtime;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Identity;
 
@@ -30,6 +31,12 @@ public static partial class AppointmentEndpoints
         {
             logger.LogWarning("UpdateStatus rejected: missing or invalid person_id claim.");
             return Results.Unauthorized();
+        }
+
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(request.Version);
+        if (missingVersionError is not null)
+        {
+            return missingVersionError;
         }
 
         var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
@@ -70,7 +77,11 @@ public static partial class AppointmentEndpoints
             appointment.CanceledAt = null;
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        var saveError = await SaveAppointmentWithVersionAsync(db, appointment, request.Version, cancellationToken);
+        if (saveError is not null)
+        {
+            return saveError;
+        }
 
         logger.LogInformation("UpdateStatus succeeded for appointment {AppointmentId}; new status {Status}.", id, newStatus);
 

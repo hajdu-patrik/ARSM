@@ -9,4 +9,8 @@ internal static class PersonIdClaim
 
     internal static bool TryGetPersonId(this ClaimsPrincipal user, out int personId)
         => int.TryParse(user.FindFirst(Type)?.Value, out personId);
+
+    /** The caller's person id, or 0 (no row ever has it) when the claim is missing, for lookups that answer 404 then. */
+    internal static int GetPersonIdOrDefault(this ClaimsPrincipal user)
+        => user.TryGetPersonId(out var personId) ? personId : 0;
 }

@@ -11,6 +11,11 @@
     <Content Update="appsettings.Local.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
+  <!-- The pricing calculators are internal; the unit tests exercise them directly. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="AutoService.UnitTests" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.104.4" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.30.1" />

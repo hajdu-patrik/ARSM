@@ -1,7 +1,6 @@
 using AutoService.ApiService.Auth.Session;
 using AutoService.ApiService.Security;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace AutoService.ApiService.Auth.Endpoints;
 
@@ -14,6 +13,9 @@ public static partial class AuthEndpoints
     internal static TimeSpan AccessTokenTtl { get; private set; } = TimeSpan.FromMinutes(10);
 
     internal static readonly TimeSpan RefreshTokenTtl = TimeSpan.FromDays(7);
+
+    /** Tolerance the bearer validation allows on exp and nbf; the session cutoffs keep their entries that much longer. */
+    internal static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
 
     /** Sets the access-token lifetime from configuration. The composition root calls it once, before any request is served; a second call fails fast so no code path can change the lifetime at runtime. */
     internal static void ConfigureAccessTokenTtl(int expirationMinutes)
@@ -87,14 +89,5 @@ public static partial class AuthEndpoints
         response.Cookies.Delete(AuthCookieNames.AccessToken, BuildAuthCookieDeletionOptions());
         response.Cookies.Delete(AuthCookieNames.RefreshToken, BuildAuthCookieDeletionOptions());
         CsrfTokenCookie.Clear(response);
-    }
-
-    /** Resolves a privacy-preserving identifier for the caller's IP address by hashing it with SHA-256, so raw client IPs never appear in logs. */
-    internal static string? ResolveClientIpAddress(HttpContext httpContext)
-    {
-        var ip = httpContext.Connection.RemoteIpAddress?.ToString();
-        if (string.IsNullOrWhiteSpace(ip)) return null;
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
-        return $"sha256:{Convert.ToHexString(hash)[..12]}";
     }
 }

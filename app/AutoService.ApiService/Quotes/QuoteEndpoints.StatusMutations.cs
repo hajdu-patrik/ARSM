@@ -44,7 +44,7 @@ public static partial class QuoteEndpoints
             return ApiProblem.Conflict($"Cannot transition a quote from {quote.Status} to {newStatus}.");
         }
 
-        var missingVersionError = GetMissingVersionError(request.Version);
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(request.Version);
         if (missingVersionError is not null)
         {
             return missingVersionError;

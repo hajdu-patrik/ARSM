@@ -1,5 +1,4 @@
 using AutoService.ApiService.Data;
-using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,13 +23,8 @@ public static partial class DatabaseInitializer
             $"Data integrity violation: appointments without assigned mechanics detected. AppointmentIds: {string.Join(", ", orphanedAppointmentIds)}");
     }
 
+    /** Status timestamps only: phone uniqueness is enforced by the IX_people_PhoneNumber index since its migration. */
     private static async Task NormalizePersistedDataAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
-    {
-        await NormalizeAppointmentStatusTimestampsAsync(db, cancellationToken);
-        await NormalizeDuplicatePhoneNumbersAsync(db, cancellationToken);
-    }
-
-    private static async Task NormalizeAppointmentStatusTimestampsAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
     {
         var appointments = await db.Appointments
             .Where(a =>
@@ -65,45 +59,6 @@ public static partial class DatabaseInitializer
                 default:
                     break;
             }
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
-    }
-
-    private static async Task NormalizeDuplicatePhoneNumbersAsync(AutoServiceDbContext db, CancellationToken cancellationToken)
-    {
-        var peopleWithPhone = await db.People
-            .Where(person => person.PhoneNumber != null)
-            .ToListAsync(cancellationToken);
-
-        if (peopleWithPhone.Count == 0)
-        {
-            return;
-        }
-
-        var seenPhones = new HashSet<string>(StringComparer.Ordinal);
-        var hasChanges = false;
-
-        foreach (var person in peopleWithPhone
-                     .OrderBy(person => person is Mechanic ? 0 : 1)
-                     .ThenBy(person => person.Id))
-        {
-            var phone = person.PhoneNumber;
-            if (phone is null)
-            {
-                continue;
-            }
-
-            if (!seenPhones.Add(phone))
-            {
-                person.PhoneNumber = null;
-                hasChanges = true;
-            }
-        }
-
-        if (!hasChanges)
-        {
-            return;
         }
 
         await db.SaveChangesAsync(cancellationToken);

@@ -33,7 +33,7 @@ public static partial class LaborTypeEndpoints
         UpdateLaborTypeRequest request,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
-        => Catalog.UpdateAsync(id, new(request.Code, request.Name, request.HourlyNetRate, request.VatRatePercent), db, cancellationToken);
+        => Catalog.UpdateAsync(id, new(request.Code, request.Name, request.HourlyNetRate, request.VatRatePercent), request.Version, db, cancellationToken);
 
     private static Task<IResult> DeleteLaborTypeAsync(int id, AutoServiceDbContext db, CancellationToken cancellationToken)
         => Catalog.DeleteAsync(id, db, cancellationToken);
@@ -42,7 +42,8 @@ public static partial class LaborTypeEndpoints
         nameof(LaborType.Code),
         "/api/labor-types",
         "Labor type not found.",
-        "A labor type with this code already exists.")
+        "A labor type with this code already exists.",
+        "labor_type_version_conflict")
     {
         protected override LaborType Create(CatalogItemInput input)
             => new(input.Key, input.Name, input.NetPrice, input.VatRatePercent);
@@ -61,6 +62,7 @@ public static partial class LaborTypeEndpoints
             laborType.Name,
             laborType.HourlyNetRate,
             PricingCalculator.GrossUnitPrice(laborType.HourlyNetRate, laborType.VatRatePercent),
-            laborType.VatRatePercent);
+            laborType.VatRatePercent,
+            laborType.Version);
     }
 }

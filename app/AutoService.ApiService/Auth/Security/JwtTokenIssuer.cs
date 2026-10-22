@@ -46,6 +46,8 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
         {
             new(JwtRegisteredClaimNames.Sub, identityUser.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            // The session cutoff compares this issue time; the handler does not add iat on its own.
+            new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(nowUtc).ToString(), ClaimValueTypes.Integer64),
             new(ClaimTypes.NameIdentifier, identityUser.Id),
             new(JwtRegisteredClaimNames.Email, email),
             new(ClaimTypes.Email, email),
@@ -53,6 +55,11 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
             new(PersonIdClaim.Type, person.Id.ToString()),
             new("person_type", PersonTypeResolver.Resolve(person))
         };
+
+        if (person is Mechanic { MustChangePassword: true })
+        {
+            claims.Add(new Claim(PasswordChangeRequiredClaim.Type, PasswordChangeRequiredClaim.Value));
+        }
 
         foreach (var role in roles)
         {

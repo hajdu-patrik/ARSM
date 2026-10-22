@@ -33,9 +33,7 @@ public sealed partial class AutoServiceDbContext
             entity.Property(x => x.TotalVat).HasPrecision(18, 2).IsRequired();
             entity.Property(x => x.TotalGross).HasPrecision(18, 2).IsRequired();
 
-            // xmin exists on every Postgres row and changes on every UPDATE; mapping it
-            // as a rowversion token adds no column and needs no migration (D30).
-            entity.Property(x => x.Version).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
+            entity.MapXminVersion();
 
             entity.HasOne(x => x.Vehicle)
                   .WithMany()

@@ -31,7 +31,7 @@ public static partial class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Login");
-        var clientIp = ResolveClientIpAddress(httpContext);
+        var clientIp = ClientIpAddress.Hash(httpContext);
 
         var validationErrors = ValidateLoginRequest(request);
         if (validationErrors.Count > 0)
@@ -108,25 +108,14 @@ public static partial class AuthEndpoints
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        var signInResult = await signInManager.CheckPasswordSignInAsync(identityUser, request.Password, lockoutOnFailure: true);
-        if (signInResult.IsLockedOut)
+        var (passwordAccepted, lockoutResult) = await PasswordCheck.VerifyAsync(signInManager, userManager, identityUser, request.Password);
+        if (lockoutResult is not null)
         {
-            var lockoutEnd = await userManager.GetLockoutEndDateAsync(identityUser);
-            var retryAfterSeconds = lockoutEnd.HasValue
-                ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value.UtcDateTime - DateTime.UtcNow).TotalSeconds))
-                : 60;
-
-            logger.LogWarning("Login blocked due to active lockout. Retry after {RetryAfterSeconds} seconds. ClientIp: {ClientIp}.", retryAfterSeconds, clientIp);
-
-            return Results.Json(new
-            {
-                code = "lockout_active",
-                message = "Too many attempts. Try again later.",
-                retryAfterSeconds
-            }, statusCode: StatusCodes.Status429TooManyRequests);
+            logger.LogWarning("Login blocked due to active lockout. ClientIp: {ClientIp}.", clientIp);
+            return lockoutResult;
         }
 
-        if (!signInResult.Succeeded)
+        if (!passwordAccepted)
         {
             logger.LogInformation("Login failed: invalid credentials. ClientIp: {ClientIp}.", clientIp);
             return Results.Problem(
@@ -169,7 +158,7 @@ public static partial class AuthEndpoints
 
         var isAdmin = roles.Contains("Admin");
         logger.LogInformation("Login succeeded for mechanic {MechanicId}. IsAdmin: {IsAdmin}. ClientIp: {ClientIp}.", mechanic.Id, isAdmin, clientIp);
-        return Results.Ok(new LoginResponse(mechanic.Id, isAdmin));
+        return Results.Ok(new SessionResponse(mechanic.Id, isAdmin, mechanic.MustChangePassword));
     }
 
     /** Validates presence of required login fields. */

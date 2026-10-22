@@ -1,3 +1,5 @@
+using AutoService.ApiService.Http;
+
 namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
@@ -36,6 +38,7 @@ public static partial class AppointmentEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces<object>(StatusCodes.Status404NotFound)
+            .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapDelete("/{id}", DeleteAppointmentAsync)
@@ -72,7 +75,9 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
-            .Produces<object>(StatusCodes.Status404NotFound);
+            .Produces<object>(StatusCodes.Status404NotFound)
+            .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         group.MapPut("/{id}/assign/{mechanicId}", AdminAssignAsync)
             .RequireAuthorization("AdminOnly")

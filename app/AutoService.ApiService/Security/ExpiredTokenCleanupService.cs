@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Security;
 
-/** Background service that periodically removes expired refresh tokens and revoked JWT denylist entries to prevent unbounded table growth. */
+/** Background service that periodically removes expired refresh tokens (revoked or not) and expired JWT denylist entries to prevent unbounded table growth. */
 internal sealed class ExpiredTokenCleanupService(
     IServiceScopeFactory scopeFactory,
     ILogger<ExpiredTokenCleanupService> logger) : BackgroundService
@@ -41,7 +41,7 @@ internal sealed class ExpiredTokenCleanupService(
             .ExecuteDeleteAsync(cancellationToken);
 
         var deletedRefreshTokens = await db.RefreshTokens
-            .Where(t => t.ExpiresAtUtc <= nowUtc && t.RevokedAtUtc != null)
+            .Where(t => t.ExpiresAtUtc <= nowUtc)
             .ExecuteDeleteAsync(cancellationToken);
 
         if (deletedJwtTokens > 0 || deletedRefreshTokens > 0)

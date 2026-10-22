@@ -1,3 +1,4 @@
+using AutoService.ApiService.Security;
 using Microsoft.AspNetCore.Routing;
 
 namespace AutoService.ApiService.Auth.Endpoints;
@@ -18,14 +19,14 @@ public static partial class AuthEndpoints
             .Produces(StatusCodes.Status403Forbidden);
 
         group.MapPost("/login", LoginAsync)
-            .RequireRateLimiting("AuthLoginAttempts")
-            .Produces<LoginResponse>(StatusCodes.Status200OK)
+            .RequireRateLimiting(RateLimitPolicies.AuthLogin)
+            .Produces<SessionResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .Produces<object>(StatusCodes.Status429TooManyRequests);
 
         group.MapPost("/refresh", RefreshAsync)
-            .RequireRateLimiting("AuthRefreshAttempts")
+            .RequireRateLimiting(RateLimitPolicies.AuthRefresh)
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
@@ -37,7 +38,7 @@ public static partial class AuthEndpoints
 
         group.MapGet("/validate", ValidateTokenAsync)
             .RequireAuthorization()
-            .Produces<ValidateTokenResponse>(StatusCodes.Status200OK)
+            .Produces<SessionResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         return endpoints;

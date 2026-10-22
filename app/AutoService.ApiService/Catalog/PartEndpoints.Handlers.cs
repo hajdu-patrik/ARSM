@@ -33,7 +33,7 @@ public static partial class PartEndpoints
         UpdatePartRequest request,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
-        => Catalog.UpdateAsync(id, new(request.PartNumber, request.Name, request.NetUnitPrice, request.VatRatePercent), db, cancellationToken);
+        => Catalog.UpdateAsync(id, new(request.PartNumber, request.Name, request.NetUnitPrice, request.VatRatePercent), request.Version, db, cancellationToken);
 
     private static Task<IResult> DeletePartAsync(int id, AutoServiceDbContext db, CancellationToken cancellationToken)
         => Catalog.DeleteAsync(id, db, cancellationToken);
@@ -42,7 +42,8 @@ public static partial class PartEndpoints
         nameof(Part.PartNumber),
         "/api/parts",
         "Part not found.",
-        "A part with this part number already exists.")
+        "A part with this part number already exists.",
+        "part_version_conflict")
     {
         protected override Part Create(CatalogItemInput input)
             => new(input.Key, input.Name, input.NetPrice, input.VatRatePercent);
@@ -61,6 +62,7 @@ public static partial class PartEndpoints
             part.Name,
             part.NetUnitPrice,
             PricingCalculator.GrossUnitPrice(part.NetUnitPrice, part.VatRatePercent),
-            part.VatRatePercent);
+            part.VatRatePercent,
+            part.Version);
     }
 }

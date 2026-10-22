@@ -3,8 +3,15 @@ using System.Threading.Channels;
 
 namespace AutoService.ApiService.Realtime;
 
+/** The per-person side of a live channel: a session revocation closes every stream the person holds. */
+internal interface IUserSubscriptions
+{
+    /** Completes every subscription of the person, so their open streams end on the next read. */
+    void DisconnectUser(int userId);
+}
+
 /** Fan-out contract for server-sent update channels. */
-internal interface IUpdateBroadcaster<TEvent>
+internal interface IUpdateBroadcaster<TEvent> : IUserSubscriptions
 {
     /** Registers a subscriber unless a capacity limit is reached. */
     bool TrySubscribe(int userId, out Guid subscriptionId, out ChannelReader<TEvent> reader);
@@ -75,6 +82,18 @@ internal abstract class UpdateBroadcaster<TEvent> : IUpdateBroadcaster<TEvent>
         {
             entry.Channel.Writer.TryComplete();
             Interlocked.Decrement(ref subscriptionCount);
+        }
+    }
+
+    /** Completing the channels ends the streams; ServerSentEventStream unsubscribes them on its way out. */
+    public void DisconnectUser(int userId)
+    {
+        foreach (var subscriber in subscribers)
+        {
+            if (subscriber.Value.UserId == userId)
+            {
+                subscriber.Value.Channel.Writer.TryComplete();
+            }
         }
     }
 

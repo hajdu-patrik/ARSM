@@ -100,27 +100,21 @@ public static partial class AppointmentEndpoints
             appointment.VehicleId = vehicle.Id;
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        // The graph is built above; the retriable unit only attaches it again and saves, so a retry inserts it once.
         try
         {
-            if (creatingCustomer)
-            {
-                db.Customers.Add(customer!);
-            }
-
-            if (!usesExistingVehicle)
-            {
-                db.Vehicles.Add(vehicle);
-            }
-
-            db.Appointments.Add(appointment);
-
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await db.ExecuteInTransactionAsync(
+                async (transaction, token) =>
+                {
+                    db.Appointments.Add(appointment);
+                    await db.SaveChangesAsync(token);
+                    await transaction.CommitAsync(token);
+                    return true;
+                },
+                cancellationToken);
         }
-        catch (DbUpdateException ex) when (Data.UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
+        catch (DbUpdateException ex) when (UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
         {
-            await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Intake creation failed due to unique constraint conflict.");
             return ApiProblem.Conflict("Unable to create intake due to conflicting customer or vehicle data.");
         }

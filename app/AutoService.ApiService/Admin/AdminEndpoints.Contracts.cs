@@ -12,4 +12,7 @@ public static partial class AdminEndpoints
         string Specialization,
         bool IsAdmin,
         bool HasProfilePicture);
+
+    /** POST /api/admin/mechanics/{id}/password-reset body: the temporary password the mechanic must replace at the next login. */
+    internal sealed record ResetMechanicPasswordRequest(string TemporaryPassword);
 }

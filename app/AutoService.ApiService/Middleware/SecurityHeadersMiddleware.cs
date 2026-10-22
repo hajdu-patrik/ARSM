@@ -11,6 +11,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
     private const string ApiContentSecurityPolicy = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
     private const string CrossOriginOpenerPolicy = "same-origin";
     private const string CrossOriginResourcePolicy = "same-site";
+    private const string ApiCacheControl = "no-store";
 
     /** Registers the security-header injection on response start and forwards the request to the next middleware in the pipeline. */
     public async Task InvokeAsync(HttpContext context)
@@ -28,6 +29,13 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
             AppendIfMissing(headers, "Cross-Origin-Resource-Policy", CrossOriginResourcePolicy);
 
             var path = httpContext.Request.Path;
+
+            // Personal API data must not land in a browser or proxy cache; the picture GETs and the SSE streams set their own policy first.
+            if (path.StartsWithSegments("/api"))
+            {
+                AppendIfMissing(headers, "Cache-Control", ApiCacheControl);
+            }
+
             var shouldSkipCspForDevTools = isDevelopmentEnvironment &&
                 (path.StartsWithSegments("/openapi", StringComparison.OrdinalIgnoreCase) ||
                  path.StartsWithSegments("/scalar", StringComparison.OrdinalIgnoreCase));

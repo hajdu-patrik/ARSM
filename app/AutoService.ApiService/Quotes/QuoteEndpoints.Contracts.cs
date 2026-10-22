@@ -2,9 +2,6 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /** Error code body for machine-readable conflict responses (D30, D38), the Appointments.Contracts.cs convention. */
-    internal sealed record ErrorCodeResponse(string Code);
-
     /** Minimal vehicle identification for a quote's anchor (D1). */
     internal sealed record QuoteVehicleSummaryDto(
         int Id,

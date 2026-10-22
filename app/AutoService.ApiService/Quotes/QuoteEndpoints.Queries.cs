@@ -35,11 +35,7 @@ public static partial class QuoteEndpoints
             statusFilter = parsedStatus;
         }
 
-        var query = db.Quotes
-            .AsNoTracking()
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
-            .AsQueryable();
+        var query = db.Quotes.AsNoTracking();
 
         if (vehicleId is not null)
         {
@@ -70,9 +66,10 @@ public static partial class QuoteEndpoints
         var result = await query
             .OrderByDescending(q => q.CreatedAt)
             .ThenBy(q => q.Id)
+            .Select(QuoteListItemProjection(nowUtc))
             .ToPagedResultAsync(request, cancellationToken);
 
-        return Results.Ok(result.Map(q => ToQuoteListItemDto(q, nowUtc)));
+        return Results.Ok(result);
     }
 
     /** Lists a vehicle's quotes, ordered by CreatedAt descending. */
@@ -92,16 +89,14 @@ public static partial class QuoteEndpoints
 
         var quotes = await db.Quotes
             .AsNoTracking()
-            .Include(q => q.Vehicle)
-            .Include(q => q.CreatedByMechanic)
             .Where(q => q.VehicleId == vehicleId)
             .OrderByDescending(q => q.CreatedAt)
             .ThenBy(q => q.Id)
             .Take(boundedLimit)
+            .Select(QuoteListItemProjection(DateTime.UtcNow))
             .ToListAsync(cancellationToken);
 
-        var nowUtc = DateTime.UtcNow;
-        return Results.Ok(quotes.Select(q => ToQuoteListItemDto(q, nowUtc)).ToList());
+        return Results.Ok(quotes);
     }
 
     /** Returns a single quote with its lines and totals. */

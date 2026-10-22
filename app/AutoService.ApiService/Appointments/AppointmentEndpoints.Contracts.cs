@@ -4,8 +4,6 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    internal sealed record ErrorCodeResponse(string Code);
-
     /** Vehicle DTO with full specifications and the owning customer's identifier. */
     internal sealed record VehicleDto(
         int Id,
@@ -26,7 +24,7 @@ public static partial class AppointmentEndpoints
         string Specialization,
         bool HasProfilePicture);
 
-    /** Full appointment DTO with scheduling details, status, vehicle, and assigned mechanics. */
+    /** Full appointment DTO with scheduling details, status, vehicle, assigned mechanics and the xmin version every edit sends back. */
     internal sealed record AppointmentDto(
         int Id,
         DateTime ScheduledDate,
@@ -37,7 +35,8 @@ public static partial class AppointmentEndpoints
         DateTime? CompletedAt,
         DateTime? CanceledAt,
         VehicleDto Vehicle,
-        IReadOnlyList<MechanicSummaryDto> Mechanics);
+        IReadOnlyList<MechanicSummaryDto> Mechanics,
+        uint Version);
 
     /** Request payload for creating a customer appointment via admin endpoint. */
     internal sealed record CreateCustomerAppointmentRequest(
@@ -74,11 +73,12 @@ public static partial class AppointmentEndpoints
         internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
     }
 
-    /** Request payload for updating appointment scheduling and task details. */
+    /** Request payload for updating appointment scheduling and task details under the submitted version. */
     internal sealed record UpdateAppointmentRequest(
         DateTime? ScheduledDate,
         DateTime DueDateTime,
-        string TaskDescription);
+        string TaskDescription,
+        uint Version);
 
     /** Request payload for updating vehicle details linked to an appointment. */
     internal sealed record UpdateAppointmentVehicleRequest(
@@ -94,6 +94,6 @@ public static partial class AppointmentEndpoints
         internal VehicleInput ToInput() => new(LicensePlate, Vin, Brand, Model, Year, MileageKm, EnginePowerKw, DrivetrainType);
     }
 
-    /** Request payload for updating appointment lifecycle status. */
-    internal sealed record UpdateStatusRequest(string Status);
+    /** Request payload for updating appointment lifecycle status under the submitted version. */
+    internal sealed record UpdateStatusRequest(string Status, uint Version);
 }

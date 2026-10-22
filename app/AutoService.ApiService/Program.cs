@@ -13,6 +13,7 @@ using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Quotes;
 using AutoService.ApiService.Quotes.Pdf;
+using AutoService.ApiService.Realtime;
 using AutoService.ApiService.Reporting;
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Profile.Realtime;
@@ -25,16 +26,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.IO.Compression;
 using System.Net;
-using System.Globalization;
 using System.Text;
-using System.Threading.RateLimiting;
 using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 
@@ -43,6 +41,10 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+/** Every body is JSON of a few kilobytes; the profile picture upload lifts this limit for its own route only. */
+const int JsonRequestBodyLimitBytes = 64 * 1024;
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = JsonRequestBodyLimitBytes);
 
 /** DB readiness check, added here (not ServiceDefaults) to keep those Npgsql-free; carries no
     "live" tag, so /alive stays process-only while /health also reflects DB connectivity. */
@@ -58,7 +60,6 @@ builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, relo
 
 // Service registration section.
 builder.Services.AddOpenApi();
-builder.Services.AddMemoryCache();
 
 // Backs the global exception handler registered below in the middleware pipeline.
 builder.Services.AddProblemDetails();
@@ -71,9 +72,12 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 QuestPDF.Settings.UseSystemFonts = false;
 QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
 QuoteDocumentAssets.RegisterFonts();
+
+/** Transient failures are retried; every explicit transaction therefore runs through
+    Data/TransactionalExecution, which the retrying strategy requires. */
 builder.Services.AddDbContext<AutoServiceDbContext>(options =>
 {
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure());
 });
 
 /** Forwarded headers trust policy configuration. */
@@ -143,14 +147,16 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AutoServiceDbContext>()
-    .AddSignInManager();
+    .AddSignInManager()
+    // The admin password reset goes through Identity's own reset token, which needs this provider.
+    .AddDefaultTokenProviders();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         /** JWT bearer events: reads the access token from the cookie when the Authorization header is
-            missing, and fails auth when the token's JTI is denylisted (revocation; see docs/PROJECT-OVERVIEW.md). */
+            missing, and fails auth on a revoked token (AccessTokenValidation). */
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -163,25 +169,7 @@ builder.Services
 
                 return Task.CompletedTask;
             },
-            OnTokenValidated = async context =>
-            {
-                var jwtId = context.Principal?.FindFirst("jti")?.Value;
-
-                if (!string.IsNullOrWhiteSpace(jwtId))
-                {
-                    var denylist = context.HttpContext.RequestServices.GetRequiredService<ITokenDenylistService>();
-                    try
-                    {
-                        if (await denylist.IsRevokedAsync(jwtId, context.HttpContext.RequestAborted))
-                        {
-                            context.Fail("Token has been revoked.");
-                        }
-                    }
-                    catch (OperationCanceledException) when (context.HttpContext.RequestAborted.IsCancellationRequested)
-                    {
-                    }
-                }
-            },
+            OnTokenValidated = AccessTokenValidation.OnTokenValidatedAsync,
         };
 
         options.TokenValidationParameters = new TokenValidationParameters
@@ -195,63 +183,11 @@ builder.Services
             RequireExpirationTime = true,
             RequireSignedTokens = true,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
+            ClockSkew = AuthEndpoints.ClockSkew
         };
     });
 
-builder.Services.AddRateLimiter(options =>
-{
-    /** Rate-limit rejection: for the login route only, this also bans the client, sets
-        Retry-After, and returns a stable JSON error payload. */
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-    options.OnRejected = async (context, cancellationToken) =>
-    {
-        if (!context.HttpContext.Request.Path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        LoginBanMiddleware.BanClient(context.HttpContext);
-
-        var retryAfterSeconds = LoginBanMiddleware.BanWindowSeconds;
-        context.HttpContext.Response.Headers.RetryAfter = retryAfterSeconds.ToString(CultureInfo.InvariantCulture);
-
-        await context.HttpContext.Response.WriteAsJsonAsync(
-            new
-            {
-                code = "login_rate_limited",
-                error = "Too many login attempts. Try again in 3 minutes!",
-                retryAfterSeconds
-            },
-            cancellationToken);
-    };
-
-    /** Partitioned per client (not a global bucket) so one noisy client cannot lock out every other
-        user; the Development-only higher limit is for the local test suite (rate limits: ApiService/CLAUDE.md). */
-    var authLoginPermitLimit = builder.Environment.IsDevelopment() ? 300 : 10;
-
-    options.AddPolicy("AuthLoginAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
-        LoginBanMiddleware.ResolveClientKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = authLoginPermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            QueueLimit = 0
-        }));
-
-    /** Partitioned per client for the same reason as AuthLoginAttempts above. */
-    options.AddPolicy("AuthRefreshAttempts", context => RateLimitPartition.GetFixedWindowLimiter(
-        LoginBanMiddleware.ResolveClientKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 20,
-            Window = TimeSpan.FromMinutes(1),
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            QueueLimit = 0
-        }));
-});
+builder.Services.AddArsmRateLimiting(builder.Environment);
 
 /** Brotli/Gzip response compression (HTTPS included); safe from BREACH because tokens travel only
     as HttpOnly cookies, never in JSON bodies (see docs/PROJECT-OVERVIEW.md). SSE stays uncompressed. */
@@ -283,12 +219,22 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("MechanicOnly", policy => policy.RequireClaim("person_type", "mechanic"));
 });
 builder.Services.AddSingleton<IJwtTokenIssuer>(_ => new JwtTokenIssuer(jwtSecret, jwtIssuer, jwtAudience));
-builder.Services.AddSingleton<ITokenDenylistService, TokenDenylistService>();
+
+// One denylist instance serves the requests and warms itself from the table as a hosted service.
+builder.Services.AddSingleton<TokenDenylistService>();
+builder.Services.AddSingleton<ITokenDenylistService>(sp => sp.GetRequiredService<TokenDenylistService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<TokenDenylistService>());
+
+// Both live channels are also reachable as IUserSubscriptions, so a session revocation closes a person's streams.
 builder.Services.AddSingleton<IProfilePictureUpdateBroadcaster, ProfilePictureUpdateBroadcaster>();
 builder.Services.AddSingleton<IAppointmentUpdateBroadcaster, AppointmentUpdateBroadcaster>();
+builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IProfilePictureUpdateBroadcaster>());
+builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IAppointmentUpdateBroadcaster>());
+builder.Services.AddSingleton<ISessionRevocationService, SessionRevocationService>();
+
 builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
-builder.Services.AddHostedService<AutoService.ApiService.Security.ExpiredTokenCleanupService>();
+builder.Services.AddHostedService<ExpiredTokenCleanupService>();
 
 // Build.
 var app = builder.Build();
@@ -334,7 +280,8 @@ await app.EnsureCompanyProfileAsync();
 await app.EnsureBootstrapAdminAsync();
 
 /** Middleware order below is a security contract (exception handling wraps everything; origin/CSRF
-    checks precede auth); see app/AutoService.ApiService/CLAUDE.md. */
+    checks precede auth; the per-person limits and the password gate need the authenticated user);
+    see app/AutoService.ApiService/CLAUDE.md. */
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -372,13 +319,14 @@ app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<LoginBanMiddleware>();
-app.UseRateLimiter();
 app.UseCors("WebUIPolicy");
 app.UseMiddleware<UnsafeCookieRequestOriginMiddleware>();
 app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 app.UseMiddleware<AuditAccessDeniedMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<PasswordChangeRequiredMiddleware>();
+app.UseRateLimiter();
 
 /** Endpoint map groups by domain module. */
 app.MapAuthEndpoints();

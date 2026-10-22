@@ -5,7 +5,7 @@ namespace AutoService.ApiService.Data;
 
 public sealed partial class AutoServiceDbContext
 {
-    /** Configures the pricing catalog entities (Part, LaborType): table names, money-column precision, VAT/amount check constraints, and unique indexes. */
+    /** Configures the pricing catalog entities (Part, LaborType): table names, money-column precision, VAT/amount check constraints, unique indexes and the xmin versions. */
     private void ConfigurePricingModel(ModelBuilder modelBuilder)
     {
         // Part mapping.
@@ -18,6 +18,7 @@ public sealed partial class AutoServiceDbContext
             });
 
             entity.HasIndex(x => x.PartNumber).IsUnique();
+            entity.MapXminVersion();
 
             entity.Property(x => x.PartNumber).HasMaxLength(40).IsRequired();
             entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
@@ -35,6 +36,7 @@ public sealed partial class AutoServiceDbContext
             });
 
             entity.HasIndex(x => x.Code).IsUnique();
+            entity.MapXminVersion();
 
             entity.Property(x => x.Code).HasMaxLength(40).IsRequired();
             entity.Property(x => x.Name).HasMaxLength(120).IsRequired();

@@ -1,10 +1,10 @@
 using AutoService.ApiService.Appointments.Realtime;
-using System.Data;
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using AutoService.ApiService.Identity;
 
@@ -167,38 +167,14 @@ public static partial class AppointmentEndpoints
         IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
+        var (result, appointment) = await db.ExecuteInTransactionAsync(
+            (transaction, token) => RemoveMechanicUnderLockAsync(id, mechanicId, operation, db, transaction, logger, token),
+            cancellationToken);
 
-        var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
         if (appointment is null)
         {
-            logger.LogInformation("{Operation} failed: appointment {AppointmentId} not found.", operation, id);
-            return AppointmentNotFound();
+            return result;
         }
-
-        var closedError = GetClosedAppointmentError(appointment);
-        if (closedError is not null)
-        {
-            return closedError;
-        }
-
-        var mechanic = appointment.Mechanics.FirstOrDefault(m => m.Id == mechanicId);
-        if (mechanic is null)
-        {
-            logger.LogInformation(
-                "{Operation} conflict: mechanic {MechanicId} is not assigned to appointment {AppointmentId}.", operation, mechanicId, id);
-            return Results.Conflict(new { code = "not_assigned" });
-        }
-
-        if (appointment.Mechanics.Count <= 1)
-        {
-            return Results.UnprocessableEntity(new { code = "last_assigned_mechanic" });
-        }
-
-        appointment.Mechanics.Remove(mechanic);
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation(
             "{Operation} succeeded: mechanic {MechanicId} removed from appointment {AppointmentId}.", operation, mechanicId, id);
@@ -206,6 +182,51 @@ public static partial class AppointmentEndpoints
         PublishAppointmentChanged(broadcaster, appointment.Id);
 
         return Results.Ok(ToDto(appointment));
+    }
+
+    /** The retriable unit: lock the row, load, remove the mechanic, commit; an error result comes back without an appointment. */
+    private static async Task<(IResult Result, Appointment? Appointment)> RemoveMechanicUnderLockAsync(
+        int id,
+        int mechanicId,
+        string operation,
+        AutoServiceDbContext db,
+        IDbContextTransaction transaction,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM appointments WHERE \"Id\" = {id} FOR UPDATE", cancellationToken);
+
+        var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
+        if (appointment is null)
+        {
+            logger.LogInformation("{Operation} failed: appointment {AppointmentId} not found.", operation, id);
+            return (AppointmentNotFound(), null);
+        }
+
+        var closedError = GetClosedAppointmentError(appointment);
+        if (closedError is not null)
+        {
+            return (closedError, null);
+        }
+
+        var mechanic = appointment.Mechanics.FirstOrDefault(m => m.Id == mechanicId);
+        if (mechanic is null)
+        {
+            logger.LogInformation(
+                "{Operation} conflict: mechanic {MechanicId} is not assigned to appointment {AppointmentId}.", operation, mechanicId, id);
+            return (Results.Conflict(new { code = "not_assigned" }), null);
+        }
+
+        if (appointment.Mechanics.Count <= 1)
+        {
+            return (Results.UnprocessableEntity(new { code = "last_assigned_mechanic" }), null);
+        }
+
+        appointment.Mechanics.Remove(mechanic);
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return (Results.Empty, appointment);
     }
 
     /** Cancelled and completed appointments take no assignment changes. */

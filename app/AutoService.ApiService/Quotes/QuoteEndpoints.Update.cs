@@ -70,7 +70,7 @@ public static partial class QuoteEndpoints
             return ApiProblem.Conflict("Validity cannot be changed on a decided quote.");
         }
 
-        var missingVersionError = GetMissingVersionError(request.Version);
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(request.Version);
         if (missingVersionError is not null)
         {
             return missingVersionError;

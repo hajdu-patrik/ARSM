@@ -1,8 +1,8 @@
+using System.Linq.Expressions;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pricing;
-using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 
@@ -12,6 +12,7 @@ public static partial class QuoteEndpoints
 {
     private const int MaxNotesLength = 1000;
     private const int MaxLineDescriptionLength = 120;
+    private const string VersionConflictCode = "quote_version_conflict";
 
     /** Resolved catalog-or-override values for one quote line (D40). */
     private readonly record struct QuoteLineSnapshot(string Description, decimal NetUnitPrice, int VatRatePercent);
@@ -43,22 +44,28 @@ public static partial class QuoteEndpoints
     private static bool ComputeIsExpired(Quote quote, DateTime nowUtc) =>
         quote.Status == QuoteStatus.Sent && quote.ValidUntil < nowUtc;
 
-    private static QuoteListItemDto ToQuoteListItemDto(Quote quote, DateTime nowUtc) => new(
-        quote.Id,
-        quote.QuoteNumber,
-        quote.Title,
-        quote.Status.ToString(),
-        ComputeIsExpired(quote, nowUtc),
-        quote.CreatedAt,
-        quote.ValidUntil,
-        quote.TotalNet,
-        quote.TotalVat,
-        quote.TotalGross,
-        quote.VehicleId,
-        ToQuoteVehicleSummaryDto(quote.Vehicle),
-        quote.AppointmentId,
-        ToQuoteMechanicSummaryDto(quote.CreatedByMechanic),
-        quote.Version);
+    /** Server-side list projection: only the mapped columns of the quote, its vehicle and its creator travel,
+        with the same expiry rule and formatting as the detail mapping (ProjectionFormat is evaluated client-side). */
+    private static Expression<Func<Quote, QuoteListItemDto>> QuoteListItemProjection(DateTime nowUtc) => q => new QuoteListItemDto(
+        q.Id,
+        q.QuoteNumber,
+        q.Title,
+        ProjectionFormat.EnumName(q.Status),
+        q.Status == QuoteStatus.Sent && q.ValidUntil < nowUtc,
+        q.CreatedAt,
+        q.ValidUntil,
+        q.TotalNet,
+        q.TotalVat,
+        q.TotalGross,
+        q.VehicleId,
+        new QuoteVehicleSummaryDto(q.Vehicle.Id, q.Vehicle.LicensePlate, q.Vehicle.Brand, q.Vehicle.Model),
+        q.AppointmentId,
+        q.CreatedByMechanic == null
+            ? null
+            : new QuoteMechanicSummaryDto(
+                q.CreatedByMechanic.Id,
+                ProjectionFormat.FullName(q.CreatedByMechanic.Name.FirstName, q.CreatedByMechanic.Name.MiddleName, q.CreatedByMechanic.Name.LastName)),
+        q.Version);
 
     private static QuoteDetailDto ToQuoteDetailDto(Quote quote, DateTime nowUtc) => new(
         quote.Id,
@@ -123,7 +130,7 @@ public static partial class QuoteEndpoints
             return (null, ApiProblem.Conflict(lockedDetail));
         }
 
-        var missingVersionError = GetMissingVersionError(version);
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(version);
         if (missingVersionError is not null)
         {
             return (null, missingVersionError);
@@ -132,38 +139,13 @@ public static partial class QuoteEndpoints
         return (quote, null);
     }
 
-    /** Rejects a request missing the concurrency version (D38); Postgres never assigns xmin 0 to a
-     * live row, so the uint default is unambiguously "missing," never a real stale value. */
-    private static IResult? GetMissingVersionError(uint version)
-    {
-        if (version == 0)
-        {
-            return ApiProblem.Unprocessable("Version is required.");
-        }
-
-        return null;
-    }
-
-    /** Saves under optimistic concurrency (D30/D38): the client-submitted version becomes the original value of the
-     * xmin-mapped Version, so a stale one fails the save and returns the 409 quote_version_conflict body. */
-    private static async Task<IResult?> SaveWithVersionAsync(
+    /** Saves under the shared optimistic-concurrency rule (D30/D38): a stale version answers 409 quote_version_conflict. */
+    private static Task<IResult?> SaveWithVersionAsync(
         AutoServiceDbContext db,
         Quote quote,
         uint version,
         CancellationToken cancellationToken)
-    {
-        db.Entry(quote).Property(q => q.Version).OriginalValue = version;
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-            return null;
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return Results.Conflict(new ErrorCodeResponse("quote_version_conflict"));
-        }
-    }
+        => OptimisticConcurrency.SaveWithVersionAsync(db, quote, version, VersionConflictCode, cancellationToken);
 
     /** The navigation set every quote detail response and write handler reads. */
     private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes

@@ -8,6 +8,8 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace AutoService.ApiService.Auth.Endpoints;
 
 /** Partial class containing the registration endpoint handler and its supporting helpers. */
@@ -25,7 +27,7 @@ public static partial class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Register");
-        var clientIp = ResolveClientIpAddress(httpContext);
+        var clientIp = ClientIpAddress.Hash(httpContext);
 
         var validationErrors = ValidateRegisterRequest(request);
         if (validationErrors.Count > 0)
@@ -77,8 +79,23 @@ public static partial class AuthEndpoints
             }
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        return await db.ExecuteInTransactionAsync(
+            (transaction, token) => CreateAccountAsync(request, email, phoneNumber, clientIp, userManager, db, transaction, logger, token),
+            cancellationToken);
+    }
 
+    /** The retriable unit: Identity user, domain person, commit; every failure returns without a commit, so it rolls back. */
+    private static async Task<IResult> CreateAccountAsync(
+        RegisterRequest request,
+        string email,
+        string? phoneNumber,
+        string? clientIp,
+        UserManager<IdentityUser> userManager,
+        AutoServiceDbContext db,
+        IDbContextTransaction transaction,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
         var identityUser = new IdentityUser
         {
             UserName = email,
@@ -89,7 +106,6 @@ public static partial class AuthEndpoints
         var createUserResult = await userManager.CreateAsync(identityUser, request.Password);
         if (!createUserResult.Succeeded)
         {
-            await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Registration failed while creating identity user. ErrorCount: {ErrorCount}.", createUserResult.Errors.Count());
             return Results.ValidationProblem(createUserResult.ToValidationErrors());
         }
@@ -100,18 +116,8 @@ public static partial class AuthEndpoints
         {
             person = CreatePerson(request, identityUser.Id, email, phoneNumber);
         }
-        catch (ArgumentOutOfRangeException exception)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            logger.LogWarning("Registration failed due to out-of-range input for {ParamName}.", exception.ParamName ?? "register");
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [exception.ParamName ?? "register"] = [exception.Message]
-            });
-        }
         catch (ArgumentException exception)
         {
-            await transaction.RollbackAsync(cancellationToken);
             logger.LogWarning("Registration failed due to invalid input for {ParamName}.", exception.ParamName ?? "register");
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -136,7 +142,6 @@ public static partial class AuthEndpoints
         }
         catch (DbUpdateException ex) when (Data.UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
         {
-            await transaction.RollbackAsync(cancellationToken);
             logger.LogInformation("Registration failed due to unique constraint conflict on persisted data.");
             return CreateRegistrationFailedResult();
         }

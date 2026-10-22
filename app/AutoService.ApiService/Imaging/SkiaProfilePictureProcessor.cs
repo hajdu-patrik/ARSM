@@ -8,18 +8,34 @@ namespace AutoService.ApiService.Imaging;
 internal sealed class SkiaProfilePictureProcessor : IProfilePictureProcessor
 {
     private const int MaxOutputEdgePixels = 512;
-    private const int MaxSourcePixelCount = 50_000_000;
+    private const int MaxSourcePixelCount = 20_000_000;
     private const int WebpQuality = 80;
     private const string OutputContentType = "image/webp";
+
+    // A 20-megapixel decode is 80 MB of pixels; two at once is what the 1 GiB container leaves room for.
+    private const int MaxConcurrentDecodes = 2;
+    private static readonly SemaphoreSlim DecodeSlots = new(MaxConcurrentDecodes, MaxConcurrentDecodes);
 
     /** Trilinear mipmapped sampling: the output only ever shrinks, and mipmaps keep large reductions alias-free. */
     private static readonly SKSamplingOptions ResizeSampling = new(SKFilterMode.Linear, SKMipmapMode.Linear);
 
     /** Decodes the upload, bounds it to 512x512, and re-encodes it as WebP with a content ETag. */
-    public Task<ProcessedProfilePicture> ProcessAsync(Stream source, CancellationToken cancellationToken)
+    public async Task<ProcessedProfilePicture> ProcessAsync(Stream source, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        await DecodeSlots.WaitAsync(cancellationToken);
 
+        try
+        {
+            return Process(source, cancellationToken);
+        }
+        finally
+        {
+            DecodeSlots.Release();
+        }
+    }
+
+    private static ProcessedProfilePicture Process(Stream source, CancellationToken cancellationToken)
+    {
         using var codec = CreateCodec(source);
         GuardSourceDimensions(codec.Info);
         cancellationToken.ThrowIfCancellationRequested();
@@ -32,7 +48,7 @@ internal sealed class SkiaProfilePictureProcessor : IProfilePictureProcessor
 
         var bytes = EncodeWebp(output);
 
-        return Task.FromResult(new ProcessedProfilePicture(bytes, OutputContentType, BuildETag(bytes)));
+        return new ProcessedProfilePicture(bytes, OutputContentType, BuildETag(bytes));
     }
 
     /** Opens a codec that reads only the image header; the caller keeps ownership of the source stream. */

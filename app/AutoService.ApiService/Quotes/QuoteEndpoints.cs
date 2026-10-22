@@ -1,4 +1,6 @@
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Pagination;
+
 namespace AutoService.ApiService.Quotes;
 
 /** Registers quote routes under /api/quotes and the nested /api/vehicles/{vehicleId}/quotes routes; handler logic split into partial files. */

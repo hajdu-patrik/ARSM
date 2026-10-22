@@ -1,5 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Identity;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 
@@ -93,7 +94,9 @@ public static partial class CustomerEndpoints
 
     private static async Task<IResult> DeleteCustomerAsync(
         int id,
+        HttpContext httpContext,
         AutoServiceDbContext db,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var customer = await db.Customers
@@ -106,6 +109,11 @@ public static partial class CustomerEndpoints
 
         db.Customers.Remove(customer);
         await db.SaveChangesAsync(cancellationToken);
+
+        loggerFactory.CreateLogger("CustomerEndpoints.Delete").LogInformation(
+            "Customer {CustomerId} deleted with its vehicles, appointments and quotes by admin {ActorPersonId}.",
+            id,
+            httpContext.User.GetPersonIdOrDefault());
 
         return Results.NoContent();
     }

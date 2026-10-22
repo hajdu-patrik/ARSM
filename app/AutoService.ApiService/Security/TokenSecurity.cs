@@ -7,20 +7,20 @@ namespace AutoService.ApiService.Security;
 
 internal static class TokenSecurity
 {
-        internal static string HashSha256(string value)
+    internal static string HashSha256(string value)
     {
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
         return Convert.ToHexString(hashBytes);
     }
 
-        internal static DateTimeOffset? ParseJwtExpiry(ClaimsPrincipal user)
-    {
-        var expClaim = user.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
-        if (!long.TryParse(expClaim, out var expUnix))
-        {
-            return null;
-        }
+    internal static DateTimeOffset? ParseJwtExpiry(ClaimsPrincipal user)
+        => ParseUnixSecondsClaim(user, JwtRegisteredClaimNames.Exp);
 
-        return DateTimeOffset.FromUnixTimeSeconds(expUnix);
-    }
+    internal static DateTimeOffset? ParseJwtIssuedAt(ClaimsPrincipal user)
+        => ParseUnixSecondsClaim(user, JwtRegisteredClaimNames.Iat);
+
+    private static DateTimeOffset? ParseUnixSecondsClaim(ClaimsPrincipal user, string claimType)
+        => long.TryParse(user.FindFirst(claimType)?.Value, out var unixSeconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(unixSeconds)
+            : null;
 }

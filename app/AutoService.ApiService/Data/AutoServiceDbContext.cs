@@ -44,6 +44,8 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             entity.Property(x => x.IdentityUserId).HasMaxLength(450);
             entity.HasIndex(x => x.IdentityUserId).IsUnique();
             entity.Property(x => x.PhoneNumber).HasMaxLength(20);
+            // Login resolves a phone with FirstOrDefault, so the database, not the handlers' pre-checks, must keep it unique.
+            entity.HasIndex(x => x.PhoneNumber).IsUnique().HasFilter("\"PhoneNumber\" IS NOT NULL");
             entity.Property(x => x.ProfilePictureObjectKey).HasMaxLength(256).HasColumnName("ProfilePictureObjectKey");
             entity.Property(x => x.ProfilePictureETag).HasMaxLength(80).HasColumnName("ProfilePictureETag");
             entity.Property(x => x.ProfilePictureContentType).HasMaxLength(50).HasColumnName("ProfilePictureContentType");
@@ -96,6 +98,9 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             entity.Property(x => x.Expertise)
                   .HasMaxLength(256)
                   .IsRequired();
+
+            // TPH: the column is shared with customer rows, so it defaults to false instead of allowing null.
+            entity.Property(x => x.MustChangePassword).HasDefaultValue(false);
         });
 
         // Refresh token mapping.
@@ -189,6 +194,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
 
             entity.HasIndex(x => x.ScheduledDate);
             entity.HasIndex(x => x.DueDateTime);
+            entity.MapXminVersion();
 
             entity.HasMany(x => x.Mechanics)
                   .WithMany(x => x.Appointments)

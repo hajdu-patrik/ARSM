@@ -50,9 +50,12 @@ public static partial class CustomerEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        // Admin only, like appointment deletion: the cascade takes the customer's vehicles, appointments and quotes with it.
         group.MapDelete("/{id:int}", DeleteCustomerAsync)
+            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;

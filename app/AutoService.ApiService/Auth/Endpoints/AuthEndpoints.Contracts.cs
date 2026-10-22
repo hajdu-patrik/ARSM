@@ -24,9 +24,6 @@ public static partial class AuthEndpoints
         (People column caps) are enforced by FieldLengthValidator in ValidateLoginRequest. */
     internal sealed record LoginRequest(string? Email, string? PhoneNumber, string Password);
 
-    /** Returned after a successful login when auth cookies were set. */
-    internal sealed record LoginResponse(int PersonId, bool IsAdmin);
-
-    /** Returned by GET /api/auth/validate when the token is valid. */
-    internal sealed record ValidateTokenResponse(int PersonId, bool IsAdmin);
+    /** The session facts the WebUI keeps: returned by login (cookies set) and by GET /api/auth/validate. */
+    internal sealed record SessionResponse(int PersonId, bool IsAdmin, bool MustChangePassword);
 }

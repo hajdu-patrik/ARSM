@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
-using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
@@ -11,14 +10,14 @@ namespace AutoService.ApiService.Appointments;
 public static partial class AppointmentEndpoints
 {
     /** Server-side projection mirroring {@code ToDto}, so EF Core fetches only mapped columns; name/enum
-        formatting runs through static helpers EF Core evaluates client-side, to keep exact domain formatting. */
+        formatting runs through ProjectionFormat, which EF Core evaluates client-side, to keep exact domain formatting. */
     private static readonly Expression<Func<Appointment, AppointmentDto>> AppointmentDtoProjection = a => new AppointmentDto(
         a.Id,
         a.ScheduledDate,
         a.IntakeCreatedAt,
         a.DueDateTime,
         a.TaskDescription,
-        FormatEnumName(a.Status),
+        ProjectionFormat.EnumName(a.Status),
         a.CompletedAt,
         a.CanceledAt,
         new VehicleDto(
@@ -30,15 +29,16 @@ public static partial class AppointmentEndpoints
             a.Vehicle.Year,
             a.Vehicle.MileageKm,
             a.Vehicle.EnginePowerKw,
-            FormatEnumName(a.Vehicle.DrivetrainType),
+            ProjectionFormat.EnumName(a.Vehicle.DrivetrainType),
             a.Vehicle.CustomerId),
         a.Mechanics
             .Select(m => new MechanicSummaryDto(
                 m.Id,
-                FormatFullName(m.Name.FirstName, m.Name.MiddleName, m.Name.LastName),
-                FormatEnumName(m.Specialization),
+                ProjectionFormat.FullName(m.Name.FirstName, m.Name.MiddleName, m.Name.LastName),
+                ProjectionFormat.EnumName(m.Specialization),
                 m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
-            .ToList());
+            .ToList(),
+        a.Version);
 
     /** Returns the appointments of a given customer across all owned vehicles, capped at the shared list limit. */
     private static async Task<IResult> GetByCustomerAsync(
@@ -148,13 +148,4 @@ public static partial class AppointmentEndpoints
         => descending == true
             ? query.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.Id)
             : query.OrderBy(a => a.ScheduledDate).ThenBy(a => a.Id);
-
-    /** Formats owned name parts exactly like {@code FullName.ToString()}; EF Core evaluates it client-side. */
-    private static string FormatFullName(string firstName, string? middleName, string lastName)
-        => new FullName(firstName, middleName, lastName).ToString();
-
-    /** Returns the enum member name exactly like {@code Enum.ToString()}; EF Core evaluates it client-side. */
-    private static string FormatEnumName<TEnum>(TEnum value)
-        where TEnum : struct, Enum
-        => value.ToString();
 }
