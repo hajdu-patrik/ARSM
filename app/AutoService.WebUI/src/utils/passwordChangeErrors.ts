@@ -5,17 +5,12 @@ import {
   extractServerFieldErrors,
   hasServerFieldErrors,
   mapValidationMessageOrFallback,
+  type ServerErrorBody,
   type ServerFieldErrors,
 } from './serverValidation';
 
 /** Generic failure message, used for a server message that has no mapping. */
 const PASSWORD_CHANGE_FAILED_KEY = 'toast.passwordChangeFailed';
-
-/** Error body of a rejected password change: a field-error dictionary and/or a single detail message. */
-interface PasswordChangeErrorBody {
-  errors?: ServerFieldErrors;
-  detail?: string;
-}
 
 /** Normalizes password-related server field errors, routing unknown keys to NewPassword. */
 function mapPasswordErrors(errors: ServerFieldErrors): ServerFieldErrors {
@@ -38,7 +33,7 @@ function mapPasswordErrors(errors: ServerFieldErrors): ServerFieldErrors {
 
 /** Maps a password-change error to normalized field errors for 422/400 responses, else null. */
 export function extractPasswordChangeErrors(err: unknown): ServerFieldErrors | null {
-  if (!isAxiosError<PasswordChangeErrorBody>(err)) {
+  if (!isAxiosError<ServerErrorBody>(err)) {
     return null;
   }
 

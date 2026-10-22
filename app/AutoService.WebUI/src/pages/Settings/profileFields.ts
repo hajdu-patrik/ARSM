@@ -2,11 +2,10 @@
  * and the lookup of which server message belongs to which field. */
 
 import type { ProfileData } from '../../types/profile/profile.types';
-import { getFieldMessageKey } from '../../utils/serverValidation';
-import type { FieldErrors } from './types';
+import { getFieldMessageKey, type ServerFieldErrors } from '../../utils/serverValidation';
 
 /** Fields of the personal-information form. */
-export const PROFILE_FIELD_NAMES = ['firstName', 'middleName', 'lastName', 'email', 'phoneNumber'] as const;
+const PROFILE_FIELD_NAMES = ['firstName', 'middleName', 'lastName', 'email', 'phoneNumber'] as const;
 
 export type ProfileFieldName = (typeof PROFILE_FIELD_NAMES)[number];
 
@@ -72,7 +71,7 @@ export function withoutDraftFields(draft: ProfileDraft, fields: readonly Profile
 }
 
 /** The field-level message of a field: its own entry, or a conflict message that names no field but concerns this one. */
-function getProfileFieldMessage(errors: FieldErrors, field: ProfileFieldName): string | undefined {
+function getProfileFieldMessage(errors: ServerFieldErrors, field: ProfileFieldName): string | undefined {
   const ownMessage = getFieldMessageKey(errors, field);
   if (ownMessage !== undefined) {
     return ownMessage;
@@ -83,7 +82,7 @@ function getProfileFieldMessage(errors: FieldErrors, field: ProfileFieldName): s
 }
 
 /** The message of every field in a failed save, leaving out the fields that were restored instead. */
-export function pickProfileFieldErrors(errors: FieldErrors, restored: readonly ProfileFieldName[]): ProfileFieldErrors {
+export function pickProfileFieldErrors(errors: ServerFieldErrors, restored: readonly ProfileFieldName[]): ProfileFieldErrors {
   const messageFor = (field: ProfileFieldName) => (restored.includes(field) ? undefined : getProfileFieldMessage(errors, field));
 
   return {

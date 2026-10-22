@@ -1,31 +1,26 @@
 /** Settings error mapping: turns rejected profile-save and profile-delete requests into field errors and message keys. */
 
 import { isAxiosError } from 'axios';
-import type { FieldErrors } from './types';
 import {
   CURRENT_PASSWORD_INVALID_KEY,
+  extractServerFieldErrors,
   getFirstFieldErrorMessage,
   hasServerFieldErrors,
   mapValidationMessageOrFallback,
   normalizeServerFieldErrors,
+  type ServerErrorBody,
+  type ServerFieldErrors,
 } from '../../utils/serverValidation';
-import { extractFieldErrors } from './helpers';
-
-/** Error body of a rejected settings request: a field-error dictionary and/or a single detail message. */
-interface ServerErrorBody {
-  errors?: FieldErrors;
-  detail?: string;
-}
 
 /** Extracts and localizes field errors from a profile-save response. */
-export function extractProfileSaveErrors(err: unknown): FieldErrors | null {
+export function extractProfileSaveErrors(err: unknown): ServerFieldErrors | null {
   if (!isAxiosError<ServerErrorBody>(err)) {
     return null;
   }
 
   const data = err.response?.data;
   const normalizedFieldErrors = normalizeServerFieldErrors(
-    extractFieldErrors(data),
+    extractServerFieldErrors(data),
     (message) => mapValidationMessageOrFallback(message, 'settings', 'toast.profileUpdateFailed'),
   );
 
@@ -55,7 +50,7 @@ export function extractDeleteProfileErrorKey(err: unknown): string | null {
 
   const data = err.response?.data;
   const mappedFieldErrors = normalizeServerFieldErrors(
-    extractFieldErrors(data),
+    extractServerFieldErrors(data),
     (message) => mapValidationMessageOrFallback(message, 'settings', 'toast.profileDeleteFailed'),
   );
 

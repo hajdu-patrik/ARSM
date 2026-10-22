@@ -6,7 +6,7 @@ import {
   getFirstFieldErrorMessage,
   hasServerFieldErrors,
   normalizeServerFieldErrors,
-  type ServerFieldErrors,
+  type ServerErrorBody,
 } from '../../../utils/serverValidation';
 import { mapCatalogValidationMessageToKey, type CatalogFormState } from '../helpers';
 
@@ -14,12 +14,6 @@ import { mapCatalogValidationMessageToKey, type CatalogFormState } from '../help
 type CatalogRequestResult<TRequest> =
   | { readonly payload: TRequest; readonly fieldError: null }
   | { readonly payload: null; readonly fieldError: string };
-
-/** Problem body a catalog endpoint answers a rejected write with. */
-interface CatalogProblemBody {
-  detail?: string;
-  errors?: ServerFieldErrors;
-}
 
 /** i18n key of the reason a form's VAT rate cannot be saved (a legacy stored 0 is not preselected as valid). */
 const INVALID_VAT_RATE_KEY = 'common.validation.invalidVatRate';
@@ -52,7 +46,7 @@ export function buildCatalogValues(form: CatalogFormState): CatalogRequestResult
 
 /** Maps a rejected part/labor-type write to the i18n key of the message to show, or `fallbackKey` when the server named none. */
 export function resolveCatalogSaveErrorKey(error: unknown, fallbackKey: string): string {
-  if (!isAxiosError<CatalogProblemBody>(error)) {
+  if (!isAxiosError<ServerErrorBody>(error)) {
     return fallbackKey;
   }
 

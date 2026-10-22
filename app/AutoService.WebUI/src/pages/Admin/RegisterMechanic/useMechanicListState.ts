@@ -10,6 +10,7 @@ import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { queryKeys } from '../../../services/cache/queryKeys';
 import { useListPaging } from '../../../hooks/useListPaging';
 import type { PagedQuery, PagedResult } from '../../../types/common/pagination.types';
+import type { ServerErrorBody } from '../../../utils/serverValidation';
 import { MECHANIC_LIST_PAGE_SIZE } from './constants';
 
 /** External dependencies for the mechanic list-state hook. */
@@ -18,17 +19,12 @@ interface UseMechanicListStateParams {
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
 }
 
-/** Error body of a rejected mechanic delete. */
-interface DeleteErrorBody {
-  detail?: string;
-}
-
 /** Stable empty page for the render before the read has data. */
 const NO_MECHANICS: MechanicListItem[] = [];
 
 /** Maps a failed delete to the toast that explains it. */
 function getDeleteErrorKey(error: unknown): string {
-  if (!isAxiosError<DeleteErrorBody>(error)) {
+  if (!isAxiosError<ServerErrorBody>(error)) {
     return 'admin.mechanicDeleteFailed';
   }
 

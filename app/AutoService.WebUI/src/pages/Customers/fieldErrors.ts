@@ -9,6 +9,7 @@ import {
   hasRequiredFieldError,
   hasServerFieldErrors,
   normalizeServerFieldErrors,
+  type ServerErrorBody,
   type ServerFieldErrors,
 } from '../../utils/serverValidation';
 
@@ -31,7 +32,7 @@ export type CustomerFieldName = (typeof CUSTOMER_FIELD_NAMES)[number];
 export type VehicleFieldName = (typeof VEHICLE_FIELD_NAMES)[number];
 
 /** A message key together with the field value it was raised for. */
-export interface PinnedFieldError {
+interface PinnedFieldError {
   readonly messageKey: string;
   readonly value: string;
 }
@@ -73,7 +74,7 @@ export function pinFieldErrors<TField extends string>(
 }
 
 /** Pins a message that names no field to the one field it concerns, if the message is a known conflict. */
-export function pinMessageField<TField extends string>(
+function pinMessageField<TField extends string>(
   messageKey: string,
   messageFields: Readonly<Record<string, TField>>,
   values: Readonly<Record<TField, string>>,
@@ -127,7 +128,7 @@ export function resolveRejectedSave<TField extends string>(
   rules: SaveErrorRules<TField>,
   values: Readonly<Record<TField, string>>,
 ): RejectedSave<TField> {
-  if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+  if (!isAxiosError<ServerErrorBody>(error)) {
     return { messageKey: rules.fallbackKey, pinned: null, fieldErrors: null };
   }
 

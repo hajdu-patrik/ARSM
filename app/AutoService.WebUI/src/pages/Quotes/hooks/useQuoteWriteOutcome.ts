@@ -6,7 +6,7 @@ import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
   normalizeServerFieldErrors,
-  type ServerFieldErrors,
+  type ServerErrorBody,
 } from '../../../utils/serverValidation';
 import type { QuoteDetailDto } from '../../../types/quotes/quotes.types';
 import { mapQuoteValidationMessageToKey } from '../helpers';
@@ -44,7 +44,7 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
 
   /** Maps a failed write to one toast; a version conflict also reloads the quote the write targeted. */
   const handleWriteError = useCallback(async (error: unknown, fallbackKey: string, quoteId: number | null) => {
-    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
+    if (!isAxiosError<ServerErrorBody>(error)) {
       showErrorToast(fallbackKey);
       return;
     }

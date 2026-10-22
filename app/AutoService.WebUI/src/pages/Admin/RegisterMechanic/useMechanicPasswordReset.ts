@@ -9,18 +9,13 @@ import {
   isFieldMessageKey,
   mapValidationMessageOrFallback,
   normalizeServerFieldErrors,
-  type ServerFieldErrors,
+  type ServerErrorBody,
 } from '../../../utils/serverValidation';
 
 /** External dependencies for the password-reset hook. */
 interface UseMechanicPasswordResetParams {
   readonly showErrorToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
-}
-
-/** Error body of a rejected reset: the field errors of a 400. */
-interface ResetErrorBody {
-  errors?: ServerFieldErrors;
 }
 
 /** Variables of the reset mutation. */
@@ -31,7 +26,7 @@ interface PasswordReset {
 
 /** Maps a failed reset to the message that explains it: 403 forbidden, the first policy message of a 400, else a plain failure. */
 function getResetErrorKey(error: unknown): string {
-  if (!isAxiosError<ResetErrorBody>(error)) {
+  if (!isAxiosError<ServerErrorBody>(error)) {
     return 'admin.passwordResetFailed';
   }
 

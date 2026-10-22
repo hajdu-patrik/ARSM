@@ -4,6 +4,12 @@
 /** Dictionary of field names to their validation error messages. */
 export type ServerFieldErrors = Record<string, string[]>;
 
+/** Body of a rejected request: a field-error dictionary and/or one detail message. */
+export interface ServerErrorBody {
+  errors?: ServerFieldErrors;
+  detail?: string;
+}
+
 /** Context discriminator for validation message mapping. */
 export type ValidationContext = 'admin' | 'settings';
 
@@ -55,9 +61,7 @@ export function hasRequiredFieldError(errors: ServerFieldErrors, field: string):
 }
 
 /** Extracts the field errors dictionary from an Axios error response payload. */
-export function extractServerFieldErrors(
-  data: { errors?: ServerFieldErrors; detail?: string } | undefined,
-): ServerFieldErrors {
+export function extractServerFieldErrors(data: ServerErrorBody | undefined): ServerFieldErrors {
   return data?.errors ?? {};
 }
 
@@ -173,7 +177,7 @@ function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): s
 
 /** Maps a backend validation message to its i18n key: uniqueness/format/name/password
  * map to shared `common.validation.*` keys; context only adds settings-specific ones. */
-export function mapValidationMessageToKey(message: string, context: ValidationContext): string {
+function mapValidationMessageToKey(message: string, context: ValidationContext): string {
   const normalized = message.trim().toLowerCase();
 
   const commonMessageKey = mapCommonValidationMessageToKey(normalized);

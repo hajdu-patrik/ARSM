@@ -27,6 +27,3 @@ export interface OptionItem {
   value: string;
   labelKey: string;
 }
-
-/** Dictionary of field names to their server validation error messages. */
-export type FieldErrors = Record<string, string[]>;

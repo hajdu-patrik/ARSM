@@ -11,16 +11,11 @@ import {
   getFirstFieldErrorMessage,
   mapValidationMessageOrFallback,
   normalizeServerFieldErrors,
+  type ServerErrorBody,
 } from '../../../utils/serverValidation';
 import { NO_REGISTER_FIELD_ERRORS, pickConflictFieldError, pickRegisterFieldErrors } from './fieldErrors';
 import { buildRegisterMechanicRequest, canSubmitForm, emptyRegisterMechanicFormValues } from './helpers';
 import type { RegisterFieldErrors, RegisterMechanicFormValues, RegisterTextFieldName } from './types';
-
-/** Error body of a rejected registration: a field-error dictionary and/or a single detail message. */
-interface RegistrationErrorBody {
-  errors?: Record<string, string[]>;
-  detail?: string;
-}
 
 /** Maps a server message to its message key, or to the generic admin error when no mapping exists. */
 function mapAdminMessageToToastKey(message: string): string {
@@ -50,7 +45,7 @@ export function useRegisterMechanicForm() {
 
   /** Maps a registration error to inline field errors, falling back to a toast message. */
   const handleSubmitError = useCallback((error: unknown) => {
-    if (!isAxiosError<RegistrationErrorBody>(error)) {
+    if (!isAxiosError<ServerErrorBody>(error)) {
       showErrorToast('admin.genericError');
       return;
     }
