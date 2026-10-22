@@ -8,7 +8,7 @@ import { primeBrowserState } from './support/browser-state';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 
 /** How long the mocked refresh takes: long enough for the second tab to hit its 401 meanwhile. */
-const REFRESH_DURATION_MS = 500;
+const REFRESH_DURATION_MS = 1500;
 
 /** The CSRF cookie the API rotates on every refresh (host-scoped, so both tabs and the API origin share it). */
 function csrfCookie(value: string, baseUrl: string) {

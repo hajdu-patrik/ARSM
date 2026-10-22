@@ -156,7 +156,9 @@ test.describe('Inventory - Parts tab', () => {
 
     // Another user saved this part first, so the version this dialog holds is stale.
     renamePartElsewhere(state, MOCK_PART_IDS.brakePad, 'Brake pad set (renamed elsewhere)');
-    const reloadedPart = page.waitForResponse((response) => response.url().endsWith(`/api/parts/${String(MOCK_PART_IDS.brakePad)}`));
+    const reloadedPart = page.waitForResponse((response) => (
+      response.request().method() === 'GET' && response.url().endsWith(`/api/parts/${String(MOCK_PART_IDS.brakePad)}`)
+    ));
     await dialog.getByLabel('Net unit price').fill('9500');
     await dialog.getByRole('button', { name: 'Save' }).click();
 

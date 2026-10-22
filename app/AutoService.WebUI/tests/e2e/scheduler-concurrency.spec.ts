@@ -36,10 +36,12 @@ function createdAppointmentId(state: MockApiState): number {
 
 /** Resolves when the scheduler has read the current month again, which is what a conflict triggers. */
 function monthReloaded(page: Page) {
-  const month = `month=${String(new Date().getMonth() + 1)}`;
+  const month = String(new Date().getMonth() + 1);
 
   return page.waitForResponse((response) => (
-    response.request().method() === 'GET' && response.url().includes('/api/appointments?') && response.url().includes(month)
+    response.request().method() === 'GET'
+    && response.url().includes('/api/appointments?')
+    && new URL(response.url()).searchParams.get('month') === month
   ));
 }
 

@@ -92,7 +92,9 @@ test.describe('Inventory - Labour types tab', () => {
 
     // Another user saved this labour type first, so the version this dialog holds is stale.
     renameLaborTypeElsewhere(state, MOCK_LABOR_TYPE_IDS.oilChange, 'Oil change (renamed elsewhere)');
-    const reloadedLaborType = page.waitForResponse((response) => response.url().endsWith(`/api/labor-types/${String(MOCK_LABOR_TYPE_IDS.oilChange)}`));
+    const reloadedLaborType = page.waitForResponse((response) => (
+      response.request().method() === 'GET' && response.url().endsWith(`/api/labor-types/${String(MOCK_LABOR_TYPE_IDS.oilChange)}`)
+    ));
     await dialog.getByLabel('Hourly rate (net)').fill('6500');
     await dialog.getByRole('button', { name: 'Save' }).click();
 
