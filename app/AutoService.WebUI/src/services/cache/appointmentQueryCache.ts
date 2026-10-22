@@ -32,16 +32,6 @@ function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; 
   };
 }
 
-/** Checks whether an appointment is scheduled today in local time (for the cached today query). */
-function isScheduledToday(appointment: AppointmentDto): boolean {
-  const scheduledDate = new Date(appointment.scheduledDate);
-  const now = new Date();
-
-  return scheduledDate.getFullYear() === now.getFullYear()
-    && scheduledDate.getMonth() === now.getMonth()
-    && scheduledDate.getDate() === now.getDate();
-}
-
 /** Checks whether a scheduler month query key targets a given year-month bucket. */
 function queryKeyMonthMatches(queryKey: QueryKey, year: number, month: number): boolean {
   const keyYear = queryKey.at(-2);
@@ -57,18 +47,6 @@ export function writeAppointmentToSchedulerCache(
   appointment: AppointmentDto,
 ): void {
   const appointmentMonth = getAppointmentLocalMonth(appointment);
-
-  queryClient.setQueryData<AppointmentDto[]>(queryKeys.scheduler.today(authScope), (current) => {
-    if (!current) {
-      return current;
-    }
-
-    const withoutUpdated = current.filter((item) => item.id !== appointment.id);
-    return isScheduledToday(appointment)
-      ? upsertAppointment(withoutUpdated, appointment)
-      : withoutUpdated;
-  });
-
   const monthQueries = queryClient.getQueryCache().findAll({
     queryKey: queryKeys.scheduler.monthRoot(authScope),
   });
@@ -87,7 +65,7 @@ export function writeAppointmentToSchedulerCache(
   }
 }
 
-/** Drops a hard-deleted appointment from every materialized scheduler list (today and all cached months). */
+/** Drops a hard-deleted appointment from every materialized scheduler list (all cached months). */
 export function removeAppointmentFromSchedulerCache(
   queryClient: QueryClient,
   authScope: AuthQueryScope,
@@ -99,7 +77,7 @@ export function removeAppointmentFromSchedulerCache(
   );
 }
 
-/** Finds a cached snapshot of an appointment across today and the cached months; read before a delete,
+/** Finds a cached snapshot of an appointment across the cached months; read before a delete,
  * because the history invalidation needs the vehicle and customer ids that the delete removes. */
 export function findCachedAppointment(
   queryClient: QueryClient,

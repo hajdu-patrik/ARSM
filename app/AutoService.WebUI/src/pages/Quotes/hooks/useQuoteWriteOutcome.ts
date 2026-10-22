@@ -1,6 +1,7 @@
 /** Outcome of a quote write, shared by every write hook: adopting the quote the server returned, or mapping the failure (a stale version included) to one toast. */
 import { useCallback } from 'react';
 import { isAxiosError } from 'axios';
+import { isVersionConflict } from '../../../services/http/error-code';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
@@ -43,14 +44,14 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
 
   /** Maps a failed write to one toast; a version conflict also reloads the quote the write targeted. */
   const handleWriteError = useCallback(async (error: unknown, fallbackKey: string, quoteId: number | null) => {
-    if (!isAxiosError<{ code?: string; detail?: string; errors?: ServerFieldErrors }>(error)) {
+    if (!isAxiosError<{ detail?: string; errors?: ServerFieldErrors }>(error)) {
       showErrorToast(fallbackKey);
       return;
     }
 
     const responseData = error.response?.data;
 
-    if (error.response?.status === 409 && responseData?.code === VERSION_CONFLICT_CODE) {
+    if (isVersionConflict(error, VERSION_CONFLICT_CODE)) {
       showErrorToast('quotes.errors.versionConflict');
 
       if (quoteId !== null) {

@@ -1,5 +1,5 @@
-/** Axios client for API calls: base URL from `VITE_API_URL` with no fallback (see WebUI CLAUDE.md),
- * plus CSRF header attachment and single-flight 401 refresh-and-retry. */
+/** Axios client for API calls: base URL from `VITE_API_URL` with no fallback (see WebUI CLAUDE.md), plus CSRF header
+ * attachment, the single-flight (also cross-tab) 401 refresh-and-retry and the required-password-change flag. */
 
 import axios from 'axios';
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
@@ -7,7 +7,9 @@ import { useAuthStore } from '../../store/auth.store';
 import { clearAuthSessionHint } from '../auth/session-hint';
 import { API_URL } from './api-url';
 import { readCsrfCookie } from './csrf-token';
+import { hasErrorCode } from './error-code';
 import { isRecord } from './record-guard';
+import type { SilentRequestOptions } from './request-options';
 import { isServerErrorStatus, redirectToServerError } from './server-error';
 
 declare module 'axios' {
@@ -33,7 +35,13 @@ const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 /** A request that takes longer than this fails with a timeout error instead of hanging. */
 const REQUEST_TIMEOUT_MS = 30_000;
 
-/** In-flight refresh promise for single-flight deduplication. */
+/** Name of the Web Lock that lets one tab at a time refresh the session of this origin. */
+const REFRESH_LOCK_NAME = 'arsm-session-refresh';
+
+/** Code of the 403 that every request except the password change gets while a temporary password is still set. */
+const PASSWORD_CHANGE_REQUIRED_CODE = 'password_change_required';
+
+/** In-flight refresh promise for single-flight deduplication within this tab. */
 let refreshPromise: Promise<void> | null = null;
 
 /** Tracks requests that have already been retried after a 401 to prevent infinite loops. */
@@ -117,19 +125,35 @@ apiClient.interceptors.request.use((config) => {
 // Interceptor: attach the CSRF double-submit header to unsafe requests (see attachCsrfHeader).
 apiClient.interceptors.request.use(attachCsrfHeader);
 
-/** Refreshes the session once for all concurrent 401s; later callers share the in-flight call. */
-function refreshSession(): Promise<void> {
-  refreshPromise ??= apiClient
-    .post(REFRESH_PATH)
-    .then(() => undefined)
-    .finally(() => {
-      refreshPromise = null;
-    });
+/** Posts the refresh request, which rotates the session and CSRF cookies. */
+async function postRefresh(options: SilentRequestOptions | undefined): Promise<void> {
+  await apiClient.post(REFRESH_PATH, undefined, { skipErrorRedirect: options?.skipErrorRedirect });
+}
+
+/** Refreshes inside the cross-tab lock: a tab that waited for it skips the call when another tab rotated the CSRF
+ * cookie meanwhile, because the tabs share their cookies, so the other tab's refresh already served this one. */
+function refreshAcrossTabs(options: SilentRequestOptions | undefined): Promise<void> {
+  const csrfTokenBeforeWaiting = readCsrfCookie();
+
+  return navigator.locks.request(REFRESH_LOCK_NAME, async () => {
+    if (readCsrfCookie() === csrfTokenBeforeWaiting) {
+      await postRefresh(options);
+    }
+  });
+}
+
+/** Refreshes the session once for all concurrent callers of this tab (later ones share the in-flight call)
+ * and, where the Web Locks API exists, one tab at a time. The single refresh path of the app. */
+export function refreshSession(options?: SilentRequestOptions): Promise<void> {
+  refreshPromise ??= ('locks' in navigator ? refreshAcrossTabs(options) : postRefresh(options)).finally(() => {
+    refreshPromise = null;
+  });
 
   return refreshPromise;
 }
 
-// Interceptor: redact the login password, send server errors to /500 and refresh-and-retry a 401 once.
+// Interceptor: redact the login password, send server errors to /500, flag a required password change
+// and refresh-and-retry a 401 once.
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
@@ -144,6 +168,11 @@ apiClient.interceptors.response.use(
 
     if (isServerErrorStatus(responseStatus) && !originalRequest?.skipErrorRedirect) {
       redirectToServerError();
+    }
+
+    if (hasErrorCode(error, 403, PASSWORD_CHANGE_REQUIRED_CODE)) {
+      // An admin reset the password during this session: the route guards now move the user to the change-password page.
+      useAuthStore.getState().setMustChangePassword(true);
     }
 
     const requestUrl = originalRequest?.url ?? '';

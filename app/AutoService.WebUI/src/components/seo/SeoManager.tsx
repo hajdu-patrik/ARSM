@@ -25,6 +25,7 @@ type RouteSeoKeys = { readonly title: string; readonly description: string };
 /** Known routes by normalized path (the route table's paths); their canonical path is the route itself. */
 const ROUTE_SEO_KEYS: ReadonlyMap<string, RouteSeoKeys> = new Map([
   [APP_ROUTE_PATHS.login, { title: 'seo.pages.login.title', description: 'seo.pages.login.description' }],
+  [APP_ROUTE_PATHS.changePassword, { title: 'seo.pages.changePassword.title', description: 'seo.pages.changePassword.description' }],
   [APP_ROUTE_PATHS.scheduler, { title: 'seo.pages.scheduler.title', description: 'seo.pages.scheduler.description' }],
   [APP_ROUTE_PATHS.customers, { title: 'seo.pages.customers.title', description: 'seo.pages.customers.description' }],
   [APP_ROUTE_PATHS.quotes, { title: 'seo.pages.quotes.title', description: 'seo.pages.quotes.description' }],

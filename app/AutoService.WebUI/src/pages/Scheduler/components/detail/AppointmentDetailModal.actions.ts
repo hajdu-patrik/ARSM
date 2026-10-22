@@ -3,11 +3,12 @@ import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 
-/** Inputs of {@link useAppointmentDetailActions}: the open appointment and the page-level handlers. */
+/** Inputs of {@link useAppointmentDetailActions}: the open appointment with its version and the page-level handlers. */
 interface UseAppointmentDetailActionsArgs {
   readonly appointmentId: number;
+  readonly appointmentVersion: number;
   readonly onClaim: (id: number) => Promise<void>;
-  readonly onStatusChange: (id: number, status: AppointmentStatus) => Promise<void>;
+  readonly onStatusChange: (id: number, status: AppointmentStatus, version: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
@@ -16,6 +17,7 @@ interface UseAppointmentDetailActionsArgs {
 /** State and handlers of the confirm dialogs and the mechanic assignment; each run is a mutation, so its pending flag is derived. */
 export function useAppointmentDetailActions({
   appointmentId,
+  appointmentVersion,
   onClaim,
   onStatusChange,
   onUnclaim,
@@ -40,7 +42,7 @@ export function useAppointmentDetailActions({
     },
   });
   const { isPending: isUpdatingStatus, mutate: runStatusChange } = useMutation({
-    mutationFn: (status: AppointmentStatus) => onStatusChange(appointmentId, status),
+    mutationFn: (status: AppointmentStatus) => onStatusChange(appointmentId, status, appointmentVersion),
     onSuccess: () => {
       setPendingStatusChange(null);
     },

@@ -81,6 +81,16 @@ export class SchedulerPage {
   async createWithCurrentForm(): Promise<void> {
     await this.intakeDialog().getByTestId('scheduler-intake-create').click();
   }
+
+  /** Creates an intake for the current day: finds the customer by plate, picks the first match and fills the task. */
+  async createIntake(licensePlate: string, taskDescription: string): Promise<void> {
+    const dialog = await this.openIntakeForCurrentDay();
+    await this.searchByLicensePlate(licensePlate);
+    await dialog.getByRole('button', { name: 'Select' }).first().click();
+    await dialog.getByTestId('scheduler-intake-task-description').fill(taskDescription);
+    await this.createWithCurrentForm();
+    await expect(this.intakeDialog()).toHaveCount(0);
+  }
 }
 
 /** The test id of today's cell in the calendar grid. */

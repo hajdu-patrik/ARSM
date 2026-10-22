@@ -1,12 +1,11 @@
 import type { Route } from '@playwright/test';
-import type { AppointmentStatus, SchedulerCreateIntakeRequest } from '../../../src/types/scheduler/scheduler.types';
 import type { CreateVehicleRequest } from '../../../src/types/customers/customers.types';
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
-import { createAppointment, createVehicle, deleteAppointment, getLookupName } from './api-mock-data';
+import { createVehicle, getLookupName } from './api-mock-data';
 import { compareText, fulfillPaged } from './api-mock-paging';
-import { fulfillJson, fulfillNoContent } from './api-mock-response';
+import { fulfillJson } from './api-mock-response';
 
 /** Dispatches `/api/customers` lookups and the nested customer/vehicle mock routes. */
 export async function tryHandleCustomerRoute(
@@ -154,77 +153,4 @@ async function handleCustomerByLicensePlate(route: Route, url: URL, state: MockA
   }
 
   await fulfillJson(route, { detail: 'Customer not found' }, 404);
-}
-
-/** Dispatches `/api/appointments` mock requests, including the live update stream. */
-export async function tryHandleAppointmentRoute(
-  route: Route,
-  method: string,
-  path: string,
-  state: MockApiState,
-  options: InstallApiMockOptions,
-): Promise<boolean> {
-  if (!isAuthenticated(options)) {
-    await fulfillJson(route, { detail: 'Unauthorized' }, 401);
-    return true;
-  }
-
-  // The scheduler opens a live update stream while mounted. Answering it with a valid, empty
-  // event stream keeps the mock from returning 404 and the client from retrying against an error.
-  if (path === '/api/appointments/updates' && method === 'GET') {
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/event-stream',
-      body: ': mock appointment updates stream ready\n\n',
-    });
-    return true;
-  }
-
-  if (path === '/api/appointments/today' && method === 'GET') {
-    await fulfillJson(route, []);
-    return true;
-  }
-
-  if (path === '/api/appointments' && method === 'GET') {
-    await fulfillJson(route, state.appointments);
-    return true;
-  }
-
-  if (path === '/api/appointments/intake' && method === 'POST') {
-    const appointment = createAppointment(state, route.request().postDataJSON() as SchedulerCreateIntakeRequest);
-    await fulfillJson(route, appointment, 201);
-    return true;
-  }
-
-  const appointmentStatusMatch = /^\/api\/appointments\/(\d+)\/status$/.exec(path);
-  if (appointmentStatusMatch && method === 'PUT') {
-    const appointmentId = Number(appointmentStatusMatch[1]);
-    const appointment = state.appointments.find((candidate) => candidate.id === appointmentId);
-
-    if (!appointment) {
-      await fulfillJson(route, { detail: 'Appointment not found.' }, 404);
-      return true;
-    }
-
-    const { status } = route.request().postDataJSON() as { status: AppointmentStatus };
-    const updated = { ...appointment, status };
-    state.appointments[state.appointments.indexOf(appointment)] = updated;
-    await fulfillJson(route, updated);
-    return true;
-  }
-
-  const appointmentByIdMatch = /^\/api\/appointments\/(\d+)$/.exec(path);
-  if (appointmentByIdMatch && method === 'DELETE') {
-    const appointmentId = Number(appointmentByIdMatch[1]);
-
-    if (!deleteAppointment(state, appointmentId)) {
-      await fulfillJson(route, { code: 'appointment_not_found' }, 404);
-      return true;
-    }
-
-    await fulfillNoContent(route);
-    return true;
-  }
-
-  return false;
 }

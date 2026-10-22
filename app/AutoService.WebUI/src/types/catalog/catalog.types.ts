@@ -28,6 +28,8 @@ export interface PartDto {
   netUnitPrice: number;
   grossUnitPrice: number;
   vatRatePercent: number;
+  /** Concurrency version the next update must echo. */
+  version: number;
 }
 
 /** Request payload for creating a part via `POST /api/parts`. */
@@ -38,12 +40,13 @@ export interface CreatePartRequest {
   vatRatePercent: number;
 }
 
-/** Request payload for updating a part via `PUT /api/parts/{id}`. */
+/** Request payload for updating a part via `PUT /api/parts/{id}`; a stale `version` is refused with a 409. */
 export interface UpdatePartRequest {
   partNumber: string;
   name: string;
   netUnitPrice: number;
   vatRatePercent: number;
+  version: number;
 }
 
 /** Labor type catalog item returned by `GET /api/labor-types` and `GET /api/labor-types/{id}`. */
@@ -54,6 +57,8 @@ export interface LaborTypeDto {
   hourlyNetRate: number;
   grossHourlyRate: number;
   vatRatePercent: number;
+  /** Concurrency version the next update must echo. */
+  version: number;
 }
 
 /** Request payload for creating a labor type via `POST /api/labor-types`. */
@@ -64,10 +69,11 @@ export interface CreateLaborTypeRequest {
   vatRatePercent: number;
 }
 
-/** Request payload for updating a labor type via `PUT /api/labor-types/{id}`. */
+/** Request payload for updating a labor type via `PUT /api/labor-types/{id}`; a stale `version` is refused with a 409. */
 export interface UpdateLaborTypeRequest {
   code: string;
   name: string;
   hourlyNetRate: number;
   vatRatePercent: number;
+  version: number;
 }

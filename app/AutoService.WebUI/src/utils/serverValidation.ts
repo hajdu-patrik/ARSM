@@ -7,6 +7,9 @@ export type ServerFieldErrors = Record<string, string[]>;
 /** Context discriminator for validation message mapping. */
 export type ValidationContext = 'admin' | 'settings';
 
+/** Message key of a wrong current password, which belongs to the current-password field. */
+export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInvalid';
+
 /** Capitalizes the first character of a string. */
 function toCapitalized(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -24,6 +27,20 @@ export function getServerFieldError(errors: ServerFieldErrors, field: string): s
   }
 
   return undefined;
+}
+
+/** Prefixes of the message keys that describe one field. */
+const FIELD_MESSAGE_KEY_PREFIXES: readonly string[] = ['common.validation.', 'settings.errors.'];
+
+/** True for a message key that describes one field; any other key is a generic failure that only the toast shows. */
+export function isFieldMessageKey(messageKey: string): boolean {
+  return FIELD_MESSAGE_KEY_PREFIXES.some((prefix) => messageKey.startsWith(prefix));
+}
+
+/** Returns the first message key of a field when it describes that field, undefined otherwise. */
+export function getFieldMessageKey(errors: ServerFieldErrors, field: string): string | undefined {
+  const messageKey = getServerFieldError(errors, field);
+  return messageKey !== undefined && isFieldMessageKey(messageKey) ? messageKey : undefined;
 }
 
 /** Returns true when the field-error dictionary has at least one non-empty entry. */
@@ -148,7 +165,7 @@ function mapPasswordValidationMessageToKey(normalizedMessage: string): string | 
 /** Maps a settings-only message (wrong current password) to its settings key. */
 function mapSettingsSpecificValidationMessageToKey(normalizedMessage: string): string | null {
   if (containsAny(normalizedMessage, ['current password is invalid', 'password is incorrect'])) {
-    return 'settings.errors.currentPasswordInvalid';
+    return CURRENT_PASSWORD_INVALID_KEY;
   }
 
   return null;
@@ -184,14 +201,15 @@ export function mapValidationMessageToKey(message: string, context: ValidationCo
   return message;
 }
 
-/** Maps a validation message to an i18n key in the admin context. */
-export function mapAdminValidationMessageToKey(message: string): string {
-  return mapValidationMessageToKey(message, 'admin');
-}
-
 /** Maps a validation message to an i18n key in the settings context. */
 export function mapSettingsValidationMessageToKey(message: string): string {
   return mapValidationMessageToKey(message, 'settings');
+}
+
+/** Maps a validation message to its i18n key in the context, or to `fallbackKey` when no rule matches it. */
+export function mapValidationMessageOrFallback(message: string, context: ValidationContext, fallbackKey: string): string {
+  const mappedKey = mapValidationMessageToKey(message, context);
+  return mappedKey === message ? fallbackKey : mappedKey;
 }
 
 /** Normalizes all error messages in a field errors dictionary by applying a mapping function to each message. */

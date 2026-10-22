@@ -117,17 +117,19 @@ export const CustomerCard = memo(function CustomerCard({
             >
               <Pencil className={smallIconClass} />
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                onOpenDeleteCustomerModal(customer);
-              }}
-              className={rowIconActionDangerClass}
-              title={deleteCustomerLabel}
-              aria-label={deleteCustomerLabel}
-            >
-              <Trash2 className={smallIconClass} />
-            </button>
+            {onOpenDeleteCustomerModal !== undefined && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenDeleteCustomerModal(customer);
+                }}
+                className={rowIconActionDangerClass}
+                title={deleteCustomerLabel}
+                aria-label={deleteCustomerLabel}
+              >
+                <Trash2 className={smallIconClass} />
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -26,6 +26,10 @@ export const huFeature = {
         title: 'Cégeredmény',
         description: 'Elfogadott, kiküldött, lejárt és elutasított árajánlatok összesítése időszakonként az ARSM-ben.',
       },
+      changePassword: {
+        title: 'Új jelszó beállítása',
+        description: 'Cserélje le a rendszergazda által beállított ideiglenes jelszót az ARSM használatának folytatásához.',
+      },
       settings: {
         title: 'Profil- és biztonsági beállítások',
         description: 'Kezelje ARSM-profilját, jelszavát és személyes biztonsági beállításait.',
@@ -169,6 +173,18 @@ export const huFeature = {
     confirmRegisterTitle: 'Regisztráció megerősítése',
     confirmRegisterMessage: 'Regisztrálni szeretné a következő szerelőt: {{email}}?',
     confirmRegister: 'Regisztrálás',
+    resetPassword: 'Jelszó visszaállítása',
+    resetPasswordMessage: 'Állítson be ideiglenes jelszót {{name}} ({{email}}) számára. Minden munkamenete megszűnik, és a következő bejelentkezéskor meg kell változtatnia.',
+    temporaryPassword: 'Ideiglenes jelszó',
+    temporaryPasswordPlaceholder: 'Adja meg az ideiglenes jelszót',
+    resettingPassword: 'Visszaállítás...',
+    passwordResetSuccess: '"{{email}}" szerelő ideiglenes jelszava beállítva; a következő bejelentkezéskor módosítania kell.',
+    passwordResetForbidden: 'Nincs jogosultsága a szerelő jelszavának visszaállításához.',
+    passwordResetFailed: 'Nem sikerült visszaállítani a jelszót.',
+  },
+  changePassword: {
+    title: 'Válasszon új jelszót',
+    message: 'A fiókjához a rendszergazda ideiglenes jelszót állított be. Adja meg jelenlegi jelszóként, majd válasszon egy újat a folytatáshoz.',
   },
   settings: {
     loadError: 'Nem sikerült betölteni a profiladatokat.',

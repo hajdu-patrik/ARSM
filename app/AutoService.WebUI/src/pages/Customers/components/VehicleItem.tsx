@@ -24,13 +24,13 @@ interface VehicleItemProps {
 	vehicle: VehicleDetailDto;
 	searchTerm: string;
 	onOpenEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
-	onOpenDeleteVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void;
+	onOpenDeleteVehicleModal: ((customerId: number, vehicle: VehicleDetailDto) => void) | undefined;
 	onOpenVehicleDetails: (customerId: number, vehicleId: number) => void;
 	onCreateQuoteForVehicle: (vehicleId: number) => void;
 	isDetailsOpen: boolean;
 }
 
-/** Renders one vehicle row (plate highlighted by the search) with its quote, history, edit and delete actions above the specs grid. */
+/** Renders one vehicle row (plate highlighted by the search) with its quote, history, edit and, for an admin, delete actions above the specs grid. */
 export const VehicleItem = memo(function VehicleItem({
 	t,
 	locale,
@@ -99,17 +99,19 @@ export const VehicleItem = memo(function VehicleItem({
 						<Pencil className={smallIconClass} />
 					</button>
 
-					<button
-						type="button"
-						onClick={() => {
-							onOpenDeleteVehicleModal(customerId, vehicle);
-						}}
-						className={rowIconActionDangerClass}
-						title={t('customers.deleteVehicle')}
-						aria-label={t('customers.deleteVehicle')}
-					>
-						<Trash2 className={smallIconClass} />
-					</button>
+					{onOpenDeleteVehicleModal !== undefined && (
+						<button
+							type="button"
+							onClick={() => {
+								onOpenDeleteVehicleModal(customerId, vehicle);
+							}}
+							className={rowIconActionDangerClass}
+							title={t('customers.deleteVehicle')}
+							aria-label={t('customers.deleteVehicle')}
+						>
+							<Trash2 className={smallIconClass} />
+						</button>
+					)}
 				</div>
 			</div>
 

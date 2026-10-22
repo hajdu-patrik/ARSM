@@ -23,6 +23,12 @@ export const laborTypeService = {
     return response.data;
   },
 
+  /** Returns one labor type with its current version. */
+  async getLaborType(id: number): Promise<LaborTypeDto> {
+    const response = await apiClient.get<LaborTypeDto>(`/api/labor-types/${String(id)}`);
+    return response.data;
+  },
+
   /** Updates a labor type. */
   async updateLaborType(id: number, request: UpdateLaborTypeRequest): Promise<void> {
     await apiClient.put(`/api/labor-types/${String(id)}`, request);

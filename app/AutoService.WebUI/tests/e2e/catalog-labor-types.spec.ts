@@ -3,7 +3,9 @@ import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
-import type { MockApiState } from './support/test-data';
+import { renameLaborTypeElsewhere } from './support/concurrent-changes';
+import { errorToastMessage } from './support/toast';
+import { MOCK_LABOR_TYPE_IDS, type MockApiState } from './support/test-data';
 
 /** Installs the catalog mock and logs in as a mechanic; returns the mutable mock state. */
 async function prepareInventoryPage(page: Page): Promise<MockApiState> {
@@ -78,6 +80,31 @@ test.describe('Inventory - Labour types tab', () => {
     await expect(page.locator('output[aria-live="polite"]')).toContainText('Labour type created successfully.');
     await expect(page.getByText('Brake service', { exact: true })).toHaveCount(1);
     await expect(page.getByText(/6,543\.21/)).toHaveCount(1);
+  });
+
+  test('a stale edit toasts the conflict, reloads the list and saves on the second try', async ({ page }) => {
+    const state = await prepareInventoryPage(page);
+    const catalogPage = new CatalogPage(page);
+    await catalogPage.goto('labor-types');
+
+    const dialog = await catalogPage.openEdit('laborType', 1);
+    await expect(dialog.getByLabel('Code')).toHaveValue('LBR-OIL');
+
+    // Another user saved this labour type first, so the version this dialog holds is stale.
+    renameLaborTypeElsewhere(state, MOCK_LABOR_TYPE_IDS.oilChange, 'Oil change (renamed elsewhere)');
+    const reloadedLaborType = page.waitForResponse((response) => response.url().endsWith(`/api/labor-types/${String(MOCK_LABOR_TYPE_IDS.oilChange)}`));
+    await dialog.getByLabel('Hourly rate (net)').fill('6500');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(errorToastMessage(page, 'Someone else changed this item in the meantime. The list has been reloaded, please try again.')).toBeVisible();
+    await reloadedLaborType;
+    await expect(page.getByText('Oil change (renamed elsewhere)', { exact: true })).toHaveCount(1);
+
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(catalogPage.formDialog('Edit labour type')).toHaveCount(0);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText('Labour type updated successfully.');
+    await expect(page.getByText(/6,500\.00/)).toHaveCount(1);
   });
 
   test('delete confirmation states the quote-snapshot effect and removes the row', async ({ page }) => {

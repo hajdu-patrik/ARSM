@@ -1,22 +1,27 @@
-/** Scheduler reads as declarative queries: today and the previous-current-next month window, refetched on a
- * visible-tab interval, on focus and reconnect, and on every live update. */
+/** Scheduler reads as declarative queries: the previous-current-next month window plus the real current month,
+ * from which today is derived; refetched on a visible-tab interval, on focus and reconnect and on every live update. */
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
-import { SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS } from '../../../services/cache/cache-policy';
+import {
+  SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS,
+  SCHEDULER_LIVE_REFRESH_INTERVAL_MS,
+} from '../../../services/cache/cache-policy';
 import type { AuthQueryScope } from '../../../services/cache/queryKeys';
 import { schedulerQueries } from '../../../services/queries/scheduler.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
+import { isScheduledToday } from '../utils/scheduler-datetime';
 import { foldReadStatus, isInitialLoading, type ReadStatus } from './readStatus';
 import {
   EMPTY_APPOINTMENTS,
   getAdjacentMonthViews,
+  getMonthViewOfDate,
   mergeUniqueAppointments,
   type CalendarMonthView,
 } from './schedulerMonthWindow';
-import { useSchedulerLiveRefresh } from './useSchedulerLiveRefresh';
+import { useIsAppointmentLiveConnected, useSchedulerLiveRefresh } from './useSchedulerLiveRefresh';
 
 /** Dependencies needed by the scheduler data hook. */
 interface UseSchedulerDataSyncArgs {
@@ -27,7 +32,7 @@ interface UseSchedulerDataSyncArgs {
 
 /** The server read models of the scheduler page. */
 interface SchedulerAppointments {
-  /** Appointments scheduled for today. */
+  /** Appointments scheduled for today, found in the loaded months. */
   readonly todayAppointments: AppointmentDto[];
   /** Appointments of the viewed calendar month. */
   readonly monthAppointments: AppointmentDto[];
@@ -37,36 +42,20 @@ interface SchedulerAppointments {
   readonly isLoadingMonth: boolean;
 }
 
-/** i18n keys of the two failure messages of one read. */
-interface ReadFailureToastKeys {
-  readonly authExpired: string;
-  readonly failed: string;
-}
-
-const TODAY_FAILURE_KEYS: ReadFailureToastKeys = {
-  authExpired: 'scheduler.todayAuthExpiredError',
-  failed: 'scheduler.todayLoadError',
-};
-
-const MONTH_FAILURE_KEYS: ReadFailureToastKeys = {
-  authExpired: 'scheduler.monthAuthExpiredError',
-  failed: 'scheduler.monthLoadError',
-};
-
-/** The message to toast for a read status: none while it is not failing, the session one for an expired session. */
-function toFailureMessageKey({ failure }: ReadStatus, { authExpired, failed }: ReadFailureToastKeys): string | null {
+/** The message to toast for the month reads: none while they are not failing, the session one for an expired session. */
+function toFailureMessageKey({ failure }: ReadStatus): string | null {
   if (failure === 'none') {
     return null;
   }
 
-  return failure === 'auth-expired' ? authExpired : failed;
+  return failure === 'auth-expired' ? 'scheduler.monthAuthExpiredError' : 'scheduler.monthLoadError';
 }
 
 /** The month read with the visible-tab background refresh; TanStack never runs the interval in a hidden tab. */
-function monthReadOptions(scope: AuthQueryScope | null, view: CalendarMonthView) {
+function monthReadOptions(scope: AuthQueryScope | null, view: CalendarMonthView, refetchInterval: number) {
   return {
     ...schedulerQueries.month(scope, view.year, view.month),
-    refetchInterval: SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS,
+    refetchInterval,
   };
 }
 
@@ -77,37 +66,37 @@ export function useSchedulerDataSync({
   showErrorToast,
 }: UseSchedulerDataSyncArgs): SchedulerAppointments {
   const scope = useAuthQueryScope();
+  // While the live stream is open its events refresh the reads, so the interval is only a long safety net.
+  const refetchInterval = useIsAppointmentLiveConnected()
+    ? SCHEDULER_LIVE_REFRESH_INTERVAL_MS
+    : SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS;
   const [previousView, currentView, nextView] = getAdjacentMonthViews(calendarYear, calendarMonth);
 
-  const todayQuery = useQuery({
-    ...schedulerQueries.today(scope),
-    refetchInterval: SCHEDULER_BACKGROUND_REFRESH_INTERVAL_MS,
-  });
-  const previousMonthQuery = useQuery(monthReadOptions(scope, previousView));
-  const currentMonthQuery = useQuery(monthReadOptions(scope, currentView));
-  const nextMonthQuery = useQuery(monthReadOptions(scope, nextView));
+  const previousMonthQuery = useQuery(monthReadOptions(scope, previousView, refetchInterval));
+  const currentMonthQuery = useQuery(monthReadOptions(scope, currentView, refetchInterval));
+  const nextMonthQuery = useQuery(monthReadOptions(scope, nextView, refetchInterval));
+  // The real current month: it shares a query with the window while inside it, and is one more read once the user paged away.
+  const todayMonthQuery = useQuery(monthReadOptions(scope, getMonthViewOfDate(new Date()), refetchInterval));
 
   const previousMonth = previousMonthQuery.data ?? EMPTY_APPOINTMENTS;
   const currentMonth = currentMonthQuery.data ?? EMPTY_APPOINTMENTS;
   const nextMonth = nextMonthQuery.data ?? EMPTY_APPOINTMENTS;
+  const todayMonth = todayMonthQuery.data ?? EMPTY_APPOINTMENTS;
   const calendarAppointments = useMemo(
     () => mergeUniqueAppointments(previousMonth, currentMonth, nextMonth),
     [previousMonth, currentMonth, nextMonth],
   );
+  const todayAppointments = useMemo(
+    () => mergeUniqueAppointments(calendarAppointments, todayMonth).filter(isScheduledToday),
+    [calendarAppointments, todayMonth],
+  );
 
   const monthReads = [previousMonthQuery, currentMonthQuery, nextMonthQuery];
-  const todayStatus = foldReadStatus([todayQuery]);
-  const monthStatus = foldReadStatus(monthReads);
+  const monthStatus = foldReadStatus([...monthReads, todayMonthQuery]);
 
   useSchedulerLiveRefresh(scope);
   useReadFailureToast({
-    failureMessageKey: toFailureMessageKey(todayStatus, TODAY_FAILURE_KEYS),
-    errorUpdatedAt: todayStatus.errorAt,
-    isSuccess: todayStatus.isSuccess,
-    showErrorToast,
-  });
-  useReadFailureToast({
-    failureMessageKey: toFailureMessageKey(monthStatus, MONTH_FAILURE_KEYS),
+    failureMessageKey: toFailureMessageKey(monthStatus),
     errorUpdatedAt: monthStatus.errorAt,
     isSuccess: monthStatus.isSuccess,
     readKey: `${String(calendarYear)}-${String(calendarMonth)}`,
@@ -115,7 +104,7 @@ export function useSchedulerDataSync({
   });
 
   return {
-    todayAppointments: todayQuery.data ?? EMPTY_APPOINTMENTS,
+    todayAppointments,
     monthAppointments: currentMonth,
     calendarAppointments,
     isLoadingMonth: monthReads.some(isInitialLoading),

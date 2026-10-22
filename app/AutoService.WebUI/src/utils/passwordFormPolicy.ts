@@ -1,8 +1,6 @@
-/** Settings password form policy helpers. */
+/** Policy of the password-change form: its fields, the reason a submit is disabled and the per-field server messages. */
 
-import { CURRENT_PASSWORD_INVALID_KEY } from './handlers';
-import { getFieldMessageKey } from './helpers';
-import type { FieldErrors } from './types';
+import { CURRENT_PASSWORD_INVALID_KEY, getFieldMessageKey, type ServerFieldErrors } from './serverValidation';
 
 const CREDENTIALS_DISABLED_REASON_KEYS = {
   submitting: 'settings.changingCredentials',
@@ -16,6 +14,13 @@ export type PasswordFieldName = 'currentPassword' | 'newPassword' | 'confirmNewP
 
 /** The server validation message key of every field, undefined while the field has none. */
 export type PasswordFieldErrors = Readonly<Record<PasswordFieldName, string | undefined>>;
+
+/** DOM id of every field, which the autofill protection finds the inputs by. */
+export const PASSWORD_FIELD_IDS: Readonly<Record<PasswordFieldName, string>> = {
+  currentPassword: 'change-password-current',
+  newPassword: 'change-password-new',
+  confirmNewPassword: 'change-password-confirm',
+};
 
 export const NO_PASSWORD_FIELD_ERRORS: PasswordFieldErrors = {
   currentPassword: undefined,
@@ -33,7 +38,7 @@ export function getPasswordFieldOfReason(reasonKey: string | null): PasswordFiel
 }
 
 /** The message of every field in a rejected password change; a wrong current password may arrive as a plain detail. */
-export function pickPasswordFieldErrors(errors: FieldErrors): PasswordFieldErrors {
+export function pickPasswordFieldErrors(errors: ServerFieldErrors): PasswordFieldErrors {
   const detailMessage = getFieldMessageKey(errors, 'detail');
 
   return {

@@ -61,6 +61,7 @@ export function buildUpdateRequestFromEditForm(
   const appointmentRequest: UpdateAppointmentRequest = {
     dueDateTime: new Date(dueMs).toISOString(),
     taskDescription,
+    version: appointment.version,
   };
 
   return {

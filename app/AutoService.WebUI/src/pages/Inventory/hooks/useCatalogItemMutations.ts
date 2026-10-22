@@ -1,6 +1,7 @@
 /** Part or labor type create/update/delete hook: modal state, payload validation, server calls, list refresh. */
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isVersionConflict } from '../../../services/http/error-code';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { TOAST_KEY_NO_CHANGES } from '../../../store/toast.keys';
 import { useToastStore } from '../../../store/toast.store';
@@ -17,9 +18,10 @@ import {
 } from '../helpers';
 import { buildCatalogValues, resolveCatalogSaveErrorKey, type CatalogItemValues } from './catalogMutation.helpers';
 
-/** Variables of the update mutation. */
+/** Variables of the update mutation: the edited item's id and the version it was loaded at. */
 interface UpdateVariables {
   readonly id: number;
+  readonly version: number;
   readonly values: CatalogItemValues;
 }
 
@@ -60,6 +62,17 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
     await queryClient.invalidateQueries({ queryKey: config.queryKey(scope) });
   }, [config, queryClient, scope]);
 
+  /** After a stale-version conflict: reloads the list and takes the item's current server state as the edit baseline,
+   * so the next save carries its version. */
+  const reloadAfterConflict = useCallback(async (id: number) => {
+    try {
+      const [latest] = await Promise.all([config.fetchItem(id), refreshList()]);
+      setEditingItem(latest);
+    } catch {
+      // A failed reload leaves the dialog as it was: saving again conflicts again and retries it.
+    }
+  }, [config, refreshList]);
+
   /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
   const reportSaveError = useCallback((messageKey: string) => {
     setPinnedFieldError(pinCatalogFieldError(messageKey, readCatalogFieldValues(form)));
@@ -79,7 +92,7 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
   });
 
   const { mutate: updateItem, isPending: isUpdating } = useMutation({
-    mutationFn: ({ id, values }: UpdateVariables) => config.update(id, values),
+    mutationFn: ({ id, version, values }: UpdateVariables) => config.update(id, version, values),
     // PUT returns 204 No Content: reload so the row shows the gross amount
     // the API recomputed.
     onSuccess: async () => {
@@ -87,7 +100,13 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
       showSuccessToast(config.updatedKey);
       setModalOpen(false);
     },
-    onError: (error) => {
+    onError: (error, { id }) => {
+      if (isVersionConflict(error, config.versionConflictCode)) {
+        showErrorToast('inventory.errors.versionConflict');
+        void reloadAfterConflict(id);
+        return;
+      }
+
       reportSaveError(resolveCatalogSaveErrorKey(error, config.saveFailedKey));
     },
   });
@@ -167,7 +186,7 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
       return;
     }
 
-    updateItem({ id: config.tab.getId(editingItem), values: request.payload });
+    updateItem({ id: config.tab.getId(editingItem), version: config.tab.getVersion(editingItem), values: request.payload });
   }, [config, createItem, editingItem, form, modalMode, reportSaveError, showWarningToast, updateItem]);
 
   const closeDeleteModal = useCallback(() => {

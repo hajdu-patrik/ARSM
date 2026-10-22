@@ -52,7 +52,7 @@ async function bootCatalog(page: Page): Promise<void> {
   const env = getAppointmentFlowEnv();
   const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
   // The part number matches the search letter for letter, so the server returns the row whose name carries the accents.
-  state.parts.push({ id: 3900, partNumber: 'FEKBETET-1', name: 'Fékbetét készlet', netUnitPrice: 5000, vatRatePercent: 27, grossUnitPrice: 6350 });
+  state.parts.push({ id: 3900, partNumber: 'FEKBETET-1', name: 'Fékbetét készlet', netUnitPrice: 5000, vatRatePercent: 27, grossUnitPrice: 6350, version: 1 });
   await new AuthPage(page).loginAsMechanic(env);
 }
 

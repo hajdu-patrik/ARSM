@@ -1,6 +1,7 @@
 /** Request-builder and form helper utilities for mechanic registration. */
 
 import type { MechanicListItem, RegisterMechanicRequest } from '../../../services/admin/admin.service';
+import { MIN_PASSWORD_LENGTH } from '../../../utils/validation';
 import type { RegisterMechanicFormValues } from './types';
 
 /** Builds the full display name of a mechanic roster entry, skipping empty name parts. */
@@ -30,8 +31,8 @@ export function canSubmitForm(values: RegisterMechanicFormValues, isSubmitting: 
     values.firstName.trim().length > 0 &&
     values.lastName.trim().length > 0 &&
     values.email.trim().length > 0 &&
-    values.password.length >= 8 &&
-    values.confirmPassword.length >= 8 &&
+    values.password.length >= MIN_PASSWORD_LENGTH &&
+    values.confirmPassword.length >= MIN_PASSWORD_LENGTH &&
     values.password === values.confirmPassword &&
     values.specialization.length > 0 &&
     values.expertise.length > 0 &&

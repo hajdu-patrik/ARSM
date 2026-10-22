@@ -3,8 +3,9 @@ import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { renamePartElsewhere } from './support/concurrent-changes';
 import { errorToastMessage } from './support/toast';
-import type { MockApiState } from './support/test-data';
+import { MOCK_PART_IDS, type MockApiState } from './support/test-data';
 
 /** Installs the catalog mock and logs in as a mechanic; returns the mutable mock state. */
 async function prepareInventoryPage(page: Page): Promise<MockApiState> {
@@ -143,6 +144,34 @@ test.describe('Inventory - Parts tab', () => {
     await expect(page.locator('output[aria-live="polite"]')).toContainText('Part updated successfully.');
     await expect(page.getByText(/8,888\.88/)).toHaveCount(1);
     await expect(page.getByText(/10,160\.00/)).toHaveCount(0);
+  });
+
+  test('a stale edit toasts the conflict, reloads the list and saves on the second try', async ({ page }) => {
+    const state = await prepareInventoryPage(page);
+    const catalogPage = new CatalogPage(page);
+    await catalogPage.goto();
+
+    const dialog = await catalogPage.openEdit('part', 1);
+    await expect(dialog.getByLabel('Part number')).toHaveValue('BRK-2002');
+
+    // Another user saved this part first, so the version this dialog holds is stale.
+    renamePartElsewhere(state, MOCK_PART_IDS.brakePad, 'Brake pad set (renamed elsewhere)');
+    const reloadedPart = page.waitForResponse((response) => response.url().endsWith(`/api/parts/${String(MOCK_PART_IDS.brakePad)}`));
+    await dialog.getByLabel('Net unit price').fill('9500');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(errorToastMessage(page, 'Someone else changed this item in the meantime. The list has been reloaded, please try again.')).toBeVisible();
+    await reloadedPart;
+    await expect(page.getByText('Brake pad set (renamed elsewhere)', { exact: true })).toHaveCount(1);
+    await expect(catalogPage.formDialog('Edit part')).toBeVisible();
+
+    // The dialog now holds the current version, so saving again goes through.
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(catalogPage.formDialog('Edit part')).toHaveCount(0);
+    await expect(page.locator('output[aria-live="polite"]')).toContainText('Part updated successfully.');
+    await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(1);
+    await expect(page.getByText(/9,500\.00/)).toHaveCount(1);
   });
 
   test('delete confirmation states the quote-snapshot effect and removes the row', async ({ page }) => {

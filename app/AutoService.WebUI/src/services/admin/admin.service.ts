@@ -83,6 +83,11 @@ export const adminService = {
     await apiClient.delete(`/api/admin/mechanics/${String(personId)}`);
   },
 
+  /** Sets a temporary password via {@code POST /api/admin/mechanics/{id}/password-reset}; the mechanic must change it at the next login. */
+  async resetMechanicPassword(personId: number, temporaryPassword: string): Promise<void> {
+    await apiClient.post(`/api/admin/mechanics/${String(personId)}/password-reset`, { temporaryPassword });
+  },
+
   /** Fetches the quote-PDF letterhead data via {@code GET /api/admin/company-profile}. */
   async getCompanyProfile(options?: SilentRequestOptions): Promise<CompanyProfileDto> {
     const response = await apiClient.get<CompanyProfileDto>('/api/admin/company-profile', {

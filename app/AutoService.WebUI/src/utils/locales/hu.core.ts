@@ -104,8 +104,10 @@ export const huCore = {
   },
   layout: {
     logout: 'Kijelentkezés',
+    skipToContent: 'Ugrás a tartalomra',
   },
   nav: {
+    main: 'Fő navigáció',
     scheduler: 'Ütemező',
     customers: 'Ügyfelek',
     quotes: 'Árajánlatok',
@@ -173,8 +175,6 @@ export const huCore = {
     claimSuccess: 'Az időpont igénylése sikeres.',
     statusUpdateError: 'Nem sikerült frissíteni az állapotot.',
     statusUpdateSuccess: 'Az időpont állapota sikeresen frissítve.',
-    todayLoadError: 'Nem sikerült betölteni a mai időpontokat.',
-    todayAuthExpiredError: 'A munkamenet lejárt. Jelentkezzen be újra a mai időpontok betöltéséhez.',
     monthLoadError: 'Nem sikerült betölteni a havi időpontokat.',
     monthAuthExpiredError: 'A munkamenet lejárt. Jelentkezzen be újra a havi időpontok betöltéséhez.',
     due: {
@@ -295,6 +295,7 @@ export const huCore = {
       saveConfirmMessage: 'Biztosan menti a szerkesztett adatokat?',
       updateSuccess: 'Az időpont sikeresen frissítve.',
       updateError: 'Nem sikerült menteni a módosításokat.',
+      versionConflict: 'Időközben valaki más módosította ezt az időpontot. A legfrissebb adatok betöltődtek, próbálja újra.',
       unassignSuccess: 'Sikeresen lejelentkezett az időpontról.',
       assignSuccess: 'A szerelő hozzárendelése sikeres.',
       adminUnassignSuccess: 'A szerelő eltávolítása sikeres.',

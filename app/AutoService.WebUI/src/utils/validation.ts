@@ -1,5 +1,8 @@
 /** Shared input validation/filtering: character-level filters for name and phone
- * fields, and file extension validation for profile picture uploads. */
+ * fields, the password length floor and file extension validation for profile picture uploads. */
+
+/** Shortest password the API accepts (the first rule of the password hint shown beside every password field). */
+export const MIN_PASSWORD_LENGTH = 8;
 
 /** Strip everything except Unicode letters and hyphens from name input (create/edit forms, backend NamePattern). */
 export function filterNameInput(value: string): string {

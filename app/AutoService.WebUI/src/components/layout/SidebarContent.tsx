@@ -205,7 +205,7 @@ export const SidebarContent = memo(function SidebarContent({
         <span className={`${TEXT_TRANSITION} ${collapsedText} truncate text-lg font-bold text-ui-text`}>ARSM</span>
       </div>
 
-      <nav className="flex-1 space-y-1 px-2 py-3">{navItems.map(renderNavLink)}</nav>
+      <nav aria-label={translate('nav.main')} className="flex-1 space-y-1 px-2 py-3">{navItems.map(renderNavLink)}</nav>
 
       <div className="hidden px-2 py-1 md:block">
         <button

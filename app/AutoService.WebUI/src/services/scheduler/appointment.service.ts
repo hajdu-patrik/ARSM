@@ -100,14 +100,6 @@ export const appointmentService = {
     return response.data;
   },
 
-  /** Fetches today's appointments via {@code GET /api/appointments/today}. */
-  async getToday(options?: SilentRequestOptions): Promise<AppointmentDto[]> {
-    const response = await apiClient.get<AppointmentDto[]>('/api/appointments/today', {
-      skipErrorRedirect: options?.skipErrorRedirect,
-    });
-    return response.data;
-  },
-
   /** Claims an appointment for the current mechanic via {@code PUT /api/appointments/{id}/claim}. */
   async claim(id: number): Promise<AppointmentDto> {
     const response = await apiClient.put<AppointmentDto>(`/api/appointments/${String(id)}/claim`);

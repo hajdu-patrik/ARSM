@@ -6,11 +6,15 @@ import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
 import { corsHeaders, fulfillJson, fulfillNoContent } from './api-mock-response';
 
-function getAuthPayload(state: MockApiState, options: InstallApiMockOptions): { personId: number; isAdmin: boolean } {
+function getAuthPayload(
+  state: MockApiState,
+  options: InstallApiMockOptions,
+): { personId: number; isAdmin: boolean; mustChangePassword: boolean } {
   const adminPersonId = state.mechanics.find((mechanic) => mechanic.isAdmin)?.personId ?? state.profile.personId;
   return {
     personId: options.isAdmin ? adminPersonId : state.profile.personId,
     isAdmin: options.isAdmin ?? false,
+    mustChangePassword: state.mustChangePassword,
   };
 }
 
@@ -177,7 +181,7 @@ async function handleProfilePut(route: Route, state: MockApiState): Promise<void
   await fulfillJson(route, state.profile);
 }
 
-async function handleProfileChangePassword(route: Route): Promise<void> {
+async function handleProfileChangePassword(route: Route, state: MockApiState): Promise<void> {
   const payload = route.request().postDataJSON() as Partial<ChangePasswordRequest>;
   if (!payload.currentPassword || !payload.newPassword || !payload.confirmNewPassword) {
     await fulfillJson(route, { detail: 'All password fields are required.' }, 422);
@@ -189,6 +193,7 @@ async function handleProfileChangePassword(route: Route): Promise<void> {
     return;
   }
 
+  state.mustChangePassword = false;
   await fulfillNoContent(route);
 }
 
