@@ -18,12 +18,12 @@ public sealed class QuoteLineCalculatorTests
     [Fact]
     public void Calculate_gross_is_the_sum_even_where_a_gross_rate_would_differ()
     {
-        // net 10.004 -> 10.00; VAT 5 % of 10.00 -> 0.50; a 1.05 multiplication of 10.004 would give 10.50 from a different base.
-        var amounts = QuoteLineCalculator.Calculate(quantity: 1m, netUnitPrice: 10.004m, vatRatePercent: 5);
+        // net 0.345 -> 0.35, VAT 5 % of 0.35 -> 0.02, gross 0.37; a 1.05 multiplication of the raw 0.345 would give 0.36.
+        var amounts = QuoteLineCalculator.Calculate(quantity: 1m, netUnitPrice: 0.345m, vatRatePercent: 5);
 
-        Assert.Equal(10.00m, amounts.NetAmount);
-        Assert.Equal(0.50m, amounts.VatAmount);
-        Assert.Equal(amounts.NetAmount + amounts.VatAmount, amounts.GrossAmount);
+        Assert.Equal(0.35m, amounts.NetAmount);
+        Assert.Equal(0.02m, amounts.VatAmount);
+        Assert.Equal(0.37m, amounts.GrossAmount);
     }
 
     [Theory]
