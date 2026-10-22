@@ -22,6 +22,8 @@ server {
     listen ${PORT};
     server_tokens off;
     root /usr/share/nginx/html;
+    # Request bodies stay small unless a location says otherwise; the API caps its JSON bodies at 64 KB too.
+    client_max_body_size 64k;
 
     gzip on;
     gzip_vary on;
@@ -31,19 +33,26 @@ server {
     # nginxinc/nginx-unprivileged ships no ngx_brotli module.
     gzip_static on;
 
-    # API and liveness go to the internal API; the API sets its own security headers.
-    location ~ ^/(api/|alive$) {
+    # Server-sent events: unbuffered, and open far longer than the default 60 s read timeout.
+    location ~ ^/api/(appointments|profile/picture)/updates$ {
         set $api_upstream ${API_UPSTREAM};
-        proxy_pass $api_upstream;
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        proxy_set_header Host $proxy_host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $forwarded_proto;
-        # Server-sent events must stream unbuffered; uploads allow the 4 MB profile picture limit.
+        include /etc/nginx/snippets/api-proxy.conf;
         proxy_buffering off;
         proxy_read_timeout 1h;
+    }
+
+    # The picture upload may exceed 64 KB: the API's 4 MB picture limit plus multipart overhead.
+    location = /api/profile/picture {
+        set $api_upstream ${API_UPSTREAM};
+        include /etc/nginx/snippets/api-proxy.conf;
         client_max_body_size 5m;
+    }
+
+    # API and liveness go to the internal API, which sets its own security headers. Regex locations are
+    # first-match-wins, so this catch-all has to stay below the event streams.
+    location ~ ^/(api/|alive$) {
+        set $api_upstream ${API_UPSTREAM};
+        include /etc/nginx/snippets/api-proxy.conf;
     }
 
     # Cache policy: hashed build output is immutable, images 30 days, manifest/robots a day.

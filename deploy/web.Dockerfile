@@ -21,6 +21,7 @@ RUN node extract-csp.mjs dist/index.html > csp.conf
 FROM nginxinc/nginx-unprivileged:1.30-alpine
 COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY deploy/nginx/static-headers.conf /etc/nginx/snippets/static-headers.conf
+COPY deploy/nginx/api-proxy.conf /etc/nginx/snippets/api-proxy.conf
 COPY --from=build /src/csp.conf /etc/nginx/snippets/csp.conf
 COPY --from=build /src/dist /usr/share/nginx/html
 ENV PORT=8080 \

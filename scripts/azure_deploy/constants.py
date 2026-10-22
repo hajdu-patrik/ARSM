@@ -37,8 +37,10 @@ OPTIONAL_DEFAULTS = {
     "ARSM_API_ALWAYS_ON": "true",
     "ARSM_WEB_ALWAYS_ON": "false",
     "ARSM_BLOB_CONTAINER": "arsm-profile-pictures",
+    "ARSM_MONTHLY_BUDGET": "20",
+    "ARSM_LOG_DAILY_QUOTA_GB": "1",
 }
-OPTIONAL_UNSET = ("ARSM_PROD_ADMIN_MIDDLE_NAME", "ARSM_PROD_ADMIN_PHONE")
+OPTIONAL_UNSET = ("ARSM_PROD_ADMIN_MIDDLE_NAME", "ARSM_PROD_ADMIN_PHONE", "ARSM_ALERT_EMAIL")
 
 # Keys whose values are secrets; their names are listed, their values are never printed.
 SECRET_KEYS = (

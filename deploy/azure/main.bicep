@@ -81,6 +81,17 @@ param webAlwaysOn bool = false
 @description('Managed certificate already issued for the publicUrl host (bind-domain); empty before the first bind.')
 param customDomainCertificateName string = ''
 
+@minValue(1)
+@description('Daily ingestion cap of the Log Analytics workspace in GB; at the cap collection pauses until the daily reset.')
+param logAnalyticsDailyQuotaGb int = 1
+
+@description('Address for the budget and alert e-mails; empty creates no budget, action group or alert rule.')
+param alertEmail string = ''
+
+@minValue(1)
+@description('Monthly budget of the resource group in the subscription currency; e-mails go out at 50, 80 and 100 percent.')
+param monthlyBudgetAmount int = 20
+
 var suffix = uniqueString(resourceGroup().id)
 var apiAppName = '${namePrefix}-api'
 var webAppName = '${namePrefix}-web'
@@ -132,6 +143,7 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   properties: {
     sku: { name: 'PerGB2018' }
     retentionInDays: 30
+    workspaceCapping: { dailyQuotaGb: logAnalyticsDailyQuotaGb }
   }
 }
 
@@ -251,7 +263,8 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
       secrets: [
         {
           name: 'db-connection'
-          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require'
+          // Npgsql's default pool of 100 would exceed what a B1ms server accepts (about 35 user connections).
+          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Maximum Pool Size=20'
         }
         { name: 'jwt-secret', value: jwtSecret }
         {
@@ -414,6 +427,17 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
         maxReplicas: 1
       }
     }
+  }
+}
+
+// Budget and alert rules; created only when an alert e-mail is set.
+module guardRails 'guardrails.bicep' = if (!empty(alertEmail)) {
+  name: '${namePrefix}-guardrails'
+  params: {
+    namePrefix: namePrefix
+    alertEmail: alertEmail
+    apiAppId: apiApp.id
+    monthlyBudgetAmount: monthlyBudgetAmount
   }
 }
 
