@@ -111,7 +111,7 @@ function useAssignmentActions() {
   return { handleClaim, handleUnclaim, handleAdminAssign, handleAdminUnassign };
 }
 
-/** Status, intake and update handlers; the status failure is toasted, the other two reject to their form. */
+/** Status, intake and update handlers; the status and update failures are toasted, the intake one rejects to its form. */
 function useEditActions() {
   const { mutateAsync: changeStatus } = useAppointmentMutation({
     mutationFn: ({ id, status, version }: StatusChange) => appointmentService.updateStatus(id, { status, version }),

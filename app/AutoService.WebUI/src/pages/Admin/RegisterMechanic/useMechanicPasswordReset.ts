@@ -58,6 +58,7 @@ export function useMechanicPasswordReset({ showErrorToast, showSuccessToast }: U
     onSuccess: (_result, { target }) => {
       showSuccessToast('admin.passwordResetSuccess', { email: target.email });
       setResetTarget(null);
+      setTemporaryPassword('');
     },
     onError: (error) => {
       const messageKey = getResetErrorKey(error);
@@ -76,6 +77,7 @@ export function useMechanicPasswordReset({ showErrorToast, showSuccessToast }: U
   const closePasswordReset = useCallback(() => {
     if (!isResetting) {
       setResetTarget(null);
+      setTemporaryPassword('');
     }
   }, [isResetting]);
 
