@@ -31,7 +31,6 @@ function inPeriod(quote: QuoteDetailDto, year: number, month: number | null): bo
   return createdAt.getUTCFullYear() === year && (month === null || createdAt.getUTCMonth() + 1 === month);
 }
 
-/** Builds the report body for one period. */
 function buildReport(state: MockApiState, year: number, month: number | null): CompanyResultDto {
   const now = Date.now();
   const periodQuotes = state.quotes.filter((quote) => inPeriod(quote, year, month));

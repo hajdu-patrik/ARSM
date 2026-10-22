@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 import { createMockApiState, type MockApiState } from './test-data';
 import { handleApiRoute } from './api-mock-handlers';
 
-/** Mock installation options for authenticated E2E API scenarios and failure paths. */
 export interface InstallApiMockOptions {
   readonly profileEmail: string;
   readonly isAdmin?: boolean;

@@ -84,7 +84,6 @@ export class QuotesPage {
     await selectDropdownOption(this.page, 'quotes-status-filter', option);
   }
 
-  /** Opens the editor for the quote with this quote number. */
   async openQuote(quoteNumber: string): Promise<Locator> {
     await this.rowAction(quoteNumber, 'quote-open-button').click();
     const dialog = this.editorDialog();

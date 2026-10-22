@@ -6,7 +6,7 @@ import { fulfillJson } from './api-mock-response';
 import { tryHandlePartRoute } from './api-mock-catalog-parts';
 import { tryHandleLaborTypeRoute } from './api-mock-catalog-labor-types';
 
-/** Dispatches `/api/parts` and `/api/labor-types` mock requests (plan F2 catalog). */
+/** Dispatches `/api/parts` and `/api/labor-types` mock requests. */
 export async function tryHandleCatalogRoute(
   route: Route,
   method: string,

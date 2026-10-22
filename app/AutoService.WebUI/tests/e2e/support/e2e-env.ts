@@ -16,7 +16,6 @@ const FALLBACK_APPOINTMENT_ENV: AppointmentFlowEnv = {
   wrongPassword: `${DEFAULT_MOCK_CREDENTIAL}-invalid`,
 };
 
-/** Reads one environment variable, or returns the fallback when it is unset or blank. */
 function readEnvWithFallback(name: string, fallback: string): string {
   const value = process.env[name];
   return value !== undefined && value.trim().length > 0 ? value : fallback;

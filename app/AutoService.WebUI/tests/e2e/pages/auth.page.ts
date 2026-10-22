@@ -2,7 +2,6 @@ import { expect, type Page } from '@playwright/test';
 import { seedSplashShown, type TestLanguage } from '../support/browser-state';
 import type { AppointmentFlowEnv } from '../support/e2e-env';
 
-/** Page object for the login flow. */
 export class AuthPage {
   constructor(private readonly page: Page) {}
 

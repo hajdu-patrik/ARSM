@@ -56,7 +56,6 @@ export async function traceSplash(page: Page): Promise<void> {
   }, TRACE_KEY);
 }
 
-/** Narrows the value read back from the page to a complete trace. */
 function isSplashTrace(value: unknown): value is SplashTrace {
   if (typeof value !== 'object' || value === null) {
     return false;

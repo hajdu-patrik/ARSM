@@ -72,7 +72,6 @@ async function saveAndRespond(
   await fulfillJson(route, toQuoteDetailResponse(saved));
 }
 
-/** Adds a line to a draft quote. */
 export async function handleAddQuoteLine(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   if (await rejectNonDraft(route, quote)) {
     return;
@@ -124,7 +123,6 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, quot
   await fulfillJson(route, toQuoteDetailResponse(saved), 201);
 }
 
-/** Updates one line of a draft quote. */
 export async function handleUpdateQuoteLine(
   route: Route,
   state: MockApiState,
@@ -178,7 +176,6 @@ export async function handleUpdateQuoteLine(
   await saveAndRespond(route, state, quote, { ...quote, lines });
 }
 
-/** Removes one line from a draft quote. */
 export async function handleDeleteQuoteLine(
   route: Route,
   state: MockApiState,

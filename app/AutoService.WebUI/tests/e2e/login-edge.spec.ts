@@ -1,24 +1,9 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
 import { errorToastMessage } from './support/toast';
+import { getTokenLikeStorageKeys } from './support/token-storage';
 
-const tokenStorageKeyPattern = /token|jwt|access|refresh/i;
-
-/** Reads storage keys that would indicate forbidden client-side token persistence. */
-function getTokenLikeStorageKeys(page: Page): Promise<string[]> {
-  return page.evaluate((patternSource) => {
-    const pattern = new RegExp(patternSource, 'i');
-    const keys = [
-      ...Object.keys(localStorage),
-      ...Object.keys(sessionStorage),
-    ];
-
-    return keys.filter((key) => pattern.test(key));
-  }, tokenStorageKeyPattern.source);
-}
-
-/** The vertical centre of the element on the page. */
 async function verticalCentre(target: Locator): Promise<number> {
   const box = await target.boundingBox();
 
@@ -29,7 +14,6 @@ async function verticalCentre(target: Locator): Promise<number> {
   return box.y + box.height / 2;
 }
 
-/** True when the element comes before the first element matching the selector in the document. */
 function precedesInDom(element: Locator, laterSelector: string): Promise<boolean> {
   return element.evaluate((earlier, selector) => {
     const later = document.querySelector(selector);

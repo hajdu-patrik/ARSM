@@ -8,6 +8,7 @@ import { QuotesPage } from './pages/quotes.page';
 import { installApiMocks } from './support/api-mocks';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { MOCK_QUOTE_IDS, type MockApiState } from './support/test-data';
+import { recordGetRequests } from './support/request-log';
 
 const VIEWPORT = { width: 1280, height: 900 };
 const SEEDED_COUNT = 30;
@@ -122,19 +123,6 @@ async function bootPage(page: Page, seed: (state: MockApiState) => void): Promis
   const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
   seed(state);
   await new AuthPage(page).loginAsMechanic(env);
-}
-
-/** Records the URL of every GET to the path, so a test can read the query the page sent. */
-function recordGetRequests(page: Page, pathname: string): URL[] {
-  const urls: URL[] = [];
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (request.method() === 'GET' && url.pathname === pathname) {
-      urls.push(url);
-    }
-  });
-
-  return urls;
 }
 
 /** Lets the frame-scheduled re-measure and a late debounced fetch happen, so an extra request is seen. */

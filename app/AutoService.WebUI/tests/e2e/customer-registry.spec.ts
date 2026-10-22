@@ -7,7 +7,6 @@ import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks
 import { errorToastMessage } from './support/toast';
 import { MOCK_CUSTOMER_IDS, MOCK_VEHICLE_IDS } from './support/test-data';
 
-/** Optional mock failure setup for customer-registry E2E preparation. */
 type CustomerRegistrySetupOptions = Pick<InstallApiMockOptions, 'failedVehicleHistoryIds'>;
 
 // Tall enough that the page-size-by-height list shows all three fixture customers on page 1.
@@ -49,7 +48,6 @@ async function countContrastPixels(page: Page, target: Locator): Promise<number>
   }
 }
 
-/** Fills the create-vehicle dialog with an electric Audi. */
 async function fillElectricAudi(page: Page, dialog: Locator): Promise<void> {
   await dialog.getByLabel('License plate').fill('EVT-260');
   await dialog.getByLabel('VIN').fill('WAUZZZF43MA123456');

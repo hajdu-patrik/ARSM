@@ -1,26 +1,16 @@
-import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+import { expect, test } from '@playwright/test';
 import { CatalogPage } from './pages/catalog.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
 import { renamePartElsewhere } from './support/concurrent-changes';
 import { errorToastMessage } from './support/toast';
-import { MOCK_PART_IDS, type MockApiState } from './support/test-data';
-
-/** Installs the catalog mock and logs in as a mechanic; returns the mutable mock state. */
-async function prepareInventoryPage(page: Page): Promise<MockApiState> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-  return state;
-}
+import { MOCK_PART_IDS } from './support/test-data';
+import { signInWithMocks } from './support/sign-in';
 
 test.describe('Inventory - Parts tab', () => {
   // Tall enough that the page-sized list shows every fixture row at once.
   test.use({ viewport: { width: 1280, height: 1000 } });
 
   test('defaults to the Parts tab and shows net and gross unit price side by side', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -34,7 +24,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('reflects the active tab in the URL when switching tabs', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -48,7 +38,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('moves between the tabs with the arrow keys', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -61,7 +51,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('shows only edit and delete actions for each part row', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -72,7 +62,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('toolbar search filters by name and by part number, and clearing restores the list', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -91,7 +81,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('lists parts in ascending part-number order and offers no sort toggle', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -105,7 +95,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('create modal previews the gross price live and saves using the server-returned value', async ({ page }) => {
-    const state = await prepareInventoryPage(page);
+    const state = await signInWithMocks(page);
     // Deliberately not what net*vat would compute, so the row can only be
     // showing this because it came from the mocked POST response (D3/D19).
     state.catalogGrossOverride = 7777.77;
@@ -127,7 +117,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('edits a part and reloads the row from the server response after the 204 PUT', async ({ page }) => {
-    const state = await prepareInventoryPage(page);
+    const state = await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -147,7 +137,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('a stale edit toasts the conflict, reloads the list and saves on the second try', async ({ page }) => {
-    const state = await prepareInventoryPage(page);
+    const state = await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -177,7 +167,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('delete confirmation states the quote-snapshot effect and removes the row', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -191,7 +181,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('surfaces the backend duplicate part number conflict on create', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -210,7 +200,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('keeps keyboard focus inside the dialog and hands it back to the opener', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
@@ -229,7 +219,7 @@ test.describe('Inventory - Parts tab', () => {
   });
 
   test('dismisses the dialog from its backdrop', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 

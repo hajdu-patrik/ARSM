@@ -192,13 +192,11 @@ function seedBulkQuotes(state: MockApiState): void {
   }
 }
 
-/** Quote numbers of the rows on the current page, in order. */
 async function pageQuoteNumbers(quotes: QuotesPage): Promise<string[]> {
   const texts = await quotes.rows().allInnerTexts();
   return texts.map((text) => QUOTE_NUMBER.exec(text)?.[0] ?? text);
 }
 
-/** Walks every page with the next arrow and returns all quote numbers. */
 async function collectQuoteNumbers(quotes: QuotesPage): Promise<string[]> {
   const controls = quotes.pagination();
   const numbers: string[] = [];

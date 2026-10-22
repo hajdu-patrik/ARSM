@@ -24,7 +24,6 @@ async function createAppointment(page: Page, taskDescription: string): Promise<{
   return { state, schedulerPage };
 }
 
-/** The id of the one appointment the intake created in the mock state. */
 function createdAppointmentId(state: MockApiState): number {
   const [appointment] = state.appointments;
   if (appointment === undefined) {

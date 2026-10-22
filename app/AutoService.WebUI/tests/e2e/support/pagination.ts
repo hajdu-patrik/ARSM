@@ -17,7 +17,6 @@ export interface PaginationControls {
   readonly indicator: Locator;
 }
 
-/** Looks up the Pagination control by its test-id prefix. */
 export function paginationControls(scope: Page | Locator, prefix: PaginationPrefix): PaginationControls {
   return {
     previous: scope.getByTestId(`${prefix}-prev`),

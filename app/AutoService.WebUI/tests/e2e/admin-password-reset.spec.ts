@@ -18,7 +18,6 @@ async function openRoster(page: Page): Promise<MockApiState> {
   return state;
 }
 
-/** Opens the reset dialog of Peter's row. */
 async function openPeterReset(page: Page) {
   await page.getByTestId(`mechanic-row-${String(MOCK_MECHANIC_IDS.peter)}`).getByRole('button', { name: 'Reset password' }).click();
   const dialog = page.getByRole('dialog', { name: 'Reset password' });

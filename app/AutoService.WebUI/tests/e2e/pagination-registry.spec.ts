@@ -6,6 +6,7 @@ import { CustomersPage } from './pages/customers.page';
 import { installApiMocks } from './support/api-mocks';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
+import { recordGetRequests } from './support/request-log';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SEEDED_CUSTOMER_COUNT = 26;
@@ -58,19 +59,6 @@ function expectedCustomerOrder(): number[] {
   const seeded = Array.from({ length: SEEDED_CUSTOMER_COUNT }, (_, index) => FIRST_SEEDED_CUSTOMER_ID + index);
 
   return [...seeded, MOCK_CUSTOMER_IDS.nora, MOCK_CUSTOMER_IDS.anna, MOCK_CUSTOMER_IDS.bela];
-}
-
-/** Records the URL of every GET to the path, so a test can read the query the page sent. */
-function recordGetRequests(page: Page, pathname: string): URL[] {
-  const urls: URL[] = [];
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (request.method() === 'GET' && url.pathname === pathname) {
-      urls.push(url);
-    }
-  });
-
-  return urls;
 }
 
 function readPageSize(url: URL | undefined): number {

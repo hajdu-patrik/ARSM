@@ -22,14 +22,12 @@ function selectedMechanicsSection(page: Page) {
   return page.locator('section[aria-label="Registered mechanics"], section[aria-label="Regisztrált szerelők"]');
 }
 
-/** Required registration form values with overridable defaults for edge cases. */
 interface RequiredRegistrationFields {
   readonly email: string;
   readonly lastName?: string;
   readonly confirmPassword?: string;
 }
 
-/** Fills the required mechanic registration fields with deterministic defaults. */
 async function fillRequiredRegistrationFields(page: Page, fields: RequiredRegistrationFields): Promise<void> {
   const {
     email,

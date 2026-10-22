@@ -67,7 +67,6 @@ export function toQuoteListItemResponse(quote: QuoteDetailDto): QuoteListItemDto
   };
 }
 
-/** Stores the saved quote in place of the one it was derived from. */
 export function replaceQuote(state: MockApiState, previous: QuoteDetailDto, saved: QuoteDetailDto): void {
   const index = state.quotes.indexOf(previous);
 

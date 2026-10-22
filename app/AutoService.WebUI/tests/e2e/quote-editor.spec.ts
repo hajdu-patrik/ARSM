@@ -1,25 +1,15 @@
-import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+import { expect, test } from '@playwright/test';
 import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
-import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
-
-/** Installs the quote mock and logs in as a mechanic; returns the mutable mock state. */
-async function prepareQuotesPage(page: Page): Promise<MockApiState> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-  return state;
-}
+import { MOCK_CUSTOMER_IDS } from './support/test-data';
+import { signInWithMocks } from './support/sign-in';
 
 test.describe('Quotes - list and editor', () => {
   // A fixed zone keeps the fixture dates on one calendar day; a tall viewport lets the page-sized list show every row.
   test.use({ timezoneId: 'UTC', viewport: { width: 1280, height: 1200 } });
 
   test('lists quotes with the vehicle, the status and the server-calculated totals', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 
@@ -37,7 +27,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('offers delete on every row, disabled for anything but a draft', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 
@@ -49,7 +39,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('searches by quote number, title and license plate', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 
@@ -66,7 +56,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('starts a draft from a vehicle row and keeps the new quote in the list', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const customersPage = new CustomersPage(page);
     const quotesPage = new QuotesPage(page);
 
@@ -94,7 +84,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('adds a catalog part line and shows the totals the server returned', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     await quotesPage.openQuote('ARSM-2026-0001');
@@ -112,7 +102,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('labels a labor line in hours and hourly rate instead of quantity and unit price', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     await quotesPage.openQuote('ARSM-2026-0001');
@@ -129,7 +119,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('adds a labor line from the labor-type catalog with a fractional hour', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     await quotesPage.openQuote('ARSM-2026-0001');
@@ -142,7 +132,7 @@ test.describe('Quotes - list and editor', () => {
   });
 
   test('edits a line quantity and removes a line, following the server totals both times', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     await quotesPage.openQuote('ARSM-2026-0001');

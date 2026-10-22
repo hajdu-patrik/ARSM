@@ -135,7 +135,6 @@ const expiredQuote: QuoteDetailDto = {
   version: 103,
 };
 
-/** Returns a fresh deep copy of the quote fixtures for one test's mock state. */
 export function createQuoteFixtureState(): QuoteFixtureState {
   return {
     quotes: [draftQuote, sentQuote, expiredQuote].map((quote) => ({

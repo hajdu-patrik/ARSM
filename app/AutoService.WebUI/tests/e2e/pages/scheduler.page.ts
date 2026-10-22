@@ -68,7 +68,6 @@ export class SchedulerPage {
     await selectDropdownOptionByLabel(this.page, trigger, statusLabel);
   }
 
-  /** The pager of the intake customer-name suggestions. */
   suggestionsPagination(): PaginationControls {
     return paginationControls(this.intakeDialog(), 'intake-suggestions-pagination');
   }
@@ -88,7 +87,6 @@ export class SchedulerPage {
   }
 }
 
-/** The test id of today's cell in the calendar grid. */
 export function currentDayTestId(): string {
   const today = new Date();
   const year = String(today.getFullYear());

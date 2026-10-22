@@ -9,8 +9,7 @@ export interface CatalogFixtureState {
   readonly laborTypes: LaborTypeDto[];
 }
 
-// Net * (1 + vat/100) at the fixed demo VAT rate of 27%, matching the backend's display-only gross
-// formula (plan F1) exactly, so the initial list renders realistic numbers before any override.
+// Net * (1 + vat/100) at the demo VAT rate of 27%, as the backend's display-only gross formula, so the initial list renders realistic numbers before any override.
 const timingBeltPart: PartDto = {
   id: MOCK_PART_IDS.timingBelt,
   partNumber: 'ALT-1001',
@@ -51,7 +50,6 @@ const oilChangeLaborType: LaborTypeDto = {
   version: 1,
 };
 
-/** Returns a fresh copy of the catalog fixture data for one test's mock state. */
 export function createCatalogFixtureState(): CatalogFixtureState {
   return {
     parts: [timingBeltPart, brakePadPart].map((part) => ({ ...part })),

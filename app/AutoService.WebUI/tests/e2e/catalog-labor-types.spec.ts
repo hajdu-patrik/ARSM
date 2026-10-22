@@ -1,26 +1,16 @@
-import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+import { expect, test } from '@playwright/test';
 import { CatalogPage } from './pages/catalog.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
 import { renameLaborTypeElsewhere } from './support/concurrent-changes';
 import { errorToastMessage } from './support/toast';
-import { MOCK_LABOR_TYPE_IDS, type MockApiState } from './support/test-data';
-
-/** Installs the catalog mock and logs in as a mechanic; returns the mutable mock state. */
-async function prepareInventoryPage(page: Page): Promise<MockApiState> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-  return state;
-}
+import { MOCK_LABOR_TYPE_IDS } from './support/test-data';
+import { signInWithMocks } from './support/sign-in';
 
 test.describe('Inventory - Labour types tab', () => {
   // Tall enough that the page-sized list shows every fixture row at once.
   test.use({ viewport: { width: 1280, height: 1000 } });
 
   test('deep links directly to the Labour types tab via the tab query param', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
@@ -31,7 +21,7 @@ test.describe('Inventory - Labour types tab', () => {
   });
 
   test('shows code, hourly rate, VAT, and gross hourly rate, with only edit and delete actions', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
@@ -46,7 +36,7 @@ test.describe('Inventory - Labour types tab', () => {
   });
 
   test('toolbar search filters labor types by name and by code', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
@@ -61,7 +51,7 @@ test.describe('Inventory - Labour types tab', () => {
   });
 
   test('creates a labour type and shows the new row using the server-returned gross hourly rate', async ({ page }) => {
-    const state = await prepareInventoryPage(page);
+    const state = await signInWithMocks(page);
     // Deliberately not what net*vat would compute -- proves the row reads
     // the mocked POST response rather than recomputing the preview formula.
     state.catalogGrossOverride = 6543.21;
@@ -83,7 +73,7 @@ test.describe('Inventory - Labour types tab', () => {
   });
 
   test('a stale edit toasts the conflict, reloads the list and saves on the second try', async ({ page }) => {
-    const state = await prepareInventoryPage(page);
+    const state = await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 
@@ -110,7 +100,7 @@ test.describe('Inventory - Labour types tab', () => {
   });
 
   test('delete confirmation states the quote-snapshot effect and removes the row', async ({ page }) => {
-    await prepareInventoryPage(page);
+    await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto('labor-types');
 

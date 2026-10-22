@@ -1,25 +1,15 @@
-import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+import { expect, test } from '@playwright/test';
 import { CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
-import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
-
-/** Installs the quote mock and logs in as a mechanic; returns the mutable mock state. */
-async function prepareQuotesPage(page: Page): Promise<MockApiState> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-  return state;
-}
+import { MOCK_CUSTOMER_IDS } from './support/test-data';
+import { signInWithMocks } from './support/sign-in';
 
 test.describe('Quotes - status flow', () => {
   // Tall enough that the page-sized quote list shows every fixture row at once.
   test.use({ viewport: { width: 1280, height: 1200 } });
 
   test('keeps send disabled while the draft has no line, and enables it once one exists', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const customersPage = new CustomersPage(page);
     const quotesPage = new QuotesPage(page);
 
@@ -46,7 +36,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('sends a draft and locks the header, leaving only the validity extendable', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     const dialog = await quotesPage.openQuote('ARSM-2026-0001');
@@ -65,7 +55,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('offers accept and reject on a sent quote, and only close once it is decided', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     const dialog = await quotesPage.openQuote('ARSM-2026-0002');
@@ -84,7 +74,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('rejects a sent quote and shows the rejected badge in the list', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
     await quotesPage.openQuote('ARSM-2026-0002');
@@ -97,7 +87,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('filters by status, with expired answering for the sent quote past its deadline', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 
@@ -121,7 +111,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('deletes a draft quote through the confirmation modal', async ({ page }) => {
-    await prepareQuotesPage(page);
+    await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();
 

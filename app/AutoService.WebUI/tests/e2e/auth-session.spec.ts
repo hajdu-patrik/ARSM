@@ -1,25 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
 import { CustomersPage } from './pages/customers.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 import { primeBrowserState } from './support/browser-state';
-
-const tokenStorageKeyPattern = /token|jwt|access|refresh/i;
-
-/** Reads storage keys that would indicate forbidden client-side token persistence. */
-function getTokenLikeStorageKeys(page: Page): Promise<string[]> {
-  return page.evaluate((patternSource) => {
-    const pattern = new RegExp(patternSource, 'i');
-    const keys = [
-      ...Object.keys(localStorage),
-      ...Object.keys(sessionStorage),
-    ];
-
-    return keys.filter((key) => pattern.test(key));
-  }, tokenStorageKeyPattern.source);
-}
+import { getTokenLikeStorageKeys } from './support/token-storage';
 
 test.describe('Auth session security flows', () => {
   // Tall enough that the page-size-by-height customers list shows Anna's card on page 1.

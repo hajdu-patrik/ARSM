@@ -1,21 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
 import { selectDropdownOption } from './support/dropdown';
-import type { MockApiState } from './support/test-data';
+import { signInWithMocks } from './support/sign-in';
 
 /** The year the quote fixtures were created in. */
 const FIXTURE_YEAR = '2026';
-
-/** Installs the mock and logs in as a mechanic; returns the mutable mock state. */
-async function prepareReportPage(page: Page): Promise<MockApiState> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-  return state;
-}
 
 /** Opens the report page and waits for the accepted headline to render. */
 async function gotoReport(page: Page): Promise<void> {
@@ -36,7 +25,7 @@ async function acceptSentQuote(page: Page): Promise<void> {
 
 test.describe('Company results', () => {
   test('splits sent money into pending and expired, and leaves drafts out of every row', async ({ page }) => {
-    await prepareReportPage(page);
+    await signInWithMocks(page);
     await gotoReport(page);
     await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
 
@@ -55,7 +44,7 @@ test.describe('Company results', () => {
   });
 
   test('counts an accepted quote in the month it was created in', async ({ page }) => {
-    await prepareReportPage(page);
+    await signInWithMocks(page);
     await acceptSentQuote(page);
     await gotoReport(page);
     await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
@@ -75,7 +64,7 @@ test.describe('Company results', () => {
   });
 
   test('narrows to a single month, and an empty month still renders with zeros', async ({ page }) => {
-    await prepareReportPage(page);
+    await signInWithMocks(page);
     await acceptSentQuote(page);
     await gotoReport(page);
 
@@ -91,7 +80,7 @@ test.describe('Company results', () => {
   });
 
   test('breaks the accepted revenue down by VAT rate and by line kind', async ({ page }) => {
-    await prepareReportPage(page);
+    await signInWithMocks(page);
     await acceptSentQuote(page);
     await gotoReport(page);
     await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
@@ -107,7 +96,7 @@ test.describe('Company results', () => {
   });
 
   test('shows an empty VAT breakdown while the period has no accepted quote', async ({ page }) => {
-    await prepareReportPage(page);
+    await signInWithMocks(page);
     await gotoReport(page);
 
     await selectDropdownOption(page, 'company-results-year', FIXTURE_YEAR);
