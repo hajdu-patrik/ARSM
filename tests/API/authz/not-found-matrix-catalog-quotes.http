@@ -5,9 +5,7 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@RunId = {{$timestamp}}
 @NonExistentId = 999999
-@GhostVin = TST{{RunId.toString().slice(-10)}}0401
 
 
 ### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)

@@ -9,7 +9,6 @@
 # earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
 @ProfileRunId = {{$timestamp}}
 @PhoneTail = {{ProfileRunId.toString().slice(-6)}}
-@PhoneTail7 = {{ProfileRunId.toString().slice(-7)}}
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout

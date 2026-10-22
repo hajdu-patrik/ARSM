@@ -4,7 +4,6 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @KnownCustomerPhone = +36304445566
 @RunId = {{$timestamp}}
 @FixtureCustomerEmail = update.conflict.{{RunId}}@example.test

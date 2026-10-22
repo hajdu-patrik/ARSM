@@ -2,7 +2,6 @@
 # Only available when ASPNETCORE_ENVIRONMENT = Development.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
-@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 
 
 ### [Positive][Health] Full health check — all registered checks must pass (200 Healthy expected)

@@ -10,7 +10,6 @@
 # Phone digits derived from this run's id so registrations never collide with another file or an
 # earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
 @PhoneTail = {{MatrixRunSuffix.toString().slice(-6)}}
-@PhoneTail7 = {{MatrixRunSuffix.toString().slice(-7)}}
 @MatrixEmailWithPhone = matrix.phone.formats.{{MatrixRunSuffix}}@example.test
 @MatrixPhoneCanonical = +36307{{PhoneTail}}
 
