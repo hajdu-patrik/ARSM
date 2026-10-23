@@ -1,0 +1,242 @@
+# While the InProgress appointment has an Accepted quote its other quotes are locked: create, edit, line and validity answer 409.
+# Delete follows the Draft-only rule. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.accepted.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0703
+
+### [Setup][AcceptedLock] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][AcceptedLock] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][AcceptedLock] Resolve the fixture part OLF-1001 (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
+
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
+
+?? status == 200
+
+### [Setup][AcceptedLock] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "AcceptedLock", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QAC-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Create the InProgress appointment (201 expected, admin assigned)
+# @name apptA
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Accepted lock fixture: in-progress appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Create the sibling Draft quote (201 expected)
+# @name draftQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Accepted Lock Draft {{RunId}}", "appointmentId": {{apptA.id}} }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Create the sibling Sent quote (201 expected)
+# @name sentQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Accepted Lock Sent {{RunId}}", "appointmentId": {{apptA.id}} }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Add the catalog part line to the sibling Sent quote (201 expected)
+# @name sentQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{sentQuote.version}} }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Send the sibling quote (200 expected, no-op mail sender in the test environment)
+# @name sentQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{sentQuoteLine.version}} }
+
+?? status == 200
+
+### [Setup][AcceptedLock] Create the soon accepted quote (201 expected)
+# @name acceptedQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Accepted Lock Accepted {{RunId}}", "appointmentId": {{apptA.id}} }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Add the catalog part line to the Accepted quote (201 expected)
+# @name acceptedQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{acceptedQuote.version}} }
+
+?? status == 201
+
+### [Setup][AcceptedLock] Send the Accepted quote (200 expected, no-op mail sender in the test environment)
+# @name acceptedQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{acceptedQuoteLine.version}} }
+
+?? status == 200
+
+### [Setup][AcceptedLock] Accept the quote (200 expected, locks the appointment's other quotes)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{acceptedQuoteSent.version}} }
+
+?? status == 200
+
+### [Negative][AcceptedLock] Creating a quote linked to the appointment is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Accepted Lock Blocked {{RunId}}", "appointmentId": {{apptA.id}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Negative][AcceptedLock] Header update of the sibling Draft is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Should not apply", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Negative][AcceptedLock] Adding a line to the sibling Draft is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Negative][AcceptedLock] A status change of the sibling Draft is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Negative][AcceptedLock] Extending the sibling Sent quote validity is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2031-01-01T00:00:00", "version": {{sentQuoteSent.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Positive][AcceptedLock] GET still works and reports the lock (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+
+?? status == 200
+?? js response.parsedBody.isLocked == true
+?? js response.parsedBody.lockReason == appointment_has_accepted_quote
+?? js response.parsedBody.canDelete == true
+
+### [Negative][AcceptedLock] A sibling Sent quote still follows the Draft-only delete rule (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}?version={{sentQuoteSent.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+
+### [Positive][AcceptedLock] The locked sibling Draft can be deleted (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}?version={{draftQuote.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][AcceptedLock] Delete the disposable customer, cascading vehicle, appointment and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

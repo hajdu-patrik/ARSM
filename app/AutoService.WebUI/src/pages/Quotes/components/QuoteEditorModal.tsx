@@ -1,4 +1,4 @@
-/** Quote editor shell: header/lines/totals/footer sections gated by quote status (draft editable, sent validity-only, decided read-only; see CLAUDE.md). */
+/** Quote editor shell: sections gated by the server lock flag, then by status (draft editable, sent validity-only, decided read-only; see CLAUDE.md). */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Modal } from '../../../components/common/Modal';
@@ -46,9 +46,11 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
   reference,
 }: QuoteEditorModalProps) {
   const { quote } = editor;
-  const canEditHeader = quote === null || quote.status === 'Draft';
-  const canChangeValidity = quote === null || quote.status === 'Draft' || quote.status === 'Sent';
-  const canEditLines = quote !== null && quote.status === 'Draft';
+  // The server lock flag wins over the status: a locked quote is view-only in every status.
+  const isLocked = quote?.isLocked === true;
+  const canEditHeader = !isLocked && (quote === null || quote.status === 'Draft');
+  const canChangeValidity = !isLocked && (quote === null || quote.status === 'Draft' || quote.status === 'Sent');
+  const canEditLines = !isLocked && quote !== null && quote.status === 'Draft';
   const vehicleLabel = resolveVehicleLabel(quote, editor.vehicle, t('quotes.vehicleUnknown'));
   const modalTitle = quote ? `${quote.quoteNumber} - ${quote.title}` : t('quotes.newQuote');
 

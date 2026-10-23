@@ -1,5 +1,5 @@
 /** Footer for the appointment detail modal: edit, status, and admin-only delete controls. */
-import { memo, useMemo } from 'react';
+import { memo, useId, useMemo } from 'react';
 import type { TFunction } from 'i18next';
 import { Save, Trash2 } from 'lucide-react';
 import { Dropdown } from '../../../../components/common/Dropdown';
@@ -7,6 +7,7 @@ import type { AppointmentDto, AppointmentStatus } from '../../../../types/schedu
 import {
   defaultIconClass,
   equalWidthControlGroupClass,
+  mutedMetaTextClass,
   referenceChipDangerButtonClass,
   referenceChipPrimaryButtonClass,
   selectWrapperClass,
@@ -27,7 +28,7 @@ interface AppointmentDetailFooterProps {
   readonly isSaveEnabled: boolean;
   readonly canChangeStatus: boolean;
   readonly isUpdating: boolean;
-  /** Whether the current user is an admin; only admins can delete an appointment. */
+  /** Whether the current user is an admin; only admins can delete an appointment (when the server allows it). */
   readonly isAdmin: boolean;
   readonly isDeleting: boolean;
   readonly t: TFunction;
@@ -53,71 +54,87 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   onStatusChange,
   onDeleteClick,
 }: AppointmentDetailFooterProps) {
+  const hintId = useId();
+  const { canComplete, canDelete } = appointment;
   const statusOptions = useMemo(() => STATUS_OPTIONS.map((status) => ({
     value: status,
     label: t(`scheduler.status.${status.toLowerCase()}`),
-  })), [t]);
-  const shouldRenderGlobalControls = isEditing || showEdit || canChangeStatus || isAdmin;
+    disabled: status === 'Completed' && !canComplete,
+  })), [t, canComplete]);
+  // Completed is terminal: the server refuses any change away from it, so no status control is offered.
+  const showStatusControl = canChangeStatus && !isEditing && appointment.status !== 'Completed';
+  const showCompleteHint = showStatusControl && appointment.status === 'InProgress' && !canComplete;
+  const showDelete = isAdmin && canDelete && !isEditing;
+  const shouldRenderGlobalControls = isEditing || showEdit || showStatusControl || showDelete;
 
   if (!shouldRenderGlobalControls) {
     return null;
   }
 
   return (
-    <div className={`${equalWidthControlGroupClass} w-full`}>
-      {canChangeStatus && !isEditing && (
-        <div className={selectWrapperClass}>
-          <Dropdown
-            value={appointment.status}
-            options={statusOptions}
-            onChange={(nextStatus) => {
-              if (isAppointmentStatus(nextStatus)) {
-                onStatusChange(nextStatus);
-              }
-            }}
-            disabled={isUpdating}
-            ariaLabel={t('scheduler.changeStatus')}
-          />
-        </div>
-      )}
+    <>
+      <div className={`${equalWidthControlGroupClass} w-full`}>
+        {showStatusControl && (
+          <div className={selectWrapperClass}>
+            <Dropdown
+              value={appointment.status}
+              options={statusOptions}
+              onChange={(nextStatus) => {
+                if (isAppointmentStatus(nextStatus)) {
+                  onStatusChange(nextStatus);
+                }
+              }}
+              disabled={isUpdating}
+              ariaLabel={t('scheduler.changeStatus')}
+              ariaDescribedBy={showCompleteHint ? hintId : undefined}
+            />
+          </div>
+        )}
 
-      {showEdit && !isEditing && (
-        <button
-          type="button"
-          data-testid="appointment-detail-edit"
-          onClick={onStartEdit}
-          className={referenceChipPrimaryButtonClass}
-        >
-          {t('scheduler.detail.edit')}
-        </button>
-      )}
+        {showEdit && !isEditing && (
+          <button
+            type="button"
+            data-testid="appointment-detail-edit"
+            onClick={onStartEdit}
+            className={referenceChipPrimaryButtonClass}
+          >
+            {t('scheduler.detail.edit')}
+          </button>
+        )}
 
-      {isAdmin && !isEditing && (
-        <button
-          type="button"
-          data-testid="appointment-detail-delete"
-          onClick={onDeleteClick}
-          disabled={isDeleting}
-          className={referenceChipDangerButtonClass}
-        >
-          <Trash2 className={defaultIconClass} />
-          <span>{t('scheduler.detail.delete')}</span>
-        </button>
-      )}
+        {showDelete && (
+          <button
+            type="button"
+            data-testid="appointment-detail-delete"
+            onClick={onDeleteClick}
+            disabled={isDeleting}
+            className={referenceChipDangerButtonClass}
+          >
+            <Trash2 className={defaultIconClass} />
+            <span>{t('scheduler.detail.delete')}</span>
+          </button>
+        )}
 
-      {isEditing && (
-        <button
-          type="button"
-          data-testid="appointment-detail-save"
-          onClick={onSave}
-          disabled={isSaving || !isSaveEnabled}
-          aria-busy={isSaving}
-          className={`${referenceChipPrimaryButtonClass} w-full`}
-        >
-          <Save className={defaultIconClass} />
-          <span>{isSaving ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>
-        </button>
+        {isEditing && (
+          <button
+            type="button"
+            data-testid="appointment-detail-save"
+            onClick={onSave}
+            disabled={isSaving || !isSaveEnabled}
+            aria-busy={isSaving}
+            className={`${referenceChipPrimaryButtonClass} w-full`}
+          >
+            <Save className={defaultIconClass} />
+            <span>{isSaving ? t('common.actions.saving') : t('common.actions.saveChanges')}</span>
+          </button>
+        )}
+      </div>
+
+      {showCompleteHint && (
+        <p id={hintId} data-testid="appointment-detail-complete-hint" className={`w-full ${mutedMetaTextClass}`}>
+          {t('scheduler.detail.completeNeedsAcceptedQuote')}
+        </p>
       )}
-    </div>
+    </>
   );
 });

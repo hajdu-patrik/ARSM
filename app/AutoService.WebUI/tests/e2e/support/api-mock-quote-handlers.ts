@@ -9,8 +9,10 @@ import { fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 import {
   applyQuoteWrite,
+  rejectLockedAppointment,
   rejectQuoteVersion,
   replaceQuote,
+  resolveAppointmentLockReason,
   sortedQuotes,
   toQuoteDetailResponse,
   toQuoteListItemResponse,
@@ -76,7 +78,7 @@ async function handleQuoteList(route: Route, url: URL, state: MockApiState): Pro
     .filter((quote) => status === null || quote.status.toLowerCase() === status.toLowerCase())
     .filter((quote) => vehicleId === null || quote.vehicleId === Number(vehicleId))
     .filter((quote) => appointmentId === null || quote.appointmentId === Number(appointmentId))
-    .map((quote) => toQuoteListItemResponse(quote))
+    .map((quote) => toQuoteListItemResponse(state, quote))
     .filter((quote) => expired === null || quote.isExpired === (expired === 'true'));
 
   await fulfillPaged(route, matching, {
@@ -166,12 +168,16 @@ async function handleQuoteRootRoute(
   version: number,
 ): Promise<boolean> {
   if (method === 'GET') {
-    await fulfillJson(route, toQuoteDetailResponse(quote));
+    await fulfillJson(route, toQuoteDetailResponse(state, quote));
     return true;
   }
 
   if (method === 'PUT') {
     const payload = route.request().postDataJSON() as UpdateQuoteRequest;
+
+    if (await rejectLockedAppointment(route, state, quote.appointmentId)) {
+      return true;
+    }
 
     if (quote.status !== 'Draft') {
       await fulfillJson(route, { detail: 'Only draft quotes can be edited.' }, 409);
@@ -184,7 +190,7 @@ async function handleQuoteRootRoute(
 
     const saved = applyQuoteWrite({ ...quote, title: payload.title, notes: payload.notes });
     replaceQuote(state, quote, saved);
-    await fulfillJson(route, toQuoteDetailResponse(saved));
+    await fulfillJson(route, toQuoteDetailResponse(state, saved));
     return true;
   }
 
@@ -192,7 +198,15 @@ async function handleQuoteRootRoute(
     return false;
   }
 
-  if (quote.status !== 'Draft') {
+  // Completed never deletes (lock code); a Cancelled appointment frees every status; else Draft only.
+  const lockReason = resolveAppointmentLockReason(state, quote.appointmentId);
+
+  if (lockReason === 'appointment_completed') {
+    await rejectLockedAppointment(route, state, quote.appointmentId);
+    return true;
+  }
+
+  if (quote.status !== 'Draft' && lockReason !== 'appointment_cancelled') {
     await fulfillJson(route, { detail: 'Only draft quotes can be deleted.' }, 409);
     return true;
   }

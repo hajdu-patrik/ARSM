@@ -8,6 +8,7 @@ import { fulfillJson } from './api-mock-response';
 import {
   applyQuoteWrite,
   recalculateQuoteLine,
+  rejectLockedAppointment,
   rejectQuoteVersion,
   replaceQuote,
   toQuoteDetailResponse,
@@ -50,8 +51,12 @@ async function rejectInvalidVat(route: Route, snapshot: QuoteLineSnapshot): Prom
   return false;
 }
 
-/** Rejects any line write on a quote that is no longer a draft. */
-async function rejectNonDraft(route: Route, quote: QuoteDetailDto): Promise<boolean> {
+/** Rejects any line write on a locked quote (lock code) or on one that is no longer a draft. */
+async function rejectNonDraft(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<boolean> {
+  if (await rejectLockedAppointment(route, state, quote.appointmentId)) {
+    return true;
+  }
+
   if (quote.status !== 'Draft') {
     await fulfillJson(route, { detail: 'Lines can only be edited while the quote is a draft.' }, 409);
     return true;
@@ -69,11 +74,11 @@ async function saveAndRespond(
 ): Promise<void> {
   const saved = applyQuoteWrite(successor);
   replaceQuote(state, previous, saved);
-  await fulfillJson(route, toQuoteDetailResponse(saved));
+  await fulfillJson(route, toQuoteDetailResponse(state, saved));
 }
 
 export async function handleAddQuoteLine(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
-  if (await rejectNonDraft(route, quote)) {
+  if (await rejectNonDraft(route, state, quote)) {
     return;
   }
 
@@ -120,7 +125,7 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, quot
 
   const saved = applyQuoteWrite({ ...quote, lines: [...quote.lines, line] });
   replaceQuote(state, quote, saved);
-  await fulfillJson(route, toQuoteDetailResponse(saved), 201);
+  await fulfillJson(route, toQuoteDetailResponse(state, saved), 201);
 }
 
 export async function handleUpdateQuoteLine(
@@ -129,7 +134,7 @@ export async function handleUpdateQuoteLine(
   quote: QuoteDetailDto,
   lineId: number,
 ): Promise<void> {
-  if (await rejectNonDraft(route, quote)) {
+  if (await rejectNonDraft(route, state, quote)) {
     return;
   }
 
@@ -183,7 +188,7 @@ export async function handleDeleteQuoteLine(
   lineId: number,
   version: number,
 ): Promise<void> {
-  if (await rejectNonDraft(route, quote)) {
+  if (await rejectNonDraft(route, state, quote)) {
     return;
   }
 

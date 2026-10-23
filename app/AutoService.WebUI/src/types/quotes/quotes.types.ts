@@ -23,6 +23,12 @@ export const MAX_QUOTE_LINE_DESCRIPTION_LENGTH = 120;
 /** Default validity window applied to a new quote, matching the server default (D22). */
 export const DEFAULT_QUOTE_VALIDITY_DAYS = 30;
 
+/** Why the linked appointment locks a quote, matching the API `lockReason` values. */
+export type QuoteLockReason =
+  | 'appointment_completed'
+  | 'appointment_cancelled'
+  | 'appointment_has_accepted_quote';
+
 interface QuoteVehicleSummaryDto {
   id: number;
   licensePlate: string;
@@ -69,6 +75,12 @@ export interface QuoteListItemDto {
   appointmentId: number | null;
   createdByMechanic: QuoteMechanicSummaryDto | null;
   version: number;
+  /** True exactly when `lockReason` is set: the linked appointment forbids every write. */
+  isLocked: boolean;
+  /** Set by the linked appointment; null for an unlocked or unlinked quote. */
+  lockReason: QuoteLockReason | null;
+  /** Server verdict on deleting this quote, whatever its status. */
+  canDelete: boolean;
 }
 
 /** Query of `GET /api/quotes`: the paging and search parameters plus the optional stored-status and vehicle filters. */

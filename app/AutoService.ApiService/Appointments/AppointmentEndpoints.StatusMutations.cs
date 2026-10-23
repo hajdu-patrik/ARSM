@@ -1,8 +1,11 @@
-using AutoService.ApiService.Appointments.Realtime;
 using System.Security.Claims;
+using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Lifecycle;
 
 namespace AutoService.ApiService.Appointments;
 
@@ -57,6 +60,54 @@ public static partial class AppointmentEndpoints
             return Results.Ok(ToDto(appointment));
         }
 
+        var transitionError = GetStatusTransitionError(appointment, newStatus, logger);
+        if (transitionError is not null)
+        {
+            return transitionError;
+        }
+
+        ApplyStatus(appointment, newStatus);
+
+        var saveError = await SaveAppointmentWithVersionAsync(db, appointment, request.Version, cancellationToken);
+        if (saveError is not null)
+        {
+            return saveError;
+        }
+
+        logger.LogInformation("UpdateStatus succeeded for appointment {AppointmentId}; new status {Status}.", id, newStatus);
+
+        PublishAppointmentChanged(broadcaster, appointment.Id);
+
+        return Results.Ok(ToDto(appointment));
+    }
+
+    /** Returns the 409 for a blocked transition (Completed is terminal; completing needs InProgress and an accepted quote), else null. */
+    private static IResult? GetStatusTransitionError(Appointment appointment, ProgressStatus newStatus, ILogger logger)
+    {
+        if (appointment.Status == ProgressStatus.Completed)
+        {
+            logger.LogInformation("UpdateStatus rejected: appointment {AppointmentId} is completed.", appointment.Id);
+            return Results.Conflict(new ErrorCodeResponse(LifecycleErrorCodes.AppointmentCompletedTerminal));
+        }
+
+        if (newStatus == ProgressStatus.Completed && appointment.Status != ProgressStatus.InProgress)
+        {
+            logger.LogInformation("UpdateStatus rejected: appointment {AppointmentId} is not in progress.", appointment.Id);
+            return Results.Conflict(new ErrorCodeResponse(LifecycleErrorCodes.AppointmentCompletionRequiresInProgress));
+        }
+
+        if (newStatus == ProgressStatus.Completed && !AppointmentQuoteLifecycle.HasAcceptedQuote(appointment.Quotes))
+        {
+            logger.LogInformation("UpdateStatus rejected: appointment {AppointmentId} has no accepted quote.", appointment.Id);
+            return Results.Conflict(new ErrorCodeResponse(LifecycleErrorCodes.AppointmentCompletionRequiresAcceptedQuote));
+        }
+
+        return null;
+    }
+
+    /** Sets the status and stamps or clears CompletedAt and CanceledAt to match. */
+    private static void ApplyStatus(Appointment appointment, ProgressStatus newStatus)
+    {
         appointment.Status = newStatus;
 
         if (newStatus == ProgressStatus.Completed)
@@ -74,17 +125,5 @@ public static partial class AppointmentEndpoints
             appointment.CompletedAt = null;
             appointment.CanceledAt = null;
         }
-
-        var saveError = await SaveAppointmentWithVersionAsync(db, appointment, request.Version, cancellationToken);
-        if (saveError is not null)
-        {
-            return saveError;
-        }
-
-        logger.LogInformation("UpdateStatus succeeded for appointment {AppointmentId}; new status {Status}.", id, newStatus);
-
-        PublishAppointmentChanged(broadcaster, appointment.Id);
-
-        return Results.Ok(ToDto(appointment));
     }
 }

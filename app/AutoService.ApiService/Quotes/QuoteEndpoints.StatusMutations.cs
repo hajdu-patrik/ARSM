@@ -36,15 +36,13 @@ public static partial class QuoteEndpoints
             return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
         }
 
-        var quote = await IncludeDetails(db.Quotes)
-            .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
-
-        if (quote is null)
+        var (quote, loadError) = await LoadUnlockedQuoteAsync(id, db, cancellationToken);
+        if (loadError is not null)
         {
-            return ApiProblem.NotFound("Quote not found.");
+            return loadError;
         }
 
-        if (!IsAllowedQuoteStatusTransition(quote.Status, newStatus))
+        if (!IsAllowedQuoteStatusTransition(quote!.Status, newStatus))
         {
             return ApiProblem.Conflict($"Cannot transition a quote from {quote.Status} to {newStatus}.");
         }
@@ -78,7 +76,9 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        // Re-resolved after the save: an Accepted quote locks the whole appointment.
+        var lockReason = await ResolveQuoteLockReasonAsync(quote, db, cancellationToken);
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason));
     }
 
     /** E-mails the quote PDF to the customer; the mail goes out before the save so Sent is only ever

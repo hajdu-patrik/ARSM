@@ -1,5 +1,5 @@
-# ClaimAsync only accepts an unassigned appointment, so ApptId is created with only the admin as assignee,
-# leaving room for the test mechanic to claim it. Cancelled/not-assigned/last-mechanic coverage is the sibling mechanic-claim-unclaim-edge-cases.http/-not-assigned.http (file-size limit); ApptId is deleted at the end.
+# ClaimAsync only accepts an unassigned appointment, so the admin creates it assigned only to itself; Completed is terminal, so it
+# lives on a disposable customer deleted at the end. Cancelled/not-assigned/last-mechanic: -edge-cases.http, -not-assigned.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -7,14 +7,13 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
-
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = claim.unclaim.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0707
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
-
-###
 
 ### [Setup][Appointments] Login as admin to create the claimable fixture (200 expected)
 # @name adminLogin
@@ -22,10 +21,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -33,40 +29,48 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Resolve the fixture part OLF-1001 for the quote line (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
 
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
-# @name knownCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
 
 ?? status == 200
 
-###
-
-@KnownCustomerId = {{knownCustomer.id}}
-@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
-
-### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
-# @name apptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{KnownCustomerId}}/appointments
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{KnownCustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Claim/unclaim fixture: claimable appointment",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
+{ "firstName": "Claim", "middleName": null, "lastName": "Unclaim", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-@ApptId = {{apptCreate.id}}
+{ "licensePlate": "MCU-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Claim/unclaim fixture: claimable appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
 
 ### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -75,18 +79,13 @@ X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
-###
-
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -94,91 +93,114 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
 ### [Positive][Appointments] Claim appointment by id (200 expected)
-# @name claimedAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
-###
-
 ### [Negative][Appointments] Duplicate claim conflict when already assigned (409 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
 ?? js response.parsedBody.code == already_claimed
-###
 
-### [Setup][Appointments] Complete appointment (setup for unclaim-completed check, 200 expected)
-# @name completedAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+### [Positive][Appointments] Unclaim appointment by id (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+### [Setup][Appointments] Claim the appointment again, so this mechanic may complete it (200 expected)
+# @name reclaimedAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+### [Setup][Appointments] Create a draft quote linked to the appointment (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Completed", "version": {{claimedAppt.version}} }
+{ "title": "Claim unclaim quote {{RunId}}", "appointmentId": {{apptCreate.id}} }
+
+?? status == 201
+
+### [Setup][Appointments] Add the catalog part line so the quote can be sent (201 expected)
+# @name quoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][Appointments] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name quoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{quoteLine.version}} }
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Accept the quote, so the appointment may be completed (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{quoteSent.version}} }
+
+?? status == 200
+
+### [Setup][Appointments] Complete appointment (setup for the claim/unclaim-completed checks, 200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{reclaimedAppt.version}} }
+
+?? status == 200
 
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Claim now returns explicit completed-state validation.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
-###
 
 ### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
 # Self-unclaim is blocked when status is Completed.
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
-###
 
-### [Setup][Appointments] Reopen completed appointment to InProgress for remaining tests (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "InProgress", "version": {{completedAppt.version}} }
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Unclaim appointment by id (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Cleanup][Appointments] Login as admin to delete the fixture appointment (200 expected)
-# @name adminLogin
+### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
+# @name adminCleanupLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -186,12 +208,8 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-# CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
-
-### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle, appointment and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

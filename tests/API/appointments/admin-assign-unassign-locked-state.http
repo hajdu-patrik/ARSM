@@ -1,21 +1,19 @@
-# Split out of admin-assign-unassign.http to stay under the file-size limit: AdminAssignAsync/AdminUnassignAsync
-# reject any change once Completed/Cancelled; fixtures use two mechanics so the disposable secondary is never the sole assignee and stays deletable via DELETE (AdminOnly, no such lock).
+# Split out of admin-assign-unassign.http (file-size limit): AdminAssignAsync/AdminUnassignAsync reject any change once Completed or
+# Cancelled. Two mechanics per fixture keep the secondary from being a sole assignee; the disposable customer is deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.assign.locked.{{RunId}}@example.test
-
+@FixtureCustomerEmail = appt.assign.locked.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0708
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
-
-###
 
 ### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints, 200 expected)
 # @name adminLogin
@@ -23,10 +21,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -34,26 +29,37 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Resolve the fixture part OLF-1001 for the quote line (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
 
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
-# @name fixtureCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
-
-?? status == 200
-
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@FixtureCustomerId = {{fixtureCustomer.id}}
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "ApptAssign", "middleName": null, "lastName": "LockedCustomer", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "AAL-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
 
 ### [Setup][Appointments] Register disposable secondary mechanic for the fixture appointments (200 expected)
 # @name secondaryMechanic
@@ -62,44 +68,66 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "ApptAssign",
-  "lastName": "Locked",
-  "email": "{{SecondaryMechanicEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "ApptAssign", "lastName": "Locked", "email": "{{SecondaryMechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
-###
-
-@SecondaryMechanicId = {{secondaryMechanic.personId}}
-
 ### [Setup][Appointments] Create appointment with both mechanics for the completed-state checks (201 expected)
 # @name completedApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Assign/unassign fixture: completed appointment",
-  "mechanicIds": [{{AdminMechanicId}}, {{SecondaryMechanicId}}]
-}
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Assign/unassign fixture: completed appointment", "mechanicIds": [{{adminLogin.personId}}, {{secondaryMechanic.personId}}] }
 
 ?? status == 201
 
-###
+### [Setup][Appointments] Create a draft quote linked to the completed-state appointment (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-@CompletedApptId = {{completedApptCreate.id}}
+{ "title": "Assign locked quote {{RunId}}", "appointmentId": {{completedApptCreate.id}} }
+
+?? status == 201
+
+### [Setup][Appointments] Add the catalog part line so the quote can be sent (201 expected)
+# @name quoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][Appointments] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name quoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{quoteLine.version}} }
+
+?? status == 200
+
+### [Setup][Appointments] Accept the quote, so the appointment may be completed (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{quoteSent.version}} }
+
+?? status == 200
 
 ### [Setup][Appointments] Move the fixture appointment to Completed (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/status
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{completedApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -108,30 +136,19 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
 ### [Setup][Appointments] Create appointment with both mechanics for the cancelled-state checks (201 expected)
 # @name cancelledApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Assign/unassign fixture: cancelled appointment",
-  "mechanicIds": [{{AdminMechanicId}}, {{SecondaryMechanicId}}]
-}
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Assign/unassign fixture: cancelled appointment", "mechanicIds": [{{adminLogin.personId}}, {{secondaryMechanic.personId}}] }
 
 ?? status == 201
 
-###
-
-@CancelledApptId = {{cancelledApptCreate.id}}
-
 ### [Setup][Appointments] Move the fixture appointment to Cancelled (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/status
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{cancelledApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -140,65 +157,49 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
 ### [Negative][Appointments] Admin assign mechanic to completed appointment (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{completedApptCreate.id}}/assign/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
-###
 
 ### [Negative][Appointments] Admin unassign mechanic from completed appointment (422 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}/assign/{{AdminMechanicId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{completedApptCreate.id}}/assign/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
-###
 
 ### [Negative][Appointments] Admin assign mechanic to cancelled appointment (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{cancelledApptCreate.id}}/assign/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
-###
 
 ### [Negative][Appointments] Admin unassign mechanic from cancelled appointment (422 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}/assign/{{AdminMechanicId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{cancelledApptCreate.id}}/assign/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_cancelled
-###
 
-### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CompletedApptId}}
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle, both appointments and the quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{CancelledApptId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
-###
 
 ### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
-# Safe: both fixture appointments are already deleted above, so the deletion invariant in
+# Safe: the customer delete above already removed both fixture appointments, so the deletion invariant in
 # AdminEndpoints.Handlers.cs (no appointment left with zero mechanics) is trivially satisfied.
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

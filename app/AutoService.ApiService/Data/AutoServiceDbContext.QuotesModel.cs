@@ -5,7 +5,7 @@ namespace AutoService.ApiService.Data;
 
 public sealed partial class AutoServiceDbContext
 {
-    /** Configures the quote entities (Quote, QuoteLine): mappings, constraints, indexes, and the xmin concurrency mapping; kept separate from PricingModel.cs (Part/LaborType catalog only). */
+    /** Configures Quote and QuoteLine: mappings, constraints, indexes and the xmin concurrency token. */
     private void ConfigureQuotesModel(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Quote>(entity =>
@@ -40,9 +40,9 @@ public sealed partial class AutoServiceDbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(x => x.Appointment)
-                  .WithMany()
+                  .WithMany(a => a.Quotes)
                   .HasForeignKey(x => x.AppointmentId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                  .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(x => x.CreatedByMechanic)
                   .WithMany()

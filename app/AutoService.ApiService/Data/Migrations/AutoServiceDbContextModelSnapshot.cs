@@ -868,9 +868,9 @@ namespace AutoService.ApiService.Data.Migrations
             modelBuilder.Entity("AutoService.ApiService.Domain.Quote", b =>
                 {
                     b.HasOne("AutoService.ApiService.Domain.Appointment", "Appointment")
-                        .WithMany()
+                        .WithMany("Quotes")
                         .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("AutoService.ApiService.Domain.Mechanic", "CreatedByMechanic")
                         .WithMany()
@@ -1001,6 +1001,11 @@ namespace AutoService.ApiService.Data.Migrations
                         .HasForeignKey("MechanicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AutoService.ApiService.Domain.Appointment", b =>
+                {
+                    b.Navigation("Quotes");
                 });
 
             modelBuilder.Entity("AutoService.ApiService.Domain.Quote", b =>

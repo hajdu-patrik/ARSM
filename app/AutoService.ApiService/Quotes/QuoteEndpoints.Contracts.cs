@@ -44,7 +44,10 @@ public static partial class QuoteEndpoints
         QuoteVehicleSummaryDto Vehicle,
         int? AppointmentId,
         QuoteMechanicSummaryDto? CreatedByMechanic,
-        uint Version);
+        uint Version,
+        bool IsLocked,
+        string? LockReason,
+        bool CanDelete);
 
     /** Full detail projection with lines and totals for GET /api/quotes/{id} and every write endpoint's response. */
     internal sealed record QuoteDetailDto(
@@ -66,7 +69,10 @@ public static partial class QuoteEndpoints
         int? AppointmentId,
         QuoteMechanicSummaryDto? CreatedByMechanic,
         IReadOnlyList<QuoteLineDto> Lines,
-        uint Version);
+        uint Version,
+        bool IsLocked,
+        string? LockReason,
+        bool CanDelete);
 
     /** Draft-creation payload; ValidUntil defaults server-side to +30 days when omitted (D22). */
     internal sealed record CreateQuoteRequest(

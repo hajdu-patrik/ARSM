@@ -74,7 +74,7 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 
     /** Updates a line on a draft quote; same order as add (load, Draft lock, version, snapshot,
@@ -137,7 +137,7 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 
     /** Removes a line from a draft quote (D39: version as a query param on DELETE); the quote
@@ -172,6 +172,6 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 }

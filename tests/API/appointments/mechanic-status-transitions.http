@@ -1,5 +1,5 @@
-# UpdateStatusAsync has no admin bypass - the caller must be an assigned mechanic - so fixtures are
-# created via intake (auto-assigns the caller). Non-assigned 403 coverage is the sibling mechanic-status-transitions-authz.http (file-size limit); both are deleted at the end.
+# UpdateStatusAsync has no admin bypass, so the appointment comes from intake (auto-assigns the caller); Completed is terminal, so
+# its disposable customer is deleted at the end. Siblings (file-size limit): -authz.http (non-assigned 403), -reopen.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -7,14 +7,13 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
-
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = status.transitions.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0705
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
-
-###
 
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 # @name nonAdminLogin
@@ -22,10 +21,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -33,17 +29,37 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Resolve the fixture part OLF-1001 for the quote line (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
 
-### [Setup][Appointments] Resolve the known customer's own vehicle (200 expected)
-# @name knownCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{KnownCustomerEmail}}
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-@KnownCustomerVehicleId = {{knownCustomer.vehicles[0].id}}
+{ "firstName": "Status", "middleName": null, "lastName": "Transitions", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "MST-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
 
 ### [Setup][Appointments] Create an appointment via intake, auto-assigned to this mechanic (201 expected)
 # @name apptCreate
@@ -52,44 +68,13 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "{{KnownCustomerEmail}}",
-  "vehicleId": {{KnownCustomerVehicleId}},
-  "scheduledDate": "2026-04-19T09:00:00",
-  "dueDateTime": "2026-04-20T09:00:00",
-  "taskDescription": "Status-transitions fixture: main appointment"
-}
+{ "customerEmail": "{{FixtureCustomerEmail}}", "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-19T09:00:00", "dueDateTime": "2026-04-20T09:00:00", "taskDescription": "Status-transitions fixture: main appointment" }
 
 ?? status == 201
-
-###
-
-@ApptId = {{apptCreate.id}}
-
-### [Setup][Appointments] Create a second appointment via intake for the cancel/reopen flow (201 expected)
-# @name pastCancelledApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "customerEmail": "{{KnownCustomerEmail}}",
-  "vehicleId": {{KnownCustomerVehicleId}},
-  "scheduledDate": "2026-04-19T09:00:00",
-  "dueDateTime": "2026-04-20T09:00:00",
-  "taskDescription": "Status-transitions fixture: cancel/reopen appointment"
-}
-
-?? status == 201
-
-###
-
-@PastCancelledApptId = {{pastCancelledApptCreate.id}}
 
 ### [Positive][Appointments] Update appointment status to InProgress (200 expected, no-op since intake already sets it)
 # @name inProgressAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -98,12 +83,53 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Create a draft quote linked to the appointment (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Status transitions quote {{RunId}}", "appointmentId": {{apptCreate.id}} }
+
+?? status == 201
+
+### [Setup][Appointments] Add the catalog part line so the quote can be sent (201 expected)
+# @name quoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][Appointments] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name quoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{quoteLine.version}} }
+
+?? status == 200
+
+### [Setup][Appointments] Accept the quote, so the appointment may be completed (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{quoteSent.version}} }
+
+?? status == 200
 
 ### [Positive][Appointments] Update appointment status to Completed (200 expected)
 # Response includes completedAt (DateTime) and canceledAt (null).
 # @name completedAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -112,61 +138,18 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
 ### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
 # Self-claim is only allowed for InProgress appointments.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/claim
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
-###
-
-### [Positive][Appointments] Update appointment status to Cancelled (200 expected)
-# Response includes canceledAt (DateTime) and completedAt (null).
-# @name cancelledAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "Cancelled", "version": {{pastCancelledApptCreate.version}} }
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Reopen cancelled appointment to InProgress (200 expected)
-# Cancelled appointments can be moved back to active states even after cancellation.
-# @name reopenedAppt
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "InProgress", "version": {{cancelledAppt.version}} }
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Move reopened appointment to Completed (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "Completed", "version": {{reopenedAppt.version}} }
-
-?? status == 200
-
-###
 
 ### [Negative][Appointments] Update appointment status with invalid value (400 expected)
 # Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/status
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -174,8 +157,6 @@ Content-Type: application/json
 { "status": "Scheduled", "version": {{completedAppt.version}} }
 
 ?? status == 400
-
-###
 
 ### [Negative][Appointments] Update non-existent appointment status (404 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
@@ -187,18 +168,13 @@ Content-Type: application/json
 
 ?? status == 404
 
-###
-
-### [Cleanup][Appointments] Login as admin to delete the fixture appointments (200 expected)
+### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
@@ -206,20 +182,8 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-# CSRF double-submit token for the cleanup deletes below (see tests/CLAUDE.md Core Rules).
-
-### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
-###
-
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{PastCancelledApptId}}
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle, appointment and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

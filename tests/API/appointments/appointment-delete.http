@@ -1,5 +1,5 @@
 # DELETE (AdminOnly) hard-deletes the appointment and its mechanic assignments in one SaveChangesAsync;
-# a linked Quote.AppointmentId would go NULL via SetNull (not exercised here). CustomerId/VehicleId resolve from a real pair at run time.
+# its linked quotes are deleted with it (cascade, no SetNull) and a Completed one is 409 (appointment-lifecycle.http). CustomerId/VehicleId resolve from a real pair at run time.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -90,6 +90,68 @@ X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == appointment_not_found
+###
+
+### [Setup][Appointments] Create an appointment that owns two quotes (201 expected)
+# @name cascadeApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureVehicles.items[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: quote cascade", "mechanicIds": [{{AdminMechanicId}}] }
+
+?? status == 201
+
+###
+
+### [Setup][Appointments] Create the first quote linked to it (201 expected)
+# @name cascadeQuoteOne
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Appointment-delete cascade one", "appointmentId": {{cascadeApptCreate.id}} }
+
+?? status == 201
+
+###
+
+### [Setup][Appointments] Create the second quote linked to it (201 expected)
+# @name cascadeQuoteTwo
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Appointment-delete cascade two", "appointmentId": {{cascadeApptCreate.id}} }
+
+?? status == 201
+
+###
+
+### [Positive][Appointments] Deleting the non-Completed appointment deletes its quotes with it (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{cascadeApptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Appointments] Cascade check - the first quote no longer exists (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{cascadeQuoteOne.id}}
+
+?? status == 404
+
+###
+
+### [Negative][Appointments] Cascade check - the second quote no longer exists (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{cascadeQuoteTwo.id}}
+
+?? status == 404
+
 ###
 
 ### [Setup][Appointments] Create a second disposable appointment for the authz/cleanup checks (201 expected)

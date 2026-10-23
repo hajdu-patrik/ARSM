@@ -87,6 +87,29 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Appointment and quote lifecycle rules (2026-10-23). An appointment may be in progress without a quote, but it completes only
+  from InProgress with an Accepted linked quote (409 `appointment_completion_requires_in_progress` /
+  `appointment_completion_requires_accepted_quote`); Completed is terminal and cannot be deleted (409
+  `appointment_completed_terminal`), and its quotes stay viewable and printable for the books but never editable or deletable.
+  A Cancelled appointment's quotes are read-only and deletable in any status; once an in-progress appointment has an Accepted
+  quote, all of its quotes lock and no new quote links to it (409 `quote_locked_appointment_completed` / `_cancelled` /
+  `_accepted` on header, line, status, validity and linked create). Deleting an appointment now deletes its quotes (FK
+  `SET NULL` to `CASCADE`, migration `QuoteAppointmentCascade`, no data migrated); deleting a quote never touches the
+  appointment. One rule source, `Lifecycle/AppointmentQuoteLifecycle`, feeds new DTO flags (`hasAcceptedQuote`, `canComplete`,
+  `canDelete`, `canLinkQuote` on appointments; `isLocked`, `lockReason`, `canDelete` on quotes). WebUI: Completed is a disabled
+  status option with an in-progress hint until a quote is accepted, a Completed appointment has no status control or delete,
+  the appointment delete confirmation warns about its quotes, the quote editor shows a reason-specific locked notice with
+  close/PDF (delete only when allowed), the row delete button follows `canDelete` with the reason in its accessible name, and
+  the quote delete confirmation no longer claims that only a draft can be deleted. New HTTP suites (`appointment-lifecycle`,
+  `quote-appointment-lock`, `-accepted-lock`, `-delete-matrix`, the cascade in `appointment-delete`), SQL section 34 (FK
+  delete rule), E2E specs `scheduler-lifecycle-rules` and `quote-appointment-lock`; existing suites that completed an
+  appointment now accept a quote first on a disposable customer.
+
+_Dev time: ~50m wall-clock (2026-10-23 16:10 to 17:00 +02:00, one arsm-chain run with a fable plan, sonnet packages and
+reviews and opus hand-offs, then the open questions, the skipped reviews, docs-sync, gate, HTTP/SQL suites and the selected
+E2E specs by hand). Cost: ~$3.4-16.9 output-token-only estimate (338k workflow output tokens, sonnet to fable pricing; excludes
+input tokens, cache and the hand-run review agents, so a lower bound)._
+
 - Clean-code pass, behaviour unchanged (2026-10-22): about 1,346 fewer lines over 357 files (+405 and -1,751); no route, status code,
   JSON body or rendered text changed and the EF migrations are untouched. Backend: 18 redundant usings, the unused `year` parameter of
   `LoadMonthsAsync` and two PDF model fields nobody read (`QuoteDocumentLine.VatAmount`, `QuoteDocumentModel.IsExpired`) removed, plus

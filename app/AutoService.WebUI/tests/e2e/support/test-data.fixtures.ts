@@ -220,6 +220,7 @@ function appointmentForVehicle(vehicle: VehicleDetailDto): AppointmentDto {
     },
     mechanics: [],
     version: 1,
+    hasAcceptedQuote: false, canComplete: false, canDelete: false, canLinkQuote: false,
   };
 }
 

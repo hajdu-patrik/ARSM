@@ -1,12 +1,14 @@
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Http;
+using AutoService.ApiService.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Hard-deletes an appointment and its mechanic assignments; the mechanic rows cascade and a linked quote's AppointmentId is set null. */
+    /** Hard-deletes a non-completed appointment; its mechanic assignments and linked quotes are deleted with it (FK cascade). */
     private static async Task<IResult> DeleteAppointmentAsync(
         int id,
         AutoServiceDbContext db,
@@ -23,6 +25,12 @@ public static partial class AppointmentEndpoints
         {
             logger.LogInformation("Appointment delete failed: appointment {AppointmentId} not found.", id);
             return AppointmentNotFound();
+        }
+
+        if (!AppointmentQuoteLifecycle.CanDelete(appointment.Status))
+        {
+            logger.LogInformation("Appointment delete rejected: appointment {AppointmentId} is completed.", id);
+            return Results.Conflict(new ErrorCodeResponse(LifecycleErrorCodes.AppointmentCompletedTerminal));
         }
 
         db.Appointments.Remove(appointment);

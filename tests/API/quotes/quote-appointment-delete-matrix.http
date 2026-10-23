@@ -1,0 +1,227 @@
+# A Completed appointment locks all its quotes: every mutation and every delete answers 409, GET and PDF stay.
+# Disposable customer, deleted at the end (cascade); the appointment-delete cascade is in appointments/appointment-delete.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.matrix.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0704
+
+### [Setup][DeleteMatrix] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][DeleteMatrix] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][DeleteMatrix] Resolve the fixture part OLF-1001 (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
+
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
+
+?? status == 200
+
+### [Setup][DeleteMatrix] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "DeleteMatrix", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QMX-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Create the appointment that gets completed (201 expected, admin assigned)
+# @name apptX
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Delete matrix fixture: completed appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Create the sibling Draft quote (201 expected)
+# @name draftQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Delete Matrix Draft {{RunId}}", "appointmentId": {{apptX.id}} }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Create the quote that gets accepted (201 expected)
+# @name acceptedQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Delete Matrix Accepted {{RunId}}", "appointmentId": {{apptX.id}} }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Add the catalog part line (201 expected)
+# @name acceptedQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{acceptedQuote.version}} }
+
+?? status == 201
+
+### [Setup][DeleteMatrix] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name acceptedQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{acceptedQuoteLine.version}} }
+
+?? status == 200
+
+### [Setup][DeleteMatrix] Accept the quote (200 expected)
+# @name acceptedQuoteAccepted
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{acceptedQuoteSent.version}} }
+
+?? status == 200
+
+### [Setup][DeleteMatrix] Complete the appointment (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptX.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptX.version}} }
+
+?? status == 200
+
+### [Negative][DeleteMatrix] Creating a quote linked to a Completed appointment is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Delete Matrix Blocked {{RunId}}", "appointmentId": {{apptX.id}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] Header update of the Draft quote is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Should not apply", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] Adding a line to the Draft quote is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] A status change of the Draft quote is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] Extending the Draft quote validity is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2031-01-01T00:00:00", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] A quote of a Completed appointment is never deletable, even a Draft (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}?version={{draftQuote.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Negative][DeleteMatrix] The Accepted quote is not deletable either (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}?version={{acceptedQuoteAccepted.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_completed
+
+### [Positive][DeleteMatrix] GET still works and reports the lock (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+
+?? status == 200
+?? js response.parsedBody.isLocked == true
+?? js response.parsedBody.lockReason == appointment_completed
+?? js response.parsedBody.canDelete == false
+
+### [Positive][DeleteMatrix] The PDF is still available (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{acceptedQuote.id}}/pdf
+
+?? status == 200
+
+### [Cleanup][DeleteMatrix] Delete the disposable customer, cascading vehicle, appointment and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

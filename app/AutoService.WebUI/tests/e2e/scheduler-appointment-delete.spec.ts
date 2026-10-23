@@ -26,6 +26,7 @@ test.describe('Scheduler appointment delete (admin)', () => {
     // Cancel closes the confirmation without deleting the appointment.
     await schedulerPage.deleteButton().click();
     await expect(confirmDialog).toBeVisible();
+    await expect(confirmDialog).toContainText('The quotes linked to this appointment are deleted with it.');
     await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(confirmDialog).toHaveCount(0);
     await expect(detailDialog).toBeVisible();

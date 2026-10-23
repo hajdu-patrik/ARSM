@@ -10,6 +10,7 @@ import type { MockApiState } from './test-data';
 import { fulfillJson } from './api-mock-response';
 import {
   applyQuoteWrite,
+  rejectLockedAppointment,
   rejectQuoteVersion,
   replaceQuote,
   sortedQuotes,
@@ -30,7 +31,7 @@ export async function handleVehicleQuoteRoute(
 ): Promise<boolean> {
   if (method === 'GET') {
     const quotes = sortedQuotes(state).filter((quote) => quote.vehicleId === vehicleId);
-    await fulfillJson(route, quotes.map((quote) => toQuoteListItemResponse(quote)));
+    await fulfillJson(route, quotes.map((quote) => toQuoteListItemResponse(state, quote)));
     return true;
   }
 
@@ -43,6 +44,10 @@ export async function handleVehicleQuoteRoute(
 
   if (!title) {
     await fulfillJson(route, { detail: 'Title cannot be empty.' }, 422);
+    return true;
+  }
+
+  if (await rejectLockedAppointment(route, state, payload.appointmentId ?? null)) {
     return true;
   }
 
@@ -80,16 +85,24 @@ export async function handleVehicleQuoteRoute(
     createdByMechanic: { id: MOCK_MECHANIC_IDS.gabor, fullName: 'Gabor Kovacs' },
     lines: [],
     version: 1,
+    isLocked: false,
+    lockReason: null,
+    canDelete: true,
   };
 
   state.quotes.push(created);
-  await fulfillJson(route, toQuoteDetailResponse(created), 201);
+  await fulfillJson(route, toQuoteDetailResponse(state, created), 201);
   return true;
 }
 
 /** Applies a status transition, enforcing the state machine and the send rule. */
 export async function handleChangeQuoteStatus(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   const payload = route.request().postDataJSON() as ChangeQuoteStatusRequest;
+
+  if (await rejectLockedAppointment(route, state, quote.appointmentId)) {
+    return;
+  }
+
   const isAllowed = (quote.status === 'Draft' && payload.status === 'Sent')
     || (quote.status === 'Sent' && (payload.status === 'Accepted' || payload.status === 'Rejected'));
 
@@ -115,12 +128,16 @@ export async function handleChangeQuoteStatus(route: Route, state: MockApiState,
     decidedAt: payload.status === 'Sent' ? quote.decidedAt : now,
   });
   replaceQuote(state, quote, saved);
-  await fulfillJson(route, toQuoteDetailResponse(saved));
+  await fulfillJson(route, toQuoteDetailResponse(state, saved));
 }
 
 /** Saves a new validity deadline, with the sent-quote extend-only rule (D23). */
 export async function handleExtendQuoteValidity(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   const payload = route.request().postDataJSON() as ExtendQuoteValidityRequest;
+
+  if (await rejectLockedAppointment(route, state, quote.appointmentId)) {
+    return;
+  }
 
   if (quote.status === 'Accepted' || quote.status === 'Rejected') {
     await fulfillJson(route, { detail: 'Validity cannot be changed on a decided quote.' }, 409);
@@ -147,5 +164,5 @@ export async function handleExtendQuoteValidity(route: Route, state: MockApiStat
 
   const saved = applyQuoteWrite({ ...quote, validUntil: payload.validUntil });
   replaceQuote(state, quote, saved);
-  await fulfillJson(route, toQuoteDetailResponse(saved));
+  await fulfillJson(route, toQuoteDetailResponse(state, saved));
 }

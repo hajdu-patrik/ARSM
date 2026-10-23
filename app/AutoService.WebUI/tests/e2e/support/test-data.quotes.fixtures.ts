@@ -64,6 +64,9 @@ const draftQuote: QuoteDetailDto = {
     },
   ],
   version: 101,
+  isLocked: false,
+  lockReason: null,
+  canDelete: true,
 };
 
 const sentQuote: QuoteDetailDto = {
@@ -101,6 +104,9 @@ const sentQuote: QuoteDetailDto = {
     },
   ],
   version: 102,
+  isLocked: false,
+  lockReason: null,
+  canDelete: false,
 };
 
 const expiredQuote: QuoteDetailDto = {

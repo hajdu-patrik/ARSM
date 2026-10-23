@@ -128,7 +128,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Completed" }
+{ "status": "Cancelled" }
 
 ?? status == 422
 
@@ -140,7 +140,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Completed", "version": {{concAppt.version}} }
+{ "status": "Cancelled", "version": {{concAppt.version}} }
 
 ?? status == 409
 ?? js response.parsedBody.code == appointment_version_conflict
@@ -154,7 +154,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Completed", "version": {{updatedAppt.version}} }
+{ "status": "Cancelled", "version": {{updatedAppt.version}} }
 
 ?? status == 200
 ?? js (response.parsedBody.version != updatedAppt.version) == true

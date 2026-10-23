@@ -119,6 +119,7 @@ public static partial class QuoteEndpoints
             return ApiProblem.NotFound("Quote not found.");
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        var lockReason = await ResolveQuoteLockReasonAsync(quote, db, cancellationToken);
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason));
     }
 }

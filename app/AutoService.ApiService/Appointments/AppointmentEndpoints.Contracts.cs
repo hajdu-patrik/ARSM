@@ -24,7 +24,7 @@ public static partial class AppointmentEndpoints
         string Specialization,
         bool HasProfilePicture);
 
-    /** Full appointment DTO with scheduling details, status, vehicle, assigned mechanics and the xmin version every edit sends back. */
+    /** Full appointment DTO: schedule, status, vehicle, mechanics and the version every edit sends back. */
     internal sealed record AppointmentDto(
         int Id,
         DateTime ScheduledDate,
@@ -36,7 +36,11 @@ public static partial class AppointmentEndpoints
         DateTime? CanceledAt,
         VehicleDto Vehicle,
         IReadOnlyList<MechanicSummaryDto> Mechanics,
-        uint Version);
+        uint Version,
+        bool HasAcceptedQuote,
+        bool CanComplete,
+        bool CanDelete,
+        bool CanLinkQuote);
 
     internal sealed record CreateCustomerAppointmentRequest(
         int VehicleId,

@@ -110,6 +110,7 @@ export const AppointmentDetailConfirmModals = memo(function AppointmentDetailCon
         confirmTestId="appointment-detail-delete-confirm"
       >
         <p className={mutedBodyTextClass}>{t('scheduler.detail.deleteConfirmMessage')}</p>
+        <p className={`mt-2 ${mutedBodyTextClass}`}>{t('scheduler.detail.deleteConfirmQuotesWarning')}</p>
       </ConfirmModal>
     </>
   );

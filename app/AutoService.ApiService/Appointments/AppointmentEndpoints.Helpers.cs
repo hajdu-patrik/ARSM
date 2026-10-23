@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Lifecycle;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Appointments;
@@ -10,40 +11,51 @@ public static partial class AppointmentEndpoints
 {
     private const string VersionConflictCode = "appointment_version_conflict";
 
-    private static AppointmentDto ToDto(Appointment appointment) => new(
-        appointment.Id,
-        appointment.ScheduledDate,
-        appointment.IntakeCreatedAt,
-        appointment.DueDateTime,
-        appointment.TaskDescription,
-        appointment.Status.ToString(),
-        appointment.CompletedAt,
-        appointment.CanceledAt,
-        new VehicleDto(
-            appointment.Vehicle.Id,
-            appointment.Vehicle.LicensePlate,
-            appointment.Vehicle.Vin,
-            appointment.Vehicle.Brand,
-            appointment.Vehicle.Model,
-            appointment.Vehicle.Year,
-            appointment.Vehicle.MileageKm,
-            appointment.Vehicle.EnginePowerKw,
-            appointment.Vehicle.DrivetrainType.ToString(),
-            appointment.Vehicle.CustomerId),
-        appointment.Mechanics
-            .Select(m => new MechanicSummaryDto(
-                m.Id,
-                m.Name.ToString(),
-                m.Specialization.ToString(),
-                m.ProfilePictureObjectKey is not null || m.ProfilePictureContentType is not null))
-            .ToList(),
-        appointment.Version);
+    /** Maps a loaded appointment; the lifecycle flags read `Quotes`, so callers load it through LoadAppointmentAsync. */
+    private static AppointmentDto ToDto(Appointment appointment)
+    {
+        var hasAcceptedQuote = AppointmentQuoteLifecycle.HasAcceptedQuote(appointment.Quotes);
 
-    /** Loads an appointment tracked, with the mechanics, vehicle and owner that ToDto reads. */
+        return new(
+            appointment.Id,
+            appointment.ScheduledDate,
+            appointment.IntakeCreatedAt,
+            appointment.DueDateTime,
+            appointment.TaskDescription,
+            appointment.Status.ToString(),
+            appointment.CompletedAt,
+            appointment.CanceledAt,
+            new VehicleDto(
+                appointment.Vehicle.Id,
+                appointment.Vehicle.LicensePlate,
+                appointment.Vehicle.Vin,
+                appointment.Vehicle.Brand,
+                appointment.Vehicle.Model,
+                appointment.Vehicle.Year,
+                appointment.Vehicle.MileageKm,
+                appointment.Vehicle.EnginePowerKw,
+                appointment.Vehicle.DrivetrainType.ToString(),
+                appointment.Vehicle.CustomerId),
+            appointment.Mechanics
+                .Select(m => new MechanicSummaryDto(
+                    m.Id,
+                    m.Name.ToString(),
+                    m.Specialization.ToString(),
+                    m.ProfilePictureObjectKey is not null || m.ProfilePictureContentType is not null))
+                .ToList(),
+            appointment.Version,
+            hasAcceptedQuote,
+            AppointmentQuoteLifecycle.CanComplete(appointment.Status, hasAcceptedQuote),
+            AppointmentQuoteLifecycle.CanDelete(appointment.Status),
+            AppointmentQuoteLifecycle.CanLinkQuote(appointment.Status, hasAcceptedQuote));
+    }
+
+    /** Loads an appointment tracked, with the mechanics, vehicle, owner and quotes that ToDto reads. */
     private static Task<Appointment?> LoadAppointmentAsync(AutoServiceDbContext db, int id, CancellationToken cancellationToken)
         => db.Appointments
             .Include(a => a.Mechanics)
             .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
+            .Include(a => a.Quotes)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
     /** Saves an edited appointment under the client's version; the shared rule answers 409 appointment_version_conflict when stale. */

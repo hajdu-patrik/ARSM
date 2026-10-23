@@ -5,7 +5,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Domain;
 
-/** Service appointment linked to a vehicle and mechanics; the many-to-many with Mechanic persists via EF Core's `appointmentmechanics` join table. */
+/** Service appointment of a vehicle; mechanics link through the `appointmentmechanics` join table. */
 public class Appointment : IVersioned
 {
     [Key]
@@ -36,4 +36,6 @@ public class Appointment : IVersioned
     public Vehicle Vehicle { get; set; } = null!;
 
     public List<Mechanic> Mechanics { get; set; } = new List<Mechanic>();
+
+    public ICollection<Quote> Quotes { get; set; } = new List<Quote>();
 }

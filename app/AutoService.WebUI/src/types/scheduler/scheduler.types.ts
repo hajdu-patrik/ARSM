@@ -43,6 +43,14 @@ export interface AppointmentDto {
   mechanics: MechanicSummaryDto[];
   /** Concurrency version that the next status change or update must echo. */
   version: number;
+  /** True when a quote linked to this appointment is Accepted. */
+  hasAcceptedQuote: boolean;
+  /** True when the appointment may switch to Completed (in progress with an accepted quote). */
+  canComplete: boolean;
+  /** True when the appointment may be deleted (anything but Completed). */
+  canDelete: boolean;
+  /** True when a new quote may be linked to the appointment (in progress, no accepted quote yet). */
+  canLinkQuote: boolean;
 }
 
 /** Request payload for updating an appointment's lifecycle status (`PUT /api/appointments/{id}/status`). */

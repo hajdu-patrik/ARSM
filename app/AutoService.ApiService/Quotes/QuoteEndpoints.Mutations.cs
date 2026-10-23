@@ -4,7 +4,9 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Identity;
+using AutoService.ApiService.Lifecycle;
 using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Quotes;
@@ -77,6 +79,13 @@ public static partial class QuoteEndpoints
             {
                 return ApiProblem.Unprocessable("Appointment does not belong to the specified vehicle.");
             }
+
+            var lockReason = await ResolveAppointmentLockReasonAsync(
+                appointment.Id, appointment.Status, db, cancellationToken);
+            if (lockReason is not null)
+            {
+                return ConflictWithCode(AppointmentQuoteLifecycle.ToLockErrorCode(lockReason));
+            }
         }
 
         var quote = new Quote(
@@ -96,26 +105,43 @@ public static partial class QuoteEndpoints
             await db.Entry(quote).Reference(q => q.CreatedByMechanic).LoadAsync(cancellationToken);
         }
 
-        return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Created($"/api/quotes/{quote.Id}", ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 
-    /** Deletes a draft quote (D7: only Draft is deletable) under optimistic concurrency (D30/D38/D39: version arrives as a query parameter on DELETE). */
+    /** Deletes a quote by the appointment matrix: Completed never, Cancelled in any status, else Draft only (D7);
+     * the version arrives as a query parameter on DELETE (D30/D38/D39). */
     private static async Task<IResult> DeleteQuoteAsync(
         int id,
         uint version,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var (quote, loadError) = await LoadDraftQuoteAsync(
-            id, version, "Only draft quotes can be deleted.", db, cancellationToken);
+        var quote = await IncludeDetails(db.Quotes)
+            .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
-        if (loadError is not null)
+        if (quote is null)
         {
-            return loadError;
+            return ApiProblem.NotFound("Quote not found.");
         }
 
-        db.Quotes.Remove(quote!);
-        var saveError = await SaveWithVersionAsync(db, quote!, version, cancellationToken);
+        if (quote.Appointment?.Status == ProgressStatus.Completed)
+        {
+            return ConflictWithCode(LifecycleErrorCodes.QuoteLockedAppointmentCompleted);
+        }
+
+        if (!AppointmentQuoteLifecycle.CanDeleteQuote(quote.Status, quote.Appointment?.Status))
+        {
+            return ApiProblem.Conflict("Only draft quotes can be deleted.");
+        }
+
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(version);
+        if (missingVersionError is not null)
+        {
+            return missingVersionError;
+        }
+
+        db.Quotes.Remove(quote);
+        var saveError = await SaveWithVersionAsync(db, quote, version, cancellationToken);
         if (saveError is not null)
         {
             return saveError;

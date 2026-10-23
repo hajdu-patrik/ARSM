@@ -1,4 +1,4 @@
-import type { SchedulerCreateIntakeRequest } from '../../../src/types/scheduler/scheduler.types';
+import type { AppointmentDto, SchedulerCreateIntakeRequest } from '../../../src/types/scheduler/scheduler.types';
 import type { CreateVehicleRequest, VehicleDetailDto } from '../../../src/types/customers/customers.types';
 import type { MockApiState } from './test-data';
 
@@ -55,6 +55,10 @@ export function createAppointment(state: MockApiState, request: SchedulerCreateI
     },
     mechanics: [],
     version: 1,
+    hasAcceptedQuote: false,
+    canComplete: false,
+    canDelete: true,
+    canLinkQuote: true,
   };
 
   state.nextAppointmentId += 1;
@@ -66,7 +70,21 @@ export function getLookupName(customer: { firstName: string; middleName: string 
   return [customer.firstName, customer.middleName, customer.lastName].filter(Boolean).join(' ');
 }
 
-/** Removes an appointment from the mock state by id, mirroring the real hard-delete endpoint. */
+/** Returns the appointment with the four lifecycle flags computed from the mock quotes, like the API projection. */
+export function withLifecycleFlags(state: MockApiState, appointment: AppointmentDto): AppointmentDto {
+  const hasAcceptedQuote = state.quotes.some((quote) => quote.appointmentId === appointment.id && quote.status === 'Accepted');
+  const isInProgress = appointment.status === 'InProgress';
+
+  return {
+    ...appointment,
+    hasAcceptedQuote,
+    canComplete: isInProgress && hasAcceptedQuote,
+    canDelete: appointment.status !== 'Completed',
+    canLinkQuote: isInProgress && !hasAcceptedQuote,
+  };
+}
+
+/** Removes an appointment and its linked quotes from the mock state by id, mirroring the real hard-delete endpoint. */
 export function deleteAppointment(state: MockApiState, id: number): boolean {
   const index = state.appointments.findIndex((appointment) => appointment.id === id);
   if (index < 0) {
@@ -74,5 +92,10 @@ export function deleteAppointment(state: MockApiState, id: number): boolean {
   }
 
   state.appointments.splice(index, 1);
+  for (let quoteIndex = state.quotes.length - 1; quoteIndex >= 0; quoteIndex -= 1) {
+    if (state.quotes[quoteIndex]?.appointmentId === id) {
+      state.quotes.splice(quoteIndex, 1);
+    }
+  }
   return true;
 }

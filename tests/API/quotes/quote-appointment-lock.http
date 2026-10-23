@@ -1,0 +1,233 @@
+# The appointment is cancelled after its quotes exist: every mutation answers 409, GET and PDF stay, DELETE works in any status.
+# Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.lock.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0702
+
+### [Setup][QuoteLock] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][QuoteLock] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteLock] Resolve the fixture part OLF-1001 (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
+
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
+
+?? status == 200
+
+### [Setup][QuoteLock] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteLock", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteLock] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QLK-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteLock] Create the appointment that gets cancelled (201 expected, admin assigned)
+# @name apptC
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Quote lock fixture: cancelled appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][QuoteLock] Create the Draft quote linked to the appointment (201 expected)
+# @name draftQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Quote Lock Draft {{RunId}}", "appointmentId": {{apptC.id}} }
+
+?? status == 201
+
+### [Setup][QuoteLock] Create the quote that gets sent (201 expected)
+# @name sentQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Quote Lock Sent {{RunId}}", "appointmentId": {{apptC.id}} }
+
+?? status == 201
+
+### [Setup][QuoteLock] Add the catalog part line (201 expected)
+# @name sentQuoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{sentQuote.version}} }
+
+?? status == 201
+
+### [Setup][QuoteLock] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name sentQuoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{sentQuoteLine.version}} }
+
+?? status == 200
+
+### [Setup][QuoteLock] Cancel the appointment (200 expected, no accepted quote needed)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptC.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{apptC.version}} }
+
+?? status == 200
+
+### [Negative][QuoteLock] Creating a quote linked to a Cancelled appointment is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Quote Lock Blocked {{RunId}}", "appointmentId": {{apptC.id}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] Header update of the Draft quote is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Should not apply", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] Adding a line to the Draft quote is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] A status change of the Draft quote is locked (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] Extending the Draft quote validity is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2031-01-01T00:00:00", "version": {{draftQuote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] Updating a line of the Sent quote is locked (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines/{{sentQuoteLine.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{PartId}}, "version": {{sentQuoteSent.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Negative][QuoteLock] Deleting a line of the Sent quote is locked (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines/{{sentQuoteLine.lines[0].id}}?version={{sentQuoteSent.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Positive][QuoteLock] GET still works and reports the lock (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
+
+?? status == 200
+?? js response.parsedBody.isLocked == true
+?? js response.parsedBody.lockReason == appointment_cancelled
+?? js response.parsedBody.canDelete == true
+
+### [Positive][QuoteLock] The PDF is still available (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/pdf
+
+?? status == 200
+
+### [Positive][QuoteLock] A locked Draft quote can be deleted (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}?version={{draftQuote.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Positive][QuoteLock] A locked Sent quote can be deleted too (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}?version={{sentQuoteSent.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][QuoteLock] Delete the disposable customer, cascading vehicle and appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

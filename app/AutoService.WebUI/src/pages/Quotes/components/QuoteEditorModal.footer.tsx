@@ -1,9 +1,10 @@
-/** Footer actions gated by quote status (same state machine the API enforces; see CLAUDE.md): draft save/delete/send, sent accept/reject, decided close-only. */
+/** Footer actions gated by the server lock flag, then by quote status (see CLAUDE.md): locked close/PDF/delete, draft save/delete/send, sent accept/reject, decided close-only. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
-import { Check, Download, Save, Send, Trash2, X } from 'lucide-react';
+import { Check, Download, Save, Send, X } from 'lucide-react';
 import type { QuoteDetailDto, QuoteStatus } from '../../../types/quotes/quotes.types';
 import { buttonClass, dangerButtonClass, defaultIconClass, secondaryButtonClass } from '../../../utils/formStyles';
+import { QuoteDeleteButton } from './QuoteDeleteButton';
 
 interface QuoteEditorFooterProps {
   readonly t: TFunction;
@@ -76,6 +77,16 @@ export const QuoteEditorFooter = memo(function QuoteEditorFooter({
     );
   }
 
+  if (quote.isLocked) {
+    return (
+      <>
+        {closeButton}
+        {downloadButton}
+        {quote.canDelete && <QuoteDeleteButton t={t} isBusy={isSaving || isChangingStatus} onDelete={onDelete} />}
+      </>
+    );
+  }
+
   if (quote.status === 'Draft') {
     const hasNoLines = quote.lines.length === 0;
 
@@ -83,16 +94,7 @@ export const QuoteEditorFooter = memo(function QuoteEditorFooter({
       <>
         {closeButton}
         {downloadButton}
-        <button
-          data-testid="quote-delete-draft-button"
-          type="button"
-          onClick={onDelete}
-          disabled={isSaving || isChangingStatus}
-          className={dangerButtonClass}
-        >
-          <Trash2 className={defaultIconClass} />
-          <span>{t('quotes.deleteQuote')}</span>
-        </button>
+        {quote.canDelete && <QuoteDeleteButton t={t} isBusy={isSaving || isChangingStatus} onDelete={onDelete} />}
         <button
           data-testid="quote-save-header-button"
           type="button"

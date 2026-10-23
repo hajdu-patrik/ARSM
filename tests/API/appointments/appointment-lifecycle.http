@@ -1,0 +1,242 @@
+# Status PUT needs an assigned mechanic, so the admin is assigned. Completed is terminal, so the disposable customer
+# (cascade removes its appointments and quotes) is deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = lifecycle.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0701
+
+### [Setup][Lifecycle] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Lifecycle] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Lifecycle] Resolve the fixture part OLF-1001 (200 expected)
+# @name fixturePart
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
+
+{{
+  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
+}}
+
+?? status == 200
+
+### [Setup][Lifecycle] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Lifecycle", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Lifecycle] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "LCY-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Lifecycle] Create the appointment that gets completed (201 expected, admin assigned)
+# @name apptA
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Lifecycle fixture: completed appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+?? js response.parsedBody.canComplete == false
+?? js response.parsedBody.canDelete == true
+
+### [Negative][Lifecycle] InProgress to Completed without any quote (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptA.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completion_requires_accepted_quote
+
+### [Setup][Lifecycle] Create a draft quote linked to the appointment (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Lifecycle Quote {{RunId}}", "appointmentId": {{apptA.id}} }
+
+?? status == 201
+
+### [Negative][Lifecycle] A Draft quote does not allow Completed (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptA.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completion_requires_accepted_quote
+
+### [Setup][Lifecycle] Add the catalog part line so the quote can be sent (201 expected)
+# @name quoteLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][Lifecycle] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name quoteSent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{quoteLine.version}} }
+
+?? status == 200
+
+### [Negative][Lifecycle] A Sent quote does not allow Completed (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptA.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completion_requires_accepted_quote
+
+### [Setup][Lifecycle] Accept the quote (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{quoteSent.version}} }
+
+?? status == 200
+
+### [Positive][Lifecycle] An accepted quote allows Completed (200 expected)
+# @name apptDone
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptA.version}} }
+
+?? status == 200
+?? js response.parsedBody.hasAcceptedQuote == true
+?? js response.parsedBody.canDelete == false
+
+### [Negative][Lifecycle] Completed to InProgress is refused, Completed is terminal (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "InProgress", "version": {{apptDone.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completed_terminal
+
+### [Negative][Lifecycle] Completed to Cancelled is refused (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{apptDone.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completed_terminal
+
+### [Negative][Lifecycle] A Completed appointment cannot be deleted (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completed_terminal
+
+### [Setup][Lifecycle] Create a second appointment for the cancel and reopen flow (201 expected)
+# @name apptB
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-19T10:30:00", "taskDescription": "Lifecycle fixture: cancelled appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Positive][Lifecycle] InProgress to Cancelled needs no quote (200 expected)
+# @name apptCancelled
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptB.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{apptB.version}} }
+
+?? status == 200
+
+### [Negative][Lifecycle] Cancelled to Completed is refused, completion starts from InProgress (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptB.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{apptCancelled.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == appointment_completion_requires_in_progress
+
+### [Positive][Lifecycle] Cancelled to InProgress stays allowed (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptB.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "InProgress", "version": {{apptCancelled.version}} }
+
+?? status == 200
+
+### [Cleanup][Lifecycle] Delete the disposable customer, cascading vehicle, appointments and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

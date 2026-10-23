@@ -1,4 +1,4 @@
-/** Quote delete confirmation; wording says "gone for good" since only a draft can be deleted and there's no archive. */
+/** Quote delete confirmation; wording says "gone for good" since a deleted quote is not archived. */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Trash2 } from 'lucide-react';

@@ -1,16 +1,17 @@
 using System.Linq.Expressions;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
-using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
-    /** Server-side projection mirroring `ToDto`, so EF Core fetches only mapped columns; name/enum
-        formatting runs through ProjectionFormat, which EF Core evaluates client-side, to keep exact domain formatting. */
+    /** Server-side projection mirroring `ToDto` (lifecycle rules inlined for SQL); enum and name
+        formatting runs through ProjectionFormat, which EF Core evaluates client-side. */
     private static readonly Expression<Func<Appointment, AppointmentDto>> AppointmentDtoProjection = a => new AppointmentDto(
         a.Id,
         a.ScheduledDate,
@@ -38,7 +39,11 @@ public static partial class AppointmentEndpoints
                 ProjectionFormat.EnumName(m.Specialization),
                 m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
             .ToList(),
-        a.Version);
+        a.Version,
+        a.Quotes.Any(q => q.Status == QuoteStatus.Accepted),
+        a.Status == ProgressStatus.InProgress && a.Quotes.Any(q => q.Status == QuoteStatus.Accepted),
+        a.Status != ProgressStatus.Completed,
+        a.Status == ProgressStatus.InProgress && !a.Quotes.Any(q => q.Status == QuoteStatus.Accepted));
 
     /** Returns the appointments of a given customer across all owned vehicles, capped at the shared list limit. */
     private static async Task<IResult> GetByCustomerAsync(

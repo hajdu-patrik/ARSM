@@ -8,17 +8,21 @@ import type {
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
-import { createAppointment, deleteAppointment } from './api-mock-data';
+import { createAppointment, deleteAppointment, withLifecycleFlags } from './api-mock-data';
 import { fulfillJson, fulfillNoContent, rejectStaleVersion } from './api-mock-response';
 
 /** Code of the 409 the API answers a status change or update that carries a stale version with. */
 const APPOINTMENT_VERSION_CONFLICT_CODE = 'appointment_version_conflict';
 
+/** Codes of the 409s that refuse a completion without an accepted quote and any change to a Completed appointment. */
+const COMPLETION_REQUIRES_ACCEPTED_QUOTE_CODE = 'appointment_completion_requires_accepted_quote';
+const COMPLETED_TERMINAL_CODE = 'appointment_completed_terminal';
+
 /** Stores an appointment write in the mock state with the next concurrency version, like the API. */
 function applyAppointmentWrite(state: MockApiState, appointment: AppointmentDto, changes: Partial<AppointmentDto>): AppointmentDto {
   const updated = { ...appointment, ...changes, version: appointment.version + 1 };
   state.appointments[state.appointments.indexOf(appointment)] = updated;
-  return updated;
+  return withLifecycleFlags(state, updated);
 }
 
 /** Dispatches `/api/appointments` mock requests, including the live update stream. */
@@ -46,13 +50,13 @@ export async function tryHandleAppointmentRoute(
   }
 
   if (path === '/api/appointments' && method === 'GET') {
-    await fulfillJson(route, state.appointments);
+    await fulfillJson(route, state.appointments.map((appointment) => withLifecycleFlags(state, appointment)));
     return true;
   }
 
   if (path === '/api/appointments/intake' && method === 'POST') {
     const appointment = createAppointment(state, route.request().postDataJSON() as SchedulerCreateIntakeRequest);
-    await fulfillJson(route, appointment, 201);
+    await fulfillJson(route, withLifecycleFlags(state, appointment), 201);
     return true;
   }
 
@@ -71,6 +75,11 @@ export async function tryHandleAppointmentRoute(
   if (appointmentByIdMatch && method === 'DELETE') {
     const appointmentId = Number(appointmentByIdMatch[1]);
 
+    if (state.appointments.find((candidate) => candidate.id === appointmentId)?.status === 'Completed') {
+      await fulfillJson(route, { code: COMPLETED_TERMINAL_CODE }, 409);
+      return true;
+    }
+
     if (!deleteAppointment(state, appointmentId)) {
       await fulfillJson(route, { code: 'appointment_not_found' }, 404);
       return true;
@@ -83,7 +92,8 @@ export async function tryHandleAppointmentRoute(
   return false;
 }
 
-/** `PUT /api/appointments/{id}/status`: refuses a missing or stale version, else changes the status. */
+/** `PUT /api/appointments/{id}/status`: refuses a missing or stale version, a change away from Completed
+ * and a completion without an accepted quote, else changes the status. */
 async function handleStatusChange(route: Route, state: MockApiState, appointmentId: number): Promise<void> {
   const appointment = state.appointments.find((candidate) => candidate.id === appointmentId);
 
@@ -95,6 +105,18 @@ async function handleStatusChange(route: Route, state: MockApiState, appointment
   const { status, version } = route.request().postDataJSON() as { status: AppointmentStatus; version?: number };
   if (await rejectStaleVersion(route, appointment.version, version, APPOINTMENT_VERSION_CONFLICT_CODE)) {
     return;
+  }
+
+  if (status !== appointment.status) {
+    if (appointment.status === 'Completed') {
+      await fulfillJson(route, { code: COMPLETED_TERMINAL_CODE }, 409);
+      return;
+    }
+
+    if (status === 'Completed' && !withLifecycleFlags(state, appointment).canComplete) {
+      await fulfillJson(route, { code: COMPLETION_REQUIRES_ACCEPTED_QUOTE_CODE }, 409);
+      return;
+    }
   }
 
   await fulfillJson(route, applyAppointmentWrite(state, appointment, { status }));

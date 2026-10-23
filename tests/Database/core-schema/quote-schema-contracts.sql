@@ -122,3 +122,18 @@ LEFT JOIN information_schema.columns c
       AND c.column_name = 'xmin'
 GROUP BY t.table_name
 ORDER BY t.table_name;
+
+
+-- 34. QUOTE -> APPOINTMENT FK DELETE RULE — deleting an appointment removes its quotes (QuoteAppointmentCascade),
+--     so quotes.AppointmentId must reference appointments with ON DELETE CASCADE (confdeltype 'c'). Expected: 0 rows.
+WITH quote_appointment_fk AS (
+    SELECT pc.conname, pc.confdeltype
+    FROM pg_constraint pc
+    JOIN pg_class t ON t.oid = pc.conrelid AND t.relname = 'quotes'
+    JOIN pg_class r ON r.oid = pc.confrelid AND r.relname = 'appointments'
+    WHERE pc.contype = 'f'
+)
+SELECT 'quotes_to_appointments_fk_missing_or_not_cascade'::text AS contract_name,
+       (SELECT COUNT(*) FROM quote_appointment_fk) AS fk_count
+WHERE NOT EXISTS (SELECT 1 FROM quote_appointment_fk)
+   OR EXISTS (SELECT 1 FROM quote_appointment_fk WHERE confdeltype <> 'c');

@@ -45,7 +45,8 @@ public static partial class AppointmentEndpoints
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
-            .Produces<object>(StatusCodes.Status404NotFound);
+            .Produces<object>(StatusCodes.Status404NotFound)
+            .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id}/vehicle", UpdateAppointmentVehicleAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)

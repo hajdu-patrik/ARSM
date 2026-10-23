@@ -1,7 +1,6 @@
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Validation;
-using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Normalization;
 
@@ -46,7 +45,7 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 
     /** Extends a quote's validity (D22/D23): any future date while Draft, only a strictly later
@@ -57,15 +56,13 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await IncludeDetails(db.Quotes)
-            .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
-
-        if (quote is null)
+        var (quote, loadError) = await LoadUnlockedQuoteAsync(id, db, cancellationToken);
+        if (loadError is not null)
         {
-            return ApiProblem.NotFound("Quote not found.");
+            return loadError;
         }
 
-        if (quote.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
+        if (quote!.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
         {
             return ApiProblem.Conflict("Validity cannot be changed on a decided quote.");
         }
@@ -102,6 +99,6 @@ public static partial class QuoteEndpoints
             return saveError;
         }
 
-        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow));
+        return Results.Ok(ToQuoteDetailDto(quote, DateTime.UtcNow, lockReason: null));
     }
 }

@@ -52,8 +52,22 @@ function buildAppointmentOptionLabel(appointment: AppointmentDto, locale: string
   return `${formatShortDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
 }
 
-/** Picks the locked-header notice key by status: Accepted and Rejected read as closed, Sent keeps the original text. */
-function resolveLockedNoticeKey(status: QuoteStatus): string {
+/** Picks the locked-header notice key: the server lock reason first, else the status (Accepted and Rejected read as closed, Sent keeps the original text). */
+function resolveLockedNoticeKey(quote: QuoteDetailDto): string {
+  switch (quote.lockReason) {
+    case 'appointment_completed':
+      return 'quotes.lockedNoticeAppointmentCompleted';
+    case 'appointment_cancelled':
+      return 'quotes.lockedNoticeAppointmentCancelled';
+    case 'appointment_has_accepted_quote':
+      return 'quotes.lockedNoticeAppointmentAccepted';
+    default:
+      return resolveStatusNoticeKey(quote.status);
+  }
+}
+
+/** Picks the locked-header notice key by status. */
+function resolveStatusNoticeKey(status: QuoteStatus): string {
   switch (status) {
     case 'Accepted':
       return 'quotes.headerLockedNoticeAccepted';
@@ -85,9 +99,13 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
   // otherwise leave the disabled dropdown blank, hiding an existing link.
   const hasUnlistedAppointmentLink = form.appointmentId.length > 0
     && !appointments.some((appointment) => String(appointment.id) === form.appointmentId);
+  // A new quote may only link an appointment the server still accepts quotes for.
+  const linkableAppointments = isExistingQuote
+    ? appointments
+    : appointments.filter((appointment) => appointment.canLinkQuote);
   const appointmentOptions = [
     { value: '', label: t('quotes.appointmentNone') },
-    ...appointments.map((appointment) => ({
+    ...linkableAppointments.map((appointment) => ({
       value: String(appointment.id),
       label: buildAppointmentOptionLabel(appointment, locale),
     })),
@@ -115,7 +133,7 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
       </div>
 
       {quote !== null && !canEditHeader && (
-        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t(resolveLockedNoticeKey(quote.status))}</p>
+        <p data-testid="quote-header-locked-notice" className={warningNoticeSurfaceClass}>{t(resolveLockedNoticeKey(quote))}</p>
       )}
 
       <div className={formFieldGroupClass}>

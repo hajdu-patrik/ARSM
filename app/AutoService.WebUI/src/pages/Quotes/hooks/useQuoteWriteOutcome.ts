@@ -1,7 +1,7 @@
 /** Outcome of a quote write, shared by every write hook: adopt the returned quote or toast the failure. */
 import { useCallback } from 'react';
 import { isAxiosError } from 'axios';
-import { hasErrorCode, isVersionConflict } from '../../../services/http/error-code';
+import { hasErrorCode, isVersionConflict, readErrorCode } from '../../../services/http/error-code';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
@@ -15,9 +15,27 @@ import { useQuoteCache } from './useQuoteCache';
 /** Error-code body the API returns when the submitted version is stale. */
 const VERSION_CONFLICT_CODE = 'quote_version_conflict';
 
+/** Error-code bodies the API returns when the linked appointment locks the quote, with their toast keys. */
+const LOCK_ERROR_TOAST_KEYS: Record<string, string> = {
+  quote_locked_appointment_completed: 'quotes.errors.lockedAppointmentCompleted',
+  quote_locked_appointment_cancelled: 'quotes.errors.lockedAppointmentCancelled',
+  quote_locked_appointment_accepted: 'quotes.errors.lockedAppointmentAccepted',
+};
+
 /** Error-code bodies the API returns when the quote e-mail failed or the customer has no address. */
 const EMAIL_FAILED_CODE = 'quote_email_failed';
 const CUSTOMER_EMAIL_MISSING_CODE = 'quote_customer_email_missing';
+
+/** The lock toast key of a 409 lock answer, or undefined for any other error. */
+function resolveLockToastKey(error: unknown): string | undefined {
+  const code = readErrorCode(error);
+
+  if (code === undefined || !hasErrorCode(error, 409, code)) {
+    return undefined;
+  }
+
+  return LOCK_ERROR_TOAST_KEYS[code];
+}
 
 interface UseQuoteWriteOutcomeParams {
   showSuccessToast: (messageKey: string) => void;
@@ -44,7 +62,7 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
     }
   }, [refreshQuote, showErrorToast]);
 
-  /** Maps a failed write to one toast; a version conflict also reloads the quote the write targeted. */
+  /** Maps a failed write to one toast; a version conflict or an appointment lock also reloads the quote the write targeted. */
   const handleWriteError = useCallback(async (error: unknown, fallbackKey: string, quoteId: number | null) => {
     if (!isAxiosError<ServerErrorBody>(error)) {
       showErrorToast(fallbackKey);
@@ -55,6 +73,18 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
 
     if (isVersionConflict(error, VERSION_CONFLICT_CODE)) {
       showErrorToast('quotes.errors.versionConflict');
+
+      if (quoteId !== null) {
+        await refreshOpenQuote(quoteId);
+      }
+
+      return;
+    }
+
+    const lockToastKey = resolveLockToastKey(error);
+
+    if (lockToastKey) {
+      showErrorToast(lockToastKey);
 
       if (quoteId !== null) {
         await refreshOpenQuote(quoteId);

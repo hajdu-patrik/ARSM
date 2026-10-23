@@ -66,6 +66,26 @@ function resolveUnclaimErrorKey(error: unknown): string {
   return 'scheduler.detail.unassignError';
 }
 
+/** Maps a refused status change to its toast key: accepted quote required, completed is terminal, or a plain failure. */
+function resolveStatusErrorKey(error: unknown): string {
+  const code = readErrorCode(error);
+
+  if (code === 'appointment_completion_requires_accepted_quote') {
+    return 'scheduler.detail.statusCompleteNeedsAcceptedQuote';
+  }
+
+  return code === 'appointment_completed_terminal'
+    ? 'scheduler.detail.statusCompletedTerminal'
+    : 'scheduler.statusUpdateError';
+}
+
+/** Maps a refused delete to its toast key: a completed appointment cannot be deleted, else a plain failure. */
+function resolveDeleteErrorKey(error: unknown): string {
+  return readErrorCode(error) === 'appointment_completed_terminal'
+    ? 'scheduler.detail.deleteCompletedError'
+    : 'scheduler.detail.deleteError';
+}
+
 /** Saves the appointment fields, then the vehicle details when given; resolves with the last saved state. */
 async function updateWithOptionalVehicle({ id, request, vehicleRequest }: AppointmentUpdate): Promise<AppointmentDto> {
   const updated = await appointmentService.updateAppointment(id, request);
@@ -115,7 +135,7 @@ function useEditActions() {
   const { mutateAsync: changeStatus } = useAppointmentMutation({
     mutationFn: ({ id, status, version }: StatusChange) => appointmentService.updateStatus(id, { status, version }),
     successKey: 'scheduler.statusUpdateSuccess',
-    failureKey: 'scheduler.statusUpdateError',
+    failureKey: resolveStatusErrorKey,
   });
   const { mutateAsync: createIntake } = useAppointmentMutation({
     mutationFn: (request: SchedulerCreateIntakeRequest) => appointmentService.createIntake(request),
@@ -170,8 +190,8 @@ function useDeleteAction() {
 
       showSuccessToast('scheduler.detail.deleteSuccess');
     },
-    onError: () => {
-      showErrorToast('scheduler.detail.deleteError');
+    onError: (error) => {
+      showErrorToast(resolveDeleteErrorKey(error));
     },
   });
 

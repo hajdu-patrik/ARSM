@@ -26,7 +26,7 @@ test.describe('Quotes - list and editor', () => {
     await expect(draftRow).toContainText('31/12/2099');
   });
 
-  test('offers delete on every row, disabled for anything but a draft', async ({ page }) => {
+  test('offers delete on every row, disabled when the server says the quote cannot be deleted', async ({ page }) => {
     await signInWithMocks(page);
     const quotesPage = new QuotesPage(page);
     await quotesPage.goto();

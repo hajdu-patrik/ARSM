@@ -39,12 +39,23 @@ interface QuoteRowActionsProps {
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
-/** Open, download and delete icon actions of one quote row; only a draft can be deleted. */
+/** Delete button title: the plain label when allowed, else the reason it is not. */
+function resolveDeleteTitle(t: TFunction, quote: QuoteListItemDto): string {
+  if (quote.canDelete) {
+    return t('quotes.deleteQuote');
+  }
+
+  return t(quote.lockReason === 'appointment_completed'
+    ? 'quotes.deleteLockedAppointmentCompletedHint'
+    : 'quotes.deleteDraftOnlyHint');
+}
+
+/** Open, download and delete icon actions of one quote row. */
 function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRowActionsProps) {
-  const isDraft = quote.status === 'Draft';
   const openLabel = t('quotes.openQuote', { quoteNumber: quote.quoteNumber });
   const downloadLabel = t('quotes.downloadPdfFor', { quoteNumber: quote.quoteNumber });
   const deleteLabel = t('quotes.deleteQuote');
+  const deleteTitle = resolveDeleteTitle(t, quote);
 
   return (
     <div className={compactRowActionsClusterClass}>
@@ -73,10 +84,10 @@ function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRow
         data-testid="quote-delete-button"
         type="button"
         onClick={() => { onDelete(quote); }}
-        disabled={!isDraft}
+        disabled={!quote.canDelete}
         className={rowIconActionDangerClass}
-        title={isDraft ? deleteLabel : t('quotes.deleteDraftOnlyHint')}
-        aria-label={deleteLabel}
+        title={deleteTitle}
+        aria-label={quote.canDelete ? deleteLabel : `${deleteLabel}: ${deleteTitle}`}
       >
         <Trash2 className={smallIconClass} />
       </button>

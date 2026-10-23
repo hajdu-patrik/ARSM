@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
+using AutoService.ApiService.Lifecycle;
 using AutoService.ApiService.Pricing;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
@@ -65,9 +66,22 @@ public static partial class QuoteEndpoints
             : new QuoteMechanicSummaryDto(
                 q.CreatedByMechanic.Id,
                 ProjectionFormat.FullName(q.CreatedByMechanic.Name.FirstName, q.CreatedByMechanic.Name.MiddleName, q.CreatedByMechanic.Name.LastName)),
-        q.Version);
+        q.Version,
+        q.Appointment != null
+            && (q.Appointment.Status != ProgressStatus.InProgress
+                || q.Appointment.Quotes.Any(s => s.Status == QuoteStatus.Accepted)),
+        q.Appointment == null ? null
+            : q.Appointment.Status == ProgressStatus.Completed ? LifecycleErrorCodes.LockReasonAppointmentCompleted
+            : q.Appointment.Status == ProgressStatus.Cancelled ? LifecycleErrorCodes.LockReasonAppointmentCancelled
+            : q.Appointment.Quotes.Any(s => s.Status == QuoteStatus.Accepted) ? LifecycleErrorCodes.LockReasonAppointmentHasAcceptedQuote
+            : null,
+        q.Appointment == null
+            ? q.Status == QuoteStatus.Draft
+            : q.Appointment.Status != ProgressStatus.Completed
+                && (q.Appointment.Status == ProgressStatus.Cancelled || q.Status == QuoteStatus.Draft));
 
-    private static QuoteDetailDto ToQuoteDetailDto(Quote quote, DateTime nowUtc) => new(
+    /** Detail mapping; the caller resolves lockReason (see ResolveQuoteLockReasonAsync). */
+    private static QuoteDetailDto ToQuoteDetailDto(Quote quote, DateTime nowUtc, string? lockReason) => new(
         quote.Id,
         quote.QuoteNumber,
         quote.Title,
@@ -86,7 +100,10 @@ public static partial class QuoteEndpoints
         quote.AppointmentId,
         ToQuoteMechanicSummaryDto(quote.CreatedByMechanic),
         quote.Lines.OrderBy(l => l.SortOrder).Select(ToQuoteLineDto).ToList(),
-        quote.Version);
+        quote.Version,
+        lockReason is not null,
+        lockReason,
+        AppointmentQuoteLifecycle.CanDeleteQuote(quote.Status, quote.Appointment?.Status));
 
     /** Recomputes every line's amounts via QuoteLineCalculator and the quote's totals via
      * QuoteTotalsCalculator (D19); every line-mutating handler must call this so ValidateQuoteTotals matches on save. */
@@ -108,12 +125,9 @@ public static partial class QuoteEndpoints
         quote.TotalGross = totals.TotalGross;
     }
 
-    /** Loads a quote (with Vehicle/CreatedByMechanic/Lines) for a write endpoint and applies the
-     * shared Draft-only checks in order: exists (404), is Draft (409), version submitted (D38, 422). */
-    private static async Task<(Quote? Quote, IResult? Error)> LoadDraftQuoteAsync(
+    /** Loads a quote with its details for a write endpoint: exists (404), then appointment lock (409). */
+    private static async Task<(Quote? Quote, IResult? Error)> LoadUnlockedQuoteAsync(
         int id,
-        uint version,
-        string lockedDetail,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
@@ -125,7 +139,25 @@ public static partial class QuoteEndpoints
             return (null, ApiProblem.NotFound("Quote not found."));
         }
 
-        if (quote.Status != QuoteStatus.Draft)
+        var lockError = await CheckQuoteLockAsync(quote, db, cancellationToken);
+        return lockError is not null ? (null, lockError) : (quote, null);
+    }
+
+    /** Loads an unlocked quote and applies the Draft check (409), then the submitted version (D38, 422). */
+    private static async Task<(Quote? Quote, IResult? Error)> LoadDraftQuoteAsync(
+        int id,
+        uint version,
+        string lockedDetail,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var (quote, loadError) = await LoadUnlockedQuoteAsync(id, db, cancellationToken);
+        if (loadError is not null)
+        {
+            return (null, loadError);
+        }
+
+        if (quote!.Status != QuoteStatus.Draft)
         {
             return (null, ApiProblem.Conflict(lockedDetail));
         }
@@ -151,6 +183,7 @@ public static partial class QuoteEndpoints
     private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes
         .Include(q => q.Vehicle).ThenInclude(v => v.Customer)
         .Include(q => q.CreatedByMechanic)
+        .Include(q => q.Appointment)
         .Include(q => q.Lines);
 
     private static string? GetNotesValidationError(string? notes)
