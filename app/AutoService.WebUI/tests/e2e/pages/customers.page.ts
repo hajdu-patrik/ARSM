@@ -41,6 +41,11 @@ export class CustomersPage {
     return this.page.getByRole('complementary', { name: 'Customer details panel' });
   }
 
+  /** A whole vehicle tile; a click anywhere on it outside the row actions toggles the vehicle's history. */
+  vehicleTile(customerId: number, index = 0): Locator {
+    return this.customerCard(customerId).getByTestId('vehicle-tile').nth(index);
+  }
+
   vehicleDetailsToggle(customerId: number, index = 0): Locator {
     return this.customerCard(customerId).getByRole('button', { name: vehicleDetailsToggleLabelPattern }).nth(index);
   }

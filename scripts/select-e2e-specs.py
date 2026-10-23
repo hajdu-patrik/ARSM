@@ -19,7 +19,7 @@ FEATURE_SPECS: dict[str, tuple[str, ...]] = {
     "src/pages/Admin/": ("admin-register-edge", "admin-password-reset", "route-guards"),
     "src/pages/ChangePassword/": ("forced-password-change", "route-guards"),
     "src/pages/CompanyResults/": ("company-results", "list-alignment"),
-    "src/pages/Customers/": ("customer-registry", "customer-delete-visibility", "auth-session", "quote-editor", "quote-status"),
+    "src/pages/Customers/": ("customer-registry", "customer-vehicle-tile", "customer-delete-visibility", "auth-session", "quote-editor", "quote-status"),
     "src/pages/Inventory/": ("catalog-parts", "catalog-labor-types", "list-alignment"),
     "src/pages/Login/": ("login-edge", "auth-session", "forced-password-change", "route-guards"),
     "src/pages/Quotes/": ("quote-editor", "quote-status", "company-results", "list-alignment"),

@@ -87,6 +87,13 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Customers: the whole vehicle tile selects the vehicle (2026-10-23). A click or Enter/Space anywhere on a vehicle tile,
+  outside its quote, edit and delete buttons, shows that vehicle's repair history on the right, and a second one returns to the
+  customer history; the Eye button is gone from the row. The tile uses the Scheduler `AppointmentCard` full-surface overlay
+  button (no nested interactive elements), a faint accent wash on hover and a stronger one when selected (no outline), and the
+  inset focus outline, now the shared `insetFocusVisibleOutlineClass`. New `customer-vehicle-tile.spec.ts` (mouse, keyboard,
+  edit does not select, 320px). Verified: validate, the full Playwright suite (214/214), screenshots at 1280 and 320 px in both themes.
+_Dev time: ~12m wall-clock (2026-10-23 17:31 to 17:43 +02:00, direct work). Cost: not measured._
 - Appointment and quote lifecycle rules (2026-10-23). An appointment may be in progress without a quote, but it completes only
   from InProgress with an Accepted linked quote (409 `appointment_completion_requires_in_progress` /
   `appointment_completion_requires_accepted_quote`); Completed is terminal and cannot be deleted (409

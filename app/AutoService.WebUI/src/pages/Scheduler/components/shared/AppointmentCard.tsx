@@ -7,6 +7,7 @@ import {
   compactHeaderRowClass,
   compactItemTitleClampTextClass,
   contentCardFrameClass,
+  insetFocusVisibleOutlineClass,
   mutedBodyTextClass,
   mutedMetaTextClass,
   smallIconClass,
@@ -28,9 +29,6 @@ interface AppointmentCardProps {
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onClick?: () => void;
 }
-
-/** Focus outline of the full-card overlay button, inset (-2px) because the card's overflow-hidden would clip an outer one. */
-const overlayFocusOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ui-focus';
 
 export const AppointmentCard = memo(function AppointmentCard({
   appointment,
@@ -181,7 +179,8 @@ export const AppointmentCard = memo(function AppointmentCard({
           type="button"
           onClick={onClick}
           aria-label={t('scheduler.detail.title')}
-          className={`absolute inset-0 z-0 rounded-2xl ${overlayFocusOutlineClass}`}
+          // Inset outline: the card's overflow-hidden would clip an outer one.
+          className={`absolute inset-0 z-0 rounded-2xl ${insetFocusVisibleOutlineClass}`}
         />
       )}
       {cardContent}

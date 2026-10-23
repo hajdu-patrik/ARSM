@@ -10,6 +10,8 @@ export const equalWidthControlGroupClass = 'arsm-equal-control-group';
 /** Keyboard focus indicator: a 2px outline 2px off the edge in the focus color, so focus never shifts the layout.
  * `arsm-focus-outline` (components.css) rests the outline color on it, so the transition does not fade it in from currentcolor. */
 export const focusVisibleOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ui-focus';
+/** Inset (-2px) variant for full-surface overlay buttons, whose outer outline a clipping ancestor or a neighbour row would hide. */
+export const insetFocusVisibleOutlineClass = 'arsm-focus-outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ui-focus';
 
 /** Scheduler details surfaces used in appointment side panels and info rows. */
 export const schedulerDetailPanelClass = 'rounded-2xl border border-ui-border bg-arsm-input/80 p-3.5 dark:bg-arsm-input-dark/65';
