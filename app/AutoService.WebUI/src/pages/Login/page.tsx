@@ -45,7 +45,7 @@ export const Login = memo(function Login() {
 
   return (
     <AuthPageLayout title={translate('login.title')} subtitle={translate('login.subtitle')}>
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4.5" noValidate>
         <fieldset aria-label={translate('login.loginMethodLabel')}>
           <legend className={`mb-2 ${uppercaseMetaLabelTextClass}`}>
             {translate('login.loginMethodLabel')}
@@ -149,7 +149,7 @@ export const Login = memo(function Login() {
         </button>
       </form>
 
-      <p className={`mt-4 ${mutedMetaTextClass} sm:mt-5 sm:text-sm`}>
+      <p className={`mt-3 ${mutedMetaTextClass} sm:mt-5 sm:text-sm`}>
         {translate('login.helpText')}
       </p>
     </AuthPageLayout>
