@@ -39,6 +39,16 @@ param postgresAdminPassword string
 @description('JWT signing secret, at least 32 bytes, no template markers.')
 param jwtSecret string
 
+@secure()
+@description('Resend sending key.')
+param resendApiKey string
+
+@description('Sender of the transactional e-mails: display name and address.')
+param mailFrom string
+
+@description('Reply-to address of the transactional e-mails.')
+param mailReplyTo string
+
 @description('Private blob container for profile pictures (created here).')
 param objectStorageContainer string = 'arsm-profile-pictures'
 
@@ -272,6 +282,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
           value: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         { name: 'bootstrap-admin-password', value: bootstrapAdminPassword }
+        { name: 'resend-api-key', value: resendApiKey }
       ]
     }
     template: {
@@ -308,6 +319,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'CompanyProfile__TaxNumber', value: companyTaxNumber }
             { name: 'CompanyProfile__PhoneNumber', value: companyPhoneNumber }
             { name: 'CompanyProfile__Email', value: companyEmail }
+            { name: 'Email__ResendApiKey', secretRef: 'resend-api-key' }
+            { name: 'Email__From', value: mailFrom }
+            { name: 'Email__ReplyTo', value: mailReplyTo }
+            { name: 'Email__PublicUrl', value: effectivePublicUrl }
             { name: 'Bootstrap__Admin__Email', value: bootstrapAdminEmail }
             { name: 'Bootstrap__Admin__FirstName', value: bootstrapAdminFirstName }
             { name: 'Bootstrap__Admin__LastName', value: bootstrapAdminLastName }

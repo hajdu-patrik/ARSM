@@ -24,6 +24,12 @@ export interface RegisterMechanicResponse {
   email: string;
 }
 
+/** Outcome of a password reset: whether the temporary-password e-mail went out, and its address. */
+export interface ResetMechanicPasswordResponse {
+  emailSent: boolean;
+  email: string;
+}
+
 /** Mechanic entry returned by `GET /api/admin/mechanics`. */
 export interface MechanicListItem {
   personId: number;
@@ -61,8 +67,9 @@ export const adminService = {
   },
 
   /** Sets a temporary password via `POST /api/admin/mechanics/{id}/password-reset`; the mechanic must change it at the next login. */
-  async resetMechanicPassword(personId: number, temporaryPassword: string): Promise<void> {
-    await apiClient.post(`/api/admin/mechanics/${String(personId)}/password-reset`, { temporaryPassword });
+  async resetMechanicPassword(personId: number, temporaryPassword: string): Promise<ResetMechanicPasswordResponse> {
+    const response = await apiClient.post<ResetMechanicPasswordResponse>(`/api/admin/mechanics/${String(personId)}/password-reset`, { temporaryPassword });
+    return response.data;
   },
 
   /** Fetches the quote-PDF letterhead data via `GET /api/admin/company-profile`. */

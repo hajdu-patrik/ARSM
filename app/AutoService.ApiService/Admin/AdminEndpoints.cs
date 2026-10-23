@@ -24,7 +24,7 @@ public static partial class AdminEndpoints
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/mechanics/{id:int}/password-reset", ResetMechanicPasswordAsync)
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ResetMechanicPasswordResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)

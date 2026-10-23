@@ -9,6 +9,8 @@ var minioConsolePort = GetRequiredPort(builder.Configuration, "Ports:MinioConsol
 var webUiPort = GetRequiredPort(builder.Configuration, "Ports:WebUi");
 var configuredWebUiSiteUrl = GetRequiredConfigValue(builder.Configuration, "WebUi:SiteUrl");
 
+var envPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", ".env"));
+
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
 var minioUser = builder.AddParameter("minio-user", secret: true);
@@ -49,7 +51,13 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("ObjectStorage__SecretAccessKey", minioPassword)
                         .WithEnvironment("ObjectStorage__AutoCreateBucket", "true")
                         .WithEnvironment("PGGSSENCMODE", "disable")
-                        .WithEnvironment("CompanyProfile__WriteBack__EnvFilePath", Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", ".env")))
+                        .WithEnvironment("CompanyProfile__WriteBack__EnvFilePath", envPath)
+                        // The e-mail keys live only in the root .env (user decision 2026-10-23), so it is read
+                        // directly instead of adding Aspire parameters; a blank key selects the no-op sender.
+                        .WithEnvironment("Email__ResendApiKey", RootEnvFile.ReadValue(envPath, "ARSM_RESEND_API_KEY") ?? "")
+                        .WithEnvironment("Email__From", RootEnvFile.ReadValue(envPath, "ARSM_MAIL_FROM") ?? "")
+                        .WithEnvironment("Email__ReplyTo", RootEnvFile.ReadValue(envPath, "ARSM_MAIL_REPLY_TO") ?? "")
+                        .WithEnvironment("Email__PublicUrl", configuredWebUiSiteUrl)
                         .WithEnvironment("CompanyProfile__WriteBack__LocalSettingsPath", Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "AutoService.ApiService", "appsettings.Local.json")))
                         .WithHttpHealthCheck("/health");
 

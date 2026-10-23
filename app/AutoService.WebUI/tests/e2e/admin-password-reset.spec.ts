@@ -18,6 +18,7 @@ async function openRoster(page: Page): Promise<MockApiState> {
   return state;
 }
 
+/** Clicks Peter's reset action and returns the opened dialog. */
 async function openPeterReset(page: Page) {
   await page.getByTestId(`mechanic-row-${String(MOCK_MECHANIC_IDS.peter)}`).getByRole('button', { name: 'Reset password' }).click();
   const dialog = page.getByRole('dialog', { name: 'Reset password' });
@@ -56,7 +57,7 @@ test.describe('Admin password reset', () => {
     await confirm.click();
 
     expect((await request).postDataJSON()).toEqual({ temporaryPassword: 'TempPass1!' });
-    await expect(toastMessage(page, `Temporary password set for ${PETER_EMAIL}; it must be changed at the next login.`)).toBeVisible();
+    await expect(toastMessage(page, `Temporary password set and e-mailed to ${PETER_EMAIL}.`)).toBeVisible();
     await expect(dialog).toHaveCount(0);
   });
 

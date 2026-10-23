@@ -22,6 +22,7 @@ public static partial class AuthEndpoints
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
+        IServiceScopeFactory scopeFactory,
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Register");
@@ -78,7 +79,7 @@ public static partial class AuthEndpoints
         }
 
         return await db.ExecuteInTransactionAsync(
-            (transaction, token) => CreateAccountAsync(request, email, phoneNumber, clientIp, userManager, db, transaction, logger, token),
+            (transaction, token) => CreateAccountAsync(request, email, phoneNumber, clientIp, userManager, db, transaction, scopeFactory, logger, token),
             cancellationToken);
     }
 
@@ -91,6 +92,7 @@ public static partial class AuthEndpoints
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         IDbContextTransaction transaction,
+        IServiceScopeFactory scopeFactory,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -123,15 +125,7 @@ public static partial class AuthEndpoints
             });
         }
 
-        switch (person)
-        {
-            case Customer customer:
-                db.Customers.Add(customer);
-                break;
-            case Mechanic mechanic:
-                db.Mechanics.Add(mechanic);
-                break;
-        }
+        AddPerson(db, person);
 
         try
         {
@@ -145,7 +139,28 @@ public static partial class AuthEndpoints
         }
 
         logger.LogInformation("Registration succeeded for person {PersonId} linked to identity user {IdentityUserId}. ClientIp: {ClientIp}.", person.Id, identityUser.Id, clientIp);
+
+        // A mail failure never changes the registration outcome (user decision 2026-10-23),
+        // so the send runs detached in its own DI scope.
+        if (person is Mechanic)
+        {
+            WelcomeMailDispatcher.Dispatch(scopeFactory, logger, person.Email, person.Name.ToString());
+        }
+
         return Results.Ok(new RegisterResponse(person.Id, PersonTypeResolver.Resolve(person), person.Email));
+    }
+
+    private static void AddPerson(AutoServiceDbContext db, People person)
+    {
+        switch (person)
+        {
+            case Customer customer:
+                db.Customers.Add(customer);
+                break;
+            case Mechanic mechanic:
+                db.Mechanics.Add(mechanic);
+                break;
+        }
     }
 
     private static Dictionary<string, string[]> ValidateRegisterRequest(RegisterRequest request)

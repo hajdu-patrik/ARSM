@@ -1,4 +1,7 @@
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
+using AutoService.ApiService.Email;
+using AutoService.ApiService.Email.Sending;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Security;
@@ -19,18 +22,14 @@ public static partial class AdminEndpoints
         UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         ISessionRevocationService sessionRevocation,
+        IEmailSender emailSender,
+        EmailSettings emailSettings,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("AdminEndpoints.ResetMechanicPassword");
 
-        var errors = new Dictionary<string, string[]>();
-        if (string.IsNullOrWhiteSpace(request.TemporaryPassword))
-        {
-            errors["TemporaryPassword"] = ["Temporary password is required."];
-        }
-
-        FieldLengthValidator.AddMaxLengthError(errors, "TemporaryPassword", request.TemporaryPassword, FieldLengthValidator.PasswordMaxLength);
+        var errors = ValidateTemporaryPassword(request.TemporaryPassword);
         if (errors.Count > 0)
         {
             return Results.ValidationProblem(errors);
@@ -62,21 +61,65 @@ public static partial class AdminEndpoints
         }
 
         mechanic.MustChangePassword = true;
-        var nowUtc = DateTime.UtcNow;
+        await RevokeActiveRefreshTokensAsync(db, mechanic.Id, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        sessionRevocation.RevokeAll(mechanic.Id);
 
+        logger.LogInformation("Admin {ActorPersonId} set a temporary password for mechanic {MechanicId}; sessions revoked.", actorPersonId, mechanic.Id);
+
+        // The reset is never rolled back on a mail failure (user decision 2026-10-23); the admin hands the password over.
+        var emailSent = await TrySendTemporaryPasswordAsync(
+            mechanic, request.TemporaryPassword, emailSender, emailSettings, db, logger, cancellationToken);
+        return Results.Ok(new ResetMechanicPasswordResponse(emailSent, mechanic.Email));
+    }
+
+    /** Collects the required and maximum-length errors of the temporary password. */
+    private static Dictionary<string, string[]> ValidateTemporaryPassword(string? temporaryPassword)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (string.IsNullOrWhiteSpace(temporaryPassword))
+        {
+            errors["TemporaryPassword"] = ["Temporary password is required."];
+        }
+
+        FieldLengthValidator.AddMaxLengthError(errors, "TemporaryPassword", temporaryPassword, FieldLengthValidator.PasswordMaxLength);
+        return errors;
+    }
+
+    /** Marks every live refresh token of the mechanic revoked; the caller saves. */
+    private static async Task RevokeActiveRefreshTokensAsync(
+        AutoServiceDbContext db, int mechanicId, CancellationToken cancellationToken)
+    {
+        var nowUtc = DateTime.UtcNow;
         var activeRefreshTokens = await db.RefreshTokens
-            .Where(rt => rt.MechanicId == mechanic.Id && rt.RevokedAtUtc == null)
+            .Where(rt => rt.MechanicId == mechanicId && rt.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
         foreach (var token in activeRefreshTokens)
         {
             token.Revoke(nowUtc);
         }
+    }
 
-        await db.SaveChangesAsync(cancellationToken);
-        sessionRevocation.RevokeAll(mechanic.Id);
+    /** Mails the temporary password; false when the company profile is missing or the mail failed. */
+    private static async Task<bool> TrySendTemporaryPasswordAsync(
+        Mechanic mechanic,
+        string temporaryPassword,
+        IEmailSender emailSender,
+        EmailSettings emailSettings,
+        AutoServiceDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var row = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+        if (row is null)
+        {
+            logger.LogWarning("Temporary password e-mail skipped: the company profile row is missing.");
+            return false;
+        }
 
-        logger.LogInformation("Admin {ActorPersonId} set a temporary password for mechanic {MechanicId}; sessions revoked.", actorPersonId, mechanic.Id);
-        return Results.NoContent();
+        var mailer = new PasswordResetMailer(emailSender, emailSettings, logger);
+        return await mailer.SendAsync(
+            mechanic.Email, mechanic.Name.ToString(), temporaryPassword, row.ToProfile(), cancellationToken);
     }
 }

@@ -31,6 +31,9 @@ REQUIRED_KEYS = (
     "ARSM_COMPANY_TAX_NUMBER",
     "ARSM_COMPANY_PHONE",
     "ARSM_COMPANY_EMAIL",
+    "ARSM_RESEND_API_KEY",
+    "ARSM_MAIL_FROM",
+    "ARSM_MAIL_REPLY_TO",
 )
 OPTIONAL_DEFAULTS = {
     "ARSM_AZURE_LOCATION": "swedencentral",
@@ -48,6 +51,7 @@ SECRET_KEYS = (
     "ARSM_JWT_SECRET",
     "ARSM_PROD_GATE_TOKEN",
     "ARSM_PROD_ADMIN_PASSWORD",
+    "ARSM_RESEND_API_KEY",
 )
 
 RESOURCE_NAMES = {"api": "arsm-api", "web": "arsm-web", "gate": "arsm-gate"}

@@ -16,6 +16,8 @@ CONTAINER = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){2,62}$")
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 WHOLE_NUMBER = re.compile(r"^[0-9]{1,9}$")
 MIN_JWT_BYTES, MIN_GATE_TOKEN_CHARS = 32, 32
+MIN_RESEND_KEY_CHARS = 20
+MAIL_FROM_NAMED = re.compile(r"^[^<>]+<([^<>]+)>$")
 MAX_EXPERTISE = 10
 
 Check = Callable[[str], "str | None"]
@@ -83,6 +85,19 @@ def check_email(value: str) -> str | None:
     return None if EMAIL.match(value) else "must look like an email address"
 
 
+def check_resend_api_key(value: str) -> str | None:
+    ok = value.startswith("re_") and len(value) >= MIN_RESEND_KEY_CHARS
+    return None if ok else f"must start with re_ and be at least {MIN_RESEND_KEY_CHARS} characters"
+
+
+def check_mail_from(value: str) -> str | None:
+    if "\r" in value or "\n" in value:
+        return "must not contain line breaks"
+    named = MAIL_FROM_NAMED.match(value.strip())
+    address = named.group(1).strip() if named else value.strip()
+    return None if EMAIL.match(address) else "must be an address or Display Name <address>"
+
+
 def check_specialization(value: str) -> str | None:
     names = read_enum_names("SpecializationType")
     return None if value in names else "must be one of: " + ", ".join(names)
@@ -129,6 +144,9 @@ KEY_CHECKS: dict[str, Check] = {
     "ARSM_PROD_ADMIN_SPECIALIZATION": check_specialization,
     "ARSM_PROD_ADMIN_EXPERTISE": check_expertise,
     "ARSM_COMPANY_EMAIL": check_email,
+    "ARSM_MAIL_FROM": check_mail_from,
+    "ARSM_MAIL_REPLY_TO": check_email,
+    "ARSM_RESEND_API_KEY": check_resend_api_key,
     "ARSM_API_ALWAYS_ON": check_always_on,
     "ARSM_WEB_ALWAYS_ON": check_always_on,
     "ARSM_BLOB_CONTAINER": check_container,

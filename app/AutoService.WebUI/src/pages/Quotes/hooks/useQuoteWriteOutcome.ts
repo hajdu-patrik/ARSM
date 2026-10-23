@@ -1,7 +1,7 @@
-/** Outcome of a quote write, shared by every write hook: adopting the quote the server returned, or mapping the failure (a stale version included) to one toast. */
+/** Outcome of a quote write, shared by every write hook: adopt the returned quote or toast the failure. */
 import { useCallback } from 'react';
 import { isAxiosError } from 'axios';
-import { isVersionConflict } from '../../../services/http/error-code';
+import { hasErrorCode, isVersionConflict } from '../../../services/http/error-code';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
@@ -15,6 +15,10 @@ import { useQuoteCache } from './useQuoteCache';
 /** Error-code body the API returns when the submitted version is stale. */
 const VERSION_CONFLICT_CODE = 'quote_version_conflict';
 
+/** Error-code bodies the API returns when the quote e-mail failed or the customer has no address. */
+const EMAIL_FAILED_CODE = 'quote_email_failed';
+const CUSTOMER_EMAIL_MISSING_CODE = 'quote_customer_email_missing';
+
 interface UseQuoteWriteOutcomeParams {
   showSuccessToast: (messageKey: string) => void;
   showErrorToast: (messageKey: string) => void;
@@ -24,7 +28,7 @@ interface UseQuoteWriteOutcomeParams {
 export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQuote }: UseQuoteWriteOutcomeParams) {
   const { refreshQuote, storeQuote } = useQuoteCache();
 
-  /** Adopts the quote a write returned; every write endpoint answers with the full detail (incl. version), so no refetch is needed. */
+  /** Adopts the quote a write returned; the answer carries the full detail, so no refetch is needed. */
   const adoptWrite = useCallback((detail: QuoteDetailDto, successKey: string) => {
     storeQuote(detail);
     adoptQuote(detail.id);
@@ -56,6 +60,16 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
         await refreshOpenQuote(quoteId);
       }
 
+      return;
+    }
+
+    if (hasErrorCode(error, 409, EMAIL_FAILED_CODE)) {
+      showErrorToast('quotes.errors.emailFailed');
+      return;
+    }
+
+    if (hasErrorCode(error, 409, CUSTOMER_EMAIL_MISSING_CODE)) {
+      showErrorToast('quotes.errors.customerEmailMissing');
       return;
     }
 

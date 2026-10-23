@@ -15,6 +15,8 @@
 - Secrets never enter the tree: the real values live in the gitignored root `.env`, and only `*.example`
   placeholders of the kit's secret files are tracked (`local-test/.gitignore` keeps its real `*.env`, tunnel
   credentials, certificates, backups and logs out).
+- Mail (Resend) reaches the API as `Email__*` settings from `main.bicep` (secret `resend-api-key`, params in
+  `main.bicepparam`), fed by the root `.env` keys `ARSM_RESEND_API_KEY`, `ARSM_MAIL_FROM`, `ARSM_MAIL_REPLY_TO`.
 - The two gate tokens differ: `GATE_TOKEN` (teszt) and `ARSM_PROD_GATE_TOKEN` (production).
 - One host name serves the WebUI and the API because the CSRF cookie is host-only: the API has no public ingress,
   Nginx is the single entry and the gate sits in front of it.

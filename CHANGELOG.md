@@ -9,6 +9,31 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Transactional e-mail via Resend (2026-10-23). The API gets an `Email/` layer: `IEmailSender` with a `ResendEmailSender`
+  (plain `HttpClient` POST to the Resend REST API, 15 s timeout, 429/5xx classified retryable, CR/LF-safe subject and a
+  single-address recipient check, the key never logged) and a `LoggingNoOpEmailSender` chosen when `Email:ResendApiKey` is blank
+  (dev without a key, CI, unit tests). One branded base template (table layout, inline styles, the logo as an inline CID
+  attachment because arsm.hu is token-gated, hex colours copied from the WebUI tokens, Hungarian block first then a short
+  English block, footer from the company profile and the reply-to address, plain-text twin, every value HTML-escaped). Three
+  mails: moving a quote to Sent e-mails the customer the quote PDF with number, vehicle, gross total and validity, and the
+  status is stored only after Resend accepted the message (409 `quote_customer_email_missing` / `quote_email_failed` keep the
+  quote as it was; the Quotes page toasts both and the success); the admin password reset e-mails the temporary password and
+  the login link and answers 200 `{emailSent, email}` instead of 204, the reset is never rolled back and the Admin page shows
+  "sent to" or "hand it over manually"; mechanic registration dispatches a fire-and-forget welcome mail in its own DI scope.
+  Configuration: root `.env` keys `ARSM_RESEND_API_KEY`, `ARSM_MAIL_FROM`, `ARSM_MAIL_REPLY_TO` (placeholders in
+  `.env.example`); the AppHost reads them from the root `.env` and passes `Email__*` plus `Email__PublicUrl` from
+  `WebUi:SiteUrl`; the Azure kit carries them as Bicep params (secret `resend-api-key`), required and validated by the deploy
+  script. DNS on Cloudflare: Resend domain verified (eu-west-1), Email Routing `info@arsm.hu`, DMARC. Tests: 101 xUnit cases
+  (sanitizer, sender with a fake handler, settings resolver, layout, builders, the three mailers with a fake sender; no
+  network), the password-reset HTTP suite and Python check expect the 200 body. Verified: validate, 126/126 unit tests, the
+  full Playwright suite; api-suites run by the pre-push gate.
+
+_Dev time: ~55m wall-clock (2026-10-23 12:25 to 13:20 +02:00, including the Resend and Cloudflare setup; one arsm-chain run
+with a fable plan and eight sonnet packages that stopped at two routine questions, then the five remaining packages, four
+reviews and docs-sync run by hand on the same routed models). Cost: ~$1.6-7.8 output-token-only estimate for the chain
+(155k output tokens, sonnet packages, fable plan; excludes input tokens and cache, so a lower bound); the hand-run
+continuation is not measured._
+
 - Appointment-to-quote link and status-aware due date (2026-10-23). The Scheduler detail modal shows an "Open quote" button beside
   the due date, and the Customers history appointment modal shows the same action beside "Open in scheduler"; both open the
   appointment's newest quote in the Quotes editor (`/quotes?quoteId=<id>`, consumed once like the create parameters), and neither

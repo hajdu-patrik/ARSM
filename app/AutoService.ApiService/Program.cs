@@ -9,6 +9,7 @@ using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.DataInitialization;
+using AutoService.ApiService.Email.Sending;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
 using AutoService.ApiService.Quotes;
@@ -231,6 +232,8 @@ builder.Services.AddSingleton<ISessionRevocationService, SessionRevocationServic
 builder.Services.AddSingleton<ICompanyProfileWriteBack, CompanyProfileWriteBack>();
 builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
+// Resend sender when Email:ResendApiKey is set, otherwise a logging no-op (dev, CI, unit tests).
+builder.Services.AddArsmEmail(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();
 
 var app = builder.Build();

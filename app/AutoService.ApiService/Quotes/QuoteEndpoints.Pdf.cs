@@ -1,3 +1,4 @@
+using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
@@ -17,11 +18,7 @@ public static partial class QuoteEndpoints
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
-        var quote = await db.Quotes
-            .AsNoTracking()
-            .Include(q => q.Vehicle).ThenInclude(v => v.Customer)
-            .Include(q => q.CreatedByMechanic)
-            .Include(q => q.Lines)
+        var quote = await IncludeDetails(db.Quotes.AsNoTracking())
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
@@ -32,11 +29,22 @@ public static partial class QuoteEndpoints
         var company = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException("Company profile row is missing.");
 
-        var identifiers = await LoadCatalogIdentifiersAsync(quote, db, cancellationToken);
-        var model = ToQuoteDocumentModel(quote, identifiers, DateTime.UtcNow);
-        var pdfBytes = new QuoteDocument(model, company.ToProfile()).GeneratePdf();
+        var pdfBytes = await RenderQuotePdfAsync(quote, company.ToProfile(), db, cancellationToken);
 
         return Results.File(pdfBytes, "application/pdf", $"{quote.QuoteNumber}.pdf");
+    }
+
+    /** Renders the quote document; shared by the PDF download and the quote e-mail attachment. */
+    private static async Task<byte[]> RenderQuotePdfAsync(
+        Quote quote,
+        CompanyProfile company,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var identifiers = await LoadCatalogIdentifiersAsync(quote, db, cancellationToken);
+        var model = ToQuoteDocumentModel(quote, identifiers, DateTime.UtcNow);
+
+        return new QuoteDocument(model, company).GeneratePdf();
     }
 
     /** Loads part numbers/labor codes for referenced catalog entries; not part of the line snapshot,

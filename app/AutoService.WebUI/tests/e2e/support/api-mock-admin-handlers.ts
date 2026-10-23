@@ -86,7 +86,7 @@ export async function tryHandleAdminRoute(
 }
 
 /** `POST /api/admin/mechanics/{id}/password-reset`: 404 for an unknown mechanic, 403 for an admin, 400 with the
- * Identity policy codes for a weak password, else 204. */
+ * Identity policy codes for a weak password, else 200 with `emailSent`. */
 async function handlePasswordReset(route: Route, state: MockApiState, personId: number): Promise<void> {
   const target = state.mechanics.find((mechanic) => mechanic.personId === personId);
   if (!target) {
@@ -110,5 +110,5 @@ async function handlePasswordReset(route: Route, state: MockApiState, personId: 
     return;
   }
 
-  await fulfillNoContent(route);
+  await fulfillJson(route, { emailSent: true, email: target.email });
 }

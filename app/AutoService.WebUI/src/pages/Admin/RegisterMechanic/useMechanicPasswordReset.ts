@@ -15,6 +15,7 @@ import {
 interface UseMechanicPasswordResetParams {
   readonly showErrorToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
   readonly showSuccessToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
+  readonly showWarningToast: (messageKey: string, messageValues?: Record<string, string | number>) => string;
 }
 
 interface PasswordReset {
@@ -40,15 +41,20 @@ function getResetErrorKey(error: unknown): string {
   return getFirstFieldErrorMessage(fieldErrors) ?? 'admin.passwordResetFailed';
 }
 
-export function useMechanicPasswordReset({ showErrorToast, showSuccessToast }: UseMechanicPasswordResetParams) {
+/** Owns the reset dialog state and the reset mutation, with its success, warning and error toasts. */
+export function useMechanicPasswordReset({ showErrorToast, showSuccessToast, showWarningToast }: UseMechanicPasswordResetParams) {
   const [resetTarget, setResetTarget] = useState<MechanicListItem | null>(null);
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
 
   const { mutate: resetPassword, isPending: isResetting } = useMutation({
     mutationFn: ({ target, temporaryPassword: password }: PasswordReset) => adminService.resetMechanicPassword(target.personId, password),
-    onSuccess: (_result, { target }) => {
-      showSuccessToast('admin.passwordResetSuccess', { email: target.email });
+    onSuccess: (result) => {
+      if (result.emailSent) {
+        showSuccessToast('admin.passwordResetSuccess', { email: result.email });
+      } else {
+        showWarningToast('admin.passwordResetEmailNotSent', { email: result.email });
+      }
       setResetTarget(null);
       setTemporaryPassword('');
     },

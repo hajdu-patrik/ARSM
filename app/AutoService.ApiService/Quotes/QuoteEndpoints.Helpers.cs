@@ -149,7 +149,7 @@ public static partial class QuoteEndpoints
 
     /** The navigation set every quote detail response and write handler reads. */
     private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes
-        .Include(q => q.Vehicle)
+        .Include(q => q.Vehicle).ThenInclude(v => v.Customer)
         .Include(q => q.CreatedByMechanic)
         .Include(q => q.Lines);
 

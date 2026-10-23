@@ -92,6 +92,9 @@ Required:
 | `ARSM_COMPANY_TAX_NUMBER` | Letterhead: tax number. |
 | `ARSM_COMPANY_PHONE` | Letterhead: phone number. |
 | `ARSM_COMPANY_EMAIL` | Letterhead: e-mail address. |
+| `ARSM_RESEND_API_KEY` | Resend sending key of the verified `arsm.hu` domain (region eu-west-1). Never printed. |
+| `ARSM_MAIL_FROM` | Display name and address of the sender, for example `ARSM <info@arsm.hu>`. |
+| `ARSM_MAIL_REPLY_TO` | Reply address, `info@arsm.hu`, which Cloudflare Email Routing forwards. DNS is not managed by this kit. |
 
 Optional:
 

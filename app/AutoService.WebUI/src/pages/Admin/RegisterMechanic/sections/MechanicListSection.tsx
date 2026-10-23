@@ -31,6 +31,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 	const { t } = useTranslation();
 	const showSuccessToast = useToastStore((state) => state.showSuccess);
 	const showErrorToast = useToastStore((state) => state.showError);
+	const showWarningToast = useToastStore((state) => state.showWarning);
 
 	const {
 		isLoading,
@@ -53,7 +54,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 		showErrorToast,
 		showSuccessToast,
 	});
-	const passwordReset = useMechanicPasswordReset({ showErrorToast, showSuccessToast });
+	const passwordReset = useMechanicPasswordReset({ showErrorToast, showSuccessToast, showWarningToast });
 
 	const highlightQuery = searchTerm.trim();
 
