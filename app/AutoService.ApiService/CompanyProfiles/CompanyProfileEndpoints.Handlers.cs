@@ -19,6 +19,7 @@ public static partial class CompanyProfileEndpoints
     private static async Task<IResult> UpdateCompanyProfileAsync(
         CompanyProfileDto request,
         AutoServiceDbContext db,
+        ICompanyProfileWriteBack writeBack,
         CancellationToken cancellationToken)
     {
         var (normalized, errors) = CompanyProfileValidator.Validate(request);
@@ -36,6 +37,7 @@ public static partial class CompanyProfileEndpoints
 
         row.Apply(normalized);
         await db.SaveChangesAsync(cancellationToken);
+        await writeBack.WriteAsync(normalized, cancellationToken);
 
         return Results.Ok(ToDto(row));
     }

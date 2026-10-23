@@ -1,6 +1,7 @@
 /** Due-date state utilities: overdue/remaining duration plus matching tone class and i18n label. */
 
 import { toneTextClasses } from '../../../utils/formStyles';
+import type { AppointmentStatus } from '../../../types/scheduler/scheduler.types';
 
 export interface DueState {
   isOverdue: boolean;
@@ -24,8 +25,16 @@ function splitDuration(absDiffMs: number): { days: number; hours: number; minute
   return { days, hours, minutes };
 }
 
-/** Computes due state from a due datetime: overdue/remaining duration, amber tone under one day left. */
-export function getDueState(dueDateTime: string): DueState {
+/** Computes due state: a closed appointment shows its outcome, an open one the overdue/remaining time (amber under a day). */
+export function getDueState(dueDateTime: string, status: AppointmentStatus): DueState {
+  if (status === 'Completed') {
+    return { isOverdue: false, toneClassName: toneTextClasses.success, labelKey: 'scheduler.due.completed' };
+  }
+
+  if (status === 'Cancelled') {
+    return { isOverdue: false, toneClassName: toneTextClasses.error, labelKey: 'scheduler.due.cancelled' };
+  }
+
   const dueDate = new Date(dueDateTime);
   const dueTimestamp = dueDate.getTime();
 

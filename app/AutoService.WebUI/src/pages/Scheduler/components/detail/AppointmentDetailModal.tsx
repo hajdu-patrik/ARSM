@@ -10,6 +10,7 @@ import type {
 import { Modal } from '../../../../components/common/Modal';
 import { getDueState } from '../../utils/due-date';
 import { formatDueExactDateTime, formatLongDateTime } from '../../utils/scheduler-datetime';
+import { useAppointmentQuoteLink } from '../../../../hooks/useAppointmentQuoteLink';
 import { useAdminMechanics } from '../../hooks/useAdminMechanics';
 import { AppointmentDetailBody } from './AppointmentDetailModal.sections';
 import { AppointmentDetailFooter } from './AppointmentDetailModal.footer';
@@ -70,6 +71,7 @@ function AppointmentDetailDialog({
   const editing = useAppointmentEditing({ appointment, onUpdate });
   const deletion = useAppointmentDelete({ appointmentId: appointment.id, onDelete });
   const { cancelEditing, isEditing } = editing;
+  const { quoteId, openQuote } = useAppointmentQuoteLink(appointment.id);
 
   const handleCloseDetailModal = useCallback(() => {
     if (isEditing) {
@@ -79,6 +81,11 @@ function AppointmentDetailDialog({
 
     onClose();
   }, [cancelEditing, isEditing, onClose]);
+
+  const handleOpenQuote = useCallback(() => {
+    onClose();
+    openQuote();
+  }, [onClose, openQuote]);
 
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
@@ -127,7 +134,9 @@ function AppointmentDetailDialog({
           editForm={editing.editForm}
           formattedDate={formatLongDateTime(appointment.scheduledDate, i18n.language)}
           dueDateLabel={formatDueExactDateTime(appointment.dueDateTime, i18n.language)}
-          dueState={getDueState(appointment.dueDateTime)}
+          dueState={getDueState(appointment.dueDateTime, appointment.status)}
+          quoteId={quoteId}
+          onOpenQuote={handleOpenQuote}
           availableMechanics={availableMechanics}
           selectedNewMechanicId={actions.selectedNewMechanicId}
           canClaim={canClaim}

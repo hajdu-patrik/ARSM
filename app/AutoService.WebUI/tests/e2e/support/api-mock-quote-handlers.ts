@@ -60,10 +60,11 @@ export async function tryHandleQuoteRoute(
   return handleQuoteResourceRoute(route, method, path, url, state);
 }
 
-/** Lists quotes newest first, filtered like the API: stored status, expired, vehicle and search. */
+/** Lists quotes newest first, filtered like the API: stored status, expired, vehicle, appointment and search. */
 async function handleQuoteList(route: Route, url: URL, state: MockApiState): Promise<void> {
   const status = url.searchParams.get('status');
   const vehicleId = url.searchParams.get('vehicleId');
+  const appointmentId = url.searchParams.get('appointmentId');
   const expired = url.searchParams.get('expired');
 
   if (status !== null && !QUOTE_STORED_STATUSES.includes(status.toLowerCase())) {
@@ -74,6 +75,7 @@ async function handleQuoteList(route: Route, url: URL, state: MockApiState): Pro
   const matching = sortedQuotes(state)
     .filter((quote) => status === null || quote.status.toLowerCase() === status.toLowerCase())
     .filter((quote) => vehicleId === null || quote.vehicleId === Number(vehicleId))
+    .filter((quote) => appointmentId === null || quote.appointmentId === Number(appointmentId))
     .map((quote) => toQuoteListItemResponse(quote))
     .filter((quote) => expired === null || quote.isExpired === (expired === 'true'));
 

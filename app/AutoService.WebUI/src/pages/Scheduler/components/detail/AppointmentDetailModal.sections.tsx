@@ -1,12 +1,13 @@
 /** Section components for the appointment detail modal body (header, due date, vehicle, task). */
 import { memo } from 'react';
-import { Clock3 } from 'lucide-react';
+import { Clock3, FileText } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import {
   baseSectionHeadingTextClass,
+  compactChipNeutralButtonClass,
   compactPrimaryValueTextClass,
   compactStackedRowClass,
   compactTwoColumnGridClass,
@@ -16,6 +17,7 @@ import {
   mutedSecondaryTextClass,
   schedulerDetailPanelClass,
   schedulerDetailRowClass,
+  smallIconClass,
   textareaClass,
   toneFeedbackClasses,
 } from '../../../../utils/formStyles';
@@ -31,6 +33,7 @@ interface AppointmentDetailBodyProps {
   readonly formattedDate: string;
   readonly dueDateLabel: string;
   readonly dueState: DueState;
+  readonly quoteId: number | null;
   readonly availableMechanics: MechanicOption[];
   readonly selectedNewMechanicId: string;
   readonly canClaim: boolean;
@@ -43,6 +46,7 @@ interface AppointmentDetailBodyProps {
   readonly locale: string;
   readonly currentMechanicId: number | undefined;
   readonly onEditField: (field: keyof EditFormState, value: string) => void;
+  readonly onOpenQuote: () => void;
   readonly onClaim: () => void;
   readonly onUnclaim: () => void;
   readonly onSelectNewMechanic: (value: string) => void;
@@ -59,6 +63,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   formattedDate,
   dueDateLabel,
   dueState,
+  quoteId,
   availableMechanics,
   selectedNewMechanicId,
   canClaim,
@@ -71,6 +76,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   locale,
   currentMechanicId,
   onEditField,
+  onOpenQuote,
   onClaim,
   onUnclaim,
   onSelectNewMechanic,
@@ -85,7 +91,9 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         dueDateLabel={dueDateLabel}
         isEditing={isEditing}
         dueDateTime={editForm.dueDateTime}
+        quoteId={quoteId}
         t={t}
+        onOpenQuote={onOpenQuote}
         onDueDateTimeChange={(value) => {
           onEditField('dueDateTime', value);
         }}
@@ -149,7 +157,9 @@ interface DueSectionProps {
   readonly dueDateLabel: string;
   readonly isEditing: boolean;
   readonly dueDateTime: string;
+  readonly quoteId: number | null;
   readonly t: TFunction;
+  readonly onOpenQuote: () => void;
   readonly onDueDateTimeChange: (value: string) => void;
 }
 
@@ -159,7 +169,9 @@ const DueSection = memo(function DueSection({
   dueDateLabel,
   isEditing,
   dueDateTime,
+  quoteId,
   t,
+  onOpenQuote,
   onDueDateTimeChange,
 }: DueSectionProps) {
   return (
@@ -170,9 +182,24 @@ const DueSection = memo(function DueSection({
           : 'border-ui-border bg-ui-toggle'
       }`}
     >
-      <div className={`flex min-w-0 items-center gap-2 ${mutedSecondaryTextClass}`}>
-        <Clock3 className={defaultIconClass} />
-        {t('scheduler.due.label')}
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+        <div className={`flex min-w-0 items-center gap-2 ${mutedSecondaryTextClass}`}>
+          <Clock3 className={defaultIconClass} />
+          {t('scheduler.due.label')}
+        </div>
+        {quoteId !== null && !isEditing && (
+          <button
+            type="button"
+            data-testid="appointment-detail-open-quote"
+            className={compactChipNeutralButtonClass}
+            title={t('common.actions.openQuote')}
+            aria-label={t('common.actions.openQuote')}
+            onClick={onOpenQuote}
+          >
+            <FileText className={smallIconClass} />
+            {t('common.actions.openQuote')}
+          </button>
+        )}
       </div>
       <p
         className={`mt-1 max-w-full break-words text-base font-bold leading-tight sm:text-lg ${dueState.toneClassName}`}

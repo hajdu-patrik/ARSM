@@ -32,8 +32,9 @@ export const toneFeedbackClasses: Record<SignalTone, string> = {
 };
 
 /** Tone-colored text for inline status copy (due dates, destructive section copy, tone icons). */
-export const toneTextClasses: Record<Extract<SemanticTone, 'neutral' | 'warning' | 'error'>, string> = {
+export const toneTextClasses: Record<Extract<SemanticTone, 'neutral' | 'success' | 'warning' | 'error'>, string> = {
   neutral: 'text-ui-label',
+  success: 'text-ui-success-text',
   warning: 'text-ui-warning-text',
   error: 'text-arsm-error-text dark:text-arsm-error-text-light',
 };

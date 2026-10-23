@@ -49,6 +49,8 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("ObjectStorage__SecretAccessKey", minioPassword)
                         .WithEnvironment("ObjectStorage__AutoCreateBucket", "true")
                         .WithEnvironment("PGGSSENCMODE", "disable")
+                        .WithEnvironment("CompanyProfile__WriteBack__EnvFilePath", Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", ".env")))
+                        .WithEnvironment("CompanyProfile__WriteBack__LocalSettingsPath", Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "AutoService.ApiService", "appsettings.Local.json")))
                         .WithHttpHealthCheck("/health");
 
 var webUi = builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")

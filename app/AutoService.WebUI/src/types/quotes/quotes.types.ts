@@ -76,6 +76,7 @@ export interface QuoteListQuery extends PagedQuery {
   status?: QuoteStatus;
   expired?: boolean;
   vehicleId?: number;
+  appointmentId?: number;
 }
 
 /** Full quote returned by `GET /api/quotes/{id}` and by every write endpoint. */

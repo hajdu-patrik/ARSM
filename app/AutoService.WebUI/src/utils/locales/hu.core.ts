@@ -1,6 +1,7 @@
 export const huCore = {
   common: {
     actions: {
+      openQuote: 'Árajánlat megnyitása',
       save: 'Mentés',
       saveChanges: 'Módosítások mentése',
       saving: 'Mentés...',
@@ -175,6 +176,8 @@ export const huCore = {
     monthAuthExpiredError: 'A munkamenet lejárt. Jelentkezzen be újra a havi időpontok betöltéséhez.',
     due: {
       label: 'Határidő',
+      completed: 'Befejezve',
+      cancelled: 'Lemondva',
       daysLeft: '{{days}} nap {{hours}}ó {{minutes}}p hátra',
       daysLeft_one: '{{days}} nap {{hours}}ó {{minutes}}p hátra',
       daysLeft_other: '{{days}} nap {{hours}}ó {{minutes}}p hátra',

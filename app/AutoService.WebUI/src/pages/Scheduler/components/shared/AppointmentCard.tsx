@@ -43,7 +43,7 @@ export const AppointmentCard = memo(function AppointmentCard({
   const { t, i18n } = useTranslation();
   const isAssigned = currentMechanicId !== undefined
     && appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
-  const dueState = getDueState(appointment.dueDateTime);
+  const dueState = getDueState(appointment.dueDateTime, appointment.status);
   const { vehicle } = appointment;
   const canClaimAppointment = !isAdmin && !isAssigned && appointment.status === 'InProgress';
   const canUnclaimAppointment = !isAdmin && isAssigned && appointment.status === 'InProgress' && appointment.mechanics.length > 1;

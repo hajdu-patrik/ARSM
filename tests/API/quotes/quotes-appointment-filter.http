@@ -1,0 +1,166 @@
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@RunId = {{$timestamp}}
+
+### [Setup][QuotesAppointment] Login as admin (MechanicOnly prerequisite)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAppointment] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+{{
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAppointment] Resolve the shared fixture customer (200 expected)
+# @name fixtureCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
+
+?? status == 200
+
+###
+
+### [Setup][QuotesAppointment] Create the appointment that gets a linked quote (201 expected, deleted at the end)
+# @name linkedAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{AnchorVehicleId}},
+  "scheduledDate": "2026-04-18T10:30:00",
+  "taskDescription": "Quote appointment filter linked fixture",
+  "mechanicIds": [{{csrfSource1.personId}}]
+}
+
+?? status == 201
+
+###
+
+### [Setup][QuotesAppointment] Create an appointment without any quote (201 expected, deleted at the end)
+# @name bareAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{AnchorVehicleId}},
+  "scheduledDate": "2026-04-19T10:30:00",
+  "taskDescription": "Quote appointment filter bare fixture",
+  "mechanicIds": [{{csrfSource1.personId}}]
+}
+
+?? status == 201
+
+###
+
+### [Setup][QuotesAppointment] Create a draft quote linked to the first appointment (201 expected)
+# @name linkedQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "title": "Appointment Filter Quote {{RunId}}",
+  "appointmentId": {{linkedAppointment.id}}
+}
+
+?? status == 201
+?? js response.parsedBody.appointmentId == {{linkedAppointment.id}}
+
+###
+
+### [Positive][QuotesAppointment] appointmentId keeps only the quote linked to that appointment (200 expected)
+# @name filtered
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{linkedAppointment.id}}&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js response.parsedBody.items[0].id == {{linkedQuote.id}}
+?? js response.parsedBody.items[0].appointmentId == {{linkedAppointment.id}}
+
+###
+
+### [Case][QuotesAppointment] appointmentId combines with the status filter (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{linkedAppointment.id}}&status=Draft
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+
+###
+
+### [Case][QuotesAppointment] appointmentId combined with a non-matching status returns nothing (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{linkedAppointment.id}}&status=Accepted
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Case][QuotesAppointment] An appointment without a quote returns an empty page (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{bareAppointment.id}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+?? js response.parsedBody.items.length == 0
+
+###
+
+### [Negative][QuotesAppointment] A non-numeric appointmentId is rejected (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId=abc
+
+?? status == 400
+
+###
+
+### [Cleanup][QuotesAppointment] Delete the linked draft quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{linkedQuote.id}}?version={{linkedQuote.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][QuotesAppointment] Delete the linked fixture appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{linkedAppointment.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][QuotesAppointment] Delete the bare fixture appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{bareAppointment.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

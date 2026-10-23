@@ -9,10 +9,11 @@ namespace AutoService.ApiService.Quotes;
 
 public static partial class QuoteEndpoints
 {
-    /** Lists one page of quotes, filtered by vehicle, status (the four stored values), expired
-     * (a Sent quote past ValidUntil, D7) and search, ordered by CreatedAt descending. */
+    /** Lists one page of quotes, filtered by vehicle, appointment, status, expired (D7) and search,
+     * ordered by CreatedAt descending. */
     private static async Task<IResult> ListQuotesAsync(
         int? vehicleId,
+        [Description("Optional: keeps only quotes linked to this appointment.")] int? appointmentId,
         string? status,
         [Description("Optional: true keeps only expired quotes (Sent and past ValidUntil), false excludes them.")] bool? expired,
         [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
@@ -40,6 +41,11 @@ public static partial class QuoteEndpoints
         if (vehicleId is not null)
         {
             query = query.Where(q => q.VehicleId == vehicleId);
+        }
+
+        if (appointmentId is not null)
+        {
+            query = query.Where(q => q.AppointmentId == appointmentId);
         }
 
         if (statusFilter is not null)
@@ -99,6 +105,7 @@ public static partial class QuoteEndpoints
         return Results.Ok(quotes);
     }
 
+    /** Returns one quote with its lines as a detail DTO, or 404 when it does not exist. */
     private static async Task<IResult> GetQuoteAsync(
         int id,
         AutoServiceDbContext db,

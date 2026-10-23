@@ -8,6 +8,26 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Added
+- Appointment-to-quote link and status-aware due date (2026-10-23). The Scheduler detail modal shows an "Open quote" button beside
+  the due date, and the Customers history appointment modal shows the same action beside "Open in scheduler"; both open the
+  appointment's newest quote in the Quotes editor (`/quotes?quoteId=<id>`, consumed once like the create parameters), and neither
+  renders the button when the appointment has no quote. `GET /api/quotes` takes an optional `appointmentId` filter for this (the
+  shared `useAppointmentQuoteLink` hook; the `QuoteListItemDto` shape is unchanged). The due-date label is status-aware: a
+  Completed appointment shows "Befejezve" / "Completed" in the success tone and a Cancelled one "Lemondva" / "Cancelled" in the
+  error tone, never an overdue text; open appointments keep the overdue/remaining time (`toneTextClasses` gained `success`).
+  Company profile write-back (Development only): after `PUT /api/admin/company-profile` the API rewrites the seven
+  `ARSM_COMPANY_*` lines of the repository `.env` and the `CompanyProfile` values of `appsettings.Local.json`, line-wise and
+  byte-identical elsewhere (line endings and a missing trailing newline kept); the paths come from
+  `CompanyProfile__WriteBack__EnvFilePath` and `...__LocalSettingsPath`, which the AppHost sets from its own directory, an unset
+  path or missing file is skipped and Production writes nothing. The seed direction is unchanged: the files feed the table only
+  while it is empty, so a hand edit never reaches the database after the first start. Tests: 14 xUnit cases for the two rewriters,
+  the `quotes-appointment-filter.http` suite (filter alone, with `status`, an appointment without a quote, a non-numeric id) and the
+  `appointment-quote-link.spec.ts` E2E spec (both modals, the completed/cancelled/overdue labels). Verified: validate, the full
+  Playwright suite, api-suites (1172/1172 HTTP requests, the six Python checks, 24/24 SQL suites).
+
+_Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run with five sonnet packages and a fable plan, plus the hand-run suite re-run, gate and review). Cost: ~$1.0-5.2 output-token-only estimate (104k output tokens, sonnet packages and reviews, fable plan; excludes input tokens and cache, so a lower bound)._
+
 ### Security
 - Audit fixes (2026-10-21 to 2026-10-22). Sessions: the token denylist is warmed into memory at startup (no database read per
   authenticated request), a per-person session cutoff ends every access token at once after an admin delete, an admin password

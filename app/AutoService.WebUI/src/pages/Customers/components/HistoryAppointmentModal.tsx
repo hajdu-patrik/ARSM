@@ -1,9 +1,10 @@
 /** Modal dialog showing a vehicle's historical appointment: status, task, timestamps, and vehicle info. */
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { Modal } from '../../../components/common/Modal';
+import { useAppointmentQuoteLink } from '../../../hooks/useAppointmentQuoteLink';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 import {
   compactChipNeutralButtonClass,
@@ -43,6 +44,13 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
     });
   }, [appointment?.id, appointment?.scheduledDate, navigate, onClose]);
 
+  const { quoteId, openQuote } = useAppointmentQuoteLink(appointment?.id ?? null, isOpen);
+
+  const handleOpenQuote = useCallback(() => {
+    onClose();
+    openQuote();
+  }, [onClose, openQuote]);
+
   if (!appointment) {
     return null;
   }
@@ -67,6 +75,18 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
             <CalendarDays className={smallIconClass} />
             <span className="min-w-0 whitespace-normal text-center">{t('customers.checkAppointment')}</span>
           </button>
+          {quoteId !== null && (
+            <button
+              type="button"
+              onClick={handleOpenQuote}
+              className={compactChipNeutralButtonClass}
+              title={t('common.actions.openQuote')}
+              aria-label={t('common.actions.openQuote')}
+            >
+              <FileText className={smallIconClass} />
+              <span className="min-w-0 whitespace-normal text-center">{t('common.actions.openQuote')}</span>
+            </button>
+          )}
         </div>
 
         <div className={compactDataSurfaceClass}>

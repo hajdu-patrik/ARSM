@@ -1,6 +1,7 @@
 export const enCore = {
   common: {
     actions: {
+      openQuote: 'Open quote',
       save: 'Save',
       saveChanges: 'Save changes',
       saving: 'Saving...',
@@ -175,6 +176,8 @@ export const enCore = {
     monthAuthExpiredError: 'Your session has expired. Please log in again to load monthly appointments.',
     due: {
       label: 'Due',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
       daysLeft: '{{days}} days {{hours}}h {{minutes}}m left',
       daysLeft_one: '{{days}} day {{hours}}h {{minutes}}m left',
       daysLeft_other: '{{days}} days {{hours}}h {{minutes}}m left',

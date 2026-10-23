@@ -22,6 +22,8 @@
 - Keep explicit Aspire secret params: `postgres-password`, `jwt-secret`, `minio-user`, `minio-password`.
 - Keep `apiservice` waiting on `minio` (`WaitFor(minio)`) and receiving `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, `ObjectStorage__SecretAccessKey`, and `ObjectStorage__AutoCreateBucket` from the `minio` resource/params.
 
+- Keep `apiservice` receiving `CompanyProfile__WriteBack__EnvFilePath` (repo-root `.env`) and `CompanyProfile__WriteBack__LocalSettingsPath` (`appsettings.Local.json`), both resolved from `AppHostDirectory`; the API's company-profile write-back (see its `CLAUDE.md`) is Development only.
+
 ## Runtime Anchors
 
 - Aspire dashboard default: `https://localhost:17094`.

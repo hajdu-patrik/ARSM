@@ -42,6 +42,7 @@ export const quoteService = {
         status: query.status,
         expired: query.expired,
         vehicleId: query.vehicleId,
+        appointmentId: query.appointmentId,
       },
       skipErrorRedirect: options?.skipErrorRedirect,
     });

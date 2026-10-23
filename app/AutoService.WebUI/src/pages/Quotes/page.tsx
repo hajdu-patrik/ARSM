@@ -1,4 +1,4 @@
-/** Quotes page: search/status list plus the editor modal; creation always starts from a vehicle row (`?vehicleId=<id>&new=1`, see CLAUDE.md). */
+/** Quotes page: search/status list plus the editor modal; creation always starts from a vehicle row (`?vehicleId=<id>&new=1`, see CLAUDE.md); `?quoteId=<id>` opens that quote. */
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
@@ -55,6 +55,23 @@ export const QuotesPage = memo(function QuotesPage() {
       openCreate(vehicleId);
     }
   }, [isCreateRequested, openCreate, requestedVehicleId, setSearchParams]);
+
+  const requestedQuoteId = searchParams.get('quoteId');
+
+  useEffect(() => {
+    if (requestedQuoteId === null) {
+      return;
+    }
+
+    const quoteId = Number(requestedQuoteId);
+
+    // Consumed once, like the create parameters above.
+    setSearchParams(new URLSearchParams(), { replace: true });
+
+    if (Number.isInteger(quoteId) && quoteId > 0) {
+      openQuote(quoteId);
+    }
+  }, [openQuote, requestedQuoteId, setSearchParams]);
 
   const handleOpenQuote = useCallback((quote: QuoteListItemDto) => {
     openQuote(quote.id);

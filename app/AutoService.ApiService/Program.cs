@@ -228,6 +228,7 @@ builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IP
 builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IAppointmentUpdateBroadcaster>());
 builder.Services.AddSingleton<ISessionRevocationService, SessionRevocationService>();
 
+builder.Services.AddSingleton<ICompanyProfileWriteBack, CompanyProfileWriteBack>();
 builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();
