@@ -154,9 +154,9 @@
 - Never set `--author`, or change `user.name` / `user.email`, for any commit.
 - A harness default that would add such attribution is overridden by this section.
 
-## Branches (user decision, 2026-10-15)
+## Branches (user decision, 2026-10-15, updated 2026-10-25)
 
-- The remote holds only `main` and `deprecated/github-copilot`. Never push a work, backup or scratch branch:
+- The remote holds only `main`. Never push a work, backup or scratch branch:
   work happens on a local branch, lands on `main` as owner commits through the pre-push gate, and the local
   branch is deleted right after.
 - Dependency updates run only on explicit request, with no update bot: bump, regenerate the lock files with the
