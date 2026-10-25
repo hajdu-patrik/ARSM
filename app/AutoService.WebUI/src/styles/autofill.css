@@ -1,17 +1,19 @@
 /* Autofill overrides: MUST stay outside @layer (unlayered author rules beat
    layered Tailwind utilities and the UA autofill sheet). */
 
-/* One rule for both themes: the ui-* variables swap under .dark; the border is the 3:1 field border. */
+/* The UA !important autofill fill is clipped to the glyphs, so the card (same colour as the field fill)
+   shows through and follows a theme switch; the ui-* variables swap under .dark. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--ui-text);
   caret-color: var(--ui-text);
-  background-color: var(--ui-input) !important;
-  background-image: linear-gradient(var(--ui-input), var(--ui-input)) !important;
-  background-clip: padding-box;
+  background-clip: text;
   border-color: var(--ui-field-border) !important;
-  /* 9999s transition freezes the background so the browser never reverts it */
-  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Dark UA autofill tint under the glyph edges, which stays invisible on the dark card */
+.dark input:-webkit-autofill {
+  color-scheme: dark;
 }

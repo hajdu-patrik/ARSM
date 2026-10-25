@@ -8,6 +8,18 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Fixed
+- Browser-autofilled inputs follow the theme (2026-10-25). Before, the autofill fill was frozen by a `9999s` background
+  transition, because the UA `!important` autofill colour beats author `!important`. So a field autofilled in one theme kept
+  that theme's fill after a switch: a light field with light text in dark mode, a dark field with dark text in light mode.
+  `styles/autofill.css` now clips the UA fill to the glyphs (`background-clip: text`) and paints the text with
+  `--ui-text`. The card behind the field shows through, and it has the same colour as `--ui-input` in both themes; every
+  autofillable field sits on a card or a modal. Dark mode adds `color-scheme: dark` for the glyph-edge tint. Verified with
+  real Edge autofill (CDP) on `/login`: field pixels match the card in light, dark and after a toggle each way; validate
+  passes.
+
+_Dev time: ~6m wall-clock (2026-10-25 15:16 to 15:22 +01:00, one arsm-chain run that kept the fix unverified, then the Edge runtime check by hand; the fix itself was drafted in an earlier, unmeasured session). Cost: ~$0.08 output-token-only estimate for the workflow (7.6k output tokens, sonnet only; excludes input tokens, cache and the hand-run check, so a lower bound)._
+
 ### Added
 - Transactional e-mail via Resend (2026-10-23). The API gets an `Email/` layer: `IEmailSender` with a `ResendEmailSender`
   (plain `HttpClient` POST to the Resend REST API, 15 s timeout, 429/5xx classified retryable, CR/LF-safe subject and a
