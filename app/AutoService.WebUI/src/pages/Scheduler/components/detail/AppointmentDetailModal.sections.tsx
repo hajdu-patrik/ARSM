@@ -138,6 +138,7 @@ interface HeaderSectionProps {
   readonly formattedDate: string;
 }
 
+/** Status badge and formatted scheduled date of the appointment. */
 const HeaderSection = memo(function HeaderSection({
   appointmentStatus,
   formattedDate,
@@ -145,7 +146,7 @@ const HeaderSection = memo(function HeaderSection({
   return (
     <div className={schedulerDetailRowClass}>
       <div className={compactStackedRowClass}>
-        <StatusBadge status={appointmentStatus} />
+        <StatusBadge status={appointmentStatus} className="self-start sm:self-auto" />
         <span className={`min-w-0 [overflow-wrap:anywhere] ${mutedSecondaryTextClass}`}>{formattedDate}</span>
       </div>
     </div>
@@ -176,7 +177,7 @@ const DueSection = memo(function DueSection({
 }: DueSectionProps) {
   return (
     <div
-      className={`rounded-2xl border px-4 py-3 ${
+      className={`rounded-2xl border px-4 py-3 max-[320px]:px-3 ${
         dueState.isOverdue
           ? toneFeedbackClasses.error
           : 'border-ui-border bg-ui-toggle'

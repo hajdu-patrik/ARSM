@@ -7,7 +7,7 @@ import { useToastStore } from '../../../../store/toast.store';
 import { formatLongDate } from '../../utils/scheduler-datetime';
 import { useSchedulerIntakeForm } from '../../hooks/useSchedulerIntakeForm';
 import { buttonClass, secondaryButtonClass } from '../../../../utils/formStyles';
-import { SchedulerIntakeCustomerForm, SchedulerIntakeHeader } from './SchedulerIntakeBasics';
+import { SchedulerIntakeCustomerForm, SchedulerIntakeDueDateField, SchedulerIntakeHeader } from './SchedulerIntakeBasics';
 import { SchedulerIntakeTaskSection } from './SchedulerIntakeTaskSection';
 import { SchedulerIntakeVehicleForm, SchedulerIntakeVehicleModeSection } from './SchedulerIntakeVehicleSections';
 import { SchedulerIntakeLookupSection } from './SchedulerIntakeLookupSection';
@@ -75,9 +75,7 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
       <div className="max-h-[64vh] space-y-3 overflow-y-auto pr-1 pb-0.5">
         <SchedulerIntakeHeader
           selectedDayLabel={selectedDayLabel}
-          dueDateTime={state.dueDateTime}
           translate={translate}
-          onDueDateTimeChange={actions.setDueDateTime}
         />
 
         <SchedulerIntakeLookupSection
@@ -131,11 +129,19 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
         )}
 
         {derived.canCreateIntake && (
-          <SchedulerIntakeTaskSection
-            taskDescription={state.taskDescription}
-            translate={translate}
-            onTaskDescriptionChange={actions.setTaskDescription}
-          />
+          <>
+            <SchedulerIntakeTaskSection
+              taskDescription={state.taskDescription}
+              translate={translate}
+              onTaskDescriptionChange={actions.setTaskDescription}
+            />
+
+            <SchedulerIntakeDueDateField
+              dueDateTime={state.dueDateTime}
+              translate={translate}
+              onDueDateTimeChange={actions.setDueDateTime}
+            />
+          </>
         )}
       </div>
     </Modal>

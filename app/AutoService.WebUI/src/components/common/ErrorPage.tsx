@@ -87,17 +87,18 @@ const ErrorPageComponent = memo(function ErrorPage({
 	}, [imageSrc]);
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-ui-surface text-ui-text">
+		<div className="relative h-dvh overflow-hidden bg-ui-surface text-ui-text">
 			<div aria-hidden="true" className={`error-page-ambient ${centeredAmbientOrbLayoutClass}`} />
+			<span
+				aria-hidden="true"
+				className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 select-none text-[14rem] font-bold leading-none text-arsm-primary/[0.05] dark:text-arsm-primary-dark/[0.08] sm:text-[22rem] lg:text-[34rem] xl:text-[42rem]"
+			>
+				{backgroundCode}
+			</span>
 			<ThemeLanguageControls />
-			<main className="relative z-10 mx-auto flex min-h-screen min-w-0 w-full max-w-[1920px] items-center justify-center px-3 pt-24 sm:px-6 sm:pt-0">
-				<span
-					aria-hidden="true"
-					className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none text-[14rem] font-bold leading-none text-arsm-primary/[0.05] dark:text-arsm-primary-dark/[0.08] sm:text-[22rem] lg:text-[34rem] xl:text-[42rem]"
-				>
-					{backgroundCode}
-				</span>
-				<section className="relative min-w-0 w-full max-w-[74rem]">
+			{/* The body never scrolls, so a page taller than the viewport scrolls in main; m-auto keeps the section centered while it fits. */}
+			<main className="relative z-10 mx-auto flex h-full min-w-0 w-full max-w-[1920px] overflow-y-auto overflow-x-hidden px-3 pb-4 pt-24 sm:px-6 sm:pb-0 sm:pt-0">
+				<section className="relative m-auto min-w-0 w-full max-w-[74rem]">
 					<div className="grid min-w-0 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
 						<div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} flex min-h-[260px] items-center justify-center bg-ui-toggle p-4 max-[320px]:min-h-[210px] sm:min-h-[320px]`}>
 							<div aria-hidden="true" className="error-page-illustration-glow pointer-events-none absolute inset-0" />

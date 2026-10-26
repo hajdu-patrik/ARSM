@@ -118,13 +118,13 @@ export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery
       )}
     >
       <DataListCell column="vehicle" label={t('common.fields.vehicle')} tile>
-        <DataListText kind="identifier" title={licensePlate}><HighlightedText text={licensePlate} query={searchQuery} /></DataListText>
+        <DataListText kind="identifier" title={licensePlate} className="@max-4xl:text-right @max-4xl:font-semibold"><HighlightedText text={licensePlate} query={searchQuery} /></DataListText>
       </DataListCell>
       <DataListCell column="status" className={statusTileClass}>
         <QuoteStatusBadge status={resolveQuoteDisplayStatus(quote)} />
       </DataListCell>
       <DataListCell column="validUntil" label={t('quotes.validUntil')} tile>
-        <DataListText kind="date" title={validUntilText}>{validUntilText}</DataListText>
+        <DataListText kind="date" title={validUntilText} className="@max-4xl:text-right">{validUntilText}</DataListText>
       </DataListCell>
       <DataListCell column="totalNet" label={t('quotes.columns.totalNet')} tile>
         <DataListText kind="amount" title={totalNetText}>{totalNetText}</DataListText>

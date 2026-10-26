@@ -17,17 +17,13 @@ import { StatusBadge } from '../shared/StatusBadge';
 
 interface SchedulerIntakeHeaderProps {
   readonly selectedDayLabel: string;
-  readonly dueDateTime: string;
   readonly translate: TFunction;
-  readonly onDueDateTimeChange: (value: string) => void;
 }
 
-/** Renders selected-day and due-date controls for scheduler intake. */
+/** Renders the selected-day and initial-status blocks for scheduler intake. */
 export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
   selectedDayLabel,
-  dueDateTime,
   translate,
-  onDueDateTimeChange,
 }: SchedulerIntakeHeaderProps) {
   return (
     <div className="space-y-3">
@@ -36,25 +32,40 @@ export const SchedulerIntakeHeader = memo(function SchedulerIntakeHeader({
         <span className="ml-1">{selectedDayLabel}</span>
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-3">
-        <label className={intakeFieldWrapperClass}>
-          <span className={intakeFieldLabelClass}>{translate('scheduler.intake.dueDateTime')}</span>
-          <input
-            type="datetime-local"
-            data-testid="scheduler-intake-due-datetime"
-            value={dueDateTime}
-            onChange={(event) => {
-              onDueDateTimeChange(event.target.value);
-            }}
-            className={intakeDateTimeInputClass}
-          />
-        </label>
-      </div>
-
-      <div className={`${insetSurfaceClass} p-3.5 text-sm`}>
+      <div className={`${insetSurfaceClass} flex min-w-0 flex-wrap items-center gap-2 p-3.5 text-sm`}>
         <span className="font-medium text-ui-muted">{translate('scheduler.intake.statusLabel')}</span>
-        <StatusBadge status="InProgress" className="mt-1" />
+        <StatusBadge status="InProgress" />
       </div>
+    </div>
+  );
+});
+
+interface SchedulerIntakeDueDateFieldProps {
+  readonly dueDateTime: string;
+  readonly translate: TFunction;
+  readonly onDueDateTimeChange: (value: string) => void;
+}
+
+/** Renders the due date and time field, shown right below the task section. */
+export const SchedulerIntakeDueDateField = memo(function SchedulerIntakeDueDateField({
+  dueDateTime,
+  translate,
+  onDueDateTimeChange,
+}: SchedulerIntakeDueDateFieldProps) {
+  return (
+    <div className="grid min-w-0 grid-cols-1 gap-3">
+      <label className={intakeFieldWrapperClass}>
+        <span className={intakeFieldLabelClass}>{translate('scheduler.intake.dueDateTime')}</span>
+        <input
+          type="datetime-local"
+          data-testid="scheduler-intake-due-datetime"
+          value={dueDateTime}
+          onChange={(event) => {
+            onDueDateTimeChange(event.target.value);
+          }}
+          className={intakeDateTimeInputClass}
+        />
+      </label>
     </div>
   );
 });

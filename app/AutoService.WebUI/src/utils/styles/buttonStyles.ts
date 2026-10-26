@@ -18,13 +18,16 @@ export const modalConfirmCloseButtonClass = `inline-flex h-11 w-11 shrink-0 item
 
 /** Bordered 44x44 icon button core (geometry, focus, motion, neutral disabled look); each tone below adds its colors. */
 const iconToneButtonBaseClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60 disabled:border-ui-border disabled:bg-ui-toggle disabled:text-ui-muted disabled:hover:bg-ui-toggle disabled:hover:text-ui-muted ${iconButtonMicroInteractionClass}`;
-export const iconDangerButtonClass = `${iconToneButtonBaseClass} border-arsm-error-border bg-ui-error-bg text-arsm-error-text hover:bg-arsm-error-softest hover:text-arsm-error-text dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/85 dark:hover:text-arsm-error-text-light`;
-export const iconWarningButtonClass = `${iconToneButtonBaseClass} border-ui-warning-border bg-ui-warning-bg text-ui-warning-text hover:bg-ui-warning-border/35 hover:text-ui-warning-text`;
+/** Size-free colors of the bordered icon button tones, for icon buttons of another size. */
+export const iconDangerToneClass = 'border-arsm-error-border bg-ui-error-bg text-arsm-error-text hover:bg-arsm-error-softest hover:text-arsm-error-text dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/85 dark:hover:text-arsm-error-text-light';
+export const iconWarningToneClass = 'border-ui-warning-border bg-ui-warning-bg text-ui-warning-text hover:bg-ui-warning-border/35 hover:text-ui-warning-text';
+export const iconDangerButtonClass = `${iconToneButtonBaseClass} ${iconDangerToneClass}`;
+export const iconWarningButtonClass = `${iconToneButtonBaseClass} ${iconWarningToneClass}`;
 
 /** Compact chip core (geometry, typography, focus, disabled) without the 44px touch sizing, which each chip base adds at its own breakpoint. */
-const compactChipCoreClass = `inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-xs font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60`;
+export const compactChipCoreClass = `inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-xs font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60`;
 /** Neutral chip tone; it matches the compact filter select surface (bg-card, field border) it sits beside. */
-const compactChipNeutralToneClass = 'border-ui-field-border bg-arsm-card text-ui-label hover:bg-ui-toggle dark:bg-arsm-input-dark';
+export const compactChipNeutralToneClass = 'border-ui-field-border bg-arsm-card text-ui-label hover:bg-ui-toggle dark:bg-arsm-input-dark';
 
 /** Compact chip button base shared by Customers and Scheduler local chip variants (min-h-7, scales to a 44px target below the sm breakpoint (640px)). */
 const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2`;
@@ -75,14 +78,14 @@ export const referenceChipPrimaryButtonClass = `${referenceChipBaseClass} ${prim
 export const referenceChipPrimaryWrapButtonClass = `${referenceChipWrapBaseClass} ${primaryActionToneClass}`;
 export const referenceChipDangerButtonClass = `${referenceChipBaseClass} ${dangerActionToneClass}`;
 
-/** Main CTA family for save/delete/edit and modal confirmation actions. */
-const mainCtaActionBaseClass = `inline-flex h-11 min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
+/** Main CTA family for save/delete/edit and modal confirmation actions; a long label wraps and grows the 44px minimum height. */
+const mainCtaActionBaseClass = `inline-flex min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-center text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
 export const buttonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover`;
 export const secondaryButtonClass = `${mainCtaActionBaseClass} border border-ui-border bg-ui-toggle font-medium text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark`;
 export const dangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 
 /** Binary pill toggle helper used by compact on/off filter controls. */
-const togglePillBaseClass = `inline-flex h-11 min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
+const togglePillBaseClass = `inline-flex min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-center text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
 const togglePillActiveClass = 'border-arsm-accent/80 bg-ui-accent text-ui-on-accent outline-1 outline-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:outline-arsm-accent-dark/35';
 const togglePillInactiveClass = 'border-ui-border bg-ui-toggle text-ui-label hover:border-ui-accent/50 hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark';
 

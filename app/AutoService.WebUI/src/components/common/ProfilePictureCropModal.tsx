@@ -93,7 +93,7 @@ export const ProfilePictureCropModal = memo(function ProfilePictureCropModal({
           {t('settings.cropModalHint')}
         </p>
 
-        <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} h-[320px] w-full bg-arsm-surface-dark sm:h-[360px]`}>
+        <div className={`${relativeOverflowBorderLayoutClass} ${defaultBorderToneClass} h-[min(320px,40dvh)] w-full bg-arsm-surface-dark sm:h-[360px]`}>
           {imageSrc && (
             <Cropper
               image={imageSrc}

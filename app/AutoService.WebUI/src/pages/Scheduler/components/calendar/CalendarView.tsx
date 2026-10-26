@@ -264,7 +264,7 @@ const CalendarViewComponent = memo(function CalendarView({
   };
 
   return (
-    <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:px-0 max-[320px]:py-2.5 sm:p-4`}>
+    <section className={`${insetSurfaceClass} relative select-none overflow-hidden p-3 max-[320px]:px-1 max-[320px]:py-2.5 sm:p-4`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(180deg,var(--ui-card)_0%,transparent_100%)] opacity-40 dark:opacity-20"

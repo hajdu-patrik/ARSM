@@ -75,7 +75,7 @@ const ToastItem = memo(function ToastItem({ toast }: ToastItemProps) {
 
   return (
     <div
-      className={`toast-enter pointer-events-auto relative flex min-w-0 w-[min(92vw,33rem)] items-center gap-2 overflow-hidden rounded-2xl border px-4 py-3 text-sm font-medium backdrop-blur-md ${toastVariantClass}`}
+      className={`toast-enter pointer-events-auto relative flex min-w-0 w-[min(92vw,33rem)] items-center gap-2 overflow-hidden rounded-2xl border px-4 py-3 text-sm max-[320px]:px-3 font-medium backdrop-blur-md ${toastVariantClass}`}
       onPointerEnter={(event) => {
         if (event.pointerType !== 'touch') {
           setIsHovered(true);

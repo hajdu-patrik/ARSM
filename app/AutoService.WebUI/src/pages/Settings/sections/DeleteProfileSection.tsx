@@ -15,10 +15,10 @@ export const DeleteProfileSection = memo(function DeleteProfileSection({
 
 	return (
 		<div className={`${relativeOverflowBorderLayoutClass} ${toneFeedbackClasses.error} p-5 sm:p-6`}>
-			<h2 className="text-lg font-semibold">
+			<h2 className="text-lg font-semibold [overflow-wrap:anywhere]">
 				{translate('settings.deleteProfileTitle')}
 			</h2>
-			<p className="mt-2 text-sm">
+			<p className="mt-2 text-sm [overflow-wrap:anywhere]">
 				{translate('settings.deleteProfileDescription')}
 			</p>
 			<button

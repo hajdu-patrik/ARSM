@@ -1,12 +1,14 @@
 /** Shared custom dropdown primitives: the closed trigger reuses the native select geometry, the popup and options are new. */
-import { compactSelectFullClass, filterSelectCompactSurfaceClass, inputClass, intakeInputClass } from './fieldStyles';
+import { compactSelectFullClass, filterSelectCompactSlimSurfaceClass, filterSelectCompactSurfaceClass, inputClass, intakeInputClass } from './fieldStyles';
 
 const dropdownTriggerLayoutClass = 'flex items-center justify-between gap-2 text-left';
+const dropdownCompactDisabledClass = 'disabled:cursor-not-allowed disabled:opacity-50';
 
-/** Closed-state trigger per size: `default` is `compactSelectFullClass`, `compact` the toolbar select, `field` the `inputClass`, `intake` the `intakeInputClass`. */
+/** Closed-state trigger per size: `default` is `compactSelectFullClass`, `compact` the toolbar select, `compactSlim` the same at 28px on every width, `field` the `inputClass`, `intake` the `intakeInputClass`. */
 export const dropdownTriggerSizeClasses = {
   default: `${compactSelectFullClass} ${dropdownTriggerLayoutClass}`,
-  compact: `${filterSelectCompactSurfaceClass} ${dropdownTriggerLayoutClass} disabled:cursor-not-allowed disabled:opacity-50`,
+  compact: `${filterSelectCompactSurfaceClass} ${dropdownTriggerLayoutClass} ${dropdownCompactDisabledClass}`,
+  compactSlim: `${filterSelectCompactSlimSurfaceClass} ${dropdownTriggerLayoutClass} ${dropdownCompactDisabledClass}`,
   field: `${inputClass} min-w-0 max-w-full ${dropdownTriggerLayoutClass}`,
   intake: `${intakeInputClass} ${dropdownTriggerLayoutClass}`,
 } as const;
@@ -24,7 +26,7 @@ export const dropdownPopupClass = 'fixed z-[115] m-0 max-h-72 list-none overflow
 
 const dropdownOptionBaseClass = 'flex min-h-11 w-full items-center justify-between gap-2 py-2 text-left text-ui-text';
 
-/** Option text per size: `compact` shares the `default` row; `field` and `intake` follow their input geometry. */
+/** Option text per size: `compact` and `compactSlim` share the `default` row;`field` and `intake` follow their input geometry. */
 const dropdownOptionTextClasses = {
   default: 'px-3 text-sm',
   field: 'px-4 text-ui-field',
@@ -41,7 +43,7 @@ interface DropdownOptionState {
 /** Option row: the active one gets the toggle fill, the selected one is semibold with a check mark. */
 export function getDropdownOptionClass({ isActive, isSelected, isDisabled, size = 'default' }: DropdownOptionState): string {
   const stateClasses = [
-    dropdownOptionTextClasses[size === 'compact' ? 'default' : size],
+    dropdownOptionTextClasses[size === 'compact' || size === 'compactSlim' ? 'default' : size],
     isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
     isActive && !isDisabled ? 'bg-ui-toggle' : '',
     isSelected ? 'font-semibold' : '',

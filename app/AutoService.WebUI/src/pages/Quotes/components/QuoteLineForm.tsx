@@ -77,7 +77,7 @@ export const QuoteLineForm = memo(function QuoteLineForm({
   const catalogOptions = [{ value: '', label: t('quotes.line.catalogNone') }, ...catalogItems];
 
   return (
-    <div data-testid="quote-line-editor" className={`min-w-0 space-y-3 ${insetSurfaceClass} p-3.5`}>
+    <div data-testid="quote-line-editor" className={`min-w-0 space-y-3 ${insetSurfaceClass} p-3.5 max-[320px]:p-3`}>
       <div className={`${segmentedControlClass} max-w-xs`}>
         <button
           data-testid="quote-line-kind-part"

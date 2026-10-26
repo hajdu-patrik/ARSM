@@ -99,6 +99,20 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Phone-optimized WebUI down to 320px (2026-10-26). Admin mechanic cards: the temporary-password and delete buttons are
+  32px icon buttons side by side in the top-right corner, the e-mail truncates with a tooltip. Scheduler month filters (sort,
+  show all, status chips, mechanic select) are compact 28px controls at every width (`Dropdown` size `compactSlim`). New intake:
+  the due date shows only with the task section, directly below the task description; the initial-status label no longer runs
+  into its badge. Quote and catalog tiles: every value right-aligned, plate/part number and gross bold, labels stay left. Below
+  350px the row icon actions drop to their own right-aligned line (`compactRowHeaderClass`, `DataList` tile `headerEnd`), with
+  the Quotes (278 px) and Inventory (220 px) tile pitch estimates measured at 320px. Below `sm` every field renders 16px text so
+  iOS Safari does not zoom on focus. Every `Modal`, the auth pages, the error pages and the mobile sidebar drawer scroll instead
+  of clipping on short phones; the quote editor keeps its footer pinned; main CTA buttons grow instead of clipping long labels.
+  A 320px sweep (both themes, every signed-in page and the intake modal) shows no horizontal overflow; validate and the full
+  Playwright suite pass.
+
+_Dev time: ~1h44m wall-clock (2026-10-26 10:01 to 11:45 +01:00, two arsm-chain runs that stopped on questions before the gate, the decisions, a hand-run 320px screenshot sweep and fixes, the full E2E suite). Cost: ~$3.92-$7.84 output-token-only estimate (392k output tokens, sonnet to opus; excludes input tokens and cache, so a lower bound)._
+
 - Self-explaining browser storage names (2026-10-26). Every localStorage, sessionStorage and Cache Storage name follows
   `arsm.<area>.<purpose>` (`arsm.pref.theme`, `arsm.auth.sessionHint`, `arsm.queryCache.private`, `arsm.errorPage.images.v1`, ...),
   so the DevTools Application tab shows what each entry stores and why. All names live in the new

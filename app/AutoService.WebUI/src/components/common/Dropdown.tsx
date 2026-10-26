@@ -104,7 +104,7 @@ export function Dropdown({
     onSelect: selectOption,
   });
 
-  const iconClass = size === 'compact' ? smallIconClass : defaultIconClass;
+  const iconClass = size === 'compact' || size === 'compactSlim' ? smallIconClass : defaultIconClass;
   const triggerClassName = [dropdownTriggerSizeClasses[size], className].filter(Boolean).join(' ');
   const chevronClassName = [iconClass, dropdownChevronClass, isOpen ? 'rotate-180' : ''].filter(Boolean).join(' ');
   const labelClassName = [dropdownLabelClass, selectedOption === undefined ? dropdownPlaceholderClass : ''].filter(Boolean).join(' ');

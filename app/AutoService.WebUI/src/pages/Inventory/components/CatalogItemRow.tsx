@@ -88,7 +88,7 @@ export const CatalogItemRow = memo(function CatalogItemRow({
       )}
     >
       <DataListCell column="identifier" label={identifierLabel} tile>
-        <DataListText kind="identifier" title={identifier}><HighlightedText text={identifier} query={searchQuery} /></DataListText>
+        <DataListText kind="identifier" title={identifier} className="@max-3xl:text-right @max-3xl:font-semibold"><HighlightedText text={identifier} query={searchQuery} /></DataListText>
       </DataListCell>
       <DataListCell column="net" label={netLabel} tile>
         <DataListText kind="amount" title={netText}>{netText}</DataListText>

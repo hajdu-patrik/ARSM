@@ -16,15 +16,14 @@ import {
 	centeredLoadingWrapperClass,
 	compactInputSurfaceClass,
 	compactListPrimaryWrapTextClass,
-	compactListSecondaryWrapTextClass,
+	compactListSecondaryTextClass,
 	defaultIconClass,
 	emptyStateBoxClass,
-	iconDangerButtonClass,
-	iconWarningButtonClass,
 	loadingSpinnerClass,
 	mutedBodyTextClass,
 	rowHoverMotionClass,
 } from '../../../../utils/formStyles';
+import { mechanicDangerIconButtonClass, mechanicWarningIconButtonClass } from '../mechanicActionStyles';
 
 /** Renders the admin mechanic roster: server-side search, fixed-size pages, and password reset and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection() {
@@ -102,12 +101,12 @@ export const MechanicListSection = memo(function MechanicListSection() {
 											<p className={compactListPrimaryWrapTextClass}>
 												<HighlightedText text={displayName} query={highlightQuery} />
 											</p>
-											<p className={compactListSecondaryWrapTextClass}>
+											<p className={compactListSecondaryTextClass} title={mechanic.email}>
 												<HighlightedText text={mechanic.email} query={highlightQuery} />
 											</p>
 										</div>
 
-										<div className="ml-auto flex shrink-0 items-center gap-2 max-[350px]:flex-col">
+										<div className="ml-auto flex shrink-0 items-center gap-1.5 self-start">
 											{!mechanic.isAdmin && (
 												<button
 													type="button"
@@ -116,7 +115,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 													}}
 													title={t('admin.resetPassword')}
 													aria-label={t('admin.resetPassword')}
-													className={iconWarningButtonClass}
+													className={mechanicWarningIconButtonClass}
 												>
 													<KeyRound className={defaultIconClass} aria-hidden="true" />
 												</button>
@@ -130,7 +129,7 @@ export const MechanicListSection = memo(function MechanicListSection() {
 													}}
 													title={t('admin.deleteMechanic')}
 													aria-label={t('admin.deleteMechanic')}
-													className={iconDangerButtonClass}
+													className={mechanicDangerIconButtonClass}
 												>
 													<Trash2 className={defaultIconClass} aria-hidden="true" />
 												</button>

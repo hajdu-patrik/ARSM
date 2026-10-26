@@ -10,7 +10,7 @@ import {
   mutedMetaTextClass,
   referenceChipDangerButtonClass,
   referenceChipPrimaryButtonClass,
-  selectWrapperClass,
+  formFieldGroupClass,
 } from '../../../../utils/formStyles';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
@@ -38,6 +38,7 @@ interface AppointmentDetailFooterProps {
   readonly onDeleteClick: () => void;
 }
 
+/** Footer controls of the detail modal; renders nothing when no control applies. */
 export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   appointment,
   showEdit,
@@ -75,7 +76,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
     <>
       <div className={`${equalWidthControlGroupClass} w-full`}>
         {showStatusControl && (
-          <div className={selectWrapperClass}>
+          <div className={formFieldGroupClass}>
             <Dropdown
               value={appointment.status}
               options={statusOptions}

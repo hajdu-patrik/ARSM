@@ -14,8 +14,8 @@ import { QuoteEditorLinesSection } from './QuoteEditorModal.lines';
 import { QuoteEditorTotalsSection } from './QuoteEditorModal.totals';
 import { QuoteEditorFooter } from './QuoteEditorModal.footer';
 
-/** Body scrolls inside the dialog (bounded height); unbounded, the modal outgrows the viewport and pushes footer actions off screen. */
-const editorBodyClass = 'min-w-0 max-h-[60vh] space-y-4 overflow-y-auto';
+/** Body scrolls inside the dialog (bounded height, shrinks in the fit-viewport dialog) so the footer actions stay on screen. */
+const editorBodyClass = 'min-h-0 min-w-0 max-h-[60vh] space-y-4 overflow-y-auto';
 
 interface QuoteEditorModalProps {
   readonly t: TFunction;
@@ -60,6 +60,7 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
       onClose={editor.close}
       title={modalTitle}
       widthClassName="max-w-4xl"
+      fitViewport
       footer={(
         <QuoteEditorFooter
           t={t}

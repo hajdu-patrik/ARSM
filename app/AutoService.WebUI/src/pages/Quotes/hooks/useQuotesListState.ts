@@ -12,11 +12,13 @@ import { toQuoteListFilter, type QuoteStatusFilter } from '../helpers';
 /** Measured pitch (row plus divider) of one table-layout row; used until a rendered row can be measured. */
 const FALLBACK_ROW_HEIGHT_PX = 69;
 
-/** Measured tile-layout pitches: the list switches to tiles below 56rem, and below ~356px the tile text wraps onto more lines. */
+/** Tile-layout pitches: tiles below 56rem, wrapped text below ~356px, actions on their own row (+33 px) at 350px and below. */
 const TILE_ROW_HEIGHT_PX = 229;
 const NARROW_TILE_ROW_HEIGHT_PX = 245;
+const ACTIONS_ROW_TILE_HEIGHT_PX = 278;
 const TABLE_MIN_WIDTH_PX = 896;
 const NARROW_TILE_MAX_WIDTH_PX = 356;
+const ACTIONS_ROW_MEDIA_QUERY = '(max-width: 350px)';
 
 /** Row pitch estimate from the list width (table or tile layout), used before a row is rendered. */
 function estimateRowHeight(list: HTMLElement): number {
@@ -24,6 +26,10 @@ function estimateRowHeight(list: HTMLElement): number {
 
   if (width >= TABLE_MIN_WIDTH_PX) {
     return FALLBACK_ROW_HEIGHT_PX;
+  }
+
+  if (window.matchMedia(ACTIONS_ROW_MEDIA_QUERY).matches) {
+    return ACTIONS_ROW_TILE_HEIGHT_PX;
   }
 
   return width < NARROW_TILE_MAX_WIDTH_PX ? NARROW_TILE_ROW_HEIGHT_PX : TILE_ROW_HEIGHT_PX;
@@ -63,6 +69,7 @@ export interface QuotesList {
   readonly listRef: RefObject<HTMLDivElement | null>;
 }
 
+/** Owns the quote list query, search, status filter and paging for the Quotes page. */
 export function useQuotesListState({ showErrorToast }: UseQuotesListStateParams): QuotesList {
   const scope = useAuthQueryScope();
   const listRef = useRef<HTMLDivElement | null>(null);

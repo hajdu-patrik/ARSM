@@ -53,10 +53,10 @@ export const toolbarActionsWrapperClass = 'flex min-w-0 max-w-full grow flex-wra
 /** Toolbar button inside `toolbarActionsWrapperClass`: fills its row below sm, keeps its own width from sm up. */
 export const toolbarActionGrowClass = 'grow sm:grow-0';
 
-/** Compact row header layout shared by vehicle, catalog, and quote row/card components. */
-export const compactRowHeaderClass = 'flex min-w-0 items-start justify-between gap-2';
-/** Compact row actions cluster paired with `compactRowHeaderClass`, wrapping under very narrow widths. */
-export const compactRowActionsClusterClass = 'flex shrink-0 items-center gap-1 max-[350px]:flex-wrap max-[350px]:justify-end';
+/** Compact row header shared by vehicle, catalog and quote rows; below 350px the text block takes the line and the actions drop below. */
+export const compactRowHeaderClass = 'flex min-w-0 items-start justify-between gap-2 max-[350px]:flex-wrap max-[350px]:*:first:basis-full';
+/** Compact row actions cluster paired with `compactRowHeaderClass`; below 350px it sits right-aligned on its own row. */
+export const compactRowActionsClusterClass = 'flex shrink-0 items-center gap-1 max-[350px]:ml-auto max-[350px]:justify-end';
 
 /** Centered loading wrapper shared by list/calendar sections while their async data resolves. */
 export const centeredLoadingWrapperClass = 'flex min-w-0 items-center justify-center py-12';

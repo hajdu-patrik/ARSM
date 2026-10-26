@@ -27,7 +27,7 @@ export interface DataListBreakpointClasses {
   readonly fullSpan: string;
   /** Wrapper of the value cells: spans the tile row, dissolves in the table so its cells become row items. */
   readonly values: string;
-  /** Cell pinned to the end of the tile header line (row actions). */
+  /** Cell pinned to the end of the tile header line (row actions); below 350px it drops to its own right-aligned row. */
   readonly headerEnd: string;
   /** Bordered surface of a tile cell. */
   readonly tileSurface: string;
@@ -50,7 +50,7 @@ export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreak
     row: '@lg:col-span-full @lg:grid @lg:grid-cols-subgrid @lg:items-center @max-lg:grid @max-lg:grid-cols-[minmax(0,1fr)_auto] @max-lg:gap-y-2',
     fullSpan: '@lg:col-span-full',
     values: '@max-lg:col-span-2 @max-lg:min-w-0 @lg:contents',
-    headerEnd: '@max-lg:col-start-2 @max-lg:row-start-1 @max-lg:ml-2 @max-lg:self-start',
+    headerEnd: '@max-lg:self-start @max-lg:min-[351px]:col-start-2 @max-lg:min-[351px]:row-start-1 @max-lg:min-[351px]:ml-2 @max-lg:max-[350px]:col-span-2 @max-lg:max-[350px]:row-start-2 @max-lg:max-[350px]:justify-self-end',
     tileSurface: '@max-lg:rounded-xl @max-lg:border @max-lg:border-ui-border @max-lg:bg-ui-input @max-lg:px-3 @max-lg:py-2',
     tilesOnly: '@lg:hidden',
     tileWrap: '@max-lg:overflow-visible @max-lg:text-clip @max-lg:whitespace-normal @max-lg:[overflow-wrap:anywhere]',
@@ -64,7 +64,7 @@ export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreak
     row: '@3xl:col-span-full @3xl:grid @3xl:grid-cols-subgrid @3xl:items-center @max-3xl:grid @max-3xl:grid-cols-[minmax(0,1fr)_auto] @max-3xl:gap-y-2',
     fullSpan: '@3xl:col-span-full',
     values: '@max-3xl:col-span-2 @max-3xl:min-w-0 @3xl:contents',
-    headerEnd: '@max-3xl:col-start-2 @max-3xl:row-start-1 @max-3xl:ml-2 @max-3xl:self-start',
+    headerEnd: '@max-3xl:self-start @max-3xl:min-[351px]:col-start-2 @max-3xl:min-[351px]:row-start-1 @max-3xl:min-[351px]:ml-2 @max-3xl:max-[350px]:col-span-2 @max-3xl:max-[350px]:row-start-2 @max-3xl:max-[350px]:justify-self-end',
     tileSurface: '@max-3xl:rounded-xl @max-3xl:border @max-3xl:border-ui-border @max-3xl:bg-ui-input @max-3xl:px-3 @max-3xl:py-2',
     tilesOnly: '@3xl:hidden',
     tileWrap: '@max-3xl:overflow-visible @max-3xl:text-clip @max-3xl:whitespace-normal @max-3xl:[overflow-wrap:anywhere]',
@@ -78,7 +78,7 @@ export const dataListBreakpointClasses: Record<DataListBreakpoint, DataListBreak
     row: '@4xl:col-span-full @4xl:grid @4xl:grid-cols-subgrid @4xl:items-center @max-4xl:grid @max-4xl:grid-cols-[minmax(0,1fr)_auto] @max-4xl:gap-y-2',
     fullSpan: '@4xl:col-span-full',
     values: '@max-4xl:col-span-2 @max-4xl:min-w-0 @4xl:contents',
-    headerEnd: '@max-4xl:col-start-2 @max-4xl:row-start-1 @max-4xl:ml-2 @max-4xl:self-start',
+    headerEnd: '@max-4xl:self-start @max-4xl:min-[351px]:col-start-2 @max-4xl:min-[351px]:row-start-1 @max-4xl:min-[351px]:ml-2 @max-4xl:max-[350px]:col-span-2 @max-4xl:max-[350px]:row-start-2 @max-4xl:max-[350px]:justify-self-end',
     tileSurface: '@max-4xl:rounded-xl @max-4xl:border @max-4xl:border-ui-border @max-4xl:bg-ui-input @max-4xl:px-3 @max-4xl:py-2',
     tilesOnly: '@4xl:hidden',
     tileWrap: '@max-4xl:overflow-visible @max-4xl:text-clip @max-4xl:whitespace-normal @max-4xl:[overflow-wrap:anywhere]',

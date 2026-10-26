@@ -14,6 +14,7 @@ interface SchedulerSummaryStripProps {
 	readonly t: TFunction;
 }
 
+/** Presentational strip showing the summary date text and the scheduled-count pill. */
 export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 	summaryDateText,
 	summaryCount,
@@ -23,7 +24,7 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 		<section className={`${insetSurfaceClass} px-4 py-3.5`}>
 			<div className={compactStackedRowClass}>
 				<p className={`min-w-0 [overflow-wrap:anywhere] ${compactSectionHeadingTextClass}`}>{summaryDateText}</p>
-				<span className="inline-flex shrink-0 items-center rounded-full border border-ui-border bg-ui-toggle px-3 py-1 text-xs font-semibold text-arsm-primary dark:text-arsm-hover">
+				<span className="inline-flex shrink-0 items-center self-start rounded-full sm:self-auto border border-ui-border bg-ui-toggle px-3 py-1 text-xs font-semibold text-arsm-primary dark:text-arsm-hover">
 					{t('scheduler.scheduledCount', { count: summaryCount })}
 				</span>
 			</div>

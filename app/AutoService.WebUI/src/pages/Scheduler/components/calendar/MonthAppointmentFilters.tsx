@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Dropdown } from '../../../../components/common/Dropdown';
-import { compactFilterChipNeutralButtonClass, filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
+import { filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
-import { schedulerChipLabelClass, schedulerMonthClearFilterButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
+import { schedulerChipLabelClass, schedulerMonthClearFilterButtonClass, schedulerSortButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
 const schedulerControlRowClass = 'flex min-w-0 max-w-full flex-wrap items-center gap-2';
 /** Sort and clear-day chips share one row; their columns shrink equally (labels wrap) only when the row is too narrow. */
@@ -51,7 +51,7 @@ export const MonthAppointmentSortControls = memo(function MonthAppointmentSortCo
 
   return (
     <div className={schedulerSortControlsRowClass}>
-      <button type="button" onClick={onToggleSort} className={compactFilterChipNeutralButtonClass} title={t('scheduler.monthList.sortByDate')}>
+      <button type="button" onClick={onToggleSort} className={schedulerSortButtonClass} title={t('scheduler.monthList.sortByDate')}>
         <ArrowUpDown className={smallIconClass} />
         <span className={schedulerChipLabelClass}>{sortAsc ? t('scheduler.monthList.sortAsc') : t('scheduler.monthList.sortDesc')}</span>
       </button>
@@ -111,7 +111,7 @@ export const MonthAppointmentFilters = memo(function MonthAppointmentFilters({
 
       <div className={filterSelectCompactWrapperClass} title={selectedMechanicName}>
         <Dropdown
-          size="compact"
+          size="compactSlim"
           value={selectedMechanicId === null ? '' : String(selectedMechanicId)}
           options={mechanicOptions}
           ariaLabel={t('scheduler.monthList.mechanicAll')}

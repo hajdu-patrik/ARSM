@@ -53,7 +53,7 @@ export const InventoryPage = memo(function InventoryPage() {
               onKeyDown={(event) => {
                 tabs.handleTabKeyDown(event, tab);
               }}
-              className={getSegmentedControlOptionClass(isActive)}
+              className={`${getSegmentedControlOptionClass(isActive)} text-center [overflow-wrap:anywhere]`}
             >
               {t(INVENTORY_TAB_LABEL_KEYS[tab])}
             </button>

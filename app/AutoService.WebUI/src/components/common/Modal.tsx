@@ -21,6 +21,9 @@ interface ModalProps {
   readonly variant?: 'default' | 'confirm';
 }
 
+/** Caps every dialog at the dynamic viewport height minus the overlay padding, so a tall one scrolls instead of clipping. */
+const DIALOG_MAX_HEIGHT_CLASS = 'max-h-[calc(100dvh-2rem)] max-[320px]:max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)]';
+
 /** Elements that can take part in the Tab sequence. */
 const TABBABLE_SELECTOR = 'a[href], button, input, select, textarea, [tabindex]';
 
@@ -119,8 +122,8 @@ export const Modal = memo(function Modal({
   const isConfirmVariant = variant === 'confirm';
   const resolvedWidthClassName = widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md');
   const dialogFitClass = fitViewport
-    ? 'flex max-h-[calc(100dvh-2rem)] flex-col max-[320px]:max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)]'
-    : '';
+    ? `flex flex-col overflow-hidden ${DIALOG_MAX_HEIGHT_CLASS}`
+    : `overflow-y-auto overflow-x-hidden ${DIALOG_MAX_HEIGHT_CLASS}`;
   const bodyClasses = [isConfirmVariant ? 'mx-auto max-w-[32rem] text-center' : '', fitViewport ? 'flex min-h-0 flex-1 flex-col' : '']
     .filter(Boolean)
     .join(' ');
@@ -148,7 +151,7 @@ export const Modal = memo(function Modal({
         aria-labelledby={titleId}
         aria-modal="true"
         tabIndex={-1}
-        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} ${dialogFitClass} overflow-hidden rounded-2xl border-[2.5px] border-arsm-primary/60 bg-ui-card p-5 text-ui-text transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark sm:p-6 ${feedbackFrameClass}`}
+        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} ${dialogFitClass} rounded-2xl border-[2.5px] border-arsm-primary/60 bg-ui-card p-5 text-ui-text transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark sm:p-6 ${feedbackFrameClass}`}
       >
         <div className={`mb-4 min-w-0 ${fitViewport ? 'shrink-0' : ''} ${isConfirmVariant ? 'relative flex min-h-11 items-center justify-center' : 'flex items-center justify-between gap-3'}`}>
           <h2 id={titleId} className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-xl font-semibold [overflow-wrap:anywhere] sm:text-2xl' : 'text-lg font-semibold [overflow-wrap:anywhere]'}`}>{title}</h2>
