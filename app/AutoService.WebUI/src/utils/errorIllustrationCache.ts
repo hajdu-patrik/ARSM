@@ -1,12 +1,11 @@
 /** Client-side cache helpers for 404/500 error-page illustrations. */
 
 import { logError } from './devLog';
+import { ERROR_PAGE_IMAGE_CACHED_AT_KEY_PREFIX, ERROR_PAGE_IMAGES_CACHE_NAME } from './browserStorageKeys';
 import { readStorage, writeStorage } from './safeStorage';
 
-const ERROR_ILLUSTRATION_CACHE_NAME = 'arsm-error-illustrations-v1';
 const ERROR_ILLUSTRATION_PATHS = ['/Error-404.webp', '/Error-500.webp'] as const;
 const ERROR_ILLUSTRATION_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const ERROR_ILLUSTRATION_CACHE_TS_PREFIX = 'arsm-error-illustration-ts:';
 /** Latest start of the cache warm-up: it runs when the browser is idle, at the latest after this delay. */
 const WARM_UP_DEADLINE_MS = 3000;
 
@@ -24,7 +23,7 @@ function canUseCacheStorage(): boolean {
 /** Opens the illustration cache, or returns null when Cache Storage refuses (for example in a private window). */
 async function openIllustrationCache(): Promise<Cache | null> {
   try {
-    return await globalThis.caches.open(ERROR_ILLUSTRATION_CACHE_NAME);
+    return await globalThis.caches.open(ERROR_PAGE_IMAGES_CACHE_NAME);
   } catch (error) {
     logError('errorIllustrationCache.open', error);
     return null;
@@ -36,7 +35,7 @@ function toAbsoluteUrl(path: string): string {
 }
 
 function getTimestampKey(imagePath: string): string {
-  return `${ERROR_ILLUSTRATION_CACHE_TS_PREFIX}${imagePath}`;
+  return `${ERROR_PAGE_IMAGE_CACHED_AT_KEY_PREFIX}${imagePath}`;
 }
 
 function readCacheTimestamp(imagePath: string): number | null {
@@ -121,7 +120,7 @@ export async function clearErrorIllustrationCache(): Promise<void> {
   }
 
   try {
-    await globalThis.caches.delete(ERROR_ILLUSTRATION_CACHE_NAME);
+    await globalThis.caches.delete(ERROR_PAGE_IMAGES_CACHE_NAME);
   } catch (error) {
     logError('errorIllustrationCache.clear', error);
   }

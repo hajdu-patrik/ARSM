@@ -12,7 +12,7 @@ const REFRESH_DURATION_MS = 1500;
 
 /** The CSRF cookie the API rotates on every refresh (host-scoped, so both tabs and the API origin share it). */
 function csrfCookie(value: string, baseUrl: string) {
-  return { name: '__Host-autoservice_csrf', value, url: baseUrl, secure: true };
+  return { name: '__Host-arsm-csrf-token', value, url: baseUrl, secure: true };
 }
 
 /** Signs the tab in with a session whose first customers read is refused once, and times its refresh. */

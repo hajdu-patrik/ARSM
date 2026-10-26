@@ -3,11 +3,9 @@
 
 import { create } from 'zustand';
 import { readStorage, writeStorage } from '../utils/safeStorage';
+import { PREF_THEME_KEY } from '../utils/browserStorageKeys';
 
 type Theme = 'light' | 'dark';
-
-/** Local storage key of the saved theme choice; index.html's pre-paint script reads the same key. */
-const THEME_STORAGE_KEY = 'preferred-theme';
 
 const SYSTEM_DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
@@ -22,7 +20,7 @@ function applyThemeToDocument(theme: Theme): void {
 
 /** The theme the user picked earlier, or null while the system color scheme still decides. */
 function readSavedTheme(): Theme | null {
-  const savedTheme = readStorage('local', THEME_STORAGE_KEY);
+  const savedTheme = readStorage('local', PREF_THEME_KEY);
   return savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : null;
 }
 
@@ -52,7 +50,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   setTheme: (theme) => {
-    writeStorage('local', THEME_STORAGE_KEY, theme);
+    writeStorage('local', PREF_THEME_KEY, theme);
     applyThemeToDocument(theme);
     set({ theme, hasChosenTheme: true });
   },

@@ -18,11 +18,11 @@ UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # CSRF double-submit pair (Middleware/CsrfDoubleSubmitMiddleware): the cookie the client reads and the
 # header it echoes the value into on every unsafe, cookie-authenticated /api request.
-CSRF_COOKIE_NAME = "__Host-autoservice_csrf"
+CSRF_COOKIE_NAME = "__Host-arsm-csrf-token"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 
 # Refresh-token cookie (Auth/Session/AuthCookieNames), rotated by every login, refresh and password change.
-REFRESH_COOKIE_NAME = "__Host-autoservice_rt"
+REFRESH_COOKIE_NAME = "__Host-arsm-refresh-token"
 
 # urllib surfaces a server-side connection reset as an OSError rather than a status code.
 CONNECTION_RESET_STATUS = 0

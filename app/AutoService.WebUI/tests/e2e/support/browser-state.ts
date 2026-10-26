@@ -1,10 +1,14 @@
 import type { Page } from '@playwright/test';
+import {
+  AUTH_SESSION_HINT_KEY,
+  PREF_LANGUAGE_KEY,
+  PREF_SIDEBAR_COLLAPSED_KEY,
+  PREF_THEME_KEY,
+  SPLASH_FIRST_SHOWN_KEY,
+} from '../../../src/utils/browserStorageKeys';
 
 export type TestLanguage = 'en' | 'hu';
 export type TestTheme = 'light' | 'dark';
-
-/** localStorage flag the app sets once the browser showed its first splash (the 2500 ms intro). */
-const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
 
 interface PrimeBrowserStateOptions {
   readonly language?: TestLanguage;
@@ -20,7 +24,7 @@ interface PrimeBrowserStateOptions {
 export async function seedSplashShown(page: Page): Promise<void> {
   await page.addInitScript((key: string) => {
     localStorage.setItem(key, '1');
-  }, SPLASH_SHOWN_STORAGE_KEY);
+  }, SPLASH_FIRST_SHOWN_KEY);
 }
 
 /** Preloads deterministic browser state before the app boots: language, theme, sidebar state,
@@ -43,25 +47,32 @@ export async function primeBrowserState(page: Page, options: PrimeBrowserStateOp
     theme: TestTheme | 'system';
     sessionHint: boolean;
     sidebarCollapsed: boolean;
+    keys: { language: string; sidebar: string; theme: string; hint: string };
   }) => {
-    localStorage.setItem('preferred-language', state.language);
-    localStorage.setItem('preferred-sidebar-collapsed', state.sidebarCollapsed ? 'true' : 'false');
+    localStorage.setItem(state.keys.language, state.language);
+    localStorage.setItem(state.keys.sidebar, state.sidebarCollapsed ? 'true' : 'false');
 
     if (state.theme === 'system') {
-      localStorage.removeItem('preferred-theme');
+      localStorage.removeItem(state.keys.theme);
     } else {
-      localStorage.setItem('preferred-theme', state.theme);
+      localStorage.setItem(state.keys.theme, state.theme);
     }
 
     if (state.sessionHint) {
-      localStorage.setItem('autoservice-session-hint', '1');
+      localStorage.setItem(state.keys.hint, '1');
     } else {
-      localStorage.removeItem('autoservice-session-hint');
+      localStorage.removeItem(state.keys.hint);
     }
   }, {
     language,
     theme,
     sessionHint,
     sidebarCollapsed,
+    keys: {
+      language: PREF_LANGUAGE_KEY,
+      sidebar: PREF_SIDEBAR_COLLAPSED_KEY,
+      theme: PREF_THEME_KEY,
+      hint: AUTH_SESSION_HINT_KEY,
+    },
   });
 }

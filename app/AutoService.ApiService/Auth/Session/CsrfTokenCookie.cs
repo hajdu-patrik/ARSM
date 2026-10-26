@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace AutoService.ApiService.Auth.Session;
 
-/** Issues/clears the `__Host-autoservice_csrf` double-submit cookie (HttpOnly=false so script can read it);
+/** Issues/clears the `__Host-arsm-csrf-token` double-submit cookie (HttpOnly=false so script can read it);
     mirrors the refresh-token cookie's shape and lifetime so both expire together (see ApiService/CLAUDE.md). */
 internal static class CsrfTokenCookie
 {
@@ -19,8 +19,7 @@ internal static class CsrfTokenCookie
         response.Cookies.Append(AuthCookieNames.CsrfToken, token, BuildCookieOptions(ttl));
     }
 
-    /** Deletes the CSRF cookie; the __Host- prefix makes browsers ignore an expiry that is not Secure with Path=/.
-        Only AuthEndpoints.ClearSessionCookies calls this, alongside the `__Host-autoservice_at`/`__Host-autoservice_rt` deletions. */
+    /** Deletes the CSRF cookie; the __Host- prefix needs Secure and Path=/ on the deletion too. */
     internal static void Clear(HttpResponse response)
     {
         response.Cookies.Delete(AuthCookieNames.CsrfToken, new CookieOptions
@@ -31,7 +30,7 @@ internal static class CsrfTokenCookie
         });
     }
 
-    /** Builds the CSRF cookie options: readable by script (HttpOnly=false) so the WebUI can copy its value into the X-CSRF-Token header, otherwise matching the flags the refresh-token cookie uses in the same response. */
+    /** Cookie options: script-readable (HttpOnly=false), otherwise the same flags as the refresh cookie. */
     private static CookieOptions BuildCookieOptions(TimeSpan ttl) => new()
     {
         HttpOnly = false,

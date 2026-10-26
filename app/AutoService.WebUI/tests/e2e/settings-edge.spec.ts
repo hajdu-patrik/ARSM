@@ -62,7 +62,7 @@ test.describe('Settings edge cases', () => {
 
     await expect(themeToggle.locator('svg.lucide-moon')).toBeVisible();
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBe('dark');
+    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBe('dark');
 
     // The language button names the language it switches to: English is active, so it offers HU.
     await expect(languageToggle).toHaveText('HU');
@@ -70,7 +70,7 @@ test.describe('Settings edge cases', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'hu');
     await expect(languageToggle).toHaveText('EN');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('preferred-language'))).toBe('hu');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('arsm.pref.language'))).toBe('hu');
   });
 
   test('keeps profile deletion disabled until password confirmation matches', async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe('Settings edge cases', () => {
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator('output[aria-live="polite"]')).toContainText(/Profile deleted successfully|Profil sikeresen törölve/i);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
+    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
     expect(sessionHint).toBeNull();
   });
 });
@@ -117,7 +117,7 @@ test.describe('Theme default', () => {
     const html = page.locator('html');
 
     await expect(html).toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBeNull();
 
     await page.emulateMedia({ colorScheme: 'light' });
     await expect(html).not.toHaveClass(/\bdark\b/);
@@ -131,7 +131,7 @@ test.describe('Theme default', () => {
 
     await page.getByTestId('theme-mode-toggle').click();
     await expect(html).not.toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('preferred-theme'))).toBe('light');
+    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBe('light');
 
     // The system goes light and back to dark; the picked light theme stays.
     await page.emulateMedia({ colorScheme: 'light' });

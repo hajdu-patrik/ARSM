@@ -10,6 +10,7 @@ import { authService } from '../../services/auth/auth.service';
 import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import { focusVisibleOutlineClass, largeIconClass, sidebarShellIconButtonClass } from '../../utils/formStyles';
 import { readStorage, writeStorage } from '../../utils/safeStorage';
+import { PREF_SIDEBAR_COLLAPSED_KEY } from '../../utils/browserStorageKeys';
 import { ThemeLanguageControls } from './ThemeLanguageControls';
 import { SidebarContent, type NavItem } from './SidebarContent';
 import { useSidebarProfile } from './useSidebarProfile';
@@ -19,7 +20,6 @@ interface SidebarLayoutProps {
   readonly navItems?: readonly NavItem[] | undefined;
 }
 
-const COLLAPSED_KEY = 'preferred-sidebar-collapsed';
 /** Id of the `<main>` landmark, which the skip link jumps to. */
 const MAIN_CONTENT_ID = 'main-content';
 /** Hidden until it takes keyboard focus, then drawn over the top-left corner of the page. */
@@ -29,7 +29,7 @@ const TABLET_VIEWPORT_QUERY = '(width >= 48rem) and (width < 64rem)';
 
 /** Reads the saved collapse choice; null until the user toggled once, so the viewport default applies. */
 function readSavedCollapsedPreference(): boolean | null {
-  const saved = readStorage('local', COLLAPSED_KEY);
+  const saved = readStorage('local', PREF_SIDEBAR_COLLAPSED_KEY);
 
   if (saved === 'true' || saved === 'false') {
     return saved === 'true';
@@ -60,7 +60,7 @@ function useSidebarCollapsed() {
 
   const toggleCollapse = useCallback(() => {
     const next = !collapsed;
-    writeStorage('local', COLLAPSED_KEY, String(next));
+    writeStorage('local', PREF_SIDEBAR_COLLAPSED_KEY, String(next));
     setSavedPreference(next);
   }, [collapsed]);
 

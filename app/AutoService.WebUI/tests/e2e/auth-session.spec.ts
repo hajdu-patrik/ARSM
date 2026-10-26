@@ -44,7 +44,7 @@ test.describe('Auth session security flows', () => {
     await page.goto('/customers');
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
+    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
     expect(sessionHint).toBeNull();
   });
 
@@ -58,7 +58,7 @@ test.describe('Auth session security flows', () => {
     await page.getByRole('button', { name: /Log out|Kijelentkezés/i }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
+    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
     expect(sessionHint).toBeNull();
     expect(await getTokenLikeStorageKeys(page)).toEqual([]);
   });

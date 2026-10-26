@@ -9,11 +9,11 @@ import {
   type PersistQueryClientOptions,
 } from '@tanstack/react-query-persist-client';
 import { logError } from '../../utils/devLog';
+import { LEGACY_QUERY_CACHE_PRIVATE_KEY, QUERY_CACHE_PRIVATE_KEY } from '../../utils/browserStorageKeys';
 import { readStorage, removeStorage, writeStorage } from '../../utils/safeStorage';
 import { isRecord } from '../http/record-guard';
 import {
   PERSISTED_QUERY_CACHE_BUSTER,
-  PERSISTED_QUERY_CACHE_KEY,
   PERSISTED_QUERY_CACHE_MAX_AGE_MS,
   PERSISTED_QUERY_CACHE_WRITE_THROTTLE_MS,
 } from './cache-policy';
@@ -74,7 +74,7 @@ function createThrottledSessionPersister(): ThrottledPersister {
     }
 
     try {
-      writeStorage('session', PERSISTED_QUERY_CACHE_KEY, JSON.stringify(client));
+      writeStorage('session', QUERY_CACHE_PRIVATE_KEY, JSON.stringify(client));
     } catch (error) {
       logError('queryCache.persist', error);
     }
@@ -95,14 +95,14 @@ function createThrottledSessionPersister(): ThrottledPersister {
       writeTimer ??= setTimeout(flushPendingWrite, PERSISTED_QUERY_CACHE_WRITE_THROTTLE_MS);
     },
     restoreClient: () => {
-      const storedValue = readStorage('session', PERSISTED_QUERY_CACHE_KEY);
+      const storedValue = readStorage('session', QUERY_CACHE_PRIVATE_KEY);
       if (storedValue === null) {
         return undefined;
       }
 
       const restoredClient = parsePersistedClient(storedValue);
       if (restoredClient === null) {
-        removeStorage('session', PERSISTED_QUERY_CACHE_KEY);
+        removeStorage('session', QUERY_CACHE_PRIVATE_KEY);
         return undefined;
       }
 
@@ -110,7 +110,7 @@ function createThrottledSessionPersister(): ThrottledPersister {
     },
     removeClient: () => {
       cancelPendingWrite();
-      removeStorage('session', PERSISTED_QUERY_CACHE_KEY);
+      removeStorage('session', QUERY_CACHE_PRIVATE_KEY);
     },
     cancelPendingWrite,
   };
@@ -162,5 +162,5 @@ export function startQueryCachePersistence(personId: number): () => void {
 export function clearArsmQueryCache(): void {
   queryClient.clear();
   privateCachePersister.removeClient();
-  removeStorage('local', PERSISTED_QUERY_CACHE_KEY);
+  removeStorage('local', LEGACY_QUERY_CACHE_PRIVATE_KEY);
 }

@@ -34,7 +34,7 @@ const COMBOS: ReadonlyArray<{ lang: TestLanguage; theme: TestTheme }> = [
 /** Installs the mock, seeds worst-case list data, forces the theme before login, and logs in. */
 async function bootListAlignment(page: Page, lang: TestLanguage, theme: TestTheme): Promise<void> {
   await page.addInitScript((value) => {
-    localStorage.setItem('preferred-theme', value);
+    localStorage.setItem('arsm.pref.theme', value);
   }, theme);
 
   const env = getAppointmentFlowEnv();
@@ -48,7 +48,7 @@ async function bootListAlignment(page: Page, lang: TestLanguage, theme: TestThem
  * scripts apply in registration order and its own would otherwise reset this back to `'false'`. */
 async function forceSidebarCollapsed(page: Page, collapsed: boolean): Promise<void> {
   await page.addInitScript((value) => {
-    localStorage.setItem('preferred-sidebar-collapsed', value);
+    localStorage.setItem('arsm.pref.sidebarCollapsed', value);
   }, collapsed ? 'true' : 'false');
 }
 

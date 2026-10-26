@@ -3,6 +3,7 @@
 
 import { create } from 'zustand';
 import { isRecord } from '../services/http/record-guard';
+import { SCHEDULER_SELECTED_VIEW_KEY } from '../utils/browserStorageKeys';
 import { readStorage, removeStorage, writeStorage } from '../utils/safeStorage';
 
 interface SchedulerState {
@@ -14,8 +15,6 @@ interface SchedulerState {
   setCalendarMonth: (year: number, month: number) => void;
   setSelectedDay: (day: number | null) => void;
 }
-
-const SCHEDULER_SESSION_KEY = 'scheduler-selected-view';
 
 interface SchedulerSessionState {
   year: number;
@@ -45,7 +44,7 @@ function parseSessionState(value: unknown, fallback: SchedulerSessionState): Sch
 
 /** Reads the persisted scheduler view state from `sessionStorage`, falling back to today's date. */
 function readSessionState(fallback: SchedulerSessionState): SchedulerSessionState {
-  const raw = readStorage('session', SCHEDULER_SESSION_KEY);
+  const raw = readStorage('session', SCHEDULER_SELECTED_VIEW_KEY);
   if (raw === null) {
     return fallback;
   }
@@ -59,7 +58,7 @@ function readSessionState(fallback: SchedulerSessionState): SchedulerSessionStat
 
 /** Persists the current scheduler view state to `sessionStorage`; a blocked storage is ignored. */
 function writeSessionState(state: SchedulerSessionState): void {
-  writeStorage('session', SCHEDULER_SESSION_KEY, JSON.stringify(state));
+  writeStorage('session', SCHEDULER_SELECTED_VIEW_KEY, JSON.stringify(state));
 }
 
 export const useSchedulerStore = create<SchedulerState>((set, get) => {
@@ -85,6 +84,6 @@ export const useSchedulerStore = create<SchedulerState>((set, get) => {
 export function clearSchedulerSession(): void {
   const today = viewOfDate(new Date());
 
-  removeStorage('session', SCHEDULER_SESSION_KEY);
+  removeStorage('session', SCHEDULER_SELECTED_VIEW_KEY);
   useSchedulerStore.setState({ calendarYear: today.year, calendarMonth: today.month, selectedDay: today.day });
 }

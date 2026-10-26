@@ -30,6 +30,23 @@ export function writeStorage(area: StorageArea, key: string, value: string): voi
   }
 }
 
+/** Lists the keys starting with a prefix; empty when storage is unavailable. */
+export function listStorageKeys(area: StorageArea, prefix: string): string[] {
+  try {
+    const storage = resolveStorage(area);
+    const keys: string[] = [];
+    for (let index = 0; index < (storage?.length ?? 0); index += 1) {
+      const key = storage?.key(index);
+      if (key?.startsWith(prefix)) {
+        keys.push(key);
+      }
+    }
+    return keys;
+  } catch {
+    return [];
+  }
+}
+
 /** Removes a key; unavailable storage is ignored. */
 export function removeStorage(area: StorageArea, key: string): void {
   try {

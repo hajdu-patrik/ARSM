@@ -81,11 +81,16 @@ public static partial class AuthEndpoints
         CsrfTokenCookie.Issue(response, RefreshTokenTtl);
     }
 
-    /** Clears the complete session cookie set; the counterpart of IssueSessionCookies. Logout and profile deletion both go through here. */
+    /** Clears the complete session cookie set; the counterpart of IssueSessionCookies. */
     internal static void ClearSessionCookies(HttpResponse response)
     {
         response.Cookies.Delete(AuthCookieNames.AccessToken, BuildAuthCookieDeletionOptions());
         response.Cookies.Delete(AuthCookieNames.RefreshToken, BuildAuthCookieDeletionOptions());
         CsrfTokenCookie.Clear(response);
+
+        // Legacy pre-rename cookies, deleted so they do not linger in the browser.
+        response.Cookies.Delete(AuthCookieNames.LegacyAccessToken, BuildAuthCookieDeletionOptions());
+        response.Cookies.Delete(AuthCookieNames.LegacyRefreshToken, BuildAuthCookieDeletionOptions());
+        response.Cookies.Delete(AuthCookieNames.LegacyCsrfToken, BuildAuthCookieDeletionOptions());
     }
 }

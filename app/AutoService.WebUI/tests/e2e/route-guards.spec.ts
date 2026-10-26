@@ -13,7 +13,7 @@ test.describe('Auth and role route guards', () => {
     await page.goto('/customers');
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('autoservice-session-hint'));
+    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
     expect(sessionHint).toBeNull();
   });
 

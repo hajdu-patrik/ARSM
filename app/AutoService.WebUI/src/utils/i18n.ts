@@ -1,9 +1,10 @@
 /** i18next setup: only the active language bundle is on the start-up path; the other one loads on
- * the first switch. The language is the saved `preferred-language`, else Hungarian. */
+ * the first switch. The language is the saved `arsm.pref.language`, else Hungarian. */
 
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { logError } from './devLog';
+import { PREF_LANGUAGE_KEY } from './browserStorageKeys';
 import type { en } from './locales/en';
 import type { hu } from './locales/hu';
 import { readStorage, writeStorage } from './safeStorage';
@@ -11,8 +12,6 @@ import { readStorage, writeStorage } from './safeStorage';
 export type AppLanguage = 'hu' | 'en';
 
 type LocaleBundle = typeof en | typeof hu;
-
-const LANGUAGE_STORAGE_KEY = 'preferred-language';
 
 const DEFAULT_LANGUAGE: AppLanguage = 'hu';
 
@@ -27,7 +26,7 @@ const bundleLoaders: Record<AppLanguage, () => Promise<LocaleBundle>> = {
 
 /** Saved language preference, or Hungarian when nothing usable is stored. */
 function resolveInitialLanguage(): AppLanguage {
-  const saved = readStorage('local', LANGUAGE_STORAGE_KEY);
+  const saved = readStorage('local', PREF_LANGUAGE_KEY);
   return saved !== null && saved.toLowerCase().startsWith('en') ? 'en' : DEFAULT_LANGUAGE;
 }
 
@@ -80,5 +79,5 @@ export async function changeAppLanguage(language: AppLanguage): Promise<void> {
   }
 
   await i18next.changeLanguage(language);
-  writeStorage('local', LANGUAGE_STORAGE_KEY, language);
+  writeStorage('local', PREF_LANGUAGE_KEY, language);
 }

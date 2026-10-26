@@ -1,9 +1,9 @@
-/** Reads the non-HttpOnly `__Host-autoservice_csrf` cookie so unsafe requests can echo it as the
+/** Reads the non-HttpOnly `__Host-arsm-csrf-token` cookie so unsafe requests can echo it as the
  * `X-CSRF-Token` header; cookies are host-scoped (not port-scoped), so this works across the dev cross-origin split. */
 
-const CSRF_COOKIE_NAME = '__Host-autoservice_csrf';
+import { AUTH_CSRF_COOKIE_NAME } from '../../utils/browserStorageKeys';
 
-/** Reads the `__Host-autoservice_csrf` cookie value as-is (base64url needs no percent-decoding), or null if unset. */
+/** Reads the `__Host-arsm-csrf-token` cookie value as-is (base64url needs no percent-decoding), or null if unset. */
 export function readCsrfCookie(): string | null {
   if (!document.cookie) {
     return null;
@@ -15,7 +15,7 @@ export function readCsrfCookie(): string | null {
       continue;
     }
 
-    if (cookiePair.slice(0, separatorIndex) === CSRF_COOKIE_NAME) {
+    if (cookiePair.slice(0, separatorIndex) === AUTH_CSRF_COOKIE_NAME) {
       return cookiePair.slice(separatorIndex + 1);
     }
   }

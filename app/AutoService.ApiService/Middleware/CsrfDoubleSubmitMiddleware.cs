@@ -4,7 +4,7 @@ using AutoService.ApiService.Auth.Session;
 
 namespace AutoService.ApiService.Middleware;
 
-/** Enforces the CSRF double-submit check (X-CSRF-Token header must equal the __Host-autoservice_csrf
+/** Enforces the CSRF double-submit check (X-CSRF-Token header must equal the __Host-arsm-csrf-token
     cookie) on unsafe API requests, right after the Origin check; login is exempt (see ApiService/CLAUDE.md). */
 public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
 {
@@ -38,14 +38,14 @@ public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
         });
     }
 
-    /** True when the request is unsafe, cookie-bearing and API-targeted (per UnsafeCookieRequestClassifier), and is not the login route, which is always exempt from the CSRF check. */
+    /** True for unsafe cookie-bearing API requests, except the login route, which is exempt. */
     private static bool RequiresCsrfProof(HttpContext context)
     {
         return UnsafeCookieRequestClassifier.IsUnsafeCookieBearingApiRequest(context)
             && !context.Request.Path.Equals(LoginPath, StringComparison.OrdinalIgnoreCase);
     }
 
-    /** Compares the header and cookie values in fixed time over their UTF-8 bytes, after rejecting a missing/empty header or cookie outright. */
+    /** Rejects a missing header or cookie, then compares both in fixed time. */
     private static bool IsValidCsrfToken(string headerValue, string? cookieValue)
     {
         if (string.IsNullOrEmpty(headerValue) || string.IsNullOrEmpty(cookieValue))

@@ -26,7 +26,7 @@ const LOGOUT_PATH = '/api/auth/logout';
 const VALIDATE_PATH = '/api/auth/validate';
 const REFRESH_EXCLUDED_PATHS = [LOGIN_PATH, REFRESH_PATH, LOGOUT_PATH, VALIDATE_PATH];
 
-/** Request header that must echo the `__Host-autoservice_csrf` cookie on unsafe requests. */
+/** Request header that must echo the `__Host-arsm-csrf-token` cookie on unsafe requests. */
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
 /** HTTP methods the CSRF header attaches to; GET/HEAD/OPTIONS are excluded to avoid a needless CORS preflight. */

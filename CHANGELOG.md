@@ -99,6 +99,20 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Self-explaining browser storage names (2026-10-26). Every localStorage, sessionStorage and Cache Storage name follows
+  `arsm.<area>.<purpose>` (`arsm.pref.theme`, `arsm.auth.sessionHint`, `arsm.queryCache.private`, `arsm.errorPage.images.v1`, ...),
+  so the DevTools Application tab shows what each entry stores and why. All names live in the new
+  `src/utils/browserStorageKeys.ts` (constants mirror the key, e.g. `PREF_THEME_KEY`); `app/AutoService.WebUI/CLAUDE.md` has the
+  store/key/content/purpose table. The auth cookies are now `__Host-arsm-access-token`, `__Host-arsm-refresh-token` and
+  `__Host-arsm-csrf-token` (every user signs in once after deploy); `ClearSessionCookies` also deletes the legacy
+  `__Host-autoservice_*` cookies. `legacyStorageMigration.ts` runs first at start-up: it copies each legacy key to its new name
+  when that is absent and removes the legacy key, deletes the old image timestamps and image cache; `index.html` and the teszt
+  gate page fall back to the legacy theme/language keys, so the first load shows no theme flash. `safeStorage` gains a guarded
+  `listStorageKeys`. The E2E specs, HTTP suites and `http_check_support.py` follow the new cookie names. Validate, the HTTP and
+  SQL suites and the full Playwright suite pass.
+
+_Dev time: ~34m wall-clock (2026-10-26 09:52 to 10:26 +01:00, two arsm-chain runs, a hand-fixed typo and the test runs). Cost: ~$1.05 output-token-only estimate (105k output tokens, sonnet only; excludes input tokens and cache, so a lower bound)._
+
 - Customers: the whole vehicle tile selects the vehicle (2026-10-23). A click or Enter/Space anywhere on a vehicle tile,
   outside its quote, edit and delete buttons, shows that vehicle's repair history on the right, and a second one returns to the
   customer history; the Eye button is gone from the row. The tile uses the Scheduler `AppointmentCard` full-surface overlay

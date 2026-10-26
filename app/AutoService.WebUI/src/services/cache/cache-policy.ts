@@ -4,10 +4,8 @@ const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
-export const PERSISTED_QUERY_CACHE_KEY = 'arsm-private-query-cache';
-
 /** Cache buster base for persisted query data; the person id is appended, so one user's payload never restores for another. */
-export const PERSISTED_QUERY_CACHE_BUSTER = 'arsm-private-query-cache-v2';
+export const PERSISTED_QUERY_CACHE_BUSTER = 'arsm.queryCache.private.v2';
 
 /** Maximum age of persisted data and default garbage-collection time of every query (at most 24 h). */
 export const PERSISTED_QUERY_CACHE_MAX_AGE_MS = DAY_MS;

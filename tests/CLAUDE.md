@@ -29,7 +29,7 @@
   `recordGetRequests` (`support/request-log.ts`) collects the GET URLs of one path and `getTokenLikeStorageKeys`
   (`support/token-storage.ts`) lists token-looking storage keys; a spec uses them instead of declaring its own.
 - CSRF double-submit pattern (httpyac): every login/refresh/password-change request carries a
-  post-response script that exports the `__Host-autoservice_csrf` value from that response's `Set-Cookie`
+  post-response script that exports the `__Host-arsm-csrf-token` value from that response's `Set-Cookie`
   header, and every later unsafe request that carries the auth cookie echoes it back as
   `X-CSRF-Token`. Reference snippet - copy verbatim:
 
@@ -41,7 +41,7 @@
   { "email": "{{SomeEmail}}", "password": "{{SomePassword}}" }
 
   {{
-    exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+    exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
   }}
 
   ?? status == 200
@@ -69,7 +69,7 @@
 - Never hardcode credentials, hosts, or connection strings.
 - `.secrets` for Playwright plus the read-only `ARSM_MCP_POSTGRES_CONNECTION_STRING` used by the sql suite; `tests/.env` for HTTP. Templates: `.secrets.example` and `tests/.env.example`.
 - HTTP cookie-auth mutation suites use `ARSM_TEST_WEBUI_ORIGIN` for the allowed `Origin` header.
-- The CSRF double-submit token (`__Host-autoservice_csrf` cookie / `X-CSRF-Token` header, see Core Rules) is
+- The CSRF double-submit token (`__Host-arsm-csrf-token` cookie / `X-CSRF-Token` header, see Core Rules) is
   always read back from a named login/refresh/password-change response at run time - never hardcoded
   as a literal, and never printed or logged.
 - Keep tracked MCP SQL templates (`.claude/.mcp.template.json`, `.vscode/mcp.template.json`, `.env.example`) placeholder-based; local gitignored `.claude/.mcp.json`, `.vscode/mcp.json`, and `.env` must hold the concrete read-only PostgreSQL URI for `ai_agent_test_user` on developer machines.
@@ -117,7 +117,7 @@
   without the header is refused the same way and leaves its disposable catalog part in place, and the
   correct token (read from the login response's `Set-Cookie`, see Core Rules) passes; every unsafe request across
   `tests/API/auth/`, `tests/API/_setup/` and `tests/API/profile/` that carries the auth cookie sends the
-  same header. `http_check_support.HttpClient` adds it automatically from the `__Host-autoservice_csrf` cookie
+  same header. `http_check_support.HttpClient` adds it automatically from the `__Host-arsm-csrf-token` cookie
   in its jar on unsafe methods, so the Python checks needed no per-call change.
 - `people` profile-picture column contract and the legacy-column-removal post-condition check in `tests/Database/core-schema/core-schema-contracts.sql`.
 - Every `tests/API/**/*.http` suite asserts status codes in-file with httpyac `?? status == N`, so the

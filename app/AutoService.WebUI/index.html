@@ -69,7 +69,7 @@
         // The theme store's rule, applied before the first paint: the saved choice, else the system scheme.
         let savedTheme = null;
         try {
-          savedTheme = localStorage.getItem('preferred-theme');
+          savedTheme = localStorage.getItem('arsm.pref.theme') ?? localStorage.getItem('preferred-theme');
         } catch {
           // Storage unavailable: follow the system color scheme, exactly like the theme store.
         }
@@ -95,7 +95,9 @@
           return;
         }
         try {
-          if (sessionStorage.getItem('autoservice-skip-loading-splash-on-next-boot') === '1') {
+          const skipFlag = sessionStorage.getItem('arsm.splash.skipOnNextBoot')
+            ?? sessionStorage.getItem('autoservice-skip-loading-splash-on-next-boot');
+          if (skipFlag === '1') {
             return;
           }
         } catch {

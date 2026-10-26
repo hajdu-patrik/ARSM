@@ -26,7 +26,7 @@ async function openScheduler(page: Page, viewedOffset: number): Promise<{ months
   await installApiMocks(page, { profileEmail: 'scheduler.reads@example.test', isAuthenticated: true, routeCallLog });
   const [year, month] = monthKey(viewedOffset).split('-').map(Number);
   await page.addInitScript((view) => {
-    sessionStorage.setItem('scheduler-selected-view', JSON.stringify(view));
+    sessionStorage.setItem('arsm.scheduler.selectedView', JSON.stringify(view));
   }, { year, month, day: null });
 
   await page.goto('/');

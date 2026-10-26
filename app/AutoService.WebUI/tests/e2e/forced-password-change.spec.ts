@@ -89,6 +89,6 @@ test.describe('Required password change', () => {
     await page.getByRole('button', { name: 'Log out' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    expect(await page.evaluate(() => localStorage.getItem('autoservice-session-hint'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBeNull();
   });
 });

@@ -24,7 +24,7 @@ Content-Type: application/json
 { "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-autoservice_csrf='))?.match(/^__Host-autoservice_csrf=([^;]+)/)?.[1];
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
 }}
 
 ?? status == 200

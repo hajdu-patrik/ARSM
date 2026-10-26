@@ -35,7 +35,7 @@ export function loadGateAssets() {
 // The app's rule (index.html, theme.store, i18n): saved theme else the system scheme; saved language else Hungarian.
 const SCRIPT = `(function(){
 var d=document.documentElement,s=null,l=null;
-try{s=localStorage.getItem('preferred-theme');l=localStorage.getItem('preferred-language');}catch(e){}
+try{s=localStorage.getItem('arsm.pref.theme')||localStorage.getItem('preferred-theme');l=localStorage.getItem('arsm.pref.language')||localStorage.getItem('preferred-language');}catch(e){}
 var theme=s==='dark'||s==='light'?s:(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
 var lang=l!==null&&l.toLowerCase().indexOf('en')===0?'en':'hu';
 var T={hu:{title:'ARSM – belépés',toLight:'Váltás világos módra',toDark:'Váltás sötét módra'},
@@ -49,8 +49,8 @@ lb.textContent=t;lb.title=n;lb.setAttribute('aria-label',t+': '+n);}
 if(tb){var m=theme==='dark'?T[lang].toLight:T[lang].toDark;tb.title=m;tb.setAttribute('aria-label',m);}}
 d.setAttribute('data-js','');apply();
 document.addEventListener('DOMContentLoaded',function(){
-document.getElementById('gate-lang').addEventListener('click',function(){lang=lang==='hu'?'en':'hu';save('preferred-language',lang);apply();});
-document.getElementById('gate-theme').addEventListener('click',function(){theme=theme==='dark'?'light':'dark';save('preferred-theme',theme);apply();});
+document.getElementById('gate-lang').addEventListener('click',function(){lang=lang==='hu'?'en':'hu';save('arsm.pref.language',lang);apply();});
+document.getElementById('gate-theme').addEventListener('click',function(){theme=theme==='dark'?'light':'dark';save('arsm.pref.theme',theme);apply();});
 apply();});
 })();`;
 

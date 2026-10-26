@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { seedSplashShown, type TestLanguage } from '../support/browser-state';
+import { PREF_LANGUAGE_KEY, PREF_SIDEBAR_COLLAPSED_KEY } from '../../../src/utils/browserStorageKeys';
 import type { AppointmentFlowEnv } from '../support/e2e-env';
 
 export class AuthPage {
@@ -28,9 +29,9 @@ export class AuthPage {
 
   private async prepareBrowserState(language: TestLanguage): Promise<void> {
     await seedSplashShown(this.page);
-    await this.page.addInitScript((preferredLanguage) => {
-      localStorage.setItem('preferred-language', preferredLanguage);
-      localStorage.setItem('preferred-sidebar-collapsed', 'false');
-    }, language);
+    await this.page.addInitScript((state) => {
+      localStorage.setItem(state.languageKey, state.language);
+      localStorage.setItem(state.sidebarKey, 'false');
+    }, { language, languageKey: PREF_LANGUAGE_KEY, sidebarKey: PREF_SIDEBAR_COLLAPSED_KEY });
   }
 }

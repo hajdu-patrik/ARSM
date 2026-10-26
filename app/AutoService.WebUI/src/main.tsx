@@ -1,6 +1,7 @@
 /** WebUI entry point: bootstraps the React application, global styles, and i18n,
  * then mounts the root App component in StrictMode. */
 
+import './utils/legacyStorageMigration.ts'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

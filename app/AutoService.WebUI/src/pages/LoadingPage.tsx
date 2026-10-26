@@ -10,15 +10,13 @@ import { isSplashRoute } from '../router/appRoutes';
 import { consumeSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecoverySession';
 import { removeLoginShell } from '../utils/loginShell';
 import { readStorage, writeStorage } from '../utils/safeStorage';
+import { SPLASH_FIRST_SHOWN_KEY } from '../utils/browserStorageKeys';
 
 /** Anti-flash minimum: a splash that is up for less than this would only flicker on a fast load. */
 const SPLASH_MIN_VISIBLE_MS = 250;
 
 /** Minimum for the very first splash in this browser, so the branded intro is seen once ever. */
 const FIRST_LOAD_SPLASH_MIN_VISIBLE_MS = 2500;
-
-/** localStorage flag that is set once this browser has shown its first splash. */
-const SPLASH_SHOWN_STORAGE_KEY = 'arsm-splash-shown';
 
 /** Whether this boot shows the splash: not right after a server-error retry, and only on an app route. */
 function shouldShowSplash(): boolean {
@@ -35,7 +33,7 @@ function resolveSplashMinVisibleMs(): number | null {
     return null;
   }
 
-  return readStorage('local', SPLASH_SHOWN_STORAGE_KEY) === null
+  return readStorage('local', SPLASH_FIRST_SHOWN_KEY) === null
     ? FIRST_LOAD_SPLASH_MIN_VISIBLE_MS
     : SPLASH_MIN_VISIBLE_MS;
 }
@@ -52,7 +50,7 @@ function useSplashVisible(isAppReady: boolean): boolean {
       return;
     }
 
-    writeStorage('local', SPLASH_SHOWN_STORAGE_KEY, '1');
+    writeStorage('local', SPLASH_FIRST_SHOWN_KEY, '1');
 
     const timer = setTimeout(() => {
       setHasMinimumPassed(true);
