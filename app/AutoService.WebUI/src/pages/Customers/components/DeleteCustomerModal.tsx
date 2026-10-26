@@ -33,7 +33,7 @@ export const DeleteCustomerModal = memo(function DeleteCustomerModal({
       icon={Trash2}
       tone="danger"
     >
-      <p className={mutedBodyTextClass}>
+      <p className={`[overflow-wrap:anywhere] ${mutedBodyTextClass}`}>
         {t('customers.deleteCustomerConfirm', {
           name: target ? buildCustomerDisplayName(target) : '',
         })}

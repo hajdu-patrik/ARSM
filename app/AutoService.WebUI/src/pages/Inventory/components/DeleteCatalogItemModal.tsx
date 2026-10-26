@@ -35,7 +35,7 @@ export const DeleteCatalogItemModal = memo(function DeleteCatalogItemModal({
       icon={Trash2}
       tone="danger"
     >
-      <p className={mutedBodyTextClass}>
+      <p className={`${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
         {t('inventory.deleteConfirm', {
           name: target?.name ?? '',
           identifier: target?.identifier ?? '',

@@ -7,9 +7,9 @@ import { FieldErrorText } from '../../components/common/FieldErrorText';
 import { Modal } from '../../components/common/Modal';
 import { fieldErrorA11yProps } from '../../utils/fieldA11y';
 import {
+  credentialToggleInputClass,
   dangerButtonClass,
   defaultIconClass,
-  inputClass,
   inputGroupContainerClass,
   largeIconClass,
   mutedBodyTextClass,
@@ -189,7 +189,7 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
             data-bwignore="true"
             disabled={isDeleting}
             aria-label={t('settings.currentPassword')}
-            className={`${inputClass} pr-12`}
+            className={credentialToggleInputClass}
             {...fieldErrorA11yProps(passwordErrorId, deletePasswordError)}
           />
           <button
@@ -230,7 +230,7 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
             data-bwignore="true"
             disabled={isDeleting}
             aria-label={t('settings.deleteConfirmPassword')}
-            className={`${inputClass} pr-12`}
+            className={credentialToggleInputClass}
             {...fieldErrorA11yProps(confirmErrorId, confirmMismatchMessageKey)}
           />
           <button

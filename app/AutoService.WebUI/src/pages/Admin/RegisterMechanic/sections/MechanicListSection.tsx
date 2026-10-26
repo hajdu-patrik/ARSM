@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, Trash2 } from 'lucide-react';
 import { useToastStore } from '../../../../store/toast.store';
+import type { MechanicListItem } from '../../../../services/admin/admin.service';
 import { HighlightedText } from '../../../../components/common/HighlightedText';
 import { ConfirmModal } from '../../../../components/common/ConfirmModal';
 import { Pagination } from '../../../../components/common/Pagination';
@@ -24,6 +25,73 @@ import {
 	rowHoverMotionClass,
 } from '../../../../utils/formStyles';
 import { mechanicDangerIconButtonClass, mechanicWarningIconButtonClass } from '../mechanicActionStyles';
+
+interface MechanicRowProps {
+	readonly mechanic: MechanicListItem;
+	readonly highlightQuery: string;
+	readonly canRemove: boolean;
+	readonly onResetPassword: (mechanic: MechanicListItem) => void;
+	readonly onDelete: (mechanic: MechanicListItem) => void;
+}
+
+/** One roster row: avatar, highlighted name and email, and the reset-password and delete actions. */
+function MechanicRow({ mechanic, highlightQuery, canRemove, onResetPassword, onDelete }: MechanicRowProps) {
+	const { t } = useTranslation();
+	const displayName = buildMechanicDisplayName(mechanic);
+
+	return (
+		<div
+			data-testid={`mechanic-row-${String(mechanic.personId)}`}
+			className={`relative flex min-w-0 items-start gap-3 px-4 py-3 max-[350px]:flex-wrap max-[350px]:gap-y-2 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
+		>
+			<MechanicAvatar
+				mechanicId={mechanic.personId}
+				fullName={displayName}
+				hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
+				sizeClassName="h-9 w-9 text-xs"
+			/>
+
+			<div className="min-w-0 flex-1">
+				<p className={compactListPrimaryWrapTextClass}>
+					<HighlightedText text={displayName} query={highlightQuery} />
+				</p>
+				<p className={compactListSecondaryTextClass} title={mechanic.email}>
+					<HighlightedText text={mechanic.email} query={highlightQuery} />
+				</p>
+			</div>
+
+			<div className="ml-auto flex shrink-0 items-center gap-1.5 self-start max-[350px]:basis-full max-[350px]:justify-end">
+				{!mechanic.isAdmin && (
+					<button
+						type="button"
+						onClick={() => {
+							onResetPassword(mechanic);
+						}}
+						title={t('admin.resetPassword')}
+						aria-label={t('admin.resetPassword')}
+						className={mechanicWarningIconButtonClass}
+					>
+						<KeyRound className={defaultIconClass} aria-hidden="true" />
+					</button>
+				)}
+
+				{canRemove && (
+					<button
+						type="button"
+						onClick={() => {
+							onDelete(mechanic);
+						}}
+						title={t('admin.deleteMechanic')}
+						aria-label={t('admin.deleteMechanic')}
+						className={mechanicDangerIconButtonClass}
+					>
+						<Trash2 className={defaultIconClass} aria-hidden="true" />
+					</button>
+				)}
+			</div>
+		</div>
+	);
+}
 
 /** Renders the admin mechanic roster: server-side search, fixed-size pages, and password reset and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection() {
@@ -80,64 +148,16 @@ export const MechanicListSection = memo(function MechanicListSection() {
 
 					{mechanics.length > 0 ? (
 						<div className="flex flex-col gap-3">
-							{mechanics.map((mechanic) => {
-								const canRemoveMechanic = !mechanic.isAdmin && removableMechanicCount > 1;
-								const displayName = buildMechanicDisplayName(mechanic);
-
-								return (
-									<div
-										key={mechanic.personId}
-										data-testid={`mechanic-row-${String(mechanic.personId)}`}
-										className={`relative flex min-w-0 items-start gap-3 px-4 py-3 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
-									>
-										<MechanicAvatar
-											mechanicId={mechanic.personId}
-											fullName={displayName}
-											hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-											sizeClassName="h-9 w-9 text-xs"
-										/>
-
-										<div className="min-w-0 flex-1">
-											<p className={compactListPrimaryWrapTextClass}>
-												<HighlightedText text={displayName} query={highlightQuery} />
-											</p>
-											<p className={compactListSecondaryTextClass} title={mechanic.email}>
-												<HighlightedText text={mechanic.email} query={highlightQuery} />
-											</p>
-										</div>
-
-										<div className="ml-auto flex shrink-0 items-center gap-1.5 self-start">
-											{!mechanic.isAdmin && (
-												<button
-													type="button"
-													onClick={() => {
-														passwordReset.openPasswordReset(mechanic);
-													}}
-													title={t('admin.resetPassword')}
-													aria-label={t('admin.resetPassword')}
-													className={mechanicWarningIconButtonClass}
-												>
-													<KeyRound className={defaultIconClass} aria-hidden="true" />
-												</button>
-											)}
-
-											{canRemoveMechanic && (
-												<button
-													type="button"
-													onClick={() => {
-														openDeleteModal(mechanic);
-													}}
-													title={t('admin.deleteMechanic')}
-													aria-label={t('admin.deleteMechanic')}
-													className={mechanicDangerIconButtonClass}
-												>
-													<Trash2 className={defaultIconClass} aria-hidden="true" />
-												</button>
-											)}
-										</div>
-									</div>
-								);
-							})}
+							{mechanics.map((mechanic) => (
+								<MechanicRow
+									key={mechanic.personId}
+									mechanic={mechanic}
+									highlightQuery={highlightQuery}
+									canRemove={!mechanic.isAdmin && removableMechanicCount > 1}
+									onResetPassword={passwordReset.openPasswordReset}
+									onDelete={openDeleteModal}
+								/>
+							))}
 						</div>
 					) : (
 						<p className={emptyStateBoxClass}>{t('admin.noMechanicsFound')}</p>

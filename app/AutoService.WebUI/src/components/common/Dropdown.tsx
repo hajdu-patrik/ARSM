@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react';
 import {
   dropdownChevronClass,
   dropdownLabelClass,
+  dropdownLabelWrapClass,
   dropdownPlaceholderClass,
   dropdownTriggerSizeClasses,
   type DropdownSize,
@@ -107,7 +108,8 @@ export function Dropdown({
   const iconClass = size === 'compact' || size === 'compactSlim' ? smallIconClass : defaultIconClass;
   const triggerClassName = [dropdownTriggerSizeClasses[size], className].filter(Boolean).join(' ');
   const chevronClassName = [iconClass, dropdownChevronClass, isOpen ? 'rotate-180' : ''].filter(Boolean).join(' ');
-  const labelClassName = [dropdownLabelClass, selectedOption === undefined ? dropdownPlaceholderClass : ''].filter(Boolean).join(' ');
+  const isWrappingLabel = size === 'field' || size === 'intake';
+  const labelClassName = [isWrappingLabel ? dropdownLabelWrapClass : dropdownLabelClass, selectedOption === undefined ? dropdownPlaceholderClass : ''].filter(Boolean).join(' ');
 
   return (
     <>

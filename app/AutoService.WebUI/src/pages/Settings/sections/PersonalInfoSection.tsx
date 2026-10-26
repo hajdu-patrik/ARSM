@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
 import { FieldErrorText } from '../../../components/common/FieldErrorText';
 import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
-import { buttonClass, cardClass, defaultIconClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
+import { buttonClass, cardClass, credentialInputClass, defaultIconClass, inputClass, labelClass, mutedMetaTextClass, sectionTitleClass } from '../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../utils/validation';
 import type { ProfileFieldErrors, ProfileFieldName, ProfileFieldValues } from '../profileFields';
 
@@ -118,7 +118,7 @@ export const PersonalInfoSection = memo(function PersonalInfoSection({
               onFieldChange('email', event.target.value);
             }}
             placeholder={t('settings.emailPlaceholder')}
-            className={inputClass}
+            className={credentialInputClass}
             disabled={isSubmitting}
             autoComplete="email"
             {...fieldErrorA11yProps(errorId('email'), fieldErrors.email)}
@@ -139,7 +139,7 @@ export const PersonalInfoSection = memo(function PersonalInfoSection({
               onFieldChange('phoneNumber', filterPhoneInput(event.target.value));
             }}
             placeholder={t('common.placeholders.phone')}
-            className={inputClass}
+            className={credentialInputClass}
             disabled={isSubmitting}
             autoComplete="tel"
             {...fieldErrorA11yProps(errorId('phoneNumber'), fieldErrors.phoneNumber)}

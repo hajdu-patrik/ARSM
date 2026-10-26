@@ -66,7 +66,7 @@ export const ProfilePictureSection = memo(function ProfilePictureSection({
 					</div>
 				)}
 
-				<div className="flex min-h-20 min-w-0 flex-1 items-center">
+				<div className="flex min-w-0 basis-full items-center min-[351px]:min-h-20 min-[351px]:flex-1">
 					<div className={actionClusterClass}>
 						<button
 							type="button"

@@ -5,8 +5,8 @@ import { NavLink, useLocation } from 'react-router';
 import { CalendarDays, ChevronsLeft, FileText, LogOut, Package, Settings, Shield, TrendingUp, Users } from 'lucide-react';
 import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import {
-  compactListPrimaryTextClass,
-  compactListSecondaryTextClass,
+  compactListPrimaryWrapTextClass,
+  compactListSecondaryWrapTextClass,
   largeIconClass,
   rowHoverMotionClass,
   sidebarIconSlotClass,
@@ -73,6 +73,9 @@ const TEXT_TRANSITION = `${TEXT_CLIP_TRANSITION} whitespace-nowrap`;
 /** Wrapping label box: its own max width (the 180px of `collapsedText`) keeps line breaks
  * independent of the animated clip box. */
 const WRAPPING_LABEL_CLASS = 'block w-max max-w-[180px] text-left';
+/** Profile name and e-mail: wrapped in the mobile drawer, ellipsized in the clipped desktop rail. */
+const PROFILE_NAME_CLASS = `${compactListPrimaryWrapTextClass} max-md:whitespace-normal md:truncate`;
+const PROFILE_EMAIL_CLASS = `${compactListSecondaryWrapTextClass} max-md:whitespace-normal md:truncate`;
 const SIDEBAR_ICON_MOTION_CLASS = 'transition-[color,transform] duration-150 ease-out hover:scale-105 motion-reduce:transform-none motion-reduce:transition-colors';
 const NAV_LINK_BASE_CLASS = `group flex min-h-11 min-w-0 items-center rounded-xl border text-sm font-medium ${rowHoverMotionClass}`;
 const NAV_LINK_ACTIVE_CLASS = 'border-arsm-accent/40 bg-ui-toggle text-arsm-primary dark:border-arsm-accent-dark/50 dark:text-arsm-hover';
@@ -150,11 +153,11 @@ const SidebarProfileSummary = memo(function SidebarProfileSummary({ collapsedTex
       </span>
       <div className={`${TEXT_TRANSITION} ${collapsedText} min-w-0`}>
         {profile.firstName && profile.lastName && (
-          <p className={compactListPrimaryTextClass}>
+          <p className={PROFILE_NAME_CLASS}>
             {profile.firstName} {profile.lastName}
           </p>
         )}
-        {profile.email && <p className={compactListSecondaryTextClass}>{profile.email}</p>}
+        {profile.email && <p className={PROFILE_EMAIL_CLASS}>{profile.email}</p>}
       </div>
     </div>
   );

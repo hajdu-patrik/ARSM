@@ -99,6 +99,17 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Phone readability round (2026-10-26). Credential and identity fields (login identifier and password, change password, admin
+  register, settings e-mail/phone, delete-profile confirmation) reserve room on the right for the icon browsers and password
+  managers inject: `credentialInputClass` (`pr-10`) and, beside an eye button, `credentialToggleInputClass` (button plus icon);
+  a long e-mail scrolls inside the field instead of running under the icon. Readability fixes at the cause: light-theme
+  success/warning text darkened to reach WCAG AA on the pale washes, delete confirmations wrap long unbroken names, calendar
+  day numbers and weekday headers keep their normal size at 320px, the Inventory tabs fit the longer label, a few badge/timestamp
+  rows wrap cleanly. A sweep at 320/360/390px (HU light, EN dark, every page plus the intake modal) finds no clipped text, no
+  element past the viewport and no unintended overlap; validate and the full Playwright suite pass.
+
+_Dev time: ~39m wall-clock (2026-10-26 12:34 to 13:13 +01:00, one arsm-chain run, then the hand-run 320/360/390px sweep and the full E2E suite). Cost: ~$4.44-$8.87 output-token-only estimate (444k output tokens, sonnet to opus; excludes input tokens and cache, so a lower bound)._
+
 - Phone-optimized WebUI down to 320px (2026-10-26). Admin mechanic cards: the temporary-password and delete buttons are
   32px icon buttons side by side in the top-right corner, the e-mail truncates with a tooltip. Scheduler month filters (sort,
   show all, status chips, mechanic select) are compact 28px controls at every width (`Dropdown` size `compactSlim`). New intake:

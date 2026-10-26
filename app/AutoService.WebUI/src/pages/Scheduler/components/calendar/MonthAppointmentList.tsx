@@ -41,6 +41,7 @@ function resolveEmptyMessageKey(selectedDay: number | null, hasActiveFilter: boo
   return selectedDay === null ? 'scheduler.monthList.empty' : 'scheduler.monthList.emptyFiltered';
 }
 
+/** Month appointment list with day scoping, status/mechanic filters and date sorting. */
 export const MonthAppointmentList = memo(function MonthAppointmentList({
   appointments,
   isLoading,
@@ -163,7 +164,7 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
       <div className="mb-4 flex min-w-0 flex-col gap-3">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col">
-            <h3 className={`truncate ${baseSectionHeadingTextClass} sm:text-lg`}>
+            <h3 className={`min-w-0 [overflow-wrap:anywhere] ${baseSectionHeadingTextClass} sm:text-lg`}>
               {t('scheduler.monthList.title')}
             </h3>
             <p className={`${mutedMetaTextClass} sm:text-sm`}>

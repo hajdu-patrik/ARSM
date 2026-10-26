@@ -9,6 +9,7 @@ import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import {
   buttonClass,
   cardClass,
+  credentialInputClass,
   defaultIconClass,
   inputClass,
   labelClass,
@@ -87,7 +88,7 @@ export const CompanyDataSection = memo(function CompanyDataSection({
           onFieldChange(field, field === 'phoneNumber' ? filterPhoneInput(event.target.value) : event.target.value);
         }}
         placeholder={placeholderKey ? t(placeholderKey) : undefined}
-        className={inputClass}
+        className={type === undefined ? inputClass : credentialInputClass}
         disabled={isBusy}
         maxLength={COMPANY_FIELD_MAX_LENGTHS[field]}
         autoComplete={autoComplete}

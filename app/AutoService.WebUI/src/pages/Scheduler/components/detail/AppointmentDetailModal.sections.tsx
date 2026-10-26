@@ -84,7 +84,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   onAdminUnassign,
 }: AppointmentDetailBodyProps) {
   return (
-    <div className="flex min-h-0 min-w-0 max-h-[62vh] flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto pb-0.5 pr-1">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto pb-0.5 pr-1">
       <HeaderSection appointmentStatus={appointment.status} formattedDate={formattedDate} />
       <DueSection
         dueState={dueState}

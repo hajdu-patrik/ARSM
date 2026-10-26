@@ -104,6 +104,29 @@ function useModalKeyboard(isOpen: boolean, onClose: () => void): RefObject<HTMLD
   return dialogRef;
 }
 
+interface ModalLayoutOptions {
+  readonly isConfirmVariant: boolean;
+  readonly fitViewport: boolean;
+  readonly widthClassName: string | undefined;
+  readonly footerClassName: string | undefined;
+}
+
+/** Resolves the width, dialog, body and footer class strings of the chosen variant and fit mode. */
+function getModalLayoutClasses({ isConfirmVariant, fitViewport, widthClassName, footerClassName }: ModalLayoutOptions) {
+  return {
+    width: widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md'),
+    dialog: fitViewport
+      ? `flex flex-col overflow-hidden ${DIALOG_MAX_HEIGHT_CLASS}`
+      : `overflow-y-auto overflow-x-hidden ${DIALOG_MAX_HEIGHT_CLASS}`,
+    body: [isConfirmVariant ? 'mx-auto max-w-[32rem] text-center' : '', fitViewport ? 'flex min-h-0 flex-1 flex-col' : '']
+      .filter(Boolean)
+      .join(' '),
+    footer: ['mt-5', fitViewport ? 'shrink-0' : '', controlPanelFooterClass, isConfirmVariant ? 'arsm-modal-footer-confirm' : '', footerClassName ?? '']
+      .filter(Boolean)
+      .join(' '),
+  };
+}
+
 export const Modal = memo(function Modal({
   isOpen,
   onClose,
@@ -120,16 +143,7 @@ export const Modal = memo(function Modal({
   const titleId = useId();
   const dialogRef = useModalKeyboard(isOpen, onClose);
   const isConfirmVariant = variant === 'confirm';
-  const resolvedWidthClassName = widthClassName ?? (isConfirmVariant ? 'max-w-xl' : 'max-w-md');
-  const dialogFitClass = fitViewport
-    ? `flex flex-col overflow-hidden ${DIALOG_MAX_HEIGHT_CLASS}`
-    : `overflow-y-auto overflow-x-hidden ${DIALOG_MAX_HEIGHT_CLASS}`;
-  const bodyClasses = [isConfirmVariant ? 'mx-auto max-w-[32rem] text-center' : '', fitViewport ? 'flex min-h-0 flex-1 flex-col' : '']
-    .filter(Boolean)
-    .join(' ');
-  const footerClasses = ['mt-5', fitViewport ? 'shrink-0' : '', controlPanelFooterClass, isConfirmVariant ? 'arsm-modal-footer-confirm' : '', footerClassName ?? '']
-    .filter(Boolean)
-    .join(' ');
+  const layout = getModalLayoutClasses({ isConfirmVariant, fitViewport, widthClassName, footerClassName });
 
   if (!isOpen) {
     return null;
@@ -151,10 +165,10 @@ export const Modal = memo(function Modal({
         aria-labelledby={titleId}
         aria-modal="true"
         tabIndex={-1}
-        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${resolvedWidthClassName} ${dialogFitClass} rounded-2xl border-[2.5px] border-arsm-primary/60 bg-ui-card p-5 text-ui-text transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark sm:p-6 ${feedbackFrameClass}`}
+        className={`arsm-modal-dialog relative w-[95%] sm:w-full ${layout.width} ${layout.dialog} rounded-2xl border-[2.5px] border-arsm-primary/60 bg-ui-card p-5 text-ui-text transition-[background-color,border-color,color,opacity,transform] duration-200 max-[320px]:p-3.5 dark:border-arsm-border-dark sm:p-6 ${feedbackFrameClass}`}
       >
         <div className={`mb-4 min-w-0 ${fitViewport ? 'shrink-0' : ''} ${isConfirmVariant ? 'relative flex min-h-11 items-center justify-center' : 'flex items-center justify-between gap-3'}`}>
-          <h2 id={titleId} className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-xl font-semibold [overflow-wrap:anywhere] sm:text-2xl' : 'text-lg font-semibold [overflow-wrap:anywhere]'}`}>{title}</h2>
+          <h2 id={titleId} className={`min-w-0 ${isConfirmVariant ? 'break-words px-12 text-center text-lg font-semibold [overflow-wrap:anywhere] min-[401px]:text-xl sm:text-2xl' : 'text-lg font-semibold [overflow-wrap:anywhere]'}`}>{title}</h2>
           {showCloseButton && (
             <div className={isConfirmVariant ? 'absolute right-0 top-0 shrink-0' : 'shrink-0'}>
               <ModalCloseButton onClick={onClose} />
@@ -162,9 +176,9 @@ export const Modal = memo(function Modal({
           )}
         </div>
 
-        <div className={bodyClasses}>{children}</div>
+        <div className={layout.body}>{children}</div>
         {footer && (
-          <div className={footerClasses}>
+          <div className={layout.footer}>
             {footer}
           </div>
         )}

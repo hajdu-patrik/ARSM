@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff } from 'lucide-react';
 import type { FieldErrorA11yProps } from '../../utils/fieldA11y';
-import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../utils/formStyles';
+import { credentialToggleInputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../utils/formStyles';
 import { FieldErrorText } from './FieldErrorText';
 
 interface PasswordInputWithToggleProps {
@@ -60,7 +60,7 @@ export function PasswordInputWithToggle({
           }}
           onFocus={onFocus}
           placeholder={placeholder}
-          className={`${inputClass} pr-12`}
+          className={credentialToggleInputClass}
           disabled={isSubmitting}
           autoComplete="off"
           readOnly={isLocked}

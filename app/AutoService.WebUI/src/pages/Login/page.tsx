@@ -8,7 +8,8 @@ import { fieldErrorA11yProps } from '../../utils/fieldA11y';
 import {
   buttonClass,
   getSegmentedControlOptionClass,
-  inputClass,
+  credentialInputClass,
+  credentialToggleInputClass,
   inputGroupContainerClass,
   labelClass,
   largeIconClass,
@@ -19,6 +20,7 @@ import {
 } from '../../utils/formStyles';
 import { useLoginForm } from './useLoginForm';
 
+/** Renders the login form with its email/phone mode switch and password toggle. */
 export const Login = memo(function Login() {
   const { t: translate } = useTranslation();
   const identifierErrorId = useId();
@@ -92,7 +94,7 @@ export const Login = memo(function Login() {
               changeIdentifier(event.target.value);
             }}
             placeholder={identifierPlaceholder}
-            className={inputClass}
+            className={credentialInputClass}
             required
             disabled={isLoading}
             {...fieldErrorA11yProps(identifierErrorId, fieldErrors.identifier)}
@@ -115,7 +117,7 @@ export const Login = memo(function Login() {
                 changePassword(event.target.value);
               }}
               placeholder={translate('login.loginPassword')}
-              className={`${inputClass} pr-12`}
+              className={credentialToggleInputClass}
               required
               disabled={isLoading}
               {...fieldErrorA11yProps(passwordErrorId, fieldErrors.password)}

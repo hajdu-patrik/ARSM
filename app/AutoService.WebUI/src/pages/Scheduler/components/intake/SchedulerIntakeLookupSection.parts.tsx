@@ -119,10 +119,10 @@ export const FoundCustomerSummary = memo(function FoundCustomerSummary({
 		<div className={`fade-in-up ${successNoticeSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
 				<UserCheck className={defaultIconClass} />
-				<span className="min-w-0 truncate">{translate('scheduler.intake.customerFound')}</span>
+				<span className="min-w-0 [overflow-wrap:anywhere]">{translate('scheduler.intake.customerFound')}</span>
 			</div>
-			<p className="mt-1 truncate">{getLookupCustomerName(customerLookup)}</p>
-			<p className="truncate text-xs opacity-80">{customerLookup.email}</p>
+			<p className="mt-1 min-w-0 [overflow-wrap:anywhere]">{getLookupCustomerName(customerLookup)}</p>
+			<p className="min-w-0 text-xs [overflow-wrap:anywhere]">{customerLookup.email}</p>
 		</div>
 	);
 });
@@ -152,20 +152,20 @@ export const NameLookupResults = memo(function NameLookupResults({
 		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 ${compactPrimaryValueTextClass} ${compactInputSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
 				<Users className={`${defaultIconClass} text-ui-muted`} />
-				<span className="min-w-0 truncate">{translate('scheduler.intake.nameResultsTitle', { count: results.length })}</span>
+				<span className="min-w-0 [overflow-wrap:anywhere]">{translate('scheduler.intake.nameResultsTitle', { count: results.length })}</span>
 			</div>
 
 			<div className="divide-y divide-ui-border/60">
 				{pageResults.map((result) => (
 					<div key={result.id} className="flex min-w-0 flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
 						<div className="min-w-0">
-							<p className="truncate font-semibold">
+							<p className="min-w-0 font-semibold [overflow-wrap:anywhere]">
 								<HighlightedText text={getLookupCustomerName(result)} query={query} />
 							</p>
-							<p className={`truncate ${mutedMetaTextClass}`}>
+							<p className={`min-w-0 [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
 								<HighlightedText text={result.email} query={query} />
 							</p>
-							<p className={`truncate ${mutedMetaTextClass}`}>
+							<p className={`min-w-0 [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>
 								{translate('common.fields.vehicleCount', { count: result.vehicles.length })}
 							</p>
 						</div>
@@ -211,13 +211,14 @@ export const LookupNoMatch = memo(function LookupNoMatch({ id, lookupMode, trans
 		<div id={id} className={`fade-in-up ${warningNoticeSurfaceClass}`}>
 			<div className={inlineStatusTitleRowClass}>
 				<UserPlus className={defaultIconClass} />
-				<span className="min-w-0 truncate">{translate(titleKey)}</span>
+				<span className="min-w-0 [overflow-wrap:anywhere]">{translate(titleKey)}</span>
 			</div>
 			<p className="mt-1 text-xs">{translate(LOOKUP_NO_MATCH_HINT_KEY)}</p>
 		</div>
 	);
 });
 
+/** Maps the lookup mode to the title key of its no-match notice. */
 function getLookupNoMatchTitleKey(lookupMode: LookupMode): string {
 	switch (lookupMode) {
 		case 'licensePlate':

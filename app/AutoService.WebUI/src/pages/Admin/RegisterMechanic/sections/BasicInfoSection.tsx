@@ -4,7 +4,7 @@ import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldErrorText } from '../../../../components/common/FieldErrorText';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
-import { inputClass, labelClass } from '../../../../utils/formStyles';
+import { credentialInputClass, inputClass, labelClass } from '../../../../utils/formStyles';
 import { filterNameInput, filterPhoneInput } from '../../../../utils/validation';
 import type { RegisterFieldErrors, RegisterFieldName, RegisterTextFieldName } from '../types';
 
@@ -112,7 +112,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
             onFieldChange('email', event.target.value);
           }}
           placeholder={t('admin.emailPlaceholder')}
-          className={inputClass}
+          className={credentialInputClass}
           disabled={isSubmitting}
           required
           {...fieldErrorA11yProps(errorId('email'), fieldErrors.email)}
@@ -134,7 +134,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
             onFieldChange('phoneNumber', filterPhoneInput(event.target.value));
           }}
           placeholder={t('common.placeholders.phone')}
-          className={inputClass}
+          className={credentialInputClass}
           disabled={isSubmitting}
           {...fieldErrorA11yProps(errorId('phoneNumber'), fieldErrors.phoneNumber)}
         />

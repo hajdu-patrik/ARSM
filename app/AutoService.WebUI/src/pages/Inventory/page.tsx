@@ -14,8 +14,10 @@ import {
   pageShellClass,
   pageSubtitleClass,
   pageTitleClass,
-  segmentedControlClass,
 } from '../../utils/formStyles';
+
+/** Segmented control with a wider second track, so the long HU "Munkadíjtípusok" tab fits at 320px. */
+const inventoryTabListClass = 'grid min-w-0 max-w-md grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-1.5 rounded-xl bg-ui-toggle p-1.5';
 
 export const InventoryPage = memo(function InventoryPage() {
   const { t, i18n } = useTranslation();
@@ -34,7 +36,7 @@ export const InventoryPage = memo(function InventoryPage() {
         <p className={pageSubtitleClass}>{t('inventory.pageDescription')}</p>
       </header>
 
-      <div role="tablist" aria-labelledby={tabs.headingId} className={`${segmentedControlClass} max-w-md`}>
+      <div role="tablist" aria-labelledby={tabs.headingId} className={inventoryTabListClass}>
         {INVENTORY_TABS.map((tab) => {
           const isActive = tab === tabs.activeTab;
 

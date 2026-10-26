@@ -49,6 +49,7 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
       onClose={onClose}
       title={translate('scheduler.intake.title')}
       widthClassName="max-w-2xl"
+      fitViewport
       footer={derived.canCreateIntake
         ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -72,7 +73,7 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
         )
         : null}
     >
-      <div className="max-h-[64vh] space-y-3 overflow-y-auto pr-1 pb-0.5">
+      <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto pr-1 pb-0.5">
         <SchedulerIntakeHeader
           selectedDayLabel={selectedDayLabel}
           translate={translate}

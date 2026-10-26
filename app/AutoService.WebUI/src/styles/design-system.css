@@ -29,12 +29,14 @@
     line-height: var(--text-ui-display--line-height);
     font-weight: 700;
     letter-spacing: 0;
+    overflow-wrap: anywhere;
     color: var(--ui-text);
   }
 
   .arsm-page-subtitle {
     font-size: var(--text-ui-small);
     line-height: var(--text-ui-small--line-height);
+    overflow-wrap: anywhere;
     color: var(--ui-muted);
   }
 
@@ -49,6 +51,7 @@
     font-size: var(--text-ui-title);
     line-height: var(--text-ui-title--line-height);
     font-weight: 600;
+    overflow-wrap: anywhere;
     color: var(--ui-text);
   }
 

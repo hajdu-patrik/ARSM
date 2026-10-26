@@ -81,7 +81,7 @@
   --color-arsm-success-bg-dark:     #173425;  /* success banner bg (dark)        */
   --color-arsm-success-border:      #a3e4b8;  /* success border (light)          */
   --color-arsm-success-border-dark: #3f8d5a;  /* success border (dark)           */
-  --color-arsm-success-text:        #1a7a3a;  /* success text (light)            */
+  --color-arsm-success-text:        #176f35;  /* success text (light), >=4.7:1 on the pale accent washes */
   --color-arsm-success-text-dark:   #98e5b5;  /* success text (dark)             */
   --color-arsm-success-accent:      #22c55e;  /* success dot / active badge fill */
   --color-arsm-success-soft:        #bbf7d0;  /* success badge bg (light)        */
@@ -92,7 +92,7 @@
   --color-arsm-warning-bg-dark:     #3a3118;  /* warning banner bg (dark)        */
   --color-arsm-warning-border:      #fcd34d;  /* warning border (light)          */
   --color-arsm-warning-border-dark: #8e7838;  /* warning border (dark)           */
-  --color-arsm-warning-text:        #a16207;  /* warning text (light)            */
+  --color-arsm-warning-text:        #8f5506;  /* warning text (light), >=4.5:1 on the pale accent washes */
   --color-arsm-warning-text-dark:   #ffd978;  /* warning text (dark)             */
   --color-arsm-warning-accent:      #f59e0b;  /* warning dot / active badge fill */
 

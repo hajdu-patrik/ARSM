@@ -23,7 +23,7 @@ export const StatusPillBadge = memo(function StatusPillBadge({
       data-testid={testId}
       className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-normal ${colorClassName} ${className}`}
     >
-      {dotClassName && <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} aria-hidden="true" />}
+      {dotClassName && <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClassName}`} aria-hidden="true" />}
       {label}
     </span>
   );

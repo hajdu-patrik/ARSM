@@ -24,7 +24,7 @@ export const SchedulerSummaryStrip = memo(function SchedulerSummaryStrip({
 		<section className={`${insetSurfaceClass} px-4 py-3.5`}>
 			<div className={compactStackedRowClass}>
 				<p className={`min-w-0 [overflow-wrap:anywhere] ${compactSectionHeadingTextClass}`}>{summaryDateText}</p>
-				<span className="inline-flex shrink-0 items-center self-start rounded-full sm:self-auto border border-ui-border bg-ui-toggle px-3 py-1 text-xs font-semibold text-arsm-primary dark:text-arsm-hover">
+				<span className="inline-flex shrink-0 items-center self-start rounded-full sm:self-auto border border-ui-border bg-ui-toggle px-3 py-1 text-xs font-semibold text-ui-text">
 					{t('scheduler.scheduledCount', { count: summaryCount })}
 				</span>
 			</div>

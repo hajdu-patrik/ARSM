@@ -17,6 +17,9 @@ export type DropdownSize = keyof typeof dropdownTriggerSizeClasses;
 
 export const dropdownLabelClass = 'min-w-0 flex-1 truncate';
 
+/** Label of the `field` and `intake` triggers, which are min-height inputs: a long value wraps and grows the field instead of ellipsizing. */
+export const dropdownLabelWrapClass = 'min-w-0 flex-1 [overflow-wrap:anywhere]';
+
 export const dropdownPlaceholderClass = 'text-ui-placeholder';
 
 export const dropdownChevronClass = 'shrink-0 transition-transform duration-200 motion-reduce:transition-none';
@@ -26,7 +29,7 @@ export const dropdownPopupClass = 'fixed z-[115] m-0 max-h-72 list-none overflow
 
 const dropdownOptionBaseClass = 'flex min-h-11 w-full items-center justify-between gap-2 py-2 text-left text-ui-text';
 
-/** Option text per size: `compact` and `compactSlim` share the `default` row;`field` and `intake` follow their input geometry. */
+/** Option text per size: `compact` and `compactSlim` share the `default` row; `field` and `intake` follow their input geometry. */
 const dropdownOptionTextClasses = {
   default: 'px-3 text-sm',
   field: 'px-4 text-ui-field',

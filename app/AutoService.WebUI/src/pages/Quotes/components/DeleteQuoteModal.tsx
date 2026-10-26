@@ -34,7 +34,7 @@ export const DeleteQuoteModal = memo(function DeleteQuoteModal({
       tone="danger"
       confirmTestId="quote-delete-confirm-button"
     >
-      <p className={mutedBodyTextClass}>
+      <p className={`${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
         {t('quotes.deleteConfirm', {
           quoteNumber: target?.quoteNumber ?? '',
           title: target?.title ?? '',

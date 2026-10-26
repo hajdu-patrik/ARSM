@@ -24,6 +24,22 @@ interface HistoryAppointmentModalProps {
   readonly onClose: () => void;
 }
 
+interface TimestampRowProps {
+  readonly label: string;
+  readonly value: string;
+  readonly locale: string;
+}
+
+/** One labelled, wrapping date-time line of the history timestamp list. */
+function TimestampRow({ label, value, locale }: TimestampRowProps) {
+  return (
+    <div className="min-w-0 px-3 py-2">
+      <p className={mutedMetaTextClass}>{label}</p>
+      <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatShortDateTime(value, locale)}</p>
+    </div>
+  );
+}
+
 /** Shows one history appointment read-only, with a shortcut that opens it in the scheduler. */
 export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
   appointment,
@@ -64,7 +80,7 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
     >
       <div className="min-w-0 space-y-4">
         <div className={compactInlineClusterClass}>
-          <StatusBadge status={appointment.status} className="min-h-0 w-fit px-2.5 py-1 text-xs" />
+          <StatusBadge status={appointment.status} />
           <button
             type="button"
             onClick={handleOpenInScheduler}
@@ -91,29 +107,17 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
 
         <div className={compactDataSurfaceClass}>
           <p className={mutedMetaTextClass}>{t('scheduler.repairTask')}</p>
-          <p className={`mt-0.5 break-words ${compactPrimaryValueTextClass}`}>{appointment.taskDescription}</p>
+          <p className={`mt-0.5 [overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{appointment.taskDescription}</p>
         </div>
 
         <div className="divide-y divide-ui-border/50 rounded-xl border border-ui-border bg-ui-input">
-          <div className="min-w-0 px-3 py-2">
-            <p className={mutedMetaTextClass}>{t('customers.intakeCreatedAt')}</p>
-            <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatShortDateTime(appointment.intakeCreatedAt, locale)}</p>
-          </div>
-          <div className="min-w-0 px-3 py-2">
-            <p className={mutedMetaTextClass}>{t('customers.dueDateTime')}</p>
-            <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatShortDateTime(appointment.dueDateTime, locale)}</p>
-          </div>
+          <TimestampRow label={t('customers.intakeCreatedAt')} value={appointment.intakeCreatedAt} locale={locale} />
+          <TimestampRow label={t('customers.dueDateTime')} value={appointment.dueDateTime} locale={locale} />
           {appointment.completedAt && (
-            <div className="min-w-0 px-3 py-2">
-              <p className={mutedMetaTextClass}>{t('customers.completedAt')}</p>
-              <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatShortDateTime(appointment.completedAt, locale)}</p>
-            </div>
+            <TimestampRow label={t('customers.completedAt')} value={appointment.completedAt} locale={locale} />
           )}
           {appointment.canceledAt && (
-            <div className="min-w-0 px-3 py-2">
-              <p className={mutedMetaTextClass}>{t('customers.cancelledAt')}</p>
-              <p className={`[overflow-wrap:anywhere] ${compactPrimaryValueTextClass}`}>{formatShortDateTime(appointment.canceledAt, locale)}</p>
-            </div>
+            <TimestampRow label={t('customers.cancelledAt')} value={appointment.canceledAt} locale={locale} />
           )}
         </div>
 

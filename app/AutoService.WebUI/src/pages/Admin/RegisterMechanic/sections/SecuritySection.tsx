@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { FieldErrorText } from '../../../../components/common/FieldErrorText';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
-import { inputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../../utils/formStyles';
+import { credentialToggleInputClass, inputGroupContainerClass, labelClass, largeIconClass, mutedMetaTextClass, passwordToggleButtonClass } from '../../../../utils/formStyles';
 import { MIN_PASSWORD_LENGTH } from '../../../../utils/validation';
 import type { RegisterFieldErrors, RegisterTextFieldName } from '../types';
 
@@ -60,7 +60,7 @@ export const SecuritySection = memo(function SecuritySection({
               onFieldChange('password', event.target.value);
             }}
             placeholder={t('admin.passwordPlaceholder')}
-            className={`${inputClass} pr-12`}
+            className={credentialToggleInputClass}
             disabled={isSubmitting}
             required
             minLength={MIN_PASSWORD_LENGTH}
@@ -98,7 +98,7 @@ export const SecuritySection = memo(function SecuritySection({
               onFieldChange('confirmPassword', event.target.value);
             }}
             placeholder={t('admin.confirmPasswordPlaceholder')}
-            className={`${inputClass} pr-12`}
+            className={credentialToggleInputClass}
             disabled={isSubmitting}
             required
             minLength={MIN_PASSWORD_LENGTH}

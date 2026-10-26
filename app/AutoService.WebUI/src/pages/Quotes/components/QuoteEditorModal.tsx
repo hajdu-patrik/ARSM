@@ -1,4 +1,4 @@
-/** Quote editor shell: sections gated by the server lock flag, then by status (draft editable, sent validity-only, decided read-only; see CLAUDE.md). */
+/** Quote editor shell: sections gated by the server lock flag, then by status (see the WebUI CLAUDE.md). */
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
 import { Modal } from '../../../components/common/Modal';
@@ -14,8 +14,9 @@ import { QuoteEditorLinesSection } from './QuoteEditorModal.lines';
 import { QuoteEditorTotalsSection } from './QuoteEditorModal.totals';
 import { QuoteEditorFooter } from './QuoteEditorModal.footer';
 
-/** Body scrolls inside the dialog (bounded height, shrinks in the fit-viewport dialog) so the footer actions stay on screen. */
-const editorBodyClass = 'min-h-0 min-w-0 max-h-[60vh] space-y-4 overflow-y-auto';
+/** Body scrolls inside the dialog (bounded height, shrinks in the fit-viewport dialog) so the footer actions stay on screen.
+ * The -m-1/p-1 pair nets to zero and leaves room for the 4px focus outline the scroll box would clip. */
+const editorBodyClass = '-m-1 min-h-0 min-w-0 max-h-[60vh] space-y-4 overflow-y-auto p-1';
 
 interface QuoteEditorModalProps {
   readonly t: TFunction;

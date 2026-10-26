@@ -111,10 +111,10 @@ const ErrorPageComponent = memo(function ErrorPage({
 						</div>
 
 						<div className="flex min-w-0 flex-col justify-center rounded-2xl border border-ui-border bg-arsm-input/95 p-5 text-center backdrop-blur-sm dark:bg-arsm-card-dark/92 max-[320px]:p-4 sm:p-6 lg:p-8">
-							<h1 className="text-2xl font-semibold leading-tight text-ui-text sm:text-3xl lg:text-4xl">
+							<h1 className="text-2xl font-semibold leading-tight text-ui-text [overflow-wrap:anywhere] sm:text-3xl lg:text-4xl">
 								{translate(titleKey)}
 							</h1>
-							<p className={`mt-3 ${mutedSecondaryTextClass} sm:text-base`}>
+							<p className={`mt-3 ${mutedSecondaryTextClass} [overflow-wrap:anywhere] sm:text-base`}>
 								{translate(subtitleKey)}
 							</p>
 							<button type="button" onClick={onCtaClick} className={errorPageCtaClass}>

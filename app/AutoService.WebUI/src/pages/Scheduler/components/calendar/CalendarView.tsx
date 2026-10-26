@@ -178,11 +178,11 @@ const CalendarDayCell = memo(function CalendarDayCell({
     <>
       <div className="mb-0.5 flex h-7 items-center justify-center max-[320px]:h-6">
         {day.isToday ? (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ui-accent text-sm font-semibold text-arsm-primary outline-2 outline-ui-accent/30 max-[320px]:h-6 max-[320px]:w-6 max-[320px]:text-xs dark:text-arsm-on-accent-dark">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ui-accent text-sm font-semibold text-ui-on-accent outline-2 outline-ui-accent/30 max-[320px]:h-6 max-[320px]:w-6">
             {dayNum}
           </span>
         ) : (
-          <span className="text-sm font-medium max-[320px]:text-xs">{dayNum}</span>
+          <span className="text-sm font-medium">{dayNum}</span>
         )}
       </div>
 
@@ -282,7 +282,7 @@ const CalendarViewComponent = memo(function CalendarView({
           <ChevronLeft className={defaultIconClass} />
         </button>
 
-        <h3 className="min-w-0 break-words px-1 text-center text-lg font-semibold capitalize text-ui-text max-[320px]:text-sm">
+        <h3 className="min-w-0 break-words px-1 text-center text-lg font-semibold capitalize text-ui-text max-[320px]:text-base">
           {monthLabel}
         </h3>
 
@@ -308,7 +308,7 @@ const CalendarViewComponent = memo(function CalendarView({
             {dayHeaders.map((dayLabel) => (
               <div
                 key={dayLabel}
-                className="py-1 text-center text-xs font-semibold uppercase tracking-[0.06em] text-ui-muted max-[320px]:text-ui-micro max-[320px]:tracking-[0.04em]"
+                className="py-1 text-center text-xs font-semibold uppercase tracking-[0.06em] text-ui-muted max-[320px]:tracking-[0.04em]"
               >
                 {dayLabel}
               </div>

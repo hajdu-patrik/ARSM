@@ -30,6 +30,7 @@ interface AppointmentCardProps {
   readonly onClick?: () => void;
 }
 
+/** Appointment card with status, vehicle, due state, mechanics and inline claim/unassign actions. */
 export const AppointmentCard = memo(function AppointmentCard({
   appointment,
   currentMechanicId,
@@ -93,10 +94,10 @@ export const AppointmentCard = memo(function AppointmentCard({
       <div className="min-w-0 space-y-3">
         <div className="min-w-0 space-y-1">
           <h3 className={compactItemTitleClampTextClass}>{vehicleTitle}</h3>
-          <p className={`font-mono ${mutedMetaTextClass}`}>{vehicle.licensePlate}</p>
+          <p className={`font-mono [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>{vehicle.licensePlate}</p>
         </div>
 
-        <p className={`line-clamp-2 ${mutedBodyTextClass}`}>{appointment.taskDescription}</p>
+        <p className={`line-clamp-2 [overflow-wrap:anywhere] ${mutedBodyTextClass}`}>{appointment.taskDescription}</p>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-ui-border/70 bg-ui-input/70 px-2.5 py-2">
           <span className={`inline-flex shrink-0 items-center gap-1 ${mutedMetaTextClass}`}>
@@ -127,7 +128,7 @@ export const AppointmentCard = memo(function AppointmentCard({
           </div>
 
           {showMechanicAction && (
-            <div className="pointer-events-auto relative z-20 ml-auto flex min-w-0 shrink-0 items-center self-center max-[350px]:ml-0 max-[350px]:w-full max-[350px]:justify-end">
+            <div className="pointer-events-auto relative z-20 ml-auto flex min-w-0 max-w-full shrink-0 items-center self-center max-[350px]:ml-0 max-[350px]:w-full max-[350px]:justify-end">
               {canClaimAppointment && (
                 <button
                   type="button"

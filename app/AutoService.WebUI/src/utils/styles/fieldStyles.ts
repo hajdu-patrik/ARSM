@@ -10,6 +10,12 @@ const inputFieldBaseClass = `min-h-11 w-full py-2.5 max-[320px]:py-2 ${textField
 /** Default full-width input used by standard forms (auth, settings, customer/admin forms). */
 export const inputClass = `${inputFieldBaseClass} px-4 text-base sm:text-ui-field max-[320px]:px-3`;
 
+/** Credential/identity input: pr-10 keeps long text clear of the icon a browser or password manager injects at the right edge. */
+export const credentialInputClass = `${inputFieldBaseClass} pl-4 pr-10 text-base sm:text-ui-field max-[320px]:pl-3`;
+
+/** Credential input with its own eye button (48px at right-1) plus the injected icon (40px): pr-22 reserves both. */
+export const credentialToggleInputClass = `${inputFieldBaseClass} pl-4 pr-22 text-base sm:text-ui-field max-[320px]:pl-3`;
+
 /** Compact input variant used in denser rows and table-like edit surfaces. */
 export const inputClassCompact = `min-h-11 w-full px-3 py-2 text-base sm:text-sm ${textFieldSurfaceClass}`;
 

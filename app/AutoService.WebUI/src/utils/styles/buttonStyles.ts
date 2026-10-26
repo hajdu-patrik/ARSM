@@ -9,7 +9,7 @@ export const iconButtonMicroInteractionClass = 'transition-[background-color,col
 
 /** Action tones shared by the medium (reference chip) and compact chip button families. */
 const primaryActionToneClass = 'border-ui-accent/60 bg-arsm-accent-subtle text-ui-text hover:border-ui-accent hover:bg-arsm-accent-wash dark:bg-arsm-accent-dark/25 dark:hover:bg-arsm-accent-dark/35';
-const dangerActionToneClass = 'border-arsm-error-border/75 bg-ui-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-soft dark:border-arsm-error-dark/75 dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85';
+const dangerActionToneClass = 'border-arsm-error-border/75 bg-ui-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-softest dark:border-arsm-error-dark/75 dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85';
 
 /** Generic utility and icon actions used in headers, toolbars, and modal close controls. */
 export const compactUtilityButtonClass = `inline-flex h-11 min-h-11 min-w-[4.9rem] shrink-0 items-center justify-center rounded-2xl border border-ui-accent/30 bg-arsm-accent-subtle/85 px-5 text-xs font-medium leading-normal text-ui-text hover:bg-arsm-accent-subtle ${focusVisibleOutlineClass} max-[320px]:min-w-[3.9rem] max-[320px]:px-3.5 dark:bg-arsm-hover-dark/80 dark:hover:bg-arsm-hover-dark ${buttonMicroInteractionClass}`;
@@ -30,14 +30,14 @@ export const compactChipCoreClass = `inline-flex min-h-7 min-w-0 max-w-full shri
 export const compactChipNeutralToneClass = 'border-ui-field-border bg-arsm-card text-ui-label hover:bg-ui-toggle dark:bg-arsm-input-dark';
 
 /** Compact chip button base shared by Customers and Scheduler local chip variants (min-h-7, scales to a 44px target below the sm breakpoint (640px)). */
-const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2`;
+const compactChipActionBaseClass = `${compactChipCoreClass} max-sm:min-h-11 max-sm:px-3 max-sm:py-2 max-[350px]:whitespace-normal max-[350px]:text-center`;
 /** Compact chip variants; the neutral one matches the compact filter select surface (bg-card, field border) it sits beside. */
 export const compactChipNeutralButtonClass = `${compactChipActionBaseClass} ${compactChipNeutralToneClass}`;
 export const compactChipPrimaryButtonClass = `${compactChipActionBaseClass} ${primaryActionToneClass}`;
 export const compactChipDangerButtonClass = `${compactChipActionBaseClass} ${dangerActionToneClass}`;
 
 /** Filter chips: the compact chips with the 44px touch target below lg (1024px) instead of sm, for controls beside the filter select. */
-export const compactFilterChipActionBaseClass = `${compactChipCoreClass} max-lg:min-h-11 max-lg:px-3 max-lg:py-2`;
+export const compactFilterChipActionBaseClass = `${compactChipCoreClass} max-lg:min-h-11 max-lg:px-3 max-lg:py-2 max-[350px]:whitespace-normal max-[350px]:text-center`;
 export const compactFilterChipNeutralButtonClass = `${compactFilterChipActionBaseClass} ${compactChipNeutralToneClass}`;
 
 /** Row-level 44x44 icon actions (vehicle/quote/catalog rows, card expand toggles): scale + tone-background hover whose icon color never loses contrast (darkest tone text in light, lightest in dark); disabled renders neutral grey with no hover. */
@@ -68,8 +68,8 @@ export const getSegmentedControlOptionClass = (isActive: boolean): string =>
   `${segmentedControlOptionBaseClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
 
 /** Reference chips, the medium button family for contextual panel/card actions (details panels, compact toolbars, history actions). */
-const referenceChipShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold leading-normal disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
-const referenceChipBaseClass = `${referenceChipShapeClass} h-11 min-h-11 whitespace-nowrap`;
+const referenceChipShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-center text-xs font-semibold leading-normal disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
+const referenceChipBaseClass = `${referenceChipShapeClass} min-h-11 whitespace-nowrap max-[350px]:whitespace-normal`;
 /** Same shape as the base, but the label may wrap (long localized labels at 320px) and the button grows from the 44px minimum height. */
 const referenceChipWrapBaseClass = `${referenceChipShapeClass} min-h-11 whitespace-normal`;
 
@@ -82,7 +82,7 @@ export const referenceChipDangerButtonClass = `${referenceChipBaseClass} ${dange
 const mainCtaActionBaseClass = `inline-flex min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-center text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
 export const buttonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover`;
 export const secondaryButtonClass = `${mainCtaActionBaseClass} border border-ui-border bg-ui-toggle font-medium text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark`;
-export const dangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-soft dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
+export const dangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-softest dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 
 /** Binary pill toggle helper used by compact on/off filter controls. */
 const togglePillBaseClass = `inline-flex min-h-11 min-w-11 max-w-full items-center justify-center rounded-xl border px-3.5 py-2 text-center text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;

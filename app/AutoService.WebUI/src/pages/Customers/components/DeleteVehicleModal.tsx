@@ -32,7 +32,7 @@ export const DeleteVehicleModal = memo(function DeleteVehicleModal({
       icon={Trash2}
       tone="danger"
     >
-      <p className={mutedBodyTextClass}>
+      <p className={`[overflow-wrap:anywhere] ${mutedBodyTextClass}`}>
         {t('customers.deleteVehicleConfirm', {
           plate: target?.vehicle.licensePlate ?? '',
         })}
