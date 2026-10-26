@@ -9,11 +9,11 @@ import {
   focusVisibleOutlineClass,
   insetSurfaceClass,
   loadingSpinnerClass,
+  navIconButtonClass,
   toneDotClasses,
 } from '../../../../utils/formStyles';
 import { formatLongDate, formatMonthYear, formatWeekdayShort } from '../../../../utils/intlFormat';
 import { CompactOverflowBadge } from '../shared/CompactOverflowBadge';
-import { schedulerNavIconButtonClass } from '../../utils/schedulerButtonStyles';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
 interface CalendarViewProps {
@@ -277,7 +277,7 @@ const CalendarViewComponent = memo(function CalendarView({
           disabled={!canGoPrev}
           title={t('scheduler.calendar.prevMonth')}
           aria-label={t('scheduler.calendar.prevMonth')}
-          className={`${schedulerNavIconButtonClass} mx-1`}
+          className={`${navIconButtonClass} mx-1`}
         >
           <ChevronLeft className={defaultIconClass} />
         </button>
@@ -292,7 +292,7 @@ const CalendarViewComponent = memo(function CalendarView({
           disabled={!canGoNext}
           title={t('scheduler.calendar.nextMonth')}
           aria-label={t('scheduler.calendar.nextMonth')}
-          className={`${schedulerNavIconButtonClass} mx-1`}
+          className={`${navIconButtonClass} mx-1`}
         >
           <ChevronRight className={defaultIconClass} />
         </button>

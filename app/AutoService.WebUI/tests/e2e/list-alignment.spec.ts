@@ -6,7 +6,7 @@ import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
-import { selectDropdownOption } from './support/dropdown';
+import { selectReportYear } from './support/company-results-period';
 import type { TestLanguage, TestTheme } from './support/browser-state';
 import { seedWorstCaseListData } from './support/list-alignment-fixtures';
 import { expectColumnsAligned, expectRowActionsAligned, listSection } from './support/list-alignment';
@@ -93,7 +93,7 @@ async function expectListsAligned(page: Page, lang: TestLanguage): Promise<void>
   await expectColumnsAligned(catalogRows, { expectedColumns: CATALOG_COLUMNS });
 
   await page.goto('/company-results');
-  await selectDropdownOption(page, 'company-results-year', '2026');
+  await selectReportYear(page, 2026);
   await expect(page.getByTestId('company-results-vat-row').first()).toBeVisible();
   await expectColumnsAligned(page.getByTestId('company-results-month-row'), { expectedColumns: MONTH_COLUMNS });
   await expectColumnsAligned(page.getByTestId('company-results-vat-row'), { expectedColumns: VAT_COLUMNS });

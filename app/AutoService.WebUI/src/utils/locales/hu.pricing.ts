@@ -205,6 +205,8 @@ export const huPricing = {
     year: 'Év',
     month: 'Hónap',
     wholeYear: 'Teljes év',
+    previousYear: 'Előző év',
+    nextYear: 'Következő év',
     loading: 'Kimutatás betöltése...',
     // _one/_other format a numeric count; the base key is the fallback for a pre-formatted (string) count.
     quoteCount: '{{count}} elfogadott árajánlatból',

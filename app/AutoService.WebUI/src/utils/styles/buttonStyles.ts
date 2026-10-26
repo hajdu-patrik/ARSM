@@ -48,6 +48,9 @@ export const rowIconActionDangerClass = `${rowIconActionBaseClass} text-arsm-err
 export const rowIconActionAccentClass = `${rowIconActionBaseClass} text-arsm-accent-vivid hover:bg-arsm-accent-wash hover:text-arsm-accent-deep dark:text-arsm-accent dark:hover:bg-arsm-accent-dark/35 dark:hover:text-arsm-accent-dark-hover`;
 export const rowIconActionNeutralClass = `${rowIconActionBaseClass} text-ui-muted hover:bg-ui-toggle hover:text-ui-text`;
 
+/** Previous/next stepper icon button (44x44, bordered, neutral tone): the scheduler calendar month nav and the company results year stepper. */
+export const navIconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-input text-ui-label hover:bg-ui-hover hover:text-ui-text ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:border-ui-border/60 disabled:opacity-50 disabled:hover:bg-ui-input disabled:hover:text-ui-label ${iconButtonMicroInteractionClass}`;
+
 /** Option tile primitives used by selectable cards and grouped checkbox-like controls; the active tile marks itself with a 1px outline. */
 export const optionTileBaseClass = 'arsm-focus-outline relative inline-flex h-11 min-h-11 w-auto max-w-full shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 text-xs transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ui-focus disabled:cursor-not-allowed';
 export const optionTileActiveClass = 'border-ui-accent bg-ui-toggle text-ui-text outline-1 outline-arsm-accent/25 dark:outline-arsm-accent-dark/30';
@@ -57,8 +60,10 @@ export const optionTileCheckboxActiveClass = 'border-ui-accent bg-ui-accent';
 export const optionTileCheckboxInactiveClass = 'border-ui-border bg-transparent';
 export const hiddenCheckboxClass = 'pointer-events-none absolute opacity-0';
 
+/** Tinted track the segmented options sit on, so inactive options still read as buttons. */
+export const segmentedTrackClass = 'rounded-xl bg-ui-toggle p-1.5';
 /** Segmented controls used where two-state mode switching is required (for example view mode toggles). */
-export const segmentedControlClass = 'grid min-w-0 grid-cols-2 gap-1.5 rounded-xl bg-ui-toggle p-1.5';
+export const segmentedControlClass = `grid min-w-0 grid-cols-2 gap-1.5 ${segmentedTrackClass}`;
 
 const segmentedControlOptionBaseClass = `inline-flex min-h-11 min-w-0 items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60`;
 const segmentedControlOptionActiveClass = 'border border-arsm-accent/80 bg-ui-accent text-ui-on-accent outline-1 outline-arsm-accent-deep/20 dark:border-arsm-accent-dark/85 dark:outline-arsm-accent-dark/35';
@@ -66,6 +71,10 @@ const segmentedControlOptionInactiveClass = 'bg-transparent text-ui-label hover:
 
 export const getSegmentedControlOptionClass = (isActive: boolean): string =>
   `${segmentedControlOptionBaseClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
+
+/** Narrow selectable tile (px-1, 12px text) in the segmented-control look, for dense grids such as the company results month picker. */
+export const getSegmentedTileClass = (isActive: boolean): string =>
+  `inline-flex min-h-11 w-full min-w-0 items-center justify-center rounded-xl px-1 py-2 text-ui-caption font-semibold transition ${focusVisibleOutlineClass} ${isActive ? segmentedControlOptionActiveClass : segmentedControlOptionInactiveClass}`;
 
 /** Reference chips, the medium button family for contextual panel/card actions (details panels, compact toolbars, history actions). */
 const referenceChipShapeClass = `inline-flex min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 text-center text-xs font-semibold leading-normal disabled:cursor-not-allowed disabled:opacity-60 ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;

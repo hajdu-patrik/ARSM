@@ -99,6 +99,17 @@ _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run
 _Dev time: ~14h53m wall-clock (2026-10-21 22:27 to 2026-10-22 13:20 +02:00, across three sessions: one orchestrated run with three sonnet-worker-max packages plus the backend, review, docs and gate passes by hand, then a review by three sonnet-worker-max reviewers, the follow-up fixes, the full pre-push gate and the full Playwright suite). Cost: not measured._
 
 ### Changed
+- Company results period picker without dropdowns (2026-10-26). The year is a `‹ 2026 ›` stepper over the same six years
+  (previous disabled at the oldest, next at the current year, the value announced politely); below it a "Whole year" tile and
+  the 12 months as short localized tiles (`formatMonthShort`, full name as label) on a tinted segmented track, 4x3 on phones and
+  6x2 from `sm`, side by side with the stepper from `lg`. Toggle buttons with `aria-pressed`, like the login mode switch; the
+  selection, URL state and data fetching are unchanged. Shared: `navIconButtonClass` (the calendar month nav moved here),
+  `getSegmentedTileClass`, `segmentedTrackClass`; new `companyResults.previousYear`/`nextYear` keys. The E2E specs drive the
+  new controls through `support/company-results-period.ts`. No overflow at 320/390/1300px in either theme; validate and the full
+  Playwright suite pass.
+
+_Dev time: ~15m wall-clock (2026-10-26 13:35 to 13:50 +01:00, one arsm-chain run, a hand fix for the tile track after the screenshot check, the full E2E suite). Cost: ~$4.79-$9.59 output-token-only estimate (479k output tokens, sonnet to opus; excludes input tokens and cache, so a lower bound)._
+
 - Phone readability round (2026-10-26). Credential and identity fields (login identifier and password, change password, admin
   register, settings e-mail/phone, delete-profile confirmation) reserve room on the right for the icon browsers and password
   managers inject: `credentialInputClass` (`pr-10`) and, beside an eye button, `credentialToggleInputClass` (button plus icon);

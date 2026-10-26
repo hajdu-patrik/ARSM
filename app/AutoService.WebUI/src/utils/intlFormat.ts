@@ -59,6 +59,8 @@ const MONTH_YEAR_OPTIONS: Intl.DateTimeFormatOptions = { month: 'long', year: 'n
 
 const MONTH_NAME_OPTIONS: Intl.DateTimeFormatOptions = { month: 'long' };
 
+const MONTH_SHORT_OPTIONS: Intl.DateTimeFormatOptions = { month: 'short' };
+
 const WEEKDAY_SHORT_OPTIONS: Intl.DateTimeFormatOptions = { weekday: 'short' };
 
 /** Formats a date or ISO string with a preset; unparsable input yields a dash instead of throwing. */
@@ -98,6 +100,10 @@ export function formatMonthYear(value: Date | string, language: string): string 
 
 export function formatMonthName(value: Date | string, language: string): string {
   return formatPreset(MONTH_NAME_OPTIONS, value, language);
+}
+
+export function formatMonthShort(value: Date | string, language: string): string {
+  return formatPreset(MONTH_SHORT_OPTIONS, value, language);
 }
 
 export function formatWeekdayShort(value: Date | string, language: string): string {

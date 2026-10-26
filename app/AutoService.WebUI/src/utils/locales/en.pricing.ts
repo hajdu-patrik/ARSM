@@ -205,6 +205,8 @@ export const enPricing = {
     year: 'Year',
     month: 'Month',
     wholeYear: 'Whole year',
+    previousYear: 'Previous year',
+    nextYear: 'Next year',
     loading: 'Loading the report...',
     // _one/_other format a numeric count; the base key is the fallback for a pre-formatted (string) count.
     quoteCount: 'From {{count}} accepted quotes',
