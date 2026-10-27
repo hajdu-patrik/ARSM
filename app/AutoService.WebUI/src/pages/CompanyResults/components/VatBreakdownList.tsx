@@ -43,7 +43,7 @@ export const VatBreakdownList = memo(function VatBreakdownList({ t, locale, rows
 
           return (
             <DataListRow key={row.vatRatePercent} testId="company-results-vat-row" valuesClassName={mobileValuesClass}>
-              <DataListCell column={rateColumn.key} className="max-[359px]:mb-1">
+              <DataListCell column={rateColumn.key} className="max-sm:mb-1">
                 <DataListText kind="title" title={rateText} className="tabular-nums">{rateText}</DataListText>
               </DataListCell>
               <MobileStackedValues

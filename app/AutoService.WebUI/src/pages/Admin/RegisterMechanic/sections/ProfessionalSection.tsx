@@ -71,6 +71,8 @@ export const ProfessionalSection = memo(function ProfessionalSection({
         <p className={labelClass}>
           {t('admin.expertiseLabel')} * <span className="text-xs font-normal">({t('admin.expertiseHint')})</span>
         </p>
+        {/* Phone: tiles fill each row, two equal halves where the labels fit and a whole row for a longer one, so no row ends ragged
+            and no word breaks; from sm they flow at their natural width. */}
         <div className="flex min-w-0 flex-wrap gap-2">
           {EXPERTISE_OPTIONS.map((opt) => {
             const isSelected = expertise.includes(opt.value);
@@ -78,7 +80,7 @@ export const ProfessionalSection = memo(function ProfessionalSection({
             return (
               <label
                 key={opt.value}
-                className={`${optionTileBaseClass} ${isSelected ? optionTileActiveClass : optionTileInactiveClass} ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
+                className={`${optionTileBaseClass} max-sm:min-w-fit max-sm:grow max-sm:basis-[calc(50%-0.25rem)] ${isSelected ? optionTileActiveClass : optionTileInactiveClass} ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}
               >
                 <input
                   type="checkbox"

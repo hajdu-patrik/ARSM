@@ -34,8 +34,8 @@ const compactSelectClass = `h-11 min-h-11 rounded-xl border border-ui-field-bord
 
 export const compactSelectFullClass = `${compactSelectClass} w-full min-w-0 max-w-full truncate`;
 
-/** Compact filter select at its 28px size on every width; the touch variant below adds the 44px sizing. */
-export const filterSelectCompactSlimSurfaceClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 text-base font-semibold leading-tight tracking-normal sm:text-xs sm:leading-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} dark:bg-arsm-input-dark`;
+/** Compact filter select at its 28px size on every width, with the 12px chip text of the filter row it sits in; the touch variant below adds the 44px sizing. */
+export const filterSelectCompactSlimSurfaceClass = `h-7 min-h-7 w-full min-w-0 max-w-full truncate rounded-xl border border-ui-field-border bg-arsm-card px-2 py-0.5 text-xs font-semibold leading-normal tracking-normal text-ui-label transition-colors hover:bg-ui-toggle focus-visible:border-ui-focus ${focusVisibleOutlineClass} dark:bg-arsm-input-dark`;
 
 /** Compact select dedicated to filter toolbars (kept distinct from form/edit selects); reaches the 44px touch height below the lg breakpoint (1024px). */
 export const filterSelectCompactSurfaceClass = `${filterSelectCompactSlimSurfaceClass} max-lg:h-11 max-lg:min-h-11 max-lg:py-2`;

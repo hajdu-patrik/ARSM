@@ -111,7 +111,7 @@ export const MonthAppointmentFilters = memo(function MonthAppointmentFilters({
 
       <div className={filterSelectCompactWrapperClass} title={selectedMechanicName}>
         <Dropdown
-          size="compactSlim"
+          size="compact"
           value={selectedMechanicId === null ? '' : String(selectedMechanicId)}
           options={mechanicOptions}
           ariaLabel={t('scheduler.monthList.mechanicAll')}
