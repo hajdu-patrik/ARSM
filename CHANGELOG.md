@@ -9,6 +9,24 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Fixed
+- Phone layout pass from on-device screenshots of teszt.arsm.hu (2026-10-27). The end of every page was unreachable:
+  the app shell listed `h-screen h-dvh`, Tailwind emits `.h-screen` later, so it was 100vh, which on a phone excludes the
+  browser toolbar, and the toolbar never hides because only `<main>` scrolls; the shell is now
+  `h-screen supports-[height:100dvh]:h-dvh`. Lists split into one-item pages on a phone (1/22 customers), so
+  `useFittingPageSize` returns a fixed 10 below `sm`. The inline repair history scrolled in a nested 30rem box with a hidden
+  scrollbar, which looked cut off; below `sm` it now grows with the page. The quote editor body fills the dialog instead of
+  a fixed `60vh`. Touch sizes: the scheduler month filters and mechanic select are 44 px below `lg`, the mechanic roster
+  actions 44x44, the header language/theme toggles 44x44 below `sm`. Row titles centre on their 44 px actions in the
+  `DataList` tiles; the quote tile puts its actions on the status-badge line so the title keeps one line; the customer card
+  keeps edit/delete on the name line. Company result month and VAT values get one labelled line each below `sm`; the
+  expertise tiles fill their rows without breaking a word; a disabled primary CTA is neutral and readable in dark mode.
+  Company results: months that have not started yet are disabled tiles (`isFutureMonth`), a year step onto one falls back
+  to the whole year, and the month picker gained a divider and tile frames. Verified: `tsc -b`, eslint, build, the affected
+  E2E specs (company results, lists and pagination, customers, quotes, scheduler, admin, settings), Playwright phone
+  screenshots at 393 and 320 px, and the user's own phone on teszt.
+
+_Dev time: ~1h40m wall-clock (2026-10-27 18:13 to 19:53 +01:00, measured from the first screenshot upload to this entry). Cost: not measured (direct work, no workflow)._
+
 - Browser-autofilled inputs follow the theme (2026-10-25). Before, the autofill fill was frozen by a `9999s` background
   transition, because the UA `!important` autofill colour beats author `!important`. So a field autofilled in one theme kept
   that theme's fill after a switch: a light field with light text in dark mode, a dark field with dark text in light mode.
