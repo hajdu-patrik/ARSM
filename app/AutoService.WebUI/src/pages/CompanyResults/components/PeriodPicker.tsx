@@ -11,6 +11,7 @@ import {
   segmentedTrackClass,
 } from '../../../utils/formStyles';
 import { formatMonthName, formatMonthShort } from '../../../utils/intlFormat';
+import { isFutureMonth } from '../helpers';
 
 interface PeriodPickerProps {
   readonly t: TFunction;
@@ -25,6 +26,17 @@ interface PeriodPickerProps {
 const SELECTABLE_YEARS = 6;
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+/** Hairline frame that separates the tiles on the track; the active tile brings its own accent border. */
+const inactiveTileFrameClass = 'border border-ui-border/70';
+
+/** A month that has not started yet: faded, dashed and inert, so it reads as not selectable. */
+const futureTileClass = 'disabled:cursor-not-allowed disabled:border-dashed disabled:text-ui-muted disabled:opacity-50 disabled:hover:bg-transparent';
+
+/** Period tile: the shared segmented tile plus the picker's own frame and future-month look. */
+function getPeriodTileClass(isActive: boolean): string {
+  return `${getSegmentedTileClass(isActive)} ${isActive ? '' : inactiveTileFrameClass} ${futureTileClass}`;
+}
 
 /** Builds month labels in the current language, so the tiles read naturally without a translated key per name. */
 function buildMonthLabels(locale: string): Array<{ month: number; shortName: string; fullName: string }> {
@@ -111,10 +123,11 @@ export const PeriodPicker = memo(function PeriodPicker({
               onClick={() => {
                 onMonthChange(null);
               }}
-              className={getSegmentedTileClass(month === null)}
+              className={getPeriodTileClass(month === null)}
             >
               {t('companyResults.wholeYear')}
             </button>
+            <span aria-hidden="true" className="mx-1 h-px bg-ui-border" />
             <div className="grid min-w-0 grid-cols-4 gap-1.5 sm:grid-cols-6">
               {monthLabels.map(({ month: tileMonth, shortName, fullName }) => (
                 <button
@@ -124,10 +137,11 @@ export const PeriodPicker = memo(function PeriodPicker({
                   title={fullName}
                   aria-label={fullName}
                   aria-pressed={month === tileMonth}
+                  disabled={isFutureMonth(year, tileMonth)}
                   onClick={() => {
                     onMonthChange(tileMonth);
                   }}
-                  className={getSegmentedTileClass(month === tileMonth)}
+                  className={getPeriodTileClass(month === tileMonth)}
                 >
                   {shortName}
                 </button>
