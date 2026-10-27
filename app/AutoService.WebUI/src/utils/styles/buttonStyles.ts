@@ -12,7 +12,7 @@ const primaryActionToneClass = 'border-ui-accent/60 bg-arsm-accent-subtle text-u
 const dangerActionToneClass = 'border-arsm-error-border/75 bg-ui-error-bg text-arsm-error-text hover:border-arsm-error-text/40 hover:bg-arsm-error-softest dark:border-arsm-error-dark/75 dark:text-arsm-error-text-light dark:hover:border-arsm-error-text-light/35 dark:hover:bg-arsm-error-bg-dark/85';
 
 /** Generic utility and icon actions used in headers, toolbars, and modal close controls. */
-export const compactUtilityButtonClass = `inline-flex h-11 min-h-11 min-w-[4.9rem] shrink-0 items-center justify-center rounded-2xl border border-ui-accent/30 bg-arsm-accent-subtle/85 px-5 text-xs font-medium leading-normal text-ui-text hover:bg-arsm-accent-subtle ${focusVisibleOutlineClass} max-[320px]:min-w-[3.9rem] max-[320px]:px-3.5 dark:bg-arsm-hover-dark/80 dark:hover:bg-arsm-hover-dark ${buttonMicroInteractionClass}`;
+export const compactUtilityButtonClass = `inline-flex h-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-2xl border border-ui-accent/30 bg-arsm-accent-subtle/85 px-3 text-xs font-medium leading-normal text-ui-text hover:bg-arsm-accent-subtle ${focusVisibleOutlineClass} sm:min-w-[4.9rem] sm:px-5 dark:bg-arsm-hover-dark/80 dark:hover:bg-arsm-hover-dark ${buttonMicroInteractionClass}`;
 export const sidebarShellIconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent p-2 text-ui-label hover:bg-ui-hover hover:text-arsm-accent-deep ${focusVisibleOutlineClass} dark:hover:text-arsm-primary-dark ${iconButtonMicroInteractionClass}`;
 export const modalConfirmCloseButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-ui-muted hover:bg-ui-hover hover:text-ui-text ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-ui-muted ${iconButtonMicroInteractionClass}`;
 
@@ -89,7 +89,8 @@ export const referenceChipDangerButtonClass = `${referenceChipBaseClass} ${dange
 
 /** Main CTA family for save/delete/edit and modal confirmation actions; a long label wraps and grows the 44px minimum height. */
 const mainCtaActionBaseClass = `inline-flex min-h-11 min-w-0 max-w-full shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-center text-sm disabled:cursor-not-allowed disabled:opacity-60 max-[350px]:w-full ${buttonMicroInteractionClass} ${focusVisibleOutlineClass}`;
-export const buttonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover`;
+/** In dark mode a disabled primary turns neutral: the faded accent fill under dark text read as an unreadable smudge. */
+export const buttonClass = `${mainCtaActionBaseClass} bg-ui-accent font-semibold text-ui-on-accent hover:bg-ui-accent-hover dark:disabled:bg-ui-toggle dark:disabled:text-ui-label dark:disabled:hover:bg-ui-toggle`;
 export const secondaryButtonClass = `${mainCtaActionBaseClass} border border-ui-border bg-ui-toggle font-medium text-ui-label hover:bg-arsm-accent-subtle dark:hover:bg-arsm-hover-dark`;
 export const dangerButtonClass = `${mainCtaActionBaseClass} border border-arsm-error-border bg-ui-error-bg font-semibold text-arsm-error-text hover:bg-arsm-error-softest dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/80`;
 

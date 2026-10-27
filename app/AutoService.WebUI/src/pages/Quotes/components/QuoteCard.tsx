@@ -28,8 +28,15 @@ interface QuoteCardProps {
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
-/** Tile layout: the status badge takes its own line above the value tiles. */
-const statusTileClass = '@max-4xl:order-first @max-4xl:col-span-2';
+/** Tile layout: the status badge takes its own 44px line above the value tiles, which the row actions share. */
+const statusTileClass = '@max-4xl:order-first @max-4xl:col-span-2 @max-4xl:flex @max-4xl:min-h-11 @max-4xl:items-center';
+
+/** Tile layout: the title gets the full header width, so three 44px actions no longer squeeze it onto two lines. */
+const leadTileClass = '@max-4xl:col-span-2';
+
+/** Tile layout: the values start on the second line, which the actions overlay at its end, beside the status badge. */
+const valuesTileClass = '@max-4xl:col-start-1 @max-4xl:row-start-2';
+const actionsTileClass = '@max-4xl:col-start-2 @max-4xl:row-start-2 @max-4xl:ml-2 @max-4xl:self-start';
 
 interface QuoteRowActionsProps {
   readonly t: TFunction;
@@ -104,15 +111,15 @@ export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery
   return (
     <DataListRow
       testId="quote-row"
-      valuesClassName={compactTwoColumnFixedGridClass}
+      valuesClassName={`${compactTwoColumnFixedGridClass} ${valuesTileClass}`}
       lead={(
-        <DataListCell column="quote">
+        <DataListCell column="quote" className={leadTileClass}>
           <DataListText kind="title" title={quote.title}><HighlightedText text={quote.title} query={searchQuery} /></DataListText>
           <DataListText kind="reference" title={quote.quoteNumber}><HighlightedText text={quote.quoteNumber} query={searchQuery} /></DataListText>
         </DataListCell>
       )}
       actions={(
-        <DataListCell column="actions" headerEnd>
+        <DataListCell column="actions" className={actionsTileClass}>
           <QuoteRowActions t={t} quote={quote} onOpen={onOpen} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />
         </DataListCell>
       )}

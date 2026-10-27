@@ -61,8 +61,9 @@ export const CustomerCard = memo(function CustomerCard({
       data-expanded={isExpanded}
       className={`min-w-0 duration-200 ${contentCardFrameClass}`}
     >
-      <div className="flex min-w-0 flex-col gap-3 px-4 py-4 sm:px-5 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-        <h2 className={`flex min-w-0 items-center gap-2 ${baseSectionHeadingTextClass}`}>
+      {/* Phone: name and its actions share the first line, the pills wrap below; lg: one line, with the actions after the pills. */}
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3 px-4 py-4 sm:px-5 lg:flex lg:flex-wrap lg:items-center">
+        <h2 className={`flex min-w-0 items-center ${baseSectionHeadingTextClass} lg:mr-auto`}>
           <button
             data-testid={`customer-expand-${String(customer.id)}`}
             type="button"
@@ -72,7 +73,7 @@ export const CustomerCard = memo(function CustomerCard({
                 onOpenCustomerDetails(customer.id);
               }
             }}
-            className={rowIconActionNeutralClass}
+            className={`${rowIconActionNeutralClass} -ml-3`}
             aria-expanded={isExpanded}
             aria-controls={isExpanded ? detailsRegionId : undefined}
             aria-label={expandLabel}
@@ -98,38 +99,39 @@ export const CustomerCard = memo(function CustomerCard({
           </button>
         </h2>
 
-        <div className={`flex min-w-0 flex-wrap items-center gap-2 ${mutedMetaTextClass}`}>
+        <div className={`${compactRowActionsClusterClass} lg:order-last`}>
+          <button
+            type="button"
+            onClick={() => {
+              onOpenEditCustomerModal(customer);
+            }}
+            className={rowIconActionWarningClass}
+            title={editCustomerLabel}
+            aria-label={editCustomerLabel}
+          >
+            <Pencil className={smallIconClass} />
+          </button>
+          {onOpenDeleteCustomerModal !== undefined && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenDeleteCustomerModal(customer);
+              }}
+              className={rowIconActionDangerClass}
+              title={deleteCustomerLabel}
+              aria-label={deleteCustomerLabel}
+            >
+              <Trash2 className={smallIconClass} />
+            </button>
+          )}
+        </div>
+
+        <div className={`col-span-2 flex min-w-0 flex-wrap items-center gap-2 ${mutedMetaTextClass}`}>
           <span className={metadataPillWrapClass}>{customer.email}</span>
           {customer.phoneNumber && <span className={metadataPillWrapClass}>{customer.phoneNumber}</span>}
           <span className={metadataPillWrapClass}>
             {t('common.fields.vehicleCount', { count: customer.vehicleCount })}
           </span>
-          <div className={compactRowActionsClusterClass}>
-            <button
-              type="button"
-              onClick={() => {
-                onOpenEditCustomerModal(customer);
-              }}
-              className={rowIconActionWarningClass}
-              title={editCustomerLabel}
-              aria-label={editCustomerLabel}
-            >
-              <Pencil className={smallIconClass} />
-            </button>
-            {onOpenDeleteCustomerModal !== undefined && (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenDeleteCustomerModal(customer);
-                }}
-                className={rowIconActionDangerClass}
-                title={deleteCustomerLabel}
-                aria-label={deleteCustomerLabel}
-              >
-                <Trash2 className={smallIconClass} />
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
