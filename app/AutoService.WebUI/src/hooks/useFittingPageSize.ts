@@ -5,6 +5,10 @@ const DEFAULT_RESERVED_BOTTOM_PX = 88;
 /** Page size a list requests while no measurement exists; also the hook's lower clamp. */
 export const DEFAULT_MIN_PAGE_SIZE = 1;
 const DEFAULT_MAX_PAGE_SIZE = 50;
+/** Below the `sm` breakpoint a phone scrolls the page instead: the header and toolbar leave room for about one card,
+ * so a fitted size would split every list into one-item pages. */
+const PHONE_MEDIA_QUERY = '(max-width: 639.98px)';
+const PHONE_PAGE_SIZE = 10;
 
 interface FittingPageSizeOptions {
   listRef: RefObject<HTMLElement | null>;
@@ -65,6 +69,9 @@ function measureFit(options: FittingPageSizeOptions): number | null {
   const { listRef, reservedBottomPx = DEFAULT_RESERVED_BOTTOM_PX } = options;
   const min = options.min ?? DEFAULT_MIN_PAGE_SIZE;
   const max = options.max ?? DEFAULT_MAX_PAGE_SIZE;
+  if (window.matchMedia(PHONE_MEDIA_QUERY).matches) {
+    return Math.min(max, Math.max(min, PHONE_PAGE_SIZE));
+  }
   const list = listRef.current;
   if (!isMeasurable(list)) {
     return null;
@@ -78,7 +85,7 @@ function measureFit(options: FittingPageSizeOptions): number | null {
   return Math.min(max, Math.max(min, Math.floor(available / Math.max(1, itemPitch))));
 }
 
-/** Rows/cards that fit the visible height without scrolling; null only until the first layout-effect pass. */
+/** Rows/cards that fit the visible height without scrolling (a fixed size on phones); null only until the first layout-effect pass. */
 export function useFittingPageSize(options: FittingPageSizeOptions): number | null {
   const { listRef, fallbackItemHeightPx, estimateItemHeightPx, itemSelector, reservedBottomPx, min, max } = options;
   const [pageSize, setPageSize] = useState<number | null>(null);

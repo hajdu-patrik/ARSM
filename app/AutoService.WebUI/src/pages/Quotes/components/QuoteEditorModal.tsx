@@ -14,9 +14,9 @@ import { QuoteEditorLinesSection } from './QuoteEditorModal.lines';
 import { QuoteEditorTotalsSection } from './QuoteEditorModal.totals';
 import { QuoteEditorFooter } from './QuoteEditorModal.footer';
 
-/** Body scrolls inside the dialog (bounded height, shrinks in the fit-viewport dialog) so the footer actions stay on screen.
+/** Body scrolls inside the dialog and fills the height the fit-viewport dialog leaves, so the footer actions stay on screen.
  * The -m-1/p-1 pair nets to zero and leaves room for the 4px focus outline the scroll box would clip. */
-const editorBodyClass = '-m-1 min-h-0 min-w-0 max-h-[60vh] space-y-4 overflow-y-auto p-1';
+const editorBodyClass = '-m-1 min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-1';
 
 interface QuoteEditorModalProps {
   readonly t: TFunction;

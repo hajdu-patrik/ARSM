@@ -50,7 +50,7 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
       aria-label={t('customers.detailsPanelTitle')}
       className={isInline
         ? 'min-w-0'
-        : 'fixed inset-x-0 bottom-0 z-[90] max-h-[82vh] min-w-0 overflow-hidden rounded-t-2xl border border-ui-border bg-ui-card lg:sticky lg:top-6 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-2xl'}
+        : 'fixed inset-x-0 bottom-0 z-[90] max-h-[82dvh] min-w-0 overflow-hidden rounded-t-2xl border border-ui-border bg-ui-card lg:sticky lg:top-6 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-2xl'}
     >
       {!isInline && (
         <div className="flex min-w-0 items-start justify-between gap-3 border-b border-ui-border px-4 py-3">
@@ -85,7 +85,8 @@ export const CustomerDetailsPanel = memo(function CustomerDetailsPanel({
         </div>
       )}
 
-      <div className={isInline ? 'arsm-scroll-no-bar max-h-[30rem] min-w-0 overflow-y-auto' : 'arsm-scroll-no-bar max-h-[calc(82vh-4.5rem)] min-w-0 overflow-y-auto px-4 py-3 lg:max-h-[calc(100vh-12rem)]'}>
+      {/* Inline on a phone the history grows with the page: a nested scroll box there clips its end and traps the swipe. */}
+      <div className={isInline ? 'arsm-scroll-no-bar min-w-0 sm:max-h-[30rem] sm:overflow-y-auto' : 'arsm-scroll-no-bar max-h-[calc(82dvh-4.5rem)] min-w-0 overflow-y-auto px-4 py-3 lg:max-h-[calc(100vh-12rem)]'}>
         {!isInline && target.kind === 'vehicle' && (
           <VehicleSpecsGrid
             t={t}
