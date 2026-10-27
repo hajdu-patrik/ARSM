@@ -118,8 +118,11 @@ export const SidebarLayout = memo(function SidebarLayout({ children, navItems }:
     />
   );
 
+  // 100vh is only the fallback: Tailwind emits .h-screen after .h-dvh, so listing both let 100vh win. On a phone 100vh is
+  // the height without the browser toolbar, which never hides here because only <main> scrolls, so the shell's bottom
+  // (one toolbar high) sat off screen and the end of every page was unreachable.
   return (
-    <div className="relative flex h-screen h-dvh overflow-hidden bg-ui-surface">
+    <div className="relative flex h-screen overflow-hidden bg-ui-surface supports-[height:100dvh]:h-dvh">
       <a href={`#${MAIN_CONTENT_ID}`} onClick={skipToContent} className={SKIP_LINK_CLASS}>
         {translate('layout.skipToContent')}
       </a>
