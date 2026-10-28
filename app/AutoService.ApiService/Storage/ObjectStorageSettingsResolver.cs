@@ -27,7 +27,8 @@ public static class ObjectStorageSettingsResolver
     public static AzureBlobStorageSettings ResolveAzureBlob(IConfiguration configuration)
     {
         return new AzureBlobStorageSettings(
-            ConnectionString: ResolveRequiredValue(configuration, "ConnectionString"),
+            ServiceUri: ResolveHttpsUri(configuration, "ServiceUrl"),
+            ManagedIdentityClientId: ResolveGuid(configuration, "ManagedIdentityClientId"),
             ContainerName: ResolveRequiredValue(configuration, "BucketName"),
             AutoCreateContainer: ResolveRequiredFlag(configuration, "AutoCreateBucket"));
     }
@@ -65,6 +66,34 @@ public static class ObjectStorageSettingsResolver
         }
 
         return value;
+    }
+
+    /** Reads a required setting that must be an absolute https URI. */
+    private static Uri ResolveHttpsUri(IConfiguration configuration, string key)
+    {
+        var value = ResolveRequiredValue(configuration, key);
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            throw new InvalidOperationException(
+                $"Object storage setting '{ConfigurationSection}:{key}' must be an absolute https URL.");
+        }
+
+        return uri;
+    }
+
+    /** Reads a required setting that must be a GUID and returns it in canonical form. */
+    private static string ResolveGuid(IConfiguration configuration, string key)
+    {
+        var value = ResolveRequiredValue(configuration, key);
+
+        if (!Guid.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException(
+                $"Object storage setting '{ConfigurationSection}:{key}' must be a GUID.");
+        }
+
+        return parsed.ToString();
     }
 
     /** Reads a required boolean setting and rejects blank or unparsable values. */

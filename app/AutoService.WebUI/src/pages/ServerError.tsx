@@ -1,4 +1,4 @@
-/** Server Error (500) page: reloads via window.location (router-independent, so it works as an ErrorBoundary fallback outside the Router) after a countdown; uses the shared ErrorPage. */
+/** Server Error (500) page: retries via window.location after a countdown, so it also works outside the Router. */
 
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,15 +14,26 @@ function getReturnTarget(): string | null {
   const params = new URLSearchParams(globalThis.location.search);
   const rawReturnTo = params.get('returnTo');
 
-  if (!rawReturnTo?.startsWith('/')) {
+  if (!rawReturnTo?.startsWith('/') || /^\/[/\\]/.test(rawReturnTo)) {
     return null;
   }
 
-  if (rawReturnTo.startsWith('//') || rawReturnTo.startsWith(APP_ROUTE_PATHS.serverError)) {
+  let resolved: URL;
+  try {
+    resolved = new URL(rawReturnTo, globalThis.location.origin);
+  } catch {
     return null;
   }
 
-  return rawReturnTo;
+  if (resolved.origin !== globalThis.location.origin) {
+    return null;
+  }
+
+  if (resolved.pathname.startsWith(APP_ROUTE_PATHS.serverError)) {
+    return null;
+  }
+
+  return resolved.pathname + resolved.search + resolved.hash;
 }
 
 export const ServerError = memo(function ServerError() {

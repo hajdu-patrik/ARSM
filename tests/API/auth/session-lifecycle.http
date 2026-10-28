@@ -122,9 +122,8 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Manual][Login] Lockout after repeated bad password attempts (expect 429, then valid login works after lockout window)
-# Manual: trigger lockout with 5 consecutive wrong-password attempts, then verify a valid-password login
-# returns 429 during the lockout window and succeeds again once it expires.
+### [Manual][Login] Lockout after repeated bad password attempts (expect 401 throughout, valid login works after lockout window)
+# Manual: login never reveals a lockout; it stays the uniform 401 until the window expires (automated in profile/credential-lockout.http).
 
 ###
 

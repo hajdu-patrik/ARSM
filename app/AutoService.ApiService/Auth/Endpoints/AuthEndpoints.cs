@@ -11,6 +11,7 @@ public static partial class AuthEndpoints
 
         group.MapPost("/register", RegisterAsync)
             .RequireAuthorization("AdminOnly")
+            .RequireRateLimiting(RateLimitPolicies.StaffEmailSends)
             .Produces<RegisterResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)

@@ -110,6 +110,16 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?page=100000&pageSize=5
 
 ###
 
+### [Case][Authz] GET /api/customers?page=2147483647&pageSize=500 (200 expected, page clamped so the offset cannot overflow - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?page=2147483647&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.page < 2147483647
+?? js response.parsedBody.items.length == 0
+?? js (response.parsedBody.totalCount == allCustomers.items.length) == true
+
+###
+
 ### [Case][Authz] GET /api/customers?page=2&pageSize=1 (200 expected, second row of the ordered set)
 GET {{AutoService_ApiService_HostAddress}}/api/customers?page=2&pageSize=1
 

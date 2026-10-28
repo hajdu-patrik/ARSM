@@ -138,6 +138,7 @@ KEY_CHECKS: dict[str, Check] = {
     "ARSM_AZURE_LOCATION": check_location,
     "ARSM_PUBLIC_URL": check_public_url,
     "ARSM_POSTGRES_PASSWORD": check_postgres_password,
+    "ARSM_POSTGRES_APP_PASSWORD": check_postgres_password,
     "ARSM_JWT_SECRET": check_jwt_secret,
     "ARSM_PROD_GATE_TOKEN": check_gate_token,
     "ARSM_PROD_ADMIN_EMAIL": check_email,

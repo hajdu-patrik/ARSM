@@ -1,3 +1,5 @@
+using AutoService.ApiService.Security;
+
 namespace AutoService.ApiService.Reporting;
 
 /** Registers the company result report route: hand-written LINQ straight into a DTO,
@@ -11,10 +13,12 @@ public static partial class CompanyResultEndpoints
             .RequireAuthorization("MechanicOnly");
 
         group.MapGet(string.Empty, GetCompanyResultsAsync)
+            .RequireRateLimiting(RateLimitPolicies.CompanyResultReports)
             .Produces<CompanyResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
         return endpoints;
     }

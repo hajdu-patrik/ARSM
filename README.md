@@ -126,7 +126,10 @@ dotnet user-secrets set "Parameters:minio-password" "<local-minio-password>"
 
 Hosted environments point `ObjectStorage__ServiceUrl` at the real S3-compatible endpoint instead,
 keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket up front. Azure Blob
-Storage is supported as well (`ObjectStorage__Provider=AzureBlob` with a connection string).
+Storage is supported as well (`ObjectStorage__Provider=AzureBlob`): the API authenticates with a user-assigned
+managed identity (`ObjectStorage__ServiceUrl` is the blob account endpoint, `ObjectStorage__ManagedIdentityClientId`
+the identity's client id), which the Azure kit grants Storage Blob Data Contributor on the picture container only,
+so no storage account key is in any app secret.
 
 Cloudflare R2 additionally needs `ObjectStorage:DisablePayloadSigning` and
 `ObjectStorage:DisableDefaultChecksumValidation` set to `true`: R2 does not support the streaming

@@ -141,6 +141,12 @@ public static partial class AppointmentEndpoints
             return (ApiProblem.Unprocessable(ValidationMessages.InvalidPhone), null);
         }
 
+        var lengthErrors = GetIntakeLengthErrors(name, normalizedEmail, normalizedPhone);
+        if (lengthErrors.Count > 0)
+        {
+            return (Results.ValidationProblem(lengthErrors), null);
+        }
+
         if (normalizedPhone is not null &&
             await db.People.AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken))
         {
@@ -148,6 +154,18 @@ public static partial class AppointmentEndpoints
         }
 
         return (null, new Customer(name, normalizedEmail, normalizedPhone));
+    }
+
+    /** Max-length errors keyed by the intake request properties, measured on the stored form. */
+    private static Dictionary<string, string[]> GetIntakeLengthErrors(FullName name, string normalizedEmail, string? normalizedPhone)
+    {
+        var errors = new Dictionary<string, string[]>();
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(SchedulerCreateIntakeRequest.CustomerFirstName), name.FirstName, FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(SchedulerCreateIntakeRequest.CustomerMiddleName), name.MiddleName, FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(SchedulerCreateIntakeRequest.CustomerLastName), name.LastName, FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(SchedulerCreateIntakeRequest.CustomerEmail), normalizedEmail, FieldLengthValidator.EmailMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(SchedulerCreateIntakeRequest.CustomerPhoneNumber), normalizedPhone, FieldLengthValidator.PhoneNumberMaxLength);
+        return errors;
     }
 
     private static IResult? ValidateIntakeCustomerName(FullName name)

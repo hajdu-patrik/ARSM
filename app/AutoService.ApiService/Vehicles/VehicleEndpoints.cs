@@ -9,32 +9,36 @@ public static partial class VehicleEndpoints
     {
         var nested = endpoints.MapGroup("/api/customers/{customerId:int}/vehicles")
             .WithTags("Vehicles")
-            .RequireAuthorization();
+            .RequireAuthorization("MechanicOnly");
 
         nested.MapGet("/", ListCustomerVehiclesAsync)
             .Produces<PagedResult<VehicleDetailDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         nested.MapPost("/", CreateVehicleAsync)
             .Produces<VehicleDetailDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         var flat = endpoints.MapGroup("/api/vehicles")
             .WithTags("Vehicles")
-            .RequireAuthorization();
+            .RequireAuthorization("MechanicOnly");
 
         flat.MapGet("/{id:int}", GetVehicleAsync)
             .Produces<VehicleDetailDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         flat.MapPut("/{id:int}", UpdateVehicleAsync)
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);

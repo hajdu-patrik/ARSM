@@ -1,4 +1,4 @@
-# Every route below is under RequireAuthorization(), so 401 is returned before any handler touches the
+# Every route below requires MechanicOnly authorization, so 401 is returned before any handler touches the
 # URL ids or body - the literal appointment/customer/vehicle ids here are safe sentinels, not references to real rows.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}

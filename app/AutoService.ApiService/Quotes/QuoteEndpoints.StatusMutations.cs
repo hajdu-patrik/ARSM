@@ -5,6 +5,7 @@ using AutoService.ApiService.Domain;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
+using AutoService.ApiService.Security;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -29,6 +30,8 @@ public static partial class QuoteEndpoints
         IEmailSender emailSender,
         EmailSettings emailSettings,
         ILoggerFactory loggerFactory,
+        HttpContext httpContext,
+        QuoteSendRateLimiter sendRateLimiter,
         CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<QuoteStatus>(request.Status, ignoreCase: true, out var newStatus))
@@ -61,7 +64,7 @@ public static partial class QuoteEndpoints
         if (newStatus == QuoteStatus.Sent)
         {
             var mailer = new QuoteSentMailer(emailSender, emailSettings, loggerFactory.CreateLogger<QuoteSentMailer>());
-            var sendError = await SendQuoteMailAsync(quote, request.Version, mailer, db, cancellationToken);
+            var sendError = await SendQuoteMailAsync(quote, request.Version, mailer, db, httpContext, sendRateLimiter, cancellationToken);
             if (sendError is not null)
             {
                 return sendError;
@@ -88,6 +91,8 @@ public static partial class QuoteEndpoints
         uint version,
         QuoteSentMailer mailer,
         AutoServiceDbContext db,
+        HttpContext httpContext,
+        QuoteSendRateLimiter sendRateLimiter,
         CancellationToken cancellationToken)
     {
         if (quote.Version != version)
@@ -98,6 +103,13 @@ public static partial class QuoteEndpoints
         if (string.IsNullOrWhiteSpace(quote.Vehicle.Customer.Email))
         {
             return ConflictWithCode("quote_customer_email_missing");
+        }
+
+        // Only a send that is about to render and mail takes the hourly permit; a refusal is a bodiless 429.
+        using var lease = sendRateLimiter.Acquire(httpContext);
+        if (!lease.IsAcquired)
+        {
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
         }
 
         var company = await db.CompanyProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken)

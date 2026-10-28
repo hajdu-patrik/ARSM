@@ -14,6 +14,12 @@ internal static class RateLimitPolicies
     internal const string AuthRefresh = "AuthRefreshAttempts";
     internal const string ProfileCredentials = "ProfileCredentialAttempts";
     internal const string ProfilePictureUpload = "ProfilePictureUploads";
+    internal const string StaffEmailSends = "StaffEmailSends";
+    internal const string QuotePdfRenders = "QuotePdfRenders";
+    internal const string CompanyResultReports = "CompanyResultReports";
+
+    internal const int QuotePdfPermitLimit = 30;
+    internal const int CompanyResultPermitLimit = 30;
 
     private const int DevelopmentPermitLimit = 300;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -21,6 +27,8 @@ internal static class RateLimitPolicies
     internal static IServiceCollection AddArsmRateLimiting(this IServiceCollection services, IHostEnvironment environment)
     {
         var isDevelopment = environment.IsDevelopment();
+
+        services.AddSingleton(_ => new QuoteSendRateLimiter(isDevelopment));
 
         return services.AddRateLimiter(options =>
         {
@@ -31,8 +39,19 @@ internal static class RateLimitPolicies
             options.AddPolicy(AuthRefresh, context => PerClient(context, 20));
             options.AddPolicy(ProfileCredentials, context => PerPerson(context, Relaxed(5, isDevelopment)));
             options.AddPolicy(ProfilePictureUpload, context => PerPerson(context, Relaxed(10, isDevelopment)));
+            options.AddPolicy(StaffEmailSends, context => PerPerson(context, Relaxed(5, isDevelopment)));
+            options.AddPolicy(QuotePdfRenders, context => QuotePdfPartition(context, isDevelopment));
+            options.AddPolicy(CompanyResultReports, context => CompanyResultPartition(context, isDevelopment));
         });
     }
+
+    /** The per-person partition of the quote PDF render route (30 per minute, Development 300). */
+    internal static RateLimitPartition<string> QuotePdfPartition(HttpContext context, bool isDevelopment)
+        => PerPerson(context, Relaxed(QuotePdfPermitLimit, isDevelopment));
+
+    /** The per-person partition of the company results route (30 per minute, Development 300). */
+    internal static RateLimitPartition<string> CompanyResultPartition(HttpContext context, bool isDevelopment)
+        => PerPerson(context, Relaxed(CompanyResultPermitLimit, isDevelopment));
 
     /** Only the login route bans the client and explains the rejection; every other 429 stays bodiless. */
     private static async ValueTask OnLoginRejectedAsync(OnRejectedContext context, CancellationToken cancellationToken)
@@ -57,7 +76,8 @@ internal static class RateLimitPolicies
             cancellationToken);
     }
 
-    private static int Relaxed(int productionLimit, bool isDevelopment)
+    /** The production limit, or the Development limit that leaves room for the local test suites. */
+    internal static int Relaxed(int productionLimit, bool isDevelopment)
         => isDevelopment ? DevelopmentPermitLimit : productionLimit;
 
     /** Partitioned per client address, so one noisy client cannot lock out every other user. */
@@ -65,16 +85,17 @@ internal static class RateLimitPolicies
         => FixedWindow(LoginBanMiddleware.ResolveClientKey(context), permitLimit);
 
     /** Partitioned per signed-in person (the limiter runs after authentication); the client key is the anonymous fallback. */
-    private static RateLimitPartition<string> PerPerson(HttpContext context, int permitLimit)
+    internal static RateLimitPartition<string> PerPerson(HttpContext context, int permitLimit, TimeSpan? window = null)
         => FixedWindow(
             context.User.TryGetPersonId(out var personId) ? $"person:{personId}" : LoginBanMiddleware.ResolveClientKey(context),
-            permitLimit);
+            permitLimit,
+            window);
 
-    private static RateLimitPartition<string> FixedWindow(string partitionKey, int permitLimit)
+    private static RateLimitPartition<string> FixedWindow(string partitionKey, int permitLimit, TimeSpan? window = null)
         => RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = permitLimit,
-            Window = Window,
+            Window = window ?? Window,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = 0
         });

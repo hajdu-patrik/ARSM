@@ -61,6 +61,14 @@
           "System.Memory.Data": "10.0.9"
         }
       },
+      "Azure.Identity": {
+        "type": "Transitive",
+        "resolved": "1.21.0",
+        "contentHash": "GeFv8sGwRKvDKwI2WFy8r0mhmlxEVZg24Sit2NogTjiSO8RVjllWM65OT6e1sKjOvG8V74y7hAbaELUUPjZQSw==",
+        "dependencies": {
+          "Azure.Core": "1.53.0"
+        }
+      },
       "Azure.Storage.Blobs": {
         "type": "Transitive",
         "resolved": "12.30.1",
@@ -820,6 +828,7 @@
         "dependencies": {
           "AWSSDK.S3": "[4.0.104.4, )",
           "AutoService.ServiceDefaults": "[1.0.0, )",
+          "Azure.Identity": "[1.21.0, )",
           "Azure.Storage.Blobs": "[12.30.1, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",

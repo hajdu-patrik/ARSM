@@ -124,7 +124,10 @@ dotnet user-secrets set "Parameters:minio-password" "<lokalis-minio-jelszo>"
 
 Hosztolt környezetben az `ObjectStorage__ServiceUrl` a valódi S3-kompatibilis végpontra mutat,
 az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig előre létre kell hozni. Az
-Azure Blob Storage is támogatott (`ObjectStorage__Provider=AzureBlob`, kapcsolati stringgel).
+Azure Blob Storage is támogatott (`ObjectStorage__Provider=AzureBlob`): az API felhasználó által hozzárendelt
+felügyelt identitással (managed identity) hitelesít (`ObjectStorage__ServiceUrl` a blob fiók végpontja,
+`ObjectStorage__ManagedIdentityClientId` az identitás client id-ja), amelynek az Azure készlet csak a profilkép-konténerre
+ad Storage Blob Data Contributor szerepet, így tárfiókkulcs egyetlen alkalmazás-secretben sincs.
 
 A Cloudflare R2-höz ezen felül az `ObjectStorage:DisablePayloadSigning` és az
 `ObjectStorage:DisableDefaultChecksumValidation` értékét is `true`-ra kell állítani: az R2 nem

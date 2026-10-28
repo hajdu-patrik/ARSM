@@ -36,6 +36,10 @@ param postgresAdminLogin string = 'arsmadmin'
 param postgresAdminPassword string
 
 @secure()
+@description('Password of the DML-only login role arsm_app the API connects as; the migration job sets it.')
+param postgresAppPassword string
+
+@secure()
 @description('JWT signing secret, at least 32 bytes, no template markers.')
 param jwtSecret string
 
@@ -102,6 +106,9 @@ param alertEmail string = ''
 @description('Monthly budget of the resource group in the subscription currency, mailed at 50, 80 and 100 percent; 0 (default) creates none, because Azure for Students does not support budgets.')
 param monthlyBudgetAmount int = 0
 
+@description('false leaves out both Container Apps and what depends on them, so the running revisions stay (deploy-azure.py phase 1).')
+param deployApps bool = true
+
 var suffix = uniqueString(resourceGroup().id)
 var apiAppName = '${namePrefix}-api'
 var webAppName = '${namePrefix}-web'
@@ -109,6 +116,7 @@ var webAppName = '${namePrefix}-web'
 var apiInternalHost = '${apiAppName}.internal.${containerEnv.properties.defaultDomain}'
 var effectivePublicUrl = empty(publicUrl) ? 'https://${webAppName}.${containerEnv.properties.defaultDomain}' : publicUrl
 var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+var blobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var apiMinReplicas = apiAlwaysOn ? 1 : 0
 var webMinReplicas = webAlwaysOn ? 1 : 0
 var pullIdentities = { '${pullIdentity.id}': {} }
@@ -177,19 +185,13 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2026-07-01' = {
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: '${namePrefix}-pg-${suffix}'
   location: location
-  sku: {
-    name: 'Standard_B1ms'
-    tier: 'Burstable'
-  }
+  sku: { name: 'Standard_B1ms', tier: 'Burstable' }
   properties: {
     version: postgresVersion
     administratorLogin: postgresAdminLogin
     administratorLoginPassword: postgresAdminPassword
     storage: { storageSizeGB: 32 }
-    backup: {
-      backupRetentionDays: 7
-      geoRedundantBackup: 'Disabled'
-    }
+    backup: { backupRetentionDays: 7, geoRedundantBackup: 'Disabled' }
     highAvailability: { mode: 'Disabled' }
     network: { publicNetworkAccess: 'Enabled' }
   }
@@ -240,6 +242,17 @@ resource pictureContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   properties: { publicAccess: 'None' }
 }
 
+// The API reaches the container as the pull identity: data role on this container only, no account key.
+resource blobDataAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: pictureContainer
+  name: guid(pictureContainer.id, pullIdentity.id, blobDataContributorRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', blobDataContributorRoleId)
+    principalId: pullIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
   parent: postgres
   name: 'AutoServiceDb'
@@ -249,12 +262,33 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-0
   }
 }
 
+// Runs --migrate-database as the administrator; deploy-azure.py starts it and waits before any app revision changes.
+module migrationJob 'migration-job.bicep' = {
+  name: '${namePrefix}-migration-job'
+  dependsOn: [ database, postgresExtensions, postgresAzureAccess, acrPullAssignment ]
+  params: {
+    namePrefix: namePrefix
+    location: location
+    environmentId: containerEnv.id
+    apiImage: apiImage
+    pullIdentityId: pullIdentity.id
+    registries: registries
+    adminConnectionString: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Maximum Pool Size=5'
+    appRolePassword: postgresAppPassword
+    jwtSecret: jwtSecret
+    publicUrl: effectivePublicUrl
+    blobServiceUrl: storage.properties.primaryEndpoints.blob
+    managedIdentityClientId: pullIdentity.properties.clientId
+    objectStorageContainer: objectStorageContainer
+  }
+}
+
 // The API is reached only through the web app's Nginx at http://<apiInternalHost>; the platform routes
 // by host name, so AllowedHosts admits it and the <apiAppName> Host header the probes send.
-resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
+resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: apiAppName
   location: location
-  dependsOn: [ database, postgresExtensions, postgresAzureAccess, pictureContainer, acrPullAssignment ]
+  dependsOn: [ database, postgresExtensions, postgresAzureAccess, pictureContainer, acrPullAssignment, blobDataAssignment ]
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: pullIdentities
@@ -273,14 +307,11 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
       secrets: [
         {
           name: 'db-connection'
-          // Npgsql's default pool of 100 would exceed what a B1ms server accepts (about 35 user connections).
-          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Maximum Pool Size=20'
+          // DML-only role provisioned by the migration job. Npgsql's default pool of 100 would exceed what
+          // a B1ms server accepts (about 35 user connections).
+          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=arsm_app;Password=${postgresAppPassword};SSL Mode=Require;Maximum Pool Size=20'
         }
         { name: 'jwt-secret', value: jwtSecret }
-        {
-          name: 'blob-connection'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-        }
         { name: 'bootstrap-admin-password', value: bootstrapAdminPassword }
         { name: 'resend-api-key', value: resendApiKey }
       ]
@@ -290,12 +321,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'api'
           image: apiImage
-          resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
-          }
+          resources: { cpu: json('0.5'), memory: '1Gi' }
           env: concat([
             { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
+            { name: 'Database__MigrateOnStartup', value: 'false' }
             { name: 'AllowedHosts', value: '${apiAppName};${apiInternalHost}' }
             { name: 'Cors__AllowedOrigins__0', value: effectivePublicUrl }
             // Nginx overwrites X-Forwarded-For with the resolved client address, and the platform
@@ -309,7 +338,8 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'ConnectionStrings__AutoServiceDb', secretRef: 'db-connection' }
             { name: 'JwtSettings__Secret', secretRef: 'jwt-secret' }
             { name: 'ObjectStorage__Provider', value: 'AzureBlob' }
-            { name: 'ObjectStorage__ConnectionString', secretRef: 'blob-connection' }
+            { name: 'ObjectStorage__ServiceUrl', value: storage.properties.primaryEndpoints.blob }
+            { name: 'ObjectStorage__ManagedIdentityClientId', value: pullIdentity.properties.clientId }
             { name: 'ObjectStorage__BucketName', value: objectStorageContainer }
             { name: 'ObjectStorage__AutoCreateBucket', value: 'false' }
             { name: 'CompanyProfile__Name', value: companyName }
@@ -353,17 +383,14 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       // Login rate limits and bans are process-local: never more than one replica.
-      scale: {
-        minReplicas: apiMinReplicas
-        maxReplicas: 1
-      }
+      scale: { minReplicas: apiMinReplicas, maxReplicas: 1 }
     }
   }
 }
 
 // Two containers share one network namespace: the gate is the ingress target on 8080 and forwards to
 // Nginx on 127.0.0.1:18080. Only TCP probes on the gate, an HTTP probe would get the lock page.
-resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
+resource webApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: webAppName
   location: location
   dependsOn: [ acrPullAssignment ]
@@ -399,10 +426,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'gate'
           image: gateImage
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
           env: [
             { name: 'GATE_MODE', value: 'azure' }
             { name: 'GATE_HOST', value: '0.0.0.0' }
@@ -427,26 +451,20 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'web'
           image: webImage
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
           env: [
             { name: 'PORT', value: '18080' }
             { name: 'API_UPSTREAM', value: 'http://${apiInternalHost}' }
           ]
         }
       ]
-      scale: {
-        minReplicas: webMinReplicas
-        maxReplicas: 1
-      }
+      scale: { minReplicas: webMinReplicas, maxReplicas: 1 }
     }
   }
 }
 
-// Action group and alert rules; created only when an alert e-mail is set.
-module guardRails 'guardrails.bicep' = if (!empty(alertEmail)) {
+// Action group and alert rules; created only when an alert e-mail is set and the apps are deployed.
+module guardRails 'guardrails.bicep' = if (deployApps && !empty(alertEmail)) {
   name: '${namePrefix}-guardrails'
   params: {
     namePrefix: namePrefix
@@ -469,12 +487,12 @@ module budget 'budget.bicep' = if (!empty(alertEmail) && monthlyBudgetAmount > 0
 output publicUrl string = effectivePublicUrl
 
 @description('Default Container Apps host name of the web app (CNAME target for a custom domain).')
-output webDefaultHost string = webApp.properties.configuration.ingress.fqdn
+output webDefaultHost string = deployApps ? webApp.properties.configuration.ingress.fqdn : ''
 
 @description('Static inbound IP of the Container Apps environment (A record of the apex domain).')
 output environmentStaticIp string = containerEnv.properties.staticIp
 
 @description('Value of the asuid TXT record that proves ownership of the custom domain.')
-output customDomainVerificationId string = webApp.properties.customDomainVerificationId
+output customDomainVerificationId string = deployApps ? webApp.properties.customDomainVerificationId : ''
 
 output postgresHost string = postgres.properties.fullyQualifiedDomainName

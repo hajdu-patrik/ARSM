@@ -16,6 +16,7 @@ public static partial class AuthEndpoints
     private static readonly Lazy<string> DummyPasswordHash = new(() =>
         new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
 
+    /** Password login: resolves the account, checks the password with lockout counting and issues the session cookies. */
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         HttpContext httpContext,
@@ -36,61 +37,12 @@ public static partial class AuthEndpoints
             return Results.ValidationProblem(validationErrors);
         }
 
-        string? email = null;
-        string? phoneNumber = null;
-
-        var rawEmail = ContactNormalization.NormalizeOptional(request.Email);
-        var rawPhoneNumber = ContactNormalization.NormalizeOptional(request.PhoneNumber);
-
-        if (rawEmail is not null && rawEmail.Contains('@'))
+        if (!TryResolveLoginIdentifier(request, logger, out var email, out var phoneNumber, out var rejection))
         {
-            if (!ContactNormalization.TryNormalizeEmail(rawEmail, out var normalizedEmail))
-            {
-                logger.LogWarning("Login rejected due to invalid email format.");
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    [nameof(request.Email)] = [ValidationMessages.InvalidEmail]
-                });
-            }
-
-            email = normalizedEmail;
+            return rejection!;
         }
 
-        // Backward compatibility: if "email" is provided without '@', treat it as a phone login identifier.
-        if (phoneNumber is null &&
-            rawPhoneNumber is null &&
-            rawEmail is not null &&
-            !rawEmail.Contains('@', StringComparison.Ordinal))
-        {
-            rawPhoneNumber = rawEmail;
-        }
-
-        if (rawPhoneNumber is not null)
-        {
-            if (!ContactNormalization.TryNormalizeEuPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
-            {
-                logger.LogWarning("Login rejected due to invalid phone number format.");
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    [nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone]
-                });
-            }
-
-            phoneNumber = normalizedPhoneNumber;
-        }
-
-        IdentityUser? identityUser = null;
-
-        if (email is not null)
-        {
-            identityUser = await userManager.FindByEmailAsync(email);
-        }
-        else if (phoneNumber is not null)
-        {
-            var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
-            identityUser = await userManager.Users
-                .FirstOrDefaultAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
-        }
+        var identityUser = await FindLoginIdentityUserAsync(userManager, email, phoneNumber, cancellationToken);
 
         if (identityUser is null)
         {
@@ -98,26 +50,15 @@ public static partial class AuthEndpoints
             _ = new PasswordHasher<IdentityUser>().VerifyHashedPassword(new IdentityUser(), DummyPasswordHash.Value, request.Password);
 
             logger.LogInformation("Login failed: no identity user found for provided identifier. ClientIp: {ClientIp}.", clientIp);
-            return Results.Problem(
-                title: "invalid_credentials",
-                detail: "Invalid login credentials.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            return InvalidCredentialsResult();
         }
 
-        var (passwordAccepted, lockoutResult) = await PasswordCheck.VerifyAsync(signInManager, userManager, identityUser, request.Password);
-        if (lockoutResult is not null)
-        {
-            logger.LogWarning("Login blocked due to active lockout. ClientIp: {ClientIp}.", clientIp);
-            return lockoutResult;
-        }
-
+        // A locked-out account fails like a wrong password, so the lockout is not observable from login.
+        var passwordAccepted = await PasswordCheck.VerifyForLoginAsync(signInManager, identityUser, request.Password);
         if (!passwordAccepted)
         {
-            logger.LogInformation("Login failed: invalid credentials. ClientIp: {ClientIp}.", clientIp);
-            return Results.Problem(
-                title: "invalid_credentials",
-                detail: "Invalid login credentials.",
-                statusCode: StatusCodes.Status401Unauthorized);
+            logger.LogInformation("Login failed: invalid credentials or active lockout. ClientIp: {ClientIp}.", clientIp);
+            return InvalidCredentialsResult();
         }
 
         var mechanic = await db.Mechanics
@@ -157,6 +98,91 @@ public static partial class AuthEndpoints
         return Results.Ok(new SessionResponse(mechanic.Id, isAdmin, mechanic.MustChangePassword));
     }
 
+    /** Splits the login identifier into a normalized email or phone number, or the 400 result for a malformed one. */
+    private static bool TryResolveLoginIdentifier(
+        LoginRequest request,
+        ILogger logger,
+        out string? email,
+        out string? phoneNumber,
+        out IResult? rejection)
+    {
+        email = null;
+        phoneNumber = null;
+        rejection = null;
+
+        var rawEmail = ContactNormalization.NormalizeOptional(request.Email);
+        var rawPhoneNumber = ContactNormalization.NormalizeOptional(request.PhoneNumber);
+
+        if (rawEmail is not null && rawEmail.Contains('@'))
+        {
+            if (!ContactNormalization.TryNormalizeEmail(rawEmail, out var normalizedEmail))
+            {
+                logger.LogWarning("Login rejected due to invalid email format.");
+                rejection = Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    [nameof(request.Email)] = [ValidationMessages.InvalidEmail]
+                });
+                return false;
+            }
+
+            email = normalizedEmail;
+        }
+
+        // Backward compatibility: if "email" is provided without '@', treat it as a phone login identifier.
+        if (rawPhoneNumber is null && rawEmail is not null && !rawEmail.Contains('@', StringComparison.Ordinal))
+        {
+            rawPhoneNumber = rawEmail;
+        }
+
+        if (rawPhoneNumber is null)
+        {
+            return true;
+        }
+
+        if (!ContactNormalization.TryNormalizeEuPhoneNumber(rawPhoneNumber, out var normalizedPhoneNumber))
+        {
+            logger.LogWarning("Login rejected due to invalid phone number format.");
+            rejection = Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(request.PhoneNumber)] = [ValidationMessages.InvalidPhone]
+            });
+            return false;
+        }
+
+        phoneNumber = normalizedPhoneNumber;
+        return true;
+    }
+
+    /** Looks the account up by email, else by phone number; null when neither identifier matches. */
+    private static async Task<IdentityUser?> FindLoginIdentityUserAsync(
+        UserManager<IdentityUser> userManager,
+        string? email,
+        string? phoneNumber,
+        CancellationToken cancellationToken)
+    {
+        if (email is not null)
+        {
+            return await userManager.FindByEmailAsync(email);
+        }
+
+        if (phoneNumber is null)
+        {
+            return null;
+        }
+
+        var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
+        return await userManager.Users
+            .FirstOrDefaultAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
+    }
+
+    /** The one 401 answer of every failed login, so the failure causes stay indistinguishable. */
+    private static IResult InvalidCredentialsResult() =>
+        Results.Problem(
+            title: "invalid_credentials",
+            detail: "Invalid login credentials.",
+            statusCode: StatusCodes.Status401Unauthorized);
+
+    /** Field-level checks of the login body: password and one identifier required, length caps. */
     private static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
     {
         var errors = new Dictionary<string, string[]>();

@@ -45,6 +45,18 @@ internal readonly record struct CustomerInput(
             : null;
     }
 
+    /** Max-length errors keyed by request property, measured on the trimmed names and the normalized contact. */
+    internal Dictionary<string, string[]> GetLengthErrors(string normalizedEmail, string? normalizedPhone)
+    {
+        var errors = new Dictionary<string, string[]>();
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(FirstName), FirstName.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(MiddleName), MiddleName?.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(LastName), LastName.Trim(), FieldLengthValidator.NameMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(Email), normalizedEmail, FieldLengthValidator.EmailMaxLength);
+        FieldLengthValidator.AddMaxLengthError(errors, nameof(PhoneNumber), normalizedPhone, FieldLengthValidator.PhoneNumberMaxLength);
+        return errors;
+    }
+
     internal FullName ToFullName() => new(FirstName.Trim(), MiddleName?.Trim(), LastName.Trim());
 
     /** The 409 detail when another person already holds the email or, checked second, the phone. */

@@ -170,19 +170,7 @@ builder.Services
             OnTokenValidated = AccessTokenValidation.OnTokenValidatedAsync,
         };
 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            RequireExpirationTime = true,
-            RequireSignedTokens = true,
-            ValidateLifetime = true,
-            ClockSkew = AuthEndpoints.ClockSkew
-        };
+        options.TokenValidationParameters = JwtValidationParameters.Create(jwtSecret, jwtIssuer, jwtAudience);
     });
 
 builder.Services.AddArsmRateLimiting(builder.Environment);
@@ -235,14 +223,22 @@ builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 // Resend sender when Email:ResendApiKey is set, otherwise a logging no-op (dev, CI, unit tests).
 builder.Services.AddArsmEmail(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();
+// Options emitted by app.UseHsts(); preload stays off so no host is committed to browser preload lists.
+builder.Services.AddHsts(HstsConfiguration.Configure);
 
 var app = builder.Build();
 
-// Maintenance entrypoint. The profile-picture verification needs the same DI graph as the API,
+// Maintenance entrypoints. The profile-picture verification needs the same DI graph as the API,
 // but must not start the web host or the database initializer, so it short-circuits right after Build().
 if (ProfilePictureStorageMigrator.IsRequested(args))
 {
     return await ProfilePictureStorageMigrator.RunAsync(app.Services, CancellationToken.None);
+}
+
+// The Azure migration job: migrates as the administrator and provisions arsm_app; it serves no HTTP.
+if (DatabaseMigrationCommand.IsRequested(args))
+{
+    return await DatabaseMigrationCommand.RunAsync(app, CancellationToken.None);
 }
 
 /** Outside Development, AllowedHosts must be explicit (no wildcard/localhost) or startup fails fast
@@ -269,8 +265,11 @@ if (!app.Environment.IsDevelopment())
     InProcessLimiterTopologyGuard.Validate(app.Configuration, app.Environment);
 }
 
-// Migrate and normalize the database at startup; no data is seeded.
-await app.EnsureDatabaseReadyAsync();
+// Migrate and normalize the database at startup (no data is seeded) unless Database:MigrateOnStartup is false.
+if (DatabaseInitializer.IsMigrateOnStartupEnabled(app.Configuration))
+{
+    await app.EnsureDatabaseReadyAsync();
+}
 
 // One-time letterhead seed from CompanyProfile config; fails fast when the table and config are empty.
 await app.EnsureCompanyProfileAsync();

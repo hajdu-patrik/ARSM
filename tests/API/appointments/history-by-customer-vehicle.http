@@ -1,4 +1,4 @@
-# Both history routes sit under plain RequireAuthorization(), so any authenticated mechanic reaches them.
+# Both history routes are MechanicOnly, so any authenticated mechanic reaches them (no non-mechanic session exists for a 403).
 # FixtureCustomerId and the vehicle id resolve from the shared fixture customer (tests/API/_setup) at run time, never a literal id.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}

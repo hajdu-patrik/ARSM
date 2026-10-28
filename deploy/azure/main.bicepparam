@@ -14,8 +14,11 @@ param customDomainCertificateName = readEnvironmentVariable('ARSM_CUSTOM_DOMAIN_
 param alertEmail = readEnvironmentVariable('ARSM_ALERT_EMAIL', '')
 param monthlyBudgetAmount = int(readEnvironmentVariable('ARSM_MONTHLY_BUDGET', '0'))
 param logAnalyticsDailyQuotaGb = int(readEnvironmentVariable('ARSM_LOG_DAILY_QUOTA_GB', '1'))
+// Set only by deploy-azure.py: 'false' for the phase that runs before the migration job.
+param deployApps = bool(readEnvironmentVariable('ARSM_DEPLOY_APPS', 'true'))
 
 param postgresAdminPassword = readEnvironmentVariable('ARSM_POSTGRES_PASSWORD')
+param postgresAppPassword = readEnvironmentVariable('ARSM_POSTGRES_APP_PASSWORD')
 param jwtSecret = readEnvironmentVariable('ARSM_JWT_SECRET')
 param gateToken = readEnvironmentVariable('ARSM_PROD_GATE_TOKEN')
 

@@ -1,0 +1,118 @@
+# Over-length customer fields answer 400 keyed by the request property (FieldLengthValidator caps: names 50, email 150).
+# Every rejected request fails before the save; only the one disposable customer needs cleanup at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
+@Over150Email = {{'l'.repeat(40)}}@{{'d'.repeat(63)}}.{{'e'.repeat(45)}}.test
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{AdminPassword}}"
+}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create the disposable customer used by the update case (201 expected)
+# @name lengthCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Length",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "field.length.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+?? status == 201
+
+###
+
+### [Negative][Customers] Create with a first name over 50 characters (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "firstName": "{{Over50Name}}",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "field.length.first.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+?? status == 400
+?? body contains FirstName
+
+###
+
+### [Negative][Customers] Create with a valid-format email over 150 characters (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Length",
+  "middleName": null,
+  "lastName": "Customer",
+  "email": "{{Over150Email}}",
+  "phoneNumber": null
+}
+
+?? status == 400
+?? body contains Email
+
+###
+
+### [Negative][Customers] Update with a last name over 50 characters (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{lengthCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Length",
+  "middleName": null,
+  "lastName": "{{Over50Name}}",
+  "email": "field.length.{{RunId}}@example.test",
+  "phoneNumber": null
+}
+
+?? status == 400
+?? body contains LastName
+
+###
+
+### [Cleanup][Customers] Delete the disposable customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{lengthCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -8,6 +8,7 @@
 @RunId = {{$timestamp}}
 @MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
 @MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
+@Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
 
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -122,3 +123,35 @@ Content-Type: application/json
 }
 
 ?? status == 422
+
+###
+
+### [Negative][Appointments] Scheduler intake rejects a new customer last name over 50 characters (400 expected)
+# Field-error shape of the register path: the body is keyed by CustomerLastName and nothing persists.
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{
+  "customerEmail": "intake.lastname.toolong.{{RunId}}@example.test",
+  "customerFirstName": "Intake",
+  "customerMiddleName": null,
+  "customerLastName": "{{Over50Name}}",
+  "vehicle": {
+    "licensePlate": "LEN-{{RunId}}",
+    "vin": "TST{{RunId.toString().slice(-10)}}0505",
+    "brand": "Ford",
+    "model": "Focus",
+    "year": 2018,
+    "mileageKm": 60000,
+    "enginePowerKw": 81,
+    "drivetrainType": "Petrol"
+  },
+  "scheduledDate": "2026-04-30T10:00:00",
+  "dueDateTime": "2026-05-01T10:00:00",
+  "taskDescription": "Intake over-length customer last name"
+}
+
+?? status == 400
+?? body contains CustomerLastName

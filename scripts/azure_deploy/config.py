@@ -19,10 +19,15 @@ from .masking import SecretMasker, secret_values_of
 from .validators import KEY_CHECKS, parse_whole_number
 
 TEMPLATE_MARKERS = ("CHANGE_ME", "CHANGEME", "SET_UNIQUE_LOCAL")
-# Teszt keys of the same .env that production must never share a value with; the prod admin may reuse
-# the dev admin login (user decision, 2026-10-18).
+# Keys that must never share a value: the prod gate token versus the teszt one, the API's database login versus
+# the administrator; the prod admin may reuse the dev admin login (user decision, 2026-10-18).
 DISTINCT_FROM = {
     "ARSM_PROD_GATE_TOKEN": ("GATE_TOKEN",),
+    "ARSM_POSTGRES_APP_PASSWORD": ("ARSM_POSTGRES_PASSWORD",),
+}
+DISTINCT_REASONS = {
+    "GATE_TOKEN": "no reuse of teszt or dev values",
+    "ARSM_POSTGRES_PASSWORD": "the API's database login must not reuse the administrator password",
 }
 
 
@@ -85,7 +90,7 @@ class DeployConfig:
 
 
 def collect_issues(raw: dict[str, str]) -> list[KeyIssue]:
-    """Every missing or invalid key, plus the distinctness rules against dev and teszt keys."""
+    """Every missing or invalid key, plus the DISTINCT_FROM rules (teszt keys, the database administrator)."""
     issues: list[KeyIssue] = []
     effective = {**OPTIONAL_DEFAULTS, **{k: v for k, v in raw.items() if v}}
     for key in REQUIRED_KEYS:
@@ -122,7 +127,7 @@ def _distinctness_issues(raw: dict[str, str]) -> list[KeyIssue]:
         prod_value = raw.get(prod_key, "").strip().lower()
         for other in other_keys:
             if prod_value and prod_value == raw.get(other, "").strip().lower():
-                issues.append(KeyIssue(prod_key, f"must differ from {other} (no reuse of teszt or dev values)"))
+                issues.append(KeyIssue(prod_key, f"must differ from {other} ({DISTINCT_REASONS[other]})"))
     return issues
 
 

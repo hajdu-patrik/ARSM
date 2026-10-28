@@ -216,6 +216,7 @@ function buildNormalizedErrorText(
     .toLowerCase();
 }
 
+/** Maps a failed login request (status, error body or transport failure) to a user-facing i18n error. */
 export function resolveLoginError(err: unknown): LoginError {
   if (!isAxiosError<ApiErrorPayload>(err)) {
     return { key: 'login.databaseUnavailable' };
@@ -226,7 +227,7 @@ export function resolveLoginError(err: unknown): LoginError {
 
   const normalizedErrorText = buildNormalizedErrorText(responseData, err.message);
 
-  if (status === 429 || includesAny(normalizedErrorText, ['lockout', 'too many attempts', 'rate limit'])) {
+  if (status === 429 || includesAny(normalizedErrorText, ['too many attempts', 'rate limit'])) {
     return toAttemptsExceededError(parseRetryAfterSeconds(err));
   }
 

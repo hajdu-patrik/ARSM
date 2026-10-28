@@ -70,8 +70,7 @@ function buildContentSecurityPolicy(apiOrigin: string, html: string): string {
     // style-src covers elements and attributes alike.
     'style-src': "'self'",
     'font-src': "'self'",
-    // blob: covers PDF download and error-illustration cache; data: covers the crop
-    // preview; the API origin covers profile pictures (<img> loads them directly).
+    // blob: PDF download and illustration cache; data: crop preview; API origin: profile pictures.
     'img-src': `'self' data: blob: ${apiOrigin}`,
     'connect-src': `'self' ${apiOrigin}`,
     'object-src': "'none'",
@@ -212,6 +211,14 @@ function resolveApiOrigin(apiUrl: string | undefined): string {
   return new URL(apiUrl).origin
 }
 
+/** Fails a build without VITE_SITE_URL, because Vite would ship the literal %VITE_SITE_URL% in the
+ * og:image and twitter:image tags of index.html. */
+function requireSiteUrl(siteUrl: string | undefined): void {
+  if (!siteUrl) {
+    throw new Error('Missing VITE_SITE_URL in environment configuration.')
+  }
+}
+
 /** Shared config; builds add the CSP, bundle-budget and precompress plugins, the dev server needs PORT. */
 export default defineConfig(({ mode, command }) => {
   const env: Record<string, string | undefined> = loadEnv(mode, process.cwd(), '')
@@ -228,6 +235,7 @@ export default defineConfig(({ mode, command }) => {
   }
 
   if (command !== 'serve') {
+    requireSiteUrl(env.VITE_SITE_URL)
     return {
       ...config,
       plugins: [

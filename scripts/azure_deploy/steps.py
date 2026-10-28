@@ -6,9 +6,18 @@ import json
 
 from .archive import exported_commit
 from .config import DeployConfig
-from .constants import BICEP_DIR, ENVIRONMENT_NAME, MAIN_DEPLOYMENT, REGISTRY_DEPLOYMENT, RESOURCE_NAMES
+from .constants import (
+    BICEP_DIR,
+    ENVIRONMENT_NAME,
+    MAIN_DEPLOYMENT,
+    MIGRATION_JOB_NAME,
+    PRE_APPS_DEPLOYMENT,
+    REGISTRY_DEPLOYMENT,
+    RESOURCE_NAMES,
+)
 from .errors import StepFailure
 from .images import acr_login, verify_images_exist
+from .migration import run_migration_job
 from .runner import CommandRunner
 
 CLOUDFLARE_NOTE = "Proxy status must be 'DNS only' (grey cloud); the Azure managed certificate cannot validate behind the proxy."
@@ -35,18 +44,30 @@ def registry(runner: CommandRunner, config: DeployConfig, commit_sha: str) -> No
 
 
 def infra(runner: CommandRunner, config: DeployConfig, commit_sha: str, tag: str) -> dict[str, str]:
-    """Deploy main.bicep + main.bicepparam; the bicepparam reads its values from the child environment."""
+    """Deploy main.bicep without the apps, run the migration job, then the full template (values via the child env)."""
     use_subscription(runner, config)
     verify_images_exist(runner, config, tag)
     environment = {**config.az_environment(tag), "ARSM_CUSTOM_DOMAIN_CERT": managed_certificate_name(runner, config)}
     with exported_commit(runner, commit_sha) as source:
+        parameters = f"{source.as_posix()}/{BICEP_DIR}/main.bicepparam"
+        runner.say("Phase 1: everything except the two Container Apps; the running app revisions stay as they are.")
+        runner.run(
+            [
+                "az", "deployment", "group", "create", "--resource-group", config.resource_group,
+                "--name", PRE_APPS_DEPLOYMENT, "--parameters", parameters, "--output", "none",
+            ],
+            env_extra={**environment, "ARSM_DEPLOY_APPS": "false"},
+        )
+        runner.say(f"Migration job {MIGRATION_JOB_NAME}: migrate as the administrator and provision arsm_app.")
+        run_migration_job(runner, config)
+        runner.say("Phase 2: the full template, the apps included.")
         result = runner.run(
             [
                 "az", "deployment", "group", "create", "--resource-group", config.resource_group,
-                "--name", MAIN_DEPLOYMENT, "--parameters", f"{source.as_posix()}/{BICEP_DIR}/main.bicepparam",
+                "--name", MAIN_DEPLOYMENT, "--parameters", parameters,
                 "--query", "properties.outputs", "--output", "json",
             ],
-            env_extra=environment,
+            env_extra={**environment, "ARSM_DEPLOY_APPS": "true"},
             capture=True,
         )
     outputs = parse_outputs(result.stdout) if not runner.dry_run else {}

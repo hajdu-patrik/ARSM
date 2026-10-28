@@ -2,10 +2,20 @@ using Microsoft.AspNetCore.Identity;
 
 namespace AutoService.ApiService.Auth.Security;
 
-/** The one password verification of the API: every failure counts toward the Identity lockout, and a
-    locked-out account answers the same 429 body on login, change-password and profile deletion. */
+/** The one password verification of the API: every failure counts toward the Identity lockout. Change-password and
+    profile deletion answer a locked-out account 429; login only gets pass/fail, so the lockout stays unobservable. */
 internal static class PasswordCheck
 {
+    /** Login check: counts failures toward the lockout, but a locked-out account is just a failure (never a 429). */
+    internal static async Task<bool> VerifyForLoginAsync(
+        SignInManager<IdentityUser> signInManager,
+        IdentityUser identityUser,
+        string password)
+    {
+        var signInResult = await signInManager.CheckPasswordSignInAsync(identityUser, password, lockoutOnFailure: true);
+        return signInResult.Succeeded;
+    }
+
     /** Verifies the password with lockout counting: whether it matched, and the 429 result to answer with when the account is locked out. */
     internal static async Task<(bool Succeeded, IResult? LockoutResult)> VerifyAsync(
         SignInManager<IdentityUser> signInManager,

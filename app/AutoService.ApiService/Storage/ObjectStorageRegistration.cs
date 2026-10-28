@@ -1,5 +1,6 @@
 using Amazon.Runtime;
 using Amazon.S3;
+using Azure.Identity;
 using Azure.Storage.Blobs;
 
 namespace AutoService.ApiService.Storage;
@@ -28,6 +29,7 @@ public static class ObjectStorageRegistration
         return services;
     }
 
+    /** Registers the Azure Blob settings, container client, storage abstraction and startup check. */
     private static IServiceCollection AddAzureBlobProfilePictureStorage(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -35,11 +37,20 @@ public static class ObjectStorageRegistration
         var settings = ObjectStorageSettingsResolver.ResolveAzureBlob(configuration);
 
         services.AddSingleton(settings);
-        services.AddSingleton(_ => new BlobContainerClient(settings.ConnectionString, settings.ContainerName));
+        services.AddSingleton(_ => CreateBlobContainerClient(settings));
         services.AddSingleton<IProfilePictureStorage, AzureBlobProfilePictureStorage>();
         services.AddHostedService<AzureBlobContainerInitializer>();
 
         return services;
+    }
+
+    /** Creates the container client that signs in as the user-assigned managed identity, with no account key. */
+    private static BlobContainerClient CreateBlobContainerClient(AzureBlobStorageSettings settings)
+    {
+        var credential = new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(settings.ManagedIdentityClientId));
+        var containerUri = new Uri(settings.ServiceUri, Uri.EscapeDataString(settings.ContainerName));
+
+        return new BlobContainerClient(containerUri, credential);
     }
 
     /** Creates an S3 client for the configured endpoint (RustFS, Cloudflare R2 or AWS S3). */

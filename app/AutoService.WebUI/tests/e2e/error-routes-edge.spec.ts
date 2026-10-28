@@ -68,4 +68,30 @@ test.describe('Error route edge cases', () => {
     await expect(page.getByText(/Server Error|Szerverhiba/i)).toBeVisible();
     await expect(page).toHaveURL(/\/login$/, { timeout: 7000 });
   });
+
+  for (const returnTo of ['%2F%5Cevil.com', '%2F%2Fevil.com']) {
+    test(`never leaves the app origin for returnTo=${returnTo}`, async ({ page }) => {
+      await primeBrowserState(page, { sessionHint: false, language: 'en' });
+      await installApiMocks(page, {
+        profileEmail: 'edge.server-error-redirect@example.test',
+        isAuthenticated: false,
+      });
+      const foreignRequests: string[] = [];
+      await page.route(/^https?:\/\/([^/]*\.)?evil\.com(:\d+)?\//, async (route) => {
+        foreignRequests.push(route.request().url());
+        await route.abort();
+      });
+
+      await page.goto(`/500?returnTo=${returnTo}`);
+      const appOrigin = new URL(page.url()).origin;
+      await expect(page.getByText(/Server Error|Szerverhiba/i)).toBeVisible();
+
+      // The countdown lasts 3 s; the rejected target falls back to a reload of /500.
+      await page.waitForTimeout(4000);
+
+      expect(new URL(page.url()).origin).toBe(appOrigin);
+      expect(new URL(page.url()).pathname).toBe('/500');
+      expect(foreignRequests).toEqual([]);
+    });
+  }
 });

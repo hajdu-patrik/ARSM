@@ -1,5 +1,6 @@
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Pagination;
+using AutoService.ApiService.Security;
 
 namespace AutoService.ApiService.Quotes;
 
@@ -70,13 +71,16 @@ public static partial class QuoteEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
         group.MapGet("/{id:int}/pdf", GetQuotePdfAsync)
+            .RequireRateLimiting(RateLimitPolicies.QuotePdfRenders)
             .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
         group.MapPut("/{id:int}/valid-until", ExtendQuoteValidityAsync)
             .Produces<QuoteDetailDto>(StatusCodes.Status200OK)

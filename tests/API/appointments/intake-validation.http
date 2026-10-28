@@ -1,4 +1,4 @@
-# Intake sits under plain RequireAuthorization(), so this file logs in as the non-admin test mechanic itself;
+# Intake is MechanicOnly, so this file logs in as the non-admin test mechanic itself;
 # CustomerVehicleId resolves from the known customer. New-customer coverage is the sibling intake-validation-new-customer.http; PastDateApptId is deleted at the end via admin.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}

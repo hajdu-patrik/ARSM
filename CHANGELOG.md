@@ -84,6 +84,39 @@ continuation is not measured._
 _Dev time: ~33m wall-clock (2026-10-23 12:19 to 12:52 +02:00, one arsm-chain run with five sonnet packages and a fable plan, plus the hand-run suite re-run, gate and review). Cost: ~$1.0-5.2 output-token-only estimate (104k output tokens, sonnet packages and reviews, fable plan; excludes input tokens and cache, so a lower bound)._
 
 ### Security
+- Pentest fixes (2026-10-28), from a read-only audit (seven parallel reviews plus a non-destructive probe of teszt.arsm.hu)
+  that found no critical or high issue. Open redirect: the `/500` page's `?returnTo=` accepted `/\evil.com`, which the
+  browser resolves cross-origin; `ServerError` now resolves the target against the own origin and refuses any other origin
+  (E2E `error-routes-edge`). Customer create/update and the scheduler intake customer answer a 400 field error instead of a
+  500 when a name (50), email (150) or phone (20) would overflow its column (HTTP `field-length-validation`,
+  `intake-validation-new-customer`). Paged lists clamp `page` to `ListQueryLimits.MaxPage`, so `?page=2147483647` no longer
+  overflows the offset into a 500. The appointment, customer and vehicle route groups require `MechanicOnly` like quotes and
+  the catalog (unit `MechanicOnlyRouteGroupsTests`). Access tokens are accepted only with HS256 (`JwtValidationParameters`),
+  and the API's HSTS is 365 days with `includeSubDomains`, no preload (`HstsConfiguration`). Login: a locked-out account now
+  answers the uniform 401 `invalid_credentials` (the lockout is no longer observable), and every login POST needs an allowed
+  `Origin` (login CSRF). Registration and the admin password reset, which send mail, share `StaffEmailSends` (5 per minute
+  per person). `robots.txt` disallows everything (every route is noindex), and the WebUI build fails without
+  `VITE_SITE_URL`, so the static `og:image` can never ship a literal placeholder.
+  Blob Storage without an account key: the Azure API reaches the profile-picture container with
+  its user-assigned managed identity (`ManagedIdentityCredential`, settings `ObjectStorage:ServiceUrl` and
+  `ObjectStorage:ManagedIdentityClientId`; `ObjectStorage:ConnectionString` is no longer read), which `main.bicep` grants
+  Storage Blob Data Contributor on the picture container only; the `blob-connection` secret is gone, so no storage account key
+  is in any app secret (the S3/RustFS path is unchanged). Rate limits: `GET /api/quotes/{id}/pdf` and `GET /api/company-results`
+  allow 30 requests per minute per person (`QuotePdfRenders`, `CompanyResultReports`), and moving a quote to `Sent` 20 per hour
+  per person (`QuoteSendRateLimiter`, the permit taken right before the PDF render and the mail); every such rejection is a
+  bodiless 429, and Development allows 300 per one-minute window (unit tests `RateLimitPoliciesTests`). Database least
+  privilege on Azure (finding 9): the API no longer connects as the server administrator. The Container Apps Job
+  `arsm-migrate` (`deploy/azure/migration-job.bicep`) runs the API image with `--migrate-database` as the administrator: it
+  migrates, then creates or updates the login role `arsm_app` in one transaction with only `CONNECT`, schema `USAGE`, table DML
+  and sequence use (default privileges included), the password passed only as a bound parameter and never logged. The API
+  connects as `arsm_app` and skips the startup migration (`Database__MigrateOnStartup=false`; local, CI and test stacks keep
+  migrating at startup). `deploy-azure.py infra` deploys everything but the apps, runs the job and waits for it (a failure or
+  the 1200 s timeout leaves the apps untouched), then deploys the full template; the new root `.env` key
+  `ARSM_POSTGRES_APP_PASSWORD` (bicep `postgresAppPassword`) is required, secret and must differ from
+  `ARSM_POSTGRES_PASSWORD` (unit tests `AppRoleProvisioningSqlTests`).
+
+_Dev time: ~2h38m wall-clock (2026-10-28 11:34 to 14:12 +01:00, one arsm-chain run with ten packages finished by hand in a clean worktree: gate, 164 unit tests, E2E, HTTP 1306/1306, SQL 24/24). Cost: ~$5.4-10.9 output-token-only estimate (543k output tokens, sonnet packages and an opus plan, database package, reviews and fixes; excludes input tokens and cache, so a lower bound; the audit itself is not measured)._
+
 - Audit fixes (2026-10-21 to 2026-10-22). Sessions: the token denylist is warmed into memory at startup (no database read per
   authenticated request), a per-person session cutoff ends every access token at once after an admin delete, an admin password
   reset, a self password change (the other sessions) or a self profile delete, and closes the person's SSE streams; refresh

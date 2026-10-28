@@ -7,12 +7,13 @@ internal static class ListQueryLimits
     internal const int MaxLimit = 500;
     internal const int DefaultPageSize = 20;
     internal const int MaxPageSize = 500;
+    internal const int MaxPage = int.MaxValue / MaxPageSize;
 
     /** Clamps a client-supplied limit to the allowed range, defaulting to DefaultLimit when absent. */
     internal static int Normalize(int? limit)
         => Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
 
-    /** Normalizes page (below 1 becomes 1) and pageSize (default 20, clamped 1..500). */
+    /** Normalizes page (clamped 1..MaxPage, so Skip fits an int) and pageSize (default 20, clamped 1..500). */
     internal static PageRequest NormalizePage(int? page, int? pageSize)
-        => new(Math.Max(page ?? 1, 1), Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize));
+        => new(Math.Clamp(page ?? 1, 1, MaxPage), Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize));
 }

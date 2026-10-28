@@ -16,6 +16,7 @@ REQUIRED_KEYS = (
     "ARSM_ACR_NAME",
     "ARSM_PUBLIC_URL",
     "ARSM_POSTGRES_PASSWORD",
+    "ARSM_POSTGRES_APP_PASSWORD",
     "ARSM_JWT_SECRET",
     "ARSM_PROD_GATE_TOKEN",
     "ARSM_PROD_ADMIN_EMAIL",
@@ -48,6 +49,7 @@ OPTIONAL_UNSET = ("ARSM_PROD_ADMIN_MIDDLE_NAME", "ARSM_PROD_ADMIN_PHONE", "ARSM_
 # Keys whose values are secrets; their names are listed, their values are never printed.
 SECRET_KEYS = (
     "ARSM_POSTGRES_PASSWORD",
+    "ARSM_POSTGRES_APP_PASSWORD",
     "ARSM_JWT_SECRET",
     "ARSM_PROD_GATE_TOKEN",
     "ARSM_PROD_ADMIN_PASSWORD",
@@ -58,6 +60,12 @@ RESOURCE_NAMES = {"api": "arsm-api", "web": "arsm-web", "gate": "arsm-gate"}
 ENVIRONMENT_NAME = "arsm-env"
 REGISTRY_DEPLOYMENT = "arsm-registry"
 MAIN_DEPLOYMENT = "arsm-main"
+# Phase 1 of infra (main.bicep without the apps), kept apart so MAIN_DEPLOYMENT always holds the app outputs.
+PRE_APPS_DEPLOYMENT = "arsm-main-pre-apps"
+MIGRATION_JOB_NAME = "arsm-migrate"
+# Above the job's replicaTimeout (900 s in migration-job.bicep), so the job's own limit fires first.
+MIGRATION_TIMEOUT_SECONDS = 1200
+MIGRATION_POLL_SECONDS = 15
 BICEP_DIR = "deploy/azure"
 DOCKERFILES = {"api": "deploy/api.Dockerfile", "web": "deploy/web.Dockerfile", "gate": "deploy/gate/Dockerfile"}
 TAG_LENGTH = 12

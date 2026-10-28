@@ -2,8 +2,9 @@
 
 Target: an Azure for Students subscription. This is the **production** instance (`arsm.hu`).
 Everything lives in one resource group and is created by `deploy/azure/registry.bicep` (the
-container registry) and `deploy/azure/main.bicep` (everything else; its `guardrails.bicep` module
-adds the optional alerts and its `budget.bicep` module the optional budget), driven from your Windows machine by
+container registry) and `deploy/azure/main.bicep` (everything else; its `migration-job.bicep` module adds
+the database migration job, its `guardrails.bicep` module the optional alerts and its `budget.bicep` module the
+optional budget), driven from your Windows machine by
 `python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
 root `.env`. Keep one host name for the WebUI and the API when changing the topology: the CSRF cookie
 is host-only.
@@ -18,6 +19,8 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
                                                           --http--> arsm-api (Container App, internal ingress only, 1 replica max)
                                                                       --> Azure Database for PostgreSQL Flexible Server (B1ms)
                                                                       --> Azure Blob Storage (private container)
+arsm-migrate (Container Apps Job, manual trigger, the API image with --migrate-database)
+  --> the same PostgreSQL server, as the administrator: migrations and the arsm_app login role
 ```
 
 | Piece | Source | Notes |
@@ -26,7 +29,8 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
 | Web image | `deploy/web.Dockerfile` + `deploy/nginx/` | `PUBLIC_URL` is baked into the bundle and its CSP; the CSP is repeated as a header with `frame-ancestors 'none'`. Inside the app it runs with `PORT=18080`. |
 | Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
-| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
+| Migration job | `deploy/azure/migration-job.bicep` | `arsm-migrate`: the API image started with `--migrate-database`, one replica, no retries, a 15-minute replica timeout. Connected as the administrator, it applies the migrations and the startup data checks, then creates or updates the login role `arsm_app` with DML rights only. The API itself no longer migrates (`Database__MigrateOnStartup=false`) and connects as `arsm_app`. |
+| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/migration-job.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
 | Driver | `scripts/deploy-azure.py` (helpers in `scripts/azure_deploy/`) | Validates `.env`, builds from a clean `git archive`, pushes, deploys, prints the DNS records. |
 
 Why the API has no public ingress: the CSRF cookie is host-only, so the browser must reach the
@@ -35,7 +39,9 @@ it, so nothing is reachable without the token.
 
 Images are pulled from the registry with one user-assigned managed identity that holds the
 `AcrPull` role on the registry. The registry admin user stays disabled, so there is no registry
-password anywhere.
+password anywhere. The same identity also holds `Storage Blob Data Contributor` on the profile-picture
+container only (not on the storage account), and the API signs in to Blob Storage with it, so no storage
+account key sits in any app secret.
 
 ## 2. teszt.arsm.hu versus arsm.hu
 
@@ -76,7 +82,8 @@ Required:
 | `ARSM_AZURE_RESOURCE_GROUP` | Resource group the script creates and deploys into, for example `arsm-rg`. |
 | `ARSM_ACR_NAME` | Registry name: 5-50 lowercase letters and digits, globally unique (login server `<name>.azurecr.io`). |
 | `ARSM_PUBLIC_URL` | `https://arsm.hu` (https, no trailing slash). Baked into the web image and used as the API CORS origin. |
-| `ARSM_POSTGRES_PASSWORD` | PostgreSQL administrator password. Generate: `openssl rand -base64 36`. |
+| `ARSM_POSTGRES_PASSWORD` | PostgreSQL administrator password. Generate: `openssl rand -base64 36`. Only the migration job connects with it. |
+| `ARSM_POSTGRES_APP_PASSWORD` | Password of the login role `arsm_app` the API connects as; the migration job sets it. Generate: `openssl rand -base64 36`. Same rules as `ARSM_POSTGRES_PASSWORD` and it must differ from it (`check` rejects a reuse). |
 | `ARSM_JWT_SECRET` | JWT signing secret, at least 32 bytes. Generate: `openssl rand -base64 48`. |
 | `ARSM_PROD_GATE_TOKEN` | Access token of the gate, at least 32 characters, different from the teszt `GATE_TOKEN`. Generate: `openssl rand -hex 32`. |
 | `ARSM_PROD_ADMIN_EMAIL` | E-mail of the bootstrap admin (the first account). |
@@ -101,7 +108,7 @@ Optional:
 | Key | Meaning |
 | --- | --- |
 | `ARSM_AZURE_LOCATION` | Azure region, default `swedencentral`. Student subscriptions only allow some regions; on a `RequestDisallowedByAzure` error pick another one. PostgreSQL Flexible Server can still be restricted in an allowed region (`ParameterOutOfRange` on `Version`); `az postgres flexible-server list-skus -l <region>` shows it. |
-| `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start and migration check). |
+| `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start; the migrations run in the job, not at API start). |
 | `ARSM_WEB_ALWAYS_ON` | Default `false`: the web app (gate + Nginx) scales to zero when idle, a cold start of about 2 s. `true` keeps one replica running (more credit used). |
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |
 | `ARSM_ALERT_EMAIL` | Address for the alert and budget mails (see Guard rails in section 8). Empty (default): no action group, alert rule or budget is created. |
@@ -124,7 +131,7 @@ and never to a tracked file); `main.bicepparam` reads them with `readEnvironment
 | `check` | Validates the `.env` keys and the tools (`az`, `docker`, `git`); prints key names with ok/missing only. With `ARSM_ALERT_EMAIL` set it also asks `az` (read-only, needs `az login`) whether `Microsoft.Insights` (and `Microsoft.Consumption` for a budget) is registered and only warns when it is not. |
 | `registry` | `az account set`, ensures the resource group, deploys `registry.bicep`, runs `az acr login`. |
 | `images` | `git archive` of `--commit` (default `HEAD`) into a temp dir; builds and pushes `arsm-api`, `arsm-web` (with `PUBLIC_URL`) and `arsm-gate`, tagged with the 12-character commit sha. |
-| `infra` | `az deployment group create` with `main.bicep` and `main.bicepparam`; prints the outputs. |
+| `infra` | Three steps with `main.bicep` and `main.bicepparam`. Phase 1 (deployment `arsm-main-pre-apps`, `ARSM_DEPLOY_APPS=false`, set by the script only) deploys everything except the two Container Apps and the alert rules that watch them, the migration job with the new image included; the incremental deployment leaves the running app revisions as they are. Then `az containerapp job start --name arsm-migrate` and a poll of `az containerapp job execution show ... --query properties.status` every 15 s until `Succeeded`; `Failed`, `Stopped`, `Degraded` or 20 minutes without success stop the step (exit 1) with the apps untouched. Phase 2 (deployment `arsm-main`) deploys the full template, apps included, and prints its outputs, which `dns` reads. `--dry-run` prints the commands (one status query included) without polling. |
 | `dns` | Prints the environment static IP, the verification id and the exact Cloudflare records. |
 | `bind-domain` | Adds `arsm.hu` to `arsm-web` and binds the free managed certificate (HTTP validation, apex). Run once; later `infra`/`release` runs find the issued certificate and keep the binding. |
 | `release` | `registry` + `images` + `infra` + `dns`. |
@@ -154,13 +161,15 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
    the student subscription the active one (`az account list -o table`).
 5. Install Docker Desktop and start it (Linux containers). Git and Python are already there.
 6. Put real values into the `.env` keys of section 4 (copy `.env.example` first if there is no
-   `.env` yet). Choose a new `ARSM_PROD_GATE_TOKEN`, not the teszt one.
+   `.env` yet). Choose a new `ARSM_PROD_GATE_TOKEN`, not the teszt one, and an
+   `ARSM_POSTGRES_APP_PASSWORD` that differs from `ARSM_POSTGRES_PASSWORD`.
 7. `python scripts/deploy-azure.py check` and fix whatever it reports as missing.
 8. Commit the state you want to ship, then
    `python scripts/deploy-azure.py release --commit <sha>`. It creates the registry, builds and
-   pushes the three images, deploys the infrastructure and prints the DNS records. The first run
-   takes a while (Flexible Server and the Container Apps environment). `--dry-run` only prints
-   what it would do.
+   pushes the three images, deploys the infrastructure without the apps, runs the migration job
+   (which migrates the empty database and creates `arsm_app`), waits for it to succeed, then
+   deploys the apps and prints the DNS records. The first run takes a while (Flexible Server and
+   the Container Apps environment). `--dry-run` only prints what it would do.
 9. Cloudflare DNS (the `arsm.hu` zone is on Cloudflare). Both records must be **DNS-only**
    (grey cloud, not proxied), because Azure validates the domain and issues the certificate
    directly:
@@ -171,7 +180,8 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
 11. Open `https://arsm.hu`: you get the gate lock page. Enter the `ARSM_PROD_GATE_TOKEN` value;
     the login page follows.
 12. Sign in with the bootstrap admin (`ARSM_PROD_ADMIN_EMAIL` / `ARSM_PROD_ADMIN_PASSWORD`). The
-    API migrated the empty database and created this single account on its first start.
+    migration job migrated the empty database, and the API created this single account on its
+    first start.
 13. Add the tester account in the Admin menu of the app.
 14. Hand the tester the URL `https://arsm.hu`, the gate token (`ARSM_PROD_GATE_TOKEN`) and the
     login of the account from step 13, over separate channels.
@@ -185,7 +195,19 @@ tester needs the new token.
 ### Updating
 
 Commit, then `python scripts/deploy-azure.py release --commit <sha>`. The new images carry a new
-tag, so both apps roll to a new revision; the DNS records and the certificate stay as they are.
+tag. `infra` first points the migration job at the new API image and runs it, so a new migration is
+applied before any app changes; only after the execution succeeded do both apps roll to a new
+revision. A failed job stops the release with the old revisions still serving; read its logs
+(section 8), fix, commit and release again. The DNS records and the certificate stay as they are.
+The first release of this setup on an existing deployment works the same way: the job creates
+`arsm_app` before the API switches its login.
+
+To rotate `ARSM_POSTGRES_APP_PASSWORD`, change it in `.env` and run
+`python scripts/deploy-azure.py infra`: the job sets the new password, then phase 2 updates the
+API's `db-connection` secret. Until the API runs with the new secret, its new database connections
+are refused; if the revision keeps the old value, restart it:
+`az containerapp revision restart --resource-group <rg> --name arsm-api --revision <revision>`
+(`az containerapp revision list --resource-group <rg> --name arsm-api -o table` lists the names).
 
 ## 7. Verification
 
@@ -207,6 +229,11 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
 
 - Logs: `az containerapp logs show --resource-group <rg> --name arsm-api --follow`, and
   `--name arsm-web --container gate` for the gate.
+- Migration job logs: `az containerapp job execution list --resource-group <rg> --name arsm-migrate -o table`
+  lists the executions and their status; the console output of one is under Execution history of the
+  `arsm-migrate` job in the portal, or in the Log Analytics workspace with
+  `ContainerAppConsoleLogs_CL | where ContainerJobName_s == 'arsm-migrate'`. The job logs its progress and, on
+  a failed role step, only the exception type and SQLSTATE; the `arsm_app` password is never logged.
 - Backups: Flexible Server keeps automatic backups for 7 days (point-in-time restore). For a copy
   you own, run an occasional `pg_dump` against the server (allow your IP in the server firewall
   only for the time of the dump, then remove the rule).
@@ -219,6 +246,28 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
   `maxReplicas: 1`.
 - The registry admin user is disabled: only the managed identity (`AcrPull`) pulls images, and
   pushing uses your own `az acr login`.
+- Managed identity for Blob Storage (implemented): the template grants the user-assigned identity
+  `Storage Blob Data Contributor` through a role assignment scoped to the picture container, and the API app gets
+  `ObjectStorage__ServiceUrl` (the account's blob endpoint) and `ObjectStorage__ManagedIdentityClientId` (the
+  identity's client id) instead of a connection string. `ObjectStorageRegistration` builds the
+  `BlobContainerClient` with a `ManagedIdentityCredential` for that client id, so `listKeys()` and the
+  `blob-connection` secret are gone. A key leaked from an app secret is no longer possible; the shared key of the
+  account itself stays enabled (`allowSharedKeyAccess` is unchanged). Right after the first role assignment the
+  API's container check at startup can fail until RBAC propagates (a few minutes); the revision recovers by
+  restarting.
+- Least-privilege database role (implemented): the API connects as the login role `arsm_app`
+  (`Username=arsm_app`, password `ARSM_POSTGRES_APP_PASSWORD`, secret `db-connection`) and runs with
+  `Database__MigrateOnStartup=false`, so it never migrates. The migration job `arsm-migrate` connects as the
+  administrator (secret `db-admin-connection`, `Maximum Pool Size=5`), runs the same migration and data checks the
+  API used to run at startup, then, in one transaction, creates `arsm_app` or updates its password
+  (`ALTER ROLE ... LOGIN PASSWORD`) and grants: `CONNECT` on `AutoServiceDb`, `USAGE` on schema `public`, `SELECT`,
+  `INSERT`, `UPDATE`, `DELETE` on all tables and `USAGE`, `SELECT`, `UPDATE` on all sequences in `public`, plus
+  `ALTER DEFAULT PRIVILEGES` in `public` for the tables and sequences the administrator's later migrations create.
+  Every run re-applies the same set. The password reaches the server as a bound parameter, never in a logged
+  command text. Residual risk: a leaked API connection string now gives DML on the data of `AutoServiceDb` only, no
+  DDL and no server control; the administrator password still lives in the job's `db-admin-connection` secret and in
+  the root `.env`, and the migrations run only through the job (`deploy-azure.py infra`). Local stacks (Aspire, CI,
+  the pre-push stack, `deploy/local-test`) leave `Database:MigrateOnStartup` unset and keep migrating at API start.
 
 ### Guard rails
 
@@ -244,9 +293,10 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
   is above 0 over 15 minutes. Both are checked every 5 minutes. `RestartCount` counts the restarts of a replica
   since it was created, so that rule stays active until the replica is replaced (the next deployment, a scale from
   zero); a rule mails when it fires and when it resolves, not for every further restart.
-- Database connections: the API's connection string carries `Maximum Pool Size=20`. A B1ms server allows 50
-  connections by default, 15 of them reserved for the platform, so Npgsql's default pool of 100 exceeds it. Old and
-  new replica overlap briefly during a rollout, but a pool only grows with concurrent queries.
+- Database connections: the API's connection string carries `Maximum Pool Size=20` and the migration job's
+  `Maximum Pool Size=5`. A B1ms server allows 50 connections by default, 15 of them reserved for the platform, so
+  Npgsql's default pool of 100 exceeds it. Old and new replica overlap briefly during a rollout, but a pool only grows
+  with concurrent queries; the job has finished before the apps roll.
 - Nginx request limits (web image, `deploy/nginx/`): the two event streams (`GET /api/appointments/updates`,
   `GET /api/profile/picture/updates`) run unbuffered with a read timeout of 1 hour; the picture upload
   (`PUT /api/profile/picture`) accepts bodies up to 5 MB (the API allows 4 MB plus multipart overhead); every other
@@ -257,44 +307,12 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
 
 ### Recommendations that are not implemented
 
-**Least-privilege database role.** The API connects as the server administrator, so a leaked connection string
-means control of the whole server. An application role would limit that to the data of `AutoServiceDb`. It is not
-set up because the API migrates the schema at every start (`MigrateAsync`: `pg_trgm` and every later schema
-change), and a data-only role fails the first time a migration is pending. Sketch, run once as the administrator
-in `AutoServiceDb`:
-
-```sql
-CREATE ROLE arsm_app LOGIN PASSWORD '<generated, not the administrator password>';
-GRANT CONNECT ON DATABASE "AutoServiceDb" TO arsm_app;
-GRANT USAGE ON SCHEMA public TO arsm_app;
--- Includes "__EFMigrationsHistory": EF reads it for pending migrations and inserts a row per applied one.
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO arsm_app;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO arsm_app;
--- Tables and sequences that the administrator's later migrations create get the same rights.
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO arsm_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO arsm_app;
-```
-
-Migrations need DDL, so one of two things has to give. Either the administrator login runs them: the API takes a
-second connection string for `MigrateAsync` (a code change) and a release that adds a migration needs it applied
-before the new revision starts. Or `GRANT CREATE ON SCHEMA public TO arsm_app` and that role creates, and so owns,
-the tables: one connection string, but DDL rights stay in the application. Either way the template puts the
-`arsm_app` password into a secret (`db-connection` or a second one) and the connection string changes its login.
-
 **Narrower database firewall rule.** `AllowAzureServices` (0.0.0.0) lets every Azure service in any subscription
 reach the server's public endpoint; only the login, its password and TLS stand in the way. It is that wide because a
 Consumption Container Apps environment has no fixed outbound address, so there is no narrower address to allow. The
 alternatives are a virtual network for the environment with the database behind a private endpoint, or a NAT
 gateway that gives the environment one fixed outbound address to allow. Both mean a new environment (and so new DNS
 records) plus the network pieces and their price, which is out of scope for this kit.
-
-**Managed identity for Blob Storage.** The API reaches the container with the storage account key: the template
-builds `ObjectStorage__ConnectionString` from `listKeys()`, and `ObjectStorageRegistration` creates the
-`BlobContainerClient` for `AzureBlobProfilePictureStorage` from that string. Switching to a managed identity is a
-coordinated code and infrastructure change, so it stays a recommendation: the API needs the `Azure.Identity` package
-and a client built with `DefaultAzureCredential` from the blob endpoint of the account, and the template has to give
-an identity of the API app the `Storage Blob Data Contributor` role on the storage account and then drop
-`listKeys()` and the `blob-connection` secret. Either half alone breaks the profile pictures.
 
 ## 9. Local rehearsal of the production images
 

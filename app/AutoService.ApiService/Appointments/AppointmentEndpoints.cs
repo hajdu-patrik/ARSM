@@ -8,26 +8,30 @@ public static partial class AppointmentEndpoints
     {
         var group = endpoints.MapGroup("/api/appointments")
                              .WithTags("Appointments")
-                             .RequireAuthorization();
+                             .RequireAuthorization("MechanicOnly");
 
         group.MapGet(string.Empty, GetByMonthAsync)
             .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
             .Produces<object>(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
 
         group.MapGet("/today", GetTodayAsync)
             .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
 
         group.MapGet("/updates", StreamAppointmentUpdatesAsync)
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .ExcludeFromDescription();
 
         group.MapPost("/intake", CreateIntakeAsync)
             .Produces<AppointmentDto>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
@@ -59,6 +63,7 @@ public static partial class AppointmentEndpoints
         group.MapPut("/{id}/claim", ClaimAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .Produces<object>(StatusCodes.Status404NotFound)
             .Produces<object>(StatusCodes.Status409Conflict)
             .Produces<ErrorCodeResponse>(StatusCodes.Status422UnprocessableEntity);
@@ -66,6 +71,7 @@ public static partial class AppointmentEndpoints
         group.MapDelete("/{id}/claim", UnclaimAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .Produces<object>(StatusCodes.Status404NotFound)
             .Produces<object>(StatusCodes.Status409Conflict)
             .Produces<object>(StatusCodes.Status422UnprocessableEntity);
@@ -99,11 +105,12 @@ public static partial class AppointmentEndpoints
 
         var customerAppointments = endpoints.MapGroup("/api/customers/{customerId:int}/appointments")
             .WithTags("Appointments")
-            .RequireAuthorization();
+            .RequireAuthorization("MechanicOnly");
 
         customerAppointments.MapGet(string.Empty, GetByCustomerAsync)
             .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         customerAppointments.MapPost(string.Empty, CreateForCustomerAsync)
@@ -116,11 +123,12 @@ public static partial class AppointmentEndpoints
 
         var vehicleAppointments = endpoints.MapGroup("/api/vehicles/{vehicleId:int}/appointments")
             .WithTags("Appointments")
-            .RequireAuthorization();
+            .RequireAuthorization("MechanicOnly");
 
         vehicleAppointments.MapGet(string.Empty, GetByVehicleAsync)
             .Produces<List<AppointmentDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;

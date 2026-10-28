@@ -65,13 +65,17 @@
   the `ARSM_*` keys of the root `.env`. Usage: `python scripts/deploy-azure.py <subcommand> [--commit REF] [--dry-run] [--yes]`.
   Subcommands: `check` (validates the keys, min lengths, https public URL, enum names read from the C# files,
   distinctness from the teszt `GATE_TOKEN` (the prod admin may reuse the dev `ADMIN_*` login), the whole-number keys
-  `ARSM_MONTHLY_BUDGET` (default 0 = no budget, above 0 needs `ARSM_ALERT_EMAIL`) and `ARSM_LOG_DAILY_QUOTA_GB`, the mail keys `ARSM_RESEND_API_KEY` (`re_` prefix, 20+ characters, never echoed), `ARSM_MAIL_FROM` (address or `Name <address>`) and `ARSM_MAIL_REPLY_TO`, the az/docker/git
+  `ARSM_MONTHLY_BUDGET` (default 0 = no budget, above 0 needs `ARSM_ALERT_EMAIL`) and `ARSM_LOG_DAILY_QUOTA_GB`,
+  `ARSM_POSTGRES_APP_PASSWORD` (required, secret, the Postgres password rules, must differ from `ARSM_POSTGRES_PASSWORD`), the mail keys `ARSM_RESEND_API_KEY` (`re_` prefix, 20+ characters, never echoed), `ARSM_MAIL_FROM` (address or `Name <address>`) and `ARSM_MAIL_REPLY_TO`, the az/docker/git
   tools, and, with `ARSM_ALERT_EMAIL` set, one read-only `az provider show` per guard-rail provider (`Microsoft.Insights`,
   plus `Microsoft.Consumption` for a budget) that only warns and is skipped without `az login`),
   `registry` (account set, resource group, `registry.bicep`, `az acr login`), `images` (`git archive` of the
   commit into a temp dir, then build and push `arsm-api`, `arsm-web` with `PUBLIC_URL`, `arsm-gate`, tag = first
-  12 sha characters), `infra` (`main.bicep` + `main.bicepparam`, outputs printed; passes the managed certificate already issued for the
-  public host so a redeploy keeps the custom domain), `dns` (static IP, asuid id and
+  12 sha characters), `infra` (`main.bicep` + `main.bicepparam` in two phases: phase 1 as deployment `arsm-main-pre-apps`
+  with `ARSM_DEPLOY_APPS=false`, no Container Apps; then it starts the job `arsm-migrate` (helper `scripts/azure_deploy/migration.py`)
+  and polls its execution until `Succeeded`, while `Failed`/`Stopped`/`Degraded` or a 1200 s timeout fail the step with the apps
+  untouched; then the full template as `arsm-main`, outputs printed; `--dry-run` prints the commands without polling; passes the
+  managed certificate already issued for the public host so a redeploy keeps the custom domain), `dns` (static IP, asuid id and
   the exact Cloudflare DNS-only records), `bind-domain` (hostname add + bind, managed certificate, HTTP
   validation), `release` (registry, images, infra, dns). `images`, `infra` and `release` ask for confirmation
   unless `--yes`; `--dry-run` prints the commands without running them. Exit 0 ok, 1 failed step, 2 bad config or

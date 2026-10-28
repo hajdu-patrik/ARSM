@@ -26,6 +26,12 @@ public static partial class CustomerEndpoints
             return ApiProblem.Unprocessable(contactError);
         }
 
+        var lengthErrors = input.GetLengthErrors(normalizedEmail, normalizedPhone);
+        if (lengthErrors.Count > 0)
+        {
+            return Results.ValidationProblem(lengthErrors);
+        }
+
         var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, null, cancellationToken);
         if (conflict is not null)
         {
@@ -75,6 +81,12 @@ public static partial class CustomerEndpoints
         if (contactError is not null)
         {
             return ApiProblem.Unprocessable(contactError);
+        }
+
+        var lengthErrors = input.GetLengthErrors(normalizedEmail, normalizedPhone);
+        if (lengthErrors.Count > 0)
+        {
+            return Results.ValidationProblem(lengthErrors);
         }
 
         var conflict = await CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, id, cancellationToken);

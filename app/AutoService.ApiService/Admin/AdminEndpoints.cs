@@ -1,4 +1,5 @@
 using AutoService.ApiService.Pagination;
+using AutoService.ApiService.Security;
 
 namespace AutoService.ApiService.Admin;
 
@@ -24,6 +25,7 @@ public static partial class AdminEndpoints
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/mechanics/{id:int}/password-reset", ResetMechanicPasswordAsync)
+            .RequireRateLimiting(RateLimitPolicies.StaffEmailSends)
             .Produces<ResetMechanicPasswordResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)

@@ -19,7 +19,7 @@ SUBCOMMANDS = {
     "check": "Validate the .env keys and the az/docker/git tools; prints key names with ok/missing only.",
     "registry": "Select the subscription, ensure the resource group, deploy registry.bicep (ACR Basic), az acr login.",
     "images": "Build arsm-api, arsm-web (PUBLIC_URL build arg) and arsm-gate from a git archive of --commit; push them.",
-    "infra": "Deploy main.bicep with main.bicepparam (secrets via the az process environment); print the outputs.",
+    "infra": "Deploy main.bicep without the apps, run and await the migration job, then the full template; print the outputs.",
     "dns": "Print the static IP, the asuid verification id and the exact Cloudflare records (DNS only).",
     "bind-domain": "Add the custom hostname to arsm-web and bind a managed certificate (HTTP validation).",
     "release": "registry + images + infra + dns in one go (asks once unless --yes).",

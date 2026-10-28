@@ -1,5 +1,5 @@
 User-agent: *
-Allow: /
+Disallow: /
 
-# ARSM is an authenticated SPA. Route-level crawl/index directives are enforced via SEO meta tags.
+# ARSM is an authenticated SPA: every route is noindex, so crawling is disallowed as well.
 # No Sitemap directive and no sitemap.xml: there are no public routes to list.

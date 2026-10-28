@@ -2,6 +2,7 @@ namespace AutoService.ApiService.Storage;
 
 /** Azure Blob Storage configuration resolved at startup ('ObjectStorage:Provider' = AzureBlob). */
 public sealed record AzureBlobStorageSettings(
-    string ConnectionString,
+    Uri ServiceUri,
+    string ManagedIdentityClientId,
     string ContainerName,
     bool AutoCreateContainer);
