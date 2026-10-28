@@ -234,6 +234,9 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
   `arsm-migrate` job in the portal, or in the Log Analytics workspace with
   `ContainerAppConsoleLogs_CL | where ContainerJobName_s == 'arsm-migrate'`. The job logs its progress and, on
   a failed role step, only the exception type and SQLSTATE; the `arsm_app` password is never logged.
+- `ServerIsBusy` on a PostgreSQL child resource: a Flexible Server accepts one write at a time, so `main.bicep`
+  chains its children (`azure.extensions`, then the firewall rule, then `AutoServiceDb`) with `dependsOn`. If a
+  run still meets it (the server busy with its own maintenance), wait for `state` `Ready` and run `infra` again.
 - Backups: Flexible Server keeps automatic backups for 7 days (point-in-time restore). For a copy
   you own, run an occasional `pg_dump` against the server (allow your IP in the server firewall
   only for the time of the dump, then remove the rule).

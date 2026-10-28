@@ -212,6 +212,8 @@ resource postgresExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configura
 resource postgresAzureAccess 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = {
   parent: postgres
   name: 'AllowAzureServices'
+  // The server takes one write at a time, so its child resources go in a chain (parallel writes fail with ServerIsBusy).
+  dependsOn: [ postgresExtensions ]
   properties: {
     startIpAddress: '0.0.0.0'
     endIpAddress: '0.0.0.0'
@@ -256,6 +258,7 @@ resource blobDataAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01'
 resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
   parent: postgres
   name: 'AutoServiceDb'
+  dependsOn: [ postgresAzureAccess ]
   properties: {
     charset: 'UTF8'
     collation: 'en_US.utf8'

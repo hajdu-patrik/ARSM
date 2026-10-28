@@ -17,6 +17,13 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- Azure deployments failed at random with `ServerIsBusy` (2026-10-28). `main.bicep` wrote the PostgreSQL server's
+  children (`azure.extensions`, the `AllowAzureServices` firewall rule, `AutoServiceDb`) in parallel, and a Flexible Server
+  takes one write at a time; they now run in a `dependsOn` chain (`az bicep build` clean). The guide's Operations section
+  says how to recover when the server itself is busy.
+
+_Dev time: ~13m wall-clock (2026-10-28 18:05 to 18:18 +01:00, from the failed release to this entry). Cost: not measured (direct work, no workflow)._
+
 - Profile picture upload showed the 500 page in production (2026-10-28). The crop dialog's `react-easy-crop` injected its
   stylesheet through `innerHTML`, which the production Trusted Types policy refuses; the `TypeError` reached the
   ErrorBoundary, so no request was ever sent (nothing in the server logs) and the dev server, which has no CSP, never
