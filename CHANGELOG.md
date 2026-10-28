@@ -17,6 +17,15 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- Profile picture upload showed the 500 page in production (2026-10-28). The crop dialog's `react-easy-crop` injected its
+  stylesheet through `innerHTML`, which the production Trusted Types policy refuses; the `TypeError` reached the
+  ErrorBoundary, so no request was ever sent (nothing in the server logs) and the dev server, which has no CSP, never
+  showed it. The cropper now runs with `disableAutomaticStylesInjection` and its stylesheet is imported in `index.css`.
+  Regression test: the Trusted Types spec opens the crop dialog under the production policy (it failed before the fix).
+  E2E 220/220.
+
+_Dev time: ~21m wall-clock (2026-10-28 17:16 to 17:37 +01:00, root cause from the prod logs and a reproduction). Cost: not measured (direct work, no workflow)._
+
 - Phone layout pass from on-device screenshots of teszt.arsm.hu (2026-10-27). The end of every page was unreachable:
   the app shell listed `h-screen h-dvh`, Tailwind emits `.h-screen` later, so it was 100vh, which on a phone excludes the
   browser toolbar, and the toolbar never hides because only `<main>` scrolls; the shell is now

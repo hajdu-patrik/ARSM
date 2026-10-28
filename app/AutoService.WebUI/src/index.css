@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The cropper's own stylesheet; its runtime <style> injection breaks Trusted Types and the CSP. */
+@import "react-easy-crop/react-easy-crop.css";
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/autofill.css";
