@@ -8,6 +8,14 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Added
+- Edit-vehicle button in the Scheduler appointment detail modal's vehicle section (2026-10-28). It navigates to
+  `/customers?vehicleId=<id>`, which the Customers page consumes once (`useRequestedVehicleEdit`) to open the vehicle
+  editor; the label key moved to `common.actions.editVehicle`. The button is shown for every status, cancelled and
+  completed included, and an unknown id opens nothing. E2E spec: `appointment-vehicle-link.spec.ts` (full suite 219/219).
+
+_Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
+
 ### Fixed
 - Phone layout pass from on-device screenshots of teszt.arsm.hu (2026-10-27). The end of every page was unreachable:
   the app shell listed `h-screen h-dvh`, Tailwind emits `.h-screen` later, so it was 100vh, which on a phone excludes the

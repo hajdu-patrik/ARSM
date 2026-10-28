@@ -11,6 +11,7 @@ import { Modal } from '../../../../components/common/Modal';
 import { getDueState } from '../../utils/due-date';
 import { formatDueExactDateTime, formatLongDateTime } from '../../utils/scheduler-datetime';
 import { useAppointmentQuoteLink } from '../../../../hooks/useAppointmentQuoteLink';
+import { useAppointmentVehicleLink } from '../../../../hooks/useAppointmentVehicleLink';
 import { useAdminMechanics } from '../../hooks/useAdminMechanics';
 import { AppointmentDetailBody } from './AppointmentDetailModal.sections';
 import { AppointmentDetailFooter } from './AppointmentDetailModal.footer';
@@ -72,6 +73,7 @@ function AppointmentDetailDialog({
   const deletion = useAppointmentDelete({ appointmentId: appointment.id, onDelete });
   const { cancelEditing, isEditing } = editing;
   const { quoteId, openQuote } = useAppointmentQuoteLink(appointment.id);
+  const openVehicleEditor = useAppointmentVehicleLink(appointment.vehicle.id);
 
   const handleCloseDetailModal = useCallback(() => {
     if (isEditing) {
@@ -86,6 +88,11 @@ function AppointmentDetailDialog({
     onClose();
     openQuote();
   }, [onClose, openQuote]);
+
+  const handleEditVehicle = useCallback(() => {
+    onClose();
+    openVehicleEditor();
+  }, [onClose, openVehicleEditor]);
 
   const isAssigned = currentMechanicId !== undefined &&
     appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
@@ -137,6 +144,7 @@ function AppointmentDetailDialog({
           dueState={getDueState(appointment.dueDateTime, appointment.status)}
           quoteId={quoteId}
           onOpenQuote={handleOpenQuote}
+          onEditVehicle={handleEditVehicle}
           availableMechanics={availableMechanics}
           selectedNewMechanicId={actions.selectedNewMechanicId}
           canClaim={canClaim}

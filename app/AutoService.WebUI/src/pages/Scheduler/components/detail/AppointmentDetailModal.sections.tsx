@@ -1,6 +1,6 @@
 /** Section components for the appointment detail modal body (header, due date, vehicle, task). */
 import { memo } from 'react';
-import { Clock3, FileText } from 'lucide-react';
+import { Clock3, FileText, Pencil } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import type { EditFormState } from './AppointmentDetailModal.edit';
@@ -47,6 +47,7 @@ interface AppointmentDetailBodyProps {
   readonly currentMechanicId: number | undefined;
   readonly onEditField: (field: keyof EditFormState, value: string) => void;
   readonly onOpenQuote: () => void;
+  readonly onEditVehicle: () => void;
   readonly onClaim: () => void;
   readonly onUnclaim: () => void;
   readonly onSelectNewMechanic: (value: string) => void;
@@ -77,6 +78,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   currentMechanicId,
   onEditField,
   onOpenQuote,
+  onEditVehicle,
   onClaim,
   onUnclaim,
   onSelectNewMechanic,
@@ -98,7 +100,13 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
           onEditField('dueDateTime', value);
         }}
       />
-      <VehicleSection appointment={appointment} t={t} locale={locale} />
+      <VehicleSection
+        appointment={appointment}
+        isEditing={isEditing}
+        t={t}
+        locale={locale}
+        onEditVehicle={onEditVehicle}
+      />
       <TaskSection
         isEditing={isEditing}
         taskDescription={editForm.taskDescription}
@@ -234,20 +242,43 @@ const DueSection = memo(function DueSection({
 
 interface VehicleSectionProps {
   readonly appointment: AppointmentDto;
+  readonly isEditing: boolean;
   readonly t: TFunction;
   readonly locale: string;
+  readonly onEditVehicle: () => void;
 }
 
-/** Read-only vehicle details of the appointment. */
-const VehicleSection = memo(function VehicleSection({ appointment, t, locale }: VehicleSectionProps) {
+/** Read-only vehicle details of the appointment, with a link that opens the vehicle editor. */
+const VehicleSection = memo(function VehicleSection({
+  appointment,
+  isEditing,
+  t,
+  locale,
+  onEditVehicle,
+}: VehicleSectionProps) {
   const { vehicle } = appointment;
   const title = `${vehicle.brand} ${vehicle.model} (${String(vehicle.year)})`;
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h3 className={`mb-2 min-w-0 break-words ${baseSectionHeadingTextClass}`}>
-        {title}
-      </h3>
+      <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
+        <h3 className={`min-w-0 break-words ${baseSectionHeadingTextClass}`}>
+          {title}
+        </h3>
+        {!isEditing && (
+          <button
+            type="button"
+            data-testid="appointment-detail-edit-vehicle"
+            className={compactChipNeutralButtonClass}
+            title={t('common.actions.editVehicle')}
+            aria-label={t('common.actions.editVehicle')}
+            onClick={onEditVehicle}
+          >
+            <Pencil className={smallIconClass} />
+            {t('common.actions.editVehicle')}
+          </button>
+        )}
+      </div>
       <div className={compactTwoColumnGridClass}>
         <VehicleValueRow
           label={t('common.fields.licensePlate')}

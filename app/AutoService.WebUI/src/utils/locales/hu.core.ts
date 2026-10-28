@@ -2,6 +2,7 @@ export const huCore = {
   common: {
     actions: {
       openQuote: 'Árajánlat megnyitása',
+      editVehicle: 'Jármű szerkesztése',
       save: 'Mentés',
       saveChanges: 'Módosítások mentése',
       saving: 'Mentés...',

@@ -11,6 +11,7 @@ import { useCustomersListMutations } from './hooks/useCustomersListMutations';
 import { useCustomerMutations } from './hooks/useCustomerMutations';
 import { useVehicleMutations } from './hooks/useVehicleMutations';
 import { useCustomerDetailsPanel } from './hooks/useCustomerDetailsPanel';
+import { useRequestedVehicleEdit } from './hooks/useRequestedVehicleEdit';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomerListSection } from './components/CustomerListSection';
 import type { CustomerHistoryState, CustomerListActions, CustomerListData } from './components/customerListSection.types';
@@ -63,6 +64,8 @@ const CustomersPageComponent = memo(function CustomersPage() {
     refreshAfterVehicleUpdated,
     refreshAfterVehicleDeleted,
   });
+
+  useRequestedVehicleEdit(vehicleMutations.openEditVehicleModal);
 
   const detailsPanel = useCustomerDetailsPanel();
 

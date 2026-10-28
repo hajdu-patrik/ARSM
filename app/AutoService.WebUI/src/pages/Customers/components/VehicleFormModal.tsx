@@ -66,7 +66,7 @@ export const VehicleFormModal = memo(function VehicleFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={mode === 'create' ? t('customers.createVehicle') : t('customers.editVehicle')}
+      title={mode === 'create' ? t('customers.createVehicle') : t('common.actions.editVehicle')}
       widthClassName="max-w-2xl"
       footerClassName="arsm-modal-footer-confirm"
       footer={(

@@ -62,7 +62,6 @@ export const huFeature = {
     emptyVehicles: 'Ehhez az ügyfélhez nincs jármű.',
     createQuote: 'Árajánlat készítése',
     createVehicle: 'Jármű létrehozása',
-    editVehicle: 'Jármű szerkesztése',
     deleteVehicle: 'Jármű törlése',
     deleteVehicleTitle: 'Jármű törlésének megerősítése',
     deleteVehicleConfirm: '{{plate}} rendszámú jármű törlése? A kapcsolódó időpontok is törlődnek.',

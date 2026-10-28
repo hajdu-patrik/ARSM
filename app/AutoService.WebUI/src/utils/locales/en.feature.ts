@@ -62,7 +62,6 @@ export const enFeature = {
     emptyVehicles: 'No vehicles found for this customer.',
     createQuote: 'Create quote',
     createVehicle: 'Create vehicle',
-    editVehicle: 'Edit vehicle',
     deleteVehicle: 'Delete vehicle',
     deleteVehicleTitle: 'Confirm vehicle deletion',
     deleteVehicleConfirm: 'Delete vehicle {{plate}}? Related appointments will also be removed.',

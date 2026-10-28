@@ -100,8 +100,8 @@ export const VehicleItem = memo(function VehicleItem({
 								onOpenEditVehicleModal(customerId, vehicle);
 							}}
 							className={rowIconActionWarningClass}
-							title={t('customers.editVehicle')}
-							aria-label={t('customers.editVehicle')}
+							title={t('common.actions.editVehicle')}
+							aria-label={t('common.actions.editVehicle')}
 						>
 							<Pencil className={smallIconClass} />
 						</button>

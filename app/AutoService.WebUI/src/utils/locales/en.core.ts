@@ -2,6 +2,7 @@ export const enCore = {
   common: {
     actions: {
       openQuote: 'Open quote',
+      editVehicle: 'Edit vehicle',
       save: 'Save',
       saveChanges: 'Save changes',
       saving: 'Saving...',
