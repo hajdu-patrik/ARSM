@@ -1,5 +1,6 @@
 """ARSM local test instance: rebuilds the arsm-tunnel-* stack when origin/main has a new green-CI commit.
 Usage: python deploy.py [--force] [--ignore-ci] [--backup-only]; see deploy/docs/deployment-local-test.md."""
+import hashlib
 import json
 import os
 import shutil
@@ -27,6 +28,19 @@ KEEP_BACKUPS = 20
 DAILY_BACKUP_SECONDS = 24 * 3600
 NETWORK = "arsm-tunnel-net"
 DATABASE = "AutoServiceDb"
+KIT_NOTICE = HERE / "kit-notice.txt"
+GATE_RESTART = HERE / "gate-restart.txt"
+# Kit files refreshed from the deployed commit (repository path: kit path); gate-assets/** join them from the tree.
+SELF_UPDATED = {"deploy/local-test/deploy.py": "deploy.py", "deploy/gate/gate.mjs": "gate.mjs",
+                "deploy/gate/gate-page.mjs": "gate-page.mjs", "deploy/gate/gate-style.mjs": "gate-style.mjs"}
+GATE_ASSETS = "deploy/gate/gate-assets/"
+# Never replaced automatically: run.cmd is read by byte offset by running supervisors, the others register tasks.
+MANUAL_FILES = ("run.cmd", "teszt.ps1", "setup.ps1", "kit.psd1")
+# Stops only the node process running this kit's gate.mjs (path from ARSM_GATE_SCRIPT); run.cmd restarts it in 3 s.
+GATE_STOP = (r"$pattern = [regex]::Escape($env:ARSM_GATE_SCRIPT) + '(?=[\x22\s]|$)'; "
+             r"Get-CimInstance Win32_Process -Filter 'Name = ''node.exe''' | "
+             r"Where-Object { $_.CommandLine -match $pattern } | "
+             r"ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }")
 # The task runs python.exe under conhost --headless; this flag keeps every git/docker call windowless in any host.
 NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
@@ -135,8 +149,9 @@ def ensure_base_services():
         run(["docker", "run", "-d", "--name", "arsm-tunnel-postgres", *common, "--env-file", str(HERE / "postgres.env"),
              "-v", "arsm-tunnel-pgdata:/var/lib/postgresql", "postgres:18.6"])
     if not exists("container", "arsm-tunnel-rustfs"):
+        # -e wins over --env-file, so the console stays off even with an older rustfs.env.
         run(["docker", "run", "-d", "--name", "arsm-tunnel-rustfs", *common, "--env-file", str(HERE / "rustfs.env"),
-             "-v", "arsm-tunnel-rustfs:/data", "rustfs/rustfs:1.0.1"])
+             "-e", "RUSTFS_CONSOLE_ENABLE=false", "-v", "arsm-tunnel-rustfs:/data", "rustfs/rustfs:1.0.1"])
     run(["docker", "start", "arsm-tunnel-postgres", "arsm-tunnel-rustfs"])
     return fresh
 
@@ -225,6 +240,104 @@ def deploy(repo, sha, deployed):
         log(f"deploy of {sha[:8]} is unhealthy; will retry on the next run")
 
 
+def git_bytes(repo, *args):
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, creationflags=NO_WINDOW, stdin=subprocess.DEVNULL)
+    if result.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args[:2])} failed: {result.stderr.decode('utf-8', 'replace').strip()[-400:]}")
+    return result.stdout
+
+
+def tree_blobs(repo, sha, paths):
+    """{repository path: blob id} of the given files and folders (recursively) in the commit; one local git call."""
+    blobs = {}
+    for entry in git_bytes(repo, "ls-tree", "-r", "-z", sha, "--", *paths).split(b"\0"):
+        if entry:
+            meta, path = entry.split(b"\t", 1)
+            _, kind, oid = meta.split()
+            if kind == b"blob":
+                blobs[path.decode("utf-8")] = oid.decode("ascii")
+    return blobs
+
+
+def blob_id(data, oid):
+    """Git's object id of the bytes (SHA-1, or SHA-256 in a SHA-256 repository), so no blob is read to compare."""
+    algorithm = hashlib.sha256 if len(oid) == 64 else hashlib.sha1
+    return algorithm(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def installed(path):
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        return None
+
+
+def write_atomic(target, data):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp = target.with_name(target.name + ".sync-tmp")
+    try:
+        temp.write_bytes(data)
+        os.replace(temp, target)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def kit_targets(blobs):
+    """Kit path of every self-updated file the commit has."""
+    targets = {path: HERE / name for path, name in SELF_UPDATED.items() if path in blobs}
+    targets.update({path: HERE / "gate-assets" / path[len(GATE_ASSETS):] for path in blobs if path.startswith(GATE_ASSETS)})
+    return targets
+
+
+def restart_gate():
+    """Stops this kit's gate process only (never other node processes); the run.cmd supervisor starts the new code."""
+    stopped = run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", GATE_STOP],
+                  env={**os.environ, "ARSM_GATE_SCRIPT": str(HERE / "gate.mjs")}, timeout=120).split()
+    if stopped:
+        log(f"kit: gate code changed; stopped gate process {', '.join(stopped)}, run.cmd restarts it")
+    else:
+        log("kit: gate code changed; no running gate process, it loads the new code on its next start")
+
+
+def note_manual_updates(repo, sha, blobs):
+    """Logs once per commit each kit script that differs from it (line endings ignored); these are never replaced."""
+    if KIT_NOTICE.exists() and KIT_NOTICE.read_text(encoding="utf-8").strip() == sha:
+        return
+    for name in MANUAL_FILES:
+        path = f"deploy/local-test/{name}"
+        if path not in blobs:
+            continue
+        wanted = git_bytes(repo, "cat-file", "blob", blobs[path]).replace(b"\r\n", b"\n")
+        current = installed(HERE / name)
+        if current is None or current.replace(b"\r\n", b"\n") != wanted:
+            log(f"kit: {name} differs from {path} in {sha[:8]}; it needs a manual update")
+    KIT_NOTICE.write_text(sha, encoding="utf-8")
+
+
+def sync_kit(repo, sha):
+    """Refreshes the self-updated kit files from the deployed commit (never the working tree), byte for byte as stored."""
+    if HERE.is_relative_to(Path(repo).resolve()):
+        return  # running from deploy/local-test of the clone: its working tree is never overwritten
+    blobs = tree_blobs(repo, sha, [*SELF_UPDATED, GATE_ASSETS.rstrip("/"), *(f"deploy/local-test/{n}" for n in MANUAL_FILES)])
+    gate_changed = False
+    for path, target in kit_targets(blobs).items():
+        current = installed(target)
+        if current is not None and blob_id(current, blobs[path]) == blobs[path]:
+            continue
+        data = git_bytes(repo, "cat-file", "blob", blobs[path])
+        if blob_id(data, blobs[path]) != blobs[path]:
+            raise RuntimeError(f"kit sync: {path} read back with a different object id")
+        write_atomic(target, data)
+        log(f"kit: updated {target.relative_to(HERE).as_posix()} from {sha[:8]}")
+        gate_changed = gate_changed or path != "deploy/local-test/deploy.py"
+    if gate_changed:
+        GATE_RESTART.write_text(sha, encoding="utf-8")  # a failed restart is retried on the next run
+    if GATE_RESTART.exists():
+        restart_gate()
+        GATE_RESTART.unlink()
+    note_manual_updates(repo, sha, blobs)
+
+
 def take_lock():
     """Atomic lock file; a lock older than an hour is stale and replaced."""
     for _ in range(2):
@@ -273,6 +386,10 @@ def main():
         if deployed and daily_backup_due():
             BACKUP_TRY.write_text("", encoding="utf-8")
             backup("daily")
+        # After a deploy and on idle runs alike: a local comparison, it writes only files that differ.
+        current = STATE.read_text(encoding="utf-8").strip() if STATE.exists() else ""
+        if current:
+            sync_kit(repo, current)
         ERROR_STATE.unlink(missing_ok=True)
     except Exception as error:
         note_error(error)

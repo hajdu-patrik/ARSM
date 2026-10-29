@@ -12,7 +12,9 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 - Error alerts, persistent DataProtection keys and session-revocation persistence (2026-10-29), the pentest follow-ups.
   - Two log-based alert rules, `arsm-api-errors` (severity 1, `fail:`/`crit:`) and `arsm-api-warnings` (severity 3,
     `warn:`): stateless, one mail per 5-minute window with the count and the first lines, no resolve mail; the existing
-    5xx and restart alerts are unchanged.
+    5xx and restart alerts are unchanged. The warning rule skips client-caused and harmless categories (login and
+    request rejections, the 401/403 audit, the startup https-port notice, EF query hints), so it mails only real
+    infrastructure trouble (none in the last 30 days apart from the DataProtection warnings this change removes).
   - The DataProtection key ring is persisted: Azure uses the blob container `dataprotection-keys` plus a new Key Vault key
     through the API managed identity (least-privilege roles), dev a gitignored AppHost folder, teszt a Docker volume. The
     application name is fixed to `arsm`, so payloads protected earlier are invalidated once. `deploy-azure.py check` now
@@ -26,6 +28,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   - `main.bicep` stays under the 500-line limit: the Key Vault, key, key container and their role assignments live in
     `dataprotection.bicep`, the PostgreSQL server and its chained children in `postgres.bicep` (same resource names and
     ids, compiled resources unchanged); the log alert rules skip query validation, so a fresh workspace deploys.
+  - The teszt kit updates itself on every push: after each deploy `deploy.py` syncs its own copy and the gate files
+    (`gate.mjs`, `gate-page.mjs`, `gate-style.mjs`, `gate-assets/`) from the deployed commit and restarts only the kit's
+    gate process when gate code changed; `run.cmd`, `teszt.ps1`, `setup.ps1` and `kit.psd1` are only reported in
+    `deploy.log` for a manual update. A new `arsm-tunnel-rustfs` always starts with the console off.
   - Security notes: the profile-picture SSE fan-out to all staff is intended (no personal data in the payload); hreflang
     is not applicable (single-URL, login-gated SPA with a stored language toggle). No code change for either.
 

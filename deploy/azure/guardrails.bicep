@@ -27,7 +27,10 @@ param workspaceLocation string
 var apiConsoleLogs = 'ContainerAppConsoleLogs_CL | where ContainerAppName_s == "${apiAppName}" and ContainerName_s == "api"'
 var summaryColumns = '| sort by TimeGenerated asc | summarize LineCount = count(), Lines = make_list(Log_s, 3) | extend Sample = substring(strcat_array(Lines, " | "), 0, 500) | project LineCount, Sample'
 var errorQuery = '${apiConsoleLogs} | where Log_s startswith "fail:" or Log_s startswith "crit:" ${summaryColumns}'
-var warningQuery = '${apiConsoleLogs} | where Log_s startswith "warn:" ${summaryColumns}'
+// Warnings caused by the client (rejected requests, wrong passwords, 401/403 audit) and two benign framework notices
+// never mail (owner decision 2026-10-29); infrastructure warnings (mail, storage, keys, startup) still do.
+var benignWarningFilter = '| extend Category = tostring(split(substring(Log_s, 6), "[")[0]) | where not(Category startswith "AuthEndpoints." or Category startswith "AppointmentEndpoints." or Category startswith "AdminEndpoints." or Category in ("Auth.AccessDenied", "Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware", "Microsoft.EntityFrameworkCore.Query"))'
+var warningQuery = '${apiConsoleLogs} | where Log_s startswith "warn:" ${benignWarningFilter} ${summaryColumns}'
 
 resource alertActionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
   name: '${namePrefix}-alerts'

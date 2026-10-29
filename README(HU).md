@@ -138,7 +138,7 @@ ezek nélkül a feltöltés hibára fut. RustFS (és korábban MinIO) esetén mi
 
 A Cloudflare named tunnel ugyanazt a reverse proxy felállást a saját domained egy fix hosztnevén teszi elérhetővé. Az URL állandó, így a WebUI-t elég egyszer buildelni. Csak tesztelésre való, éles üzemre soha.
 
-A projekt saját példányai: az éles a `https://arsm.hu` az Azure-on ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); a lokális tesztpéldány, a `https://teszt.arsm.hu` ez a felállás automatikus deployjal és tokenes kapuval, a készlete a [deploy/local-test](deploy/local-test) mappában van, jelenleg ki van kapcsolva. A működését, valamint a be- és kikapcsolását a [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) írja le.
+A projekt saját példányai: az éles a `https://arsm.hu` az Azure-on ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); a lokális tesztpéldány, a `https://teszt.arsm.hu` ez a felállás automatikus deployjal és tokenes kapuval, a készlete a [deploy/local-test](deploy/local-test) mappában van, jelenleg be van kapcsolva. A működését, valamint a be- és kikapcsolását a [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) írja le.
 
 ### Feltételek
 

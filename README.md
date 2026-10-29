@@ -140,7 +140,7 @@ without them. RustFS (like MinIO before it) keeps both `false`.
 
 A Cloudflare named tunnel exposes the same reverse-proxy setup on a fixed hostname of your own domain. The URL is stable, so the WebUI is built once. It is for testing only, never for production.
 
-This project's own instances: production is `https://arsm.hu` on Azure ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); the local test instance `https://teszt.arsm.hu` is this setup with auto-deploy and a token gate, kit in [deploy/local-test](deploy/local-test), currently off. How it works and how to turn it on and off: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md).
+This project's own instances: production is `https://arsm.hu` on Azure ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); the local test instance `https://teszt.arsm.hu` is this setup with auto-deploy and a token gate, kit in [deploy/local-test](deploy/local-test), currently on. How it works and how to turn it on and off: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md).
 
 ### Requirements
 

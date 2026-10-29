@@ -15,6 +15,9 @@ ci-state.txt
 deploy.lock
 error-state.txt
 backup-try.txt
+kit-notice.txt
+gate-restart.txt
+*.sync-tmp
 # The live kit's own notes name the tunnel id.
 README.txt
 # The gate is tracked once, in deploy/gate; a copied kit gate stays local.

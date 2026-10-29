@@ -323,7 +323,13 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
 - Log alert rules (same action group, e-mail and API-only filter; they query `ContainerAppConsoleLogs_CL` of the
   workspace for `ContainerAppName_s == "arsm-api"` and `ContainerName_s == "api"`): `arsm-api-errors` (severity 1)
   fires when a console line of the window starts with `fail:` or `crit:`, i.e. the API logged at Error or Critical
-  level; `arsm-api-warnings` (severity 3) does the same for `warn:` lines. The API image runs ASP.NET Core's default
+  level; `arsm-api-warnings` (severity 3) does the same for `warn:` lines, except the ones the client causes or that
+  are known to be harmless (owner decision 2026-10-29, so mails stay rare and mean a real problem): the categories
+  `AuthEndpoints.*` (wrong passwords, rejected logins and refreshes), `AppointmentEndpoints.*` and `AdminEndpoints.*`
+  (rejected requests), `Auth.AccessDenied` (the 401/403 audit line), `HttpsRedirectionMiddleware` (the startup "https
+  port" notice behind the proxy) and `Microsoft.EntityFrameworkCore.Query` (query hints). Mail, storage, key ring and
+  startup warnings still fire; on 30 days of production logs only the old DataProtection warnings would have. The
+  API image runs ASP.NET Core's default
   simple console formatter (no JSON formatter is configured), which prefixes every record with its level. Both are
   checked every 5 minutes over the last 5 minutes and fire when the count is above 0. The query returns one row per
   evaluation (`LineCount` and a `Sample` of the first three matching lines, at most 500 characters), and the rules are
