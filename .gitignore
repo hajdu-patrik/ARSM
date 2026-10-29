@@ -95,6 +95,9 @@ packages/
 **/appsettings.Development.json
 **/appsettings.Local.json
 
+# Local DataProtection key ring written by the API under the AppHost
+app/AutoService.AppHost/.dataprotection-keys/
+
 # Local private documentation (not for repository)
 docs/Private-Docs/
 *.private.md

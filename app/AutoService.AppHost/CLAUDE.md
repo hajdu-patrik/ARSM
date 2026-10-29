@@ -24,6 +24,8 @@
 
 - Keep `apiservice` receiving `CompanyProfile__WriteBack__EnvFilePath` (repo-root `.env`) and `CompanyProfile__WriteBack__LocalSettingsPath` (`appsettings.Local.json`), both resolved from `AppHostDirectory`; the API's company-profile write-back (see its `CLAUDE.md`) is Development only.
 
+- Keep `apiservice` receiving `DataProtection__Provider=FileSystem` and `DataProtection__KeyDirectory` (`.dataprotection-keys` under `AppHostDirectory`, resolved with `Path.GetFullPath`, gitignored); the API persists its unencrypted development DataProtection key ring there (see its `CLAUDE.md`).
+
 - Keep `apiservice` receiving `Email__ResendApiKey`, `Email__From`, `Email__ReplyTo` (read from the repo-root `.env` keys `ARSM_RESEND_API_KEY`, `ARSM_MAIL_FROM`, `ARSM_MAIL_REPLY_TO` via `RootEnvFile`, blank when absent so the API uses its logging no-op sender) and `Email__PublicUrl` (from `WebUi:SiteUrl`).
 
 ## Runtime Anchors

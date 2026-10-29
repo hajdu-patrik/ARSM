@@ -10,6 +10,7 @@ var webUiPort = GetRequiredPort(builder.Configuration, "Ports:WebUi");
 var configuredWebUiSiteUrl = GetRequiredConfigValue(builder.Configuration, "WebUi:SiteUrl");
 
 var envPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", ".env"));
+var dataProtectionKeyDirectory = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, ".dataprotection-keys"));
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var jwtSecret = builder.AddParameter("jwt-secret", secret: true);
@@ -52,6 +53,8 @@ var apiService = builder.AddProject("apiservice", "../AutoService.ApiService/Aut
                         .WithEnvironment("ObjectStorage__AutoCreateBucket", "true")
                         .WithEnvironment("PGGSSENCMODE", "disable")
                         .WithEnvironment("CompanyProfile__WriteBack__EnvFilePath", envPath)
+                        .WithEnvironment("DataProtection__Provider", "FileSystem")
+                        .WithEnvironment("DataProtection__KeyDirectory", dataProtectionKeyDirectory)
                         // The e-mail keys live only in the root .env (user decision 2026-10-23), so it is read
                         // directly instead of adding Aspire parameters; a blank key selects the no-op sender.
                         .WithEnvironment("Email__ResendApiKey", RootEnvFile.ReadValue(envPath, "ARSM_RESEND_API_KEY") ?? "")

@@ -31,7 +31,6 @@ const MIN_TOKEN_LENGTH = 32;
 const MAX_FORM_BYTES = 4096;
 const MAX_NEXT_LENGTH = 2048;
 const PER_CLIENT = { max: 5, windowMs: 15 * 60_000 };
-const OVERALL = { max: 50, windowMs: 60 * 60_000 };
 const ROBOTS = 'noindex, nofollow';
 const ASSET_CACHE_CONTROL = 'public, max-age=604800';
 const GATE_HEADERS = Object.freeze({
@@ -53,7 +52,6 @@ let tokenState = AZURE ? describeToken(process.env.GATE_TOKEN ?? '', 'env') : de
 let logTokenChanges = false;
 let logBytes = -1;
 let upstreamDown = false;
-let overallFailures = [];
 const failuresByClient = new Map();
 
 process.on('uncaughtException', (error) => fatal(error?.stack ?? String(error)));
@@ -182,7 +180,6 @@ function hasValidCookie(req, state) {
 
 /** Drops expired failures and empty client entries, so the map stays small however many IPs try. */
 function pruneFailures(now) {
-  overallFailures = overallFailures.filter((time) => now - time < OVERALL.windowMs);
   for (const [ip, times] of failuresByClient) {
     const live = times.filter((time) => now - time < PER_CLIENT.windowMs);
     if (live.length > 0) failuresByClient.set(ip, live);
@@ -190,11 +187,10 @@ function pruneFailures(now) {
   }
 }
 
-/** Whole seconds until both sliding windows allow another attempt from ip; 0 when one is allowed now. */
+/** Whole seconds until the client's sliding window allows another attempt from ip; 0 when one is allowed now. */
 function retryAfterSeconds(ip, now) {
   pruneFailures(now);
-  const clientWait = windowWaitMs(failuresByClient.get(ip) ?? [], PER_CLIENT, now);
-  const waitMs = Math.max(clientWait, windowWaitMs(overallFailures, OVERALL, now));
+  const waitMs = windowWaitMs(failuresByClient.get(ip) ?? [], PER_CLIENT, now);
   return waitMs > 0 ? Math.max(1, Math.ceil(waitMs / 1000)) : 0;
 }
 
@@ -207,7 +203,6 @@ function recordFailure(ip, now) {
   const times = failuresByClient.get(ip);
   if (times) times.push(now);
   else failuresByClient.set(ip, [now]);
-  overallFailures.push(now);
 }
 
 /** Every gate answer: the gate headers plus an exact Content-Length, so HEAD gets the same headers as GET. */

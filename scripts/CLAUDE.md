@@ -67,8 +67,9 @@
   distinctness from the teszt `GATE_TOKEN` (the prod admin may reuse the dev `ADMIN_*` login), the whole-number keys
   `ARSM_MONTHLY_BUDGET` (default 0 = no budget, above 0 needs `ARSM_ALERT_EMAIL`) and `ARSM_LOG_DAILY_QUOTA_GB`,
   `ARSM_POSTGRES_APP_PASSWORD` (required, secret, the Postgres password rules, must differ from `ARSM_POSTGRES_PASSWORD`), the mail keys `ARSM_RESEND_API_KEY` (`re_` prefix, 20+ characters, never echoed), `ARSM_MAIL_FROM` (address or `Name <address>`) and `ARSM_MAIL_REPLY_TO`, the az/docker/git
-  tools, and, with `ARSM_ALERT_EMAIL` set, one read-only `az provider show` per guard-rail provider (`Microsoft.Insights`,
-  plus `Microsoft.Consumption` for a budget) that only warns and is skipped without `az login`),
+  tools, and one read-only `az provider show` per provider, always `Microsoft.KeyVault` (the DataProtection key vault) and,
+  with `ARSM_ALERT_EMAIL` set, the guard-rail providers (`Microsoft.Insights`, plus `Microsoft.Consumption` for a budget);
+  it only warns and is skipped without `az login`),
   `registry` (account set, resource group, `registry.bicep`, `az acr login`), `images` (`git archive` of the
   commit into a temp dir, then build and push `arsm-api`, `arsm-web` with `PUBLIC_URL`, `arsm-gate`, tag = first
   12 sha characters), `infra` (`main.bicep` + `main.bicepparam` in two phases: phase 1 as deployment `arsm-main-pre-apps`

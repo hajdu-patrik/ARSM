@@ -8,6 +8,7 @@ using AutoService.ApiService.Security;
 using AutoService.ApiService.Validation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AutoService.ApiService.Admin;
 
@@ -60,10 +61,11 @@ public static partial class AdminEndpoints
             return Results.ValidationProblem(resetResult.ToValidationErrors(fallbackKey: "TemporaryPassword"));
         }
 
-        mechanic.MustChangePassword = true;
-        await RevokeActiveRefreshTokensAsync(db, mechanic.Id, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        sessionRevocation.RevokeAll(mechanic.Id);
+        var cutoffUtc = sessionRevocation.StageCutoff(mechanic);
+        await db.ExecuteInTransactionAsync(
+            (transaction, token) => SaveResetRevocationAsync(mechanic.Id, cutoffUtc, db, transaction, token),
+            cancellationToken);
+        sessionRevocation.ApplyRevocation(mechanic.Id, cutoffUtc);
 
         logger.LogInformation("Admin {ActorPersonId} set a temporary password for mechanic {MechanicId}; sessions revoked.", actorPersonId, mechanic.Id);
 
@@ -84,6 +86,23 @@ public static partial class AdminEndpoints
 
         FieldLengthValidator.AddMaxLengthError(errors, "TemporaryPassword", temporaryPassword, FieldLengthValidator.PasswordMaxLength);
         return errors;
+    }
+
+    /** The retriable unit: forced change flag, refresh-token revocation and the monotonic session cutoff, committed together. */
+    private static async Task<bool> SaveResetRevocationAsync(
+        int mechanicId,
+        DateTime cutoffUtc,
+        AutoServiceDbContext db,
+        IDbContextTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        var mechanic = await db.Mechanics.FirstAsync(m => m.Id == mechanicId, cancellationToken);
+        mechanic.MustChangePassword = true;
+        await RevokeActiveRefreshTokensAsync(db, mechanicId, cancellationToken);
+        await db.SaveWithSessionCutoffAsync(mechanicId, cutoffUtc, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     /** Marks every live refresh token of the mechanic revoked; the caller saves. */

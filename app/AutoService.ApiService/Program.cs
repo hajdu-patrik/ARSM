@@ -9,6 +9,7 @@ using AutoService.ApiService.Configuration;
 using AutoService.ApiService.Customers;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.DataInitialization;
+using AutoService.ApiService.DataProtection;
 using AutoService.ApiService.Email.Sending;
 using AutoService.ApiService.Middleware;
 using AutoService.ApiService.Profile.Endpoints;
@@ -216,10 +217,12 @@ builder.Services.AddSingleton<IAppointmentUpdateBroadcaster, AppointmentUpdateBr
 builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IProfilePictureUpdateBroadcaster>());
 builder.Services.AddSingleton<IUserSubscriptions>(sp => sp.GetRequiredService<IAppointmentUpdateBroadcaster>());
 builder.Services.AddSingleton<ISessionRevocationService, SessionRevocationService>();
+builder.Services.AddHostedService<SessionRevocationWarmupService>();
 
 builder.Services.AddSingleton<ICompanyProfileWriteBack, CompanyProfileWriteBack>();
 builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
+builder.Services.AddArsmDataProtection(builder.Configuration);
 // Resend sender when Email:ResendApiKey is set, otherwise a logging no-op (dev, CI, unit tests).
 builder.Services.AddArsmEmail(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();

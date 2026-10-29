@@ -252,6 +252,10 @@ namespace AutoService.ApiService.Data.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("ProfilePictureObjectKey");
 
+                    b.Property<DateTime?>("TokensValidAfter")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("TokensValidAfter");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")

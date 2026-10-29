@@ -9,6 +9,28 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Error alerts, persistent DataProtection keys and session-revocation persistence (2026-10-29), the pentest follow-ups.
+  - Two log-based alert rules, `arsm-api-errors` (severity 1, `fail:`/`crit:`) and `arsm-api-warnings` (severity 3,
+    `warn:`): stateless, one mail per 5-minute window with the count and the first lines, no resolve mail; the existing
+    5xx and restart alerts are unchanged.
+  - The DataProtection key ring is persisted: Azure uses the blob container `dataprotection-keys` plus a new Key Vault key
+    through the API managed identity (least-privilege roles), dev a gitignored AppHost folder, teszt a Docker volume. The
+    application name is fixed to `arsm`, so payloads protected earlier are invalidated once. `deploy-azure.py check` now
+    always checks the `Microsoft.KeyVault` provider.
+  - Session revocation cutoffs are persisted (`people.TokensValidAfter`, migration `AddPeopleTokensValidAfter`) and
+    warmed at startup with a configurable timeout (`SessionRevocation:WarmupTimeoutSeconds`); the per-person reservation
+    is atomic and the database update is conditional and monotonic.
+  - Gate: the global failure window is gone, only the per-client limit remains. Teszt kit: the RustFS console is disabled
+    and its CORS setting removed. The WebUI splash honours `prefers-reduced-motion` (static logo, same 2.5 s).
+    `deploy/CLAUDE.md` now says agents run Azure steps only with the owner's explicit permission in that same message.
+  - `main.bicep` stays under the 500-line limit: the Key Vault, key, key container and their role assignments live in
+    `dataprotection.bicep`, the PostgreSQL server and its chained children in `postgres.bicep` (same resource names and
+    ids, compiled resources unchanged); the log alert rules skip query validation, so a fresh workspace deploys.
+  - Security notes: the profile-picture SSE fan-out to all staff is intended (no personal data in the payload); hreflang
+    is not applicable (single-URL, login-gated SPA with a stored language toggle). No code change for either.
+
+_Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run stopped on open questions, finished with direct opus agents: follow-ups, docs, review, fixes). Cost: ~$1.4-2.7 output-token-only estimate for the arsm-chain run (136k output tokens, sonnet and opus routed; excludes input tokens and cache, so a lower bound); the follow-up agents are not measured._
+
 - Edit-vehicle button in the Scheduler appointment detail modal's vehicle section (2026-10-28). It navigates to
   `/customers?vehicleId=<id>`, which the Customers page consumes once (`useRequestedVehicleEdit`) to open the vehicle
   editor; the label key moved to `common.actions.editVehicle`. The button is shown for every status, cancelled and

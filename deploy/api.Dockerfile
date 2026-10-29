@@ -27,5 +27,7 @@ ENV ASPNETCORE_HTTP_PORTS=8080 \
     PGGSSENCMODE=disable \
     Logging__LogLevel__Microsoft.EntityFrameworkCore=Warning
 EXPOSE 8080
+# A fresh named volume mounted here inherits this owner (the local test kit keeps its DataProtection keys there).
+RUN mkdir -p /var/lib/arsm/dataprotection-keys && chown $APP_UID /var/lib/arsm/dataprotection-keys
 USER $APP_UID
 ENTRYPOINT ["dotnet", "AutoService.ApiService.dll"]

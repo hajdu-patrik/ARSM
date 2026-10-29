@@ -1,5 +1,5 @@
 // ARSM on Azure Container Apps: web app (token gate + Nginx, public ingress), internal API app, PostgreSQL
-// Flexible Server, Blob Storage, images from ACR. Walkthrough: deploy/docs/deployment-azure.md.
+// Flexible Server, Blob Storage, Key Vault, images from ACR. Walkthrough: deploy/docs/deployment-azure.md.
 
 targetScope = 'resourceGroup'
 
@@ -182,41 +182,15 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2026-07-01' = {
   }
 }
 
-resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
-  name: '${namePrefix}-pg-${suffix}'
-  location: location
-  sku: { name: 'Standard_B1ms', tier: 'Burstable' }
-  properties: {
-    version: postgresVersion
-    administratorLogin: postgresAdminLogin
-    administratorLoginPassword: postgresAdminPassword
-    storage: { storageSizeGB: 32 }
-    backup: { backupRetentionDays: 7, geoRedundantBackup: 'Disabled' }
-    highAvailability: { mode: 'Disabled' }
-    network: { publicNetworkAccess: 'Enabled' }
-  }
-}
-
-// The migrations create the pg_trgm extension (customer search); Flexible Server only allows
-// extensions that are listed here.
-resource postgresExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
-  parent: postgres
-  name: 'azure.extensions'
-  properties: {
-    value: 'PG_TRGM'
-    source: 'user-override'
-  }
-}
-
-// Consumption Container Apps have no fixed outbound address; this rule admits Azure services only.
-resource postgresAzureAccess 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = {
-  parent: postgres
-  name: 'AllowAzureServices'
-  // The server takes one write at a time, so its child resources go in a chain (parallel writes fail with ServerIsBusy).
-  dependsOn: [ postgresExtensions ]
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
+// PostgreSQL server, extension allow-list, firewall rule and the AutoServiceDb database.
+module postgres 'postgres.bicep' = {
+  name: '${namePrefix}-postgres'
+  params: {
+    location: location
+    namePrefix: namePrefix
+    postgresVersion: postgresVersion
+    postgresAdminLogin: postgresAdminLogin
+    postgresAdminPassword: postgresAdminPassword
   }
 }
 
@@ -255,20 +229,23 @@ resource blobDataAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01'
   }
 }
 
-resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
-  parent: postgres
-  name: 'AutoServiceDb'
-  dependsOn: [ postgresAzureAccess ]
-  properties: {
-    charset: 'UTF8'
-    collation: 'en_US.utf8'
+// DataProtection key ring of the API: container, Key Vault, key and the pull identity's roles on them.
+module dataProtection 'dataprotection.bicep' = {
+  name: '${namePrefix}-dataprotection'
+  dependsOn: [ blobService ]
+  params: {
+    location: location
+    namePrefix: namePrefix
+    storageAccountName: storage.name
+    pullIdentityId: pullIdentity.id
+    pullIdentityPrincipalId: pullIdentity.properties.principalId
   }
 }
 
 // Runs --migrate-database as the administrator; deploy-azure.py starts it and waits before any app revision changes.
 module migrationJob 'migration-job.bicep' = {
   name: '${namePrefix}-migration-job'
-  dependsOn: [ database, postgresExtensions, postgresAzureAccess, acrPullAssignment ]
+  dependsOn: [ acrPullAssignment ]
   params: {
     namePrefix: namePrefix
     location: location
@@ -276,7 +253,7 @@ module migrationJob 'migration-job.bicep' = {
     apiImage: apiImage
     pullIdentityId: pullIdentity.id
     registries: registries
-    adminConnectionString: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Maximum Pool Size=5'
+    adminConnectionString: 'Host=${postgres.outputs.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Maximum Pool Size=5'
     appRolePassword: postgresAppPassword
     jwtSecret: jwtSecret
     publicUrl: effectivePublicUrl
@@ -291,7 +268,7 @@ module migrationJob 'migration-job.bicep' = {
 resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
   name: apiAppName
   location: location
-  dependsOn: [ database, postgresExtensions, postgresAzureAccess, pictureContainer, acrPullAssignment, blobDataAssignment ]
+  dependsOn: [ pictureContainer, acrPullAssignment, blobDataAssignment ]
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: pullIdentities
@@ -312,7 +289,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
           name: 'db-connection'
           // DML-only role provisioned by the migration job. Npgsql's default pool of 100 would exceed what
           // a B1ms server accepts (about 35 user connections).
-          value: 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=arsm_app;Password=${postgresAppPassword};SSL Mode=Require;Maximum Pool Size=20'
+          value: 'Host=${postgres.outputs.fullyQualifiedDomainName};Port=5432;Database=AutoServiceDb;Username=arsm_app;Password=${postgresAppPassword};SSL Mode=Require;Maximum Pool Size=20'
         }
         { name: 'jwt-secret', value: jwtSecret }
         { name: 'bootstrap-admin-password', value: bootstrapAdminPassword }
@@ -345,6 +322,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'ObjectStorage__ManagedIdentityClientId', value: pullIdentity.properties.clientId }
             { name: 'ObjectStorage__BucketName', value: objectStorageContainer }
             { name: 'ObjectStorage__AutoCreateBucket', value: 'false' }
+            { name: 'DataProtection__Provider', value: 'AzureBlob' }
+            { name: 'DataProtection__BlobUri', value: dataProtection.outputs.blobUri }
+            { name: 'DataProtection__KeyVaultKeyUri', value: dataProtection.outputs.keyVaultKeyUri }
+            { name: 'DataProtection__ManagedIdentityClientId', value: pullIdentity.properties.clientId }
             { name: 'CompanyProfile__Name', value: companyName }
             { name: 'CompanyProfile__AddressLine', value: companyAddressLine }
             { name: 'CompanyProfile__PostalCode', value: companyPostalCode }
@@ -473,6 +454,9 @@ module guardRails 'guardrails.bicep' = if (deployApps && !empty(alertEmail)) {
     namePrefix: namePrefix
     alertEmail: alertEmail
     apiAppId: apiApp.id
+    apiAppName: apiAppName
+    workspaceId: logs.id
+    workspaceLocation: logs.location
   }
 }
 
@@ -498,4 +482,4 @@ output environmentStaticIp string = containerEnv.properties.staticIp
 @description('Value of the asuid TXT record that proves ownership of the custom domain.')
 output customDomainVerificationId string = deployApps ? webApp.properties.customDomainVerificationId : ''
 
-output postgresHost string = postgres.properties.fullyQualifiedDomainName
+output postgresHost string = postgres.outputs.fullyQualifiedDomainName

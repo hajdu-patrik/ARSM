@@ -2,9 +2,10 @@
 
 Target: an Azure for Students subscription. This is the **production** instance (`arsm.hu`).
 Everything lives in one resource group and is created by `deploy/azure/registry.bicep` (the
-container registry) and `deploy/azure/main.bicep` (everything else; its `migration-job.bicep` module adds
-the database migration job, its `guardrails.bicep` module the optional alerts and its `budget.bicep` module the
-optional budget), driven from your Windows machine by
+container registry) and `deploy/azure/main.bicep` (everything else; its `postgres.bicep` module adds
+the PostgreSQL server and database, its `dataprotection.bicep` module the DataProtection key vault, key and blob
+container, its `migration-job.bicep` module the database migration job, its `guardrails.bicep` module the optional
+alerts and its `budget.bicep` module the optional budget), driven from your Windows machine by
 `python scripts/deploy-azure.py`. All settings and secrets come from the gitignored
 root `.env`. Keep one host name for the WebUI and the API when changing the topology: the CSRF cookie
 is host-only.
@@ -18,7 +19,8 @@ Browser --https--> Container Apps ingress (TLS by the platform, appends the clie
                              --http, 127.0.0.1:18080--> Nginx (web container): serves the WebUI build at /, proxies /api/* and /alive
                                                           --http--> arsm-api (Container App, internal ingress only, 1 replica max)
                                                                       --> Azure Database for PostgreSQL Flexible Server (B1ms)
-                                                                      --> Azure Blob Storage (private container)
+                                                                      --> Azure Blob Storage (private containers: profile pictures, DataProtection keys)
+                                                                      --> Azure Key Vault (the key that encrypts the DataProtection keys)
 arsm-migrate (Container Apps Job, manual trigger, the API image with --migrate-database)
   --> the same PostgreSQL server, as the administrator: migrations and the arsm_app login role
 ```
@@ -30,7 +32,7 @@ arsm-migrate (Container Apps Job, manual trigger, the API image with --migrate-d
 | Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
 | Migration job | `deploy/azure/migration-job.bicep` | `arsm-migrate`: the API image started with `--migrate-database`, one replica, no retries, a 15-minute replica timeout. Connected as the administrator, it applies the migrations and the startup data checks, then creates or updates the login role `arsm_app` with DML rights only. The API itself no longer migrates (`Database__MigrateOnStartup=false`) and connects as `arsm_app`. |
-| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/migration-job.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
+| Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/postgres.bicep`, `deploy/azure/dataprotection.bicep`, `deploy/azure/migration-job.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
 | Driver | `scripts/deploy-azure.py` (helpers in `scripts/azure_deploy/`) | Validates `.env`, builds from a clean `git archive`, pushes, deploys, prints the DNS records. |
 
 Why the API has no public ingress: the CSRF cookie is host-only, so the browser must reach the
@@ -41,7 +43,9 @@ Images are pulled from the registry with one user-assigned managed identity that
 `AcrPull` role on the registry. The registry admin user stays disabled, so there is no registry
 password anywhere. The same identity also holds `Storage Blob Data Contributor` on the profile-picture
 container only (not on the storage account), and the API signs in to Blob Storage with it, so no storage
-account key sits in any app secret.
+account key sits in any app secret. For the DataProtection key ring it holds `Storage Blob Data Contributor` on the
+`dataprotection-keys` container only and `Key Vault Crypto Service Encryption User` on the vault key only (see the
+DataProtection keys bullet in section 8).
 
 ## 2. teszt.arsm.hu versus arsm.hu
 
@@ -128,7 +132,7 @@ and never to a tracked file); `main.bicepparam` reads them with `readEnvironment
 
 | Subcommand | What it does |
 | --- | --- |
-| `check` | Validates the `.env` keys and the tools (`az`, `docker`, `git`); prints key names with ok/missing only. With `ARSM_ALERT_EMAIL` set it also asks `az` (read-only, needs `az login`) whether `Microsoft.Insights` (and `Microsoft.Consumption` for a budget) is registered and only warns when it is not. |
+| `check` | Validates the `.env` keys and the tools (`az`, `docker`, `git`); prints key names with ok/missing only. It also asks `az` (read-only, needs `az login`) whether `Microsoft.KeyVault` is registered and, with `ARSM_ALERT_EMAIL` set, `Microsoft.Insights` (and `Microsoft.Consumption` for a budget), and only warns when one is not. |
 | `registry` | `az account set`, ensures the resource group, deploys `registry.bicep`, runs `az acr login`. |
 | `images` | `git archive` of `--commit` (default `HEAD`) into a temp dir; builds and pushes `arsm-api`, `arsm-web` (with `PUBLIC_URL`) and `arsm-gate`, tagged with the 12-character commit sha. |
 | `infra` | Three steps with `main.bicep` and `main.bicepparam`. Phase 1 (deployment `arsm-main-pre-apps`, `ARSM_DEPLOY_APPS=false`, set by the script only) deploys everything except the two Container Apps and the alert rules that watch them, the migration job with the new image included; the incremental deployment leaves the running app revisions as they are. Then `az containerapp job start --name arsm-migrate` and a poll of `az containerapp job execution show ... --query properties.status` every 15 s until `Succeeded`; `Failed`, `Stopped`, `Degraded` or 20 minutes without success stop the step (exit 1) with the apps untouched. Phase 2 (deployment `arsm-main`) deploys the full template, apps included, and prints its outputs, which `dns` reads. `--dry-run` prints the commands (one status query included) without polling. |
@@ -147,16 +151,16 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
    free-service list, both visible in the portal's Education hub. When the credit runs out the
    subscription stops instead of billing you; renew it yearly while you are a student.
 2. Alerts and budget: set `ARSM_ALERT_EMAIL` in step 6. The deployment then creates the action
-   group and the two alert rules (Guard rails in section 8), so there is nothing to set up by hand
+   group and the four alert rules (Guard rails in section 8), so there is nothing to set up by hand
    in the portal. A budget is a separate opt-in (`ARSM_MONTHLY_BUDGET` above 0); Azure for Students
    does not support budgets, so leave it at `0` on the student subscription.
 3. Register the resource providers once (check with
    `az provider show --namespace <name> --query registrationState -o tsv` until it says
    `Registered`): `az provider register --namespace Microsoft.App`, then the same for
-   `Microsoft.OperationalInsights`, `Microsoft.DBforPostgreSQL`, `Microsoft.ContainerRegistry`
-   and `Microsoft.Storage`, plus `Microsoft.Insights` for the alert rules (and
-   `Microsoft.Consumption` only if you switch the budget on). `deploy-azure.py check` warns when a
-   provider of the guard rails you switched on is not registered; it needs `az login` for that.
+   `Microsoft.OperationalInsights`, `Microsoft.DBforPostgreSQL`, `Microsoft.ContainerRegistry`,
+   `Microsoft.Storage` and `Microsoft.KeyVault` (the DataProtection key vault), plus `Microsoft.Insights` for the alert rules (and
+   `Microsoft.Consumption` only if you switch the budget on). `deploy-azure.py check` warns when
+   `Microsoft.KeyVault` or a provider of the guard rails you switched on is not registered; it needs `az login` for that.
 4. Install the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and run `az login`; make
    the student subscription the active one (`az account list -o table`).
 5. Install Docker Desktop and start it (Linux containers). Git and Python are already there.
@@ -222,7 +226,8 @@ the headers on `/`: the CSP ends in `frame-ancestors 'none'`, HSTS is present an
 no-cache`. Then log in, upload a profile picture and download a quote PDF.
 
 With `ARSM_ALERT_EMAIL` set, `az monitor metrics alert list --resource-group <rg> --output table`
-lists `arsm-api-5xx` and `arsm-api-restarts`; with `ARSM_MONTHLY_BUDGET` above 0 as well, the Budgets
+lists `arsm-api-5xx` and `arsm-api-restarts`, and `az monitor scheduled-query list --resource-group <rg> --output table`
+(`scheduled-query` extension) lists `arsm-api-errors` and `arsm-api-warnings`; with `ARSM_MONTHLY_BUDGET` above 0 as well, the Budgets
 page of the resource group in the portal shows `arsm-monthly-budget`.
 
 ## 8. Operations
@@ -234,7 +239,7 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
   `arsm-migrate` job in the portal, or in the Log Analytics workspace with
   `ContainerAppConsoleLogs_CL | where ContainerJobName_s == 'arsm-migrate'`. The job logs its progress and, on
   a failed role step, only the exception type and SQLSTATE; the `arsm_app` password is never logged.
-- `ServerIsBusy` on a PostgreSQL child resource: a Flexible Server accepts one write at a time, so `main.bicep`
+- `ServerIsBusy` on a PostgreSQL child resource: a Flexible Server accepts one write at a time, so `postgres.bicep`
   chains its children (`azure.extensions`, then the firewall rule, then `AutoServiceDb`) with `dependsOn`. If a
   run still meets it (the server busy with its own maintenance), wait for `state` `Ready` and run `infra` again.
 - Backups: Flexible Server keeps automatic backups for 7 days (point-in-time restore). For a copy
@@ -258,6 +263,24 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
   account itself stays enabled (`allowSharedKeyAccess` is unchanged). Right after the first role assignment the
   API's container check at startup can fail until RBAC propagates (a few minutes); the revision recovers by
   restarting.
+- DataProtection keys (implemented): the API's ASP.NET Core key ring would otherwise live in the container's file system and be regenerated on every revision.
+  `main.bicep` (module `dataprotection.bicep`) creates the private blob container `dataprotection-keys` in the existing storage account, the Key Vault
+  `<prefix>kv<suffix>` (standard SKU, Azure RBAC authorization, public network access on because Consumption apps have
+  no fixed outbound address, soft delete at the platform default, purge protection off because it cannot be undone)
+  and in it the key `dataprotection` (RSA 2048, operations `wrapKey` and `unwrapKey` only). The user-assigned
+  identity holds `Storage Blob Data Contributor` on that container only and `Key Vault Crypto Service Encryption User`
+  on that key only. The API app gets `DataProtection__Provider=AzureBlob`, `DataProtection__BlobUri` (the `keys.xml`
+  blob in the container), `DataProtection__KeyVaultKeyUri` (the versionless key id) and
+  `DataProtection__ManagedIdentityClientId`; the key ring is stored in `keys.xml`, encrypted with the vault key, so
+  it persists across revisions and restarts and the blob alone is useless without the key. The migration job gets
+  none of this. No `.env` key is involved, the names derive from the prefix and the resource group. Right after the
+  first role assignments the API can fail to reach the blob or the key until RBAC propagates (a few minutes); the
+  revision recovers by restarting. Do not delete the vault or its key: the stored key ring could then not be read.
+  Soft delete: a deleted vault keeps its name while it is soft-deleted, so the next `infra` fails until you run
+  `az keyvault recover --name <vault>` (or free the name with `az keyvault purge --name <vault>`). If the vault or the
+  key is lost or purged and created anew, the existing `dataprotection-keys/keys.xml` blob can no longer be unwrapped:
+  delete that blob and restart the API, which then writes a new key ring; whatever the old ring protected (Identity
+  tokens) stops validating.
 - Least-privilege database role (implemented): the API connects as the login role `arsm_app`
   (`Username=arsm_app`, password `ARSM_POSTGRES_APP_PASSWORD`, secret `db-connection`) and runs with
   `Database__MigrateOnStartup=false`, so it never migrates. The migration job `arsm-migrate` connects as the
@@ -283,7 +306,8 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
 - Log cap: the Log Analytics workspace takes in at most `ARSM_LOG_DAILY_QUOTA_GB` GB a day (default 1). At the cap
   Azure stops collecting new logs until the workspace's own reset hour (shown under Usage and estimated costs of the
   workspace, not configurable), so the console logs of that stretch are lost. The cap is approximate: some data
-  above it still arrives and is billed. The alert rules read platform metrics, so they keep working at the cap.
+  above it still arrives and is billed. The 5xx and restart rules read platform metrics, so they keep working at the cap;
+  the error and warning rules read the console logs, so they go quiet while collection is paused.
 - Budget (opt-in): with `ARSM_MONTHLY_BUDGET` above 0, `arsm-monthly-budget` covers the resource group with that
   amount per month (in the subscription currency) and mails `ARSM_ALERT_EMAIL` at 50, 80 and 100 percent of the actual
   cost. Cost data is 8-24 hours old and budgets are evaluated once a day, so a mail lags the spend; it only warns and
@@ -291,11 +315,26 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
   Microsoft lists Azure for Students (MS-AZR-0170P) as an offer Cost Management does not support, so the default is
   no budget. If a subscription cannot take one anyway, only the budget module fails (`infra` reports the error, the
   alert rules are already in place): set the key back to `0` and run `infra` again.
-- Alert rules (severity 2, mailed through the action group `arsm-alerts`): `arsm-api-5xx` fires when the API answers
+- Metric alert rules (severity 2, mailed through the action group `arsm-alerts`): `arsm-api-5xx` fires when the API answers
   more than 5 requests with a 5xx status within 5 minutes; `arsm-api-restarts` fires when the API's `RestartCount`
   is above 0 over 15 minutes. Both are checked every 5 minutes. `RestartCount` counts the restarts of a replica
   since it was created, so that rule stays active until the replica is replaced (the next deployment, a scale from
   zero); a rule mails when it fires and when it resolves, not for every further restart.
+- Log alert rules (same action group, e-mail and API-only filter; they query `ContainerAppConsoleLogs_CL` of the
+  workspace for `ContainerAppName_s == "arsm-api"` and `ContainerName_s == "api"`): `arsm-api-errors` (severity 1)
+  fires when a console line of the window starts with `fail:` or `crit:`, i.e. the API logged at Error or Critical
+  level; `arsm-api-warnings` (severity 3) does the same for `warn:` lines. The API image runs ASP.NET Core's default
+  simple console formatter (no JSON formatter is configured), which prefixes every record with its level. Both are
+  checked every 5 minutes over the last 5 minutes and fire when the count is above 0. The query returns one row per
+  evaluation (`LineCount` and a `Sample` of the first three matching lines, at most 500 characters), and the rules are
+  stateless (`autoMitigate: false`), so every 5-minute window with matching lines sends exactly one mail however many
+  different messages it holds, and no resolve mail follows. The rule name in the mail subject tells which one fired;
+  the mail shows the count as the metric value, the sample as a dimension and a link to the matching log search.
+  The simple formatter writes the message on the row after the `fail: <category>[<event id>]` line, so the sample
+  names the category and the full text is in the linked search. A window without matching lines sends nothing, and
+  errors that keep coming mail once per window for as long as they last. A log line is ingested a minute or two
+  after it was written, so a rule can see it one evaluation later. Logging levels are unchanged; the rules only read
+  what the API already writes.
 - Database connections: the API's connection string carries `Maximum Pool Size=20` and the migration job's
   `Maximum Pool Size=5`. A B1ms server allows 50 connections by default, 15 of them reserved for the platform, so
   Npgsql's default pool of 100 exceeds it. Old and new replica overlap briefly during a rollout, but a pool only grows

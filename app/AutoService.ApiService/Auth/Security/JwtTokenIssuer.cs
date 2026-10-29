@@ -42,9 +42,9 @@ internal sealed class JwtTokenIssuer : IJwtTokenIssuer
         IEnumerable<string> roles,
         DateTime expiresAtUtc)
     {
-        // Dated at the person's cutoff when that is ahead (at most a few seconds, inside the clock skew),
-        // so the token a handler issues right after revoking is never caught by its own revocation.
-        var issuedAtUtc = sessionRevocation.IssueTimeUtc(person.Id, DateTime.UtcNow);
+        // Dated at the person's cutoff (memory or the row's staged one) when ahead, at most a few seconds inside
+        // the clock skew, so the token a handler issues right after revoking is never caught by its own revocation.
+        var issuedAtUtc = sessionRevocation.IssueTimeUtc(person.Id, DateTime.UtcNow, person.TokensValidAfter);
         var email = identityUser.Email ?? person.Email;
 
         var claims = new List<Claim>

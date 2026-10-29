@@ -32,6 +32,9 @@ public abstract class People
     [MaxLength(50)]
     public string? ProfilePictureContentType { get; set; }
 
+    // Access tokens issued before this UTC whole-second instant are invalid; null until the first revocation.
+    public DateTime? TokensValidAfter { get; set; }
+
     /** Parameterless constructor required by EF Core. */
     protected People() { }
 

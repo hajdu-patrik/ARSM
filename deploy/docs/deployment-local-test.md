@@ -11,7 +11,7 @@ instances share no database, storage or token.
 `teszt.ps1 off` (section 4): the three scheduled tasks are disabled, the gate and tunnel processes are
 stopped and the four containers are stopped with restart policy `no`, so nothing of it starts again at
 logon, on the deploy trigger or after a Docker or PC restart until `teszt.ps1 on`. Kept: the Docker
-volumes (`arsm-tunnel-pgdata`, `arsm-tunnel-rustfs`), the `pg_dump` backups, the Cloudflare tunnel
+volumes (`arsm-tunnel-pgdata`, `arsm-tunnel-rustfs`, `arsm-tunnel-dpkeys`), the `pg_dump` backups, the Cloudflare tunnel
 `arsm-teszt` and its DNS record. While it is off, `teszt.arsm.hu` answers with a Cloudflare tunnel
 error page (530 / error 1033). Section 3 turns it back on.
 
@@ -32,7 +32,7 @@ runtime differs (here Docker containers).
 | Piece | Where | Notes |
 | --- | --- | --- |
 | Kit folder | `%USERPROFILE%\.arsm\tunnel` | Working copy of [deploy/local-test](../local-test) plus a copy of the gate, `bin\cloudflared.exe` and the real secret files. |
-| Containers | Docker network `arsm-tunnel-net` | `arsm-tunnel-postgres` (`postgres:18.6`), `arsm-tunnel-rustfs` (`rustfs/rustfs:1.0.1`), `arsm-tunnel-api`, `arsm-tunnel-web`; restart policy `unless-stopped` while on, `no` while off. |
+| Containers | Docker network `arsm-tunnel-net` | `arsm-tunnel-postgres` (`postgres:18.6`), `arsm-tunnel-rustfs` (`rustfs/rustfs:1.0.1`), `arsm-tunnel-api`, `arsm-tunnel-web`; restart policy `unless-stopped` while on, `no` while off. Volumes: `arsm-tunnel-pgdata`, `arsm-tunnel-rustfs` and `arsm-tunnel-dpkeys` (the API's ASP.NET Core DataProtection keys, mounted at `/var/lib/arsm/dataprotection-keys`, unencrypted, created by `deploy.py` when missing; `deploy.py` passes `DataProtection__Provider=FileSystem` and `DataProtection__KeyDirectory` to the container, so `api.env` needs neither). The image creates that directory owned by the non-root runtime user, so a fresh volume is writable. The RustFS console is off (`RUSTFS_CONSOLE_ENABLE=false` in `rustfs.env`); an existing real `rustfs.env` must get the same change (and lose `RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS`), and `arsm-tunnel-rustfs` must be recreated (`docker rm -f arsm-tunnel-rustfs`, then the next deploy run) for it to apply. |
 | Token gate | `gate.mjs` in the kit (copy of [deploy/gate](../gate)) | Reads `GATE_TOKEN` from the repository-root `.env` named by `GATE_ENV_FILE` in `gate.env` (written by the setup, passed as `node --env-file=gate.env`), re-reads it when it changes. A request without `cf-connecting-ip` (local) passes untouched. `run.cmd` sets `GATE_LOG_FILE=off`, so the gate logs only to its console, which `run.cmd` writes into `logs\gate.log`. |
 | Task `\Automations\ARSM teszt - Gate` | Task Scheduler | At logon: `conhost.exe --headless cmd.exe /d /s /c ""<kit>\run.cmd" gate"`, restart on failure, no time limit. |
 | Task `\Automations\ARSM teszt - Tunnel` | Task Scheduler | At logon: the same with `run.cmd tunnel` (`cloudflared tunnel --no-autoupdate --config cloudflared.yml run`). |
@@ -109,7 +109,7 @@ To pause only the auto-deploy: `Disable-ScheduledTask -TaskPath '\Automations\' 
   repository root: `"https://teszt.arsm.hu/?access=" + (Select-String .env '^GATE_TOKEN=(.+)$').Matches[0].Groups[1].Value`.
 - Rotation: write a new value (or delete the line and re-run the setup); every older cookie stops
   working at once. Without a usable token the gate answers 503.
-- Limits: 5 wrong tokens per IP per 15 minutes and 50 overall per hour (in memory), then 429.
+- Limits: 5 wrong tokens per IP per 15 minutes (in memory, per client only, no global limit), then 429.
 
 ## 6. Backups and restore
 
@@ -166,7 +166,7 @@ image bakes the URL into its CSP, the API gets it as CORS origin).
 ## 8. Removing it completely
 
 Turn it off (section 4), then `docker rm` the four containers, `docker volume rm arsm-tunnel-pgdata
-arsm-tunnel-rustfs`, `docker network rm arsm-tunnel-net`, unregister the three tasks
+arsm-tunnel-rustfs arsm-tunnel-dpkeys`, `docker network rm arsm-tunnel-net`, unregister the three tasks
 (`Unregister-ScheduledTask -TaskPath '\Automations\' -TaskName '<name>' -Confirm:$false`), and delete
 the tunnel with `cloudflared --origincert <cert> tunnel delete arsm-teszt` plus its DNS record in
 Cloudflare. The volumes and backups hold the only copy of the test data.

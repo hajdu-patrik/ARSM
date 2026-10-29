@@ -169,7 +169,12 @@ def restart_app(public_url, admin_password):
     for name in ("arsm-tunnel-web", "arsm-tunnel-api"):
         if exists("container", name):
             run(["docker", "rm", "-f", name])
+    if not exists("volume", "arsm-tunnel-dpkeys"):
+        run(["docker", "volume", "create", "arsm-tunnel-dpkeys"])
     api_args = ["docker", "run", "-d", "--name", "arsm-tunnel-api", *common, "--env-file", str(HERE / "api.env"),
+                "-v", "arsm-tunnel-dpkeys:/var/lib/arsm/dataprotection-keys",
+                "-e", "DataProtection__Provider=FileSystem",
+                "-e", "DataProtection__KeyDirectory=/var/lib/arsm/dataprotection-keys",
                 "-e", f"Cors__AllowedOrigins__0={public_url}"]
     if admin_password:
         api_args += ["-e", f"Bootstrap__Admin__Password={admin_password}"]

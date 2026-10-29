@@ -1,4 +1,4 @@
-"""The check subcommand: key and tool status, printing key names only, plus a warning for unregistered guard-rail providers."""
+"""The check subcommand: key and tool status, printing key names only, plus a warning for unregistered resource providers."""
 
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ from .errors import ConfigError
 from .validators import check_subscription, parse_whole_number
 
 PROVIDER_QUERY_TIMEOUT_SECONDS = 60
+# main.bicep always creates the Key Vault that wraps the DataProtection keys.
+ALWAYS_CHECKED_PROVIDERS = ("Microsoft.KeyVault",)
 
 
 def run_check() -> None:
@@ -59,6 +61,11 @@ def guard_rail_providers(raw: dict[str, str]) -> list[str]:
     return ["Microsoft.Insights", *(["Microsoft.Consumption"] if budget > 0 else [])]
 
 
+def checked_providers(raw: dict[str, str]) -> list[str]:
+    """Providers check asks about: Key Vault always, plus the guard-rail providers the .env switches on."""
+    return [*ALWAYS_CHECKED_PROVIDERS, *guard_rail_providers(raw)]
+
+
 def registration_state(provider: str, subscription_id: str) -> str | None:
     """Registration state of a provider in the subscription (one read-only az query), None when az cannot tell."""
     az = shutil.which("az")
@@ -78,12 +85,12 @@ def registration_state(provider: str, subscription_id: str) -> str | None:
 
 
 def _print_provider_warnings(raw: dict[str, str]) -> None:
-    """Warn, never fail, when a provider of the guard rails is not registered; silent while no guard rail is on."""
-    providers = guard_rail_providers(raw)
+    """Warn, never fail, when a checked provider is not registered; silent without a valid subscription id."""
+    providers = checked_providers(raw)
     subscription_id = raw.get("ARSM_AZURE_SUBSCRIPTION_ID", "")
-    if not providers or check_subscription(subscription_id) is not None:
+    if check_subscription(subscription_id) is not None:
         return
-    print("Resource providers of the guard rails (a warning only):")
+    print("Resource providers (a warning only):")
     for provider in providers:
         state = registration_state(provider, subscription_id)
         if state is None:

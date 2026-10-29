@@ -45,6 +45,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
             entity.Property(x => x.ProfilePictureObjectKey).HasMaxLength(256).HasColumnName("ProfilePictureObjectKey");
             entity.Property(x => x.ProfilePictureETag).HasMaxLength(80).HasColumnName("ProfilePictureETag");
             entity.Property(x => x.ProfilePictureContentType).HasMaxLength(50).HasColumnName("ProfilePictureContentType");
+            entity.Property(x => x.TokensValidAfter).HasColumnName("TokensValidAfter").HasColumnType("timestamp with time zone");
 
             entity.OwnsOne(x => x.Name, name =>
             {
