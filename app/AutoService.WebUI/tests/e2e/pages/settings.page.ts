@@ -1,10 +1,16 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { installApiMocks, type InstallApiMockOptions } from '../support/api-mocks';
-import { primeBrowserState } from '../support/browser-state';
+import { primeBrowserState, type TestLanguage } from '../support/browser-state';
 import { fillLockedPasswordField } from '../support/password-fields';
 import type { MockApiState } from '../support/test-data';
 
-/** The Settings page in English: its sections, the profile fields and the password and delete flows. */
+/** Accessible names of the delete-profile section and dialog per language (from src/utils/locales). */
+const DELETE_LABELS: Record<TestLanguage, { section: string; dialog: string; confirm: string }> = {
+  en: { section: 'Delete profile', dialog: 'Confirm profile deletion', confirm: 'Confirm deletion' },
+  hu: { section: 'Profil törlése', dialog: 'Profil törlésének megerősítése', confirm: 'Törlés megerősítése' },
+};
+
+/** The Settings page: its sections, the profile fields and the password and delete flows. */
 export class SettingsPage {
   readonly firstName: Locator;
   readonly middleName: Locator;
@@ -18,7 +24,10 @@ export class SettingsPage {
   readonly passwordSection: Locator;
   readonly deleteSection: Locator;
 
-  constructor(private readonly page: Page) {
+  constructor(
+    private readonly page: Page,
+    private readonly language: TestLanguage = 'en',
+  ) {
     this.firstName = page.locator('#settings-firstName');
     this.middleName = page.locator('#settings-middleName');
     this.lastName = page.locator('#settings-lastName');
@@ -29,7 +38,7 @@ export class SettingsPage {
     this.personalSection = page.getByRole('region', { name: 'Personal information' });
     this.companySection = page.getByRole('region', { name: 'Company data' });
     this.passwordSection = page.getByRole('region', { name: 'Change password' });
-    this.deleteSection = page.getByRole('region', { name: 'Delete profile' });
+    this.deleteSection = page.getByRole('region', { name: DELETE_LABELS[language].section });
   }
 
   async goto(): Promise<void> {
@@ -66,10 +75,16 @@ export class SettingsPage {
 
   /** Opens the delete-profile dialog and returns it. */
   async openDeleteDialog(): Promise<Locator> {
-    await this.deleteSection.getByRole('button', { name: 'Delete profile' }).click();
-    const dialog = this.confirmDialog('Confirm profile deletion');
+    const labels = DELETE_LABELS[this.language];
+    await this.deleteSection.getByRole('button', { name: labels.section }).click();
+    const dialog = this.confirmDialog(labels.dialog);
     await expect(dialog).toBeVisible();
     return dialog;
+  }
+
+  /** The confirm button of the delete-profile dialog in the page language. */
+  deleteConfirmButton(dialog: Locator): Locator {
+    return dialog.getByRole('button', { name: DELETE_LABELS[this.language].confirm });
   }
 
   async fillDeletePasswords(password: string, confirm: string): Promise<void> {
@@ -78,14 +93,15 @@ export class SettingsPage {
   }
 }
 
-/** Signs a mechanic in through the mocks (restorable session, English, light) and opens Settings. */
+/** Signs a mechanic in through the mocks (restorable session, light; English unless asked) and opens Settings. */
 export async function openSettings(
   page: Page,
   options: Partial<InstallApiMockOptions> = {},
+  language: TestLanguage = 'en',
 ): Promise<{ settings: SettingsPage; state: MockApiState }> {
-  await primeBrowserState(page, { sessionHint: true, language: 'en', theme: 'light' });
+  await primeBrowserState(page, { sessionHint: true, language, theme: 'light' });
   const state = await installApiMocks(page, { profileEmail: 'mechanic.settings@example.test', ...options });
-  const settings = new SettingsPage(page);
+  const settings = new SettingsPage(page, language);
   await settings.goto();
   return { settings, state };
 }

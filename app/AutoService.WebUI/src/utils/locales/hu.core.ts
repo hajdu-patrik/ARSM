@@ -147,6 +147,8 @@ export const huCore = {
     pictureInvalidType: 'Csak PNG, JPG, JPEG és WebP képek engedélyezettek.',
     profileDeleted: 'Profil sikeresen törölve.',
     profileDeleteFailed: 'Nem sikerült törölni a profilt.',
+    profileDeleteSoleMechanic:
+      'A profil nem törölhető, amíg egy időpont egyetlen szerelője vagy. Előbb egy adminisztrátornak másik szerelőt kell hozzárendelnie.',
     companyProfileUpdated: 'Cégadatok sikeresen frissítve.',
     companyProfileUpdateFailed: 'Nem sikerült frissíteni a cégadatokat.',
   },

@@ -116,12 +116,12 @@ public static partial class AuthEndpoints
         {
             person = CreatePerson(request, identityUser.Id, email, phoneNumber);
         }
-        catch (ArgumentException exception)
+        catch (RegistrationRefusedException exception)
         {
-            logger.LogWarning("Registration failed due to invalid input for {ParamName}.", exception.ParamName ?? "register");
+            logger.LogWarning("Registration failed due to invalid input for {ParamName}.", exception.Key);
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
-                [exception.ParamName ?? "register"] = [exception.Message]
+                [exception.Key] = [exception.Message]
             });
         }
 
@@ -228,12 +228,12 @@ public static partial class AuthEndpoints
 
         if (!string.Equals(request.PersonType, "mechanic", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException("Registration is only available for mechanics.", nameof(request.PersonType));
+            throw new RegistrationRefusedException(nameof(request.PersonType), "Registration is only available for mechanics.");
         }
 
         if (!DefinedEnum.TryParse<SpecializationType>(request.Specialization, out var specialization))
         {
-            throw new ArgumentException("Specialization is invalid.", nameof(request.Specialization));
+            throw new RegistrationRefusedException(nameof(request.Specialization), "Specialization is invalid.");
         }
 
         var expertise = ParseExpertise(request.Expertise ?? []);
@@ -252,7 +252,7 @@ public static partial class AuthEndpoints
         {
             if (!DefinedEnum.TryParse<ExpertiseType>(expertiseValue, out var parsedValue))
             {
-                throw new ArgumentException($"Expertise value '{expertiseValue}' is invalid.", nameof(expertiseValues));
+                throw new RegistrationRefusedException(nameof(expertiseValues), $"Expertise value '{expertiseValue}' is invalid.");
             }
 
             expertise.Add(parsedValue);

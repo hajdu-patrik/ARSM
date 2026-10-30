@@ -4,6 +4,7 @@ import { apiClient } from '../http/api.client';
 import { isTransientRequestFailure, redirectToServerError } from '../http/server-error';
 import type { LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse } from '../../types/auth/login.types';
 import { useAuthStore } from '../../store/auth.store';
+import { logError } from '../../utils/devLog';
 import { clearArsmQueryCache } from '../cache/queryClient';
 import { clearAuthSessionHint, hasAuthSessionHint, setAuthSessionHint } from './session-hint';
 
@@ -36,10 +37,13 @@ export const authService = {
     return authUser;
   },
 
-  /** Logs out via `POST /api/auth/logout`; clears local state in `finally` even when the request fails. */
+  /** Logs out via `POST /api/auth/logout`; a failure is logged, never rethrown.
+   * Local state is cleared in `finally` either way. */
   async logout(): Promise<void> {
     try {
       await apiClient.post('/api/auth/logout');
+    } catch (error) {
+      logError('auth.logout', error);
     } finally {
       clearAuthSessionHint();
       clearAuthState();

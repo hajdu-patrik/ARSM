@@ -9,6 +9,13 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Known defects of the audit fixed and test gaps closed (2026-10-30).
+  - A sole mechanic refused on self-delete gets a dedicated toast (`toast.profileDeleteSoleMechanic`) instead of the generic failure.
+  - The registration 400 no longer leaks the framework suffix ` (Parameter '...')` (`RegistrationRefusedException`).
+  - `profileService` calls `/api/profile` with no trailing slash, and a failed logout leaves no unhandled rejection (`authService.logout` logs it).
+  - New xUnit coverage: the login, refresh and picture upload 429 limits, the refresh replay of a revoked token and the SSE connection cap; the gaps that
+    need a real second admin or a non-mechanic token stay recorded in `tests/CLAUDE.md`.
+  - _Dev time: ~1h 20m wall-clock. ~$27 (2,676,279 output tokens, all on sonnet; output-token-only estimate, a lower bound)._
 - Test coverage audit of every layer (2026-10-30), with a new regression-proof rule in the agent chain.
   - Every layer was compared with the code branch by branch: xUnit grew from 241 to 1258 tests, the new stdlib `tests/Scripts` suite has 466
     tests (run by the pre-push backend stage and the `dotnet.yml` repo gate), the HTTP suite runs 2293 requests, and the E2E suite has 625 tests.

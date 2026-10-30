@@ -24,13 +24,6 @@ const ALLOWED_WHILE_PASSWORD_TEMPORARY: ReadonlySet<string> = new Set([
   'GET /api/auth/validate',
 ]);
 
-function normalizeApiPath(pathname: string): string {
-  if (pathname.length > 1 && pathname.endsWith('/')) {
-    return pathname.slice(0, -1);
-  }
-  return pathname;
-}
-
 /** Dispatches one mocked API request to the matching domain handler. */
 export async function handleApiRoute(
   route: Route,
@@ -40,7 +33,7 @@ export async function handleApiRoute(
   const request = route.request();
   const url = new URL(request.url());
   const method = request.method().toUpperCase();
-  const path = normalizeApiPath(url.pathname);
+  const path = url.pathname;
   const routeKey = `${method} ${path}`;
 
   options.routeCallLog?.push(routeKey);

@@ -6,6 +6,7 @@ import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
   hasServerFieldErrors,
+  PROFILE_DELETE_SOLE_MECHANIC_KEY,
   mapValidationMessageOrFallback,
   normalizeServerFieldErrors,
   type ServerErrorBody,
@@ -49,6 +50,10 @@ export function extractDeleteProfileErrorKey(err: unknown): string | null {
   }
 
   const data = err.response?.data;
+  if (status === 422 && data?.detail?.includes('appointments would be left without')) {
+    return PROFILE_DELETE_SOLE_MECHANIC_KEY;
+  }
+
   const mappedFieldErrors = normalizeServerFieldErrors(
     extractServerFieldErrors(data),
     (message) => mapValidationMessageOrFallback(message, 'settings', 'toast.profileDeleteFailed'),

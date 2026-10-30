@@ -14,6 +14,9 @@ export type ValidationContext = 'admin' | 'settings';
 /** Message key of a wrong current password, which belongs to the current-password field. */
 export const CURRENT_PASSWORD_INVALID_KEY = 'settings.errors.currentPasswordInvalid';
 
+/** Message key of a self-delete refused because the mechanic is the only one on an appointment (toast only). */
+export const PROFILE_DELETE_SOLE_MECHANIC_KEY = 'toast.profileDeleteSoleMechanic';
+
 function toCapitalized(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

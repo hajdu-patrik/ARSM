@@ -159,7 +159,7 @@ Content-Type: application/json
 { "firstName": "Bad", "lastName": "Expertise", "email": "{{RollbackEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Telepathy"] }
 
 ?? status == 400
-?? js (Object.values(response.parsedBody.errors).flat().some(m => m.startsWith("Expertise value 'Telepathy' is invalid."))) == true
+?? js (Object.values(response.parsedBody.errors).flat().includes("Expertise value 'Telepathy' is invalid.")) == true
 
 ###
 
@@ -172,7 +172,7 @@ Content-Type: application/json
 { "firstName": "Bad", "lastName": "Specialization", "email": "{{RollbackEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "Hovercraft", "expertise": ["Engine"] }
 
 ?? status == 400
-?? js (Object.values(response.parsedBody.errors).flat().some(m => m.startsWith("Specialization is invalid."))) == true
+?? js (Object.values(response.parsedBody.errors).flat().includes("Specialization is invalid.")) == true
 
 ###
 

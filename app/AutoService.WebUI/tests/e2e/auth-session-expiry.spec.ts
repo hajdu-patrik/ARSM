@@ -89,4 +89,21 @@ test.describe('Session during use', () => {
     await expect(page).toHaveURL(/\/login$/);
     expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBeNull();
   });
+
+  test('a refused logout leaves no unhandled rejection (pageerror) and still lands on login', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await openSettings(page, { routeFailures: { 'POST /api/auth/logout': { status: 401, body: {} } } });
+    const logoutResponse = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/auth/logout');
+
+    await page.locator('aside:visible').getByRole('button', { name: 'Log out' }).click();
+
+    expect((await logoutResponse).status()).toBe(401);
+    await expect(page).toHaveURL(/\/login$/);
+    // A browser round trip plus a short pause lets the asynchronous unhandled-rejection report arrive first.
+    await page.evaluate(() => fetch('/').then(() => new Promise((resolve) => setTimeout(resolve, 300))));
+    expect(pageErrors).toEqual([]);
+    expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBeNull();
+    await expect(page).toHaveURL(/\/login$/);
+  });
 });

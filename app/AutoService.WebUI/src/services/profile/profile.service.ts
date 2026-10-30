@@ -12,14 +12,14 @@ import type {
 
 export const profileService = {
   async getProfile(options?: SilentRequestOptions): Promise<ProfileData> {
-    const response = await apiClient.get<ProfileData>('/api/profile/', {
+    const response = await apiClient.get<ProfileData>('/api/profile', {
       skipErrorRedirect: options?.skipErrorRedirect,
     });
     return response.data;
   },
 
   async updateProfile(data: UpdateProfileRequest): Promise<ProfileData> {
-    const response = await apiClient.put<ProfileData>('/api/profile/', data);
+    const response = await apiClient.put<ProfileData>('/api/profile', data);
     return response.data;
   },
 

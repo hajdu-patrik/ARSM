@@ -40,7 +40,7 @@ test.describe('Profile form', () => {
     await settings.firstName.fill('Updated');
     await settings.lastName.fill('Person-Name');
 
-    const saveRequest = page.waitForRequest((request) => request.method() === 'PUT' && /^\/api\/profile\/?$/.test(new URL(request.url()).pathname));
+    const saveRequest = page.waitForRequest((request) => request.method() === 'PUT' && new URL(request.url()).pathname === '/api/profile');
     await settings.saveProfileButton().click();
     const dialog = settings.confirmDialog('Confirm changes');
     await expect(dialog).toBeVisible();

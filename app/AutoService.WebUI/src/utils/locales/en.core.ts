@@ -147,6 +147,8 @@ export const enCore = {
     pictureInvalidType: 'Only PNG, JPG, JPEG, and WebP images are allowed.',
     profileDeleted: 'Profile deleted successfully.',
     profileDeleteFailed: 'Failed to delete profile.',
+    profileDeleteSoleMechanic:
+      'Your profile cannot be deleted while you are the only mechanic on an appointment. An admin must assign another mechanic to it first.',
     companyProfileUpdated: 'Company data updated successfully.',
     companyProfileUpdateFailed: 'Failed to update company data.',
   },

@@ -2,10 +2,22 @@
  * cancel, the wrong-password refusal, the request and the sign-out). */
 import { expect, test } from '@playwright/test';
 import { openSettings } from './pages/settings.page';
+import type { TestLanguage } from './support/browser-state';
 import { errorToastMessage, toastMessage } from './support/toast';
 
 const PASSWORD = 'CurrentPass1!';
 const DELETE_PROFILE = 'DELETE /api/profile';
+const SOLE_MECHANIC_DETAIL = 'Cannot delete this mechanic because one or more appointments would be left without assigned mechanics.';
+const SOLE_MECHANIC_TOAST: Record<TestLanguage, { sole: string; generic: string }> = {
+  en: {
+    sole: 'Your profile cannot be deleted while you are the only mechanic on an appointment. An admin must assign another mechanic to it first.',
+    generic: 'Failed to delete profile.',
+  },
+  hu: {
+    sole: 'A profil nem törölhető, amíg egy időpont egyetlen szerelője vagy. Előbb egy adminisztrátornak másik szerelőt kell hozzárendelnie.',
+    generic: 'Nem sikerült törölni a profilt.',
+  },
+};
 
 test.describe('Settings sections per role', () => {
   test('a mechanic sees the delete section and no company data', async ({ page }) => {
@@ -101,6 +113,28 @@ test.describe('Delete profile dialog', () => {
     await expect(page.locator('#delete-profile-password')).toHaveAccessibleDescription('Current password is invalid.');
     await expect(page).toHaveURL(/\/settings$/);
   });
+
+  for (const language of ['en', 'hu'] as const) {
+    const text = SOLE_MECHANIC_TOAST[language];
+    test(`a sole-mechanic refusal (422) toasts the dedicated text in ${language} and keeps dialog and session`, async ({ page }) => {
+      const { settings } = await openSettings(
+        page,
+        { routeFailures: { [DELETE_PROFILE]: { status: 422, body: { detail: SOLE_MECHANIC_DETAIL } } } },
+        language,
+      );
+      const dialog = await settings.openDeleteDialog();
+      await settings.fillDeletePasswords(PASSWORD, PASSWORD);
+
+      await settings.deleteConfirmButton(dialog).click();
+
+      await expect(errorToastMessage(page, text.sole)).toBeVisible();
+      await expect(errorToastMessage(page, text.generic)).toHaveCount(0);
+      await expect(dialog).toBeVisible();
+      await expect(page.locator('#delete-profile-password')).not.toHaveAttribute('aria-invalid', 'true');
+      await expect(page).toHaveURL(/\/settings$/);
+      expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBe('1');
+    });
+  }
 
   test('a refusal that names no field keeps the dialog and the session, with an error alert', async ({ page }) => {
     const { settings } = await openSettings(page, {
