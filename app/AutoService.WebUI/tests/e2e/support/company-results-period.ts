@@ -25,3 +25,17 @@ export async function selectReportMonth(page: Page, month: number | 'all'): Prom
   await tile.click();
   await expect(tile).toHaveAttribute('aria-pressed', 'true');
 }
+
+/** The pinned "now" of the picker specs: October 2026, so months 11 and 12 are still ahead and 2021 is the oldest year. */
+export const REPORT_NOW = new Date('2026-10-15T12:00:00.000Z');
+
+/** Fixes the browser clock before the first navigation, so the current year and month do not depend on the run date. */
+export async function pinReportClock(page: Page): Promise<void> {
+  await page.clock.setFixedTime(REPORT_NOW);
+}
+
+/** Opens the report page and waits for the accepted headline to render. */
+export async function openReport(page: Page): Promise<void> {
+  await page.goto('/company-results');
+  await expect(page.getByTestId('company-results-accepted')).toBeVisible();
+}

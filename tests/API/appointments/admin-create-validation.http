@@ -1,42 +1,30 @@
-# Split out of admin-create-update-validation.http (file-size limit). Every case is rejected before any
-# write, so there is nothing to clean up. UnknownVehicleId/UnknownMechanicId are 99999 sentinels; the rest resolve from the shared fixture rows.
+# POST /api/customers/{id}/appointments refusals (AdminOnly). Payload rules are checked first, then the customer,
+# the vehicle and its owner, then the mechanics. Nothing is written, and the shared fixture customers are only read.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
-@SecondFixtureCustomerEmail = fixture.second@example.test
+@SecondCustomerEmail = fixture.second@example.test
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@UnknownVehicleId = 99999
-@UnknownMechanicId = 99999
-
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly create endpoint, 200 expected)
+### [Setup][Appointments] Login as admin (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
 }}
 
 ?? status == 200
-
-###
-
-@PrimaryMechanicId = {{adminLogin.personId}}
 
 ### [Setup][Appointments] Resolve the two shared fixture customers, each owning a vehicle (200 expected)
 # @name fixtureCustomer
@@ -46,166 +34,150 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{Fixtur
 
 ###
 
-# @name otherFixtureCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{SecondFixtureCustomerEmail}}
+# @name otherCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{SecondCustomerEmail}}
 
 ?? status == 200
 
-###
-
-@CustomerId = {{fixtureCustomer.id}}
-@OtherCustomerId = {{otherFixtureCustomer.id}}
-
-### [Setup][Appointments] Resolve CustomerId's own vehicle (200 expected)
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
-
-@CustomerVehicleId = {{fixtureVehicles.items[0].id}}
-
-### [Setup][Appointments] Resolve a vehicle owned by the other customer (200 expected)
-# @name otherFixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{OtherCustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
-
-@AnotherCustomerVehicleId = {{otherFixtureVehicles.items[0].id}}
-
-### [Negative][Appointments] Admin create fails when customer does not exist (404 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/99999/appointments
+### [Negative][Appointments] An unknown customer is refused (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/99999999/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create unknown customer", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails when vehicle is not owned by customer (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] A vehicle of another customer is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{AnotherCustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
+{ "vehicleId": {{otherCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create foreign vehicle", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Vehicle does not belong to the specified customer.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails when vehicle does not exist (404 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] An unknown vehicle is refused (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{UnknownVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
+{ "vehicleId": 99999999, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create unknown vehicle", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails for empty mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] vehicleId 0 is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": []
-}
+{ "vehicleId": 0, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create vehicle zero", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "VehicleId must be a positive integer.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails for duplicate mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] An empty mechanicIds list is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{PrimaryMechanicId}}, {{PrimaryMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create no mechanic", "mechanicIds": [] }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "At least one mechanic must be assigned.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails for non-positive mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] A missing mechanicIds field is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [0]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create mechanics missing" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "At least one mechanic must be assigned.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails for empty taskDescription (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] Duplicate mechanicIds are refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "   ",
-  "mechanicIds": [{{PrimaryMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create duplicate mechanic", "mechanicIds": [{{adminLogin.personId}}, {{adminLogin.personId}}] }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "MechanicIds must be unique.") == true
 
-###
-
-### [Negative][Appointments] Admin create fails for invalid mechanicIds (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{CustomerId}}/appointments
+### [Negative][Appointments] A non-positive mechanic id is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{CustomerVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Uj idopont felvetele admin oldalon",
-  "mechanicIds": [{{UnknownMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create mechanic zero", "mechanicIds": [0] }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "MechanicIds must contain positive values only.") == true
+
+### [Negative][Appointments] An unknown mechanic id is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create unknown mechanic", "mechanicIds": [99999999] }
+
+?? status == 422
+?? js (response.parsedBody.detail === "One or more mechanicIds are invalid.") == true
+
+### [Negative][Appointments] A known plus an unknown mechanic id is refused as a whole (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Admin create partly unknown mechanics", "mechanicIds": [{{adminLogin.personId}}, 99999999] }
+
+?? status == 422
+?? js (response.parsedBody.detail === "One or more mechanicIds are invalid.") == true
+
+### [Negative][Appointments] A blank task description is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "   ", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 422
+?? js (response.parsedBody.detail === "TaskDescription is required.") == true
+
+### [Negative][Appointments] A task description of 201 characters is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "{{'a'.repeat(201)}}", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 422
+?? js (response.parsedBody.detail === "TaskDescription must be at most 200 characters.") == true
+
+### [Negative][Appointments] A missing scheduledDate is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "taskDescription": "Admin create no schedule", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 422
+?? js (response.parsedBody.detail === "ScheduledDate is required.") == true

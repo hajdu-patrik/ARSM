@@ -9,7 +9,7 @@ from typing import Iterable
 SENSITIVE_NAME_PATTERN = re.compile(r"(?i)(password|passwd|secret|token|cookie|key|connection|pgpassword)")
 POSTGRES_URI_PATTERN = re.compile(r"postgres(?:ql)?://[^\s\"']+", re.IGNORECASE)
 ASSIGNMENT_SECRET_PATTERN = re.compile(
-    r"(?i)\b(password|passwd|secret|token|authorization|cookie|connectionstring|pgpassword)\b([\s:=\"']+)([^\s,;]+)",
+    r"(?i)\b(password|passwd|secret|token|authorization|cookie|connectionstring|pgpassword)\b([\s:=\"']+)((?:(?:bearer|basic)\s+)?[^\s,;]+)",
 )
 # The assignment pattern above stops at the first "," or ";", leaving a multi-cookie header's
 # tail readable; this replaces the whole quoted value instead (also matches accessToken/set-cookie).
@@ -81,7 +81,7 @@ class EnvironmentLoader:
             return []
 
         loaded_values: list[str] = []
-        for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        for raw_line in env_file.read_text(encoding="utf-8-sig").splitlines():
             line = raw_line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue

@@ -1,0 +1,147 @@
+# POST /api/customers/{id}/appointments (AdminOnly): mechanics assigned at creation, due date defaulting to the start,
+# past dates allowed. A disposable customer, vehicle and secondary mechanic (prefix appt.) are created and deleted here.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@CustomerEmail = fixture.appt.create.happy.{{RunId}}@example.test
+@SecondaryMechanicEmail = appt.create.happy.{{RunId}}@example.test
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Appointment", "middleName": null, "lastName": "Happy", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "OWH-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}0800", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Register the disposable secondary mechanic (200 expected)
+# @name secondaryMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "ApptCreate", "lastName": "Happy", "email": "{{SecondaryMechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+### [Positive][Appointments] Admin creates an appointment with two mechanics (201 expected)
+# The due date defaults to the scheduled date and the padded task description is stored trimmed.
+# @name createdAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "  Uj idopont felvetele admin oldalon  ", "mechanicIds": [{{adminLogin.personId}}, {{secondaryMechanic.personId}}] }
+
+?? status == 201
+?? header location includes /api/appointments/
+?? js response.parsedBody.status == InProgress
+?? js (response.parsedBody.taskDescription === "Uj idopont felvetele admin oldalon") == true
+?? js response.parsedBody.scheduledDate startsWith 2026-04-18T10:30:00
+?? js (response.parsedBody.dueDateTime == response.parsedBody.scheduledDate) == true
+?? js (response.parsedBody.intakeCreatedAt != null) == true
+?? js (response.parsedBody.completedAt == null) == true
+?? js (response.parsedBody.canceledAt == null) == true
+?? js response.parsedBody.mechanics.length == 2
+?? js (response.parsedBody.mechanics.some(m => m.id == adminLogin.personId) && response.parsedBody.mechanics.some(m => m.id == secondaryMechanic.personId)) == true
+?? js (response.parsedBody.vehicle.id == vehicle.id) == true
+?? js (response.parsedBody.vehicle.customerId == customer.id) == true
+?? js response.parsedBody.version > 0
+?? js response.parsedBody.hasAcceptedQuote == false
+?? js response.parsedBody.canComplete == false
+?? js response.parsedBody.canDelete == true
+?? js response.parsedBody.canLinkQuote == true
+
+### [Positive][Appointments] A past scheduled date and a 200-character task are allowed (201 expected)
+# @name pastDateAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2020-01-01T10:30:00", "taskDescription": "{{'t'.repeat(200)}}", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+?? js response.parsedBody.taskDescription.length == 200
+?? js response.parsedBody.mechanics.length == 1
+
+### [Positive][Appointments] Both appointments are listed in the customer and vehicle history (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+
+?? status == 200
+?? js response.parsedBody.length == 2
+?? js (response.parsedBody[0].id == pastDateAppt.id && response.parsedBody[1].id == createdAppt.id) == true
+
+### [Positive][Appointments] The vehicle history holds the same two appointments (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/appointments
+
+?? status == 200
+?? js response.parsedBody.length == 2
+
+### [Cleanup][Appointments] Delete the two fixture appointments (204 expected each)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{createdAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{pastDateAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
+# Safe: the appointments are gone, so the zero-mechanics deletion invariant never blocks it.
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{secondaryMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

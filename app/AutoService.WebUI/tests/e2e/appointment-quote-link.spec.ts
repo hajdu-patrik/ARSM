@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
-import type { AppointmentDto, AppointmentStatus } from '../../src/types/scheduler/scheduler.types';
+import type { AppointmentStatus } from '../../src/types/scheduler/scheduler.types';
 import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
 import { SchedulerPage } from './pages/scheduler.page';
+import { DAY_MS, seedAppointment } from './support/appointment-fixtures';
 import { signInWithMocks } from './support/sign-in';
 import { MOCK_CUSTOMER_IDS, MOCK_QUOTE_IDS } from './support/test-data';
 import { MOCK_APPOINTMENT_IDS } from './support/test-data.constants';
 import type { MockApiState } from './support/test-data';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const OVERDUE_TONE = /text-arsm-error-text/;
 const SUCCESS_TONE = /text-ui-success-text/;
 const TODAY_APPOINTMENT_ID = 6101;
@@ -16,23 +16,7 @@ const LINKED_QUOTE_TITLE = 'Timing belt replacement';
 
 /** Adds an appointment scheduled now that fell due 30 days ago, in the given status. */
 function addOverdueTodayAppointment(state: MockApiState, status: AppointmentStatus): void {
-  const template = state.customerHistoryByCustomerId[MOCK_CUSTOMER_IDS.anna]?.[0];
-  if (template === undefined) {
-    throw new Error('The fixture history appointment is missing.');
-  }
-
-  const now = Date.now();
-  const appointment: AppointmentDto = {
-    ...template,
-    id: TODAY_APPOINTMENT_ID,
-    scheduledDate: new Date(now).toISOString(),
-    dueDateTime: new Date(now - 30 * DAY_MS).toISOString(),
-    status,
-    completedAt: status === 'Completed' ? new Date(now).toISOString() : null,
-    canceledAt: status === 'Cancelled' ? new Date(now).toISOString() : null,
-  };
-
-  state.appointments.push(appointment);
+  seedAppointment(state, { id: TODAY_APPOINTMENT_ID, status, dueAt: new Date(Date.now() - 30 * DAY_MS) });
 }
 
 /** Links the draft fixture quote to the given appointment, like a quote created from it. */

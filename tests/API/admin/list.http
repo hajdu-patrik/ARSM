@@ -86,6 +86,40 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=100000&pageS
 
 ###
 
+### [Case][Admin] GET /api/admin/mechanics?page=2147483647&pageSize=500 (200 expected, page clamped so the offset cannot overflow - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=2147483647&pageSize=500
+
+?? status == 200
+?? js response.parsedBody.page < 2147483647
+?? js response.parsedBody.items.length == 0
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?page=-5&pageSize=-1 (200 expected, both clamped to the floor)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=-5&pageSize=-1
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 1
+?? js response.parsedBody.items.length == 1
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?pageSize=abc (400 expected, a non-numeric pageSize fails model binding - never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?pageSize=abc
+
+?? status == 400
+
+###
+
+### [Case][Admin] GET /api/admin/mechanics?search=%20%20 (200 expected, a blank search applies no filter)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=%20%20&pageSize=1
+
+?? status == 200
+?? js (response.parsedBody.totalCount == allMechanics.items.length) == true
+
+###
+
 ### [Case][Admin] GET /api/admin/mechanics?page=2&pageSize=1 (200 expected, second row of the ordered set)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=2&pageSize=1
 

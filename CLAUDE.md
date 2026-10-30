@@ -60,8 +60,13 @@
        pre-existing or tracked ones) and only lists tracked files the change left unused, for approval.
     4. Gate: `python scripts/validate.py` once; each failure goes back to the package owning the path it
        names (unowned paths to one agent per area) for at most two fix rounds.
-    5. Test: heavy suites only when their gate matches; E2E runs the specs selected for the diff by
-       `python scripts/select-e2e-specs.py --run` (3 workers).
+    5. Test: first a regression test for every defect the run reported in `bugsFound` (see Regression
+       Proof), then the heavy suites only when their gate matches; E2E runs the specs selected for the diff
+       by `python scripts/select-e2e-specs.py --run` (3 workers), the unit gate `pre-push.py --only backend`,
+       the HTTP and SQL gates `pre-push.py --only api-suites`. A failing suite or an unproven defect ends the
+       run as `tests-failed`.
+- Test-only work is a `test` package: `tests/API` runs on `http-endpoint-test`, `tests/Database` on
+  `sql-database-test`, `app/AutoService.WebUI/tests` on `e2e-playwright-test`, anything else on `general-purpose`.
 - Without the Workflow tool, run the same steps by hand in the same order and with the same parallelism.
 - Whatever the answer, run `python scripts/validate.py` before committing a source change: it is
   deterministic, takes seconds, and costs no tokens.
@@ -70,6 +75,14 @@
   only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
 - Skipping the workflow never waives Decision Ownership, Security and Secrets, Engineering
   Guardrails, Core Invariants, or Version Control Attribution. Those apply to every task.
+
+## Regression Proof (user decision, 2026-10-30)
+
+- A behaviour defect we find ourselves during a run, not named in the task, is done only when a test proves
+  the fix, with or without `arsm-chain`; lint, type and style findings do not count.
+- The test sits at the lowest layer that observes the defect, passes with the fix, and fails without it
+  (a temporary `git worktree` of the base, never a revert in the working tree). A suite that needs the API
+  stack runs in the Test phase instead, and the report says the fails-without-fix check was not run.
 
 ## Decision Ownership
 

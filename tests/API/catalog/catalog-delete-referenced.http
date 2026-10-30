@@ -1,0 +1,172 @@
+# Deleting a part or labor type that a quote line references is allowed: the line keeps its snapshot and totals and only
+# loses the catalog reference. A disposable customer, vehicle and draft quote carry the lines.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Key = ZZD{{RunId}}
+
+### [Setup][Catalog] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Catalog] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Catalog] Create the part (201 expected)
+# @name refPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}P", "name": "Referenced Part", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Setup][Catalog] Create the labor type (201 expected)
+# @name refLabor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}L", "name": "Referenced Labor", "hourlyNetRate": 150, "vatRatePercent": 18 }
+
+?? status == 201
+
+###
+
+### [Setup][Catalog] Create the disposable customer (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Catalog", "middleName": null, "lastName": "Referenced", "email": "catalog.referenced.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Catalog] Create the disposable vehicle (201 expected)
+# @name ownerVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CR-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}1901", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Catalog] Create a draft quote on it (201 expected)
+# @name refQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{ownerVehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Catalog delete referenced {{RunId}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Catalog] Add a line for 2 pieces of the part (201 expected, snapshot net 100.00)
+# @name partLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{refQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{refPart.id}}, "version": {{refQuote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[0].partId == refPart.id) == true
+?? js (response.parsedBody.lines[0].description === "Referenced Part") == true
+
+###
+
+### [Setup][Catalog] Add a line for 1 hour of the labor type (201 expected, snapshot net 150.00)
+# @name laborLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{refQuote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "laborTypeId": {{refLabor.id}}, "version": {{partLine.version}} }
+
+?? status == 201
+?? js response.parsedBody.totalNet == 350
+
+###
+
+### [Positive][Catalog] Delete the referenced part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{refPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Catalog] Delete the referenced labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{refLabor.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Catalog] The quote keeps both lines with their snapshot and totals (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{refQuote.id}}
+
+?? status == 200
+?? js response.parsedBody.lines.length == 2
+?? js response.parsedBody.totalNet == 350
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Part').partId === null) == true
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Part').description === 'Referenced Part') == true
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Part').netUnitPrice === 100) == true
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Labor').laborTypeId === null) == true
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Labor').description === 'Referenced Labor') == true
+?? js (response.parsedBody.lines.find(l => l.lineKind === 'Labor').netUnitPrice === 150) == true
+
+###
+
+### [Negative][Catalog] The deleted part is gone from the catalog (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{refPart.id}}
+
+?? status == 404
+
+###
+
+### [Cleanup][Catalog] Delete the disposable customer, which deletes the vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

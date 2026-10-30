@@ -1,3 +1,4 @@
+using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Pagination;
@@ -28,7 +29,7 @@ public static partial class QuoteEndpoints
         QuoteStatus? statusFilter = null;
         if (status is not null)
         {
-            if (!Enum.TryParse<QuoteStatus>(status, ignoreCase: true, out var parsedStatus))
+            if (!DefinedEnum.TryParse<QuoteStatus>(status, out var parsedStatus))
             {
                 return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
             }

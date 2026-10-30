@@ -1,0 +1,143 @@
+# Login by a Budapest landline (06 1 ...) and by an EU (+49) number: each resolves to the self-provisioned mechanic that
+# was registered with the same number in another notation. Mobile shapes are login-positive-phone-matrix.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+# Phone digits derived from this run's id so registrations never collide with another file or an
+# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+@PhoneTail = {{RunId.toString().slice(-6)}}
+@PhoneTail7 = {{RunId.toString().slice(-7)}}
+@BudapestPhoneEmail = login.negmatrix.budapest.{{RunId}}@example.test
+@EuPhoneEmail = login.negmatrix.euphone.{{RunId}}@example.test
+@MatrixEuPhoneCanonical = +491512{{PhoneTail7}}
+
+
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin Session] Login as admin to provision the mechanics (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Register] Mechanic with a Budapest landline phone (200 expected)
+# @name regBudapest
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "NegMatrix", "lastName": "Budapest", "email": "{{BudapestPhoneEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 1 3{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Setup][Register] Mechanic with an EU (+49) phone (200 expected)
+# @name regEuPhone
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "NegMatrix", "lastName": "EuPhone", "email": "{{EuPhoneEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+49 151 2{{PhoneTail7}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Setup][Admin Session] Logout admin before the phone logins (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Login Phone Regions] Budapest landline written 06 1 3xx xxxx (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "06 1 3{{PhoneTail}}", "password": "{{TestPassword}}" }
+
+?? status == 200
+?? js (response.parsedBody.personId == regBudapest.personId) == true
+
+###
+
+### [Positive][Login Phone Regions] EU phone in canonical E.164 (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "{{MatrixEuPhoneCanonical}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+?? js (response.parsedBody.personId == regEuPhone.personId) == true
+
+###
+
+### [Setup][Cleanup] Logout the EU-phone mechanic session (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Cleanup] Login as admin again to delete the throwaway mechanics (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the Budapest-landline mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regBudapest.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the EU-phone mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEuPhone.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

@@ -1,0 +1,182 @@
+# POST /api/customers happy paths: names trimmed, email lower-cased, phone stored as E.164, blank optional fields null.
+# Each last name carries a letters-only run tag, so one search proves what was persisted.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Customers] Create with padded names, a mixed-case email and a formatted phone (201 expected, all normalized)
+# @name fullCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "  Árpád ", "middleName": " Mária ", "lastName": " Kovács-{{Tag}} ", "email": "  Create.Happy.{{RunId}}@Example.TEST ", "phoneNumber": " +36 (20) {{Digits}} " }
+
+?? status == 201
+?? js (response.headers.location === '/api/customers/' + response.parsedBody.id) == true
+?? js (response.parsedBody.id > 0) == true
+?? js response.parsedBody.firstName == Árpád
+?? js response.parsedBody.middleName == Mária
+?? js response.parsedBody.lastName == Kovács-{{Tag}}
+?? js response.parsedBody.email == create.happy.{{RunId}}@example.test
+?? js response.parsedBody.phoneNumber == +3620{{Digits}}
+?? js response.parsedBody.vehicleCount == 0
+?? js response.parsedBody.vehicleLicensePlates.length == 0
+
+###
+
+### [Positive][Customers] The created customer reads back with the normalized values (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fullCustomer.id}}
+
+?? status == 200
+?? js response.parsedBody.firstName == Árpád
+?? js response.parsedBody.middleName == Mária
+?? js response.parsedBody.lastName == Kovács-{{Tag}}
+?? js response.parsedBody.email == create.happy.{{RunId}}@example.test
+?? js response.parsedBody.phoneNumber == +3620{{Digits}}
+?? js response.parsedBody.vehicles.length == 0
+
+###
+
+### [Positive][Customers] A national-format phone (06 prefix) is stored as E.164 (201 expected)
+# @name nationalCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "National", "middleName": null, "lastName": "Phone-{{Tag}}", "email": "create.national.{{RunId}}@example.test", "phoneNumber": "06 30 {{Digits}}" }
+
+?? status == 201
+?? js response.parsedBody.phoneNumber == +3630{{Digits}}
+
+###
+
+### [Positive][Customers] A phone from another European country is accepted (201 expected)
+# @name czechCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Czech", "middleName": null, "lastName": "Phone-{{Tag}}", "email": "create.czech.{{RunId}}@example.test", "phoneNumber": "+420 602 {{RunId.toString().slice(-6)}}" }
+
+?? status == 201
+?? js response.parsedBody.phoneNumber == +420602{{RunId.toString().slice(-6)}}
+
+###
+
+### [Positive][Customers] Create without the optional fields (201 expected, middle name and phone are null)
+# @name minimalCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Minimal", "middleName": null, "lastName": "Customer-{{Tag}}", "email": "create.minimal.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+?? js (response.parsedBody.middleName === null) == true
+?? js (response.parsedBody.phoneNumber === null) == true
+
+###
+
+### [Positive][Customers] A whitespace-only phone counts as absent (201 expected, phone is null)
+# @name blankPhoneCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Blank", "middleName": null, "lastName": "Phone-{{Tag}}", "email": "create.blankphone.{{RunId}}@example.test", "phoneNumber": "   " }
+
+?? status == 201
+?? js (response.parsedBody.phoneNumber === null) == true
+
+###
+
+### [Positive][Customers] The email lookup finds the created customer by its normalized address (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=create.happy.{{RunId}}@example.test
+
+?? status == 200
+?? js (response.parsedBody.id == fullCustomer.id) == true
+
+###
+
+### [Positive][Customers] All five customers are listed under the run tag, nothing extra (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&pageSize=10
+
+?? status == 200
+?? js response.parsedBody.totalCount == 5
+
+###
+
+### [Cleanup][Customers] Delete the full customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fullCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the national-phone customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{nationalCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the Czech-phone customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{czechCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the minimal customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{minimalCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the blank-phone customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{blankPhoneCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

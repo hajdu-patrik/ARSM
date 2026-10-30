@@ -1,0 +1,125 @@
+# A successful delete removes the roster row and the linked Identity account: the login is refused, a repeat delete is 404,
+# and the same e-mail can be registered again. Live sessions of the deleted mechanic end at once (session-revocation-check.py).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@CandidateEmail = delete.mechanic.candidate.{{RunId}}@example.test
+
+### [Setup][Admin] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Admin] Login as admin (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Admin] Register the disposable mechanic with no appointments (200 expected)
+# @name candidate
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Delete", "lastName": "Candidate", "email": "{{CandidateEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Positive][Admin] The mechanic is listed as a non-admin (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{CandidateEmail}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js response.parsedBody.items[0].isAdmin == false
+
+###
+
+### [Positive][Admin] Delete the mechanic (200 expected, message)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{candidate.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.message == "Mechanic deleted successfully.") == true
+
+###
+
+### [Positive][Admin] The roster no longer lists the mechanic (200 expected, no match)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{CandidateEmail}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+?? js response.parsedBody.items.length == 0
+
+###
+
+### [Negative][Admin] The deleted mechanic can no longer log in (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{CandidateEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+
+###
+
+### [Negative][Admin] A repeat delete finds nothing (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{candidate.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js (response.parsedBody.detail == "Mechanic not found.") == true
+
+###
+
+### [Positive][Admin] The e-mail is free again, so the Identity account and the person row are both gone (200 expected)
+# @name reregistered
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Delete", "lastName": "Candidate", "email": "{{CandidateEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+?? js (response.parsedBody.personId != candidate.personId) == true
+
+###
+
+### [Cleanup][Admin] Delete the re-registered mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{reregistered.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Setup][Admin] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

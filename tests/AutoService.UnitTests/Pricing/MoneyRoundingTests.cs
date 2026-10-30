@@ -11,14 +11,12 @@ public sealed class MoneyRoundingTests
     [InlineData(-10.005, -10.01)]
     [InlineData(0.125, 0.13)]
     [InlineData(1234.5, 1234.5)]
+    [InlineData(0, 0)]
+    [InlineData(2.675, 2.68)]
+    [InlineData(-0.004, 0)]
+    [InlineData(0.0049, 0)]
     public void RoundMoney_rounds_to_two_decimals_away_from_zero(decimal value, decimal expected)
     {
         Assert.Equal(expected, MoneyRounding.RoundMoney(value));
-    }
-
-    [Fact]
-    public void RoundMoney_keeps_an_exact_amount()
-    {
-        Assert.Equal(4500.00m, MoneyRounding.RoundMoney(4500.00m));
     }
 }

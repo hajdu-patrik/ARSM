@@ -1,0 +1,162 @@
+# Row content, ordering and search of GET /api/admin/mechanics, read on two disposable mechanics with the same last name
+# (ordered by last name, first name, id) and the shared accounts; paging bounds are in list.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@AlphaEmail = admin.list.alpha.{{RunId}}@example.test
+@BetaEmail = admin.list.beta.{{RunId}}@example.test
+
+### [Setup][AdminList] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][AdminList] Login as admin (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][AdminList] Register Alpha, with a middle name and the hybrid specialization (200 expected)
+# @name alpha
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Alpha", "middleName": "Zeta", "lastName": "Listorder", "email": "{{AlphaEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "HybridAndElectric", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Setup][AdminList] Register Beta with the same last name (200 expected)
+# @name beta
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Beta", "lastName": "Listorder", "email": "{{BetaEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Positive][AdminList] Both rows by run id: same last name, so first name orders them, with every field mapped (200 expected)
+# @name both
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{RunId}}@example.test
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+?? js (response.parsedBody.items.map(m => m.email).join(",") == AlphaEmail + "," + BetaEmail) == true
+?? js (response.parsedBody.items[0].personId == alpha.personId && response.parsedBody.items[1].personId == beta.personId) == true
+?? js (response.parsedBody.items[0].firstName == "Alpha" && response.parsedBody.items[0].middleName == "Zeta" && response.parsedBody.items[0].lastName == "Listorder") == true
+?? js (response.parsedBody.items[1].firstName == "Beta" && response.parsedBody.items[1].middleName == null) == true
+?? js (response.parsedBody.items[0].specialization == "HybridAndElectric" && response.parsedBody.items[1].specialization == "GasolineAndDiesel") == true
+?? js (response.parsedBody.items.every(m => m.isAdmin === false && m.hasProfilePicture === false && m.phoneNumber == null)) == true
+
+###
+
+### [Positive][AdminList] Search is trimmed and case-insensitive (200 expected, same two rows)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=%20%20{{RunId}}@EXAMPLE.TEST%20
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Positive][AdminList] Search by "first last" matches the full name only (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=alpha%20listorder
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail)) == true
+?? js (response.parsedBody.items.some(m => m.email == BetaEmail)) == false
+
+###
+
+### [Positive][AdminList] Search by middle name (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=zeta
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail)) == true
+?? js (response.parsedBody.items.some(m => m.email == BetaEmail)) == false
+
+###
+
+### [Positive][AdminList] Search by specialization (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=hybridandelectric&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail)) == true
+?? js (response.parsedBody.items.some(m => m.email == BetaEmail)) == false
+
+###
+
+### [Positive][AdminList] Page 2 of size 1 over the filtered set is the second row (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{RunId}}@example.test&page=2&pageSize=1
+
+?? status == 200
+?? js response.parsedBody.page == 2
+?? js response.parsedBody.totalCount == 2
+?? js response.parsedBody.items.length == 1
+?? js (response.parsedBody.items[0].email == BetaEmail) == true
+
+###
+
+### [Positive][AdminList] The bootstrap admin is the admin row and the shared mechanic is not (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{AdminEmail}}
+
+?? status == 200
+?? js (response.parsedBody.items.find(m => m.email.toLowerCase() == AdminEmail.toLowerCase()).isAdmin == true) == true
+
+###
+
+### [Positive][AdminList] The shared plain mechanic is listed as a non-admin (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{MechanicEmail}}
+
+?? status == 200
+?? js (response.parsedBody.items.find(m => m.email.toLowerCase() == MechanicEmail.toLowerCase()).isAdmin == false) == true
+
+###
+
+### [Cleanup][AdminList] Delete Alpha (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{alpha.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Cleanup][AdminList] Delete Beta (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{beta.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Setup][AdminList] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

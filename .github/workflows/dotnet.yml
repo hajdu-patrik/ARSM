@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Repository-wide size and no-shadow checks; build and lint run in the jobs below.
+  # Repository-wide size and no-shadow checks and the scripts test suite; build and lint run in the jobs below.
   repo-gate:
     runs-on: ubuntu-latest
 
@@ -31,6 +31,9 @@ jobs:
 
     - name: Run repository gate
       run: python scripts/validate.py --all --skip-build
+
+    - name: Run scripts tests
+      run: python -m unittest discover -s tests/Scripts
 
   backend-build:
     runs-on: ubuntu-latest

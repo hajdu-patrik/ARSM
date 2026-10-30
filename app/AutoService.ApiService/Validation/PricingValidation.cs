@@ -30,7 +30,7 @@ internal static class PricingValidation
 
     internal static string? GetQuantityValidationError(decimal quantity)
     {
-        if (quantity <= 0 || quantity > MaxQuantity)
+        if (decimal.Round(quantity, 2, MidpointRounding.AwayFromZero) <= 0 || quantity > MaxQuantity)
         {
             return ValidationMessages.InvalidQuantity;
         }

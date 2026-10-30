@@ -1,3 +1,4 @@
+using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Email;
 using AutoService.ApiService.Email.Sending;
@@ -34,7 +35,7 @@ public static partial class QuoteEndpoints
         QuoteSendRateLimiter sendRateLimiter,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<QuoteStatus>(request.Status, ignoreCase: true, out var newStatus))
+        if (!DefinedEnum.TryParse<QuoteStatus>(request.Status, out var newStatus))
         {
             return ApiProblem.Unprocessable($"Status must be one of: {string.Join(", ", Enum.GetNames<QuoteStatus>())}.");
         }

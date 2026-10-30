@@ -1,22 +1,21 @@
-# Split from quotes-crud-happy.http for the 250-line test file limit: creates a disposable draft quote
-# on the fixture anchor vehicle and deletes it (only a Draft is deletable).
+# DELETE /api/quotes/{id}: a draft goes (204, lines with it), a sent quote is refused (409); the version rules on the way.
+# Accepted and Rejected refusals are in quote-*-terminal.http, the appointment matrix in the quote-appointment-* files.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.delete.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0721
 
-### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteDelete] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -24,36 +23,147 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
-# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-### [Positive][Quotes] Create a second draft quote for the delete happy path (201 expected)
-# @name deletableQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteDelete] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "CRUD Happy Deletable Quote {{RunId}}"
-}
+{ "firstName": "QuoteDelete", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
+### [Setup][QuoteDelete] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] Delete the draft quote (204 expected, D7: only Draft is deletable)
-DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{deletableQuote.id}}?version={{deletableQuote.version}}
+{ "licensePlate": "QDL-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteDelete] Create the draft that gets deleted (201 expected)
+# @name draft
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Delete Draft {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteDelete] Give the draft a line (201 expected, the version moves on)
+# @name draftLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Delete fixture line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{draft.version}} }
+
+?? status == 201
+
+### [Negative][QuoteDelete] Deleting with version 0 is refused (422 expected, "Version is required.")
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}?version=0
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteDelete] Deleting with a stale version is refused (409 expected, quote_version_conflict)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}?version={{draft.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Positive][QuoteDelete] The refused deletes left the draft in place (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.version === draftLine.version && response.parsedBody.canDelete === true) == true
+
+### [Positive][QuoteDelete] Delete the draft with its current version (204 expected, D7: Draft is deletable)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}?version={{draftLine.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Positive][QuoteDelete] The deleted quote is gone (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+
+?? status == 404
+
+### [Positive][QuoteDelete] The vehicle's quote list is empty again (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+
+?? status == 200
+?? js (response.parsedBody.length === 0) == true
+
+### [Negative][QuoteDelete] Deleting it again is a 404 (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}?version={{draftLine.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+
+### [Setup][QuoteDelete] Create the quote that gets sent (201 expected)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Delete Sent {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteDelete] Add a line so it can be sent (201 expected)
+# @name sentLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sent.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Delete fixture line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{sent.version}} }
+
+?? status == 201
+
+### [Setup][QuoteDelete] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name sentDone
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sent.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{sentLine.version}} }
+
+?? status == 200
+?? js (response.parsedBody.canDelete === false) == true
+
+### [Negative][QuoteDelete] A sent quote cannot be deleted (409 expected, Draft-only rule)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{sent.id}}?version={{sentDone.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.detail includes Only draft quotes can be deleted
+
+### [Positive][QuoteDelete] The refused delete left the sent quote untouched (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{sent.id}}
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent" && response.parsedBody.lines.length === 1 && response.parsedBody.version === sentDone.version) == true
+
+### [Cleanup][QuoteDelete] Delete the disposable customer, cascading vehicle and the sent quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

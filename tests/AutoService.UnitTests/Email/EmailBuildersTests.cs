@@ -28,7 +28,6 @@ public sealed class EmailBuildersTests
         var message = QuoteSentEmail.Build(QuoteModel(), Footer, Pdf, "quote.pdf");
 
         Assert.Equal("customer@example.com", message.To);
-        Assert.Contains("Q-2026-0001", message.Subject);
         Assert.Equal("Árajánlat Q-2026-0001 - ARSM Kft. | Quote Q-2026-0001", message.Subject);
     }
 

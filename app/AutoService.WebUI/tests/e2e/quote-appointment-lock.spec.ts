@@ -1,52 +1,17 @@
 import { expect, test } from '@playwright/test';
-import type { AppointmentDto, AppointmentStatus } from '../../src/types/scheduler/scheduler.types';
 import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
 import { readDropdownOptionValues } from './support/dropdown';
 import { signInWithMocks } from './support/sign-in';
 import { MOCK_CUSTOMER_IDS, MOCK_QUOTE_IDS } from './support/test-data';
 import { MOCK_VEHICLE_IDS } from './support/test-data.constants';
-import type { MockApiState } from './support/test-data';
+import { buildAppointment, linkQuotes } from './support/test-data.quotes.appointments';
 
 const LOCKED_APPOINTMENT_ID = 6201;
 const LINKABLE_APPOINTMENT_ID = 6202;
 const CLOSED_APPOINTMENT_ID = 6203;
 const DRAFT_NUMBER = 'ARSM-2026-0001';
 const SENT_NUMBER = 'ARSM-2026-0002';
-
-/** Builds an appointment in the given status, with the flags the API derives for it. */
-function buildAppointment(state: MockApiState, id: number, status: AppointmentStatus, taskDescription: string): AppointmentDto {
-  const template = state.customerHistoryByCustomerId[MOCK_CUSTOMER_IDS.anna]?.[0];
-  if (template === undefined) {
-    throw new Error('The fixture history appointment is missing.');
-  }
-
-  const isOpen = status === 'InProgress';
-
-  return {
-    ...template,
-    id,
-    taskDescription,
-    status,
-    completedAt: status === 'Completed' ? template.completedAt : null,
-    canceledAt: status === 'Cancelled' ? template.scheduledDate : null,
-    hasAcceptedQuote: false,
-    canComplete: false,
-    canDelete: status !== 'Completed',
-    canLinkQuote: isOpen,
-  };
-}
-
-/** Registers an appointment in the scheduler list and links the given fixture quotes to it. */
-function linkQuotes(state: MockApiState, appointment: AppointmentDto, quoteIds: readonly number[]): void {
-  state.appointments.push(appointment);
-
-  for (const quote of state.quotes) {
-    if (quoteIds.includes(quote.id)) {
-      quote.appointmentId = appointment.id;
-    }
-  }
-}
 
 test.describe('Quotes - appointment lock', () => {
   test.use({ timezoneId: 'UTC', viewport: { width: 1280, height: 1200 } });

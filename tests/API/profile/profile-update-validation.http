@@ -1,0 +1,170 @@
+# PUT /api/profile rejected input as the shared mechanic: name rules, empty names, email and phone format, several errors
+# at once, and proof that a refused update stores nothing. Length caps are field-length-validation.http; duplicates are profile-update-conflicts.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Profile] Login as the shared plain mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{ProfileMechanicEmail}}", "password": "{{ProfileCurrentPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Remember the profile before the refused updates (200 expected)
+# @name profileBefore
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+
+###
+
+### [Negative][Profile] firstName with a space (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Mary Jane" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Profile] firstName with a digit (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "John2" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Profile] lastName with an apostrophe (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lastName": "O'Brien" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Last name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Profile] middleName with a space (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "middleName": "Van Der" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Middle name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Profile] A blank firstName is refused, not kept (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "   " }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name cannot be empty.")) == true
+
+###
+
+### [Negative][Profile] An empty lastName is refused (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lastName": "" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Last name cannot be empty.")) == true
+
+###
+
+### [Negative][Profile] Invalid email format (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "email": "invalid-email-format" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Email must be a valid email address.")) == true
+
+###
+
+### [Negative][Profile] Invalid European phone format (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "phoneNumber": "12345" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Phone number must be a valid European number.")) == true
+
+###
+
+### [Negative][Profile] Several invalid fields are all reported in one answer (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "John2", "lastName": "Sm!th", "email": "invalid-email-format", "phoneNumber": "12345" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().length == 4) == true
+
+###
+
+### [Positive][Profile] None of the refused updates stored anything (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js (response.parsedBody.firstName == profileBefore.firstName && response.parsedBody.lastName == profileBefore.lastName && response.parsedBody.email == profileBefore.email) == true
+?? js (response.parsedBody.middleName == profileBefore.middleName && response.parsedBody.phoneNumber == profileBefore.phoneNumber) == true
+
+###
+
+### [Setup][Profile] Logout (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

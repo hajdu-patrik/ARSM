@@ -1,17 +1,15 @@
-# Verified against AuthEndpoints.Login.cs: email lookup trims+lowercases, and an unknown identifier, wrong
-# password, or a Customer's credentials all answer the same generic 401 (anti-enumeration); the phone-format matrix is the sibling login-positive-phone-matrix.http. This file self-provisions and deletes its own mechanics.
+# Login success contract: body facts, the three session cookies and their attributes, email normalization. The 401s
+# are login-negative-matrix.http, phone shapes login-positive-phone-*.http; the mechanics are created and deleted here.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
-@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @MatrixRunSuffix = {{$timestamp}}
 # Phone digits derived from this run's id so registrations never collide with another file or an
 # earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
 @PhoneTail = {{MatrixRunSuffix.toString().slice(-6)}}
-@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
 
@@ -22,22 +20,20 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Admin Session] Login as admin to provision the matrix accounts (200 expected)
+### [Setup][Admin Session] Login as admin to provision the matrix accounts (200 expected, isAdmin true)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
 }}
 
 ?? status == 200
+?? js response.parsedBody.isAdmin == true
 
 ###
 
@@ -48,15 +44,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Matrix",
-  "lastName": "EmailOnly",
-  "email": "{{MatrixEmailOnly}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Matrix", "lastName": "EmailOnly", "email": "{{MatrixEmailOnly}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
@@ -69,16 +57,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Matrix",
-  "lastName": "PhoneUser",
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "06 30 6{{PhoneTail}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Matrix", "lastName": "PhoneUser", "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "06 30 6{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
@@ -93,107 +72,76 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Positive][Login] Email-only user login by email (200 expected)
+### [Positive][Login] Email-only user logs in: body facts and the three session cookies (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{MatrixEmailOnly}}",
-  "password": "{{TestPassword}}"
-}
+{ "email": "{{MatrixEmailOnly}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regEmailOnly.personId) == true
+?? js response.parsedBody.isAdmin == false
+?? js response.parsedBody.mustChangePassword == false
+?? js (Object.keys(response.parsedBody).length == 3) == true
+?? js (response.headers['set-cookie'].some(c => c.toLowerCase().startsWith('__host-arsm-access-token=') && c.toLowerCase().includes('; httponly') && c.toLowerCase().includes('; secure') && c.toLowerCase().includes('samesite=strict') && c.toLowerCase().includes('path=/') && c.toLowerCase().includes('max-age=') && !c.toLowerCase().includes('domain='))) == true
+?? js (response.headers['set-cookie'].some(c => c.toLowerCase().startsWith('__host-arsm-refresh-token=') && c.toLowerCase().includes('; httponly') && c.toLowerCase().includes('; secure') && c.toLowerCase().includes('samesite=strict') && c.toLowerCase().includes('path=/') && c.toLowerCase().includes('max-age=604800') && !c.toLowerCase().includes('domain='))) == true
+?? js (response.headers['set-cookie'].some(c => c.toLowerCase().startsWith('__host-arsm-csrf-token=') && !c.toLowerCase().includes('httponly') && c.toLowerCase().includes('; secure') && c.toLowerCase().includes('samesite=strict') && c.toLowerCase().includes('path=/') && c.toLowerCase().includes('max-age=604800') && !c.toLowerCase().includes('domain='))) == true
 
 ###
 
-### [Positive][Login] Email+phone user login by email (uppercase normalization) (200 expected)
+### [Positive][Login] Upper-case email resolves to the same account (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST",
-  "password": "{{TestPassword}}"
-}
+{ "email": "MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
-### [Positive][Login] Whitespace email login (trim + lowercase normalization) (200 expected)
+### [Positive][Login] Whitespace around the email is trimmed (200 expected)
+# @name whitespaceLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "   MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ",
-  "password": "{{TestPassword}}"
-}
+{ "email": "   MATRIX.PHONE.USER.{{MatrixRunSuffix}}@EXAMPLE.TEST   ", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
-### [Negative][Login] Existing user wrong password (401 expected)
+### [Positive][Login] A login while a session already exists needs no CSRF header and replaces the session (200 expected)
+# Login is CSRF-exempt, so a second login with the first session's cookies in the jar is still accepted.
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestWrongPassword}}"
-}
+{ "email": "{{MatrixEmailOnly}}", "password": "{{TestPassword}}" }
 
-?? status == 401
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
 
-###
-
-### [Negative][Login] Unknown account (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "unknown.user.{{MatrixRunSuffix}}@example.test",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 401
+?? status == 200
+?? js (response.parsedBody.personId == regEmailOnly.personId) == true
 
 ###
 
-### [Negative][Login] Existing customer email returns generic invalid credentials (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{KnownCustomerEmail}}",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 401
-
-###
-
-### [Negative][Login] Existing customer phone returns generic invalid credentials (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "+36 30 444 5566",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 401
-
-###
-
-### [Setup][Cleanup] Logout the matrix mechanic session (204 or 401, not asserted)
+### [Setup][Cleanup] Logout the matrix mechanic session with its own CSRF token (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
 
 ###
 
@@ -203,10 +151,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];

@@ -1,0 +1,237 @@
+# PUT /api/appointments/{id}/vehicle: normalized edit, uniqueness conflicts (plate first, then VIN) and field rules.
+# The admin is assigned; a disposable customer with two vehicles is created and deleted here, so shared vehicles stay untouched.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@CustomerEmail = fixture.appt.vehicle.{{RunId}}@example.test
+@OwnVin = TST{{RunId.toString().slice(-10)}}1701
+@OtherVin = TST{{RunId.toString().slice(-10)}}1702
+@NewVin = TST{{RunId.toString().slice(-10)}}1703
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Appointment", "middleName": null, "lastName": "VehicleEdit", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the vehicle under edit (201 expected)
+# @name ownVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEO-{{RunId}}", "vin": "{{OwnVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Create a second vehicle whose plate and VIN are taken (201 expected)
+# @name otherVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEX-{{RunId}}", "vin": "{{OtherVin}}", "brand": "Seat", "model": "Leon", "year": 2019, "mileageKm": 90000, "enginePowerKw": 96, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+### [Setup][Appointments] Create the appointment on the first vehicle (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{ownVehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Vehicle edit fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Positive][Appointments] The vehicle is edited and its plate, brand and drivetrain stored normalized (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": " vew-{{RunId}} ", "vin": "{{NewVin}}", "brand": " Volkswagen ", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "phev" }
+
+?? status == 200
+?? js response.parsedBody.vehicle.licensePlate == VEW-{{RunId}}
+?? js (response.parsedBody.vehicle.vin == NewVin) == true
+?? js response.parsedBody.vehicle.brand == Volkswagen
+?? js response.parsedBody.vehicle.drivetrainType == PHEV
+?? js response.parsedBody.vehicle.mileageKm == 124500
+?? js (response.parsedBody.vehicle.id == ownVehicle.id) == true
+?? js (response.parsedBody.vehicle.customerId == customer.id) == true
+
+### [Positive][Appointments] The edit is persisted on the vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{ownVehicle.id}}/appointments
+
+?? status == 200
+?? js response.parsedBody[0].vehicle.model == Golf
+?? js response.parsedBody[0].vehicle.enginePowerKw == 82
+
+### [Positive][Appointments] Resubmitting the vehicle's own plate and VIN is no conflict (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Passat", "year": 2018, "mileageKm": 124600, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 200
+?? js response.parsedBody.vehicle.model == Passat
+
+### [Negative][Appointments] A plate held by another vehicle is refused (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "vex-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+### [Negative][Appointments] A VIN held by another vehicle is refused (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{OtherVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this VIN already exists.") == true
+
+### [Negative][Appointments] Missing required fields are refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "brand": "Volkswagen" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+### [Negative][Appointments] A brand over 50 characters is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "{{'B'.repeat(51)}}", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Brand must be at most 50 characters.") == true
+
+### [Negative][Appointments] A year outside 1886-2100 is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 1800, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Year must be between 1886 and 2100.") == true
+
+### [Negative][Appointments] A negative mileage is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": -1, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "MileageKm and EnginePowerKw must be non-negative.") == true
+
+### [Negative][Appointments] Mileage and power above the maxima are refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 1000001, "enginePowerKw": 50001, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js response.parsedBody.detail includes 1000000
+
+### [Negative][Appointments] A VIN of the wrong length is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "SHORTVIN", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN must be exactly 17 characters.") == true
+
+### [Negative][Appointments] A plate with an unsupported character is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "AB#123", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js response.parsedBody.detail includes unsupported characters
+
+### [Negative][Appointments] An unsupported drivetrain type is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VEW-{{RunId}}", "vin": "{{NewVin}}", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 82, "drivetrainType": "Hydrogen" }
+
+?? status == 422
+?? js response.parsedBody.detail includes DrivetrainType must be one of
+
+### [Negative][Appointments] An unknown appointment is refused before the body is read (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999999/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "brand": "Volkswagen" }
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading vehicles and appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

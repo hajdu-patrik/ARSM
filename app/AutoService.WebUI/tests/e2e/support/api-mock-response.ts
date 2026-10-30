@@ -1,10 +1,28 @@
 import type { Route } from '@playwright/test';
 
-export async function fulfillJson(route: Route, body: unknown, status = 200): Promise<void> {
+/** A failure a spec arms for one route key: an HTTP error answer, or a dropped connection. */
+export interface MockFailure {
+  readonly status?: number;
+  readonly body?: unknown;
+  /** Extra response headers, for example `Retry-After`. */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** Fail every request of the route instead of only the next one. */
+  readonly repeat?: boolean;
+  /** Drop the connection (a network failure) instead of answering. */
+  readonly abort?: boolean;
+}
+
+/** Answers the route with a JSON body, the status and the CORS headers. */
+export async function fulfillJson(
+  route: Route,
+  body: unknown,
+  status = 200,
+  extraHeaders: Readonly<Record<string, string>> = {},
+): Promise<void> {
   await route.fulfill({
     status,
     contentType: 'application/json',
-    headers: corsHeaders(route),
+    headers: { ...corsHeaders(route), ...extraHeaders },
     body: JSON.stringify(body),
   });
 }
@@ -42,5 +60,6 @@ export function corsHeaders(route: Route): Record<string, string> {
     'access-control-allow-credentials': 'true',
     'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'access-control-allow-headers': 'content-type,authorization',
+    'access-control-expose-headers': 'retry-after',
   };
 }

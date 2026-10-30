@@ -18,15 +18,19 @@ Plan-only agent. No direct implementation edits.
 2. Split the task into independent, roughly even work packages sized for that parallelism. Each
    package has one area: backend/platform -> `backend`; frontend/UI, responsiveness, interaction, or
    style-policy work -> `frontend` (it applies the `ui-ux-style-profile` policy itself; the profile
-   audits the diff afterwards); real schema delta -> `migration`, after every `backend` package.
+   audits the diff afterwards); test-only work -> `test`, owning one test layer (`tests/API`,
+   `tests/Database`, `app/AutoService.WebUI/tests` or the rest) per package; real schema delta ->
+   `migration`, after every `backend` package.
 3. Give every package a disjoint set of owned paths (repository-relative files or directories, no
    globs): all packages share one working tree. Work that other packages build on (a shared
    component, style token, hook or DTO) is its own package, listed in its consumers' `dependsOn`.
 4. When backend and frontend both change, fix the shared DTO/API contract in the plan so both sides
    can run in parallel without waiting on each other.
-5. Plan from a targeted scan; leave reproduction and root-cause debugging to the owning package, and
-   keep tests, repro scripts, dev servers and validation out of package prompts.
-6. Set the heavy-test gates (`e2e`, `http`, `sql`) from the Gates section.
+5. Plan from a targeted scan; leave reproduction and root-cause debugging to the owning package. Only
+   `test` packages author or delete tests; no package prompt asks to run tests, repro scripts, dev
+   servers or validation.
+6. Set the heavy-test gates (`e2e`, `http`, `sql`) from the Gates section, and `unit` for any change
+   the xUnit project covers.
 7. List every undecided product/UX/contract decision as a question instead of choosing.
 8. Route every package and shared step through the trirouter (Model Routing below).
 9. The rest of the chain (pipelined per-package review, `scripts/validate.py` gate, targeted tests) is

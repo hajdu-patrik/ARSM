@@ -1,0 +1,186 @@
+# POST /api/auth/register name rules (letters and hyphens only) and FieldLengthValidator caps (names 50, email 150,
+# phone 20, password 128). Every case fails ValidationProblem before an account is created, so nothing needs cleanup.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
+@Over150LocalPart = lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+@Over20Phone = +491511234567890123456
+@Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Auth] Login as admin; register is AdminOnly, so a 401 would preempt the validation (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Register] firstName with a space (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Mary Jane", "lastName": "Smith", "email": "name.space.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Register] firstName with a digit (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "John2", "lastName": "Smith", "email": "name.digit.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Register] firstName with an apostrophe (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "O'Brien", "lastName": "Smith", "email": "name.apostrophe.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("First name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Register] lastName with a special character (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "lastName": "Sm!th", "email": "lastname.special.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Last name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Register] middleName with a space (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": "Van Der", "lastName": "Smith", "email": "middlename.space.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Middle name may only contain letters and hyphens.")) == true
+
+###
+
+### [Negative][Register] FirstName over 50 chars (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "{{Over50Name}}", "lastName": "Smith", "email": "firstname.toolong.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("FirstName must be at most 50 characters.")) == true
+
+###
+
+### [Negative][Register] LastName over 50 chars (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "lastName": "{{Over50Name}}", "email": "lastname.toolong.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("LastName must be at most 50 characters.")) == true
+
+###
+
+### [Negative][Register] MiddleName over 50 chars (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": "{{Over50Name}}", "lastName": "Smith", "email": "middlename.toolong.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("MiddleName must be at most 50 characters.")) == true
+
+###
+
+### [Negative][Register] Email over 150 chars is refused on the Email field (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "lastName": "Smith", "email": "{{Over150LocalPart}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).map(k => k.toLowerCase()).includes("email")) == true
+
+###
+
+### [Negative][Register] PhoneNumber over 20 chars is refused on the PhoneNumber field (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "lastName": "Smith", "email": "phone.toolong.{{RunId}}@example.test", "phoneNumber": "{{Over20Phone}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).map(k => k.toLowerCase()).includes("phonenumber")) == true
+
+###
+
+### [Negative][Register] Password over 128 chars (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "lastName": "Smith", "email": "password.toolong.{{RunId}}@example.test", "password": "{{Over128Password}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Password must be at most 128 characters.")) == true
+
+###
+
+### [Setup][Auth] Logout the admin session (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

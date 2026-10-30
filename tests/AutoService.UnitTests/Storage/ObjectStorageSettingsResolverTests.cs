@@ -1,11 +1,17 @@
 using AutoService.ApiService.Storage;
+using AutoService.UnitTests.Configuration;
 using Microsoft.Extensions.Configuration;
 
 namespace AutoService.UnitTests.Storage;
 
 /** The Azure Blob settings are resolved from the account endpoint and the managed identity client id, never a key. */
-public sealed class ObjectStorageSettingsResolverTests
+[Collection(ProcessEnvironmentCollection.Name)]
+public sealed class ObjectStorageSettingsResolverTests : IDisposable
 {
+    private readonly ProcessEnvironmentScope environment = new(ObjectStorageTestConfig.VariableNames);
+
+    public void Dispose() => environment.Dispose();
+
     private const string ClientId = "0f8fad5b-d9cb-469f-a165-70867728950e";
 
     private static IConfiguration Configure(

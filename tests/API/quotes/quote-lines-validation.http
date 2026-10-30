@@ -1,0 +1,213 @@
+# Field rules of POST and PUT /api/quotes/{id}/lines (D24): kind, quantity, price, description and the required manual
+# fields, each refused with 422 and its message. Catalog references and locks are in quote-lines-references.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.linerules.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0728
+@Description121 = {{'d'.repeat(121)}}
+
+### [Setup][LineRules] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][LineRules] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteLineRules", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][LineRules] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QLR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][LineRules] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Line Rules {{RunId}}" }
+
+?? status == 201
+
+### [Setup][LineRules] Add the seed line the update checks target (201 expected)
+# @name seed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Negative][LineRules] An unknown line kind is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Material", "quantity": 1, "description": "Bad kind", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes LineKind must be one of: Part, Labor
+
+### [Negative][LineRules] A numeric line kind that names no member is refused (422 expected, "9" is neither Part nor Labor)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "9", "quantity": 1, "description": "Numeric kind", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes LineKind must be one of
+
+### [Negative][LineRules] Quantity 0 is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 0, "description": "Zero quantity", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Quantity must be
+
+### [Negative][LineRules] Quantity above 10,000 is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 10000.01, "description": "Too many", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Quantity must be
+
+### [Negative][LineRules] A quantity that rounds to 0.00 in the 2-decimal column must be refused (4xx expected, never a 500)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 0.004, "description": "Rounds to zero", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? js (response.statusCode >= 400 && response.statusCode < 500) == true
+
+### [Negative][LineRules] A negative price is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Negative price", "netUnitPrice": -0.01, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Amount must be
+
+### [Negative][LineRules] A price above 100,000,000 is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Huge price", "netUnitPrice": 100000000.01, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Amount must be
+
+### [Negative][LineRules] A 121-character description is refused (422 expected, the cap is 120)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "{{Description121}}", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Description must be at most 120 characters
+
+### [Negative][LineRules] A line with no catalog reference and no manual fields is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes are required when no catalog reference is provided
+
+### [Negative][LineRules] A manual line without a VAT rate is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "description": "No VAT", "netUnitPrice": 100, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes are required when no catalog reference is provided
+
+### [Negative][LineRules] Updating a line to quantity 0 is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 0, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Quantity must be
+
+### [Negative][LineRules] Updating a line to an unknown kind is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Material", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes LineKind must be one of
+
+### [Positive][LineRules] None of the refused writes changed the quote (200 expected, the seed line only, same version)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].description === "Seed line" && response.parsedBody.lines[0].quantity === 1 && response.parsedBody.version === seed.version && response.parsedBody.totalNet === 100) == true
+
+### [Cleanup][LineRules] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

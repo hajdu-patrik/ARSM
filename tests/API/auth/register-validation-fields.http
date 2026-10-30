@@ -1,0 +1,207 @@
+# Register required fields, person type, specialization, expertise, email and phone format. Failures after the Identity user
+# exists (specialization, expertise value) must roll it back. Names and lengths: register-validation-names-and-lengths.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@RollbackEmail = bad.expertise.rollback.{{RunId}}@example.test
+
+
+### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Auth] Login as admin (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Register] Every blank required field is named (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "personType": "", "firstName": " ", "lastName": "", "email": "", "password": "" }
+
+?? status == 400
+?? js (["PersonType","FirstName","LastName","Email","Password"].every(k => Object.values(response.parsedBody.errors).flat().includes(k + " is required."))) == true
+
+###
+
+### [Negative][Register] Customer personType is refused, registration is mechanic-only (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Customer", "lastName": "ShouldFail", "email": "customer.should.fail.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Customer" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Registration is only available for mechanics.")) == true
+
+###
+
+### [Negative][Register] An unknown personType is refused the same way (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Role", "lastName": "Escalation", "email": "customer.should.fail.admin.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Admin", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Registration is only available for mechanics.")) == true
+
+###
+
+### [Negative][Register] A mechanic without specialization and expertise (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "No", "lastName": "Skills", "email": "bad.expertise.none.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Specialization is required.")) == true
+?? js (Object.values(response.parsedBody.errors).flat().includes("Mechanic registration requires at least one expertise item.")) == true
+
+###
+
+### [Negative][Register] An empty expertise list (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Empty", "lastName": "Skills", "email": "bad.expertise.empty.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": [] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Mechanic registration requires at least one expertise item.")) == true
+
+###
+
+### [Negative][Register] More than 10 expertise items (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Too", "lastName": "Many", "email": "bad.expertise.many.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["a1","a2","a3","a4","a5","a6","a7","a8","a9","a10","a11"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Mechanic expertise may contain at most 10 items.")) == true
+
+###
+
+### [Negative][Register] Duplicate expertise items, compared case-insensitively (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Expertise", "email": "bad.expertise.dup.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Mechanic expertise items must be unique.")) == true
+
+###
+
+### [Negative][Register] Invalid email format (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Email", "email": "bad-email-format", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Email must be a valid email address.")) == true
+
+###
+
+### [Negative][Register] Invalid phone format (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Phone", "email": "bad.phone.{{RunId}}@example.test", "phoneNumber": "12345", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Phone number must be a valid European number.")) == true
+
+###
+
+### [Negative][Register] An expertise value outside the enum fails after the Identity user exists (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Expertise", "email": "{{RollbackEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Telepathy"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().some(m => m.startsWith("Expertise value 'Telepathy' is invalid."))) == true
+
+###
+
+### [Negative][Register] A specialization outside the enum fails the same way (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Specialization", "email": "{{RollbackEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "Hovercraft", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().some(m => m.startsWith("Specialization is invalid."))) == true
+
+###
+
+### [Positive][Register] Both failed attempts rolled back, so the same address registers now (200 expected)
+# @name rollbackMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Rolled", "lastName": "Back", "email": "{{RollbackEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+?? js response.parsedBody.personType == mechanic
+
+###
+
+### [Setup][Cleanup] Delete the rollback-proof mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{rollbackMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Setup][Auth] Logout the admin session (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

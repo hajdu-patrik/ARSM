@@ -1,5 +1,5 @@
-# Split out of mechanic-status-transitions.http (file-size limit): a cancelled appointment reopens to InProgress and, with an
-# Accepted linked quote, completes. Completed is terminal, so the disposable customer is deleted at the end (cascade).
+# A cancelled appointment reopens to InProgress (stamps cleared) and, with an Accepted linked quote, completes (stamps set).
+# Completed is terminal, so the disposable customer is deleted at the end by the admin (cascade).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -73,7 +73,6 @@ Content-Type: application/json
 ?? status == 201
 
 ### [Positive][Appointments] Update appointment status to Cancelled (200 expected)
-# Response includes canceledAt (DateTime) and completedAt (null).
 # @name cancelledAppt
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{pastCancelledApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
@@ -83,9 +82,11 @@ Content-Type: application/json
 { "status": "Cancelled", "version": {{pastCancelledApptCreate.version}} }
 
 ?? status == 200
+?? js response.parsedBody.status == Cancelled
+?? js (response.parsedBody.canceledAt != null) == true
+?? js (response.parsedBody.completedAt == null) == true
 
-### [Positive][Appointments] Reopen cancelled appointment to InProgress (200 expected)
-# Cancelled appointments can be moved back to active states even after cancellation.
+### [Positive][Appointments] Reopen the cancelled appointment to InProgress and clear the stamp (200 expected)
 # @name reopenedAppt
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{pastCancelledApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
@@ -95,6 +96,10 @@ Content-Type: application/json
 { "status": "InProgress", "version": {{cancelledAppt.version}} }
 
 ?? status == 200
+?? js response.parsedBody.status == InProgress
+?? js (response.parsedBody.canceledAt == null) == true
+?? js response.parsedBody.canLinkQuote == true
+?? js response.parsedBody.canDelete == true
 
 ### [Setup][Appointments] Create a draft quote linked to the reopened appointment (201 expected)
 # @name quote
@@ -139,7 +144,7 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Positive][Appointments] Move reopened appointment to Completed (200 expected)
+### [Positive][Appointments] Move the reopened appointment to Completed and stamp completedAt (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{pastCancelledApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -148,6 +153,11 @@ Content-Type: application/json
 { "status": "Completed", "version": {{reopenedAppt.version}} }
 
 ?? status == 200
+?? js response.parsedBody.status == Completed
+?? js (response.parsedBody.completedAt != null) == true
+?? js (response.parsedBody.canceledAt == null) == true
+?? js response.parsedBody.canDelete == false
+?? js response.parsedBody.canLinkQuote == false
 
 ### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
 # @name adminLogin

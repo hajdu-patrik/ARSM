@@ -1,0 +1,141 @@
+# PUT /api/appointments/{id} accepted edits: the due date and task change, the start stays fixed, the version moves.
+# The admin is assigned to the fixtures; a disposable customer and vehicle are created and deleted here.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@CustomerEmail = fixture.appt.update.happy.{{RunId}}@example.test
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Appointment", "middleName": null, "lastName": "UpdateHappy", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "UPH-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1601", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Create the appointment under edit (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Update happy fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Positive][Appointments] The due date and task are updated, the task trimmed (200 expected)
+# @name updatedAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "  Frissitett feladat leiras  ", "version": {{apptCreate.version}} }
+
+?? status == 200
+?? js (response.parsedBody.id == apptCreate.id) == true
+?? js (response.parsedBody.taskDescription === "Frissitett feladat leiras") == true
+?? js response.parsedBody.dueDateTime startsWith 2026-04-22T16:15:00
+?? js response.parsedBody.scheduledDate startsWith 2026-04-18T10:30:00
+?? js response.parsedBody.status == InProgress
+?? js response.parsedBody.mechanics.length == 1
+?? js (response.parsedBody.vehicle.id == vehicle.id) == true
+?? js (response.parsedBody.version != apptCreate.version) == true
+
+### [Positive][Appointments] The change is persisted (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+
+?? status == 200
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).taskDescription == "Frissitett feladat leiras") == true
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).version == updatedAppt.version) == true
+
+### [Positive][Appointments] Repeating the same start instant in another UTC offset is accepted (200 expected)
+# 12:30+02:00 is the stored 10:30 UTC start, so it is not a ScheduledDate change.
+# @name sameStartAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "scheduledDate": "2026-04-18T12:30:00+02:00", "dueDateTime": "2026-04-23T16:15:00", "taskDescription": "Same start in another offset", "version": {{updatedAppt.version}} }
+
+?? status == 200
+?? js response.parsedBody.scheduledDate startsWith 2026-04-18T10:30:00
+
+### [Positive][Appointments] A due date equal to the start and a 200-character task are accepted (200 expected)
+# @name boundaryAppt
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-18T10:30:00", "taskDescription": "{{'t'.repeat(200)}}", "version": {{sameStartAppt.version}} }
+
+?? status == 200
+?? js response.parsedBody.taskDescription.length == 200
+?? js (response.parsedBody.dueDateTime == response.parsedBody.scheduledDate) == true
+
+### [Setup][Appointments] Create an appointment in the past (201 expected)
+# @name pastAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2020-06-15T09:00:00", "taskDescription": "Update happy past fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Positive][Appointments] A past appointment stays editable (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{pastAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2030-01-03T16:15:00", "taskDescription": "Past appointment due and task update allowed", "version": {{pastAppt.version}} }
+
+?? status == 200
+?? js response.parsedBody.dueDateTime startsWith 2030-01-03T16:15:00
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading vehicle and appointments (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

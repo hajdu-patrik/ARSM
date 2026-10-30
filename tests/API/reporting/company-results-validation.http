@@ -1,0 +1,163 @@
+# GET /api/company-results parameter rules: year 2000-2100 (default: the current UTC year), month 1-12 (default: whole year);
+# an out-of-range value is 400 with code invalid_date_range, a non-numeric one fails binding (400); no session is 401.
+
+# A MechanicOnly 403 cannot be produced: only mechanics can sign in (customers never get an identity).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+
+### [Setup][Reporting] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Negative][Reporting] Whole-year request without a session (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026
+
+?? status == 401
+
+###
+
+### [Negative][Reporting] Default request without a session (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/company-results
+
+?? status == 401
+
+###
+
+### [Negative][Reporting] Month request without a session (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026&month=9
+
+?? status == 401
+
+###
+
+### [Setup][Reporting] Login as the plain mechanic (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Reporting] No parameters: the current UTC year, whole year (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results
+
+?? status == 200
+?? js (response.parsedBody.year == new Date().getUTCFullYear()) == true
+?? js response.parsedBody.month == null
+?? js response.parsedBody.months.length == 12
+?? js (response.headers['cache-control'] == "no-store") == true
+
+###
+
+### [Positive][Reporting] Only a month: the current UTC year with that month (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?month=5
+
+?? status == 200
+?? js (response.parsedBody.year == new Date().getUTCFullYear()) == true
+?? js response.parsedBody.month == 5
+?? js response.parsedBody.months.length == 1
+
+###
+
+### [Positive][Reporting] Lowest accepted year 2000 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2000
+
+?? status == 200
+?? js response.parsedBody.year == 2000
+
+###
+
+### [Positive][Reporting] Highest accepted year 2100 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2100&month=12
+
+?? status == 200
+?? js response.parsedBody.year == 2100
+?? js response.parsedBody.month == 12
+
+###
+
+### [Negative][Reporting] Year 1999 is below the range (400 expected, stable code)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=1999
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+?? js (response.parsedBody.error == "Year must be 2000-2100, month must be 1-12.") == true
+
+###
+
+### [Negative][Reporting] Year 2101 is above the range (400 expected, stable code)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2101
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+###
+
+### [Negative][Reporting] Month 0 (400 expected, stable code)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026&month=0
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+###
+
+### [Negative][Reporting] Month 13 (400 expected, stable code)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026&month=13
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+###
+
+### [Negative][Reporting] Negative month (400 expected, stable code)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026&month=-1
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+###
+
+### [Negative][Reporting] A valid month does not rescue an invalid year (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=1999&month=6
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+###
+
+### [Negative][Reporting] A non-numeric year fails model binding (400 expected, never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=abc
+
+?? status == 400
+
+###
+
+### [Negative][Reporting] A non-numeric month fails model binding (400 expected, never 500)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year=2026&month=abc
+
+?? status == 400
+
+###
+
+### [Setup][Reporting] Logout the plain mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

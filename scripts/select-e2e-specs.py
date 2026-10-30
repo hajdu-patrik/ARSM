@@ -16,25 +16,30 @@ E2E_DIR = ROOT / "app" / "AutoService.WebUI" / "tests" / "e2e"
 
 # Feature folder (WebUI-relative prefix) -> spec file names that exercise it.
 FEATURE_SPECS: dict[str, tuple[str, ...]] = {
-    "src/pages/Admin/": ("admin-register-edge", "admin-password-reset", "route-guards"),
-    "src/pages/ChangePassword/": ("forced-password-change", "route-guards"),
-    "src/pages/CompanyResults/": ("company-results", "list-alignment"),
-    "src/pages/Customers/": ("customer-registry", "customer-vehicle-tile", "customer-delete-visibility", "auth-session", "quote-editor", "quote-status"),
-    "src/pages/Inventory/": ("catalog-parts", "catalog-labor-types", "list-alignment"),
-    "src/pages/Login/": ("login-edge", "auth-session", "forced-password-change", "route-guards"),
-    "src/pages/Quotes/": ("quote-editor", "quote-status", "company-results", "list-alignment"),
-    "src/pages/Scheduler/": (
-        "scheduler-intake",
-        "scheduler-live-status",
-        "scheduler-live-updates",
-        "scheduler-appointment-delete",
-        "scheduler-concurrency",
-        "scheduler-reads",
-    ),
-    "src/pages/Settings/": ("settings-edge",),
+    "src/pages/Admin/": ("admin-register-edge", "admin-password-reset", "route-guards", "admin-roster", "admin-register-form", "admin-register-errors", "admin-layout-hu"),
+    "src/pages/ChangePassword/": ("forced-password-change", "settings-password", "route-guards"),
+    "src/pages/CompanyResults/": ("company-results", "company-results-period", "company-results-states", "company-results-flow", "list-alignment", "hu-wording"),
+    "src/pages/Customers/": ("customer-registry", "customer-vehicle-tile", "customer-delete-visibility", "auth-session", "quote-editor", "quote-status", "quote-list", "quote-header", "customer-create-edit", "customer-delete", "customer-list-states", "customer-history", "customer-layout-hu", "vehicle-form-create", "vehicle-form-edit", "vehicle-delete", "vehicle-deep-link", "pagination-registry"),
+    "src/pages/Inventory/": ("catalog-parts", "catalog-labor-types", "catalog-validation", "catalog-states", "catalog-hu", "vat-options", "pagination-catalog-quotes", "list-single-request", "list-alignment"),
+    "src/pages/Login/": ("login-edge", "login-validation", "login-failures", "auth-session", "auth-session-expiry", "forced-password-change", "route-guards"),
+    "src/pages/Quotes/": ("quote-editor", "quote-status", "quote-list", "quote-header", "quote-header-details", "quote-validity", "quote-lines", "quote-line-validation", "quote-conflicts", "quote-send", "quote-pdf", "quote-delete", "quote-hu", "quote-pagination", "quote-appointment-lock", "vat-options", "list-single-request", "company-results", "list-alignment"),
+    "src/pages/Scheduler/": ("scheduler-intake", "intake-suggestions", "scheduler-live-status", "scheduler-live-updates", "scheduler-appointment-delete", "scheduler-concurrency", "scheduler-reads", "scheduler-lifecycle-rules", "scheduler-calendar", "scheduler-month-list", "scheduler-claim", "scheduler-claim-refusals", "scheduler-admin-assign", "scheduler-detail-edit", "scheduler-refusals", "scheduler-intake-validation", "scheduler-intake-customers", "scheduler-read-failure", "appointment-quote-link", "appointment-vehicle-link"),
+    "src/pages/Settings/": ("settings-edge", "settings-profile", "settings-password", "settings-picture", "settings-account", "settings-company"),
     "src/pages/NotFound.tsx": ("error-routes-edge",),
     "src/pages/ServerError.tsx": ("error-routes-edge",),
-    "src/router/": ("route-guards", "error-routes-edge", "auth-session", "forced-password-change"),
+    "src/router/": ("route-guards", "error-routes-edge", "auth-session", "auth-session-expiry", "forced-password-change"),
+    "src/components/layout/": ("shell-sidebar", "shell-narrow", "theme-persistence", "settings-edge"),
+    "src/components/seo/": ("shell-seo",),
+    "src/components/common/ToastViewport": ("shell-toast",),
+    "src/store/toast": ("shell-toast",),
+    "src/store/theme": ("theme-persistence", "settings-edge"),
+    "src/utils/legacyStorageMigration": ("shell-storage",),
+    "src/utils/safeStorage": ("shell-storage", "theme-persistence"),
+    "src/utils/browserStorageKeys": ("shell-storage", "theme-persistence"),
+    "src/utils/imageInspection": ("settings-picture",),
+    "src/utils/imageCrop": ("settings-picture",),
+    "src/services/auth/": ("auth-session", "auth-session-expiry", "login-failures"),
+    "src/services/http/api.client": ("auth-session", "auth-session-expiry", "auth-refresh-tabs", "forced-password-change"),
     "tests/e2e/support/list-alignment": ("list-alignment",),
 }
 # The axe sweep covers every route, so a change under src/ that has a rule of its own selects it as well.
@@ -68,7 +73,8 @@ def select_specs(files: list[str]) -> set[str] | None:
             continue
         spec_match, page_match = SPEC_PATTERN.match(path), PAGE_OBJECT_PATTERN.match(path)
         if spec_match:
-            selected.add(spec_match.group(1))
+            if (E2E_DIR / f"{spec_match.group(1)}.spec.ts").is_file():
+                    selected.add(spec_match.group(1))
         elif page_match:
             selected |= specs_using_page_object(page_match.group(1))
         else:

@@ -1,10 +1,9 @@
-# Verified against AuthEndpoints.Login/Refresh/Logout/Validate.cs: a stale cookie replayed after logout is
-# rejected on both Validate and Refresh. [Manual] blocks stay non-executing to avoid tripping rate limits/lockout and banning the suite's client. Self-provisions/deletes its own mechanic.
+# Session lifecycle of one mechanic: validate, refresh (rotated cookie set), rejected cookies, logout (every cookie cleared).
+# Replaying cookies that were already issued (after logout, after a rotation) is refresh-reuse-check.py. Self-provisions/deletes its mechanic.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
-@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @MatrixRunSuffix = {{$timestamp}}
@@ -23,10 +22,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -43,15 +39,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Session",
-  "lastName": "Lifecycle",
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Session", "lastName": "Lifecycle", "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
@@ -66,16 +54,58 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Positive][Session] Login before validate/refresh/logout chain (200 expected, MustChangePassword=false)
+### [Negative][Session] Validate without any cookie (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 401
+
+###
+
+### [Negative][Session] Validate with a malformed access cookie (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+Cookie: __Host-arsm-access-token=not-a-jwt
+
+?? status == 401
+
+###
+
+### [Negative][Session] Refresh without any cookie is refused by the handler, not by the Origin/CSRF layers (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+
+?? status == 401
+
+###
+
+### [Negative][Session] Refresh with an unknown refresh token and a matching CSRF pair (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+Cookie: __Host-arsm-refresh-token=unknown-refresh-token; __Host-arsm-csrf-token=unknown-csrf-pair
+X-CSRF-Token: unknown-csrf-pair
+
+?? status == 401
+
+###
+
+### [Negative][Session] Logout without any cookie (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+?? status == 401
+
+###
+
+### [Positive][Session] Login before the validate/refresh/logout chain (200 expected, mustChangePassword false)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestPassword}}"
-}
+{ "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -83,18 +113,21 @@ Content-Type: application/json
 
 ?? status == 200
 ?? js response.parsedBody.mustChangePassword == false
+?? js (response.parsedBody.personId == regSessionMechanic.personId) == true
 
 ###
 
-### [Positive][Session] Validate authenticated session (200 expected; requires login cookie)
+### [Positive][Session] Validate returns the session facts of the signed-in mechanic (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200
+?? js (response.parsedBody.personId == regSessionMechanic.personId) == true
+?? js response.parsedBody.isAdmin == false
 ?? js response.parsedBody.mustChangePassword == false
 
 ###
 
-### [Positive][Session] Refresh authenticated session (204 expected; requires refresh cookie)
+### [Positive][Session] Refresh rotates the session: 204 with a fresh access, refresh and CSRF cookie (204 expected)
 # @name Refresh
 POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: {{WebUI_Origin}}
@@ -105,55 +138,38 @@ X-CSRF-Token: {{CsrfToken}}
 }}
 
 ?? status == 204
+?? js (["__Host-arsm-access-token=","__Host-arsm-refresh-token=","__Host-arsm-csrf-token="].every(n => response.headers['set-cookie'].some(c => c.startsWith(n) && !c.startsWith(n + ";")))) == true
 
 ###
 
-# Refresh rotates the CSRF cookie too, so the logout below needs the new value.
+# Refresh rotates the CSRF cookie too, so the requests below need the new value.
 
-### [Manual][Session] Refresh rate limiting (expect 429 after >20 refresh calls per minute from same client)
-# Manual: re-run rapidly to verify AuthRefreshAttempts (429 after >20/min). PowerShell:
-# 1..25 | % { iwr -Method Post -UseBasicParsing "{{AutoService_ApiService_HostAddress}}/api/auth/refresh" }
+### [Positive][Session] The rotated session validates (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
-###
-
-### [Manual][Login] Login rate limiting (expect 429 after >10 login calls per minute from same client)
-# Manual: re-run rapidly to verify AuthLoginAttempts (429 after >10/min). PowerShell:
-# 1..12 | % { $body = @{ email = "{{MatrixEmailWithPhone}}"; password = "{{TestWrongPassword}}" } | ConvertTo-Json; iwr -Method Post -UseBasicParsing -ContentType "application/json" -Body $body "{{AutoService_ApiService_HostAddress}}/api/auth/login" }
+?? status == 200
+?? js (response.parsedBody.personId == regSessionMechanic.personId) == true
 
 ###
 
-### [Manual][Login] Lockout after repeated bad password attempts (expect 401 throughout, valid login works after lockout window)
-# Manual: login never reveals a lockout; it stays the uniform 401 until the window expires (automated in profile/credential-lockout.http).
+### [Manual][Session] Rate limits: login 10/min and refresh 20/min per client (429), not run to keep the suite out of the 3-minute ban
+# Manual: the login route answers login_rate_limited, then login_banned for 3 minutes; Development raises login to 300/min.
 
 ###
 
-### [Positive][Session] Logout current session (204 expected)
+### [Positive][Session] Logout answers 204 and expires all six session cookies, legacy names included (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
+?? js (["__Host-arsm-access-token","__Host-arsm-refresh-token","__Host-arsm-csrf-token","__Host-autoservice_at","__Host-autoservice_rt","__Host-autoservice_csrf"].every(n => response.headers['set-cookie'].some(c => c.startsWith(n + "=;") && c.toLowerCase().includes("expires=thu, 01 jan 1970")))) == true
 
 ###
 
 ### [Negative][Session] Validate after logout (401 expected)
+# @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
-
-?? status == 401
-
-###
-
-### [Negative][Session] Refresh without active cookie session (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
-Origin: {{WebUI_Origin}}
-
-?? status == 401
-
-###
-
-### [Negative][Session] Logout without active access cookie (401 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
 
 ?? status == 401
 
@@ -165,10 +181,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];

@@ -1,0 +1,129 @@
+# Intake 409 conflicts: plate, VIN and phone already taken. A conflicting request rolls back whole, so its new
+# customer must not exist afterwards. The customer created by the base intake is deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@BaseEmail = intake.conflict.base.{{RunId}}@example.test
+@BasePlate = ICB-{{RunId}}
+@BaseVin = TST{{RunId.toString().slice(-10)}}1301
+@BasePhone = +36301{{RunId.toString().slice(-6)}}
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Base intake that owns the plate, VIN and phone (201 expected)
+# @name baseAppt
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "{{BaseEmail}}", "customerFirstName": "Intake", "customerLastName": "Base", "customerPhoneNumber": "{{BasePhone}}", "vehicle": { "licensePlate": "{{BasePlate}}", "vin": "{{BaseVin}}", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Hybrid" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake conflict base" }
+
+?? status == 201
+
+### [Negative][Appointments] A new customer with a taken license plate is refused (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.conflict.plate.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Plate", "vehicle": { "licensePlate": "{{BasePlate}}", "vin": "TST{{RunId.toString().slice(-10)}}1302", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake plate conflict" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+### [Negative][Appointments] The refused intake did not create its customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=intake.conflict.plate.{{RunId}}@example.test
+
+?? status == 404
+
+### [Negative][Appointments] The plate matches after normalization, lower case and padding (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.conflict.norm.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Norm", "vehicle": { "licensePlate": " {{BasePlate.toLowerCase()}} ", "vin": "TST{{RunId.toString().slice(-10)}}1303", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake normalized plate conflict" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+### [Negative][Appointments] A new customer with a taken VIN is refused (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.conflict.vin.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vin", "vehicle": { "licensePlate": "ICV-{{RunId}}", "vin": "{{BaseVin}}", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake VIN conflict" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this VIN already exists.") == true
+
+### [Negative][Appointments] An existing customer adding a vehicle with a taken plate is refused (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "{{BaseEmail}}", "vehicle": { "licensePlate": "{{BasePlate}}", "vin": "TST{{RunId.toString().slice(-10)}}1304", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake existing customer plate conflict" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+### [Negative][Appointments] A new customer with a taken phone number is refused (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.conflict.phone.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Phone", "customerPhoneNumber": "{{BasePhone}}", "vehicle": { "licensePlate": "ICP-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1305", "brand": "Skoda", "model": "Fabia", "year": 2021, "mileageKm": 60500, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T12:00:00", "dueDateTime": "2026-04-25T18:00:00", "taskDescription": "Intake phone conflict" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this phone number already exists.") == true
+
+### [Negative][Appointments] The phone-refused intake did not create its customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=intake.conflict.phone.{{RunId}}@example.test
+
+?? status == 404
+
+### [Cleanup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Cleanup][Appointments] Delete the base customer, cascading vehicle and appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{baseAppt.vehicle.customerId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

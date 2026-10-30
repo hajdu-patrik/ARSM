@@ -14,6 +14,7 @@ const FIRST_SEEDED_CUSTOMER_ID = 200;
 const SEEDED_VEHICLE_COUNT = 10;
 const FIRST_SEEDED_VEHICLE_ID = 2000;
 const VEHICLES_PER_PAGE = 5;
+const END_OF_LIST = 'No more customers in the system';
 const SHORT_VIEWPORT = { width: 1280, height: 640 };
 const TALL_VIEWPORT = { width: 1280, height: 1100 };
 
@@ -114,6 +115,7 @@ test.describe('Customers list paging', () => {
     await expect(indicator).toHaveText(`1 / ${String(totalPages)}`);
     await expect(previous).toBeDisabled();
     await expect(customersPage.customerCard(order[0] ?? 0)).toBeVisible();
+    await expect(page.getByText(END_OF_LIST)).toHaveCount(0);
 
     await next.click();
     await expect(indicator).toHaveText(`2 / ${String(totalPages)}`);
@@ -128,6 +130,7 @@ test.describe('Customers list paging', () => {
 
     await expect(next).toBeDisabled();
     await expect(customersPage.customerCard(MOCK_CUSTOMER_IDS.bela)).toBeVisible();
+    await expect(page.getByText(END_OF_LIST)).toBeVisible();
 
     await previous.click();
     await expect(indicator).toHaveText(`${String(totalPages - 1)} / ${String(totalPages)}`);

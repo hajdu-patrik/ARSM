@@ -1,36 +1,14 @@
 /** The appointment status control follows the server flags: Completed needs an accepted quote and is terminal. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import type { AppointmentDto, AppointmentStatus } from '../../src/types/scheduler/scheduler.types';
 import { SchedulerPage } from './pages/scheduler.page';
+import { seedAppointment } from './support/appointment-fixtures';
 import { signInWithMocks } from './support/sign-in';
-import { MOCK_CUSTOMER_IDS, MOCK_QUOTE_IDS } from './support/test-data';
+import { MOCK_QUOTE_IDS } from './support/test-data';
 import type { MockApiState } from './support/test-data';
 import { toastMessage } from './support/toast';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const LIFECYCLE_APPOINTMENT_ID = 6201;
 const ACCEPTED_QUOTE_ID = 7201;
-
-/** Adds an appointment scheduled now, in the given status, built from the fixture history appointment. */
-function addAppointment(state: MockApiState, status: AppointmentStatus): void {
-  const template = state.customerHistoryByCustomerId[MOCK_CUSTOMER_IDS.anna]?.[0];
-  if (template === undefined) {
-    throw new Error('The fixture history appointment is missing.');
-  }
-
-  const now = Date.now();
-  const appointment: AppointmentDto = {
-    ...template,
-    id: LIFECYCLE_APPOINTMENT_ID,
-    scheduledDate: new Date(now).toISOString(),
-    dueDateTime: new Date(now + DAY_MS).toISOString(),
-    status,
-    completedAt: status === 'Completed' ? new Date(now).toISOString() : null,
-    canceledAt: status === 'Cancelled' ? new Date(now).toISOString() : null,
-  };
-
-  state.appointments.push(appointment);
-}
 
 /** Adds an accepted quote linked to the lifecycle appointment, cloned from the fixture draft quote. */
 function addAcceptedQuote(state: MockApiState): void {
@@ -65,7 +43,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('Completed is not offered without an accepted quote and the reason is shown', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    addAppointment(state, 'InProgress');
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress' });
     const dialog = await openDetail(page);
 
     await expect(dialog.getByTestId('appointment-detail-complete-hint')).toBeVisible();
@@ -78,7 +56,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('Completed is offered once an accepted quote exists, and completing it works', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    addAppointment(state, 'InProgress');
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress' });
     addAcceptedQuote(state);
     const schedulerPage = new SchedulerPage(page);
     const dialog = await openDetail(page);
@@ -98,7 +76,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('a Completed appointment has no status control and no delete button', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    addAppointment(state, 'Completed');
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Completed' });
     addAcceptedQuote(state);
     const dialog = await openDetail(page);
 
@@ -109,7 +87,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('a Cancelled appointment can be moved back to in progress', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    addAppointment(state, 'Cancelled');
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Cancelled' });
     const schedulerPage = new SchedulerPage(page);
     await openDetail(page);
 

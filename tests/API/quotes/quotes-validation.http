@@ -1,23 +1,27 @@
-# ValidUntil status-matrix scenarios (Sent/Accepted lock behavior) live in the sibling
-# quotes-validity-matrix.http, split out to keep both files under the 250-line limit.
+# POST /api/vehicles/{id}/quotes validation: title, notes and ValidUntil rules with their boundaries, unknown vehicle or
+# appointment, foreign appointment. Header edit rules are in quotes-update-validation.http. Disposable customer, deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.validation.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0722
+@SecondVehicleVin = TST{{RunId.toString().slice(-10)}}0723
+@Title120 = {{'t'.repeat(120)}}
+@Title121 = {{'t'.repeat(121)}}
+@Notes1000 = {{'n'.repeat(1000)}}
+@Notes1001 = {{'n'.repeat(1001)}}
+@MissingId = 999999999
 
-### [Setup][QuotesValidation] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteValidation] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -25,141 +29,163 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Setup][QuotesValidation] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
-# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][QuotesValidation] Resolve the shared fixture customer and a second vehicle of it (200 expected)
-# The second vehicle is a vehicle other than the anchor's, used below for the D42 appointment mismatch case.
-# @name fixtureCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
-
-{{
-  exports.OtherVehicleId = fixtureCustomer.vehicles.find(v => v.id !== AnchorVehicleId).id;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][QuotesValidation] Create an appointment on the anchor vehicle (201 expected, deleted at the end)
-# Used below against the other vehicle for the D42 mismatch case; an admin-created appointment may carry any scheduled date.
-# @name anchorAppointment
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
+### [Setup][QuoteValidation] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{AnchorVehicleId}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Quote validation foreign-appointment fixture",
-  "mechanicIds": [{{csrfSource1.personId}}]
-}
-
-{{
-  exports.ForeignAppointmentId = anchorAppointment.id;
-}}
+{ "firstName": "QuoteValidation", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
-
-### [Negative][QuotesValidation] Create with a past ValidUntil is rejected (422 expected, D22)
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteValidation] Create the first vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Past ValidUntil Quote {{RunId}}",
-  "validUntil": "2020-01-01T00:00:00"
-}
-
-?? status == 422
-
-###
-
-### [Negative][QuotesValidation] Create with an AppointmentId belonging to a different vehicle is rejected (422 expected, D42)
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{OtherVehicleId}}/quotes
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "title": "Foreign Appointment Quote {{RunId}}",
-  "appointmentId": {{ForeignAppointmentId}}
-}
-
-?? status == 422
-
-###
-
-### [Negative][QuotesValidation] Unknown ?status= filter value is rejected (422 expected, D43: Expired is a computed flag, not a filter value)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Expired
-
-?? status == 422
-
-###
-
-### [Setup][QuotesValidation] Create a draft quote for the concurrency checks (201 expected)
-# @name versionQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "title": "Version Conflict Quote {{RunId}}"
-}
+{ "licensePlate": "QVL-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
-###
-
-### [Negative][QuotesValidation] Update with a version that does not match is rejected (409 expected, body {"code":"quote_version_conflict"}, D30/D38)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{versionQuote.id}}
+### [Setup][QuoteValidation] Create the second vehicle (201 expected)
+# @name otherVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Version Conflict Quote {{RunId}} Stale",
-  "version": 123456789
-}
+{ "licensePlate": "QVM-{{RunId}}", "vin": "{{SecondVehicleVin}}", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 80000, "enginePowerKw": 70, "drivetrainType": "Petrol" }
 
-?? status == 409
-?? js response.parsedBody.code == quote_version_conflict
-###
+?? status == 201
 
-### [Negative][QuotesValidation] Update with no version is rejected (422 expected, "Version is required.", D38)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{versionQuote.id}}
+### [Setup][QuoteValidation] Create an appointment on the first vehicle (201 expected, admin assigned)
+# @name appointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Version Conflict Quote {{RunId}} No Version"
-}
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Quote validation appointment", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Negative][QuoteValidation] A blank title is refused (422 expected, D14)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "" }
 
 ?? status == 422
+?? js response.parsedBody.detail includes Title cannot be empty
 
-###
+### [Negative][QuoteValidation] A whitespace-only title is refused too (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Cleanup][QuotesValidation] Delete the fixture appointment created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ForeignAppointmentId}}
+{ "title": "     " }
+
+?? status == 422
+?? js response.parsedBody.detail includes Title cannot be empty
+
+### [Negative][QuoteValidation] A 121-character title is refused (422 expected, the cap is 120)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "{{Title121}}" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Title must be at most 120 characters
+
+### [Negative][QuoteValidation] 1001-character notes are refused (422 expected, the cap is 1000)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Notes too long {{RunId}}", "notes": "{{Notes1001}}" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Notes must be at most 1000 characters
+
+### [Positive][QuoteValidation] A 120-character title with 1000-character notes is accepted (201 expected, both boundaries)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "{{Title120}}", "notes": "{{Notes1000}}" }
+
+?? status == 201
+?? js (response.parsedBody.title.length === 120 && response.parsedBody.notes.length === 1000) == true
+
+### [Negative][QuoteValidation] A ValidUntil in the past is refused (422 expected, D22)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Past ValidUntil {{RunId}}", "validUntil": "2020-01-01T00:00:00" }
+
+?? status == 422
+?? js response.parsedBody.detail includes ValidUntil cannot be in the past
+
+### [Negative][QuoteValidation] An unknown vehicle is a 404 (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{MissingId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Unknown vehicle {{RunId}}" }
+
+?? status == 404
+?? js response.parsedBody.detail includes Vehicle not found
+
+### [Negative][QuoteValidation] An unknown appointment is a 404 (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Unknown appointment {{RunId}}", "appointmentId": {{MissingId}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Appointment not found
+
+### [Negative][QuoteValidation] An appointment of another vehicle is refused (422 expected, D42)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{otherVehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Foreign appointment {{RunId}}", "appointmentId": {{appointment.id}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Appointment does not belong to the specified vehicle
+
+### [Positive][QuoteValidation] No refused create with the run id in its title left a quote behind (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => !q.title.includes(String(RunId)))) == true
+
+### [Positive][QuoteValidation] The first vehicle holds only the boundary quote, so no blank or long title got through (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].title === `${Title120}`) == true
+
+### [Cleanup][QuoteValidation] Delete the disposable customer, cascading vehicles, appointment and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

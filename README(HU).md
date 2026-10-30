@@ -221,6 +221,8 @@ Suite célok:
 
 A backend unit tesztekhez (`tests/AutoService.UnitTests`, xUnit: az árazási kalkulátorok és a session-lezárások) nem kell futó stack: az `app/` mappában a `dotnet test` futtatja őket, ahogy a pre-push kapu és a CI is.
 
+A Python automatizálási szkriptekhez a `tests/Scripts` mappában stdlib unittest csomag tartozik, a repository gyökeréből a `python -m unittest discover -s tests/Scripts` paranccsal futtatható; a `python scripts/pre-push.py` (backend szakasz) és a `.github/workflows/dotnet.yml` `repo-gate` jobja automatikusan futtatja.
+
 Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:
 
 ```bash

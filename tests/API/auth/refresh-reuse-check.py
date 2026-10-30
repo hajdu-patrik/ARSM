@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks that a refresh cookie replayed inside the 30 s grace window gets 204 and no cookies, and the rotated session stays valid."""
+"""Replays issued cookies: a rotated refresh cookie inside the 30 s window is tolerated, but nothing works after logout."""
 
 from __future__ import annotations
 
@@ -20,23 +20,28 @@ from http_check_support import (  # noqa: E402
     read_admin_credentials,
 )
 
-# Only the replay inside the 30 s window is checked: the one after it (401, chain revoked) would need a 30 s wait.
+# The replay after the 30 s window (401, chain revoked) is a known gap: it would need a 30 s wait.
 REFRESH_PATH = "/api/auth/refresh"
+VALIDATE_PATH = "/api/auth/validate"
+ACCESS_COOKIE_NAME = "__Host-arsm-access-token"
 
 
-def replay_stale_refresh_cookie(
-    base_url: str, origin: str, stale_refresh: str | None, stale_csrf: str | None, results: list[StepResult],
-) -> None:
-    """Sends the cookies from before the rotation on a fresh client, as a second browser tab holding them would."""
-    replayer = HttpClient(base_url, origin)
-    status, headers = replayer.request_headers(
+def replay_refresh(
+    base_url: str, origin: str, refresh: str | None, csrf: str | None,
+) -> tuple[int, dict[str, str]]:
+    """Sends the given refresh and CSRF cookies on a fresh client, as another tab or an attacker holding them would."""
+    return HttpClient(base_url, origin).request_headers(
         "POST",
         REFRESH_PATH,
-        {
-            "Cookie": f"{REFRESH_COOKIE_NAME}={stale_refresh}; {CSRF_COOKIE_NAME}={stale_csrf}",
-            CSRF_HEADER_NAME: stale_csrf or "",
-        },
+        {"Cookie": f"{REFRESH_COOKIE_NAME}={refresh}; {CSRF_COOKIE_NAME}={csrf}", CSRF_HEADER_NAME: csrf or ""},
     )
+
+
+def check_replay_inside_window(
+    base_url: str, origin: str, stale_refresh: str | None, stale_csrf: str | None, results: list[StepResult],
+) -> None:
+    """The pre-rotation cookies replayed right after the rotation answer 204 and issue nothing."""
+    status, headers = replay_refresh(base_url, origin, stale_refresh, stale_csrf)
     assert_status("replay-inside-window-is-tolerated", status, {204}, results)
     assert_condition(
         "replay-sets-no-cookies",
@@ -46,33 +51,54 @@ def replay_stale_refresh_cookie(
     )
 
 
+def check_replay_after_logout(
+    base_url: str, origin: str, session: dict[str, str | None], results: list[StepResult],
+) -> None:
+    """After logout the access token is denylisted and both refresh cookies (stale and rotated) are dead."""
+    status, _ = HttpClient(base_url, origin).request_headers(
+        "GET", VALIDATE_PATH, {"Cookie": f"{ACCESS_COOKIE_NAME}={session['access']}"},
+    )
+    assert_status("logged-out-access-token-is-denylisted", status, {401}, results)
+
+    status, _ = replay_refresh(base_url, origin, session["rotated_refresh"], session["rotated_csrf"])
+    assert_status("logged-out-refresh-cookie-is-revoked", status, {401}, results)
+
+    status, _ = replay_refresh(base_url, origin, session["stale_refresh"], session["stale_csrf"])
+    assert_status("stale-cookie-without-live-successor-is-reuse", status, {401}, results)
+
+
 def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
-    """Rotates a session once, replays the pre-rotation cookie, and asserts the rotated session still works."""
+    """Rotates a session once, replays the old cookies, logs out, and replays everything again."""
     client, _ = sign_in(base_url, origin, read_admin_credentials(), "login", results)
+    session: dict[str, str | None] = {
+        "stale_refresh": client.cookie_value(REFRESH_COOKIE_NAME),
+        "stale_csrf": client.cookie_value(CSRF_COOKIE_NAME),
+    }
     try:
-        stale_refresh = client.cookie_value(REFRESH_COOKIE_NAME)
-        stale_csrf = client.cookie_value(CSRF_COOKIE_NAME)
         assert_condition(
             "login-issues-refresh-and-csrf-cookies",
-            bool(stale_refresh and stale_csrf),
+            bool(session["stale_refresh"] and session["stale_csrf"]),
             "The login response carried no refresh or CSRF cookie.",
             results,
         )
 
         status, _ = client.request_headers("POST", REFRESH_PATH)
         assert_status("refresh-rotates-the-session", status, {204}, results)
-        rotated_refresh = client.cookie_value(REFRESH_COOKIE_NAME)
+        session["rotated_refresh"] = client.cookie_value(REFRESH_COOKIE_NAME)
+        session["rotated_csrf"] = client.cookie_value(CSRF_COOKIE_NAME)
         assert_condition(
-            "refresh-issues-a-new-refresh-cookie",
-            bool(rotated_refresh) and rotated_refresh != stale_refresh,
-            "The refresh did not rotate the refresh cookie.",
+            "refresh-rotates-refresh-and-csrf-cookies",
+            bool(session["rotated_refresh"]) and session["rotated_refresh"] != session["stale_refresh"]
+            and session["rotated_csrf"] != session["stale_csrf"],
+            "The refresh did not rotate the refresh and CSRF cookies.",
             results,
         )
 
-        replay_stale_refresh_cookie(base_url, origin, stale_refresh, stale_csrf, results)
+        check_replay_inside_window(base_url, origin, session["stale_refresh"], session["stale_csrf"], results)
 
-        status, _ = client.request_json("GET", "/api/auth/validate")
+        status, _ = client.request_json("GET", VALIDATE_PATH)
         assert_status("rotated-session-stays-valid", status, {200}, results)
+        session["access"] = client.cookie_value(ACCESS_COOKIE_NAME)
     except Exception:
         # Best-effort sign-out only, so the original failure is the one reported.
         client.request_json("POST", "/api/auth/logout")
@@ -80,6 +106,7 @@ def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
 
     status, _ = client.request_json("POST", "/api/auth/logout")
     assert_status("logout", status, {204}, results)
+    check_replay_after_logout(base_url, origin, session, results)
 
 
 if __name__ == "__main__":

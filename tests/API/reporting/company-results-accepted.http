@@ -1,0 +1,168 @@
+# Exact amounts of the accepted row: one new quote (part 2 x 100 at 27% and labor 1 x 50 at 5%) is accepted, and the year and
+# month reports move by net 250, VAT 56.50, gross 306.50, split by VAT rate, line kind and month. Deltas, so other data cancels out.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@ThisYear = {{new Date().getUTCFullYear()}}
+@ThisMonth = {{new Date().getUTCMonth() + 1}}
+
+### [Setup][Reporting] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Reporting] Login as admin, who also passes MechanicOnly (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+{{
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Create the draft that gets accepted (201 expected)
+# @name quoteA
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Company result accepted {{RunId}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Reporting] Add the part line, 2 x 100 at 27% (201 expected)
+# @name lineA1
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteA.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "description": "Result part", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quoteA.version}} }
+
+?? status == 201
+
+###
+
+### [Setup][Reporting] Add the labor line, 1 x 50 at 5% (201 expected)
+# @name lineA2
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteA.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "description": "Result labor", "netUnitPrice": 50, "vatRatePercent": 5, "version": {{lineA1.version}} }
+
+?? status == 201
+?? js (Math.round(response.parsedBody.totalNet * 100) == 25000 && Math.round(response.parsedBody.totalVat * 100) == 5650 && Math.round(response.parsedBody.totalGross * 100) == 30650) == true
+
+###
+
+### [Setup][Reporting] Baseline year report before the quote is decided (200 expected)
+# @name baseYear
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Baseline month report (200 expected)
+# @name baseMonth
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}&month={{ThisMonth}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Send the quote (200 expected)
+# @name sentA
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{lineA2.version}} }
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Accept the quote (200 expected)
+# @name acceptedA
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteA.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{sentA.version}} }
+
+?? status == 200
+?? js (new Date(response.parsedBody.createdAt).getUTCFullYear() == new Date().getUTCFullYear() && new Date(response.parsedBody.createdAt).getUTCMonth() == new Date().getUTCMonth()) == true
+
+###
+
+### [Positive][Reporting] Year report: the accepted row, VAT split, line-kind split and month entry moved by exactly the quote (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
+
+?? status == 200
+?? js (response.parsedBody.accepted.quoteCount - baseYear.accepted.quoteCount == 1) == true
+?? js (Math.round((response.parsedBody.accepted.net - baseYear.accepted.net) * 100) == 25000) == true
+?? js (Math.round((response.parsedBody.accepted.gross - baseYear.accepted.gross) * 100) == 30650) == true
+?? js (response.parsedBody.pending.quoteCount == baseYear.pending.quoteCount && response.parsedBody.rejected.quoteCount == baseYear.rejected.quoteCount) == true
+?? js (Math.round((response.parsedBody.acceptedVatBreakdown.filter(x => x.vatRatePercent == 27).reduce((s, x) => s + x.net, 0) - baseYear.acceptedVatBreakdown.filter(x => x.vatRatePercent == 27).reduce((s, x) => s + x.net, 0)) * 100) == 20000) == true
+?? js (Math.round((response.parsedBody.acceptedVatBreakdown.filter(x => x.vatRatePercent == 27).reduce((s, x) => s + x.vat, 0) - baseYear.acceptedVatBreakdown.filter(x => x.vatRatePercent == 27).reduce((s, x) => s + x.vat, 0)) * 100) == 5400) == true
+?? js (Math.round((response.parsedBody.acceptedVatBreakdown.filter(x => x.vatRatePercent == 5).reduce((s, x) => s + x.net, 0) - baseYear.acceptedVatBreakdown.filter(x => x.vatRatePercent == 5).reduce((s, x) => s + x.net, 0)) * 100) == 5000) == true
+?? js (Math.round((response.parsedBody.acceptedVatBreakdown.filter(x => x.vatRatePercent == 5).reduce((s, x) => s + x.vat, 0) - baseYear.acceptedVatBreakdown.filter(x => x.vatRatePercent == 5).reduce((s, x) => s + x.vat, 0)) * 100) == 250) == true
+?? js (Math.round((response.parsedBody.acceptedByLineKind.filter(x => x.lineKind == "Part").reduce((s, x) => s + x.net, 0) - baseYear.acceptedByLineKind.filter(x => x.lineKind == "Part").reduce((s, x) => s + x.net, 0)) * 100) == 20000) == true
+?? js (Math.round((response.parsedBody.acceptedByLineKind.filter(x => x.lineKind == "Part").reduce((s, x) => s + x.gross, 0) - baseYear.acceptedByLineKind.filter(x => x.lineKind == "Part").reduce((s, x) => s + x.gross, 0)) * 100) == 25400) == true
+?? js (Math.round((response.parsedBody.acceptedByLineKind.filter(x => x.lineKind == "Labor").reduce((s, x) => s + x.net, 0) - baseYear.acceptedByLineKind.filter(x => x.lineKind == "Labor").reduce((s, x) => s + x.net, 0)) * 100) == 5000) == true
+?? js (Math.round((response.parsedBody.acceptedByLineKind.filter(x => x.lineKind == "Labor").reduce((s, x) => s + x.gross, 0) - baseYear.acceptedByLineKind.filter(x => x.lineKind == "Labor").reduce((s, x) => s + x.gross, 0)) * 100) == 5250) == true
+?? js (response.parsedBody.months[new Date().getUTCMonth()].acceptedQuoteCount - baseYear.months[new Date().getUTCMonth()].acceptedQuoteCount == 1) == true
+?? js (Math.round((response.parsedBody.months[new Date().getUTCMonth()].acceptedNet - baseYear.months[new Date().getUTCMonth()].acceptedNet) * 100) == 25000) == true
+?? js (response.parsedBody.months.filter((m, i) => i != new Date().getUTCMonth()).every((m, i) => m.acceptedQuoteCount == baseYear.months.filter((x, j) => j != new Date().getUTCMonth())[i].acceptedQuoteCount)) == true
+
+###
+
+### [Positive][Reporting] Month report: the same amounts land in the quote's creation month (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}&month={{ThisMonth}}
+
+?? status == 200
+?? js (response.parsedBody.accepted.quoteCount - baseMonth.accepted.quoteCount == 1) == true
+?? js (Math.round((response.parsedBody.accepted.net - baseMonth.accepted.net) * 100) == 25000) == true
+?? js (Math.round((response.parsedBody.accepted.gross - baseMonth.accepted.gross) * 100) == 30650) == true
+?? js (response.parsedBody.months.length == 1 && response.parsedBody.months[0].acceptedQuoteCount - baseMonth.months[0].acceptedQuoteCount == 1) == true
+?? js (Math.round((response.parsedBody.months[0].acceptedGross - baseMonth.months[0].acceptedGross) * 100) == 30650) == true
+
+###
+
+### [Setup][Reporting] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

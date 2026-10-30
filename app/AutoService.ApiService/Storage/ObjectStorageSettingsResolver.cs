@@ -18,9 +18,13 @@ public static class ObjectStorageSettingsResolver
             return ObjectStorageProvider.S3;
         }
 
-        return Enum.TryParse<ObjectStorageProvider>(value, ignoreCase: true, out var provider)
-            ? provider
-            : throw new InvalidOperationException($"Object storage setting '{ConfigurationSection}:Provider' must be 'S3' or 'AzureBlob'.");
+        var trimmed = value.Trim();
+        var providerName = Enum.GetNames<ObjectStorageProvider>()
+            .FirstOrDefault(name => string.Equals(name, trimmed, StringComparison.OrdinalIgnoreCase));
+
+        return providerName is null
+            ? throw new InvalidOperationException($"Object storage setting '{ConfigurationSection}:Provider' must be 'S3' or 'AzureBlob'.")
+            : Enum.Parse<ObjectStorageProvider>(providerName);
     }
 
     /** Resolves the Azure Blob settings (the container name reuses 'BucketName'), failing fast like the S3 set. */

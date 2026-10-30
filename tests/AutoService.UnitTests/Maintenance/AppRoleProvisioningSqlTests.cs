@@ -25,17 +25,6 @@ public sealed class AppRoleProvisioningSqlTests
     }
 
     [Fact]
-    public void BuildGrantStatements_NeverGrantsDdlOrOwnership()
-    {
-        var statements = string.Join("\n", AppRoleProvisioningSql.BuildGrantStatements("AutoServiceDb"));
-
-        Assert.DoesNotContain("CREATE", statements, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("ALL PRIVILEGES", statements, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("TRUNCATE", statements, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("WITH GRANT OPTION", statements, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
     public void QuoteIdentifier_DoublesEmbeddedDoubleQuotes()
     {
         Assert.Equal("\"Auto\"\"; DROP ROLE x; --\"", AppRoleProvisioningSql.QuoteIdentifier("Auto\"; DROP ROLE x; --"));

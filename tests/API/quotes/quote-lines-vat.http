@@ -1,25 +1,21 @@
+# VAT rates and line arithmetic: only 5, 18 and 27 are accepted, every amount is rounded half away from zero to 2 decimals,
+# gross is net + vat and the totals are the sums of the lines. Disposable customer, deleted at the end (cascade).
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.vat.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0731
 
-### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-
-###
-
-### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteVat] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -27,160 +23,194 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][QuoteLineVat] Create a draft quote fixture (201 expected)
-# @name vatQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteVat] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Line VAT Rates Quote {{RunId}}"
-}
+{ "firstName": "QuoteVat", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
-
-### [Negative][QuoteLineVat] Add a line with VAT 0 is rejected (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+### [Setup][QuoteVat] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 0,
-  "version": {{vatQuote.version}}
-}
+{ "licensePlate": "QVT-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteVat] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Line VAT Rates Quote {{RunId}}" }
+
+?? status == 201
+
+### [Negative][QuoteVat] VAT 0 is refused on add (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 0, "version": {{quote.version}} }
 
 ?? status == 422
-?? js response.parsedBody.detail includes VAT rate
+?? js response.parsedBody.detail includes VAT rate must be 5, 18, or 27
 
-###
-
-### [Positive][QuoteLineVat] Add a line with VAT 5 (201 expected)
-# @name vatLine5
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
+### [Negative][QuoteVat] VAT 10 is refused on add (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 5,
-  "version": {{vatQuote.version}}
-}
-
-?? status == 201
-
-###
-
-### [Positive][QuoteLineVat] Add a line with VAT 18 (201 expected)
-# @name vatLine18
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 18,
-  "version": {{vatLine5.version}}
-}
-
-?? status == 201
-
-###
-
-### [Positive][QuoteLineVat] Add a line with VAT 27 (201 expected)
-# @name vatLine27
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{vatLine18.version}}
-}
-
-?? status == 201
-
-###
-
-### [Negative][QuoteLineVat] Update a line to VAT 0 is rejected (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines/{{vatLine5.lines[0].id}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 0,
-  "version": {{vatLine27.version}}
-}
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 10, "version": {{quote.version}} }
 
 ?? status == 422
-?? js response.parsedBody.detail includes VAT rate
+?? js response.parsedBody.detail includes VAT rate must be 5, 18, or 27
 
-###
-
-### [Positive][QuoteLineVat] Update a line from VAT 5 to 18 still succeeds (200 expected)
-# @name vatUpdated
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}/lines/{{vatLine5.lines[0].id}}
+### [Positive][QuoteVat] A line at VAT 5 (201 expected, vat 5, gross 105)
+# @name vat5
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 18,
-  "version": {{vatLine27.version}}
-}
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 5, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[0].vatRatePercent === 5 && response.parsedBody.lines[0].vatAmount === 5 && response.parsedBody.lines[0].grossAmount === 105) == true
+
+### [Positive][QuoteVat] A line at VAT 18 (201 expected, vat 18, gross 118)
+# @name vat18
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 18, "version": {{vat5.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[1].vatRatePercent === 18 && response.parsedBody.lines[1].vatAmount === 18 && response.parsedBody.lines[1].grossAmount === 118) == true
+
+### [Positive][QuoteVat] A line at VAT 27 (201 expected, vat 27, gross 127, totals 300 / 50 / 350)
+# @name vat27
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{vat18.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[2].vatRatePercent === 27 && response.parsedBody.lines[2].vatAmount === 27 && response.parsedBody.lines[2].grossAmount === 127) == true
+?? js (response.parsedBody.totalNet === 300 && response.parsedBody.totalVat === 50 && response.parsedBody.totalGross === 350) == true
+
+### [Negative][QuoteVat] Updating a line to VAT 0 is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{vat5.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 0, "version": {{vat27.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes VAT rate must be 5, 18, or 27
+
+### [Positive][QuoteVat] Updating the VAT 5 line to 18 (200 expected, totals 300 / 63 / 363)
+# @name updated
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{vat5.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "VAT line", "netUnitPrice": 100, "vatRatePercent": 18, "version": {{vat27.version}} }
 
 ?? status == 200
+?? js (response.parsedBody.lines[0].vatAmount === 18 && response.parsedBody.lines[0].grossAmount === 118) == true
+?? js (response.parsedBody.totalNet === 300 && response.parsedBody.totalVat === 63 && response.parsedBody.totalGross === 363) == true
 
-###
+### [Positive][QuoteVat] The net amount rounds to 2 decimals, the VAT rounds up (201 expected, 3 x 33.33 at 27%)
+# @name rounded
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Cleanup][QuoteLineVat] Delete the draft quote fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{vatQuote.id}}?version={{vatUpdated.version}}
+{ "lineKind": "Part", "quantity": 3, "description": "Rounding line", "netUnitPrice": 33.33, "vatRatePercent": 27, "version": {{updated.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[3].netAmount === 99.99 && response.parsedBody.lines[3].vatAmount === 27 && response.parsedBody.lines[3].grossAmount === 126.99) == true
+?? js (response.parsedBody.totalNet === 399.99 && response.parsedBody.totalVat === 90 && response.parsedBody.totalGross === 489.99) == true
+
+### [Positive][QuoteVat] A VAT half cent rounds away from zero (201 expected, 0.10 at 5% gives 0.01, not 0.00)
+# @name halfVat
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Half cent VAT", "netUnitPrice": 0.10, "vatRatePercent": 5, "version": {{rounded.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[4].netAmount === 0.1 && response.parsedBody.lines[4].vatAmount === 0.01 && response.parsedBody.lines[4].grossAmount === 0.11) == true
+
+### [Positive][QuoteVat] A net half cent rounds away from zero too (201 expected, 2.5 x 0.01 gives 0.03)
+# @name halfNet
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2.5, "description": "Half cent net", "netUnitPrice": 0.01, "vatRatePercent": 27, "version": {{halfVat.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[5].netAmount === 0.03 && response.parsedBody.lines[5].vatAmount === 0.01 && response.parsedBody.lines[5].grossAmount === 0.04) == true
+?? js (response.parsedBody.totalNet === 400.12 && response.parsedBody.totalVat === 90.02 && response.parsedBody.totalGross === 490.14) == true
+
+### [Positive][QuoteVat] A zero price is allowed (201 expected, every amount 0, totals unchanged)
+# @name freeLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "description": "Free of charge", "netUnitPrice": 0, "vatRatePercent": 27, "version": {{halfNet.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[6].netAmount === 0 && response.parsedBody.lines[6].vatAmount === 0 && response.parsedBody.lines[6].grossAmount === 0 && response.parsedBody.totalGross === 490.14) == true
+
+### [Positive][QuoteVat] The largest quantity at the largest price is accepted (201 expected, both caps are inclusive)
+# @name maxLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 10000, "description": "Both caps", "netUnitPrice": 100000000, "vatRatePercent": 27, "version": {{freeLine.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[7].netAmount === 1000000000000 && response.parsedBody.lines[7].vatAmount === 270000000000 && response.parsedBody.lines[7].grossAmount === 1270000000000) == true
+
+### [Positive][QuoteVat] The persisted quote adds up line by line (200 expected, gross = net + vat)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 8 && Math.abs(response.parsedBody.totalNet - response.parsedBody.lines.reduce((sum, l) => sum + l.netAmount, 0)) < 0.01 && Math.abs(response.parsedBody.totalVat - response.parsedBody.lines.reduce((sum, l) => sum + l.vatAmount, 0)) < 0.01) == true
+?? js (Math.abs(response.parsedBody.totalGross - (response.parsedBody.totalNet + response.parsedBody.totalVat)) < 0.01 && response.parsedBody.lines.every(l => Math.abs(l.grossAmount - (l.netAmount + l.vatAmount)) < 0.01)) == true
+
+### [Cleanup][QuoteVat] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###

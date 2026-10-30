@@ -57,7 +57,7 @@ internal readonly record struct CustomerInput(
         return errors;
     }
 
-    internal FullName ToFullName() => new(FirstName.Trim(), MiddleName?.Trim(), LastName.Trim());
+    internal FullName ToFullName() => new(FirstName.Trim(), ContactNormalization.NormalizeOptional(MiddleName), LastName.Trim());
 
     /** The 409 detail when another person already holds the email or, checked second, the phone. */
     internal static async Task<string?> FindContactConflictAsync(

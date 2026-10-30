@@ -80,6 +80,7 @@ Content-Type: application/json
 { "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Concurrency no version" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -92,6 +93,7 @@ Content-Type: application/json
 { "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Concurrency zero version", "version": 0 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -131,6 +133,18 @@ Content-Type: application/json
 { "status": "Cancelled" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
+
+### [Negative][Appointments] Status change with version 0 is rejected (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{concAppt.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": 0 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 

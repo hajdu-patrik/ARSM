@@ -1,0 +1,152 @@
+# POST /api/auth/login input validation (ValidateLoginRequest, TryResolveLoginIdentifier): every case is refused with 400
+# before any credential lookup, so no account is touched and no cookie is issued. Bodies are asserted by message.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@Over150LocalPart = lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+@Over20Phone = +491511234567890123456
+@Over128Password = Aa1!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+
+### [Negative][Login] Blank password is required (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "someone.{{RunId}}@example.test", "password": "   " }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Password is required.")) == true
+
+###
+
+### [Negative][Login] Password without any identifier names the missing login (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Either Email or PhoneNumber is required.")) == true
+
+###
+
+### [Negative][Login] Blank email and blank phone count as no identifier (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "  ", "phoneNumber": "", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Either Email or PhoneNumber is required.")) == true
+
+###
+
+### [Negative][Login] Email over 150 chars (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{Over150LocalPart}}@example.test", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Email must be at most 150 characters.")) == true
+
+###
+
+### [Negative][Login] PhoneNumber over 20 chars (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "{{Over20Phone}}", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("PhoneNumber must be at most 20 characters.")) == true
+
+###
+
+### [Negative][Login] Password over 128 chars (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "someone.{{RunId}}@example.test", "password": "{{Over128Password}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Password must be at most 128 characters.")) == true
+
+###
+
+### [Negative][Login] Malformed email containing an at sign (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "bad@@example.test", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Email must be a valid email address.")) == true
+
+###
+
+### [Negative][Login] Invalid phone format (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "12345", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Phone number must be a valid European number.")) == true
+
+###
+
+### [Negative][Login] Unsupported Hungarian area prefix (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "06 12 123 4567", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Phone number must be a valid European number.")) == true
+
+###
+
+### [Negative][Login] An email field without an at sign is read as a phone number and refused the same way (400 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "12345", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Phone number must be a valid European number.")) == true
+
+###
+
+### [Negative][Login] A refused login sets no session cookie (400 expected, no Set-Cookie)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "12345", "password": "{{TestPassword}}" }
+
+?? status == 400
+?? js (!response.headers['set-cookie']) == true

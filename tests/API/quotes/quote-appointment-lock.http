@@ -206,6 +206,12 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
 ?? js response.parsedBody.lockReason == appointment_cancelled
 ?? js response.parsedBody.canDelete == true
 
+### [Positive][QuoteLock] The list rows report the same lock and keep both quotes deletable (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{apptC.id}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 2 && response.parsedBody.items.every(q => q.isLocked === true && q.lockReason === "appointment_cancelled" && q.canDelete === true)) == true
+
 ### [Positive][QuoteLock] The PDF is still available (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/pdf
 

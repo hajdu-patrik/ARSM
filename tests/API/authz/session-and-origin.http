@@ -1,29 +1,26 @@
-# Verified against source: logout revokes+denylists the token and clears cookies, so a stale session is
-# rejected either way; UnsafeCookieRequestOriginMiddleware rejects a foreign/missing Origin (403) before touching the cookie, leaving the session intact. Repeats session-lifecycle.http/origin-csrf.http's coverage here to keep this authz suite self-contained.
+# Cross-cutting session and Origin rules: a logged-out session is dead, and UnsafeCookieRequestOriginMiddleware refuses an unsafe
+# cookie-bearing request or any login whose Origin is not the configured WebUI (403, before the route or the CSRF check runs).
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @SessionEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @SessionPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @ForeignOrigin = https://evil.example.com
+@OriginDetail = Unsafe authenticated API requests require an allowed Origin header.
 
-
-### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+### [Setup][Authz] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Authz] Login with the admin account
+### [Setup][Authz] Login with the admin account (200 expected)
 # @name csrfSource1
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{SessionEmail}}",
-  "password": "{{SessionPassword}}"
-}
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -37,6 +34,7 @@ Content-Type: application/json
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200
+?? js response.parsedBody.isAdmin == true
 
 ###
 
@@ -49,23 +47,51 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Negative][Authz] Replaying a request with the now-stale post-logout cookies is rejected (401 expected)
+### [Negative][Authz] The session is dead after logout, on the session check (401 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 401
 
 ###
 
-### [Setup][Authz] Login with the admin account again for the cross-origin check
+### [Negative][Authz] An admin route answers 401 after logout (401 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics
+
+?? status == 401
+
+###
+
+### [Negative][Authz] A login from a foreign Origin is refused, which blocks login CSRF (403 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{ForeignOrigin}}
+Content-Type: application/json
+
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
+
+?? status == 403
+?? js (response.parsedBody.detail == OriginDetail) == true
+
+###
+
+### [Negative][Authz] A login without an Origin header is refused (403 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
+
+?? status == 403
+
+###
+
+### [Setup][Authz] Login with the admin account again for the cross-origin checks (200 expected)
 # @name csrfSource2
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{SessionEmail}}",
-  "password": "{{SessionPassword}}"
-}
+{ "email": "{{SessionEmail}}", "password": "{{SessionPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -75,16 +101,70 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Authz] Cross-origin unsafe request with a foreign Origin and valid cookies is rejected (403 expected)
+### [Negative][Authz] Unsafe request with a foreign Origin and valid cookies is refused (403 expected, stable detail)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{ForeignOrigin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+?? js (response.parsedBody.detail == OriginDetail) == true
+
+###
+
+### [Negative][Authz] An admin mutation with a foreign Origin is refused before the route runs (403 expected, not 404)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/999999
+Origin: {{ForeignOrigin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+?? js (response.parsedBody.detail == OriginDetail) == true
+
+###
+
+### [Negative][Authz] An unsafe request without an Origin header is refused (403 expected, not 404)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/999999
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 403
 
 ###
 
-### [Positive][Authz] Session survives the rejected cross-origin attempt (200 expected, still logged in)
+### [Negative][Authz] The Origin "null" is refused (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/999999
+Origin: null
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+
+###
+
+### [Negative][Authz] An Origin that only starts with the WebUI origin is refused (403 expected, exact match)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/999999
+Origin: {{WebUI_Origin}}.evil.example.com
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+
+###
+
+### [Positive][Authz] A safe request is not Origin-checked: a foreign Origin on a GET still reads (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+Origin: {{ForeignOrigin}}
+
+?? status == 200
+
+###
+
+### [Positive][Authz] The configured Origin passes the same unsafe route, which then answers from the handler (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/999999
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+
+###
+
+### [Positive][Authz] The session survived every rejected attempt (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200

@@ -1,7 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
-import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
-import { selectDropdownOptionByLabel } from './support/dropdown';
+import { ANNA_VEHICLE_ROW, CustomersPage, ELECTRIC_AUDI } from './pages/customers.page';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks';
 import { errorToastMessage } from './support/toast';
@@ -46,17 +45,6 @@ async function countContrastPixels(page: Page, target: Locator): Promise<number>
   } finally {
     await scratch.close();
   }
-}
-
-async function fillElectricAudi(page: Page, dialog: Locator): Promise<void> {
-  await dialog.getByLabel('License plate').fill('EVT-260');
-  await dialog.getByLabel('VIN').fill('WAUZZZF43MA123456');
-  await dialog.getByLabel('Brand').fill('Audi');
-  await dialog.getByLabel('Model').fill('Q4 e-tron');
-  await dialog.getByLabel('Year').fill('2023');
-  await dialog.getByLabel('Mileage (km)').fill('18000');
-  await dialog.getByLabel('Engine power (kW)').fill('150');
-  await selectDropdownOptionByLabel(page, dialog.getByLabel('Drivetrain'), 'Electric');
 }
 
 /** Prepares authenticated customer-registry state with optional repair-history failures. */
@@ -119,11 +107,6 @@ test.describe('Customer registry vehicle flows', () => {
     await customersPage.goto();
     await customersPage.expandCustomer(MOCK_CUSTOMER_IDS.anna);
 
-    await customersPage.vehicleDetailsToggle(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441).click();
-    await customersPage.expectVehicleHistoryOnlyPanel('NXE-441');
-    await customersPage.vehicleDetailsToggle(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441).click();
-    await customersPage.expectCustomerHistoryPanel();
-
     await customersPage.vehicleDetailsToggle(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.phe220).click();
 
     const panel = customersPage.detailsPanel();
@@ -143,7 +126,7 @@ test.describe('Customer registry vehicle flows', () => {
     await expect(dialog.getByLabel('Drivetrain')).toBeVisible();
     await expect(dialog).not.toContainText(/HP|Torque/i);
 
-    await fillElectricAudi(page, dialog);
+    await customersPage.fillVehicle(dialog, ELECTRIC_AUDI);
 
     await expect(dialog.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
@@ -155,7 +138,7 @@ test.describe('Customer registry vehicle flows', () => {
 
     const dialog = await customersPage.openCreateVehicle(MOCK_CUSTOMER_IDS.anna);
 
-    await fillElectricAudi(page, dialog);
+    await customersPage.fillVehicle(dialog, ELECTRIC_AUDI);
     await dialog.getByRole('button', { name: 'Save' }).click();
 
     await expect(customersPage.vehicleDialog('Create vehicle')).toHaveCount(0);

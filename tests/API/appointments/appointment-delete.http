@@ -1,5 +1,5 @@
-# DELETE (AdminOnly) hard-deletes the appointment and its mechanic assignments in one SaveChangesAsync;
-# its linked quotes are deleted with it (cascade, no SetNull) and a Completed one is 409 (appointment-lifecycle.http). CustomerId/VehicleId resolve from a real pair at run time.
+# DELETE /api/appointments/{id} (AdminOnly) hard-deletes the appointment, its mechanic assignments and its linked quotes
+# (cascade); a Completed one is 409 (appointment-lifecycle.http), unauthenticated 401 is in appointments-unauth.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -9,12 +9,9 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 
-
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
-
-###
 
 ### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints, 200 expected)
 # @name adminLogin
@@ -22,10 +19,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -33,81 +27,58 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
+### [Setup][Appointments] Resolve the shared fixture customer and its vehicle (200 expected)
 # @name fixtureCustomer
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
 
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@FixtureCustomerId = {{fixtureCustomer.id}}
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
-
 ### [Setup][Appointments] Create a disposable appointment to delete below (201 expected)
 # @name firstApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Appointment-delete fixture: first disposable appointment",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: first disposable appointment", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 201
 
-###
-
-@FirstApptId = {{firstApptCreate.id}}
-
 ### [Positive][Appointments] Admin deletes the appointment (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{FirstApptId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{firstApptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
-###
+### [Positive][Appointments] The deleted appointment is gone from the customer history (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments?descending=true
 
-### [Negative][Appointments] Repeat delete on the now-deleted appointment (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{FirstApptId}}
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == firstApptCreate.id)) == false
+
+### [Negative][Appointments] Repeat delete on the now-deleted appointment (404, appointment_not_found)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{firstApptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
 ?? js response.parsedBody.code == appointment_not_found
-###
 
 ### [Setup][Appointments] Create an appointment that owns two quotes (201 expected)
 # @name cascadeApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "vehicleId": {{fixtureVehicles.items[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: quote cascade", "mechanicIds": [{{AdminMechanicId}}] }
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: quote cascade", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 201
 
-###
-
 ### [Setup][Appointments] Create the first quote linked to it (201 expected)
 # @name cascadeQuoteOne
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureCustomer.vehicles[0].id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -116,11 +87,9 @@ Content-Type: application/json
 
 ?? status == 201
 
-###
-
 ### [Setup][Appointments] Create the second quote linked to it (201 expected)
 # @name cascadeQuoteTwo
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/quotes
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureCustomer.vehicles[0].id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -129,8 +98,6 @@ Content-Type: application/json
 
 ?? status == 201
 
-###
-
 ### [Positive][Appointments] Deleting the non-Completed appointment deletes its quotes with it (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{cascadeApptCreate.id}}
 Origin: {{WebUI_Origin}}
@@ -138,98 +105,64 @@ X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
-###
-
 ### [Negative][Appointments] Cascade check - the first quote no longer exists (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{cascadeQuoteOne.id}}
 
 ?? status == 404
-
-###
 
 ### [Negative][Appointments] Cascade check - the second quote no longer exists (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{cascadeQuoteTwo.id}}
 
 ?? status == 404
 
-###
-
-### [Setup][Appointments] Create a second disposable appointment for the authz/cleanup checks (201 expected)
-# @name secondApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+### [Setup][Appointments] Create an appointment and cancel it (201, then 200 expected)
+# @name cancelledApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Appointment-delete fixture: second disposable appointment",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: cancelled appointment", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 201
 
 ###
 
-@SecondApptId = {{secondApptCreate.id}}
-
-### [Setup][Appointments] Logout admin, login as plain mechanic for the authz check (200 expected)
-# @name nonAdminLogin
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-### [Negative][Appointments] Plain mechanic cannot delete appointment (403 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{cancelledApptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 403
+{ "status": "Cancelled", "version": {{cancelledApptCreate.version}} }
 
-###
+?? status == 200
+?? js response.parsedBody.canDelete == true
 
-### [Setup][Appointments] Logout before the unauthenticated delete check (204 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+### [Positive][Appointments] A Cancelled appointment can be deleted (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{cancelledApptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
-###
-
-### [Negative][Appointments] Unauthenticated delete (401 expected)
-# @no-cookie-jar
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+### [Setup][Appointments] Create a second disposable appointment for the authz check (201 expected)
+# @name secondApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 401
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Appointment-delete fixture: second disposable appointment", "mechanicIds": [{{adminLogin.personId}}] }
 
-###
+?? status == 201
 
-### [Setup][Appointments] Login as admin again for cleanup (200 expected)
-# @name adminLogin
+### [Setup][Appointments] Login as the plain mechanic for the authz check (200 expected)
+# @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -237,12 +170,35 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Negative][Appointments] Plain mechanic cannot delete appointment (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{secondApptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
-# CSRF double-submit token for the cleanup delete below (see tests/CLAUDE.md Core Rules).
+?? status == 403
+
+### [Positive][Appointments] The refused delete left the appointment in place (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments?descending=true
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == secondApptCreate.id)) == true
+
+### [Setup][Appointments] Login as admin again for cleanup (200 expected)
+# @name adminAgainLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
 
 ### [Cleanup][Appointments] Admin deletes the second appointment (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SecondApptId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{secondApptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

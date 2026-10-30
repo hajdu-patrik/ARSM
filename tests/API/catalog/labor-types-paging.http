@@ -184,6 +184,17 @@ GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search=%20%20%20&page
 
 ###
 
+### [Positive][LaborTypes] Without any parameter the first page of 20 comes back (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js (response.parsedBody.items.length <= 20) == true
+?? js (response.parsedBody.totalCount >= 3) == true
+
+###
+
 ### [Cleanup][LaborTypes] Delete paging fixture A (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{pageA.id}}
 Origin: {{WebUI_Origin}}

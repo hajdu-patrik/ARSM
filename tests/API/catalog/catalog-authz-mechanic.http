@@ -1,0 +1,128 @@
+# A plain (non-admin) mechanic passes MechanicOnly on all 10 catalog routes (no AdminOnly there) and cleans up itself.
+# The unauthenticated 401 for every route: catalog-authz.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZM{{RunId}}
+
+### [Setup][Catalog] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Catalog] Login as the plain mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Catalog] Mechanic creates a part (201 expected)
+# @name mechanicPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}P", "name": "Mechanic Part", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Positive][Catalog] Mechanic reads the part (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{mechanicPart.id}}
+
+?? status == 200
+?? js response.parsedBody.partNumber == {{Key}}P
+
+###
+
+### [Positive][Catalog] Mechanic lists parts (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+
+###
+
+### [Positive][Catalog] Mechanic updates the part (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{mechanicPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}P", "name": "Mechanic Part Edited", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{mechanicPart.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][Catalog] Mechanic deletes the part (204 expected, DELETE is not AdminOnly here)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{mechanicPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Catalog] Mechanic creates a labor type (201 expected)
+# @name mechanicLabor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}L", "name": "Mechanic Labor", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Positive][Catalog] Mechanic reads the labor type (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{mechanicLabor.id}}
+
+?? status == 200
+?? js response.parsedBody.code == {{Key}}L
+
+###
+
+### [Positive][Catalog] Mechanic lists labor types (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+
+###
+
+### [Positive][Catalog] Mechanic updates the labor type (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{mechanicLabor.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}L", "name": "Mechanic Labor Edited", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{mechanicLabor.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][Catalog] Mechanic deletes the labor type (204 expected, DELETE is not AdminOnly here)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{mechanicLabor.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

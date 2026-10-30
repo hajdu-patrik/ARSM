@@ -1,0 +1,223 @@
+# Labor type code uniqueness (409 with the reason in `detail`, compared after trim and upper-casing), update input rules,
+# and the 404 for a missing row. A refused write changes nothing; a renamed or deleted labor type frees its code again.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZX{{RunId}}
+@GhostLaborId = 999999999
+
+### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][LaborTypes] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][LaborTypes] Create labor type A (201 expected)
+# @name laborA
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}A", "name": "Conflict Labor A", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Setup][LaborTypes] Create labor type B (201 expected)
+# @name laborB
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}B", "name": "Conflict Labor B", "hourlyNetRate": 200, "vatRatePercent": 18 }
+
+?? status == 201
+
+###
+
+### [Negative][LaborTypes] Create with an existing code (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}B", "name": "Duplicate", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A labor type with this code already exists.") == true
+
+###
+
+### [Negative][LaborTypes] Create with the code in lower case and padded (409 expected, normalized before the comparison)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "  {{Key.toLowerCase()}}b ", "name": "Duplicate", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A labor type with this code already exists.") == true
+
+###
+
+### [Negative][LaborTypes] Update A to B's code (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key.toLowerCase()}}b", "name": "Conflict Labor A", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{laborA.version}} }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A labor type with this code already exists.") == true
+
+###
+
+### [Negative][LaborTypes] Update A with an unsupported VAT rate (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}A", "name": "Conflict Labor A", "hourlyNetRate": 100, "vatRatePercent": 10, "version": {{laborA.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
+
+###
+
+### [Negative][LaborTypes] Update a missing labor type (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostLaborId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}G", "name": "Ghost", "hourlyNetRate": 100, "vatRatePercent": 27, "version": 1 }
+
+?? status == 404
+?? js (response.parsedBody.detail === "Labor type not found.") == true
+
+###
+
+### [Negative][LaborTypes] Delete a missing labor type (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostLaborId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Labor type not found.") == true
+
+###
+
+### [Negative][LaborTypes] Get a missing labor type (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostLaborId}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Labor type not found.") == true
+
+###
+
+### [Positive][LaborTypes] The refused writes changed nothing (200 expected, A keeps its code, name and version)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborA.id}}
+
+?? status == 200
+?? js response.parsedBody.code == {{Key}}A
+?? js (response.parsedBody.name === "Conflict Labor A") == true
+?? js response.parsedBody.vatRatePercent == 27
+?? js (response.parsedBody.version == laborA.version) == true
+
+###
+
+### [Positive][LaborTypes] Rename A to a free code (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}C", "name": "Conflict Labor A", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{laborA.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][LaborTypes] The code A gave up is free for a new labor type (201 expected)
+# @name reusedA
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}A", "name": "Reused A", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Positive][LaborTypes] Deleting B frees its code (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][LaborTypes] The code of the deleted labor type is free for a new one (201 expected)
+# @name reusedB
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}B", "name": "Reused B", "hourlyNetRate": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Cleanup][LaborTypes] Delete the renamed labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{laborA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][LaborTypes] Delete the labor type that reused A's code (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{reusedA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][LaborTypes] Delete the labor type that reused B's code (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{reusedB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

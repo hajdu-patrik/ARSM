@@ -1,0 +1,235 @@
+# PUT /api/profile also rewrites the linked Identity user: after an email and phone change the new values log in, the old
+# ones answer 401, and clearing the phone ends phone login. Disposable mechanic, prefix profile.update.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+# Phone digits derived from this run's id so the registration never collides with another file or an earlier, aborted run.
+@PhoneTail = {{RunId.toString().slice(-6)}}
+@OldEmail = profile.update.sync.before.{{RunId}}@example.test
+@NewEmail = profile.update.sync.after.{{RunId}}@example.test
+
+
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Profile] Login as admin to provision the disposable mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Register the disposable mechanic with the old email and phone (200 expected)
+# @name regActor
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Identity", "lastName": "Sync", "email": "{{OldEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 30 1{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Setup][Profile] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Profile] Login as the disposable mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{OldEmail}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Profile] Change email (upper-case input) and phone (local format, default region) in one update: both are normalized (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "email": "  PROFILE.UPDATE.SYNC.AFTER.{{RunId}}@EXAMPLE.TEST ", "phoneNumber": "304{{PhoneTail}}" }
+
+?? status == 200
+?? js (response.parsedBody.email.startsWith("profile.update.sync.after.")) == true
+?? js (response.parsedBody.email == response.parsedBody.email.toLowerCase()) == true
+?? js (/^\+36304[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+
+###
+
+### [Positive][Profile] The same email in another letter case is no change and no conflict with itself (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "email": "Profile.Update.Sync.After.{{RunId}}@Example.Test", "phoneNumber": "+36 30 4{{PhoneTail}}" }
+
+?? status == 200
+?? js (response.parsedBody.email.startsWith("profile.update.sync.after.")) == true
+?? js (/^\+36304[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+
+###
+
+### [Setup][Profile] Logout the disposable mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Profile] The old email no longer logs in (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{OldEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Negative][Profile] The old phone no longer logs in (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "+36 30 1{{PhoneTail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Positive][Profile] The new phone logs in (200 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "+36 30 4{{PhoneTail}}", "password": "{{TestPassword}}" }
+
+?? status == 200
+?? js (response.parsedBody.personId == regActor.personId) == true
+
+###
+
+### [Positive][Profile] The new email logs in (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NewEmail}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+?? js (response.parsedBody.personId == regActor.personId) == true
+
+###
+
+### [Positive][Profile] An empty phone clears it (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "phoneNumber": "" }
+
+?? status == 200
+?? js (response.parsedBody.phoneNumber == null) == true
+
+###
+
+### [Negative][Profile] A cleared phone ends phone login (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "+36 30 4{{PhoneTail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Positive][Profile] The stored profile shows the new email and no phone (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js (response.parsedBody.email.startsWith("profile.update.sync.after.")) == true
+?? js (response.parsedBody.phoneNumber == null) == true
+
+###
+
+### [Setup][Profile] Logout the disposable mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Cleanup] Login as admin to delete the disposable mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the disposable mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regActor.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

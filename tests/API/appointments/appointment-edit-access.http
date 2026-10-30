@@ -1,0 +1,184 @@
+# Who may edit an appointment: an assigned mechanic or any admin; a mechanic who is not assigned gets 403 on update,
+# vehicle edit and status change. A disposable customer and vehicle are created and deleted by the admin here.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@CustomerEmail = fixture.appt.access.{{RunId}}@example.test
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Appointment", "middleName": null, "lastName": "Access", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ACC-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1801", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Create an appointment assigned only to the admin (201 expected)
+# @name adminOnlyAppt
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Access fixture: admin only", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Negative][Appointments] A mechanic who is not assigned cannot change the status (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{adminOnlyAppt.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{adminOnlyAppt.version}} }
+
+?? status == 403
+
+### [Negative][Appointments] A mechanic who is not assigned cannot update the appointment (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{adminOnlyAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2030-01-03T16:15:00", "taskDescription": "Forbidden update attempt", "version": {{adminOnlyAppt.version}} }
+
+?? status == 403
+
+### [Negative][Appointments] A mechanic who is not assigned cannot edit the vehicle (403 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{adminOnlyAppt.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ACX-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1802", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 1000, "enginePowerKw": 80, "drivetrainType": "Petrol" }
+
+?? status == 403
+
+### [Setup][Appointments] Intake the appointment as this mechanic, so it is assigned only to the mechanic (201 expected)
+# @name mechanicOnlyAppt
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "{{CustomerEmail}}", "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-19T09:00:00", "dueDateTime": "2026-04-20T09:00:00", "taskDescription": "Access fixture: mechanic only" }
+
+?? status == 201
+
+### [Positive][Appointments] An assigned plain mechanic updates the appointment (200 expected)
+# @name mechanicUpdated
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{mechanicOnlyAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-21T09:00:00", "taskDescription": "Updated by the assigned mechanic", "version": {{mechanicOnlyAppt.version}} }
+
+?? status == 200
+?? js (response.parsedBody.taskDescription === "Updated by the assigned mechanic") == true
+
+### [Positive][Appointments] An assigned plain mechanic edits the vehicle (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{mechanicOnlyAppt.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ACM-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1803", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 1000, "enginePowerKw": 80, "drivetrainType": "Petrol" }
+
+?? status == 200
+?? js response.parsedBody.vehicle.brand == Ford
+
+### [Setup][Appointments] Login as admin again (200 expected)
+# @name adminAgainLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Positive][Appointments] An admin who is not assigned updates the appointment (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{mechanicOnlyAppt.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "dueDateTime": "2026-04-22T09:00:00", "taskDescription": "Updated by an unassigned admin", "version": {{mechanicUpdated.version}} }
+
+?? status == 200
+?? js (response.parsedBody.taskDescription === "Updated by an unassigned admin") == true
+?? js response.parsedBody.mechanics.length == 1
+
+### [Positive][Appointments] An admin who is not assigned edits the vehicle (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{mechanicOnlyAppt.id}}/vehicle
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ACM-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1803", "brand": "Opel", "model": "Astra", "year": 2018, "mileageKm": 2000, "enginePowerKw": 80, "drivetrainType": "Petrol" }
+
+?? status == 200
+?? js response.parsedBody.vehicle.brand == Opel
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading vehicle and appointments (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

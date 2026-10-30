@@ -52,6 +52,7 @@ Content-Type: application/json
 { "code": "{{Key}}", "name": "Concurrency No Version", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -64,6 +65,7 @@ Content-Type: application/json
 { "code": "{{Key}}", "name": "Concurrency Zero Version", "hourlyNetRate": 100, "vatRatePercent": 27, "version": 0 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -101,6 +103,15 @@ Content-Type: application/json
 
 ###
 
+### [Positive][LaborTypes] The stale write was not applied (200 expected, name and version are those of the last good update)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+
+?? status == 200
+?? js (response.parsedBody.name === "Concurrency Updated") == true
+?? js (response.parsedBody.version == rereadLaborType.version) == true
+
+###
+
 ### [Positive][LaborTypes] The re-read version updates again (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
 Origin: {{WebUI_Origin}}
@@ -110,6 +121,15 @@ Content-Type: application/json
 { "code": "{{Key}}", "name": "Concurrency Recovered", "hourlyNetRate": 100, "vatRatePercent": 27, "version": {{rereadLaborType.version}} }
 
 ?? status == 204
+
+###
+
+### [Positive][LaborTypes] The recovered write is stored under yet another version (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{concLaborType.id}}
+
+?? status == 200
+?? js (response.parsedBody.name === "Concurrency Recovered") == true
+?? js (response.parsedBody.version != rereadLaborType.version) == true
 
 ###
 

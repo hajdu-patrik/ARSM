@@ -9,6 +9,21 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Added
+- Test coverage audit of every layer (2026-10-30), with a new regression-proof rule in the agent chain.
+  - Every layer was compared with the code branch by branch: xUnit grew from 241 to 1258 tests, the new stdlib `tests/Scripts` suite has 466
+    tests (run by the pre-push backend stage and the `dotnet.yml` repo gate), the HTTP suite runs 2293 requests, and the E2E suite has 625 tests.
+    `GET /api/profile/picture/updates` got its first test.
+  - The SQL suite could never fail (its checks only returned rows); all 26 files now raise an error on a violation.
+  - 34 redundant or obsolete test files were deleted or merged; `tests/CLAUDE.md` records what covers their behaviour.
+  - Fixed, each proven by a test that fails on the old code: numeric enum text accepted as a quote or appointment status, line kind, status
+    filter and object storage provider (shared `Validation/DefinedEnum`, also on registration); a quantity rounding to 0.00 answered 500;
+    non-ASCII digits passed the company tax number and postal code; a blank customer middle name stored as an empty string; a sole mechanic's
+    self-delete orphaned the appointment and stopped the next API start (now 422); the WebUI showed the too-short message for a missing special
+    character and no toast on a repeated intake refusal; in the scripts `validate.py` missed `!shadow-*` and arbitrary shadows, the sanitizer
+    left bearer tokens readable, a BOM lost the first secret, and a deleted spec broke `select-e2e-specs.py --run`.
+  - `arsm-chain`: a `test` work package area, `bugsFound` on every agent, a regression test per self-found defect before the suites, a `unit`
+    gate, and a `tests-failed` end state; the rule also binds direct work (root `CLAUDE.md`, Regression Proof).
+  - _Dev time: ~2h 47m wall-clock. ~$24 (2,401,599 output tokens, all on sonnet; output-token-only estimate of the chain run, a lower bound that excludes input tokens, cache and the follow-up E2E fix agent)._
 - Error alerts, persistent DataProtection keys and session-revocation persistence (2026-10-29), the pentest follow-ups.
   - Two log-based alert rules, `arsm-api-errors` (severity 1, `fail:`/`crit:`) and `arsm-api-warnings` (severity 3,
     `warn:`): stateless, one mail per 5-minute window with the count and the first lines, no resolve mail; the existing

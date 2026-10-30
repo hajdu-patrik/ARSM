@@ -1,15 +1,11 @@
-/** Paging of the Inventory tabs and the Quotes list: viewport-sized pages, arrows, indicator, server search and filter. */
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+/** Paging of the Inventory tabs: viewport-sized pages, arrows, indicator, server search and the tab switch.
+ * The file keeps its old name; the Quotes list is paged in `quote-pagination.spec.ts`. */
+import { expect, test, type Page } from '@playwright/test';
 import { CatalogPage, type CatalogItemKind, type CatalogTab } from './pages/catalog.page';
-import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
-import type { PaginationControls } from './support/pagination';
-import { MOCK_QUOTE_IDS, type MockApiState } from './support/test-data';
+import { bootPagedPage, scrollOverflowPx, settledPageSize } from './support/paging-helpers';
+import type { MockApiState } from './support/test-data';
 
 const VIEWPORT = { width: 1280, height: 900 };
-const QUOTE_NUMBER = /ARSM-\d{4}-\d{4}/;
 const CATALOG_TOTAL = 42;
 const SEARCH_MATCHES = 10;
 
@@ -47,31 +43,8 @@ const CATALOG_CASES: readonly CatalogCase[] = [
   },
 ];
 
-/** Waits until the rows and the indicator agree on one page size above 1, and returns that size. */
-async function settledPageSize(rows: Locator, controls: PaginationControls, total: number): Promise<number> {
-  let pageSize = 0;
-  await expect.poll(async () => {
-    pageSize = await rows.count();
-    const indicator = (await controls.indicator.count()) > 0 ? (await controls.indicator.innerText()).replaceAll(/\s+/g, ' ').trim() : '';
-    return pageSize > 1 && indicator === `1 / ${String(Math.ceil(total / pageSize))}`;
-  }).toBe(true);
-  return pageSize;
-}
-
-/** Remaining vertical scroll of the page's scroll container; a fitted page leaves none. */
-function scrollOverflowPx(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const main = document.querySelector('main');
-    return main === null ? Number.NaN : main.scrollHeight - main.clientHeight;
-  });
-}
-
 async function bootPage(page: Page, seed?: (state: MockApiState) => void): Promise<void> {
-  await page.setViewportSize(VIEWPORT);
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  seed?.(state);
-  await new AuthPage(page).loginAsMechanic(env);
+  await bootPagedPage(page, VIEWPORT, seed);
 }
 
 for (const catalogCase of CATALOG_CASES) {
@@ -167,79 +140,5 @@ test.describe('Pagination - catalog tab switch', () => {
 
     await catalog.tab('parts').click();
     await expect(partControls.indicator).toHaveText(/^1 \/ \d+$/);
-  });
-});
-
-/** 24 extra quotes: even numbers are drafts, odd ones sent; titles "Bulk quote 01" to "Bulk quote 24". */
-function seedBulkQuotes(state: MockApiState): void {
-  const template = state.quotes.find((quote) => quote.id === MOCK_QUOTE_IDS.sentDiagnostics);
-  if (!template) {
-    throw new Error('The quote fixtures changed: the bulk seed needs the sent quote.');
-  }
-
-  for (let index = 1; index <= 24; index += 1) {
-    const isDraft = index % 2 === 0;
-    state.quotes.push({
-      ...template,
-      id: 8000 + index,
-      quoteNumber: `ARSM-2026-02${String(index).padStart(2, '0')}`,
-      title: `Bulk quote ${String(index).padStart(2, '0')}`,
-      status: isDraft ? 'Draft' : 'Sent',
-      sentAt: isDraft ? null : template.sentAt,
-      createdAt: new Date(Date.UTC(2026, 5, index)).toISOString(),
-      lines: [],
-    });
-  }
-}
-
-async function pageQuoteNumbers(quotes: QuotesPage): Promise<string[]> {
-  const texts = await quotes.rows().allInnerTexts();
-  return texts.map((text) => QUOTE_NUMBER.exec(text)?.[0] ?? text);
-}
-
-async function collectQuoteNumbers(quotes: QuotesPage): Promise<string[]> {
-  const controls = quotes.pagination();
-  const numbers: string[] = [];
-  for (;;) {
-    const current = await pageQuoteNumbers(quotes);
-    numbers.push(...current);
-    if (await controls.next.isDisabled()) {
-      return numbers;
-    }
-    await controls.next.click();
-    await expect(quotes.rows().first()).not.toContainText(current[0] ?? '');
-  }
-}
-
-test.describe('Pagination - quotes', () => {
-  test('pages the list and reaches every quote once', async ({ page }) => {
-    await bootPage(page, seedBulkQuotes);
-    const quotes = new QuotesPage(page);
-    await quotes.goto();
-    const pageSize = await settledPageSize(quotes.rows(), quotes.pagination(), 27);
-    expect(pageSize).toBeLessThan(27);
-
-    const numbers = await collectQuoteNumbers(quotes);
-    expect(numbers).toHaveLength(27);
-    expect(new Set(numbers).size).toBe(27);
-  });
-
-  test('filters by status and searches on the server, starting over on page 1', async ({ page }) => {
-    await bootPage(page, seedBulkQuotes);
-    const quotes = new QuotesPage(page);
-    await quotes.goto();
-    await settledPageSize(quotes.rows(), quotes.pagination(), 27);
-    await quotes.pagination().next.click();
-    await expect(quotes.pagination().indicator).toHaveText(/^2 \/ \d+$/);
-
-    await quotes.filterByStatus('Draft');
-    await settledPageSize(quotes.rows(), quotes.pagination(), 13);
-    await expect(quotes.rows().first().getByTestId('quote-status-badge')).toHaveText('Draft');
-    expect(await collectQuoteNumbers(quotes)).toHaveLength(13);
-
-    await quotes.searchInput().fill('Bulk quote 1');
-    await settledPageSize(quotes.rows(), quotes.pagination(), 5);
-    const drafts = await collectQuoteNumbers(quotes);
-    expect(drafts.sort()).toEqual(['ARSM-2026-0210', 'ARSM-2026-0212', 'ARSM-2026-0214', 'ARSM-2026-0216', 'ARSM-2026-0218']);
   });
 });

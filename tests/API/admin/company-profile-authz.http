@@ -2,8 +2,11 @@
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 
 # The valid body keeps every rejection on policy (AdminOnly gates before validation).
+# The rejected updates must not have reached the row, which the admin read at the end checks.
 
 ### [Setup][CompanyProfile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -92,3 +95,36 @@ Content-Type: application/json
 }
 
 ?? status == 401
+
+###
+
+### [Setup][CompanyProfile] Login as admin (200 expected)
+# @name csrfSource2
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][CompanyProfile] The rejected updates left the stored profile untouched (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 200
+?? js (response.parsedBody.name != "Forbidden Kft." && response.parsedBody.email != "forbidden@example.test") == true
+
+###
+
+### [Setup][CompanyProfile] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -1,0 +1,229 @@
+# POST /api/customers/{id}/vehicles format rules: VIN (17 characters, no I/O/Q), drivetrain names (no numeric input) and the
+# European plate rules. All 422 with the reason in `detail`.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}1201
+@GhostCustomerId = 999999999
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Formats", "email": "vehicles.formats.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Negative][Vehicles] A 16-character VIN (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin.slice(0, 16)}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN must be exactly 17 characters.") == true
+
+###
+
+### [Negative][Vehicles] An 18-character VIN (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin}}9", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN must be exactly 17 characters.") == true
+
+###
+
+### [Negative][Vehicles] A VIN with the forbidden letter Q (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin.slice(0, 16)}}Q", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN may only contain digits and uppercase letters A-H, J-N, P, and R-Z.") == true
+
+###
+
+### [Negative][Vehicles] A VIN with a symbol (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin.slice(0, 16)}}!", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN may only contain digits and uppercase letters A-H, J-N, P, and R-Z.") == true
+
+###
+
+### [Negative][Vehicles] An unknown drivetrain (422 expected, the allowed names are listed)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Hydrogen" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "DrivetrainType must be one of: Petrol, Diesel, Hybrid, PHEV, Electric.") == true
+
+###
+
+### [Negative][Vehicles] A numeric drivetrain is not accepted as an enum index (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "1" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "DrivetrainType must be one of: Petrol, Diesel, Hybrid, PHEV, Electric.") == true
+
+###
+
+### [Negative][Vehicles] A one-character plate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "5", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must be between 2 and 20 characters.") == true
+
+###
+
+### [Negative][Vehicles] A plate with an unsupported character (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "AB@123", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail.includes('unsupported characters')) == true
+
+###
+
+### [Negative][Vehicles] A plate in a non-European script (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "اب-123", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail.includes('non-European letters')) == true
+
+###
+
+### [Negative][Vehicles] A plate that starts with a separator (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "-AB123", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must start and end with a letter or digit.") == true
+
+###
+
+### [Negative][Vehicles] A plate with repeated separators (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "AB--123", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate cannot contain repeated separators.") == true
+
+###
+
+### [Negative][Vehicles] A plate without a digit (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "ABCDEF", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must contain at least one digit.") == true
+
+###
+
+### [Negative][Vehicles] A valid body for a missing customer (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{GhostCustomerId}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "FM-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 0, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
+
+###
+
+### [Positive][Vehicles] None of the refused requests created a vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Cleanup][Vehicles] Delete the owner (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

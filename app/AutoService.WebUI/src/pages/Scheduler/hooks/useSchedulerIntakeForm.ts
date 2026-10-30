@@ -21,6 +21,7 @@ export function useSchedulerIntakeForm({
 }: UseSchedulerIntakeFormArgs) {
   const fields = useSchedulerIntakeFields(selectedDate);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [errorAttempt, setErrorAttempt] = useState(0);
 
   const lookup = useSchedulerIntakeLookup({
     onLookupReset: fields.resetVehicleSelectionState,
@@ -53,6 +54,7 @@ export function useSchedulerIntakeForm({
     },
     onError: (error) => {
       setErrorKey(mapIntakeErrorToKey(error));
+      setErrorAttempt((attempt) => attempt + 1);
     },
   });
 
@@ -83,6 +85,7 @@ export function useSchedulerIntakeForm({
 
     if ('errorKey' in result) {
       setErrorKey(result.errorKey);
+      setErrorAttempt((attempt) => attempt + 1);
       return;
     }
 
@@ -163,6 +166,7 @@ export function useSchedulerIntakeForm({
       vehicle,
       isSubmitting,
       errorKey,
+      errorAttempt,
     },
     derived: {
       shouldShowCustomerCreate,

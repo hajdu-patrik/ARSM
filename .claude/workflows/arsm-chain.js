@@ -19,12 +19,17 @@ const baseRef = args?.baseRef || 'HEAD'
 const taskRoute = args?.route || null // {model, effort} from the [router] line's model=/effort= fields: the planner's route
 if (!task) throw new Error('arsm-chain needs args.task (the user request plus every agreed constraint).')
 
-const AREAS = ['backend', 'frontend', 'migration']
+const AREAS = ['backend', 'frontend', 'migration', 'test']
 const AREA_ROOTS = {
   frontend: ['app/AutoService.WebUI'],
   backend: ['app/AutoService.ApiService', 'app/AutoService.AppHost', 'app/AutoService.ServiceDefaults'],
   migration: ['app/AutoService.ApiService/Data/Migrations'],
+  test: ['tests', 'app/AutoService.WebUI/tests'],
 }
+// A test package runs on the persona that may write its layer; xUnit and mixed test paths need a general worker.
+const TEST_AGENTS = { 'tests/API': 'http-endpoint-test', 'tests/Database': 'sql-database-test', 'app/AutoService.WebUI/tests': 'e2e-playwright-test' }
+const agentOf = (area, owns = []) => area !== 'test' ? area
+  : Object.entries(TEST_AGENTS).find(([root]) => owns.length && owns.every((o) => o.startsWith(root)))?.[1] ?? 'general-purpose'
 const WEBUI_PREFIX = 'app/AutoService.WebUI/'
 // Implementing agents that may run at once, indexed by the effective 0-4 difficulty.
 const PARALLEL_CAP = [2, 2, 4, 6, 8]
@@ -78,9 +83,11 @@ const run = async (role, route, prompt, opts) => {
 const HOUSE_RULES =
   'House rules: every comment is at most 2 lines, doc comments included (one short summary, no @param/@returns lists). ' +
   'Temporary files (scratch specs, scripts, screenshots, dumps, logs) go only to your scratchpad or the OS temp directory, ' +
-  'never into the repository; delete them when done and never stage or commit them.'
+  'never into the repository; delete them when done and never stage or commit them. List every behaviour defect you found ' +
+  'and fixed yourself (not named in the task; lint, type and style findings do not count) in `bugsFound`: the chain proves each with a test.'
 
 const STR_LIST = { type: 'array', items: { type: 'string' } }
+const BUGS = { type: 'array', items: { type: 'object', properties: { summary: { type: 'string' }, fixedIn: STR_LIST }, required: ['summary', 'fixedIn'] } }
 const ROUTE_SCHEMA = {
   type: 'object',
   properties: {
@@ -116,7 +123,7 @@ const PLAN_SCHEMA = {
     contract: { type: 'string', description: 'Shared DTO/API contract fixed up front so backend and frontend can run in parallel; empty if none.' },
     packages: { type: 'array', items: PACKAGE_SCHEMA },
     uiChange: { type: 'boolean' },
-    gates: { type: 'object', properties: { e2e: { type: 'boolean' }, http: { type: 'boolean' }, sql: { type: 'boolean' } }, required: ['e2e', 'http', 'sql'] },
+    gates: { type: 'object', properties: { e2e: { type: 'boolean' }, http: { type: 'boolean' }, sql: { type: 'boolean' }, unit: { type: 'boolean' } }, required: ['e2e', 'http', 'sql', 'unit'] },
     questions: { ...STR_LIST, description: 'Undecided product/UX/contract questions the user must answer before implementation.' },
     steps: { ...STEPS_SCHEMA, description: 'Trirouter routes of the shared steps: review (docs-sync), gate (validate + bookkeeping), test, fix (hand-offs, unowned failures).' },
   },
@@ -129,8 +136,9 @@ const IMPL_SCHEMA = {
     filesChanged: STR_LIST,
     openQuestions: STR_LIST,
     handoffs: { ...STR_LIST, description: 'Changes needed outside your own paths, each naming the file and the exact change; the chain applies them after every package finishes.' },
+    bugsFound: BUGS,
   },
-  required: ['summary', 'filesChanged', 'openQuestions', 'handoffs'],
+  required: ['summary', 'filesChanged', 'openQuestions', 'handoffs', 'bugsFound'],
 }
 const UNTRACKED_SCHEMA = { type: 'object', properties: { untracked: STR_LIST }, required: ['untracked'] }
 const CLEANUP_SCHEMA = {
@@ -140,9 +148,11 @@ const CLEANUP_SCHEMA = {
 }
 const REVIEW_SCHEMA = {
   type: 'object',
-  properties: { summary: { type: 'string' }, filesChanged: STR_LIST, findings: STR_LIST },
-  required: ['summary', 'filesChanged', 'findings'],
+  properties: { summary: { type: 'string' }, filesChanged: STR_LIST, findings: STR_LIST, bugsFound: BUGS },
+  required: ['summary', 'filesChanged', 'findings', 'bugsFound'],
 }
+const PROOF_SCHEMA = { type: 'object', properties: { testFile: { type: 'string' }, filesChanged: STR_LIST, passesWithFix: { type: 'boolean' }, failsWithoutFix: { type: 'boolean' }, note: { type: 'string' } }, required: ['testFile', 'filesChanged', 'passesWithFix', 'failsWithoutFix', 'note'] }
+const TEST_SCHEMA = { type: 'object', properties: { passed: { type: 'boolean' }, summary: { type: 'string' }, filesChanged: STR_LIST, failures: STR_LIST }, required: ['passed', 'summary', 'filesChanged', 'failures'] }
 const GATE_SCHEMA = {
   type: 'object',
   properties: { passed: { type: 'boolean' }, failures: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, detail: STR_LIST }, required: ['stage', 'detail'] } } },
@@ -177,14 +187,14 @@ if (routerDifficulty === 1 && AREAS.includes(directArea)) {
     `- Rate the whole task on the 0-4 difficulty scale in \`difficulty\`. The router rated it ${routerDifficulty ?? 'unknown'}; ` +
     `the chain uses the higher rating and runs at most this many implementing agents at once (difficulty: agents): ` +
     `${capTable}. Cut the work into independent, roughly even packages sized for that parallelism.\n` +
-    `- Every package has one area (backend, frontend, migration only on a real schema delta) and \`owns\` a disjoint set of repository-relative ` +
+    `- Every package has one area (backend, frontend, test for test-only work, migration only on a real schema delta) and \`owns\` a disjoint set of repository-relative ` +
     `files or directories that only it edits; all packages share one working tree.\n` +
     `- Work that other packages build on (a shared component, style token, hook or DTO) is its own package, and its consumers list it in ` +
     `\`dependsOn\`. Migration packages always run after every backend package.\n` +
     `- If backend and frontend both change, fix the shared DTO/API contract in \`contract\` so they run in parallel.\n` +
     `- Plan from a targeted scan: read what you need to assign ownership and write precise prompts, and leave reproduction and root-cause ` +
-    `debugging to the owning package. Package prompts must not ask for tests, repro scripts, dev servers or validation; the chain runs those.\n` +
-    `- Set gates per the root CLAUDE.md Gates section. List every undecided product/UX/contract decision in \`questions\` instead of choosing ` +
+    `debugging to the owning package. Only \`test\` packages author or delete tests. No package prompt asks to run tests, repro scripts, dev servers or validation; the chain does.\n` +
+    `- Set gates per the root CLAUDE.md Gates section, plus \`unit\` for any change the xUnit project covers. List every undecided product/UX/contract decision in \`questions\` instead of choosing ` +
     `(then skip the routing and return '' for every route).\n- ${ROUTING_RULES}\n\nTask:\n${task}`,
     { agentType: 'orchestrator', phase: 'Plan', schema: PLAN_SCHEMA })
 }
@@ -260,7 +270,8 @@ const limiter = (limit) => {
 }
 const slot = limiter(cap)
 const changed = new Set()
-const track = (result) => { if (result) result.filesChanged.forEach((f) => changed.add(normPath(f))) }
+const bugs = [] // defects the run found by itself: each one needs a regression test (user decision 2026-10-30)
+const track = (result) => { if (result) { result.filesChanged.forEach((f) => changed.add(normPath(f))); bugs.push(...(result.bugsFound ?? [])) } }
 
 // implement + per-package review
 // Untracked files that exist before any package runs belong to the user; the cleanup never touches them.
@@ -278,7 +289,7 @@ const packagePrompt = (p) =>
   (plan.contract ? `Shared contract (fixed, do not change it):\n${plan.contract}\n\n` : '') +
   (p.area === 'frontend' ? 'Apply the UI/UX policy in `.claude/agents/ui-ux-style-profile.md` yourself while implementing; it is reviewed on the diff afterwards.\n\n' : '') +
   `Original task for context:\n${task}\n\n` +
-  'Do not run validation, tests, repro scripts or dev servers, even if asked above; the chain does that. Report every file you changed.\n\n' +
+  `Do not run validation, tests, repro scripts or dev servers, even if asked above; the chain does that${p.area === 'test' ? ' in its Test phase' : ''}. Report every file you changed.\n\n` +
   HOUSE_RULES
 const fixPrompt = (failures, p, busy) =>
   `Fix these validation/review failures in your scope, nothing else:\n${JSON.stringify(failures, null, 2)}\n\n` +
@@ -288,7 +299,7 @@ const reviewPrompt = (what, files) =>
   `${what}\nReview ONLY these changed files (diff against ${baseRef}); do not sweep the repository:\n${files.join('\n')}`
 
 const runPackage = async (p) => {
-  const impl = await slot(() => run('implement', p.routes.implement, packagePrompt(p), { agentType: p.area, phase: 'Implement', label: `implement:${p.id}`, schema: IMPL_SCHEMA }))
+  const impl = await slot(() => run('implement', p.routes.implement, packagePrompt(p), { agentType: agentOf(p.area, p.owns), phase: 'Implement', label: `implement:${p.id}`, schema: IMPL_SCHEMA }))
   track(impl)
   if (!impl || impl.openQuestions.length) return { p, impl }
   const source = impl.filesChanged.filter((f) => /\.(cs|ts|tsx)$/.test(f))
@@ -303,7 +314,7 @@ const runPackage = async (p) => {
   track(principles)
   const uiFix = audit?.findings.length
     ? await slot(() => run('fix', p.routes.fix, fixPrompt([{ stage: 'ui-ux', detail: audit.findings }], p, []),
-      { agentType: p.area, phase: 'Review', label: `fix:${p.id}:ui-ux`, schema: IMPL_SCHEMA }))
+      { agentType: agentOf(p.area, p.owns), phase: 'Review', label: `fix:${p.id}:ui-ux`, schema: IMPL_SCHEMA }))
     : null
   track(uiFix)
   return { p, impl, review: [principles, audit].filter(Boolean), uiFix }
@@ -340,7 +351,7 @@ if (handoffs.length) {
     handoffs.filter((h) => h.area === area).map((h) => `- (${h.from}) ${h.change}`).join('\n') + '\n\n' +
     (plan.contract ? `Shared contract (fixed, do not change it):\n${plan.contract}\n\n` : '') +
     `Do not run validation or tests; the chain does that. Report every file you changed.\n\n${HOUSE_RULES}`,
-    { agentType: area, phase: 'Implement', label: `handoff:${area}`, schema: IMPL_SCHEMA }))))).filter(Boolean))
+    { agentType: agentOf(area), phase: 'Implement', label: `handoff:${area}`, schema: IMPL_SCHEMA }))))).filter(Boolean))
   applied.forEach(track)
 }
 const openQuestions = [...finished, ...applied.map((impl) => ({ impl }))].flatMap((r) => r.impl.openQuestions)
@@ -436,7 +447,7 @@ for (let round = 1; round <= 2 && gate?.passed === false; round++) {
   const fixLabel = (g) => (g.owner ? g.owner.id : `area-${g.area}`)
   log(`Fix round ${round}: ${groups.map(fixLabel).join(', ')}`)
   const fixes = await parallel(groups.map((g) => () => slot(() => run('fix', g.owner ? g.owner.routes.fix : stepRoutes.fix, fixPrompt(g.failures, g.owner, busy), {
-    agentType: g.area, phase: 'Gate', label: `fix:${fixLabel(g)}:${round}`, schema: IMPL_SCHEMA,
+    agentType: agentOf(g.area, g.owner?.owns), phase: 'Gate', label: `fix:${fixLabel(g)}:${round}`, schema: IMPL_SCHEMA,
   }))))
   fixes.forEach(track)
   gate = await runGate()
@@ -446,25 +457,43 @@ track(docs)
 if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, cleanup, calls: ran, tokensSpent: budget.spent() }
 
 phase('Test')
+// One at a time: an agent may use a temporary worktree and builds, and the suites below then run its test.
+const provePrompt = (bug) => `The run found and fixed this defect itself, so a regression test must prove the fix (root CLAUDE.md):\n${JSON.stringify(bug)}\n` +
+  'Reuse an existing test only if it really fails without the fix; otherwise add one at the lowest layer that observes the defect, per tests/CLAUDE.md. ' +
+  `Run it with the fix (must pass) and without it: xUnit and Playwright in a temporary \`git worktree\` of ${baseRef} with the test copied in, removed afterwards, ` + // Playwright needs its own PORT and PLAYWRIGHT_BASE_URL there, else it reuses the fixed dev server
+
+  'never by reverting the working tree. Suites that need the API stack run in the next step: set failsWithoutFix false and say why in `note`; do the same for a defect this run introduced itself.\n\n' + HOUSE_RULES
+const proofs = []
+for (const bug of bugs) {
+  const proof = await run('fix', stepRoutes.fix, provePrompt(bug), { agentType: 'general-purpose', phase: 'Test', label: `prove:${proofs.length + 1}`, schema: PROOF_SCHEMA })
+  proofs.push({ bug, proof })
+}
+proofs.forEach(({ proof }) => proof?.filesChanged.forEach((f) => changed.add(normPath(f))))
+if (proofs.length) gate = await runGate()
+if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, cleanup, proofs, calls: ran, tokensSpent: budget.spent() }
 const files = [...changed]
+const proofIn = (re) => proofs.some(({ proof }) => re.test(proof?.testFile ?? ''))
+const suiteOpts = (agentType, label) => ({ agentType, phase: 'Test', label, schema: TEST_SCHEMA })
+const FIX_TESTS = ' Fix a test that is wrong, never weaken one to pass; report an application defect in `failures`, you do not edit application code.'
 const tests = []
-if (plan.gates.e2e) tests.push(await run('test', stepRoutes.test,
+if (plan.gates.unit || proofIn(/AutoService\.UnitTests/)) tests.push(await run('test', stepRoutes.test, `Run \`python scripts/pre-push.py --only backend\` and report the result.${FIX_TESTS}`, suiteOpts('general-purpose', 'test:unit')))
+if (plan.gates.e2e || proofIn(/tests\/e2e/)) tests.push(await run('test', stepRoutes.test,
   `Generate missing coverage first if this is a new feature, then run \`python scripts/select-e2e-specs.py --base ${baseRef} --run\` ` +
-  `(targeted specs, 3 workers) and report the sanitized summary.\nChanged files:\n${files.join('\n')}`,
-  { agentType: 'e2e-playwright-test', phase: 'Test' }))
-// All suites share the runner's summary file, so they run one after another.
-if (plan.gates.http) tests.push(await run('test', stepRoutes.test, `Run the HTTP endpoint gate for these changes:\n${files.join('\n')}`,
-  { agentType: 'http-endpoint-test', phase: 'Test' }))
-if (plan.gates.sql) tests.push(await run('test', stepRoutes.test, `Run the SQL gate for these changes:\n${files.join('\n')}`,
-  { agentType: 'sql-database-test', phase: 'Test' }))
+  `(targeted specs, 3 workers) and report the sanitized summary.${FIX_TESTS}\nChanged files:\n${files.join('\n')}`, suiteOpts('e2e-playwright-test', 'test:e2e')))
+// That gate stage runs the HTTP and SQL suites together on a disposable stack, so one agent covers both.
+if (plan.gates.http || plan.gates.sql || proofIn(/tests\/(API|Database)/)) tests.push(await run('test', stepRoutes.test,
+  `Run \`python scripts/pre-push.py --only api-suites\` and report the sanitized summary.${FIX_TESTS}\nChanged files:\n${files.join('\n')}`, suiteOpts('http-endpoint-test', 'test:api')))
+tests.forEach((t) => t?.filesChanged.forEach((f) => changed.add(normPath(f))))
 const finalCleanup = tests.length ? await cleanupPass('cleanup:after-tests') : null
+const unproven = proofs.filter(({ proof }) => !proof?.passesWithFix)
+const testsPassed = tests.every((t) => t?.passed) && !unproven.length
 
 return {
-  status: 'done',
+  status: testsPassed ? 'done' : 'tests-failed',
   difficulty: { router: routerDifficulty, orchestrator: planDifficulty, effective, parallel: cap },
   plan, packages,
   // Planned routes ({model, effort, source}: router, partial or fallback) and `calls`: what each agent really ran on.
   models: { plan: planRoute, steps: stepRoutes, packages: Object.fromEntries(ordered.map((p) => [p.id, p.routes])), calls: ran },
-  unfinished, applied, docs, cleanup, finalCleanup, gate, tests, changed: files,
+  unfinished, applied, docs, cleanup, finalCleanup, gate, proofs, unproven, tests, changed: [...changed],
   tokensSpent: budget.spent(),
 }

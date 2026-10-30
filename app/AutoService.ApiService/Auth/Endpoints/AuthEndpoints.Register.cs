@@ -231,7 +231,7 @@ public static partial class AuthEndpoints
             throw new ArgumentException("Registration is only available for mechanics.", nameof(request.PersonType));
         }
 
-        if (!Enum.TryParse<SpecializationType>(request.Specialization, true, out var specialization))
+        if (!DefinedEnum.TryParse<SpecializationType>(request.Specialization, out var specialization))
         {
             throw new ArgumentException("Specialization is invalid.", nameof(request.Specialization));
         }
@@ -250,7 +250,7 @@ public static partial class AuthEndpoints
 
         foreach (var expertiseValue in expertiseValues)
         {
-            if (!Enum.TryParse<ExpertiseType>(expertiseValue, true, out var parsedValue))
+            if (!DefinedEnum.TryParse<ExpertiseType>(expertiseValue, out var parsedValue))
             {
                 throw new ArgumentException($"Expertise value '{expertiseValue}' is invalid.", nameof(expertiseValues));
             }

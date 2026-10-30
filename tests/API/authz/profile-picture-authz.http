@@ -1,5 +1,5 @@
-# Verified against ProfileEndpoints.ProfilePicture.cs: only Admin or the caller's own personId may fetch
-# (else 403 before lookup). Complements profile-picture.http's 403/200/404 branches with the missing case - own picture via the id route - using ids resolved from login responses, not hardcoded.
+# GET /api/profile/picture/{personId}: an admin or the person itself may fetch (200 with a stored picture, else 404); anyone
+# else gets 403 before any lookup, so an unknown id cannot be probed. The expected 200 or 404 comes from hasProfilePicture in the admin roster.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -7,52 +7,21 @@
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@UnknownPersonId = 999999
 
-
-### [Setup][Authz] Clear any session cookie left by a previous file (204 or 401, not asserted)
+### [Setup][Authz] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Authz] Login as plain mechanic, capture own person id
-# @name mechanicLogin
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-### [Setup][Authz] Logout plain mechanic before the admin session
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
-###
-
-### [Setup][Authz] Login as admin, capture own person id
+### [Setup][Authz] Login as admin, capture own person id (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -62,15 +31,27 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Authz] Admin fetches the plain mechanic's picture by id (200 or 404 if none)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{mechanicLogin.personId}}
+### [Setup][Authz] Find the plain mechanic in the roster, with its picture flag (200 expected)
+# @name mechanicRow
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{NonAdminEmail}}&pageSize=500
 
-?? status != 403
-?? status < 500
+{{
+  exports.MechanicId = mechanicRow.items.find(m => m.email.toLowerCase() === NonAdminEmail.toLowerCase())?.personId;
+}}
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email.toLowerCase() == NonAdminEmail.toLowerCase())) == true
 
 ###
 
-### [Setup][Authz] Logout admin, login as plain mechanic again
+### [Positive][Authz] Admin fetches the plain mechanic's picture by id (200 with a picture, 404 without)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{MechanicId}}
+
+?? js (response.statusCode == (mechanicRow.items.find(m => m.email.toLowerCase() == NonAdminEmail.toLowerCase()).hasProfilePicture ? 200 : 404)) == true
+
+###
+
+### [Setup][Authz] Logout admin (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -79,34 +60,47 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Authz] Login as plain mechanic
-# @name csrfSource1
+### [Setup][Authz] Login as the plain mechanic (200 expected)
+# @name mechanicLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
 }}
 
 ?? status == 200
+?? js (response.parsedBody.personId == MechanicId) == true
 
 ###
 
-### [Positive][Authz] Plain mechanic fetches their own picture through the id route (200 or 404 if none)
+### [Positive][Authz] The plain mechanic fetches its own picture through the id route (200 with a picture, 404 without, never 403)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{mechanicLogin.personId}}
 
-?? status != 403
-?? status < 500
+?? js (response.statusCode == (mechanicRow.items.find(m => m.email.toLowerCase() == NonAdminEmail.toLowerCase()).hasProfilePicture ? 200 : 404)) == true
 
 ###
 
-### [Negative][Authz] Plain mechanic cannot fetch the admin's picture by id (403 expected)
+### [Negative][Authz] The plain mechanic cannot fetch the admin's picture (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{adminLogin.personId}}
 
 ?? status == 403
+
+###
+
+### [Negative][Authz] The plain mechanic gets 403, not 404, for an unknown id (403 expected, policy before lookup)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{UnknownPersonId}}
+
+?? status == 403
+
+###
+
+### [Setup][Authz] Logout the plain mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

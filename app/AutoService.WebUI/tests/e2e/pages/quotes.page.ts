@@ -101,6 +101,22 @@ export class QuotesPage {
     return dialog;
   }
 
+  /** Opens the create dialog through the `?vehicleId=<id>&new=1` link the vehicle row uses. */
+  async gotoNewQuote(vehicleId: number): Promise<Locator> {
+    await this.page.goto(`/quotes?vehicleId=${String(vehicleId)}&new=1`);
+    const dialog = this.page.getByRole('dialog', { name: /^(New quote|Új árajánlat)$/ });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+
+  /** Opens the add-line form of the open draft and returns the line editor. */
+  async startAddLine(): Promise<Locator> {
+    await this.page.getByTestId('quote-add-line-button').click();
+    const editor = this.page.getByTestId('quote-line-editor');
+    await expect(editor).toBeVisible();
+    return editor;
+  }
+
   /** Fills the add-line form and saves it, returning once the row count settles. */
   async addLine(options: {
     kind: QuoteLineKindOption;

@@ -1,0 +1,132 @@
+# Lockout through the login route: the fifth failed check locks the account for 15 minutes, a successful login resets the
+# count, and a locked account answers the uniform 401 (never 429, the lockout is not observable). Disposable mechanic only.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
+@RunId = {{$timestamp}}
+@LoginLockoutEmail = credential.lockout.login.{{RunId}}@example.test
+
+
+### [Setup][Lockout] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Lockout] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Lockout] Register the disposable mechanic that gets locked out (200 expected)
+# @name loginLockoutMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Login", "lastName": "Lockout", "email": "{{LoginLockoutEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Negative][Lockout] Four wrong passwords in a row are refused one by one (401 expected each)
+# @no-cookie-jar
+# @loop for 4
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LoginLockoutEmail}}", "password": "{{TestWrongPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Positive][Lockout] The right password still works after four failures, and that resets the count (200 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LoginLockoutEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 200
+?? js (response.parsedBody.personId == loginLockoutMechanic.personId) == true
+
+###
+
+### [Negative][Lockout] Four more wrong passwords stay below the threshold because of the reset (401 expected each)
+# @no-cookie-jar
+# @loop for 4
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LoginLockoutEmail}}", "password": "{{TestWrongPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Negative][Lockout] The fifth consecutive failure locks the account but still answers 401 (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LoginLockoutEmail}}", "password": "{{TestWrongPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Negative][Lockout] Now even the right password is refused with the same uniform problem, never 429 (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LoginLockoutEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+?? js (!response.headers['set-cookie']) == true
+
+###
+
+### [Cleanup][Lockout] Admin deletes the locked-out mechanic (200 expected, a lockout does not block the delete)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{loginLockoutMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Setup][Lockout] Logout the admin session (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

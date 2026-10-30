@@ -1,5 +1,5 @@
-# Split out of login-positive-matrix.http to keep both files under the size limit. Verified against
-# AuthEndpoints.Login.cs: every phone shape below normalizes to the same E.164 number, so all must resolve to the same self-provisioned (and deleted) mechanic.
+# Login by phone: every Hungarian mobile shape below normalizes to the same E.164 number, so all must resolve to the same
+# self-provisioned (and deleted) mechanic. Landline and EU numbers are login-positive-phone-regions.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -26,10 +26,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -46,16 +43,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Matrix",
-  "lastName": "PhoneFormats",
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "06 30 7{{PhoneTail}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Matrix", "lastName": "PhoneFormats", "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "06 30 7{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
@@ -75,12 +63,10 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "{{MatrixPhoneCanonical}}",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "{{MatrixPhoneCanonical}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
@@ -89,12 +75,10 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "+36307{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "+36307{{PhoneTail}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
@@ -103,12 +87,10 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "06307{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "06307{{PhoneTail}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
@@ -117,12 +99,10 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "06 30 7{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "06 30 7{{PhoneTail}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
@@ -131,46 +111,60 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "307{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "307{{PhoneTail}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
-### [Positive][Login Phone Matrix] Leading/trailing whitespace phone format (200 expected)
+### [Positive][Login Phone Matrix] Leading/trailing whitespace (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "   06 30 7{{PhoneTail}}   ",
-  "password": "{{TestPassword}}"
-}
+{ "phoneNumber": "   06 30 7{{PhoneTail}}   ", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
-### [Positive][Login Phone Matrix] Phone in email field (backward compatibility) (200 expected)
+### [Positive][Login Phone Matrix] Phone in the email field (backward compatibility) (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "06 30 7{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
+{ "email": "06 30 7{{PhoneTail}}", "password": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
 
 ###
 
-### [Setup][Cleanup] Logout the matrix mechanic session (204 or 401, not asserted)
+### [Positive][Login Phone Matrix] The email wins over a well-formed phone that belongs to nobody (200 expected)
+# FindLoginIdentityUserAsync looks the email up first; the phone is only a fallback when no email is given.
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{MatrixEmailWithPhone}}", "phoneNumber": "+49 151 12345678", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
+
+###
+
+### [Setup][Cleanup] Logout the matrix mechanic session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
 
 ###
 
@@ -180,10 +174,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];

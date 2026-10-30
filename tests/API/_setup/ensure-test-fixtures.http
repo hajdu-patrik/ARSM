@@ -234,8 +234,8 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Fixtures] The anchor quote exists with at least one line (200 expected)
+### [Setup][Fixtures] The anchor quote exists with a part line and a labor line (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{AnchorQuoteId}}
 
 ?? status == 200
-?? js response.parsedBody.lines.length >= 1
+?? js (response.parsedBody.lines.some(l => l.lineKind == "Part") && response.parsedBody.lines.some(l => l.lineKind == "Labor")) == true

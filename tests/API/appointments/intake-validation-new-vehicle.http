@@ -1,0 +1,181 @@
+# Inline-vehicle rules of an intake (a new customer with an otherwise valid request). The checks run before
+# the transaction, so nothing persists and there is nothing to clean up. Customer fields: intake-validation-new-customer.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@Vin = TST{{RunId.toString().slice(-10)}}1501
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Negative][Appointments] Missing required vehicle fields (brand and model absent) (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.0.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VF-{{RunId}}", "vin": "{{Vin}}", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.LicensePlate, Vehicle.Vin, Vehicle.Brand, Vehicle.Model, and Vehicle.DrivetrainType are required.") == true
+
+### [Negative][Appointments] A license plate over 20 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.1.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "{{'P'.repeat(21)}}", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.LicensePlate must be at most 20 characters.") == true
+
+### [Negative][Appointments] A brand over 50 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.2.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VB-{{RunId}}", "vin": "{{Vin}}", "brand": "{{'B'.repeat(51)}}", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.Brand must be at most 50 characters.") == true
+
+### [Negative][Appointments] A model over 50 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.3.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VM-{{RunId}}", "vin": "{{Vin}}", "brand": "Ford", "model": "{{'M'.repeat(51)}}", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.Model must be at most 50 characters.") == true
+
+### [Negative][Appointments] A year before 1886 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.4.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VY-{{RunId}}", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 1885, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.Year must be between 1886 and 2100.") == true
+
+### [Negative][Appointments] A year after 2100 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.5.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VZ-{{RunId}}", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 2101, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.Year must be between 1886 and 2100.") == true
+
+### [Negative][Appointments] A negative mileage (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.6.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VN-{{RunId}}", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": -1, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Vehicle.MileageKm and Vehicle.EnginePowerKw must be non-negative.") == true
+
+### [Negative][Appointments] Mileage and power above the maxima (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.7.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VX-{{RunId}}", "vin": "{{Vin}}", "brand": "Audi", "model": "A3", "year": 2021, "mileageKm": 1000001, "enginePowerKw": 50001, "drivetrainType": "Diesel" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js response.parsedBody.detail includes 1000000
+
+### [Negative][Appointments] A license plate with an unsupported character (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.8.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "AB#123", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js response.parsedBody.detail includes unsupported characters
+
+### [Negative][Appointments] A one-character license plate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.9.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "A", "vin": "{{Vin}}", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must be between 2 and 20 characters.") == true
+
+### [Negative][Appointments] A VIN of 16 characters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.10.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VS-{{RunId}}", "vin": "WVWZZZAUZJW12345", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VIN must be exactly 17 characters.") == true
+
+### [Negative][Appointments] A VIN containing the letter I (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.11.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VI-{{RunId}}", "vin": "WVWZZZAUZJW12345I", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js response.parsedBody.detail includes may only contain digits and uppercase letters
+
+### [Negative][Appointments] An unsupported drivetrain type (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.12.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VD-{{RunId}}", "vin": "{{Vin}}", "brand": "Audi", "model": "A3", "year": 2021, "mileageKm": 10000, "enginePowerKw": 110, "drivetrainType": "Hydrogen" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Vehicle.DrivetrainType must be one of
+
+### [Negative][Appointments] A numeric drivetrain type (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.veh.13.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Vehicle", "vehicle": { "licensePlate": "VE-{{RunId}}", "vin": "{{Vin}}", "brand": "Audi", "model": "A3", "year": 2021, "mileageKm": 10000, "enginePowerKw": 110, "drivetrainType": "1" }, "scheduledDate": "2026-04-24T10:00:00", "dueDateTime": "2026-04-25T10:00:00", "taskDescription": "Intake vehicle rule" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Vehicle.DrivetrainType must be one of

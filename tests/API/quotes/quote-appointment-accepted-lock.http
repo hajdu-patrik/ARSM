@@ -220,6 +220,13 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}
 ?? js response.parsedBody.lockReason == appointment_has_accepted_quote
 ?? js response.parsedBody.canDelete == true
 
+### [Positive][AcceptedLock] The list rows lock all three quotes, only the Draft stays deletable (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{apptA.id}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 3 && response.parsedBody.items.every(q => q.isLocked === true && q.lockReason === "appointment_has_accepted_quote")) == true
+?? js (response.parsedBody.items.filter(q => q.canDelete).map(q => q.id).join(",") === `${draftQuote.id}`) == true
+
 ### [Negative][AcceptedLock] A sibling Sent quote still follows the Draft-only delete rule (409 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}?version={{sentQuoteSent.version}}
 Origin: {{WebUI_Origin}}

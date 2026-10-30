@@ -1,11 +1,12 @@
+# Labor type CRUD happy paths: create (201, code upper-cased, name trimmed, gross rate rounded), read, update under the
+# version (204), delete and the 404s. Rules: labor-types-validation/-conflicts/-concurrency.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@NewLaborTypeCode = ZZT{{RunId}}A
-@LowercaseLaborTypeCode = zzt{{RunId}}b
-@RoundingLaborTypeCode = ZZT{{RunId}}C
+@Key = ZZH{{RunId}}
 
 ### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -13,16 +14,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][LaborTypes] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][LaborTypes] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -32,100 +29,106 @@ Content-Type: application/json
 
 ###
 
-### [Positive][LaborTypes] List labor types (200 expected, paged shape with default page 1 and pageSize 20)
-GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+### [Positive][LaborTypes] Admin creates a labor type (201 expected, gross 4500.00 plus 27% VAT = 5715.00, version is positive)
+# @name createdLabor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}A", "name": "Catalog Happy Labor", "hourlyNetRate": 4500.00, "vatRatePercent": 27 }
+
+?? status == 201
+?? js (response.headers.location === '/api/labor-types/' + response.parsedBody.id) == true
+?? js (Object.keys(response.parsedBody).sort().join(',') === 'code,grossHourlyRate,hourlyNetRate,id,name,vatRatePercent,version') == true
+?? js response.parsedBody.code == {{Key}}A
+?? js (response.parsedBody.name === "Catalog Happy Labor") == true
+?? js response.parsedBody.hourlyNetRate == 4500
+?? js response.parsedBody.grossHourlyRate == 5715
+?? js response.parsedBody.vatRatePercent == 27
+?? js (response.parsedBody.version > 0) == true
+
+###
+
+### [Positive][LaborTypes] The created labor type reads back the same (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
 
 ?? status == 200
-?? js response.parsedBody.items isArray
-?? js response.parsedBody.totalCount >= 0
-?? js response.parsedBody.page == 1
-?? js response.parsedBody.pageSize == 20
-?? js response.parsedBody.items.length <= 20
+?? js (response.parsedBody.id == createdLabor.id) == true
+?? js response.parsedBody.code == {{Key}}A
+?? js response.parsedBody.hourlyNetRate == 4500
+?? js response.parsedBody.grossHourlyRate == 5715
+?? js (response.parsedBody.version == createdLabor.version) == true
 
 ###
 
-### [Positive][LaborTypes] Admin creates labor type (201 expected, grossHourlyRate = 8000.00 * 1.27 = 10160.00, version is a positive integer)
-# @name createdLaborType
+### [Positive][LaborTypes] A padded lower-case code and name are normalized (201 expected, gross 100.00 plus 18% = 118.00)
+# @name normalizedLabor
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{NewLaborTypeCode}}",
-  "name": "Catalog Happy Labor",
-  "hourlyNetRate": 8000.00,
-  "vatRatePercent": 27
-}
+{ "code": "  {{Key.toLowerCase()}}b ", "name": "  Catalog Lowercase Labor  ", "hourlyNetRate": 100, "vatRatePercent": 18 }
 
 ?? status == 201
-?? js response.parsedBody.version > 0
+?? js response.parsedBody.code == {{Key}}B
+?? js (response.parsedBody.name === "Catalog Lowercase Labor") == true
+?? js response.parsedBody.grossHourlyRate == 118
 
 ###
 
-### [Positive][LaborTypes] Get created labor type by id (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+### [Positive][LaborTypes] The gross is rounded away from zero at a cent midpoint (201 expected, 10.10 plus 5% = 10.605 -> 10.61)
+# @name roundingLabor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}C", "name": "Catalog Rounding Labor", "hourlyNetRate": 10.10, "vatRatePercent": 5 }
+
+?? status == 201
+?? js response.parsedBody.hourlyNetRate == 10.1
+?? js response.parsedBody.grossHourlyRate == 10.61
+
+###
+
+### [Positive][LaborTypes] The list contains all three labor types under the run key (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search={{Key}}
 
 ?? status == 200
+?? js response.parsedBody.totalCount == 3
 
 ###
 
-### [Positive][LaborTypes] Create with lowercase code normalizes to uppercase (201 expected, code echoes uppercase)
-# @name lowercaseLaborType
-POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+### [Positive][LaborTypes] Update under the current version (204 expected, new values, code sent in lower case)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{LowercaseLaborTypeCode}}",
-  "name": "Catalog Lowercase Labor",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 18
-}
-
-?? status == 201
-
-###
-
-### [Positive][LaborTypes] Create demonstrates gross rounded away from zero at a monetary midpoint (201 expected, grossHourlyRate = 10.10 * 1.05 = 10.61)
-# @name roundingLaborType
-POST {{AutoService_ApiService_HostAddress}}/api/labor-types
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "code": "{{RoundingLaborTypeCode}}",
-  "name": "Catalog Rounding Labor",
-  "hourlyNetRate": 10.10,
-  "vatRatePercent": 5
-}
-
-?? status == 201
-
-###
-
-### [Positive][LaborTypes] Admin updates created labor type (204 expected, grossHourlyRate recomputed to 9000.00 * 1.18 = 10620.00)
-PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "code": "{{NewLaborTypeCode}}",
-  "name": "Catalog Happy Labor Updated",
-  "hourlyNetRate": 9000.00,
-  "vatRatePercent": 18,
-  "version": {{createdLaborType.version}}
-}
+{ "code": " {{Key.toLowerCase()}}a ", "name": " Catalog Happy Labor Updated ", "hourlyNetRate": 5000.00, "vatRatePercent": 18, "version": {{createdLabor.version}} }
 
 ?? status == 204
 
 ###
 
-### [Positive][LaborTypes] Admin deletes created labor type (204 expected, no soft delete/no in-use blocking)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+### [Positive][LaborTypes] The update is persisted and the row has a new version (200 expected, gross 5000.00 plus 18% = 5900.00)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
+
+?? status == 200
+?? js (response.parsedBody.id == createdLabor.id) == true
+?? js response.parsedBody.code == {{Key}}A
+?? js (response.parsedBody.name === "Catalog Happy Labor Updated") == true
+?? js response.parsedBody.hourlyNetRate == 5000
+?? js response.parsedBody.vatRatePercent == 18
+?? js response.parsedBody.grossHourlyRate == 5900
+?? js (response.parsedBody.version != createdLabor.version) == true
+
+###
+
+### [Positive][LaborTypes] Admin deletes the labor type (204 expected, no soft delete)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
@@ -133,24 +136,34 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Negative][LaborTypes] Deleted labor type cannot be fetched (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+### [Negative][LaborTypes] The deleted labor type cannot be read (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Labor type not found.") == true
 
 ###
 
-### [Negative][LaborTypes] Re-delete deleted labor type returns not found (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+### [Negative][LaborTypes] Deleting it again (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLabor.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Labor type not found.") == true
 
 ###
 
-### [Cleanup][LaborTypes] Delete lowercase-normalization fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{lowercaseLaborType.id}}
+### [Positive][LaborTypes] The list no longer holds the deleted labor type (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Cleanup][LaborTypes] Delete the normalization fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{normalizedLabor.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
@@ -158,8 +171,8 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Cleanup][LaborTypes] Delete rounding-demo fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{roundingLaborType.id}}
+### [Cleanup][LaborTypes] Delete the rounding fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{roundingLabor.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

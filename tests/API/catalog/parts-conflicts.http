@@ -1,0 +1,223 @@
+# Part number uniqueness (409 with the reason in `detail`, compared after trim and upper-casing), update input rules,
+# and the 404 for a missing row. A refused write changes nothing; a renamed or deleted part frees its number again.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZK{{RunId}}
+@GhostPartId = 999999999
+
+### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Parts] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Parts] Create part A (201 expected)
+# @name partA
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}A", "name": "Conflict Part A", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Setup][Parts] Create part B (201 expected)
+# @name partB
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}B", "name": "Conflict Part B", "netUnitPrice": 200, "vatRatePercent": 18 }
+
+?? status == 201
+
+###
+
+### [Negative][Parts] Create with an existing part number (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}B", "name": "Duplicate", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A part with this part number already exists.") == true
+
+###
+
+### [Negative][Parts] Create with the number in lower case and padded (409 expected, normalized before the comparison)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "  {{Key.toLowerCase()}}b ", "name": "Duplicate", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A part with this part number already exists.") == true
+
+###
+
+### [Negative][Parts] Update A to B's number (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{partA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key.toLowerCase()}}b", "name": "Conflict Part A", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{partA.version}} }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A part with this part number already exists.") == true
+
+###
+
+### [Negative][Parts] Update A with an unsupported VAT rate (422 expected, the current version does not matter)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{partA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}A", "name": "Conflict Part A", "netUnitPrice": 100, "vatRatePercent": 10, "version": {{partA.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
+
+###
+
+### [Negative][Parts] Update a missing part (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostPartId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}G", "name": "Ghost", "netUnitPrice": 100, "vatRatePercent": 27, "version": 1 }
+
+?? status == 404
+?? js (response.parsedBody.detail === "Part not found.") == true
+
+###
+
+### [Negative][Parts] Delete a missing part (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostPartId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Part not found.") == true
+
+###
+
+### [Negative][Parts] Get a missing part (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostPartId}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Part not found.") == true
+
+###
+
+### [Positive][Parts] The refused writes changed nothing (200 expected, A keeps its number, name and version)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{partA.id}}
+
+?? status == 200
+?? js response.parsedBody.partNumber == {{Key}}A
+?? js (response.parsedBody.name === "Conflict Part A") == true
+?? js response.parsedBody.vatRatePercent == 27
+?? js (response.parsedBody.version == partA.version) == true
+
+###
+
+### [Positive][Parts] Rename A to a free number (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{partA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}C", "name": "Conflict Part A", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{partA.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][Parts] The number A gave up is free for a new part (201 expected)
+# @name reusedA
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}A", "name": "Reused A", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Positive][Parts] Deleting B frees its number (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{partB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Parts] The number of the deleted part is free for a new part (201 expected)
+# @name reusedB
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}B", "name": "Reused B", "netUnitPrice": 100, "vatRatePercent": 27 }
+
+?? status == 201
+
+###
+
+### [Cleanup][Parts] Delete the renamed part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{partA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete the part that reused A's number (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{reusedA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete the part that reused B's number (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{reusedB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

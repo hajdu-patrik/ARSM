@@ -160,6 +160,10 @@ Content-Type: application/json
 ?? status == 200
 ?? js response.parsedBody.hasAcceptedQuote == true
 ?? js response.parsedBody.canDelete == false
+?? js response.parsedBody.status == Completed
+?? js (response.parsedBody.completedAt != null) == true
+?? js (response.parsedBody.canceledAt == null) == true
+?? js response.parsedBody.canLinkQuote == false
 
 ### [Negative][Lifecycle] Completed to InProgress is refused, Completed is terminal (409 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptA.id}}/status

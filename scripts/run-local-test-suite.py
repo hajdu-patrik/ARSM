@@ -47,6 +47,12 @@ PYTHON_HTTP_CHECKS = (
         "Quote PDF check",
     ),
     (
+        "quoteNumberCheck",
+        "http-quote-number-check",
+        "tests/API/quotes/quote-number-check.py",
+        "Quote number check",
+    ),
+    (
         "refreshReuseCheck",
         "http-refresh-reuse-check",
         "tests/API/auth/refresh-reuse-check.py",
@@ -57,6 +63,12 @@ PYTHON_HTTP_CHECKS = (
         "http-session-revocation-check",
         "tests/API/auth/session-revocation-check.py",
         "Session revocation check",
+    ),
+    (
+        "profilePictureUpdatesCheck",
+        "http-profile-picture-updates-check",
+        "tests/API/profile/profile-picture-updates-check.py",
+        "Profile picture live updates check",
     ),
 )
 DEFAULT_COMMAND_TIMEOUT_SECONDS = 300

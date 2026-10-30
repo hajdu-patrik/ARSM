@@ -1,9 +1,12 @@
+# VAT rates on parts: only 5, 18 and 27 are accepted on create and update (0 is no longer a rate); the gross unit price
+# follows the rate. A refused update changes nothing. Other input rules: parts-validation.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@Key = ZZV{{RunId}}
+@Key = ZZR{{RunId}}
 
 ### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -11,16 +14,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][Parts] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -30,130 +29,151 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Parts] Create part with VAT 0 is rejected (422 expected, 0 is no longer an allowed rate)
+### [Negative][Parts] Create with VAT 0 (422 expected, 0 is no longer an allowed rate)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}Z",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 0
-}
+{ "partNumber": "{{Key}}Z", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 0 }
 
 ?? status == 422
-?? js response.parsedBody.detail includes VAT rate
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
 
 ###
 
-### [Positive][Parts] Create part with VAT 5 (201 expected)
+### [Negative][Parts] Create with a negative VAT rate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}Z", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": -5 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
+
+###
+
+### [Negative][Parts] Create with VAT 28, just above the highest rate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}Z", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 28 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
+
+###
+
+### [Positive][Parts] Create with VAT 5 (201 expected, gross 105.00)
 # @name vatA
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}A",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 5
-}
+{ "partNumber": "{{Key}}A", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 5 }
 
 ?? status == 201
+?? js response.parsedBody.vatRatePercent == 5
+?? js response.parsedBody.grossUnitPrice == 105
 
 ###
 
-### [Positive][Parts] Create part with VAT 18 (201 expected)
+### [Positive][Parts] Create with VAT 18 (201 expected, gross 118.00)
 # @name vatB
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}B",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 18
-}
+{ "partNumber": "{{Key}}B", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 18 }
 
 ?? status == 201
+?? js response.parsedBody.vatRatePercent == 18
+?? js response.parsedBody.grossUnitPrice == 118
 
 ###
 
-### [Positive][Parts] Create part with VAT 27 (201 expected)
+### [Positive][Parts] Create with VAT 27 (201 expected, gross 127.00)
 # @name vatC
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}C",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}C", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 201
+?? js response.parsedBody.vatRatePercent == 27
+?? js response.parsedBody.grossUnitPrice == 127
 
 ###
 
-### [Negative][Parts] Update part to VAT 0 is rejected (422 expected)
+### [Negative][Parts] Update to VAT 0 (422 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{vatA.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}A",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 0,
-  "version": {{vatA.version}}
-}
+{ "partNumber": "{{Key}}A", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 0, "version": {{vatA.version}} }
 
 ?? status == 422
-?? js response.parsedBody.detail includes VAT rate
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
 
 ###
 
-### [Positive][Parts] Update part from VAT 5 to 27 still succeeds (204 expected)
+### [Positive][Parts] The refused update changed nothing (200 expected, still VAT 5 at the same version)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{vatA.id}}
+
+?? status == 200
+?? js response.parsedBody.vatRatePercent == 5
+?? js (response.parsedBody.version == vatA.version) == true
+
+###
+
+### [Positive][Parts] Update from VAT 5 to 27 (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{vatA.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}A",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{vatA.version}}
-}
+{ "partNumber": "{{Key}}A", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{vatA.version}} }
 
 ?? status == 204
 
 ###
 
-### [Positive][Parts] Update part from VAT 18 to 5 still succeeds (204 expected)
+### [Positive][Parts] The part now carries VAT 27 and gross 127.00 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{vatA.id}}
+
+?? status == 200
+?? js response.parsedBody.vatRatePercent == 27
+?? js response.parsedBody.grossUnitPrice == 127
+
+###
+
+### [Positive][Parts] Update from VAT 18 to 5 (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{vatB.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{Key}}B",
-  "name": "Catalog VAT Rate Fixture",
-  "netUnitPrice": 100,
-  "vatRatePercent": 5,
-  "version": {{vatB.version}}
-}
+{ "partNumber": "{{Key}}B", "name": "Catalog VAT Rate Fixture", "netUnitPrice": 100, "vatRatePercent": 5, "version": {{vatB.version}} }
 
 ?? status == 204
+
+###
+
+### [Positive][Parts] The part now carries VAT 5 and gross 105.00 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{vatB.id}}
+
+?? status == 200
+?? js response.parsedBody.vatRatePercent == 5
+?? js response.parsedBody.grossUnitPrice == 105
 
 ###
 

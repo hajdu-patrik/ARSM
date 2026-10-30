@@ -1,13 +1,14 @@
+# DELETE /api/vehicles/{id} as admin: 204, gone from every read while the owner and its other vehicles stay, 404 on repeat,
+# plate and VIN free again. The 403 and 401 are in authz.http, the appointment and quote cascade in delete-cascade.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@NonExistentVehicleId = 99999
 @RunId = {{$timestamp}}
-@FixtureCustomerEmail = delete.vehicle.{{RunId}}@example.test
-@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0701
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}17
+@GhostVehicleId = 999999999
 
 ### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -15,16 +16,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Vehicles] Login as admin for delete tests (200 expected)
-# @name adminLogin
+### [Setup][Vehicles] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -34,111 +31,47 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Vehicles] Create a fixture customer to own the vehicle below (201 expected)
-# @name fixtureCustomer
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Delete",
-  "middleName": null,
-  "lastName": "VehicleFixture",
-  "email": "{{FixtureCustomerEmail}}",
-  "phoneNumber": null
-}
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Delete", "email": "vehicles.delete.{{RunId}}@example.test", "phoneNumber": null }
 
 ?? status == 201
 
 ###
 
-### [Setup][Vehicles] Create a fixture vehicle to delete below (201 expected)
-# @name fixtureVehicle
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+### [Setup][Vehicles] Create the vehicle to delete (201 expected)
+# @name doomed
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "licensePlate": "DVH-{{RunId}}",
-  "vin": "{{FixtureVehicleVin}}",
-  "brand": "Skoda",
-  "model": "Octavia",
-  "year": 2020,
-  "mileageKm": 45000,
-  "enginePowerKw": 110,
-  "drivetrainType": "Petrol"
-}
+{ "licensePlate": "DV-{{Digits}}", "vin": "{{Vin}}01", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
 ###
 
-### [Negative][Vehicles] Delete non-existent vehicle (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
+### [Setup][Vehicles] Create the vehicle that must survive (201 expected)
+# @name survivor
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
-
-?? status == 404
-
-###
-
-### [Setup][Vehicles] Logout admin, login as non-admin for delete auth check
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-
-###
-
-### [Setup][Vehicles] Login as non-admin mechanic (200 expected)
-# @name nonAdminLogin
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "licensePlate": "DS-{{Digits}}", "vin": "{{Vin}}02", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 91500, "enginePowerKw": 70, "drivetrainType": "Diesel" }
 
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
+?? status == 201
 
 ###
 
-### [Negative][Vehicles] Non-admin delete is refused before any lookup (403 expected, AdminOnly)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 403
-
-###
-
-### [Setup][Vehicles] Login as admin before positive delete
-# @name adminLogin
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-### [Positive][Vehicles] Admin deletes the fixture vehicle (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+### [Positive][Vehicles] Admin deletes the vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{doomed.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
@@ -146,33 +79,73 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Negative][Vehicles] Deleted vehicle cannot be fetched (404 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+### [Negative][Vehicles] The deleted vehicle cannot be read (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{doomed.id}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
+
+###
+
+### [Negative][Vehicles] The plate lookup no longer finds it (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=DV-{{Digits}}
 
 ?? status == 404
 
 ###
 
-### [Negative][Vehicles] Re-delete deleted vehicle returns not found (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicle.id}}
+### [Positive][Vehicles] The owner's list holds only the survivor (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == survivor.id) == true
+
+###
+
+### [Positive][Vehicles] The owner is untouched (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+
+?? status == 200
+?? js response.parsedBody.vehicles.length == 1
+
+###
+
+### [Negative][Vehicles] Deleting it again (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{doomed.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
 
 ###
 
-### [Cascade][Vehicles] Customer vehicle list stays queryable and empty after its only vehicle is deleted (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+### [Negative][Vehicles] Deleting a missing id (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{GhostVehicleId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
-?? status == 200
-?? js response.parsedBody.items.length == 0
-?? js response.parsedBody.totalCount == 0
+?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
 
 ###
 
-### [Cleanup][Vehicles] Delete the fixture customer created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+### [Positive][Vehicles] The plate and VIN are free again (201 expected)
+# @name reborn
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "DV-{{Digits}}", "vin": "{{Vin}}01", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Cleanup][Vehicles] Delete the owner, which deletes its vehicles (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

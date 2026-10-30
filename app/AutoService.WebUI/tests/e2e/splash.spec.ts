@@ -118,3 +118,30 @@ test.describe('Loading splash minimum per browser', () => {
     expect(newTabMs, 'the new tab splash only flickered').toBeGreaterThanOrEqual(REPEAT_LOAD_SPLASH_MIN_MS - TIMER_SLACK_MS);
   });
 });
+
+test.describe('Loading splash on non-app routes', () => {
+  for (const path of ['/500', '/no-such-page']) {
+    test(`${path} never shows the splash`, async ({ page }) => {
+      await traceSplash(page);
+      await primeBrowserState(page, { sessionHint: false });
+      await installApiMocks(page, { profileEmail: 'route.check@example.test', isAuthenticated: false });
+
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+      expect((await readSplashTrace(page)).appearedAt).toBeNull();
+    });
+  }
+
+  test('the load after a server-error retry skips the splash once', async ({ page }) => {
+    await traceSplash(page);
+    await primeBrowserState(page, { sessionHint: true });
+    await installApiMocks(page, { profileEmail: 'route.check@example.test', isAuthenticated: true });
+    await page.goto('/500?returnTo=%2Fcustomers');
+
+    await page.getByRole('button', { name: 'Reload page' }).click();
+
+    await expect(CUSTOMERS_ROUTE.ready(page)).toBeVisible();
+    expect((await readSplashTrace(page)).appearedAt).toBeNull();
+  });
+});

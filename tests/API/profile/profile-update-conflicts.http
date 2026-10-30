@@ -1,17 +1,17 @@
-# Split out of profile-get-and-update.http to stay <= 250 lines. The disposable "Profile Conflict"
-# mechanic is deleted via admin DELETE /api/admin/mechanics/{id}, id resolved from the register response.
+# PUT /api/profile uniqueness: an email or phone of another mechanic or a customer is 400 with a naming message. The 409 for
+# a race past the pre-check cannot be produced deterministically over HTTP and stays a recorded gap.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@MatrixRunSuffix = {{$timestamp}}
+@RunId = {{$timestamp}}
+@PhoneTail = {{RunId.toString().slice(-6)}}
 @ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@ProfileConflictEmail = profile.conflict.{{MatrixRunSuffix}}@example.test
-@ProfileConflictPhoneSuffix = {{$randomInt 1000000 9999999}}
-@ProfileConflictPhone = +3630{{ProfileConflictPhoneSuffix}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@ProfileConflictEmail = profile.conflict.{{RunId}}@example.test
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -19,16 +19,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Profile] Login as admin to provision the profile conflict identity
+### [Setup][Profile] Login as admin to provision the profile conflict identity (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -38,29 +35,20 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Profile] Register mechanic used for duplicate email/phone profile validation (200 expected)
+### [Setup][Profile] Register the mechanic whose email and phone the update collides with (200 expected)
 # @name profileConflictMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Profile",
-  "lastName": "Conflict",
-  "email": "{{ProfileConflictEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "{{ProfileConflictPhone}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Profile", "lastName": "Conflict", "email": "{{ProfileConflictEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 30 6{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "Brakes"] }
 
 ?? status == 200
 
 ###
 
-### [Setup][Profile] Logout admin before mechanic profile checks
+### [Setup][Profile] Logout admin before the mechanic profile checks (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -69,16 +57,13 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+### [Setup][Profile] Login as the shared plain mechanic (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{ProfileMechanicEmail}}",
-  "password": "{{ProfileCurrentPassword}}"
-}
+{ "email": "{{ProfileMechanicEmail}}", "password": "{{ProfileCurrentPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -88,91 +73,72 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update with duplicate email validation (400 expected)
+### [Negative][Profile] The email of another mechanic (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "email": "{{ProfileConflictEmail}}"
-}
+{ "email": "{{ProfileConflictEmail}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("An account already exists with this email address.")) == true
 
 ###
 
-### [Negative][Profile] Update with duplicate phone validation (400 expected)
+### [Negative][Profile] The same email in upper case is the same address (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "{{ProfileConflictPhone}}"
-}
+{ "email": "  PROFILE.CONFLICT.{{RunId}}@EXAMPLE.TEST " }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("An account already exists with this email address.")) == true
 
 ###
 
-### [Negative][Profile] Update with invalid email format (400 expected)
+### [Negative][Profile] The email of a customer (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "email": "invalid-email-format"
-}
+{ "email": "{{KnownCustomerEmail}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("An account already exists with this email address.")) == true
 
 ###
 
-### [Negative][Profile] Update with invalid European phone format (400 expected)
+### [Negative][Profile] The phone of another mechanic, written in another notation (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "12345"
-}
+{ "phoneNumber": "06 30 6{{PhoneTail}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("An account already exists with this phone number.")) == true
 
 ###
 
-### [Negative][Profile] Update with empty firstName (400 expected)
+### [Negative][Profile] The phone of a customer (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "   "
-}
+{ "phoneNumber": "+36 30 444 5566" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("An account already exists with this phone number.")) == true
 
 ###
 
-### [Negative][Profile] Update with empty lastName (400 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lastName": ""
-}
-
-?? status == 400
-
-###
-
-### [Setup][Profile] Logout non-admin mechanic before deleting the conflict fixture
+### [Setup][Profile] Logout the shared mechanic before deleting the conflict fixture (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -181,16 +147,13 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Login as admin to clean up the disposable conflict fixture
+### [Setup][Profile] Login as admin to clean up the disposable conflict fixture (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -209,7 +172,7 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Logout admin after cleanup
+### [Setup][Profile] Logout admin after cleanup (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

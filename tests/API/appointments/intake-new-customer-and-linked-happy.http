@@ -1,5 +1,5 @@
-# Split out of list-and-intake-happy.http (file-size limit). Both appointments are deleted via admin at
-# the end; the "new customer" case also deletes its customer (cascades the vehicle), but the mechanic-linked case deletes only the vehicle - its customer is the shared mechanic-owned identity, left alone.
+# Intake that creates the customer (email unknown) or resolves a mechanic email to its mechanic-owned customer. The new customer
+# is deleted at the end (cascades its vehicle); for the mechanic-owned customer only the vehicle goes, that identity is shared.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -8,30 +8,23 @@
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @RunId = {{$timestamp}}
-@NewSchedulerCustomerEmail = scheduler.intake.new.{{RunId}}@example.test
-@NewSchedulerPlate = SCH-{{RunId}}
-@NewSchedulerVin = TST{{RunId.toString().slice(-10)}}0401
-@DuplicatePlateVin = TST{{RunId.toString().slice(-10)}}0402
-@MechanicEmailFlowPlate = MEC-{{RunId}}
-@MechanicEmailFlowVin = TST{{RunId.toString().slice(-10)}}0403
-
+@NewCustomerEmail = scheduler.intake.new.{{RunId}}@example.test
+@NewCustomerPlate = SCH-{{RunId}}
+@NewCustomerVin = TST{{RunId.toString().slice(-10)}}0401
+@MechanicFlowPlate = MEC-{{RunId}}
+@MechanicFlowVin = TST{{RunId.toString().slice(-10)}}0403
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+### [Setup][Appointments] Login as the plain mechanic, the intake caller (200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -39,111 +32,73 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Positive][Appointments] Scheduler intake creates customer and vehicle when email not found (201 expected)
+### [Positive][Appointments] Unknown email creates customer and vehicle, normalizing email, plate and phone (201 expected)
+# Mixed-case padded email, lower-case plate and a national-format phone number are stored normalized.
 # @name newCustomerApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "{{NewSchedulerCustomerEmail}}",
-  "customerFirstName": "Scheduler",
-  "customerMiddleName": null,
-  "customerLastName": "New",
-  "customerPhoneNumber": "+36301{{RunId.toString().slice(-6)}}",
-  "vehicle": {
-    "licensePlate": "{{NewSchedulerPlate}}",
-    "vin": "{{NewSchedulerVin}}",
-    "brand": "Skoda",
-    "model": "Octavia",
-    "year": 2020,
-    "mileageKm": 98500,
-    "enginePowerKw": 110,
-    "drivetrainType": "Petrol"
-  },
-  "scheduledDate": "2026-04-22T10:00:00",
-  "dueDateTime": "2026-04-25T15:00:00",
-  "taskDescription": "Scheduler intake new customer and vehicle"
-}
+{ "customerEmail": "  Scheduler.Intake.NEW.{{RunId}}@Example.Test ", "customerFirstName": "Scheduler", "customerMiddleName": "Mid", "customerLastName": "New", "customerPhoneNumber": "06 30 1{{RunId.toString().slice(-6)}}", "vehicle": { "licensePlate": "sch-{{RunId}}", "vin": "{{NewCustomerVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 98500, "enginePowerKw": 110, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T10:00:00", "dueDateTime": "2026-04-25T15:00:00", "taskDescription": "Scheduler intake new customer and vehicle" }
 
 ?? status == 201
+?? js response.parsedBody.status == InProgress
+?? js response.parsedBody.mechanics.length == 1
+?? js (response.parsedBody.mechanics[0].id == nonAdminLogin.personId) == true
+?? js response.parsedBody.vehicle.licensePlate == SCH-{{RunId}}
+?? js (response.parsedBody.vehicle.vin == NewCustomerVin) == true
+?? js response.parsedBody.vehicle.year == 2020
+?? js response.parsedBody.vehicle.mileageKm == 98500
+?? js response.parsedBody.vehicle.enginePowerKw == 110
 
-###
+### [Positive][Appointments] The created customer is stored with normalized email and E.164 phone (200 expected)
+# @name createdCustomer
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{NewCustomerEmail}}
 
-### [Negative][Appointments] Scheduler intake rejects duplicate license plate for new vehicle (409 expected)
-# Reuses the plate from the previous successful new-vehicle intake case.
-POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
+?? status == 200
+?? js response.parsedBody.firstName == Scheduler
+?? js response.parsedBody.middleName == Mid
+?? js response.parsedBody.lastName == New
+?? js (response.parsedBody.email == NewCustomerEmail) == true
+?? js response.parsedBody.phoneNumber == +36301{{RunId.toString().slice(-6)}}
+?? js response.parsedBody.vehicles.length == 1
+?? js (response.parsedBody.id == newCustomerApptCreate.vehicle.customerId) == true
 
-{
-  "customerEmail": "scheduler.intake.duplicate.{{RunId}}@example.test",
-  "customerFirstName": "Scheduler",
-  "customerMiddleName": null,
-  "customerLastName": "Duplicate",
-  "customerPhoneNumber": "+36309998877",
-  "vehicle": {
-    "licensePlate": "{{NewSchedulerPlate}}",
-    "vin": "{{DuplicatePlateVin}}",
-    "brand": "Skoda",
-    "model": "Fabia",
-    "year": 2021,
-    "mileageKm": 60500,
-    "enginePowerKw": 81,
-    "drivetrainType": "Hybrid"
-  },
-  "scheduledDate": "2026-04-22T12:00:00",
-  "dueDateTime": "2026-04-25T18:00:00",
-  "taskDescription": "Scheduler intake duplicate plate conflict"
-}
-
-?? status == 409
-
-###
-
-### [Positive][Appointments] Scheduler intake accepts mechanic email via linked customer flow (201 expected)
-# Mechanic email is resolved to linked customer identity (mechanic-owner-{id}@customers.arsm.local) internally.
+### [Positive][Appointments] A mechanic email resolves to the mechanic-owned customer and creates a vehicle (201 expected)
+# The customer name comes from the mechanic account, so no name fields are sent.
 # @name mechanicLinkedApptCreate
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "{{NonAdminEmail}}",
-  "vehicle": {
-    "licensePlate": "{{MechanicEmailFlowPlate}}",
-    "vin": "{{MechanicEmailFlowVin}}",
-    "brand": "Seat",
-    "model": "Leon",
-    "year": 2019,
-    "mileageKm": 151000,
-    "enginePowerKw": 96,
-    "drivetrainType": "PHEV"
-  },
-  "scheduledDate": "2026-04-23T11:00:00",
-  "dueDateTime": "2026-04-24T13:00:00",
-  "taskDescription": "Scheduler intake mechanic email linked flow"
-}
+{ "customerEmail": "{{NonAdminEmail}}", "vehicle": { "licensePlate": "{{MechanicFlowPlate}}", "vin": "{{MechanicFlowVin}}", "brand": "Seat", "model": "Leon", "year": 2019, "mileageKm": 151000, "enginePowerKw": 96, "drivetrainType": "PHEV" }, "scheduledDate": "2026-04-23T11:00:00", "dueDateTime": "2026-04-24T13:00:00", "taskDescription": "Scheduler intake mechanic email linked flow" }
 
 ?? status == 201
+?? js response.parsedBody.vehicle.drivetrainType == PHEV
+?? js (response.parsedBody.vehicle.customerId != newCustomerApptCreate.vehicle.customerId) == true
 
-###
+### [Positive][Appointments] The mechanic-owned customer is reused and takes its vehicle by id (201 expected)
+# @name mechanicReuseApptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Cleanup][Appointments] Login as admin to delete the fixture appointments (200 expected)
+{ "customerEmail": "{{NonAdminEmail}}", "vehicleId": {{mechanicLinkedApptCreate.vehicle.id}}, "scheduledDate": "2026-04-23T14:00:00", "dueDateTime": "2026-04-24T16:00:00", "taskDescription": "Scheduler intake mechanic-owned customer reused" }
+
+?? status == 201
+?? js (response.parsedBody.vehicle.id == mechanicLinkedApptCreate.vehicle.id) == true
+?? js (response.parsedBody.vehicle.customerId == mechanicLinkedApptCreate.vehicle.customerId) == true
+
+### [Cleanup][Appointments] Login as admin to delete the fixtures (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -151,11 +106,7 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-# CSRF double-submit token for the cleanup requests below (see tests/CLAUDE.md Core Rules).
-
-### [Cleanup][Appointments] Delete the two fixture appointments created above (204 expected each)
+### [Cleanup][Appointments] Delete the three fixture appointments (204 expected each)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{newCustomerApptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -172,17 +123,20 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Cleanup][Appointments] Delete the customer created by the "new customer" intake, cascading its vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{mechanicReuseApptCreate.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][Appointments] Delete the customer the first intake created, cascading its vehicle (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{newCustomerApptCreate.vehicle.customerId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
 
-###
-
-### [Cleanup][Appointments] Delete the vehicle created by the mechanic-email-linked intake (204 expected)
-# Only the vehicle, never the mechanic-owned customer itself (see file header).
+### [Cleanup][Appointments] Delete the vehicle of the mechanic-linked intake, never the shared customer (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{mechanicLinkedApptCreate.vehicle.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

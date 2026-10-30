@@ -1,5 +1,5 @@
-# Every id is resolved/created at run time. Locked-state and non-admin authz coverage split into the
-# sibling admin-assign-unassign-locked-state.http/admin-assign-unassign-authz.http files (file-size limit).
+# PUT/DELETE /api/appointments/{id}/assign/{mechanicId} (AdminOnly) on an InProgress appointment. Closed states are in
+# admin-assign-unassign-locked-state.http, non-admin 403 in -authz.http. The fixture appointment and mechanic are deleted here.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -10,12 +10,9 @@
 @RunId = {{$timestamp}}
 @SecondaryMechanicEmail = appt.assign.secondary.{{RunId}}@example.test
 
-
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
-
-###
 
 ### [Setup][Appointments] Login as admin (session prerequisite for AdminOnly endpoints, 200 expected)
 # @name adminLogin
@@ -23,10 +20,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -34,26 +28,11 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
+### [Setup][Appointments] Resolve the shared fixture customer and its vehicle (200 expected)
 # @name fixtureCustomer
 GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
 
 ?? status == 200
-
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@FixtureCustomerId = {{fixtureCustomer.id}}
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
 
 ### [Setup][Appointments] Register disposable secondary mechanic for the assign/unassign flow (200 expected)
 # @name secondaryMechanic
@@ -62,130 +41,104 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "ApptAssign",
-  "lastName": "Secondary",
-  "email": "{{SecondaryMechanicEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "ApptAssign", "lastName": "Secondary", "email": "{{SecondaryMechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
-###
-
-@SecondaryMechanicId = {{secondaryMechanic.personId}}
-
-### [Setup][Appointments] Create appointment with a single assigned mechanic for the assign/unassign flow (201 expected)
-# @name singleAssignedApptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+### [Setup][Appointments] Create appointment with a single assigned mechanic (201 expected)
+# @name apptCreate
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Assign/unassign fixture: single-mechanic appointment",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
+{ "vehicleId": {{fixtureCustomer.vehicles[0].id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Assign/unassign fixture: single-mechanic appointment", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 201
 
-###
-
-@SingleAssignedApptId = {{singleAssignedApptCreate.id}}
-
-### [Positive][Appointments] Admin assign mechanic to appointment (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+### [Positive][Appointments] Admin assigns a second mechanic (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
+?? js response.parsedBody.mechanics.length == 2
+?? js (response.parsedBody.mechanics.some(m => m.id == secondaryMechanic.personId) && response.parsedBody.mechanics.some(m => m.id == adminLogin.personId)) == true
+?? js response.parsedBody.status == InProgress
 
-###
-
-### [Positive][Appointments] Admin unassign mechanic from appointment (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Negative][Appointments] Admin cannot unassign last mechanic from appointment (422 expected)
-# SingleAssignedApptId's sole mechanic is AdminMechanicId, hence last_assigned_mechanic.
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 422
-?? js response.parsedBody.code == last_assigned_mechanic
-###
-
-### [Negative][Appointments] Admin assign to non-existent appointment (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{SecondaryMechanicId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 404
-?? js response.parsedBody.code == appointment_not_found
-###
-
-### [Negative][Appointments] Admin assign non-existent mechanic (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/99999
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 404
-?? js response.parsedBody.code == mechanic_not_found
-###
-
-### [Negative][Appointments] Admin assign mechanic already assigned (409 expected)
-# AdminMechanicId is still SingleAssignedApptId's sole mechanic, hence already_assigned.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{AdminMechanicId}}
+### [Negative][Appointments] Assigning the same mechanic again is a conflict (409, already_assigned)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
 ?? js response.parsedBody.code == already_assigned
-###
 
-### [Negative][Appointments] Admin unassign from non-existent appointment (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999/assign/{{AdminMechanicId}}
+### [Positive][Appointments] Admin unassigns the second mechanic and the admin stays (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
-?? status == 404
-?? js response.parsedBody.code == appointment_not_found
-###
+?? status == 200
+?? js response.parsedBody.mechanics.length == 1
+?? js (response.parsedBody.mechanics[0].id == adminLogin.personId) == true
 
-### [Negative][Appointments] Admin unassign mechanic not assigned to appointment (409 expected)
-# SecondaryMechanicId was unassigned from SingleAssignedApptId above, hence not_assigned.
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}/assign/{{SecondaryMechanicId}}
+### [Negative][Appointments] Admin cannot unassign the last mechanic (422, last_assigned_mechanic)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/{{adminLogin.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js response.parsedBody.code == last_assigned_mechanic
+
+### [Negative][Appointments] Unassigning a mechanic that is not assigned is a conflict (409, not_assigned)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 409
 ?? js response.parsedBody.code == not_assigned
-###
+
+### [Negative][Appointments] Assigning to an unknown appointment (404, appointment_not_found)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999999/assign/{{secondaryMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+### [Negative][Appointments] Assigning an unknown mechanic (404, mechanic_not_found)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/assign/99999999
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == mechanic_not_found
+
+### [Negative][Appointments] Unassigning from an unknown appointment (404, appointment_not_found)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/99999999/assign/{{adminLogin.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+### [Positive][Appointments] The refused calls left exactly the admin assigned (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/appointments?descending=true
+
+?? status == 200
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).mechanics.length == 1) == true
 
 ### [Cleanup][Appointments] Delete the disposable secondary mechanic (200 expected)
-# Safe: SecondaryMechanicId is unassigned from SingleAssignedApptId by this point, so the deletion
-# invariant in AdminEndpoints.Handlers.cs (no appointment left with zero mechanics) does not block it.
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{SecondaryMechanicId}}
+# Safe: it is unassigned by now, so the zero-mechanics deletion invariant does not block it.
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{secondaryMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
 
-###
-
 ### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{SingleAssignedApptId}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

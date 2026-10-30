@@ -4,6 +4,8 @@ import type { MechanicListItem } from '../../../src/services/admin/admin.service
 import type { ProfileData } from '../../../src/types/profile/profile.types';
 import type { LaborTypeDto, PartDto } from '../../../src/types/catalog/catalog.types';
 import type { QuoteDetailDto } from '../../../src/types/quotes/quotes.types';
+import type { CompanyProfileDto } from '../../../src/types/admin/companyProfile.types';
+import type { MockFailure } from './api-mock-response';
 import { MOCK_MECHANIC_IDS } from './test-data.constants';
 import { createFixtureState } from './test-data.fixtures';
 import { createCatalogFixtureState } from './test-data.catalog.fixtures';
@@ -19,6 +21,7 @@ export {
   PROTECTED_DEMO_MECHANIC_EMAILS,
 } from './test-data.constants';
 
+/** The mutable in-memory backend the API route mocks read and write during one test. */
 export interface MockApiState {
   readonly customers: CustomerListItem[];
   readonly vehiclesByCustomerId: Record<number, VehicleDetailDto[]>;
@@ -27,6 +30,10 @@ export interface MockApiState {
   readonly schedulerLookupCustomers: SchedulerCustomerLookupDto[];
   readonly appointments: AppointmentDto[];
   readonly profile: ProfileData;
+  /** The letterhead the admin company-profile mock reads and writes. */
+  readonly companyProfile: CompanyProfileDto;
+  /** Failures armed per route key (`'PUT /api/profile'`); a request of that route is answered with it. */
+  readonly routeFailures: Map<string, MockFailure>;
   readonly mechanics: MechanicListItem[];
   readonly parts: PartDto[];
   readonly laborTypes: LaborTypeDto[];
@@ -45,6 +52,7 @@ export interface MockApiState {
   mustChangePassword: boolean;
 }
 
+/** Builds a fresh mock backend state seeded with the fixtures and the signed-in profile email. */
 export function createMockApiState(profileEmail: string): MockApiState {
   const fixtures = createFixtureState();
   const catalogFixtures = createCatalogFixtureState();
@@ -65,6 +73,16 @@ export function createMockApiState(profileEmail: string): MockApiState {
       phoneNumber: '+36 30 888 9999',
       hasProfilePicture: false,
     },
+    companyProfile: {
+      name: 'ARSM Auto Kft.',
+      addressLine: 'Fo utca 1.',
+      postalCode: '1111',
+      city: 'Budapest',
+      taxNumber: '12345678-1-12',
+      phoneNumber: '+36 30 123 4567',
+      email: 'info@example.test',
+    },
+    routeFailures: new Map(),
     nextVehicleId: 2000,
     nextAppointmentId: 6000,
     nextMechanicPersonId: 9000,

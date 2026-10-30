@@ -223,6 +223,8 @@ Suite targets:
 
 The backend unit tests (`tests/AutoService.UnitTests`, xUnit: the pricing calculators and the session cutoffs) need no stack: `dotnet test` in `app/` runs them, as the pre-push gate and CI do.
 
+The Python automation scripts have a stdlib unittest suite in `tests/Scripts`, run with `python -m unittest discover -s tests/Scripts` from the repository root; `python scripts/pre-push.py` (backend stage) and the `repo-gate` job of `.github/workflows/dotnet.yml` run it automatically.
+
 Before full-suite runs, start Aspire in another terminal:
 
 ```bash

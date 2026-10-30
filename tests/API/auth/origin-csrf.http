@@ -59,6 +59,33 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
 Origin: https://evil.example.test
 
 ?? status == 403
+?? js (response.parsedBody.detail === "Unsafe authenticated API requests require an allowed Origin header.") == true
+
+###
+
+### [Negative][Origin] Login rejects a hostile Origin even without any session cookie, the login-CSRF guard (403 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: https://evil.example.test
+Content-Type: application/json
+
+{ "email": "{{OriginProofEmail}}", "password": "{{OriginProofPassword}}" }
+
+?? status == 403
+?? js (response.parsedBody.detail === "Unsafe authenticated API requests require an allowed Origin header.") == true
+?? js (!response.headers['set-cookie']) == true
+
+###
+
+### [Negative][Origin] Login rejects a missing Origin (403 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{OriginProofEmail}}", "password": "{{OriginProofPassword}}" }
+
+?? status == 403
+?? js (!response.headers['set-cookie']) == true
 
 ###
 

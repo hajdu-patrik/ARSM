@@ -1,0 +1,202 @@
+# POST /api/customers/{id}/vehicles happy paths: plate/VIN/brand/model normalized, all five drivetrains (case-insensitive),
+# Latin and Cyrillic plates, and the exact limits (year 1886..2100, mileage, kW, plate 20, brand and model 50).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "CreateHappy", "email": "vehicles.create.happy.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Positive][Vehicles] Create a vehicle (201 expected, every field echoed, Location points at it)
+# @name base
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CH-{{Digits}}", "vin": "{{Vin}}0901", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 201
+?? js (response.headers.location === '/api/vehicles/' + response.parsedBody.id) == true
+?? js response.parsedBody.licensePlate == CH-{{Digits}}
+?? js response.parsedBody.vin == {{Vin}}0901
+?? js response.parsedBody.brand == Volkswagen
+?? js response.parsedBody.model == Golf
+?? js response.parsedBody.year == 2018
+?? js response.parsedBody.mileageKm == 124500
+?? js response.parsedBody.enginePowerKw == 81
+?? js response.parsedBody.drivetrainType == Petrol
+?? js (response.parsedBody.customer.id == owner.id) == true
+?? js response.parsedBody.customer.lastName == CreateHappy
+
+###
+
+### [Positive][Vehicles] The created vehicle reads back identically (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{base.id}}
+
+?? status == 200
+?? js response.parsedBody.licensePlate == CH-{{Digits}}
+?? js response.parsedBody.drivetrainType == Petrol
+?? js (response.parsedBody.customer.id == owner.id) == true
+
+###
+
+### [Positive][Vehicles] Padded lower-case input is normalized (201 expected)
+# @name normalized
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "  cn   {{Digits}} ", "vin": "{{Vin.toLowerCase()}}0902", "brand": "  Renault ", "model": " Megane  ", "year": 2019, "mileageKm": 88000, "enginePowerKw": 85, "drivetrainType": "electric" }
+
+?? status == 201
+?? js (response.parsedBody.licensePlate === `CN ${Digits}`) == true
+?? js response.parsedBody.vin == {{Vin}}0902
+?? js response.parsedBody.brand == Renault
+?? js response.parsedBody.model == Megane
+?? js response.parsedBody.drivetrainType == Electric
+
+###
+
+### [Positive][Vehicles] Drivetrain Diesel (201 expected)
+# @name diesel
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CD-{{Digits}}", "vin": "{{Vin}}0903", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 91500, "enginePowerKw": 70, "drivetrainType": "Diesel" }
+
+?? status == 201
+?? js response.parsedBody.drivetrainType == Diesel
+
+###
+
+### [Positive][Vehicles] Drivetrain Hybrid (201 expected)
+# @name hybrid
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CY-{{Digits}}", "vin": "{{Vin}}0904", "brand": "Toyota", "model": "Yaris", "year": 2021, "mileageKm": 20000, "enginePowerKw": 85, "drivetrainType": "Hybrid" }
+
+?? status == 201
+?? js response.parsedBody.drivetrainType == Hybrid
+
+###
+
+### [Positive][Vehicles] Drivetrain PHEV (201 expected)
+# @name phev
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CP-{{Digits}}", "vin": "{{Vin}}0905", "brand": "Kia", "model": "Ceed", "year": 2022, "mileageKm": 9000, "enginePowerKw": 104, "drivetrainType": "PHEV" }
+
+?? status == 201
+?? js response.parsedBody.drivetrainType == PHEV
+
+###
+
+### [Positive][Vehicles] A European Cyrillic plate (201 expected, stored as written)
+# @name cyrillic
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "АВ-{{Digits}}-ЕЖ", "vin": "{{Vin}}0906", "brand": "Skoda", "model": "Kodiaq", "year": 2021, "mileageKm": 39000, "enginePowerKw": 140, "drivetrainType": "Hybrid" }
+
+?? status == 201
+?? js response.parsedBody.licensePlate == АВ-{{Digits}}-ЕЖ
+
+###
+
+### [Positive][Vehicles] Lower limits: year 1886, mileage 0, kW 0, a 20-character plate, a 50-character brand (201 expected)
+# @name lowest
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "M{{'X'.repeat(12)}}{{Digits}}", "vin": "{{Vin}}0907", "brand": "{{'B'.repeat(50)}}", "model": "Veteran", "year": 1886, "mileageKm": 0, "enginePowerKw": 0, "drivetrainType": "Petrol" }
+
+?? status == 201
+?? js response.parsedBody.licensePlate.length == 20
+?? js response.parsedBody.brand.length == 50
+?? js response.parsedBody.year == 1886
+?? js response.parsedBody.mileageKm == 0
+?? js response.parsedBody.enginePowerKw == 0
+
+###
+
+### [Positive][Vehicles] Upper limits: year 2100, mileage 1,000,000, kW 50,000, a 50-character model (201 expected)
+# @name highest
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "HI-{{Digits}}", "vin": "{{Vin}}0908", "brand": "Limit", "model": "{{'M'.repeat(50)}}", "year": 2100, "mileageKm": 1000000, "enginePowerKw": 50000, "drivetrainType": "Electric" }
+
+?? status == 201
+?? js response.parsedBody.model.length == 50
+?? js response.parsedBody.year == 2100
+?? js response.parsedBody.mileageKm == 1000000
+?? js response.parsedBody.enginePowerKw == 50000
+
+###
+
+### [Positive][Vehicles] All eight vehicles are listed for the owner (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 8
+
+###
+
+### [Cleanup][Vehicles] Delete the owner, which deletes its vehicles (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

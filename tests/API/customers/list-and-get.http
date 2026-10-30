@@ -1,0 +1,223 @@
+# GET /api/customers (paged, last name then first name, plates sorted) and GET /api/customers/{id}; three disposable
+# customers share a run tag. Page clamps and the 400s: authz/list-limit-edges-customers.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+@GhostCustomerId = 999999999
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create customer B, last name Lb (201 expected, created first so the order is not the id order)
+# @name custB
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fb{{Tag}}", "middleName": null, "lastName": "Lb{{Tag}}", "email": "list.get.b.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer C, last name Lc, no vehicles (201 expected)
+# @name custC
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fc{{Tag}}", "middleName": null, "lastName": "Lc{{Tag}}", "email": "list.get.c.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer A, last name La, with a middle name and a phone (201 expected)
+# @name custA
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fa{{Tag}}", "middleName": "Ma{{Tag}}", "lastName": "La{{Tag}}", "email": "list.get.a.{{RunId}}@example.test", "phoneNumber": "+3620{{Digits}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give A the plate ...B first (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "Z{{Digits}}B", "vin": "TST{{RunId.toString().slice(-10)}}0801", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 1000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give A the plate ...A second (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "Z{{Digits}}A", "vin": "TST{{RunId.toString().slice(-10)}}0802", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 1000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give B one plate (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custB.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "Z{{Digits}}C", "vin": "TST{{RunId.toString().slice(-10)}}0803", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 1000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Search by the tag lists the three, ordered by last name, with counts and sorted plates (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&pageSize=10
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 10
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.items.length == 3
+?? js (Object.keys(response.parsedBody.items[0]).sort().join(',') === 'email,firstName,id,lastName,middleName,phoneNumber,vehicleCount,vehicleLicensePlates') == true
+?? js (response.parsedBody.items[0].id == custA.id) == true
+?? js response.parsedBody.items[0].firstName == Fa{{Tag}}
+?? js response.parsedBody.items[0].middleName == Ma{{Tag}}
+?? js response.parsedBody.items[0].lastName == La{{Tag}}
+?? js response.parsedBody.items[0].email == list.get.a.{{RunId}}@example.test
+?? js response.parsedBody.items[0].phoneNumber == +3620{{Digits}}
+?? js response.parsedBody.items[0].vehicleCount == 2
+?? js response.parsedBody.items[0].vehicleLicensePlates[0] == Z{{Digits}}A
+?? js response.parsedBody.items[0].vehicleLicensePlates[1] == Z{{Digits}}B
+?? js (response.parsedBody.items[1].id == custB.id) == true
+?? js (response.parsedBody.items[1].middleName === null) == true
+?? js (response.parsedBody.items[1].phoneNumber === null) == true
+?? js response.parsedBody.items[1].vehicleCount == 1
+?? js response.parsedBody.items[1].vehicleLicensePlates[0] == Z{{Digits}}C
+?? js (response.parsedBody.items[2].id == custC.id) == true
+?? js response.parsedBody.items[2].vehicleCount == 0
+?? js response.parsedBody.items[2].vehicleLicensePlates.length == 0
+
+###
+
+### [Positive][Customers] First page of two (200 expected, totalCount covers every page)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&page=1&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.items.length == 2
+?? js (response.parsedBody.items[0].id == custA.id) == true
+?? js (response.parsedBody.items[1].id == custB.id) == true
+
+###
+
+### [Positive][Customers] Second page holds the remaining customer (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&page=2&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.page == 2
+?? js response.parsedBody.totalCount == 3
+?? js response.parsedBody.items.length == 1
+?? js (response.parsedBody.items[0].id == custC.id) == true
+
+###
+
+### [Positive][Customers] Third page is empty but keeps the real totalCount (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&page=3&pageSize=2
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 3
+
+###
+
+### [Positive][Customers] Get customer A by id (200 expected, vehicle summaries without VIN or power)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+
+?? status == 200
+?? js (Object.keys(response.parsedBody).sort().join(',') === 'email,firstName,id,lastName,middleName,phoneNumber,vehicles') == true
+?? js (response.parsedBody.id == custA.id) == true
+?? js response.parsedBody.middleName == Ma{{Tag}}
+?? js response.parsedBody.phoneNumber == +3620{{Digits}}
+?? js response.parsedBody.vehicles.length == 2
+?? js (Object.keys(response.parsedBody.vehicles[0]).sort().join(',') === 'brand,id,licensePlate,model,year') == true
+?? js (response.parsedBody.vehicles.every(v => v.brand === 'Skoda' && v.model === 'Octavia' && v.year === 2020)) == true
+
+###
+
+### [Positive][Customers] Get customer C by id (200 expected, empty vehicle list)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{custC.id}}
+
+?? status == 200
+?? js response.parsedBody.vehicles.length == 0
+?? js (response.parsedBody.phoneNumber === null) == true
+
+###
+
+### [Negative][Customers] Get a missing customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{GhostCustomerId}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
+
+###
+
+### [Cleanup][Customers] Delete customer A (204 expected, its vehicles go with it)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer B (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer C (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custC.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

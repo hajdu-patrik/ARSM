@@ -1,20 +1,21 @@
+# POST /api/quotes/{id}/lines with catalog references (D40): the part and labor snapshot, an override that wins, a blank
+# description that falls back to the catalog, the computed amounts and totals. Disposable customer, part and labor type.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@NonExistentCatalogId = 999999999
+@FixtureCustomerEmail = quote.lines.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0725
 
-### [Setup][QuoteLines] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteLines] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -22,200 +23,145 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][QuoteLines] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Setup][QuoteLines] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
-# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+{ "firstName": "QuoteLines", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
+?? status == 201
 
-?? status == 200
+### [Setup][QuoteLines] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-###
+{ "licensePlate": "QLN-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
-### [Setup][QuoteLines] Create a disposable part fixture for the catalog line checks below (201 expected)
-# @name createdPart
+?? status == 201
+
+### [Setup][QuoteLines] Create the disposable part, 1234 net at 27% (201 expected)
+# @name part
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "ZZL{{RunId}}A",
-  "name": "Quote Line Fixture Part",
-  "netUnitPrice": 1234,
-  "vatRatePercent": 27
-}
+{ "partNumber": "ZZL{{RunId}}A", "name": "Quote Line Fixture Part", "netUnitPrice": 1234, "vatRatePercent": 27 }
 
 ?? status == 201
 
-###
-
-### [Setup][QuoteLines] Create a draft quote fixture for line validation (201 expected)
-# @name draftQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteLines] Create the disposable labor type, 8000 net per hour at 18% (201 expected)
+# @name labor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Quote Line Fixture {{RunId}}"
-}
+{ "code": "ZZL{{RunId}}A", "name": "Quote Line Fixture Labor", "hourlyNetRate": 8000, "vatRatePercent": 18 }
 
 ?? status == 201
 
-###
-
-### [Positive][QuoteLines] Add catalog part line with no override (201 expected, snapshot fills description/price/VAT from the disposable Part fixture, D40)
-# @name catalogLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+### [Setup][QuoteLines] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "partId": {{createdPart.id}},
-  "version": {{draftQuote.version}}
-}
+{ "title": "Quote Lines Fixture {{RunId}}" }
 
 ?? status == 201
 
-###
+### [Positive][QuoteLines] Add a catalog part line without overrides (201 expected, snapshot of the Part, D40)
+# @name partLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][QuoteLines] Add catalog part line with an explicit override (201 expected, override NetUnitPrice wins over the Part snapshot, D40)
+{ "lineKind": "Part", "quantity": 2, "partId": {{part.id}}, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.headers.location === `/api/quotes/${quote.id}` && response.parsedBody.version !== quote.version && response.parsedBody.lines.length === 1) == true
+?? js (response.parsedBody.lines[0].lineKind === "Part" && response.parsedBody.lines[0].partId === part.id && response.parsedBody.lines[0].laborTypeId == null && response.parsedBody.lines[0].sortOrder === 1) == true
+?? js (response.parsedBody.lines[0].description === "Quote Line Fixture Part" && response.parsedBody.lines[0].netUnitPrice === 1234 && response.parsedBody.lines[0].vatRatePercent === 27 && response.parsedBody.lines[0].quantity === 2) == true
+?? js (response.parsedBody.lines[0].netAmount === 2468 && response.parsedBody.lines[0].vatAmount === 666.36 && response.parsedBody.lines[0].grossAmount === 3134.36) == true
+?? js (response.parsedBody.totalNet === 2468 && response.parsedBody.totalVat === 666.36 && response.parsedBody.totalGross === 3134.36) == true
+
+### [Positive][QuoteLines] Add a catalog labor line with a fractional quantity (201 expected, snapshot of the LaborType)
+# @name laborLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1.5, "laborTypeId": {{labor.id}}, "version": {{partLine.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines.length === 2 && response.parsedBody.lines[1].lineKind === "Labor" && response.parsedBody.lines[1].laborTypeId === labor.id && response.parsedBody.lines[1].partId == null && response.parsedBody.lines[1].sortOrder === 2) == true
+?? js (response.parsedBody.lines[1].description === "Quote Line Fixture Labor" && response.parsedBody.lines[1].netUnitPrice === 8000 && response.parsedBody.lines[1].vatRatePercent === 18 && response.parsedBody.lines[1].quantity === 1.5) == true
+?? js (response.parsedBody.lines[1].netAmount === 12000 && response.parsedBody.lines[1].vatAmount === 2160 && response.parsedBody.lines[1].grossAmount === 14160) == true
+?? js (response.parsedBody.totalNet === 14468 && response.parsedBody.totalVat === 2826.36 && response.parsedBody.totalGross === 17294.36) == true
+
+### [Positive][QuoteLines] Overrides win over the catalog snapshot and the description is trimmed (201 expected, D40)
 # @name overrideLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "partId": {{createdPart.id}},
-  "netUnitPrice": 4321,
-  "version": {{catalogLine.version}}
-}
+{ "lineKind": "Part", "quantity": 3, "partId": {{part.id}}, "description": "  Override description  ", "netUnitPrice": 10, "vatRatePercent": 5, "version": {{laborLine.version}} }
 
 ?? status == 201
+?? js (response.parsedBody.lines[2].description === "Override description" && response.parsedBody.lines[2].netUnitPrice === 10 && response.parsedBody.lines[2].vatRatePercent === 5 && response.parsedBody.lines[2].partId === part.id && response.parsedBody.lines[2].sortOrder === 3) == true
+?? js (response.parsedBody.lines[2].netAmount === 30 && response.parsedBody.lines[2].vatAmount === 1.5 && response.parsedBody.lines[2].grossAmount === 31.5) == true
+?? js (response.parsedBody.totalNet === 14498 && response.parsedBody.totalVat === 2827.86 && response.parsedBody.totalGross === 17325.86) == true
 
-###
-
-### [Negative][QuoteLines] Add line with no catalog id and no manual fields (422 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+### [Positive][QuoteLines] A blank description falls back to the catalog name, a price override keeps the catalog VAT (201 expected)
+# @name partialLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "version": {{overrideLine.version}}
-}
+{ "lineKind": "Part", "quantity": 1, "partId": {{part.id}}, "description": "   ", "netUnitPrice": 500, "version": {{overrideLine.version}} }
 
-?? status == 422
+?? status == 201
+?? js (response.parsedBody.lines[3].description === "Quote Line Fixture Part" && response.parsedBody.lines[3].netUnitPrice === 500 && response.parsedBody.lines[3].vatRatePercent === 27 && response.parsedBody.lines[3].sortOrder === 4) == true
+?? js (response.parsedBody.lines[3].netAmount === 500 && response.parsedBody.lines[3].vatAmount === 135 && response.parsedBody.lines[3].grossAmount === 635) == true
+?? js (response.parsedBody.totalNet === 14998 && response.parsedBody.totalVat === 2962.86 && response.parsedBody.totalGross === 17960.86) == true
 
-###
-
-### [Negative][QuoteLines] Add line with a non-existent PartId (404 expected; a non-existent LaborTypeId shares the same lookup path)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "partId": {{NonExistentCatalogId}},
-  "version": {{overrideLine.version}}
-}
-
-?? status == 404
-
-###
-
-### [Negative][QuoteLines] NetUnitPrice over the 100,000,000 cap is rejected (422 expected, D24)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "Over-priced manual line",
-  "netUnitPrice": 100000001,
-  "vatRatePercent": 27,
-  "version": {{overrideLine.version}}
-}
-
-?? status == 422
-
-###
-
-### [Negative][QuoteLines] Quantity over the 10,000 cap is rejected (422 expected, D24)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 10001,
-  "description": "Over-quantity manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{overrideLine.version}}
-}
-
-?? status == 422
-
-###
-
-### [Setup][QuoteLines] Send the fixture quote, reusing its 2 existing lines (200 expected)
-# @name sentQuote
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "Sent",
-  "version": {{overrideLine.version}}
-}
+### [Positive][QuoteLines] The quote lists its lines in order with totals that add up (200 expected, gross = net + vat)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
 
 ?? status == 200
+?? js (response.parsedBody.lines.map(l => l.sortOrder).join(",") === "1,2,3,4" && new Set(response.parsedBody.lines.map(l => l.id)).size === 4) == true
+?? js (Math.abs(response.parsedBody.totalNet - response.parsedBody.lines.reduce((sum, l) => sum + l.netAmount, 0)) < 0.001 && Math.abs(response.parsedBody.totalVat - response.parsedBody.lines.reduce((sum, l) => sum + l.vatAmount, 0)) < 0.001) == true
+?? js (Math.abs(response.parsedBody.totalGross - (response.parsedBody.totalNet + response.parsedBody.totalVat)) < 0.001 && response.parsedBody.lines.every(l => Math.abs(l.grossAmount - (l.netAmount + l.vatAmount)) < 0.001)) == true
+?? js (response.parsedBody.version === partialLine.version && response.parsedBody.status === "Draft") == true
 
-###
-
-### [Negative][QuoteLines] Adding a line to a Sent quote is rejected (409 expected, Draft-only lock; update/delete share the same lock, see quotes-validation.http for the Title-edit sibling case)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{draftQuote.id}}/lines
+### [Cleanup][QuoteLines] Delete the disposable part (204 expected, the line snapshots survive, see quote-lines-snapshot.http)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{part.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "Should not be added",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{sentQuote.version}}
-}
+?? status == 204
 
-?? status == 409
+### [Cleanup][QuoteLines] Delete the disposable labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{labor.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
-###
+?? status == 204
 
-### [Cleanup][QuoteLines] Delete the disposable part fixture (204 expected, SetNull on delete leaves the quote's line snapshots intact, D4)
-DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+### [Cleanup][QuoteLines] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

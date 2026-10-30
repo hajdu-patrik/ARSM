@@ -1,73 +1,188 @@
+# expired=true|false on GET /api/quotes (D7): a quote is expired only while Sent and past its ValidUntil. A real one is made
+# by sending a quote that is valid for 3 seconds and waiting them out. Disposable customer, deleted at the end (cascade).
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.expired.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0737
 
-### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-
-###
-
-### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
+### [Setup][QuoteExpired] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
-###
+### [Setup][QuoteExpired] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Setup][Quotes] All quotes, no expired filter (200 expected)
-# @name allQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=1&pageSize=1
+{ "firstName": "QuoteExpired", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteExpired] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QEX-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteExpired] Create the quote that expires, valid for 3 seconds (201 expected)
+# @name expiring
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Expiring {{RunId}}", "validUntil": "{{new Date(Date.now() + 3000).toISOString()}}" }
+
+?? status == 201
+
+### [Setup][QuoteExpired] Give it a line (201 expected)
+# @name expiringLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Expiring line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{expiring.version}} }
+
+?? status == 201
+
+### [Setup][QuoteExpired] Send it (200 expected, no-op mail sender in the test environment)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{expiringLine.version}} }
 
 ?? status == 200
 
-###
+### [Setup][QuoteExpired] Create a second quote that stays valid for 30 days (201 expected)
+# @name valid
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] expired=true keeps only expired quotes (200 expected)
-# COVERAGE GAP: a Sent quote can only expire as time passes (ValidUntil cannot be created in the past), so on a fresh database this holds vacuously.
-# @name expiredQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=true&page=1&pageSize=500
+{ "title": "Still valid {{RunId}}" }
 
-?? status == 200
-?? js (response.parsedBody.items.every(q => q.isExpired && q.status == "Sent")) == true
+?? status == 201
 
-###
+### [Setup][QuoteExpired] Give it a line (201 expected)
+# @name validLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{valid.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] expired=false excludes expired quotes (200 expected)
-# @name activeQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=false&page=1&pageSize=500
+{ "lineKind": "Part", "quantity": 1, "description": "Valid line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{valid.version}} }
 
-?? status == 200
-?? js (response.parsedBody.items.every(q => !q.isExpired)) == true
-?? js response.parsedBody.totalCount >= 1
+?? status == 201
 
-###
+### [Setup][QuoteExpired] Send it (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{valid.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Case][Quotes] expired=true and expired=false split the whole list (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=1&pageSize=1
-
-?? status == 200
-?? js (response.parsedBody.totalCount == expiredQuotes.totalCount + activeQuotes.totalCount) == true
-
-###
-
-### [Positive][Quotes] status=Sent with expired=false is the Sent chip: Sent and not expired (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Sent&expired=false&page=1&pageSize=500
+{ "status": "Sent", "version": {{validLine.version}} }
 
 ?? status == 200
-?? js (response.parsedBody.items.every(q => q.status == "Sent" && !q.isExpired)) == true
 
-###
+### [Setup][QuoteExpired] Create a draft that is also valid for only 3 seconds (201 expected)
+# @name draft
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Negative][Quotes] expired=maybe is not a boolean (400 expected)
+{ "title": "Draft past its date {{RunId}}", "validUntil": "{{new Date(Date.now() + 3000).toISOString()}}" }
+
+?? status == 201
+
+### [Positive][QuoteExpired] Once the 3 seconds are over the sent quote reads as expired (200 expected, still Sent)
+# @name expiredDetail
+{{
+  const waitMs = new Date(expiring.validUntil).getTime() - Date.now() + 500;
+  if (waitMs > 0) { await new Promise(resolve => setTimeout(resolve, waitMs)); }
+}}
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}
+
+?? status == 200
+?? js (response.parsedBody.isExpired === true && response.parsedBody.status === "Sent") == true
+
+### [Positive][QuoteExpired] A draft past its date is not expired, only Sent quotes are (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+
+?? status == 200
+?? js (response.parsedBody.isExpired === false && response.parsedBody.status === "Draft") == true
+
+### [Positive][QuoteExpired] expired=true lists only the expired quote (200 expected)
+# @name expiredList
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&expired=true
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === expiring.id && response.parsedBody.items[0].isExpired === true && response.parsedBody.items[0].status === "Sent") == true
+
+### [Positive][QuoteExpired] expired=false lists the other two (200 expected, none expired)
+# @name activeList
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&expired=false
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 2 && response.parsedBody.items.every(q => !q.isExpired) && response.parsedBody.items.some(q => q.id === valid.id) && response.parsedBody.items.some(q => q.id === draft.id)) == true
+
+### [Positive][QuoteExpired] The two filters split the vehicle's whole list (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 3 && response.parsedBody.totalCount === expiredList.totalCount + activeList.totalCount) == true
+
+### [Positive][QuoteExpired] status=Sent with expired=false is the Sent chip: only the valid sent quote (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&status=Sent&expired=false
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === valid.id) == true
+
+### [Positive][QuoteExpired] status=Sent with expired=true finds the expired one (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&status=Sent&expired=true
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === expiring.id) == true
+
+### [Positive][QuoteExpired] status=Draft with expired=true finds nothing, a draft never expires (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&status=Draft&expired=true
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 0) == true
+
+### [Negative][QuoteExpired] expired=maybe is not a boolean (400 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?expired=maybe
 
 ?? status == 400
+
+### [Cleanup][QuoteExpired] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

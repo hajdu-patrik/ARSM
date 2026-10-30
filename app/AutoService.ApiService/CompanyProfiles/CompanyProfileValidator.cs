@@ -8,10 +8,10 @@ namespace AutoService.ApiService.CompanyProfiles;
 /** Validates and normalizes the company profile request; error keys are camelCase field names. */
 internal static partial class CompanyProfileValidator
 {
-    [GeneratedRegex(@"^\d{8}-\d-\d{2}$")]
+    [GeneratedRegex(@"^[0-9]{8}-[0-9]-[0-9]{2}$")]
     private static partial Regex TaxNumberPattern();
 
-    [GeneratedRegex(@"^\d{4}$")]
+    [GeneratedRegex(@"^[0-9]{4}$")]
     private static partial Regex PostalCodePattern();
 
     /** Returns the normalized profile and the field-keyed errors (empty when valid). */

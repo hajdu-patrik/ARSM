@@ -14,7 +14,7 @@ Otherwise return `SKIPPED`.
 
 ## Scope
 
-- `tests/API/**/*.http`
+- `tests/API/**/*.http` and the Python checks `tests/API/**/*.py`
 
 ## Rules
 
@@ -24,11 +24,12 @@ Otherwise return `SKIPPED`.
 
 ## File and Shell Permissions
 
-- Create, update, and delete `.http` suites only inside `tests/API/**`.
-- Shell use is limited to the canonical runner and read-only inspection; no ad-hoc commands outside the runner and scope paths.
+- Create, update, and delete `.http` suites and Python checks only inside `tests/API/**`.
+- Shell use is limited to the canonical runner, `python scripts/pre-push.py --only api-suites`, and read-only inspection; no ad-hoc commands outside the runner and scope paths.
 - Delete a suite only when its coverage is obsolete or relocated; never delete or weaken a test to make a run pass.
 
 ## Execution
 
-- Use `python scripts/run-local-test-suite.py http`.
+- Use `python scripts/run-local-test-suite.py http`, or `python scripts/pre-push.py --only api-suites`
+  for the HTTP and SQL suites together on the disposable stack.
 - Use sanitized summary only (`tests/.artifacts/test-suite-summary.json`).

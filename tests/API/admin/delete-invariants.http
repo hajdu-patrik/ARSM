@@ -1,16 +1,20 @@
-# Every id here is resolved at runtime or created as a disposable fixture, never hardcoded: literal
-# mechanic ids drifted with the insert counter and once deleted the real ARSM_TEST_MECHANIC_EMAIL account.
+# Delete refusals: the caller itself (403), an unknown id (404), a sole appointment assignee (422, nothing deleted),
+# and the same mechanic once a second one is assigned (200, the appointment keeps the other mechanic).
+
+# Not reachable: an admin target (403) needs a second admin, which no API or bootstrap path creates.
+# Not reachable: "last remaining mechanic" (422), because the admin is a mechanic and the target is always a non-admin.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @RunId = {{$timestamp}}
+@SoleEmail = delete.mechanic.sole.{{RunId}}@example.test
+@CustomerEmail = delete.mechanic.customer.{{RunId}}@example.test
 @UnknownMechanicId = 999999
 
-### [Setup][Admin] Clear any session cookie left by a previous file (204 or 401, not asserted)
+### [Setup][Admin] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
@@ -22,10 +26,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -35,155 +36,156 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Admin] Admin cannot delete own account (403 expected)
-# adminLogin.personId comes from the login response (AuthEndpoints.Contracts.cs), never hardcoded:
-# DeleteMechanicAsync compares the caller's person_id claim to the route id.
+### [Negative][Admin] Admin cannot delete the own account (403 expected, stable detail)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{adminLogin.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 403
+?? js (response.parsedBody.detail == "Administrators cannot delete their own account.") == true
 
 ###
 
-# COVERAGE GAP: DeleteMechanicAsync's 403-on-admin-target branch needs a second admin, which would require
-# promoting an account of the shared database (only the bootstrap admin is Admin); not executed.
-
-# COVERAGE GAP: the "last remaining mechanic" 422 needs the shared test DB down to one mechanic, which
-# every other suite's login depends on staying intact; not executed.
-
-
-### [Setup][Admin] Resolve the shared fixture customer (200 expected)
-# @name fixtureCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
+### [Positive][Admin] The refused self-delete left the admin session alive (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200
+?? js response.parsedBody.isAdmin == true
 
 ###
 
-@SoleAssignmentCustomerId = {{fixtureCustomer.id}}
-
-### [Setup][Admin] Resolve one of that customer vehicles (200 expected)
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/vehicles?page=1&pageSize=500
-
-?? status == 200
-
-###
-
-### [Setup][Admin] Register a disposable mechanic to be an appointment sole assignee (200 expected)
-# @name soleAssignmentMechanic
-POST {{AutoService_ApiService_HostAddress}}/api/auth/register
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "firstName": "Delete",
-  "lastName": "SoleAssignment",
-  "email": "delete.mechanic.sole.{{RunId}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
-
-?? status == 200
-
-###
-
-### [Setup][Admin] Create an appointment where the disposable mechanic is the sole assignee (201 expected)
-# This fixture appointment is not deleted by this file and stays on the calendar after the run
-# (appointment-delete.http covers the AdminOnly DELETE /api/appointments/{id} route).
-# @name soleAssignmentAppt
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{SoleAssignmentCustomerId}}/appointments
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "vehicleId": {{fixtureVehicles.items[0].id}},
-  "scheduledDate": "2020-01-01T10:00:00",
-  "taskDescription": "ARSM delete-invariants sole-assignment fixture",
-  "mechanicIds": [{{soleAssignmentMechanic.personId}}]
-}
-
-?? status == 201
-
-###
-
-### [Negative][Admin] Cannot delete mechanic that would leave an appointment unassigned (422 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 422
-
-###
-
-### [Cleanup][Admin] Assign a second mechanic so the disposable one is no longer the sole assignee (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{soleAssignmentAppt.id}}/assign/{{adminLogin.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Cleanup][Admin] Delete the disposable sole-assignment mechanic now that the invariant no longer blocks it (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleAssignmentMechanic.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Setup][Admin] Register a disposable mechanic with no appointment assignments (200 expected)
-# @name deletableMechanic
-POST {{AutoService_ApiService_HostAddress}}/api/auth/register
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "firstName": "Delete",
-  "lastName": "Candidate",
-  "email": "delete.mechanic.candidate.{{RunId}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
-
-?? status == 200
-
-###
-
-### [Positive][Admin] Delete non-admin mechanic when invariants hold (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{deletableMechanic.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Manual][Admin] Concurrent mechanic delete contention returns conflict (409 expected)
-# Not automated: needs a DbUpdateConcurrencyException/Postgres serialization failure mid-transaction,
-# which sequential HTTP calls cannot force; reproduce by hand with two concurrent deletes of one mechanic.
-
-###
-
-### [Manual][Admin] Linked identity delete failure returns server error (500 expected)
-# Not automated: needs UserManager.DeleteAsync to fail for a mechanic with a resolvable IdentityUserId,
-# unreachable via the public API; reproduce by fault-injecting the Identity store or deleting the row.
-
-###
-
-### [Negative][Admin] Cannot delete unknown mechanic (404 expected)
+### [Negative][Admin] Cannot delete an unknown mechanic (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{UnknownMechanicId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
+?? js (response.parsedBody.detail == "Mechanic not found.") == true
+
+###
+
+### [Negative][Admin] A non-numeric id does not match the int route (404 expected, never 500)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/abc
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+
+###
+
+### [Setup][Admin] Create a disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Delete", "middleName": null, "lastName": "Invariant", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Admin] Create the customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "DMI-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}0501", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Admin] Register the disposable mechanic that becomes the sole assignee (200 expected)
+# @name soleMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Delete", "lastName": "SoleAssignment", "email": "{{SoleEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Setup][Admin] Create an appointment assigned only to that mechanic (201 expected)
+# @name soleAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Delete invariant fixture", "mechanicIds": [{{soleMechanic.personId}}] }
+
+?? status == 201
+?? js response.parsedBody.mechanics.length == 1
+
+###
+
+### [Negative][Admin] Deleting the sole assignee is refused (422 expected, stable detail)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js (response.parsedBody.detail == "Cannot delete this mechanic because one or more appointments would be left without assigned mechanics.") == true
+
+###
+
+### [Positive][Admin] The refused delete changed nothing: the mechanic is still listed (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search={{SoleEmail}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].personId == soleMechanic.personId) == true
+
+###
+
+### [Setup][Admin] Assign the admin as a second mechanic (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{soleAppointment.id}}/assign/{{adminLogin.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+
+###
+
+### [Positive][Admin] With a second assignee the delete goes through (200 expected, message)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{soleMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.message == "Mechanic deleted successfully.") == true
+
+###
+
+### [Positive][Admin] The appointment survives with only the admin assigned (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js response.parsedBody[0].mechanics.length == 1
+?? js (response.parsedBody[0].mechanics[0].id == adminLogin.personId) == true
+
+###
+
+### [Cleanup][Admin] Delete the disposable customer with its vehicle and appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Admin] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

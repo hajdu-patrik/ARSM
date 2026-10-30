@@ -1,0 +1,231 @@
+# PUT /api/admin/company-profile edges: null or missing fields, exact error messages and keys, the length caps (150/150/50/20/150)
+# one past and exactly at the cap, trimming and phone normalization. Reads the row first and restores it at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@Name150 = {{'N'.repeat(150)}}
+@City50 = {{'C'.repeat(50)}}
+
+### [Setup][CompanyProfile] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][CompanyProfile] Login as admin (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][CompanyProfile] Read the original profile (200 expected)
+# @name originalProfile
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 200
+
+###
+
+### [Negative][CompanyProfile] Every field null (400 expected, one error per field)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": null, "addressLine": null, "postalCode": null, "city": null, "taxNumber": null, "phoneNumber": null, "email": null }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).sort().join(",") == "addressLine,city,email,name,phoneNumber,postalCode,taxNumber") == true
+?? js (response.parsedBody.errors.name[0] == "name cannot be empty.") == true
+
+###
+
+### [Negative][CompanyProfile] Empty body object, every property missing (400 expected, one error per field)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).sort().join(",") == "addressLine,city,email,name,phoneNumber,postalCode,taxNumber") == true
+
+###
+
+### [Negative][CompanyProfile] Tax number with a letter (400 expected, only taxNumber is reported)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "1234567A-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).join(",") == "taxNumber") == true
+?? js (response.parsedBody.errors.taxNumber[0] == "taxNumber must match the format 12345678-1-12.") == true
+
+###
+
+### [Negative][CompanyProfile] Tax number with an extra group (400 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12-3", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).join(",") == "taxNumber") == true
+
+###
+
+### [Negative][CompanyProfile] Postal code with 3 digits (400 expected, exact message)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).join(",") == "postalCode") == true
+?? js (response.parsedBody.errors.postalCode[0] == "postalCode must be exactly 4 digits.") == true
+
+###
+
+### [Negative][CompanyProfile] Arabic-Indic digits in the postal code and tax number (400 expected, the formats are ASCII)
+# .NET \d matches any Unicode digit, so the validator patterns may accept these; the body escapes keep this file ASCII.
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "\u0661\u0662\u0663\u0664", "city": "Budapest", "taxNumber": "\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668-\u0661-\u0661\u0662", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).sort().join(",") == "postalCode,taxNumber") == true
+
+###
+
+### [Negative][CompanyProfile] Non-EU phone number (400 expected, European number message)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+12025550143", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.phoneNumber[0] == "Phone number must be a valid European number.") == true
+
+###
+
+### [Negative][CompanyProfile] Phone number of 21 characters (400 expected, length message before the format check)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567890123456", "email": "a@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.phoneNumber[0] == "phoneNumber must be at most 20 characters.") == true
+
+###
+
+### [Negative][CompanyProfile] E-mail of 151 characters (400 expected, length message)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "X", "addressLine": "Teszt utca 1.", "postalCode": "1111", "city": "Budapest", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "{{'a'.repeat(138)}}@example.test" }
+
+?? status == 400
+?? js (response.parsedBody.errors.email[0] == "email must be at most 150 characters.") == true
+
+###
+
+### [Negative][CompanyProfile] Name and address of 151 and city of 51 characters (400 expected, three length messages)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "{{Name150}}N", "addressLine": "{{Name150}}N", "postalCode": "1111", "city": "{{City50}}C", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 400
+?? js (Object.keys(response.parsedBody.errors).sort().join(",") == "addressLine,city,name") == true
+?? js (response.parsedBody.errors.name[0] == "name must be at most 150 characters.") == true
+?? js (response.parsedBody.errors.addressLine[0] == "addressLine must be at most 150 characters.") == true
+?? js (response.parsedBody.errors.city[0] == "city must be at most 50 characters.") == true
+
+###
+
+### [Positive][CompanyProfile] None of the rejected updates reached the row (200 expected, same as the original)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+
+?? status == 200
+?? js (["name","addressLine","postalCode","city","taxNumber","phoneNumber","email"].every(k => response.parsedBody[k] == originalProfile[k])) == true
+
+###
+
+### [Positive][CompanyProfile] Name and address of exactly 150 and city of exactly 50 characters are accepted (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "{{Name150}}", "addressLine": "{{Name150}}", "postalCode": "1111", "city": "{{City50}}", "taxNumber": "12345678-1-12", "phoneNumber": "+36301234567", "email": "a@example.test" }
+
+?? status == 200
+?? js (response.parsedBody.name.length == 150 && response.parsedBody.addressLine.length == 150 && response.parsedBody.city.length == 50) == true
+
+###
+
+### [Positive][CompanyProfile] Surrounding spaces are trimmed and a national phone number is stored as E.164 (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "  Trim Kft.  ", "addressLine": " Teszt utca 1. ", "postalCode": " 1111 ", "city": " Budapest ", "taxNumber": " 12345678-1-12 ", "phoneNumber": " 06301234567 ", "email": "a@example.test" }
+
+?? status == 200
+?? js (response.parsedBody.name == "Trim Kft." && response.parsedBody.addressLine == "Teszt utca 1." && response.parsedBody.city == "Budapest") == true
+?? js (response.parsedBody.postalCode == "1111" && response.parsedBody.taxNumber == "12345678-1-12" && response.parsedBody.phoneNumber == "+36301234567") == true
+
+###
+
+### [Cleanup][CompanyProfile] Restore the original profile (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/admin/company-profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "name": "{{originalProfile.name}}", "addressLine": "{{originalProfile.addressLine}}", "postalCode": "{{originalProfile.postalCode}}", "city": "{{originalProfile.city}}", "taxNumber": "{{originalProfile.taxNumber}}", "phoneNumber": "{{originalProfile.phoneNumber}}", "email": "{{originalProfile.email}}" }
+
+?? status == 200
+?? js (["name","addressLine","postalCode","city","taxNumber","phoneNumber","email"].every(k => response.parsedBody[k] == originalProfile[k])) == true
+
+###
+
+### [Setup][CompanyProfile] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

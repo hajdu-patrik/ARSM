@@ -6,7 +6,7 @@ import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks
 import { primeBrowserState } from './support/browser-state';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { fillLockedPasswordField } from './support/password-fields';
-import { toastMessage } from './support/toast';
+import { errorToastMessage, toastMessage } from './support/toast';
 
 /** Paths a signed-in user with a temporary password must not stay on; each one is guarded or redirects on. */
 const OTHER_APP_PATHS = ['/', '/login', '/customers', '/quotes', '/inventory', '/settings', '/admin/register'];
@@ -90,5 +90,38 @@ test.describe('Required password change', () => {
 
     await expect(page).toHaveURL(/\/login$/);
     expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBeNull();
+  });
+
+  test('a wrong temporary password is refused under its field and the page stays', async ({ page }) => {
+    await startSignedIn(page, {
+      mustChangePassword: true,
+      routeFailures: { 'POST /api/profile/change-password': { status: 400, body: { errors: { CurrentPassword: ['Current password is invalid.'] } } } },
+    });
+    await page.goto('/change-password');
+
+    await fillLockedPasswordField(page.locator('#change-password-current'), 'WrongTemporary1!');
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'BrandNewPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-confirm'), 'BrandNewPass1!');
+    await page.getByRole('button', { name: 'Change password' }).click();
+
+    await expect(page.locator('#change-password-current')).toHaveAccessibleDescription('Current password is invalid.');
+    await expect(errorToastMessage(page, 'Current password is invalid.')).toBeVisible();
+    await expect(page).toHaveURL(/\/change-password$/);
+  });
+
+  test('names why the submit is disabled while the new password is too short or unconfirmed', async ({ page }) => {
+    await startSignedIn(page, { mustChangePassword: true });
+    await page.goto('/change-password');
+    const submit = page.getByRole('button', { name: 'Change password' });
+
+    await expect(submit).toBeDisabled();
+    await fillLockedPasswordField(page.locator('#change-password-current'), 'TemporaryPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'Short1!');
+    await fillLockedPasswordField(page.locator('#change-password-confirm'), 'Short1!');
+    await expect(submit).toBeDisabled();
+    await expect(page.locator('#change-password-new')).toHaveAccessibleDescription('Password must be at least 8 characters.');
+
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'BrandNewPass1!');
+    await expect(page.locator('#change-password-confirm')).toHaveAccessibleDescription('Passwords do not match.');
   });
 });

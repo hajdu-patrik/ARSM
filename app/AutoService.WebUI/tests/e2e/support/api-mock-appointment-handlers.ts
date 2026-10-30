@@ -9,7 +9,8 @@ import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
 import { createAppointment, deleteAppointment, withLifecycleFlags } from './api-mock-data';
-import { fulfillJson, fulfillNoContent, rejectStaleVersion } from './api-mock-response';
+import { tryHandleAssignmentRoute } from './api-mock-appointment-assignment';
+import { corsHeaders, fulfillJson, fulfillNoContent, rejectStaleVersion } from './api-mock-response';
 
 /** Code of the 409 the API answers a status change or update that carries a stale version with. */
 const APPOINTMENT_VERSION_CONFLICT_CODE = 'appointment_version_conflict';
@@ -38,12 +39,13 @@ export async function tryHandleAppointmentRoute(
     return true;
   }
 
-  // The scheduler opens a live update stream while mounted. Answering it with a valid, empty
-  // event stream keeps the mock from returning 404 and the client from retrying against an error.
+  // The scheduler opens a live update stream while mounted. Answering it with a valid, empty event
+  // stream (with the CORS headers a credentialed cross-origin EventSource needs) keeps the client from retrying against an error.
   if (path === '/api/appointments/updates' && method === 'GET') {
     await route.fulfill({
       status: 200,
       contentType: 'text/event-stream',
+      headers: corsHeaders(route),
       body: ': mock appointment updates stream ready\n\n',
     });
     return true;
@@ -55,7 +57,13 @@ export async function tryHandleAppointmentRoute(
   }
 
   if (path === '/api/appointments/intake' && method === 'POST') {
-    const appointment = createAppointment(state, route.request().postDataJSON() as SchedulerCreateIntakeRequest);
+    const request = route.request().postDataJSON() as SchedulerCreateIntakeRequest;
+    const appointment = createAppointment(state, request);
+    if (request.vehicle !== undefined && request.vehicleId === undefined) {
+      // A new vehicle of a known customer: the appointment carries the typed vehicle, not the customer's first one.
+      appointment.vehicle = { ...appointment.vehicle, ...request.vehicle, id: state.nextVehicleId };
+      state.nextVehicleId += 1;
+    }
     await fulfillJson(route, withLifecycleFlags(state, appointment), 201);
     return true;
   }
@@ -89,7 +97,7 @@ export async function tryHandleAppointmentRoute(
     return true;
   }
 
-  return false;
+  return tryHandleAssignmentRoute(route, method, path, state, options);
 }
 
 /** `PUT /api/appointments/{id}/status`: refuses a missing or stale version, a change away from Completed

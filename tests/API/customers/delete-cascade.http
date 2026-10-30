@@ -1,0 +1,114 @@
+# Deleting a customer cascades to everything it owns: its vehicles, their appointments and the quotes on them.
+# The customer, vehicle, appointment and quote below are all disposable, so no shared fixture is touched.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create the customer (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Cascade", "middleName": null, "lastName": "Owner", "email": "customers.cascade.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give it a vehicle (201 expected)
+# @name ownerVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CC-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0871", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Book an appointment for the vehicle (201 expected)
+# @name ownerAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{ownerVehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Customer delete cascade fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create a quote linked to that appointment (201 expected)
+# @name ownerQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{ownerVehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Customer delete cascade quote", "appointmentId": {{ownerAppointment.id}} }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Delete the customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Customers] The vehicle is gone (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{ownerVehicle.id}}
+
+?? status == 404
+
+###
+
+### [Negative][Customers] The appointment is gone (404 expected, appointment_not_found)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ownerAppointment.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+###
+
+### [Negative][Customers] The quote is gone (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{ownerQuote.id}}
+
+?? status == 404

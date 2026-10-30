@@ -1,0 +1,234 @@
+# POST /api/customers field rules (required, name pattern, email, European phone, check order), one change per case; every
+# case is refused with 422 before a row is written. Length limits: create-validation-length.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Customers] Empty first name (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "FirstName, LastName, and Email are required.") == true
+
+###
+
+### [Negative][Customers] Whitespace-only last name (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "   ", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "FirstName, LastName, and Email are required.") == true
+
+###
+
+### [Negative][Customers] Empty email (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "FirstName, LastName, and Email are required.") == true
+
+###
+
+### [Negative][Customers] An empty JSON object lacks every required field (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{}
+
+?? status == 422
+?? js (response.parsedBody.detail === "FirstName, LastName, and Email are required.") == true
+
+###
+
+### [Negative][Customers] First name with a space (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Mary Jane", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "First name may only contain letters and hyphens.") == true
+
+###
+
+### [Negative][Customers] First name with a digit (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "John2", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "First name may only contain letters and hyphens.") == true
+
+###
+
+### [Negative][Customers] Last name with an apostrophe (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "O'Brien", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Last name may only contain letters and hyphens.") == true
+
+###
+
+### [Negative][Customers] Middle name with a space (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": "Van Der", "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Middle name may only contain letters and hyphens.") == true
+
+###
+
+### [Negative][Customers] Email without an at sign (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "invalid-email-format", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] Email in display-name form (422 expected, only the bare address is accepted)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "Joe <joe.{{RunId}}@example.test>", "phoneNumber": null }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] Phone too short to be a number (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": "12345" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Phone number must be a valid European number.") == true
+
+###
+
+### [Negative][Customers] A valid non-European number (US) is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": "+1 202 555 0143" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Phone number must be a valid European number.") == true
+
+###
+
+### [Negative][Customers] Phone made of letters (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "cv.fields.{{RunId}}@example.test", "phoneNumber": "not a phone" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Phone number must be a valid European number.") == true
+
+###
+
+### [Negative][Customers] A bad name and a bad email together (422 expected, the name is reported first)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "John2", "middleName": null, "lastName": "Customer", "email": "invalid-email-format", "phoneNumber": "12345" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "First name may only contain letters and hyphens.") == true
+
+###
+
+### [Negative][Customers] A bad email and a bad phone together (422 expected, the email is reported first)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Valid", "middleName": null, "lastName": "Customer", "email": "invalid-email-format", "phoneNumber": "12345" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] A body that is not JSON (400 expected, never a server error)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Broken",
+
+?? status == 400

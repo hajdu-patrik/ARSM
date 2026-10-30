@@ -42,7 +42,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=1&pageSize=5
 ###
 
 ### [Cleanup] Delete every leftover test-fixture mechanic still matching the filter above
-# @loop for leftoverMechanic of mechanics.items.filter(m => !m.isAdmin && m.email.toLowerCase() !== MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test") && ["matrix.","appt.","delete.mechanic.","login.negmatrix.","duplicate.rules.target.","duplicate.phone.","bad.phone.","bad.expertise.","customer.should.fail.","name.","lastname.","middlename.","firstname.toolong.","phone.toolong.","password.toolong.","blocked.nonadmin.","blocked.unauth.","profile.conflict.","profile.delete.","session.lifecycle.","password.reset.","credential.lockout.","session.revocation."].some(p => m.email.toLowerCase().startsWith(p)))
+# @loop for leftoverMechanic of mechanics.items.filter(m => !m.isAdmin && m.email.toLowerCase() !== MechanicEmail.toLowerCase() && m.email.toLowerCase().endsWith("@example.test") && ["matrix.","appt.","delete.mechanic.","login.negmatrix.","duplicate.rules.target.","duplicate.phone.","bad.phone.","bad.expertise.","customer.should.fail.","name.","lastname.","middlename.","firstname.toolong.","phone.toolong.","password.toolong.","blocked.nonadmin.","blocked.unauth.","profile.conflict.","profile.delete.","session.lifecycle.","password.reset.","credential.lockout.","session.revocation.","admin.list.","profile.update."].some(p => m.email.toLowerCase().startsWith(p)))
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{leftoverMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

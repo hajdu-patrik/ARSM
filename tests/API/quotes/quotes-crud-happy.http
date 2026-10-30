@@ -1,19 +1,21 @@
+# Create, read, header edit and validity of a quote with every response field asserted. Disposable customer and
+# vehicle, deleted at the end (cascade). Delete rules are in quotes-delete-happy.http, validation in quotes-validation.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.crud.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0720
 
-### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][Crud] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -21,214 +23,141 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
-# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][Quotes] Create a disposable labor type fixture for the catalog line below (201 expected)
-# @name createdLaborType
-POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+### [Setup][Crud] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "ZZQ{{RunId}}A",
-  "name": "Quotes Happy Labor Fixture",
-  "hourlyNetRate": 5000,
-  "vatRatePercent": 27
-}
+{ "firstName": "QuoteCrud", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
+### [Setup][Crud] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] Create draft quote with no ValidUntil (201 expected, validUntil defaults to now + 30 days, D22)
+{ "licensePlate": "QCR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Positive][Crud] Create a draft with padded title and notes and no ValidUntil (201 expected, trimmed, +30 days, D22)
 # @name createdQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "CRUD Happy Quote {{RunId}}",
-  "notes": "Created by the quotes-crud-happy suite"
-}
+{ "title": "  CRUD Happy Quote {{RunId}}  ", "notes": "  Created by the crud suite  " }
 
 ?? status == 201
+?? js (response.headers.location === "/api/quotes/" + response.parsedBody.id) == true
+?? js (response.parsedBody.title === `CRUD Happy Quote ${RunId}` && response.parsedBody.notes === "Created by the crud suite") == true
+?? js (/^ARSM-\d{4}-\d{4,}$/.test(response.parsedBody.quoteNumber)) == true
+?? js (response.parsedBody.quoteNumber.startsWith("ARSM-" + new Date().getUTCFullYear() + "-")) == true
+?? js (response.parsedBody.status === "Draft" && response.parsedBody.sentAt == null && response.parsedBody.decidedAt == null && response.parsedBody.appointmentId == null) == true
+?? js (response.parsedBody.lines.length === 0 && response.parsedBody.totalNet === 0 && response.parsedBody.totalVat === 0 && response.parsedBody.totalGross === 0) == true
+?? js (response.parsedBody.isExpired === false && response.parsedBody.isLocked === false && response.parsedBody.lockReason == null && response.parsedBody.canDelete === true) == true
+?? js (Math.abs(new Date(response.parsedBody.validUntil).getTime() - Date.now() - 30 * 86400000) < 2 * 86400000) == true
+?? js (response.parsedBody.createdByMechanic.id === adminLogin.personId && response.parsedBody.version > 0) == true
+?? js (response.parsedBody.vehicleId === vehicle.id && response.parsedBody.vehicle.id === vehicle.id && response.parsedBody.vehicle.licensePlate === `QCR-${RunId}` && response.parsedBody.vehicle.brand === "Skoda" && response.parsedBody.vehicle.model === "Octavia") == true
 
-###
+### [Positive][Crud] Create a second draft with blank notes and an explicit ValidUntil (201 expected, notes null, later number)
+# @name secondQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] Get created quote by id (200 expected)
+{ "title": "CRUD Happy Second {{RunId}}", "notes": "   ", "validUntil": "2099-01-01T00:00:00" }
+
+?? status == 201
+?? js (response.parsedBody.notes == null && response.parsedBody.validUntil.startsWith("2099-01-01T00:00:00")) == true
+?? js (response.parsedBody.quoteNumber > createdQuote.quoteNumber) == true
+
+### [Positive][Crud] Get the quote by id (200 expected, same data as the create response)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
 
 ?? status == 200
+?? js (response.parsedBody.id === createdQuote.id && response.parsedBody.quoteNumber === createdQuote.quoteNumber && response.parsedBody.title === createdQuote.title && response.parsedBody.notes === createdQuote.notes) == true
+?? js (response.parsedBody.version === createdQuote.version && Math.abs(new Date(response.parsedBody.validUntil) - new Date(createdQuote.validUntil)) < 1000 && response.parsedBody.lines.length === 0) == true
 
-###
-
-### [Positive][Quotes] List the anchor vehicle's quotes (200 expected, includes the created quote)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
-
-?? status == 200
-
-###
-
-### [Positive][Quotes] List quotes filtered by vehicleId and Draft status (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{AnchorVehicleId}}&status=Draft
+### [Positive][Crud] List the vehicle's quotes (200 expected, newest first, a plain array without lines)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 
 ?? status == 200
+?? js (Array.isArray(response.parsedBody) && response.parsedBody.length === 2) == true
+?? js (response.parsedBody[0].id === secondQuote.id && response.parsedBody[1].id === createdQuote.id) == true
+?? js (response.parsedBody[1].lines === undefined && response.parsedBody[1].status === "Draft" && response.parsedBody[1].canDelete === true && response.parsedBody[1].isLocked === false) == true
+?? js (response.parsedBody[1].vehicle.licensePlate === `QCR-${RunId}` && response.parsedBody[1].createdByMechanic.id === adminLogin.personId && response.parsedBody[1].version === createdQuote.version) == true
 
-###
+### [Positive][Crud] The vehicle list honours limit (200 expected, one row, the newest)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes?limit=1
 
-### [Positive][Quotes] Update draft quote title and notes (200 expected)
+?? status == 200
+?? js (response.parsedBody.length === 1 && response.parsedBody[0].id === secondQuote.id) == true
+
+### [Positive][Crud] Update title and notes (200 expected, trimmed, version bumped, nothing else changes)
 # @name updatedQuote
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "CRUD Happy Quote {{RunId}} Updated",
-  "notes": "Updated by the quotes-crud-happy suite",
-  "version": {{createdQuote.version}}
-}
+{ "title": "  CRUD Happy Quote {{RunId}} Updated  ", "notes": "  Updated by the crud suite  ", "version": {{createdQuote.version}} }
 
 ?? status == 200
+?? js (response.parsedBody.title === `CRUD Happy Quote ${RunId} Updated` && response.parsedBody.notes === "Updated by the crud suite") == true
+?? js (response.parsedBody.version !== createdQuote.version && response.parsedBody.quoteNumber === createdQuote.quoteNumber && Math.abs(new Date(response.parsedBody.validUntil) - new Date(createdQuote.validUntil)) < 1000 && response.parsedBody.status === "Draft") == true
 
-###
+### [Positive][Crud] Blank notes clear the notes (200 expected, null)
+# @name clearedQuote
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-### [Positive][Quotes] Extend draft quote's ValidUntil (200 expected, Draft accepts any future date)
-# @name extendedQuote
+{ "title": "CRUD Happy Quote {{RunId}} Updated", "notes": "", "version": {{updatedQuote.version}} }
+
+?? status == 200
+?? js (response.parsedBody.notes == null) == true
+
+### [Positive][Crud] The edit is persisted (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}
+
+?? status == 200
+?? js (response.parsedBody.title === `CRUD Happy Quote ${RunId} Updated` && response.parsedBody.notes == null && response.parsedBody.version === clearedQuote.version) == true
+
+### [Positive][Crud] A draft accepts any future ValidUntil, later or earlier (200 expected, D22/D23)
+# @name laterValidity
 PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/valid-until
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "validUntil": "2027-06-01T00:00:00",
-  "version": {{updatedQuote.version}}
-}
+{ "validUntil": "2099-06-01T12:30:00", "version": {{clearedQuote.version}} }
 
 ?? status == 200
+?? js (response.parsedBody.validUntil.startsWith("2099-06-01T12:30:00") && response.parsedBody.version !== clearedQuote.version && response.parsedBody.title === clearedQuote.title) == true
 
-###
-
-### [Positive][Quotes] Add a manual part line (201 expected, no catalog reference)
-# @name lineAdded1
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines
+### [Positive][Crud] Moving the draft's ValidUntil to an earlier future date works too (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/valid-until
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 2,
-  "description": "Manual brake pad set",
-  "netUnitPrice": 15000,
-  "vatRatePercent": 27,
-  "version": {{extendedQuote.version}}
-}
-
-?? status == 201
-
-###
-
-### [Positive][Quotes] Add a catalog labor line (201 expected, snapshot from the disposable LaborType fixture created above)
-# @name lineAdded2
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Labor",
-  "quantity": 1,
-  "laborTypeId": {{createdLaborType.id}},
-  "version": {{lineAdded1.version}}
-}
-
-?? status == 201
-
-###
-
-### [Positive][Quotes] Update the manual part line's quantity (200 expected)
-# @name lineUpdated
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines/{{lineAdded2.lines[0].id}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "lineKind": "Part",
-  "quantity": 3,
-  "description": "Manual brake pad set",
-  "netUnitPrice": 15000,
-  "vatRatePercent": 27,
-  "version": {{lineAdded2.version}}
-}
+{ "validUntil": "2098-01-01T00:00:00", "version": {{laterValidity.version}} }
 
 ?? status == 200
+?? js (response.parsedBody.validUntil.startsWith("2098-01-01T00:00:00")) == true
 
-###
-
-### [Positive][Quotes] Remove the catalog labor line (200 expected, returns the updated quote, not 204)
-# @name lineDeleted
-DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/lines/{{lineUpdated.lines[1].id}}?version={{lineUpdated.version}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Cleanup][Quotes] Delete the disposable labor type fixture now that no quote line references it (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{createdLaborType.id}}
+### [Cleanup][Crud] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-### [Positive][Quotes] Transition draft quote to Sent (200 expected, at least one line remains)
-# @name sentQuote
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "Sent",
-  "version": {{lineDeleted.version}}
-}
-
-?? status == 200
-
-###
-
-### [Positive][Quotes] Transition sent quote to Accepted (200 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{createdQuote.id}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "status": "Accepted",
-  "version": {{sentQuote.version}}
-}
-
-?? status == 200
-
-###

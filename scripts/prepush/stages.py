@@ -16,9 +16,11 @@ def validate(ctx: Context) -> StageOutcome:
 
 
 def backend(ctx: Context) -> StageOutcome:
-    """Local mirror of the dotnet.yml backend job; its NuGet audit is covered by validate.py --security."""
+    """Mirror of the dotnet.yml backend job plus the scripts tests CI runs in repo-gate; the NuGet audit is in validate.py --security."""
     ef_command = ["dotnet", "tool", "run", "dotnet-ef", "--", "migrations", "has-pending-model-changes", "--project", "AutoService.ApiService"]
+    scripts_tests = [sys.executable, "-m", "unittest", "discover", "-s", "tests/Scripts"]
     specs = [
+        StepSpec("python -m unittest tests/Scripts", scripts_tests, ROOT),
         StepSpec("dotnet restore --locked-mode", ["dotnet", "restore", "--locked-mode"], APP),
         StepSpec("dotnet build --no-restore", ["dotnet", "build", "--no-restore"], APP),
         StepSpec("dotnet test --no-build", ["dotnet", "test", "--no-build"], APP),

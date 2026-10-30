@@ -1,34 +1,24 @@
-# ApptId is created here (on a disposable customer and vehicle, deleted at the end) so field validation is reached instead of 404;
-# AdminMechanicId is the admin's own person_id. FixtureVehicleVin only needs to pass VIN format (drivetrain parsing runs before the uniqueness check); ApptId is deleted at the end.
+# PUT /api/appointments/{id} refusals: due date, task and fixed start. The version rules are in appointment-concurrency.http,
+# vehicle edits in appointment-vehicle-update.http. A disposable customer, vehicle and appointment are created and deleted here.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-# Disposable owner and vehicle: the vehicle edits persist, so the shared fixture vehicles stay untouched.
 @RunId = {{$timestamp}}
-@FixtureCustomerEmail = fixture.appt.update.validation.{{RunId}}@example.test
-@OwnLicensePlate = OWU-{{RunId}}
-@OwnVehicleVin = TST{{RunId.toString().slice(-10)}}0900
-@FixtureVehicleVin = WVWZZZAUZJW123456
-
+@CustomerEmail = fixture.appt.update.validation.{{RunId}}@example.test
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Setup][Appointments] Login as admin (session prerequisite, 200 expected)
+### [Setup][Appointments] Login as admin (200 expected)
 # @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -36,175 +26,126 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-@AdminMechanicId = {{adminLogin.personId}}
-
-### [Setup][Appointments] Create a disposable customer, because the vehicle edits below persist (201 expected)
-# @name fixtureCustomer
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "firstName": "Appointment", "middleName": null, "lastName": "FieldValidation", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+{ "firstName": "Appointment", "middleName": null, "lastName": "FieldValidation", "email": "{{CustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
-
-###
 
 ### [Setup][Appointments] Create the disposable customer's vehicle (201 expected)
-# @name ownVehicle
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}/vehicles
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "licensePlate": "{{OwnLicensePlate}}", "vin": "{{OwnVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+{ "licensePlate": "OWU-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}0900", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
-###
-
-@FixtureCustomerId = {{fixtureCustomer.id}}
-
-### [Setup][Appointments] Create the appointment under field-level validation test (201 expected)
+### [Setup][Appointments] Create the appointment under validation (201 expected)
 # @name apptCreate
-POST {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "vehicleId": {{ownVehicle.id}},
-  "scheduledDate": "2026-04-18T10:30:00",
-  "taskDescription": "Update-field-validation fixture",
-  "mechanicIds": [{{AdminMechanicId}}]
-}
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Update validation fixture", "mechanicIds": [{{adminLogin.personId}}] }
 
 ?? status == 201
 
-###
-
-@ApptId = {{apptCreate.id}}
-
-### [Negative][Appointments] Admin update rejects empty taskDescription (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Negative][Appointments] A missing dueDateTime is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "dueDateTime": "2026-04-25T16:00:00",
-  "taskDescription": "   ",
-  "version": {{apptCreate.version}}
-}
+{ "taskDescription": "Update without due date", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "DueDateTime is required.") == true
 
-###
-
-### [Negative][Appointments] Admin update rejects taskDescription exceeding 200 characters (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Negative][Appointments] A blank task description is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "dueDateTime": "2026-04-25T16:00:00",
-  "taskDescription": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX",
-  "version": {{apptCreate.version}}
-}
+{ "dueDateTime": "2026-04-25T16:00:00", "taskDescription": "   ", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "TaskDescription is required.") == true
 
-###
-
-### [Negative][Appointments] Admin update rejects dueDateTime earlier than scheduledDate (422 expected)
-# dueDateTime must be >= scheduledDate for the linked appointment.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Negative][Appointments] A missing task description is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "dueDateTime": "2000-01-01T00:00:00",
-  "taskDescription": "Due before scheduled date should be rejected",
-  "version": {{apptCreate.version}}
-}
+{ "dueDateTime": "2026-04-25T16:00:00", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "TaskDescription is required.") == true
 
-###
-
-### [Negative][Appointments] Admin vehicle update missing required fields (422 expected)
-# LicensePlate, Vin, Brand, Model, and DrivetrainType are required for /vehicle update payloads.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+### [Negative][Appointments] A task description of 201 characters is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "brand": "Volkswagen"
-}
+{ "dueDateTime": "2026-04-25T16:00:00", "taskDescription": "{{'a'.repeat(201)}}", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "TaskDescription must be at most 200 characters.") == true
 
-###
-
-### [Negative][Appointments] Admin vehicle update rejects invalid VIN format (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+### [Negative][Appointments] A due date before the start is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "licensePlate": "ABC-101",
-  "vin": "SHORTVIN",
-  "brand": "Volkswagen",
-  "model": "Golf",
-  "year": 2018,
-  "mileageKm": 124500,
-  "enginePowerKw": 81,
-  "drivetrainType": "Petrol"
-}
+{ "dueDateTime": "2026-04-18T10:29:59", "taskDescription": "Due before scheduled date", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "DueDateTime must be greater than or equal to ScheduledDate.") == true
 
-###
-
-### [Negative][Appointments] Admin vehicle update rejects unsupported drivetrain type (422 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}/vehicle
+### [Negative][Appointments] A different start is refused, the start cannot be changed (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "licensePlate": "ABC-101",
-  "vin": "{{FixtureVehicleVin}}",
-  "brand": "Volkswagen",
-  "model": "Golf",
-  "year": 2018,
-  "mileageKm": 124500,
-  "enginePowerKw": 81,
-  "drivetrainType": "Hydrogen"
-}
+{ "scheduledDate": "2026-04-18T10:30:01", "dueDateTime": "2026-04-25T16:00:00", "taskDescription": "Scheduled date change", "version": {{apptCreate.version}} }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "ScheduledDate cannot be changed.") == true
 
-###
-
-### [Cleanup][Appointments] Delete the fixture appointment created above (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{ApptId}}
+### [Negative][Appointments] An unknown appointment is refused (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999999
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-?? status == 204
+{ "dueDateTime": "2026-04-22T16:15:00", "taskDescription": "Update of a missing appointment", "version": 1 }
 
-###
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
 
-### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{fixtureCustomer.id}}
+### [Positive][Appointments] None of the refused edits changed the appointment (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+
+?? status == 200
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).taskDescription == "Update validation fixture") == true
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).dueDateTime.startsWith("2026-04-18T10:30:00")) == true
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).version == apptCreate.version) == true
+
+### [Cleanup][Appointments] Delete the disposable customer, cascading vehicle and appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 

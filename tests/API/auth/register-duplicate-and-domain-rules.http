@@ -1,5 +1,5 @@
-# Verified against AuthEndpoints.Register.cs: AdminOnly needs an admin session first; every duplicate
-# (email or phone) answers the same generic anti-enumeration ValidationProblem (key "register"). This file self-provisions and deletes its own duplicate-target mechanic.
+# POST /api/auth/register uniqueness (Identity and People, email and phone): every duplicate answers the same generic
+# anti-enumeration message under the "register" key. The duplicate-target mechanic is created and deleted here.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -21,16 +21,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Admin Session] Login as admin before duplicate/domain-rule checks (200 expected)
+### [Setup][Admin Session] Login as admin (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -47,124 +44,87 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Duplicate",
-  "lastName": "Target",
-  "email": "{{DuplicateTargetEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "{{DuplicateTargetPhone}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Duplicate", "lastName": "Target", "email": "{{DuplicateTargetEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "{{DuplicateTargetPhone}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "Brakes"] }
 
 ?? status == 200
 
 ###
 
-### [Negative][Register][Admin] Existing customer email is blocked by domain People uniqueness (400 expected)
-# Expected ValidationProblem key: register (generic anti-enumeration response).
+### [Negative][Register] The exact email of an existing mechanic (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Domain",
-  "lastName": "Conflict",
-  "email": "{{KnownCustomerEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Same", "lastName": "Email", "email": "{{DuplicateTargetEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
 
 ###
 
-### [Negative][Register][Admin] Duplicate phone in another valid input format (400 expected)
-# Expected ValidationProblem key: register (generic anti-enumeration response).
+### [Negative][Register] The same email in upper case with surrounding whitespace is the same account (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Duplicate",
-  "lastName": "Phone",
-  "email": "duplicate.phone.{{RunId}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "+36305{{PhoneTail}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Same", "lastName": "EmailCase", "email": "  DUPLICATE.RULES.TARGET.{{RunId}}@EXAMPLE.TEST ", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
 
 ###
 
-### [Negative][Register][Admin] Duplicate phone with leading/trailing whitespace (400 expected)
-# Expected ValidationProblem key: register (generic anti-enumeration response).
+### [Negative][Register] An existing customer email is blocked by People uniqueness (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Duplicate",
-  "lastName": "PhoneWhitespace",
-  "email": "duplicate.phone.whitespace.{{RunId}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "   06 30 5{{PhoneTail}}   ",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Domain", "lastName": "Conflict", "email": "{{KnownCustomerEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "Brakes"] }
 
 ?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
 
 ###
 
-### [Negative][Register][Admin] Invalid email format (400 expected)
+### [Negative][Register] The phone of an existing mechanic in another valid format (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Bad",
-  "lastName": "Email",
-  "email": "bad-email-format",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Duplicate", "lastName": "Phone", "email": "duplicate.phone.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36305{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
 
 ###
 
-### [Negative][Register][Admin] Invalid phone format (400 expected)
+### [Negative][Register] The same phone with leading and trailing whitespace (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Bad",
-  "lastName": "Phone",
-  "email": "bad.phone.{{RunId}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "12345",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "Duplicate", "lastName": "PhoneWhitespace", "email": "duplicate.phone.whitespace.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "   06 30 5{{PhoneTail}}   ", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
+
+###
+
+### [Negative][Register] The phone of the fixture customer is blocked by People uniqueness (400 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Duplicate", "lastName": "CustomerPhone", "email": "duplicate.phone.customer.{{RunId}}@example.test", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 30 444 5566", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 400
+?? js (response.parsedBody.errors.register[0] === "Registration failed. Please check your information, or the account may already exist.") == true
 
 ###
 

@@ -1,31 +1,16 @@
 import { expect, test } from '@playwright/test';
-import type { AppointmentDto } from '../../src/types/scheduler/scheduler.types';
 import { CustomersPage } from './pages/customers.page';
 import { SchedulerPage } from './pages/scheduler.page';
+import { seedAppointment } from './support/appointment-fixtures';
 import { signInWithMocks } from './support/sign-in';
 import { MOCK_VEHICLE_IDS } from './support/test-data.constants';
-import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
+import type { MockApiState } from './support/test-data';
 
 const UNKNOWN_VEHICLE_ID = 987654;
 
 /** Adds a cancelled appointment scheduled now for the fixture history vehicle (Anna's Golf). */
 function addCancelledTodayAppointment(state: MockApiState): void {
-  const template = state.customerHistoryByCustomerId[MOCK_CUSTOMER_IDS.anna]?.[0];
-  if (template === undefined) {
-    throw new Error('The fixture history appointment is missing.');
-  }
-
-  const now = new Date().toISOString();
-  const appointment: AppointmentDto = {
-    ...template,
-    id: 6102,
-    scheduledDate: now,
-    status: 'Cancelled',
-    completedAt: null,
-    canceledAt: now,
-  };
-
-  state.appointments.push(appointment);
+  seedAppointment(state, { id: 6102, status: 'Cancelled' });
 }
 
 test.describe('Appointment - vehicle edit link', () => {

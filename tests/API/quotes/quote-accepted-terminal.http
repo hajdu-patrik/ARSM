@@ -1,0 +1,215 @@
+# Accepted is terminal (D7): every move out of it is a 409, the header, the lines, the validity and the quote itself are
+# frozen. Rejected has its own file. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.accepted.terminal.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0734
+
+### [Setup][AcceptedTerminal] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][AcceptedTerminal] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteAccepted", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][AcceptedTerminal] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QAT-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][AcceptedTerminal] Create the quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Accepted Terminal {{RunId}}" }
+
+?? status == 201
+
+### [Setup][AcceptedTerminal] Add a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Decided line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][AcceptedTerminal] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 200
+
+### [Setup][AcceptedTerminal] Accept the quote (200 expected, no appointment so nothing is locked by it)
+# @name decided
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{sent.version}} }
+
+?? status == 200
+?? js (response.parsedBody.status === "Accepted" && response.parsedBody.decidedAt != null && response.parsedBody.isLocked === false && response.parsedBody.lockReason == null) == true
+
+### [Negative][AcceptedTerminal] Accepted to Draft, even without a version, is a 409 (the transition check comes first)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Draft" }
+
+?? status == 409
+?? js response.parsedBody.detail includes Cannot transition a quote from Accepted to Draft
+
+### [Negative][AcceptedTerminal] Accepted to Sent is a 409 (nothing is mailed again)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Cannot transition a quote from Accepted to Sent
+
+### [Negative][AcceptedTerminal] Accepted to Rejected is a 409
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Rejected", "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Cannot transition a quote from Accepted to Rejected
+
+### [Negative][AcceptedTerminal] Accepted to Accepted is a 409
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Cannot transition a quote from Accepted to Accepted
+
+### [Negative][AcceptedTerminal] The header cannot be edited (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Should not apply", "notes": null, "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Only draft quotes can be edited
+
+### [Negative][AcceptedTerminal] No line can be added (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Too late", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be added while the quote is a draft
+
+### [Negative][AcceptedTerminal] No line can be changed (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 9, "description": "Decided line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be edited while the quote is a draft
+
+### [Negative][AcceptedTerminal] No line can be removed (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line.lines[0].id}}?version={{decided.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be removed while the quote is a draft
+
+### [Negative][AcceptedTerminal] The validity cannot be changed (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2098-01-01T00:00:00", "version": {{decided.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Validity cannot be changed on a decided quote
+
+### [Negative][AcceptedTerminal] The quote cannot be deleted (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}?version={{decided.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.detail includes Only draft quotes can be deleted
+
+### [Positive][AcceptedTerminal] The status filter finds it, ignoring case (200 expected, untouched by every refusal)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&status=accepted
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === quote.id && response.parsedBody.items[0].status === "Accepted" && response.parsedBody.items[0].version === decided.version) == true
+?? js (response.parsedBody.items[0].canDelete === false && response.parsedBody.items[0].isLocked === false && response.parsedBody.items[0].isExpired === false && response.parsedBody.items[0].totalGross === 127) == true
+
+### [Positive][AcceptedTerminal] The Sent filter no longer lists it (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&status=Sent
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 0) == true
+
+### [Cleanup][AcceptedTerminal] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

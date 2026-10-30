@@ -1,0 +1,226 @@
+# Vehicle routes: MechanicOnly (401 unauthenticated on all 5), DELETE adds AdminOnly (a plain mechanic gets 403 before any
+# lookup). The 403 for an authenticated non-mechanic cannot be produced live (see tests/CLAUDE.md Coverage Anchors).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@GhostVehicleId = 999999999
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the disposable owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Authz", "email": "vehicles.authz.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the disposable vehicle the checks address (201 expected)
+# @name target
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VA-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0501", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Logout before the unauthenticated checks (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Vehicles] Unauthenticated GET /api/customers/{id}/vehicles (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 401
+
+###
+
+### [Negative][Vehicles] Unauthenticated POST /api/customers/{id}/vehicles (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VX-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0502", "brand": "Anon", "model": "Car", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 401
+
+###
+
+### [Negative][Vehicles] Unauthenticated GET /api/vehicles/{id} (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+
+?? status == 401
+
+###
+
+### [Negative][Vehicles] Unauthenticated PUT /api/vehicles/{id} (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VA-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0501", "brand": "Anon", "model": "Car", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 401
+
+###
+
+### [Negative][Vehicles] Unauthenticated DELETE /api/vehicles/{id} (401 expected)
+# @no-cookie-jar
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 401
+
+###
+
+### [Setup][Vehicles] Login as the plain mechanic (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Vehicles] Mechanic lists the customer's vehicles (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == target.id) == true
+
+###
+
+### [Positive][Vehicles] Mechanic reads one vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+
+?? status == 200
+?? js response.parsedBody.licensePlate == VA-{{Digits}}
+
+###
+
+### [Positive][Vehicles] Mechanic creates a vehicle (201 expected)
+# @name byMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VB-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0503", "brand": "Mechanic", "model": "Made", "year": 2020, "mileageKm": 0, "enginePowerKw": 74, "drivetrainType": "Petrol" }
+
+?? status == 201
+?? js response.parsedBody.brand == Mechanic
+
+###
+
+### [Positive][Vehicles] Mechanic updates a vehicle (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VA-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0501", "brand": "Volkswagen", "model": "Golf 8", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 204
+
+###
+
+### [Negative][Vehicles] Mechanic cannot delete a vehicle (403 expected, AdminOnly)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+
+###
+
+### [Positive][Vehicles] The refused delete left the vehicle in place with the mechanic's edit (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{target.id}}
+
+?? status == 200
+?? js (response.parsedBody.model === "Golf 8") == true
+
+###
+
+### [Negative][Vehicles] The delete is refused before any lookup, so a missing id is 403 too (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{GhostVehicleId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 403
+
+###
+
+### [Setup][Vehicles] Login as admin for the cleanup (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Cleanup][Vehicles] Delete the owner, which deletes both vehicles (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

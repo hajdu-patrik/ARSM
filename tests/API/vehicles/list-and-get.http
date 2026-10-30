@@ -1,0 +1,217 @@
+# GET /api/customers/{id}/vehicles (paged, brand, model, id) and GET /api/vehicles/{id}: VIN, kW and drivetrain with the owner
+# summary, no horsepower or torque. Page clamps: authz/list-limit-edges-nested.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@GhostId = 999999999
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": "Mid", "lastName": "Owner", "email": "vehicles.list.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the customer without vehicles (201 expected)
+# @name emptyOwner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Empty", "email": "vehicles.list.empty.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V1, Skoda Octavia (201 expected)
+# @name v1
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "L1-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0601", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V2, Audi A4 (201 expected)
+# @name v2
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "L2-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0602", "brand": "Audi", "model": "A4", "year": 2019, "mileageKm": 60000, "enginePowerKw": 140, "drivetrainType": "Hybrid" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V3, Audi A3 (201 expected)
+# @name v3
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "L3-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0603", "brand": "Audi", "model": "A3", "year": 2021, "mileageKm": 12000, "enginePowerKw": 110, "drivetrainType": "Electric" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V4, a second Audi A3 (201 expected, ties on brand and model fall back to the id)
+# @name v4
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "L4-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0604", "brand": "Audi", "model": "A3", "year": 2022, "mileageKm": 5000, "enginePowerKw": 100, "drivetrainType": "PHEV" }
+
+?? status == 201
+
+###
+
+### [Positive][Vehicles] List the owner's vehicles (200 expected, brand, model, id order and the detail shape)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js response.parsedBody.totalCount == 4
+?? js response.parsedBody.items.length == 4
+?? js (response.parsedBody.items[0].id == v3.id) == true
+?? js (response.parsedBody.items[1].id == v4.id) == true
+?? js (response.parsedBody.items[2].id == v2.id) == true
+?? js (response.parsedBody.items[3].id == v1.id) == true
+?? js (Object.keys(response.parsedBody.items[0]).sort().join(',') === 'brand,customer,drivetrainType,enginePowerKw,id,licensePlate,mileageKm,model,vin,year') == true
+?? js response.parsedBody.items[0].licensePlate == L3-{{Digits}}
+?? js response.parsedBody.items[0].vin == TST{{RunId.toString().slice(-10)}}0603
+?? js response.parsedBody.items[0].brand == Audi
+?? js response.parsedBody.items[0].model == A3
+?? js response.parsedBody.items[0].year == 2021
+?? js response.parsedBody.items[0].mileageKm == 12000
+?? js response.parsedBody.items[0].enginePowerKw == 110
+?? js response.parsedBody.items[0].drivetrainType == Electric
+?? js response.parsedBody.items[3].drivetrainType == Diesel
+?? js (Object.keys(response.parsedBody.items[0].customer).sort().join(',') === 'firstName,id,lastName,middleName') == true
+?? js (response.parsedBody.items[0].customer.id == owner.id) == true
+?? js response.parsedBody.items[0].customer.middleName == Mid
+
+###
+
+### [Positive][Vehicles] First page of three (200 expected, totalCount covers every page)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles?page=1&pageSize=3
+
+?? status == 200
+?? js response.parsedBody.items.length == 3
+?? js response.parsedBody.totalCount == 4
+?? js (response.parsedBody.items[2].id == v2.id) == true
+
+###
+
+### [Positive][Vehicles] Second page holds the last vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles?page=2&pageSize=3
+
+?? status == 200
+?? js response.parsedBody.page == 2
+?? js response.parsedBody.items.length == 1
+?? js (response.parsedBody.items[0].id == v1.id) == true
+
+###
+
+### [Positive][Vehicles] A customer without vehicles has an empty page (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{emptyOwner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Negative][Vehicles] List the vehicles of a missing customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{GhostId}}/vehicles
+
+?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
+
+###
+
+### [Positive][Vehicles] Get V2 by id (200 expected, same shape as a list item, no horsepower or torque)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v2.id}}
+
+?? status == 200
+?? js (Object.keys(response.parsedBody).sort().join(',') === 'brand,customer,drivetrainType,enginePowerKw,id,licensePlate,mileageKm,model,vin,year') == true
+?? js (response.parsedBody.id == v2.id) == true
+?? js response.parsedBody.licensePlate == L2-{{Digits}}
+?? js response.parsedBody.vin == TST{{RunId.toString().slice(-10)}}0602
+?? js response.parsedBody.model == A4
+?? js response.parsedBody.year == 2019
+?? js response.parsedBody.mileageKm == 60000
+?? js response.parsedBody.enginePowerKw == 140
+?? js response.parsedBody.drivetrainType == Hybrid
+?? js (response.parsedBody.customer.id == owner.id) == true
+?? js response.parsedBody.customer.firstName == Vehicle
+?? js response.parsedBody.customer.lastName == Owner
+
+###
+
+### [Negative][Vehicles] Get a missing vehicle (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{GhostId}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
+
+###
+
+### [Cleanup][Vehicles] Delete the owner, which deletes its vehicles (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Vehicles] Delete the customer without vehicles (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{emptyOwner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

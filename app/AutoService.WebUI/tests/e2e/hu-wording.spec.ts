@@ -5,6 +5,7 @@ import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
+import { fillLockedPasswordField } from './support/password-fields';
 
 test.describe('Hungarian wording', () => {
   // A fixed zone, so the fixture instants render the same calendar day on every machine.
@@ -75,5 +76,31 @@ test.describe('Hungarian wording', () => {
 
     await page.goto('/nincs-ilyen-oldal');
     await expect(page.getByRole('button', { name: 'Ugrás az ütemezőhöz' })).toBeVisible();
+  });
+
+  test('words the Settings page, its save hints and the password rules in Hungarian', async ({ page }) => {
+    await page.goto('/settings');
+    await expect(page.locator('#settings-firstName')).toBeVisible();
+
+    await expect(page.getByRole('heading', { name: 'Beállítások', level: 1 })).toBeVisible();
+    const personal = page.getByRole('region', { name: 'Személyes adatok' });
+    await expect(personal).toContainText('A mentéshez módosítson legalább egy profilmezőt.');
+    await expect(personal.getByRole('button', { name: 'Módosítások mentése' })).toBeDisabled();
+
+    const password = page.getByRole('region', { name: 'Jelszó módosítása' });
+    await expect(password).toContainText('A folytatáshoz töltse ki az összes jelszómezőt.');
+    await fillLockedPasswordField(page.locator('#change-password-current'), 'CurrentPass1!');
+    await fillLockedPasswordField(page.locator('#change-password-new'), 'Rovid1!');
+    await fillLockedPasswordField(page.locator('#change-password-confirm'), 'Rovid1!');
+    await expect(page.locator('#change-password-new')).toHaveAccessibleDescription('A jelszónak legalább 8 karakter hosszúnak kell lennie.');
+  });
+
+  test('words the sign-in actions of the sidebar and the missing page in Hungarian', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
+
+    await expect(page.locator('aside:visible').getByRole('button', { name: 'Kijelentkezés' })).toBeVisible();
+    await expect(page.locator('aside:visible').getByRole('link', { name: 'Beállítások' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Ugrás a tartalomra' })).toBeAttached();
   });
 });

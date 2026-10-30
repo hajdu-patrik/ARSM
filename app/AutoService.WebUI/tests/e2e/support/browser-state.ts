@@ -76,3 +76,26 @@ export async function primeBrowserState(page: Page, options: PrimeBrowserStateOp
     },
   });
 }
+
+/** Storage entries to plant before the app boots. */
+interface StorageSeed {
+  readonly local?: Readonly<Record<string, string>>;
+  readonly session?: Readonly<Record<string, string>>;
+}
+
+/** Plants raw storage entries on the first document load of the tab only, so a reload sees what the app saved itself. */
+export async function seedStorageOnce(page: Page, seed: StorageSeed): Promise<void> {
+  await page.addInitScript((entries: { local: Record<string, string>; session: Record<string, string> }) => {
+    if (sessionStorage.getItem('e2e.seeded') !== null) {
+      return;
+    }
+
+    sessionStorage.setItem('e2e.seeded', '1');
+    for (const [key, value] of Object.entries(entries.local)) {
+      localStorage.setItem(key, value);
+    }
+    for (const [key, value] of Object.entries(entries.session)) {
+      sessionStorage.setItem(key, value);
+    }
+  }, { local: { ...seed.local }, session: { ...seed.session } });
+}

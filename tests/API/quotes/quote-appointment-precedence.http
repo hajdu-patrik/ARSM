@@ -1,0 +1,192 @@
+# Which lock reason wins when the appointment state changes under an Accepted quote: accepted, then cancelled, back to
+# accepted after the reopen, completed at the end. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.precedence.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0744
+
+### [Setup][QuotePrecedence] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuotePrecedence] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuotePrecedence", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QPR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Create the appointment (201 expected, admin assigned, InProgress)
+# @name appointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Quote precedence fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Create the sibling draft quote (201 expected)
+# @name sibling
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Precedence Sibling {{RunId}}", "appointmentId": {{appointment.id}} }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Create the quote that gets accepted (201 expected)
+# @name decided
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Precedence Accepted {{RunId}}", "appointmentId": {{appointment.id}} }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Add a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{decided.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Precedence line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{decided.version}} }
+
+?? status == 201
+
+### [Setup][QuotePrecedence] Send it (200 expected, no-op mail sender in the test environment)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{decided.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 200
+
+### [Setup][QuotePrecedence] Accept it (200 expected, the response already reports the appointment lock)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{decided.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Accepted", "version": {{sent.version}} }
+
+?? status == 200
+?? js (response.parsedBody.isLocked === true && response.parsedBody.lockReason === "appointment_has_accepted_quote") == true
+
+### [Negative][QuotePrecedence] The sibling is locked by the accepted quote (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sibling.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Locked edit", "notes": null, "version": {{sibling.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_accepted
+
+### [Positive][QuotePrecedence] Cancel the appointment (200 expected)
+# @name cancelled
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{appointment.version}} }
+
+?? status == 200
+
+### [Negative][QuotePrecedence] Cancelled wins over the accepted quote (409 expected, quote_locked_appointment_cancelled)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sibling.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Locked edit", "notes": null, "version": {{sibling.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Positive][QuotePrecedence] Both quotes now report the cancelled lock and are deletable (200 expected, even the Accepted one)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{appointment.id}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 2 && response.parsedBody.items.every(q => q.isLocked === true && q.lockReason === "appointment_cancelled" && q.canDelete === true)) == true
+
+### [Positive][QuotePrecedence] Reopen the appointment (200 expected, Cancelled to InProgress)
+# @name reopened
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "InProgress", "version": {{cancelled.version}} }
+
+?? status == 200
+
+### [Positive][QuotePrecedence] The accepted lock is back and only the sibling draft is deletable (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{appointment.id}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => q.isLocked === true && q.lockReason === "appointment_has_accepted_quote")) == true
+?? js (response.parsedBody.items.filter(q => q.canDelete).map(q => q.id).join(",") === `${sibling.id}`) == true
+
+### [Positive][QuotePrecedence] Complete the appointment (200 expected, it has an accepted quote)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Completed", "version": {{reopened.version}} }
+
+?? status == 200
+
+### [Positive][QuotePrecedence] Completed wins over the accepted quote and nothing is deletable (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?appointmentId={{appointment.id}}&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.every(q => q.isLocked === true && q.lockReason === "appointment_completed" && q.canDelete === false)) == true
+
+### [Cleanup][QuotePrecedence] Delete the disposable customer, cascading vehicle, appointment and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

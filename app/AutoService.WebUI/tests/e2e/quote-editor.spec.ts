@@ -147,6 +147,8 @@ test.describe('Quotes - list and editor', () => {
 
     await quotesPage.lineAction(0, 'quote-line-delete-button').click();
     await expect(quotesPage.lineRows()).toHaveCount(0);
-    await expect(quotesPage.totalGross()).toContainText(/0/);
+    await expect(quotesPage.totalNet()).toHaveText('HUF 0');
+    await expect(quotesPage.totalVat()).toHaveText('HUF 0');
+    await expect(quotesPage.totalGross()).toHaveText('HUF 0');
   });
 });

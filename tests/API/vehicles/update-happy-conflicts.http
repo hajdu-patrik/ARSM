@@ -1,0 +1,214 @@
+# PUT /api/vehicles/{id}: replaces all eight fields (204) like create normalizes, never moves the owner; own plate and VIN
+# never conflict, another vehicle's do (409); a refused update changes nothing and freed values can be taken over.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}14
+@GhostVehicleId = 999999999
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create owner 1 (201 expected)
+# @name owner1
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "UpdateOne", "email": "vehicles.update.one.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create owner 2 (201 expected)
+# @name owner2
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "UpdateTwo", "email": "vehicles.update.two.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V1 for owner 1 (201 expected)
+# @name v1
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U1-{{Digits}}", "vin": "{{Vin}}01", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V2 for owner 1 (201 expected)
+# @name v2
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U2-{{Digits}}", "vin": "{{Vin}}02", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 91500, "enginePowerKw": 70, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create V3 for owner 2 (201 expected)
+# @name v3
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U3-{{Digits}}", "vin": "{{Vin}}03", "brand": "Opel", "model": "Astra", "year": 2017, "mileageKm": 99000, "enginePowerKw": 81, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+###
+
+### [Positive][Vehicles] Update every field of V1 with padded, lower-case input (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": " u4  {{Digits}} ", "vin": "{{Vin.toLowerCase()}}04", "brand": " Audi ", "model": " A6 ", "year": 2022, "mileageKm": 1000, "enginePowerKw": 150, "drivetrainType": "diesel" }
+
+?? status == 204
+
+###
+
+### [Positive][Vehicles] The update persisted normalized and the owner is unchanged (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+
+?? status == 200
+?? js (response.parsedBody.licensePlate === `U4 ${Digits}`) == true
+?? js response.parsedBody.vin == {{Vin}}04
+?? js response.parsedBody.brand == Audi
+?? js response.parsedBody.model == A6
+?? js response.parsedBody.year == 2022
+?? js response.parsedBody.mileageKm == 1000
+?? js response.parsedBody.enginePowerKw == 150
+?? js response.parsedBody.drivetrainType == Diesel
+?? js (response.parsedBody.customer.id == owner1.id) == true
+
+###
+
+### [Positive][Vehicles] Sending the same plate and VIN again is no conflict with itself (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U4 {{Digits}}", "vin": "{{Vin}}04", "brand": "Audi", "model": "A6", "year": 2022, "mileageKm": 2000, "enginePowerKw": 150, "drivetrainType": "Diesel" }
+
+?? status == 204
+
+###
+
+### [Negative][Vehicles] Taking V2's plate (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "u2-{{Digits}}", "vin": "{{Vin}}04", "brand": "Audi", "model": "A6", "year": 2022, "mileageKm": 2000, "enginePowerKw": 150, "drivetrainType": "Diesel" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+###
+
+### [Negative][Vehicles] Taking V3's VIN from another customer (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U4 {{Digits}}", "vin": "{{Vin.toLowerCase()}}03", "brand": "Audi", "model": "A6", "year": 2022, "mileageKm": 2000, "enginePowerKw": 150, "drivetrainType": "Diesel" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this VIN already exists.") == true
+
+###
+
+### [Positive][Vehicles] The refused updates changed nothing (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v1.id}}
+
+?? status == 200
+?? js (response.parsedBody.licensePlate === `U4 ${Digits}`) == true
+?? js response.parsedBody.vin == {{Vin}}04
+?? js response.parsedBody.mileageKm == 2000
+
+###
+
+### [Positive][Vehicles] V2 can take the plate and VIN V1 gave up (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{v2.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "U1-{{Digits}}", "vin": "{{Vin}}01", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 91500, "enginePowerKw": 70, "drivetrainType": "Petrol" }
+
+?? status == 204
+
+###
+
+### [Negative][Vehicles] Update a missing vehicle (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/vehicles/{{GhostVehicleId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "UG-{{Digits}}", "vin": "{{Vin}}09", "brand": "Ghost", "model": "Rider", "year": 2020, "mileageKm": 0, "enginePowerKw": 74, "drivetrainType": "Petrol" }
+
+?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
+
+###
+
+### [Cleanup][Vehicles] Delete owner 1 (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Vehicles] Delete owner 2 (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

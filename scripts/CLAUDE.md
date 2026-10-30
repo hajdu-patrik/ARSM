@@ -20,7 +20,7 @@
 
 - `run-local-test-suite.py`: canonical local test runner (`all|playwright|http|sql`). Behaviour that
   HTTPYAC cannot express is registered in `PYTHON_HTTP_CHECKS` (profile picture upload, appointment SSE,
-  quote line cap, quote PDF, refresh replay window, session revocation) rather than invoked separately; each
+  quote line cap, quote PDF, quote number, refresh replay window, session revocation, profile picture live updates) rather than invoked separately; each
   entry reports under its own key in the sanitized summary. Every captured line passes the sanitizer first: loaded secret values, Postgres URIs,
   secret-shaped assignments and secret-named JSON fields (cookie, set-cookie, accessToken and friends) are
   replaced, and local paths are masked. `tests/API/_setup/*.http` runs as its own HTTPYAC command before the
@@ -49,7 +49,7 @@
 - `pre-push.py` (helpers in `scripts/prepush/`): the local pre-push gate run by `.githooks/pre-push`
   (install: `git config core.hooksPath .githooks`; the hook always runs every stage). Usage:
   `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <validate|backend|frontend|e2e|api-suites>]`.
-  Stages, fail fast: validate (`validate.py --all --security`), backend (locked restore, build, test, EF
+  Stages, fail fast: validate (`validate.py --all --security`), backend (the tests/Scripts unittest suite, locked restore, build, test, EF
   pending-model check), frontend (`npm ci` only when the lockfile differs from upstream, audit, tsc, lint,
   build), e2e (`select-e2e-specs.py --run`, diffed against the upstream ref), api-suites
   (`run-local-test-suite.py http sql` on throwaway `arsm-prepush-postgres` (port 15432) and
@@ -60,7 +60,7 @@
   `ARSM_TEST_ADMIN_PASSWORD` in the local secrets, and aborts on a Bootstrap section in
   `appsettings.Local.json` and on an in-use gate API port. It never touches the dev database
   or `arsm-tunnel-*`. Prints a summary table; non-zero exit on failure. `git push --no-verify` is an
-  exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
+  exception only. The CI repo gate is `python scripts/validate.py --all --skip-build` followed by `python -m unittest discover -s tests/Scripts` (same job).
 - `deploy-azure.py` (helpers in `scripts/azure_deploy/`): the manual, local production deploy to Azure, driven by
   the `ARSM_*` keys of the root `.env`. Usage: `python scripts/deploy-azure.py <subcommand> [--commit REF] [--dry-run] [--yes]`.
   Subcommands: `check` (validates the keys, min lengths, https public URL, enum names read from the C# files,
@@ -91,5 +91,6 @@
 
 ## Validation
 
+- The scripts are covered by the stdlib unittest suite in tests/Scripts (no network, no az/docker/git push); run it with `python -m unittest discover -s tests/Scripts`.
 - Validate script behavior from repository root when practical.
 - If script behavior changes setup or test workflow, update both `README.md` and `README(HU).md`.

@@ -1,31 +1,26 @@
-# Both history routes are MechanicOnly, so any authenticated mechanic reaches them (no non-mechanic session exists for a 403).
-# FixtureCustomerId and the vehicle id resolve from the shared fixture customer (tests/API/_setup) at run time, never a literal id.
+# GET /api/customers/{id}/appointments and /api/vehicles/{id}/appointments (MechanicOnly): ordering by scheduled date then id,
+# the limit clamp and the 404s. Read as the plain mechanic on a disposable customer with two vehicles, deleted at the end.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@FixtureCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-@NonExistentCustomerId = 99999
-@NonExistentVehicleId = 99999
-
+@RunId = {{$timestamp}}
+@CustomerEmail = history.queries.{{RunId}}@example.test
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Setup][Appointments] Login as non-admin mechanic (history endpoints require authenticated user, 200 expected)
-# @name nonAdminLogin
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -33,88 +28,178 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-# CSRF double-submit token for the unsafe request below (see tests/CLAUDE.md Core Rules).
+{ "firstName": "History", "middleName": null, "lastName": "Queries", "email": "{{CustomerEmail}}", "phoneNumber": null }
 
-### [Setup][Appointments] Resolve the shared fixture customer (200 expected)
-# @name fixtureCustomer
-GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{FixtureCustomerEmail}}
+?? status == 201
+
+### [Setup][Appointments] Create the first vehicle (201 expected)
+# @name vehicleOne
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "HQ1-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1901", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Create the second vehicle (201 expected)
+# @name vehicleTwo
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "HQ2-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1902", "brand": "Seat", "model": "Leon", "year": 2019, "mileageKm": 90000, "enginePowerKw": 96, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment A on the first vehicle, 1 May 2099 (201 expected)
+# @name apptA
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicleOne.id}}, "scheduledDate": "2099-05-01T09:00:00", "taskDescription": "History fixture A", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment C on the first vehicle, 3 May 2099 (201 expected)
+# @name apptC
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicleOne.id}}, "scheduledDate": "2099-05-03T09:00:00", "taskDescription": "History fixture C", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment B on the second vehicle, 2 May 2099 (201 expected)
+# @name apptB
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicleTwo.id}}, "scheduledDate": "2099-05-02T09:00:00", "taskDescription": "History fixture B", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Login as the plain mechanic, who reads the history (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 
-###
-
-### [Setup][Appointments] Resolve one of that customer's vehicles (200 expected)
-@FixtureCustomerId = {{fixtureCustomer.id}}
-# @name fixtureVehicles
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/vehicles?page=1&pageSize=500
+### [Positive][Appointments] Customer history is oldest-first across all of the customer's vehicles (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 
 ?? status == 200
+?? js response.parsedBody.length == 3
+?? js (response.parsedBody[0].id == apptA.id && response.parsedBody[1].id == apptB.id && response.parsedBody[2].id == apptC.id) == true
 
-###
-
-### [Positive][Appointments] Get customer repair history oldest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Get customer repair history newest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments?descending=true
+### [Positive][Appointments] Customer history newest-first reverses the order (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments?descending=true
 
 ?? status == 200
+?? js (response.parsedBody[0].id == apptC.id && response.parsedBody[1].id == apptB.id && response.parsedBody[2].id == apptA.id) == true
 
-###
-
-### [Positive][Appointments] Get vehicle repair history oldest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments
-
-?? status == 200
-
-###
-
-### [Positive][Appointments] Get vehicle repair history newest-first (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments?descending=true
+### [Positive][Appointments] An explicit descending=false is oldest-first (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments?descending=false
 
 ?? status == 200
+?? js (response.parsedBody[0].id == apptA.id) == true
 
-###
+### [Positive][Appointments] The limit caps the rows, applied after the ordering (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments?descending=true&limit=2
 
-### [Negative][Appointments] Unknown customer history returns 404
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{NonExistentCustomerId}}/appointments
+?? status == 200
+?? js response.parsedBody.length == 2
+?? js (response.parsedBody[0].id == apptC.id && response.parsedBody[1].id == apptB.id) == true
+
+### [Positive][Appointments] A limit below 1 is clamped to one row (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments?limit=0
+
+?? status == 200
+?? js response.parsedBody.length == 1
+
+### [Positive][Appointments] Vehicle history holds only that vehicle's appointments, oldest-first (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicleOne.id}}/appointments
+
+?? status == 200
+?? js response.parsedBody.length == 2
+?? js (response.parsedBody[0].id == apptA.id && response.parsedBody[1].id == apptC.id) == true
+?? js (response.parsedBody.every(a => a.vehicle.id == vehicleOne.id)) == true
+
+### [Positive][Appointments] Vehicle history newest-first (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicleOne.id}}/appointments?descending=true
+
+?? status == 200
+?? js (response.parsedBody[0].id == apptC.id && response.parsedBody[1].id == apptA.id) == true
+
+### [Positive][Appointments] The second vehicle's history holds its own appointment only (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicleTwo.id}}/appointments?limit=1
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == apptB.id) == true
+
+### [Negative][Appointments] Unknown customer history is refused (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/99999999/appointments
 
 ?? status == 404
 
-###
-
-### [Negative][Appointments] Unknown vehicle history returns 404
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{NonExistentVehicleId}}/appointments
+### [Negative][Appointments] Unknown vehicle history is refused (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/99999999/appointments
 
 ?? status == 404
 
-###
+### [Negative][Appointments] Unauthenticated customer history returns 401
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
 
-### [Setup][Appointments] Logout to verify unauthenticated behavior (204 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+?? status == 401
+
+### [Negative][Appointments] Unauthenticated vehicle history returns 401
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicleOne.id}}/appointments
+
+?? status == 401
+
+### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
+# @name adminCleanupLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Cleanup][Appointments] Delete the customer, cascading vehicles and appointments (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-### [Negative][Appointments] Unauthenticated customer history returns 401
-# @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/customers/{{FixtureCustomerId}}/appointments
-
-?? status == 401
-
-###
-
-### [Negative][Appointments] Unauthenticated vehicle history returns 401
-# @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{fixtureVehicles.items[0].id}}/appointments
-
-?? status == 401

@@ -46,7 +46,7 @@ class StepResult:
 
 
 class HttpClient:
-    """Small cookie-aware HTTP client for profile picture endpoint checks."""
+    """Small cookie-aware HTTP client for the endpoint checks; ``opener`` serves the streaming (SSE) reads."""
 
     def __init__(self, base_url: str, allowed_origin: str) -> None:
         self.base_url = base_url.rstrip("/")

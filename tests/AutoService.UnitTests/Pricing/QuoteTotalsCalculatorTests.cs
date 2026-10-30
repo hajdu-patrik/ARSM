@@ -37,4 +37,22 @@ public sealed class QuoteTotalsCalculatorTests
 
         Assert.Equal(totals.TotalNet + totals.TotalVat, totals.TotalGross);
     }
+
+    [Fact]
+    public void Calculate_of_one_line_is_that_line()
+    {
+        var totals = QuoteTotalsCalculator.Calculate([new QuoteLineAmounts(100m, 27m, 127m)]);
+
+        Assert.Equal(new QuoteTotals(100m, 27m, 127m), totals);
+    }
+
+    [Fact]
+    public void Calculate_does_not_round_the_sums()
+    {
+        var totals = QuoteTotalsCalculator.Calculate([new QuoteLineAmounts(0.005m, 0.001m, 0.006m), new QuoteLineAmounts(0.005m, 0.001m, 0.006m)]);
+
+        Assert.Equal(0.010m, totals.TotalNet);
+        Assert.Equal(0.002m, totals.TotalVat);
+        Assert.Equal(0.012m, totals.TotalGross);
+    }
 }

@@ -1,14 +1,16 @@
-# Duplicate-email/phone and invalid-format conflict checks split out to the sibling
-# profile-update-conflicts.http (same disposable-mechanic naming convention) to stay <= 250 lines.
+# GET and PUT /api/profile on a disposable mechanic (prefix profile.update.): body, partial updates, trimming, the 401s.
+# Login effects: profile-update-identity-sync.http; rejected input: profile-update-validation.http, profile-update-conflicts.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
-@ProfileMechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
-@ProfileCurrentPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
-# Phone digits derived from this run's id so registrations never collide with another file or an
-# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
-@ProfileRunId = {{$timestamp}}
-@PhoneTail = {{ProfileRunId.toString().slice(-6)}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+# Phone digits derived from this run's id so the registration never collides with another file or an earlier, aborted run.
+@PhoneTail = {{RunId.toString().slice(-6)}}
+@ActorEmail = profile.update.before.{{RunId}}@example.test
+
 
 ### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -16,16 +18,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+### [Setup][Profile] Login as admin to provision the disposable mechanic (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{ProfileMechanicEmail}}",
-  "password": "{{ProfileCurrentPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -35,79 +34,191 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Profile] Get own profile (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/profile
-
-?? status == 200
-
-###
-
-### [Positive][Profile] Update own profile (middle name only) (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
+### [Setup][Profile] Register the disposable mechanic (200 expected)
+# @name regActor
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "email": null,
-  "phoneNumber": null,
-  "middleName": "TestMiddle"
-}
+{ "firstName": "Profile", "lastName": "Update", "email": "{{ActorEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 30 2{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
 ###
 
-### [Positive][Profile] Update first and last name (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "firstName": "UpdatedFirst",
-  "lastName": "UpdatedLast"
-}
-
-?? status == 200
-
-###
-
-### [Positive][Profile] Update all name fields together (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "firstName": "UpdatedFirst",
-  "middleName": "UpdatedMiddle",
-  "lastName": "UpdatedLast"
-}
-
-?? status == 200
-
-###
-
-### [Positive][Profile] Update phone with local format (default region normalization) (200 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/profile
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "email": null,
-  "phoneNumber": "304{{PhoneTail}}",
-  "middleName": "TestMiddle"
-}
-
-?? status == 200
-
-###
-
-### [Setup][Profile] Logout after happy-path profile checks
+### [Setup][Profile] Logout admin (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
+
+###
+
+### [Setup][Profile] Login as the disposable mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{ActorEmail}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Profile] Get own profile: every field of the ProfileResponse (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js (response.parsedBody.personId == regActor.personId) == true
+?? js response.parsedBody.personType == mechanic
+?? js response.parsedBody.firstName == Profile
+?? js response.parsedBody.lastName == Update
+?? js (response.parsedBody.middleName == null) == true
+?? js (response.parsedBody.email.startsWith("profile.update.before.")) == true
+?? js (/^\+36302[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+?? js response.parsedBody.hasProfilePicture == false
+
+###
+
+### [Positive][Profile] An empty update changes nothing (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{}
+
+?? status == 200
+?? js response.parsedBody.firstName == Profile
+?? js response.parsedBody.lastName == Update
+?? js (response.parsedBody.middleName == null) == true
+?? js (/^\+36302[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+
+###
+
+### [Positive][Profile] Update the middle name only: the other fields are kept (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "middleName": "TestMiddle" }
+
+?? status == 200
+?? js response.parsedBody.middleName == TestMiddle
+?? js response.parsedBody.firstName == Profile
+?? js response.parsedBody.lastName == Update
+
+###
+
+### [Positive][Profile] First and last name are trimmed and accept accented hyphenated letters (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "  Éva-Mária ", "lastName": " Tóth " }
+
+?? status == 200
+?? js response.parsedBody.firstName == Éva-Mária
+?? js response.parsedBody.lastName == Tóth
+?? js response.parsedBody.middleName == TestMiddle
+
+###
+
+### [Positive][Profile] Null email and phone mean keep, only the sent field changes (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "email": null, "phoneNumber": null, "middleName": "Kept" }
+
+?? status == 200
+?? js response.parsedBody.middleName == Kept
+?? js (response.parsedBody.email.startsWith("profile.update.before.")) == true
+?? js (/^\+36302[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+
+###
+
+### [Positive][Profile] A blank middle name clears it (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "middleName": "   " }
+
+?? status == 200
+?? js (response.parsedBody.middleName == null) == true
+
+###
+
+### [Positive][Profile] A fresh GET returns what the updates stored (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js response.parsedBody.firstName == Éva-Mária
+?? js response.parsedBody.lastName == Tóth
+?? js (response.parsedBody.middleName == null) == true
+
+###
+
+### [Setup][Profile] Logout the disposable mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Profile] Get profile without authentication (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 401
+
+###
+
+### [Negative][Profile] Update profile without authentication (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "middleName": "Nobody" }
+
+?? status == 401
+
+###
+
+### [Setup][Cleanup] Login as admin to delete the disposable mechanic (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Cleanup] Delete the disposable mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regActor.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

@@ -1,11 +1,12 @@
+# Part CRUD happy paths: create (201, key upper-cased, name trimmed, gross rounded), read, update under the version (204),
+# delete and the 404s. Rules: parts-validation/-conflicts/-concurrency.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@NewPartNumber = ZZT{{RunId}}A
-@LowercasePartNumber = zzt{{RunId}}b
-@RoundingPartNumber = ZZT{{RunId}}C
+@Key = ZZT{{RunId}}
 
 ### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -13,16 +14,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Parts] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][Parts] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -32,99 +29,105 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Parts] List parts (200 expected, paged shape with default page 1 and pageSize 20)
-GET {{AutoService_ApiService_HostAddress}}/api/parts
-
-?? status == 200
-?? js response.parsedBody.items isArray
-?? js response.parsedBody.totalCount >= 0
-?? js response.parsedBody.page == 1
-?? js response.parsedBody.pageSize == 20
-?? js response.parsedBody.items.length <= 20
-
-###
-
-### [Positive][Parts] Admin creates part (201 expected, grossUnitPrice = 4500.00 * 1.27 = 5715.00, version is a positive integer)
+### [Positive][Parts] Admin creates a part (201 expected, gross 4500.00 plus 27% VAT = 5715.00, version is positive)
 # @name createdPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{NewPartNumber}}",
-  "name": "Catalog Happy Part",
-  "netUnitPrice": 4500.00,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}A", "name": "Catalog Happy Part", "netUnitPrice": 4500.00, "vatRatePercent": 27 }
 
 ?? status == 201
-?? js response.parsedBody.version > 0
+?? js (response.headers.location === '/api/parts/' + response.parsedBody.id) == true
+?? js (Object.keys(response.parsedBody).sort().join(',') === 'grossUnitPrice,id,name,netUnitPrice,partNumber,vatRatePercent,version') == true
+?? js response.parsedBody.partNumber == {{Key}}A
+?? js (response.parsedBody.name === "Catalog Happy Part") == true
+?? js response.parsedBody.netUnitPrice == 4500
+?? js response.parsedBody.grossUnitPrice == 5715
+?? js response.parsedBody.vatRatePercent == 27
+?? js (response.parsedBody.version > 0) == true
 
 ###
 
-### [Positive][Parts] Get created part by id (200 expected)
+### [Positive][Parts] The created part reads back the same (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 
 ?? status == 200
+?? js (response.parsedBody.id == createdPart.id) == true
+?? js response.parsedBody.partNumber == {{Key}}A
+?? js response.parsedBody.netUnitPrice == 4500
+?? js response.parsedBody.grossUnitPrice == 5715
+?? js (response.parsedBody.version == createdPart.version) == true
 
 ###
 
-### [Positive][Parts] Create with lowercase part number normalizes to uppercase (201 expected, partNumber echoes uppercase)
-# @name lowercasePart
+### [Positive][Parts] A padded lower-case part number and name are normalized (201 expected, gross 100.00 plus 18% = 118.00)
+# @name normalizedPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{LowercasePartNumber}}",
-  "name": "Catalog Lowercase Part",
-  "netUnitPrice": 100,
-  "vatRatePercent": 18
-}
+{ "partNumber": "  {{Key.toLowerCase()}}b ", "name": "  Catalog Lowercase Part  ", "netUnitPrice": 100, "vatRatePercent": 18 }
 
 ?? status == 201
+?? js response.parsedBody.partNumber == {{Key}}B
+?? js (response.parsedBody.name === "Catalog Lowercase Part") == true
+?? js response.parsedBody.grossUnitPrice == 118
 
 ###
 
-### [Positive][Parts] Create demonstrates gross rounded away from zero at a monetary midpoint (201 expected, grossUnitPrice = 10.10 * 1.05 = 10.61)
+### [Positive][Parts] The gross is rounded away from zero at a cent midpoint (201 expected, 10.10 plus 5% = 10.605 -> 10.61)
 # @name roundingPart
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{RoundingPartNumber}}",
-  "name": "Catalog Rounding Part",
-  "netUnitPrice": 10.10,
-  "vatRatePercent": 5
-}
+{ "partNumber": "{{Key}}C", "name": "Catalog Rounding Part", "netUnitPrice": 10.10, "vatRatePercent": 5 }
 
 ?? status == 201
+?? js response.parsedBody.netUnitPrice == 10.1
+?? js response.parsedBody.grossUnitPrice == 10.61
 
 ###
 
-### [Positive][Parts] Admin updates created part (204 expected, grossUnitPrice recomputed to 5000.00 * 1.18 = 5900.00)
+### [Positive][Parts] The list contains all three parts under the run key (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 3
+
+###
+
+### [Positive][Parts] Update under the current version (204 expected, new values, key sent in lower case)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{NewPartNumber}}",
-  "name": "Catalog Happy Part Updated",
-  "netUnitPrice": 5000.00,
-  "vatRatePercent": 18,
-  "version": {{createdPart.version}}
-}
+{ "partNumber": " {{Key.toLowerCase()}}a ", "name": " Catalog Happy Part Updated ", "netUnitPrice": 5000.00, "vatRatePercent": 18, "version": {{createdPart.version}} }
 
 ?? status == 204
 
 ###
 
-### [Positive][Parts] Admin deletes created part (204 expected, no soft delete/no in-use blocking)
+### [Positive][Parts] The update is persisted and the row has a new version (200 expected, gross 5000.00 plus 18% = 5900.00)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
+
+?? status == 200
+?? js (response.parsedBody.id == createdPart.id) == true
+?? js response.parsedBody.partNumber == {{Key}}A
+?? js (response.parsedBody.name === "Catalog Happy Part Updated") == true
+?? js response.parsedBody.netUnitPrice == 5000
+?? js response.parsedBody.vatRatePercent == 18
+?? js response.parsedBody.grossUnitPrice == 5900
+?? js (response.parsedBody.version != createdPart.version) == true
+
+###
+
+### [Positive][Parts] Admin deletes the part (204 expected, no soft delete)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -133,24 +136,34 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Negative][Parts] Deleted part cannot be fetched (404 expected)
+### [Negative][Parts] The deleted part cannot be read (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Part not found.") == true
 
 ###
 
-### [Negative][Parts] Re-delete deleted part returns not found (404 expected)
+### [Negative][Parts] Deleting it again (404 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{createdPart.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 404
+?? js (response.parsedBody.detail === "Part not found.") == true
 
 ###
 
-### [Cleanup][Parts] Delete lowercase-normalization fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{lowercasePart.id}}
+### [Positive][Parts] The list no longer holds the deleted part (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Cleanup][Parts] Delete the normalization fixture (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{normalizedPart.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
@@ -158,7 +171,7 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Cleanup][Parts] Delete rounding-demo fixture (204 expected)
+### [Cleanup][Parts] Delete the rounding fixture (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{roundingPart.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

@@ -9,6 +9,8 @@ import { tryHandleCustomerRoute } from './api-mock-customer-handlers';
 import { tryHandleCatalogRoute } from './api-mock-catalog-handlers';
 import { tryHandleQuoteRoute } from './api-mock-quote-handlers';
 import { tryHandleCompanyResultRoute } from './api-mock-company-results';
+import { tryHandleCompanyProfileRoute } from './api-mock-company-profile';
+import { tryFailRoute } from './api-mock-failures';
 import { fulfillJson, fulfillNoContent } from './api-mock-response';
 
 const unauthorizedOnceHits = new WeakMap<InstallApiMockOptions, Set<string>>();
@@ -53,6 +55,10 @@ export async function handleApiRoute(
     return;
   }
 
+  if (await tryFailRoute(route, state, routeKey)) {
+    return;
+  }
+
   if (state.mustChangePassword && isAuthenticated(options) && !ALLOWED_WHILE_PASSWORD_TEMPORARY.has(routeKey)) {
     await fulfillJson(route, { code: 'password_change_required' }, 403);
     return;
@@ -63,6 +69,10 @@ export async function handleApiRoute(
   }
 
   if (await tryHandleProfileRoute(route, method, path, options, state)) {
+    return;
+  }
+
+  if (await tryHandleCompanyProfileRoute(route, method, path, options, state)) {
     return;
   }
 

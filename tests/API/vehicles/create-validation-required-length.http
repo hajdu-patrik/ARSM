@@ -1,0 +1,163 @@
+# POST /api/customers/{id}/vehicles required fields and length limits (422, reason in `detail`), one change per case. Ranges:
+# create-validation-year-numeric.http, VIN/drivetrain/plate formats: create-validation-formats.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}1001
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Required", "email": "vehicles.required.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Negative][Vehicles] Empty license plate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+###
+
+### [Negative][Vehicles] Whitespace-only VIN (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "   ", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+###
+
+### [Negative][Vehicles] Empty brand (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "{{Vin}}", "brand": "", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+###
+
+### [Negative][Vehicles] Empty model (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+###
+
+### [Negative][Vehicles] Empty drivetrain (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate, Vin, Brand, Model, and DrivetrainType are required.") == true
+
+###
+
+### [Negative][Vehicles] A 21-character plate (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "{{'A1'.repeat(10)}}1", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate must be at most 20 characters.") == true
+
+###
+
+### [Negative][Vehicles] A 51-character brand (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "{{Vin}}", "brand": "{{'B'.repeat(51)}}", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Brand must be at most 50 characters.") == true
+
+###
+
+### [Negative][Vehicles] A 51-character model (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "RQ-{{Digits}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "{{'M'.repeat(51)}}", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Model must be at most 50 characters.") == true
+
+###
+
+### [Positive][Vehicles] None of the refused requests created a vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Cleanup][Vehicles] Delete the owner (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

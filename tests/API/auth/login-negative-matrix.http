@@ -1,19 +1,17 @@
-# Verified against AuthEndpoints.Login.cs/ContactNormalization: an invalid phone format (bad length or
-# unsupported prefix) answers 400 before credential lookup; the two phone-format cases below self-provision (and delete) their own mechanic to prove a valid-but-unusual format really logs in, not just parses.
+# Every failed login (unknown identifier, wrong password, a customer's identifier) answers the same 401 problem
+# (title invalid_credentials), sets no cookie and never says which part was wrong. A disposable mechanic is the known account.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@TestWrongPassword = {{$processEnv ARSM_TEST_WRONG_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@KnownCustomerEmail = {{$processEnv ARSM_TEST_CUSTOMER_EMAIL}}
 @RunId = {{$timestamp}}
-# Phone digits derived from this run's id so registrations never collide with another file or an
-# earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
+# Phone digits derived from this run's id so the registration never collides with another file or an earlier, aborted run.
 @PhoneTail = {{RunId.toString().slice(-6)}}
-@PhoneTail7 = {{RunId.toString().slice(-7)}}
-@BudapestPhoneEmail = login.negmatrix.budapest.{{RunId}}@example.test
-@EuPhoneEmail = login.negmatrix.euphone.{{RunId}}@example.test
-@MatrixEuPhoneCanonical = +491512{{PhoneTail7}}
+@KnownMechanicEmail = login.negmatrix.known.{{RunId}}@example.test
 
 
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
@@ -22,16 +20,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Admin Session] Login as admin to provision the phone-format matrix (200 expected)
+### [Setup][Admin Session] Login as admin to provision the known mechanic (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -41,189 +36,131 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Register] Mechanic with a Budapest landline phone (200 expected)
-# @name regBudapest
+### [Setup][Register] Known mechanic with an email and a phone (200 expected)
+# @name knownMechanic
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "NegMatrix",
-  "lastName": "Budapest",
-  "email": "{{BudapestPhoneEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "+36 1 3{{PhoneTail}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
+{ "firstName": "NegMatrix", "lastName": "Known", "email": "{{KnownMechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "+36 30 3{{PhoneTail}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
 
 ?? status == 200
 
 ###
 
-### [Setup][Register] Mechanic with an EU (+49) phone (200 expected)
-# @name regEuPhone
-POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+### [Negative][Login] Known account with a wrong password, by email (401 expected, no cookie)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{KnownMechanicEmail}}", "password": "{{TestWrongPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+?? js (!response.headers['set-cookie']) == true
+
+###
+
+### [Negative][Login] The right password with one character appended is wrong (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{KnownMechanicEmail}}", "password": "{{TestPassword}}-wrong" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+
+###
+
+### [Negative][Login] Known account with a wrong password, by phone (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "06 30 3{{PhoneTail}}", "password": "{{TestWrongPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+
+###
+
+### [Negative][Login] Unknown email answers the same problem (401 expected, no cookie)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "login.negmatrix.unknown.{{RunId}}@example.test", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+?? js (!response.headers['set-cookie']) == true
+
+###
+
+### [Negative][Login] Unknown but well-formed phone answers the same problem (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "+49 151 12345678", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+
+###
+
+### [Negative][Login] A customer's email is not a login (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{KnownCustomerEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+
+###
+
+### [Negative][Login] A customer's phone is not a login (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "+36 30 444 5566", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+?? js (response.parsedBody.detail === "Invalid login credentials.") == true
+
+###
+
+### [Setup][Cleanup] Delete the known mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{knownMechanic.personId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "firstName": "NegMatrix",
-  "lastName": "EuPhone",
-  "email": "{{EuPhoneEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "+49 151 2{{PhoneTail7}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
 
 ?? status == 200
 
 ###
 
-### [Positive][Login Phone Matrix] Budapest landline login (06 1 3xx xxxx) (200 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "06 1 3{{PhoneTail}}",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 200
-
-###
-
-### [Positive][Login Phone Matrix] EU phone (+49) for matrix user (200 expected)
-# @name Login
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "{{MatrixEuPhoneCanonical}}",
-  "password": "{{TestPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-# CSRF double-submit token for the matrix-mechanic logout below (see tests/CLAUDE.md Core Rules).
-
-### [Negative][Login Phone Matrix] Invalid phone format (400 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "12345",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 400
-
-###
-
-### [Negative][Login Phone Matrix] Unsupported area/prefix (400 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "phoneNumber": "06 12 123 4567",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 400
-
-###
-
-### [Negative][Login] Non-existent identifier answers the uniform invalid-credentials problem (401 expected)
-# @no-cookie-jar
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "login.negmatrix.unknown.{{RunId}}@example.test",
-  "password": "{{TestPassword}}"
-}
-
-?? status == 401
-?? js response.parsedBody.title == invalid_credentials
-?? js response.parsedBody.detail == Invalid login credentials.
-
-###
-
-### [Negative][Login] Known account with a wrong password answers the same problem as an unknown one (401 expected)
-# @no-cookie-jar
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{BudapestPhoneEmail}}",
-  "password": "{{TestPassword}}-wrong"
-}
-
-?? status == 401
-?? js response.parsedBody.title == invalid_credentials
-?? js response.parsedBody.detail == Invalid login credentials.
-
-###
-
-### [Setup][Cleanup] Logout the matrix mechanic session (204 expected)
+### [Setup][Cleanup] Logout the admin session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-### [Setup][Cleanup] Login as admin again to delete the throwaway mechanics (200 expected)
-# @name Login
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-# CSRF double-submit token for the cleanup deletes below (see tests/CLAUDE.md Core Rules).
-
-### [Setup][Cleanup] Delete the Budapest-landline matrix mechanic (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regBudapest.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200
-
-###
-
-### [Setup][Cleanup] Delete the EU-phone matrix mechanic (200 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regEuPhone.personId}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 200

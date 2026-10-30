@@ -11,7 +11,7 @@ public static partial class QuoteEndpoints
     /** Parses LineKind and validates Quantity, shared by the add- and update-line handlers (D24). */
     private static IResult? TryParseLineRequestBasics(string lineKindRaw, decimal quantity, out QuoteLineKind lineKind)
     {
-        if (!Enum.TryParse(lineKindRaw, ignoreCase: true, out lineKind))
+        if (!DefinedEnum.TryParse(lineKindRaw, out lineKind))
         {
             return ApiProblem.Unprocessable($"LineKind must be one of: {string.Join(", ", Enum.GetNames<QuoteLineKind>())}.");
         }

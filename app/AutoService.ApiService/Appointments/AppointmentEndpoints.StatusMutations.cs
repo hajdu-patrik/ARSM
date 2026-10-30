@@ -1,3 +1,4 @@
+using AutoService.ApiService.Validation;
 using System.Security.Claims;
 using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Data;
@@ -22,7 +23,7 @@ public static partial class AppointmentEndpoints
     {
         var logger = loggerFactory.CreateLogger("AppointmentEndpoints.UpdateStatus");
 
-        if (!Enum.TryParse<ProgressStatus>(request.Status, ignoreCase: true, out var newStatus))
+        if (!DefinedEnum.TryParse<ProgressStatus>(request.Status, out var newStatus))
         {
             logger.LogWarning("UpdateStatus rejected: invalid status value {Status}.", request.Status);
             return Results.BadRequest(new { code = "invalid_status", error = $"Valid statuses: {string.Join(", ", Enum.GetNames<ProgressStatus>())}" });

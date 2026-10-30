@@ -1,0 +1,241 @@
+# Optimistic concurrency of every quote write (D30/D38): a version that is no longer current answers 409
+# quote_version_conflict, a missing or zero one 422, and a re-read version goes through. Disposable customer, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.versions.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0732
+
+### [Setup][QuoteVersions] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteVersions] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteVersions", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteVersions] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QVR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteVersions] Create the draft quote, its version is stale once the seed line is added (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Versions {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteVersions] Add the seed line (201 expected, the version moves on)
+# @name seed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.version !== quote.version) == true
+
+### [Negative][QuoteVersions] Header edit with the stale version (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Stale header", "notes": null, "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] ValidUntil change with the stale version (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2098-01-01T00:00:00", "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] Adding a line with the stale version (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Stale add", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] Updating a line with the stale version (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 4, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] Deleting a line with the stale version (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}?version={{quote.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] Sending with the stale version (409 expected, refused before any mail goes out)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][QuoteVersions] ValidUntil change without a version (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2098-01-01T00:00:00" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteVersions] Adding a line with version 0 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Zero version", "netUnitPrice": 100, "vatRatePercent": 27, "version": 0 }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteVersions] Updating a line with version 0 (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 4, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": 0 }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteVersions] Deleting a line with version 0 (422 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}?version=0
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteVersions] Sending without a version (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Positive][QuoteVersions] Every refused write left the quote as it was (200 expected, Draft, one line, same version)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.status === "Draft" && response.parsedBody.title === `Versions ${RunId}` && response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].quantity === 1 && response.parsedBody.version === seed.version) == true
+
+### [Positive][QuoteVersions] The current version goes through (200 expected, a new version comes back)
+# @name edited
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Versions {{RunId}} edited", "notes": null, "version": {{seed.version}} }
+
+?? status == 200
+?? js (response.parsedBody.version !== seed.version) == true
+
+### [Negative][QuoteVersions] Replaying the version it just replaced is stale (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Versions {{RunId}} replay", "notes": null, "version": {{seed.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Positive][QuoteVersions] The version of a fresh read recovers (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+{{
+  exports.RereadVersion = response.parsedBody.version;
+}}
+
+?? status == 200
+?? js (response.parsedBody.version === edited.version && response.parsedBody.title === `Versions ${RunId} edited`) == true
+
+### [Positive][QuoteVersions] Sending with the re-read version works (200 expected, Sent)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{RereadVersion}} }
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent") == true
+
+### [Cleanup][QuoteVersions] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

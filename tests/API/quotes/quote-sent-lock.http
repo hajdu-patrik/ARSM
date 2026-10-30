@@ -1,0 +1,141 @@
+# A Sent quote is frozen (D7): the header edit and every line write answer 409 with their own message, GET and PDF stay,
+# only ValidUntil may still be extended (quotes-validity-matrix.http). Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.sentlock.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0730
+
+### [Setup][SentLock] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][SentLock] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteSentLock", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][SentLock] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QSL-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][SentLock] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Sent Lock {{RunId}}", "notes": "Frozen once sent" }
+
+?? status == 201
+
+### [Setup][SentLock] Add a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Frozen line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][SentLock] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 200
+
+### [Negative][SentLock] Editing the header is refused (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Should not apply", "notes": null, "version": {{sent.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Only draft quotes can be edited
+
+### [Negative][SentLock] Adding a line is refused (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Should not be added", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{sent.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be added while the quote is a draft
+
+### [Negative][SentLock] Updating a line is refused (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 5, "description": "Frozen line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{sent.version}} }
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be edited while the quote is a draft
+
+### [Negative][SentLock] Deleting a line is refused (409 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line.lines[0].id}}?version={{sent.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.detail includes Lines can only be removed while the quote is a draft
+
+### [Positive][SentLock] The sent quote is untouched and stamped (200 expected, SentAt set, DecidedAt empty)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent" && response.parsedBody.title === `Sent Lock ${RunId}` && response.parsedBody.notes === "Frozen once sent" && response.parsedBody.version === sent.version) == true
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].quantity === 1 && response.parsedBody.totalNet === 100 && response.parsedBody.decidedAt == null && response.parsedBody.sentAt != null) == true
+?? js (response.parsedBody.canDelete === false && response.parsedBody.isLocked === false && response.parsedBody.isExpired === false) == true
+
+### [Positive][SentLock] The PDF of a sent quote is still available (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/pdf
+
+?? status == 200
+?? js (response.headers["content-type"].startsWith("application/pdf") && response.headers["content-disposition"].includes("ARSM-")) == true
+
+### [Cleanup][SentLock] Delete the disposable customer, cascading vehicle and the sent quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

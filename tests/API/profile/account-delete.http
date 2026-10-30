@@ -1,5 +1,5 @@
-# DeleteProfileAsync checks missing-password first (400), then admin-role BEFORE password check (403
-# for any admin), so the wrong-password case below runs as non-admin to hit CheckPasswordAsync instead.
+# DELETE /api/profile checks the missing password first (400), then the admin role BEFORE the password (403 for any admin),
+# so the wrong-password case runs as a disposable non-admin. A successful delete expires every session cookie and kills the login.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -18,16 +18,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Profile] Login as admin for self-delete negative test
+### [Setup][Profile] Login as admin for the self-delete negative tests (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -37,7 +34,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Self-delete with missing password body (400 expected)
+### [Negative][Profile] Self-delete with an empty body (400 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -46,45 +43,63 @@ Content-Type: application/json
 {}
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Current password is required.")) == true
 
 ###
 
-### [Negative][Profile] Admin self-delete forbidden regardless of password (403 expected)
+### [Negative][Profile] Self-delete with a blank password (400 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{AdminPassword}}"
-}
+{ "currentPassword": "   " }
 
-?? status == 403
+?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Current password is required.")) == true
 
 ###
 
-### [Setup][Profile] Register disposable non-admin mechanic for self-delete flow (200 expected)
+### [Negative][Profile] Admin self-delete is forbidden with the right password (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "currentPassword": "{{AdminPassword}}" }
+
+?? status == 403
+?? js (response.parsedBody.detail === "Administrator accounts cannot be deleted.") == true
+
+###
+
+### [Negative][Profile] Admin self-delete is forbidden before the password is even checked (403 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "currentPassword": "{{TestWrongPassword}}" }
+
+?? status == 403
+?? js (response.parsedBody.detail === "Administrator accounts cannot be deleted.") == true
+
+###
+
+### [Setup][Profile] Register the disposable non-admin mechanic for the self-delete flow (200 expected)
+# @name regDeleteSelf
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Delete",
-  "lastName": "Self",
-  "email": "{{DeleteSelfEmail}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "{{DeleteSelfPhone}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Delete", "lastName": "Self", "email": "{{DeleteSelfEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "phoneNumber": "{{DeleteSelfPhone}}", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "Brakes"] }
 
 ?? status == 200
 
 ###
 
-### [Setup][Profile] Logout admin before non-admin self-delete check
+### [Setup][Profile] Logout admin before the non-admin self-delete (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -93,16 +108,13 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Login as disposable non-admin mechanic
+### [Setup][Profile] Login as the disposable non-admin mechanic (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{DeleteSelfEmail}}",
-  "password": "{{TestPassword}}"
-}
+{ "email": "{{DeleteSelfEmail}}", "password": "{{TestPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -112,50 +124,72 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Self-delete with wrong password (400 expected)
+### [Negative][Profile] Self-delete with a wrong password changes nothing (400 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{TestWrongPassword}}"
-}
+{ "currentPassword": "{{TestWrongPassword}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Current password is invalid.")) == true
 
 ###
 
-### [Positive][Profile] Non-admin self-delete (200 expected)
+### [Positive][Profile] The account is still there after the refused delete (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js (response.parsedBody.personId == regDeleteSelf.personId) == true
+
+###
+
+### [Positive][Profile] Non-admin self-delete: 200 and every session cookie expired (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{TestPassword}}"
-}
+{ "currentPassword": "{{TestPassword}}" }
 
 ?? status == 200
+?? js (response.parsedBody.message === "Profile deleted successfully.") == true
+?? js (["__Host-arsm-access-token","__Host-arsm-refresh-token","__Host-arsm-csrf-token","__Host-autoservice_at","__Host-autoservice_rt","__Host-autoservice_csrf"].every(n => response.headers['set-cookie'].some(c => c.startsWith(n + "=;") && c.toLowerCase().includes("expires=thu, 01 jan 1970")))) == true
 
 ###
 
-### [Negative][Profile] Validate deleted session profile access is unauthorized (401 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/profile
+### [Negative][Profile] The deleted account can no longer log in (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{DeleteSelfEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+?? js response.parsedBody.title == invalid_credentials
+
+###
+
+### [Negative][Profile] The deleted account's phone is free and does not log in either (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "phoneNumber": "{{DeleteSelfPhone}}", "password": "{{TestPassword}}" }
 
 ?? status == 401
 
 ###
 
-### [Negative][Profile] Unauthenticated self-delete (no session cookie) returns 401
+### [Negative][Profile] Unauthenticated self-delete (401 expected)
 # @no-cookie-jar
-# Run in a fresh session with no active cookies.
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{TestPassword}}"
-}
+{ "currentPassword": "{{TestPassword}}" }
 
 ?? status == 401

@@ -54,6 +54,63 @@ def add_line(client: HttpClient, quote_id: int, version: int, ordinal: int) -> t
     )
 
 
+def amounts_match(quote: dict, net: float, vat: float, gross: float) -> bool:
+    """True when the quote totals equal the expected amounts and gross is net + vat."""
+    totals = (float(quote["totalNet"]), float(quote["totalVat"]), float(quote["totalGross"]))
+    close = all(abs(actual - expected) < 0.005 for actual, expected in zip(totals, (net, vat, gross)))
+    return close and abs(totals[2] - (totals[0] + totals[1])) < 0.005
+
+
+def check_edits_at_cap(client: HttpClient, quote_id: int, version: int, full_quote: dict, results: list[StepResult]) -> int:
+    """At the cap an update still works (no new line), a delete frees one slot and the add after it fits again."""
+    first_line = full_quote["lines"][0]
+    status, body = client.request_json(
+        "PUT",
+        f"{QUOTES_PATH}/{quote_id}/lines/{first_line['id']}",
+        {
+            "lineKind": "Part",
+            "quantity": 2,
+            "description": first_line["description"],
+            "netUnitPrice": 100,
+            "vatRatePercent": 27,
+            "version": version,
+        },
+    )
+    assert_status("update-line-at-cap", status, {200}, results)
+    updated = json.loads(body)
+    assert_condition(
+        "update-at-cap-keeps-count",
+        len(updated["lines"]) == MAX_LINE_COUNT and amounts_match(updated, 20100, 5427, 25527),
+        f"Expected 200 lines totalling 20100/5427/25527; got {len(updated['lines'])} lines, net {updated['totalNet']}.",
+        results,
+    )
+
+    last_line = updated["lines"][-1]
+    status, body = client.request_json(
+        "DELETE", f"{QUOTES_PATH}/{quote_id}/lines/{last_line['id']}?version={updated['version']}",
+    )
+    assert_status("delete-line-at-cap", status, {200}, results)
+    shrunk = json.loads(body)
+    assert_condition(
+        "delete-frees-a-slot",
+        len(shrunk["lines"]) == MAX_LINE_COUNT - 1,
+        f"Expected {MAX_LINE_COUNT - 1} lines after the delete; got {len(shrunk['lines'])}.",
+        results,
+    )
+
+    status, body = add_line(client, quote_id, int(shrunk["version"]), MAX_LINE_COUNT + 2)
+    assert_status("add-after-delete-fits", status, {201}, results)
+    refilled = json.loads(body)
+    assert_condition(
+        "cap-reached-again",
+        len(refilled["lines"]) == MAX_LINE_COUNT,
+        f"Expected {MAX_LINE_COUNT} lines after refilling; got {len(refilled['lines'])}.",
+        results,
+    )
+
+    return int(refilled["version"])
+
+
 def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
     """Signs in, fills a fresh quote to the cap, asserts the next add is refused, then cleans up and signs out."""
     client, _ = sign_in_with_available_login(base_url, origin, results)
@@ -90,6 +147,15 @@ def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
             results,
         )
         version = int(reread["version"])
+
+        assert_condition(
+            "cap-totals-add-up",
+            amounts_match(reread, MAX_LINE_COUNT * 100, MAX_LINE_COUNT * 27, MAX_LINE_COUNT * 127),
+            f"200 lines of 100 net at 27% must total 20000/5400/25400; got {reread['totalNet']}/{reread['totalVat']}/{reread['totalGross']}.",
+            results,
+        )
+
+        version = check_edits_at_cap(client, quote_id, version, reread, results)
     except Exception:
         # Best-effort cleanup only: asserting here would mask the real failure with whatever
         # the delete returns, and the version in hand may already be stale.

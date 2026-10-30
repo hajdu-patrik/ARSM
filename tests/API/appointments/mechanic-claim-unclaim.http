@@ -1,5 +1,5 @@
-# ClaimAsync only accepts an unassigned appointment, so the admin creates it assigned only to itself; Completed is terminal, so it
-# lives on a disposable customer deleted at the end. Cancelled/not-assigned/last-mechanic: -edge-cases.http, -not-assigned.http.
+# Claim and unclaim as the plain mechanic on an appointment the admin created assigned only to itself. Completed is terminal,
+# so everything lives on a disposable customer deleted at the end. Cancelled and last-mechanic: -edge-cases.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -72,13 +72,6 @@ Content-Type: application/json
 
 ?? status == 201
 
-### [Setup][Appointments] Logout admin, login as non-admin mechanic (204 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
 ### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
@@ -93,14 +86,24 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Positive][Appointments] Claim appointment by id (200 expected)
+### [Negative][Appointments] Unclaim before claiming is refused, the mechanic is not assigned (409, not_assigned)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == not_assigned
+
+### [Positive][Appointments] Claim adds the caller next to the admin (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
+?? js response.parsedBody.mechanics.length == 2
+?? js (response.parsedBody.mechanics.some(m => m.id == nonAdminLogin.personId) && response.parsedBody.mechanics.some(m => m.id == adminLogin.personId)) == true
 
-### [Negative][Appointments] Duplicate claim conflict when already assigned (409 expected)
+### [Negative][Appointments] Duplicate claim conflict when already assigned (409, already_claimed)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -108,12 +111,14 @@ X-CSRF-Token: {{CsrfToken}}
 ?? status == 409
 ?? js response.parsedBody.code == already_claimed
 
-### [Positive][Appointments] Unclaim appointment by id (200 expected)
+### [Positive][Appointments] Unclaim removes only the caller (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 200
+?? js response.parsedBody.mechanics.length == 1
+?? js (response.parsedBody.mechanics[0].id == adminLogin.personId) == true
 
 ### [Setup][Appointments] Claim the appointment again, so this mechanic may complete it (200 expected)
 # @name reclaimedAppt
@@ -166,7 +171,7 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Setup][Appointments] Complete appointment (setup for the claim/unclaim-completed checks, 200 expected)
+### [Setup][Appointments] Complete the appointment (setup for the claim/unclaim-completed checks, 200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -176,8 +181,7 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
-# Claim now returns explicit completed-state validation.
+### [Negative][Appointments] Claim of a Completed appointment is refused (422, appointment_completed)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -185,8 +189,7 @@ X-CSRF-Token: {{CsrfToken}}
 ?? status == 422
 ?? js response.parsedBody.code == appointment_completed
 
-### [Negative][Appointments] Unclaim completed appointment is rejected (422 expected)
-# Self-unclaim is blocked when status is Completed.
+### [Negative][Appointments] Unclaim of a Completed appointment is refused (422, appointment_completed)
 DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

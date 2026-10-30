@@ -1,25 +1,21 @@
+# search on GET /api/quotes matches the quote number, the title and the license plate, ignores case and surrounding blanks,
+# treats % and _ literally and combines with status and vehicleId. Disposable customer, deleted at the end (cascade).
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.search.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0740
 
-### [Setup][Quotes] Clear any session cookie left by a previous file (204 or 401, not asserted)
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-
-###
-
-### [Setup][Quotes] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteSearch] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -27,185 +23,150 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Setup][Quotes] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][Quotes] Create paging draft quote A (201 expected)
-# @name pagingA
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteSearch] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Paging Quote Alpha {{RunId}}"
-}
+{ "firstName": "QuoteSearch", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
-
-### [Setup][Quotes] Create paging draft quote B (201 expected)
-# @name pagingB
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteSearch] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Paging Quote Bravo {{RunId}}"
-}
+{ "licensePlate": "QSR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
-###
-
-### [Setup][Quotes] Create paging draft quote C (201 expected)
-# @name pagingC
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteSearch] Create draft quote Alpha (201 expected)
+# @name searchA
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Paging Quote Charlie {{RunId}}"
-}
+{ "title": "Search Quote Alpha {{RunId}}" }
 
 ?? status == 201
 
-###
-
-### [Setup][Quotes] Add a manual line to quote C so it can be sent (201 expected)
-# @name pagingCLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingC.id}}/lines
+### [Setup][QuoteSearch] Create draft quote Bravo (201 expected)
+# @name searchB
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "VAT rate manual line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{pagingC.version}}
-}
+{ "title": "Search Quote Bravo {{RunId}}" }
 
 ?? status == 201
 
-###
-
-### [Setup][Quotes] Send quote C (200 expected, the Sent fixture stays behind like the status-transition fixtures)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingC.id}}/status
+### [Setup][QuoteSearch] Create quote Charlie (201 expected)
+# @name searchC
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Sent",
-  "version": {{pagingCLine.version}}
-}
+{ "title": "Search Quote Charlie {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteSearch] Add a line to Charlie so it can be sent (201 expected)
+# @name searchCLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{searchC.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Search line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{searchC.version}} }
+
+?? status == 201
+
+### [Setup][QuoteSearch] Send Charlie (200 expected, no-op mail sender in the test environment)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{searchC.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{searchCLine.version}} }
 
 ?? status == 200
 
-###
-
-### [Positive][Quotes] Search by the quote number (200 expected, one row)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{pagingB.quoteNumber}}
+### [Positive][QuoteSearch] By the quote number (200 expected, one row)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&search={{searchB.quoteNumber}}
 
 ?? status == 200
-?? js response.parsedBody.totalCount == 1
-?? js response.parsedBody.items[0].title includes Bravo
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === searchB.id) == true
 
-###
-
-### [Positive][Quotes] Search by the title, case-insensitively (200 expected, one row)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=paging%20quote%20alpha%20{{RunId}}
+### [Positive][QuoteSearch] By the title in lower case (200 expected, one row)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=search%20quote%20alpha%20{{RunId}}
 
 ?? status == 200
-?? js response.parsedBody.totalCount == 1
-?? js response.parsedBody.items[0].title includes Alpha
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === searchA.id) == true
 
-###
-
-### [Positive][Quotes] Search by the vehicle license plate, case-insensitively (200 expected, at least the 3 fixtures)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{pagingA.vehicle.licensePlate.toLowerCase()}}&pageSize=500
+### [Positive][QuoteSearch] By part of the title with blanks around it (200 expected, trimmed)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&search=%20%20bravo%20%20
 
 ?? status == 200
-?? js response.parsedBody.totalCount >= 3
-?? js response.parsedBody.items.some(q => q.title.includes("Charlie"))
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === searchB.id) == true
 
-###
+### [Positive][QuoteSearch] By the license plate in lower case (200 expected, all three quotes of the vehicle)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=qsr-{{RunId}}
 
-### [Positive][Quotes] Search without a match returns an empty page (200 expected)
+?? status == 200
+?? js (response.parsedBody.totalCount === 3 && response.parsedBody.items.every(q => q.vehicleId === vehicle.id)) == true
+
+### [Positive][QuoteSearch] A blank search is ignored (200 expected, no filter)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&search=%20%20%20
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 3) == true
+
+### [Positive][QuoteSearch] A search without a match is an empty page (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=zz-no-such-quote-{{RunId}}
 
 ?? status == 200
-?? js response.parsedBody.items.length == 0
-?? js response.parsedBody.totalCount == 0
-?? js response.parsedBody.page == 1
+?? js (response.parsedBody.items.length === 0 && response.parsedBody.totalCount === 0 && response.parsedBody.page === 1) == true
 
-###
+### [Positive][QuoteSearch] A percent sign is searched literally, not as a wildcard (200 expected, nothing matches)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&search=%25
 
-### [Positive][Quotes] Search combined with status=Sent narrows to the sent fixture (200 expected)
+?? status == 200
+?? js (response.parsedBody.totalCount === 0) == true
+
+### [Positive][QuoteSearch] An underscore is searched literally too (200 expected, nothing matches)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&search=_
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 0) == true
+
+### [Positive][QuoteSearch] Search with status=Sent narrows to the sent quote (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&status=Sent
 
 ?? status == 200
-?? js response.parsedBody.totalCount == 1
-?? js response.parsedBody.items[0].title includes Charlie
-?? js response.parsedBody.items[0].status == Sent
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === searchC.id && response.parsedBody.items[0].status === "Sent") == true
 
-###
-
-### [Positive][Quotes] Search combined with status=Draft keeps the two drafts (200 expected)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&status=Draft&pageSize=10
+### [Positive][QuoteSearch] Search with status=Draft keeps the two drafts (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&status=Draft
 
 ?? status == 200
-?? js response.parsedBody.totalCount == 2
-?? js (response.parsedBody.items.every(q => q.status == "Draft")) == true
+?? js (response.parsedBody.totalCount === 2 && response.parsedBody.items.every(q => q.status === "Draft")) == true
 
-###
-
-### [Positive][Quotes] Search combined with the vehicleId filter (200 expected, all three fixtures)
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&vehicleId={{AnchorVehicleId}}
-
-?? status == 200
-?? js response.parsedBody.totalCount == 3
-
-###
-
-### [Negative][Quotes] An invalid status is still rejected together with a search (422 expected)
+### [Negative][QuoteSearch] An invalid status is still refused together with a search (422 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/quotes?search={{RunId}}&status=Bogus
 
 ?? status == 422
 
-###
-
-### [Cleanup][Quotes] Delete draft quote A (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingA.id}}?version={{pagingA.version}}
+### [Cleanup][QuoteSearch] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###
-
-### [Cleanup][Quotes] Delete draft quote B (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{pagingB.id}}?version={{pagingB.version}}
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
-###

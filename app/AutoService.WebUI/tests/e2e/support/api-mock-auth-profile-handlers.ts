@@ -18,6 +18,7 @@ function getAuthPayload(
   };
 }
 
+/** Dispatches the `/api/auth/*` routes; returns false when the route is not an auth one. */
 export async function tryHandleAuthRoute(
   route: Route,
   method: string,
@@ -112,6 +113,7 @@ async function handleAuthValidate(
   await fulfillJson(route, getAuthPayload(state, options));
 }
 
+/** Dispatches the `/api/profile*` routes; returns false when the route is not a profile one. */
 export async function tryHandleProfileRoute(
   route: Route,
   method: string,
@@ -150,6 +152,7 @@ function getProfileRouteHandler(routeKey: string): ProfileRouteHandler | null {
     'PUT /api/profile/picture': handleProfilePictureUpload,
     'DELETE /api/profile/picture': handleProfilePictureDelete,
     'GET /api/profile/picture/updates': handleProfilePictureUpdates,
+    'GET /api/profile/picture': handleProfilePictureGet,
   };
 
   return routeHandlers[routeKey] ?? null;
@@ -211,6 +214,27 @@ async function handleProfilePictureDelete(route: Route, state: MockApiState): Pr
   await fulfillNoContent(route);
 }
 
+/** A 1x1 PNG, served as the stored picture while the mock profile has one. */
+const MOCK_PICTURE_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+async function handleProfilePictureGet(route: Route, state: MockApiState): Promise<void> {
+  if (!state.profile.hasProfilePicture) {
+    await fulfillJson(route, { detail: 'No profile picture.' }, 404);
+    return;
+  }
+
+  await route.fulfill({ status: 200, contentType: 'image/png', headers: corsHeaders(route), body: MOCK_PICTURE_PNG });
+}
+
+/** A valid empty event stream: a 204 would make the browser close the EventSource as rejected, which refreshes the session. */
 async function handleProfilePictureUpdates(route: Route): Promise<void> {
-  await route.fulfill({ status: 204, headers: corsHeaders(route) });
+  await route.fulfill({
+    status: 200,
+    contentType: 'text/event-stream',
+    headers: corsHeaders(route),
+    body: ': mock profile picture updates stream ready\n\n',
+  });
 }

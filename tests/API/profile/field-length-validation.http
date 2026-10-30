@@ -1,5 +1,5 @@
-# FieldLengthValidator caps: Email 150, FirstName/MiddleName/LastName 50, PhoneNumber 20
-# (UpdateProfileAsync); CurrentPassword/NewPassword/ConfirmNewPassword 128 (ChangePasswordAsync).
+# FieldLengthValidator caps on the profile routes: Email 150, names 50, PhoneNumber 20 (PUT /api/profile) and the three
+# password fields 128 (change-password). The cap is checked before any password hashing, so none of these counts toward the lockout.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -16,16 +16,13 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Profile] Login as non-admin mechanic (session prerequisite)
+### [Setup][Profile] Login as the shared plain mechanic (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{ProfileMechanicEmail}}",
-  "password": "{{ProfileCurrentPassword}}"
-}
+{ "email": "{{ProfileMechanicEmail}}", "password": "{{ProfileCurrentPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -35,129 +32,114 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Profile] Update firstName over 50 chars rejected (400 expected)
+### [Negative][Profile] Update firstName over 50 chars (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "{{Over50Name}}"
-}
+{ "firstName": "{{Over50Name}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("FirstName must be at most 50 characters.")) == true
 
 ###
 
-### [Negative][Profile] Update lastName over 50 chars rejected (400 expected)
+### [Negative][Profile] Update lastName over 50 chars (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lastName": "{{Over50Name}}"
-}
+{ "lastName": "{{Over50Name}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("LastName must be at most 50 characters.")) == true
 
 ###
 
-### [Negative][Profile] Update middleName over 50 chars rejected (400 expected)
+### [Negative][Profile] Update middleName over 50 chars (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "middleName": "{{Over50Name}}"
-}
+{ "middleName": "{{Over50Name}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("MiddleName must be at most 50 characters.")) == true
 
 ###
 
-### [Negative][Profile] Update email over 150 chars rejected (400 expected)
+### [Negative][Profile] Update email over 150 chars (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "email": "{{Over150LocalPart}}@example.test"
-}
+{ "email": "{{Over150LocalPart}}@example.test" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("Email must be at most 150 characters.")) == true
 
 ###
 
-### [Negative][Profile] Update phoneNumber over 20 chars rejected (400 expected)
+### [Negative][Profile] Update phoneNumber over 20 chars (400 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/profile
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "phoneNumber": "{{Over20Phone}}"
-}
+{ "phoneNumber": "{{Over20Phone}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("PhoneNumber must be at most 20 characters.")) == true
 
 ###
 
-### [Negative][Profile] Change password with currentPassword over 128 chars rejected (400 expected)
+### [Negative][Profile] Change password with currentPassword over 128 chars (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{Over128Password}}",
-  "newPassword": "Valid-New-Password1!",
-  "confirmNewPassword": "Valid-New-Password1!"
-}
+{ "currentPassword": "{{Over128Password}}", "newPassword": "Valid-New-Password1!", "confirmNewPassword": "Valid-New-Password1!" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("CurrentPassword must be at most 128 characters.")) == true
 
 ###
 
-### [Negative][Profile] Change password with newPassword over 128 chars rejected (400 expected)
+### [Negative][Profile] Change password with newPassword over 128 chars (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{ProfileCurrentPassword}}",
-  "newPassword": "{{Over128Password}}",
-  "confirmNewPassword": "{{Over128Password}}"
-}
+{ "currentPassword": "{{ProfileCurrentPassword}}", "newPassword": "{{Over128Password}}", "confirmNewPassword": "{{Over128Password}}" }
 
 ?? status == 400
+?? js (Object.values(response.parsedBody.errors).flat().includes("NewPassword must be at most 128 characters.")) == true
 
 ###
 
-### [Negative][Profile] Change password with confirmNewPassword over 128 chars rejected (400 expected)
+### [Negative][Profile] Change password with confirmNewPassword over 128 chars is refused on that field (400 expected)
+# The mismatch message already occupies the field, so the cap message itself is not asserted here.
 POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "currentPassword": "{{ProfileCurrentPassword}}",
-  "newPassword": "Valid-New-Password1!",
-  "confirmNewPassword": "{{Over128Password}}"
-}
+{ "currentPassword": "{{ProfileCurrentPassword}}", "newPassword": "Valid-New-Password1!", "confirmNewPassword": "{{Over128Password}}" }
 
 ?? status == 400
+?? js (Object.keys(response.parsedBody.errors).map(k => k.toLowerCase()).includes("confirmnewpassword")) == true
 
 ###
 
-### [Setup][Profile] Logout after field-length validation checks
+### [Setup][Profile] Logout after the field-length checks (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
 ?? status == 204
-
-###

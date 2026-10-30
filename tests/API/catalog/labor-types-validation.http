@@ -1,14 +1,12 @@
+# POST /api/labor-types input rules: required code and name, code at most 40, name at most 120, rate 0..100,000,000, VAT
+# 5/18/27 (422, reason in `detail`; exact limits pass). More: labor-types-vat-rates.http, labor-types-conflicts.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@ValidLaborTypeCode = ZZV{{RunId}}A
-@FixtureLaborTypeCode = OLAJCSERE
-@LowercaseFixtureLaborTypeCode = olajcsere
-@NonExistentLaborTypeId = 999999999
-@OverLengthCode = C9999999999999999999999999999999999999999
-@OverLengthName = N999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+@Key = ZZW{{RunId}}
 
 ### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -16,16 +14,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][LaborTypes] Login as admin for validation tests
-# @name csrfSource1
+### [Setup][LaborTypes] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -35,180 +29,174 @@ Content-Type: application/json
 
 ###
 
-### [Negative][LaborTypes] Create labor type with missing code (422 expected)
+### [Negative][LaborTypes] Empty code (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "",
-  "name": "Valid Name",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "", "name": "Valid Name", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Code and Name are required.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with missing name (422 expected)
+### [Negative][LaborTypes] Whitespace-only name (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "   ", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Code and Name are required.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with code over 40 characters (422 expected)
+### [Negative][LaborTypes] Code of 41 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{OverLengthCode}}",
-  "name": "Valid Name",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "{{'C'.repeat(41)}}", "name": "Valid Name", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Code must be at most 40 characters.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with name over 120 characters (422 expected)
+### [Negative][LaborTypes] Name of 121 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "{{OverLengthName}}",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "{{'N'.repeat(121)}}", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Name must be at most 120 characters.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with negative hourly net rate (422 expected)
+### [Negative][LaborTypes] Negative hourly rate (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "Valid Name",
-  "hourlyNetRate": -1,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "Valid Name", "hourlyNetRate": -0.01, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with hourly net rate over 100000000 (422 expected)
+### [Negative][LaborTypes] Hourly rate over 100,000,000 (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "Valid Name",
-  "hourlyNetRate": 100000000.01,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "Valid Name", "hourlyNetRate": 100000000.01, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with unsupported VAT rate (422 expected)
+### [Negative][LaborTypes] Unsupported VAT rate 10 (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "Valid Name",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 10
-}
+{ "code": "{{Key}}", "name": "Valid Name", "hourlyNetRate": 100, "vatRatePercent": 10 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
 
 ###
 
-### [Negative][LaborTypes] Create labor type with duplicate code matching the shared fixture key (created by tests/API/_setup) (409 expected)
+### [Negative][LaborTypes] A bad rate and a bad VAT together (422 expected, the rate is reported first)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{FixtureLaborTypeCode}}",
-  "name": "Duplicate Check",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "Valid Name", "hourlyNetRate": -1, "vatRatePercent": 10 }
 
-?? status == 409
+?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][LaborTypes] Lowercase code normalizes and collides with existing uppercase key (409 expected)
+### [Negative][LaborTypes] A non-numeric rate fails model binding (400 expected, never a server error)
 POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{LowercaseFixtureLaborTypeCode}}",
-  "name": "Duplicate Lowercase Check",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27
-}
+{ "code": "{{Key}}", "name": "Valid Name", "hourlyNetRate": "abc", "vatRatePercent": 27 }
 
-?? status == 409
+?? status == 400
 
 ###
 
-### [Negative][LaborTypes] Update non-existent labor type (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentLaborTypeId}}
+### [Positive][LaborTypes] The lower limits pass: rate 0, a 40-character code, a 120-character name (201 expected)
+# @name lowest
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "code": "{{ValidLaborTypeCode}}",
-  "name": "Ghost Update",
-  "hourlyNetRate": 100,
-  "vatRatePercent": 27,
-  "version": 1
-}
+{ "code": "{{Key}}{{'L'.repeat(40 - Key.length)}}", "name": "{{'N'.repeat(120)}}", "hourlyNetRate": 0, "vatRatePercent": 5 }
 
-?? status == 404
+?? status == 201
+?? js response.parsedBody.code.length == 40
+?? js response.parsedBody.name.length == 120
+?? js response.parsedBody.hourlyNetRate == 0
+?? js response.parsedBody.grossHourlyRate == 0
 
 ###
 
-### [Negative][LaborTypes] Delete non-existent labor type (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{NonExistentLaborTypeId}}
+### [Positive][LaborTypes] The upper limit passes: rate 100,000,000 (201 expected, gross 127,000,000.00)
+# @name highest
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}H", "name": "Highest Rate", "hourlyNetRate": 100000000, "vatRatePercent": 27 }
+
+?? status == 201
+?? js response.parsedBody.hourlyNetRate == 100000000
+?? js response.parsedBody.grossHourlyRate == 127000000
+
+###
+
+### [Positive][LaborTypes] None of the refused requests created a row (200 expected, only the two boundary rows exist)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Cleanup][LaborTypes] Delete the lowest-limit labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{lowest.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
-?? status == 404
+?? status == 204
+
+###
+
+### [Cleanup][LaborTypes] Delete the highest-limit labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{highest.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

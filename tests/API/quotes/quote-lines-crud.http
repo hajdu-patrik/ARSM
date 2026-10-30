@@ -1,0 +1,181 @@
+# Free-form quote lines (no catalog reference): add, update (also switching the kind), delete returning the quote, the
+# sort order and the totals after every write down to an empty quote. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.crud.lines.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0727
+
+### [Setup][QuoteLinesCrud] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteLinesCrud] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteLinesCrud", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteLinesCrud] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QLC-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteLinesCrud] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Quote Lines Crud {{RunId}}" }
+
+?? status == 201
+
+### [Positive][QuoteLinesCrud] Add a free-form part line (201 expected, trimmed description, no catalog reference)
+# @name line1
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "description": "  Manual brake pad set  ", "netUnitPrice": 15000, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[0].description === "Manual brake pad set" && response.parsedBody.lines[0].partId == null && response.parsedBody.lines[0].laborTypeId == null && response.parsedBody.lines[0].sortOrder === 1) == true
+?? js (response.parsedBody.lines[0].netAmount === 30000 && response.parsedBody.lines[0].vatAmount === 8100 && response.parsedBody.lines[0].grossAmount === 38100) == true
+?? js (response.parsedBody.totalNet === 30000 && response.parsedBody.totalVat === 8100 && response.parsedBody.totalGross === 38100) == true
+
+### [Positive][QuoteLinesCrud] Add a free-form labor line with a lower-case kind and VAT 18 (201 expected)
+# @name line2
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "labor", "quantity": 2.5, "description": "Manual labor", "netUnitPrice": 9000, "vatRatePercent": 18, "version": {{line1.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[1].lineKind === "Labor" && response.parsedBody.lines[1].sortOrder === 2 && response.parsedBody.lines[1].quantity === 2.5 && response.parsedBody.lines[1].laborTypeId == null) == true
+?? js (response.parsedBody.lines[1].netAmount === 22500 && response.parsedBody.lines[1].vatAmount === 4050 && response.parsedBody.lines[1].grossAmount === 26550) == true
+?? js (response.parsedBody.totalNet === 52500 && response.parsedBody.totalVat === 12150 && response.parsedBody.totalGross === 64650) == true
+
+### [Positive][QuoteLinesCrud] Add a third line at VAT 5 (201 expected)
+# @name line3
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Small part", "netUnitPrice": 100, "vatRatePercent": 5, "version": {{line2.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines[2].sortOrder === 3 && response.parsedBody.lines[2].grossAmount === 105) == true
+?? js (response.parsedBody.totalNet === 52600 && response.parsedBody.totalVat === 12155 && response.parsedBody.totalGross === 64755) == true
+
+### [Positive][QuoteLinesCrud] Update the first line's quantity (200 expected, same id and position, amounts recomputed)
+# @name update1
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line1.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 3, "description": "Manual brake pad set", "netUnitPrice": 15000, "vatRatePercent": 27, "version": {{line3.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines[0].id === line1.lines[0].id && response.parsedBody.lines[0].sortOrder === 1 && response.parsedBody.lines[0].quantity === 3 && response.parsedBody.lines[0].netAmount === 45000 && response.parsedBody.lines[0].grossAmount === 57150) == true
+?? js (response.parsedBody.totalNet === 67600 && response.parsedBody.totalVat === 16205 && response.parsedBody.totalGross === 83805 && response.parsedBody.lines.length === 3) == true
+
+### [Positive][QuoteLinesCrud] Turn the labor line into a part line (200 expected, position kept)
+# @name update2
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line2.lines[1].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Now a part", "netUnitPrice": 1000, "vatRatePercent": 27, "version": {{update1.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines[1].lineKind === "Part" && response.parsedBody.lines[1].description === "Now a part" && response.parsedBody.lines[1].sortOrder === 2 && response.parsedBody.lines[1].grossAmount === 1270) == true
+?? js (response.parsedBody.totalNet === 46100 && response.parsedBody.totalVat === 12425 && response.parsedBody.totalGross === 58525) == true
+
+### [Positive][QuoteLinesCrud] Delete the middle line (200 expected, the response is the updated quote, not 204)
+# @name delete2
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line2.lines[1].id}}?version={{update2.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.id === quote.id && response.parsedBody.lines.length === 2 && response.parsedBody.lines.every(l => l.id !== line2.lines[1].id)) == true
+?? js (response.parsedBody.lines[0].id === line1.lines[0].id && response.parsedBody.lines[1].id === line3.lines[2].id && response.parsedBody.lines[0].sortOrder < response.parsedBody.lines[1].sortOrder) == true
+?? js (response.parsedBody.totalNet === 45100 && response.parsedBody.totalVat === 12155 && response.parsedBody.totalGross === 57255) == true
+
+### [Positive][QuoteLinesCrud] A new line goes behind the existing ones (201 expected, sort order above every other)
+# @name line4
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Added last", "netUnitPrice": 50, "vatRatePercent": 27, "version": {{delete2.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines.length === 3 && response.parsedBody.lines[2].description === "Added last" && response.parsedBody.lines[2].sortOrder > response.parsedBody.lines[1].sortOrder) == true
+?? js (response.parsedBody.totalNet === 45150 && response.parsedBody.totalVat === 12168.5 && response.parsedBody.totalGross === 57318.5) == true
+
+### [Positive][QuoteLinesCrud] Delete the first line (200 expected)
+# @name delete1
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line1.lines[0].id}}?version={{line4.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 2 && response.parsedBody.totalNet === 150 && response.parsedBody.totalVat === 18.5 && response.parsedBody.totalGross === 168.5) == true
+
+### [Positive][QuoteLinesCrud] Delete the third line (200 expected)
+# @name delete3
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line3.lines[2].id}}?version={{delete1.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].description === "Added last" && response.parsedBody.totalNet === 50 && response.parsedBody.totalGross === 63.5) == true
+
+### [Positive][QuoteLinesCrud] Delete the last line (200 expected, an empty quote has zero totals)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{line4.lines[2].id}}?version={{delete3.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 0 && response.parsedBody.totalNet === 0 && response.parsedBody.totalVat === 0 && response.parsedBody.totalGross === 0 && response.parsedBody.status === "Draft") == true
+
+### [Cleanup][QuoteLinesCrud] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

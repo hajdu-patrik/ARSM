@@ -52,6 +52,7 @@ Content-Type: application/json
 { "partNumber": "{{Key}}", "name": "Concurrency No Version", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -64,6 +65,7 @@ Content-Type: application/json
 { "partNumber": "{{Key}}", "name": "Concurrency Zero Version", "netUnitPrice": 100, "vatRatePercent": 27, "version": 0 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
 
 ###
 
@@ -101,6 +103,15 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Parts] The stale write was not applied (200 expected, name and version are those of the last good update)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+
+?? status == 200
+?? js (response.parsedBody.name === "Concurrency Updated") == true
+?? js (response.parsedBody.version == rereadPart.version) == true
+
+###
+
 ### [Positive][Parts] The re-read version updates again (204 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
 Origin: {{WebUI_Origin}}
@@ -110,6 +121,15 @@ Content-Type: application/json
 { "partNumber": "{{Key}}", "name": "Concurrency Recovered", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{rereadPart.version}} }
 
 ?? status == 204
+
+###
+
+### [Positive][Parts] The recovered write is stored under yet another version (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{concPart.id}}
+
+?? status == 200
+?? js (response.parsedBody.name === "Concurrency Recovered") == true
+?? js (response.parsedBody.version != rereadPart.version) == true
 
 ###
 

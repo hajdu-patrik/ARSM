@@ -1,0 +1,118 @@
+# DELETE /api/profile refuses a mechanic who is the only one on an appointment: the cascade would orphan it,
+# and the startup integrity check then stops the API. The admin deletes the fixtures at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@MechanicEmail = profile.delete.sole.{{RunId}}@example.test
+@CustomerEmail = sole.customer.{{RunId}}@example.test
+@Vin = TST{{RunId.toString().slice(-10)}}0991
+
+### [Setup][Profile] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Profile] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Profile] Register the disposable mechanic (200 expected)
+# @name mechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Sole", "lastName": "Mechanic", "email": "{{MechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+### [Setup][Profile] Login as the disposable mechanic (200 expected)
+# @name mechanicLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{MechanicEmail}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Profile] The intake assigns the caller as the only mechanic (201 expected)
+# @name appointment
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "{{CustomerEmail}}", "customerFirstName": "Scheduler", "customerMiddleName": "Mid", "customerLastName": "New", "customerPhoneNumber": null, "vehicle": { "licensePlate": "SOL-{{RunId}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 98500, "enginePowerKw": 110, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T10:00:00", "dueDateTime": "2026-04-25T15:00:00", "taskDescription": "Scheduler intake new customer and vehicle" }
+
+?? status == 201
+?? js response.parsedBody.mechanics.length == 1
+
+### [Negative][Profile] Self-delete would orphan the appointment (422 expected, right password)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "currentPassword": "{{TestPassword}}" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Cannot delete this mechanic because one or more appointments would be left without assigned mechanics.") == true
+
+### [Positive][Profile] The refused delete left the account and the appointment alone (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{appointment.vehicle.id}}/appointments
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == appointment.id && a.mechanics[0].id == mechanicLogin.personId)) == true
+
+### [Setup][Profile] Login as admin for the cleanup (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Cleanup][Profile] Delete the appointment (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][Profile] Delete the customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{appointment.vehicle.customerId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][Profile] Delete the mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{mechanicLogin.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

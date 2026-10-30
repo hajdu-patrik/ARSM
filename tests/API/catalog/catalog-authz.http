@@ -1,23 +1,18 @@
+# All 10 catalog routes are MechanicOnly: 401 without a session, before any handler (a missing id needs no fixture).
+# COVERAGE GAP: the 403 for a non-mechanic cannot be produced live (tests/CLAUDE.md); signed-in access: catalog-authz-mechanic.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-@RunId = {{$timestamp}}
-@AuthzPartNumber = ZZU{{RunId}}A
+@GhostId = 999999999
 
-# COVERAGE GAP: a MechanicOnly 403 for an authenticated-but-not-mechanic caller cannot be produced
-# against the live API today (no fabricated token) - see tests/CLAUDE.md Coverage Anchors.
-
-### [Setup][Catalog] Login as admin to create disposable authz fixtures
-# @name csrfSource1
+### [Setup][Catalog] Login once to hold a real CSRF token for the unsafe requests below (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -27,27 +22,7 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Catalog] Create disposable part used as the authz target id (201 expected)
-# @name authzPart
-POST {{AutoService_ApiService_HostAddress}}/api/parts
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "partNumber": "{{AuthzPartNumber}}",
-  "name": "Catalog Authz Part",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
-
-?? status == 201
-
-###
-
-###
-
-### [Setup][Catalog] Logout before unauthenticated checks
+### [Setup][Catalog] Logout so the checks below run unauthenticated (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -56,7 +31,7 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Negative][Catalog] Unauthenticated list parts (401 expected)
+### [Negative][Catalog] Unauthenticated GET /api/parts (401 expected)
 # @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/parts
 
@@ -64,54 +39,43 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts
 
 ###
 
-### [Negative][Catalog] Unauthenticated get part by id (401 expected)
+### [Negative][Catalog] Unauthenticated GET /api/parts/{id} (401 expected)
 # @no-cookie-jar
-GET {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostId}}
 
 ?? status == 401
 
 ###
 
-### [Negative][Catalog] Unauthenticated create part (401 expected)
+### [Negative][Catalog] Unauthenticated POST /api/parts (401 expected)
 # @no-cookie-jar
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "UNAUTH-PART",
-  "name": "Unauthenticated",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "UNAUTH-PART", "name": "Unauthenticated", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 401
 
 ###
 
-### [Negative][Catalog] Unauthenticated update part (401 expected)
+### [Negative][Catalog] Unauthenticated PUT /api/parts/{id} (401 expected)
 # @no-cookie-jar
-PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "UNAUTH-PART",
-  "name": "Unauthenticated",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{authzPart.version}}
-}
+{ "partNumber": "UNAUTH-PART", "name": "Unauthenticated", "netUnitPrice": 100, "vatRatePercent": 27, "version": 1 }
 
 ?? status == 401
 
 ###
 
-### [Negative][Catalog] Unauthenticated delete part (401 expected)
+### [Negative][Catalog] Unauthenticated DELETE /api/parts/{id} (401 expected)
 # @no-cookie-jar
-DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{GhostId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
@@ -119,49 +83,52 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-###
+### [Negative][Catalog] Unauthenticated GET /api/labor-types (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types
+
+?? status == 401
 
 ###
 
-###
+### [Negative][Catalog] Unauthenticated GET /api/labor-types/{id} (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostId}}
+
+?? status == 401
 
 ###
 
-###
-
-### [Setup][Catalog] Login as admin again to clean up the disposable authz fixtures
-# @name csrfSource2
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+### [Negative][Catalog] Unauthenticated POST /api/labor-types (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
 Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "code": "UNAUTH-LT", "name": "Unauthenticated", "hourlyNetRate": 100, "vatRatePercent": 27 }
 
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
+?? status == 401
 
 ###
 
-### [Cleanup][Catalog] Delete the disposable authz part fixture (204 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{authzPart.id}}
+### [Negative][Catalog] Unauthenticated PUT /api/labor-types/{id} (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "UNAUTH-LT", "name": "Unauthenticated", "hourlyNetRate": 100, "vatRatePercent": 27, "version": 1 }
+
+?? status == 401
+
+###
+
+### [Negative][Catalog] Unauthenticated DELETE /api/labor-types/{id} (401 expected)
+# @no-cookie-jar
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{GhostId}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
-?? status == 204
-
-###
-
-###
-
-### [Setup][Catalog] Logout admin after cleanup
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
+?? status == 401

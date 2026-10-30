@@ -185,6 +185,14 @@ Content-Type: application/json
 
 ###
 
+### [Negative][QuotesAuthz] Unauthenticated quote PDF (401 expected)
+# @no-cookie-jar
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{SomeQuoteId}}/pdf
+
+?? status == 401
+
+###
+
 ### [Negative][QuotesAuthz] Unauthenticated list a vehicle's quotes (401 expected)
 # @no-cookie-jar
 GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{SomeVehicleId}}/quotes

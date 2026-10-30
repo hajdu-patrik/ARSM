@@ -1,0 +1,212 @@
+# GET /api/customers?search=: case-insensitive substring over names, "first last", "first middle last" and plates; the
+# term is trimmed and cut at 100 characters. Customer A has a middle name and a plate, D has 50-character names.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+@LongFirst = {{('F' + Tag).padEnd(50, 'F')}}
+@LongLast = {{('L' + Tag).padEnd(50, 'L')}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create customer A with a middle name (201 expected)
+# @name custA
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fa{{Tag}}", "middleName": "Ma{{Tag}}", "lastName": "La{{Tag}}", "email": "list.search.a.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give A the plate YX-<digits> (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "YX-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0811", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 5000, "enginePowerKw": 70, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer D with 50-character first and last names (201 expected)
+# @name custD
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "{{LongFirst}}", "middleName": null, "lastName": "{{LongLast}}", "email": "list.search.d.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Search by the first name in lower case (200 expected, only customer A)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=fa{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by the middle name (200 expected, only customer A)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=MA{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by the last name (200 expected, only customer A)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=la{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by "first last" (200 expected, the middle name does not break the combination)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=Fa{{Tag}}%20La{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by "first middle last" (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=fa{{Tag.toLowerCase()}}%20ma{{Tag.toLowerCase()}}%20la{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by the plate in lower case (200 expected, the plate is still listed)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=yx-{{Digits}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+?? js response.parsedBody.items[0].vehicleLicensePlates[0] == YX-{{Digits}}
+
+###
+
+### [Positive][Customers] Search by a plate fragment (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=x-{{Digits}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] A padded term is trimmed (200 expected, both tagged customers)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=%20%20{{Tag}}%20%20
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Positive][Customers] A term over 100 characters is cut to its first 100 (200 expected, customer D matches)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{LongFirst}}%20{{LongLast.slice(0, 49)}}ZZZ
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custD.id) == true
+
+###
+
+### [Positive][Customers] A difference inside the first 100 characters still matches nothing (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{LongFirst}}%20{{LongLast.slice(0, 48)}}XZZZ
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+?? js response.parsedBody.items.length == 0
+
+###
+
+### [Positive][Customers] A 150-character term answers an empty page, never an error (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{'Z'.repeat(150)}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][Customers] A percent sign is a literal, not a wildcard (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=%25
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][Customers] An underscore is a literal, not a wildcard (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=_
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][Customers] No match gives an empty first page (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=nomatch{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.page == 1
+?? js response.parsedBody.pageSize == 20
+?? js response.parsedBody.items.length == 0
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Cleanup][Customers] Delete customer A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer D (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custD.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

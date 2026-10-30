@@ -37,7 +37,7 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
     }
 
     showErrorToast(state.errorKey);
-  }, [showErrorToast, state.errorKey]);
+  }, [showErrorToast, state.errorKey, state.errorAttempt]);
 
   const selectedDayLabel = useMemo(() => {
     return formatLongDate(selectedDate, i18n.language);

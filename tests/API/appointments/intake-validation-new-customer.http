@@ -1,32 +1,24 @@
-# Split out of intake-validation.http (file-size limit): every case supplies a brand-new customerEmail
-# plus inline vehicle, so no known-customer setup is needed. All validation runs before the transaction, so nothing persists and there is nothing to clean up.
+# Customer-field rules when the intake creates the customer (unknown email) with a valid inline vehicle. The
+# checks run before the transaction, so nothing persists and there is nothing to clean up. Vehicle fields: intake-validation-new-vehicle.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @RunId = {{$timestamp}}
-@MaxVehicleVin = TST{{RunId.toString().slice(-10)}}0502
-@MissingNameVehicleVin = TST{{RunId.toString().slice(-10)}}0503
 @Over50Name = NameNameNameNameNameNameNameNameNameNameNameNameNameNameX
-
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-###
-
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -34,124 +26,112 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Negative][Appointments] Scheduler intake rejects vehicle numeric values above max limits (422 expected)
+### [Negative][Appointments] Both names missing for an unknown email (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "intake.vehicle.max.{{RunId}}@example.test",
-  "customerFirstName": "Intake",
-  "customerMiddleName": null,
-  "customerLastName": "Max",
-  "customerPhoneNumber": "+36305556666",
-  "vehicle": {
-    "licensePlate": "MAX-{{RunId}}",
-    "vin": "{{MaxVehicleVin}}",
-    "brand": "Audi",
-    "model": "A3",
-    "year": 2021,
-    "mileageKm": 1000001,
-    "enginePowerKw": 50001,
-    "drivetrainType": "Diesel"
-  },
-  "scheduledDate": "2026-04-24T10:00:00",
-  "dueDateTime": "2026-04-25T10:00:00",
-  "taskDescription": "Scheduler intake vehicle numeric max should be rejected"
-}
+{ "customerEmail": "completely.unknown.{{RunId}}@example.test", "vehicle": { "licensePlate": "UNK-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake missing customer names" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "CustomerFirstName and CustomerLastName are required when customer is created.") == true
 
-###
-
-### [Negative][Appointments] Scheduler intake rejects unsupported vehicle drivetrain type (422 expected)
+### [Negative][Appointments] Only the first name given (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "intake.vehicle.drivetrain.{{RunId}}@example.test",
-  "customerFirstName": "Intake",
-  "customerMiddleName": null,
-  "customerLastName": "Drivetrain",
-  "customerPhoneNumber": "+36305557777",
-  "vehicle": {
-    "licensePlate": "DRV-{{RunId}}",
-    "vin": "TST{{RunId.toString().slice(-10)}}0504",
-    "brand": "Audi",
-    "model": "A3",
-    "year": 2021,
-    "mileageKm": 10000,
-    "enginePowerKw": 110,
-    "drivetrainType": "Hydrogen"
-  },
-  "scheduledDate": "2026-04-24T10:00:00",
-  "dueDateTime": "2026-04-25T10:00:00",
-  "taskDescription": "Scheduler intake vehicle drivetrain should be rejected"
-}
+{ "customerEmail": "intake.nolast.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "  ", "vehicle": { "licensePlate": "NL-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake blank last name" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "CustomerFirstName and CustomerLastName are required when customer is created.") == true
 
-###
-
-### [Negative][Appointments] Scheduler intake requires customer name fields when email is unknown and not a mechanic email (422 expected)
-# When the email does not match any customer or mechanic, customerFirstName and customerLastName are mandatory.
+### [Negative][Appointments] A first name with a digit (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "completely.unknown.{{RunId}}@example.test",
-  "vehicle": {
-    "licensePlate": "UNK-{{RunId}}",
-    "vin": "{{MissingNameVehicleVin}}",
-    "brand": "Ford",
-    "model": "Focus",
-    "year": 2018,
-    "mileageKm": 60000,
-    "enginePowerKw": 81,
-    "drivetrainType": "Petrol"
-  },
-  "scheduledDate": "2026-04-30T10:00:00",
-  "dueDateTime": "2026-05-01T10:00:00",
-  "taskDescription": "Intake missing customer name fields"
-}
+{ "customerEmail": "intake.badfirst.{{RunId}}@example.test", "customerFirstName": "Intake1", "customerLastName": "Customer", "vehicle": { "licensePlate": "BF-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake bad first name" }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "First name may only contain letters and hyphens.") == true
 
-###
-
-### [Negative][Appointments] Scheduler intake rejects a new customer last name over 50 characters (400 expected)
-# Field-error shape of the register path: the body is keyed by CustomerLastName and nothing persists.
+### [Negative][Appointments] A last name with an underscore (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "customerEmail": "intake.lastname.toolong.{{RunId}}@example.test",
-  "customerFirstName": "Intake",
-  "customerMiddleName": null,
-  "customerLastName": "{{Over50Name}}",
-  "vehicle": {
-    "licensePlate": "LEN-{{RunId}}",
-    "vin": "TST{{RunId.toString().slice(-10)}}0505",
-    "brand": "Ford",
-    "model": "Focus",
-    "year": 2018,
-    "mileageKm": 60000,
-    "enginePowerKw": 81,
-    "drivetrainType": "Petrol"
-  },
-  "scheduledDate": "2026-04-30T10:00:00",
-  "dueDateTime": "2026-05-01T10:00:00",
-  "taskDescription": "Intake over-length customer last name"
-}
+{ "customerEmail": "intake.badlast.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Cus_tomer", "vehicle": { "licensePlate": "BL-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake bad last name" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Last name may only contain letters and hyphens.") == true
+
+### [Negative][Appointments] A middle name with a digit (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.badmid.{{RunId}}@example.test", "customerFirstName": "Intake", "customerMiddleName": "Mid3", "customerLastName": "Customer", "vehicle": { "licensePlate": "BM-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake bad middle name" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Middle name may only contain letters and hyphens.") == true
+
+### [Negative][Appointments] A malformed phone number (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.badphone.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Customer", "customerPhoneNumber": "12345", "vehicle": { "licensePlate": "BP-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake bad phone" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Phone number must be a valid European number.") == true
+
+### [Negative][Appointments] A valid non-European phone number (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.usphone.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "Customer", "customerPhoneNumber": "+14155552671", "vehicle": { "licensePlate": "UP-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake non-European phone" }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Phone number must be a valid European number.") == true
+
+### [Negative][Appointments] A first name over 50 characters (400 expected, keyed by CustomerFirstName)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.firstlong.{{RunId}}@example.test", "customerFirstName": "{{Over50Name}}", "customerLastName": "Customer", "vehicle": { "licensePlate": "FL-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake over-length first name" }
+
+?? status == 400
+?? body contains CustomerFirstName
+
+### [Negative][Appointments] A middle name over 50 characters (400 expected, keyed by CustomerMiddleName)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.midlong.{{RunId}}@example.test", "customerFirstName": "Intake", "customerMiddleName": "{{Over50Name}}", "customerLastName": "Customer", "vehicle": { "licensePlate": "ML-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake over-length middle name" }
+
+?? status == 400
+?? body contains CustomerMiddleName
+
+### [Negative][Appointments] A last name over 50 characters (400 expected, keyed by CustomerLastName)
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "intake.lastlong.{{RunId}}@example.test", "customerFirstName": "Intake", "customerLastName": "{{Over50Name}}", "vehicle": { "licensePlate": "LL-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}1401", "brand": "Ford", "model": "Focus", "year": 2018, "mileageKm": 60000, "enginePowerKw": 81, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-30T10:00:00", "dueDateTime": "2026-05-01T10:00:00", "taskDescription": "Intake over-length last name" }
 
 ?? status == 400
 ?? body contains CustomerLastName

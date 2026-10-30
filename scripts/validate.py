@@ -33,7 +33,7 @@ SOURCE_SUFFIXES = (".cs", ".ts", ".tsx", ".js", ".mjs", ".py")
 SOURCE_LIMIT, TEST_LIMIT, CSHARP_TYPE_LIMIT = 500, 250, 300
 GENERATED_MARKERS = ("/Migrations/", "/node_modules/", "/dist/", "/bin/", "/obj/", ".Designer.cs", "ModelSnapshot.cs")
 SHADOW_PATTERN = re.compile(
-    r"box-shadow|transition-shadow|(?:^|[\s\"'`:])(?:dark:)?shadow(?:-[\w/\[\].-]+)?(?=[\s\"'`]|$)"
+    r"box-shadow|transition-shadow|(?:^|[\s\"'`:!])(?:dark:)?shadow(?:-[^\s\"'`]+)?(?=[\s\"'`]|$)"
     # Tailwind renders ring-* as box-shadow; a bare ring counts only behind a variant prefix (focus:ring).
     r"|(?:^|[\s\"'`:!])(?:inset-)?ring-|:ring(?=[\s\"'`!]|$)")
 CSHARP_TYPE_PATTERN = re.compile(r"^\s*(?:[\w<>\[\],]+\s+)*(?:class|record|struct|interface)\s+(\w+)")

@@ -1,0 +1,241 @@
+# GET /api/customers/by-name: substring over names, name combinations and plates (also without dashes), ordered by last name,
+# limit clamped to 1..25. The 25-row cap is only proven as at most 25 in authz/list-limit-edges-customers.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create customer C, last name Lc (201 expected, created first so the order is not the id order)
+# @name custC
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fc{{Tag}}", "middleName": null, "lastName": "Lc{{Tag}}", "email": "lookup.name.c.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer B, last name Lb (201 expected)
+# @name custB
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fb{{Tag}}", "middleName": null, "lastName": "Lb{{Tag}}", "email": "lookup.name.b.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer A with a middle name, last name La (201 expected)
+# @name custA
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fa{{Tag}}", "middleName": "Ma{{Tag}}", "lastName": "La{{Tag}}", "email": "lookup.name.a.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give A the plate NX-<digits>-A (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "NX-{{Digits}}-A", "vin": "TST{{RunId.toString().slice(-10)}}0841", "brand": "Kia", "model": "Ceed", "year": 2021, "mileageKm": 12000, "enginePowerKw": 88, "drivetrainType": "PHEV" }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Lookup by the tag lists all three by last name (200 expected, vehicles included)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{Tag}}
+
+?? status == 200
+?? js response.parsedBody.length == 3
+?? js (response.parsedBody[0].id == custA.id) == true
+?? js (response.parsedBody[1].id == custB.id) == true
+?? js (response.parsedBody[2].id == custC.id) == true
+?? js response.parsedBody[0].vehicles.length == 1
+?? js response.parsedBody[0].vehicles[0].drivetrainType == PHEV
+?? js response.parsedBody[1].vehicles.length == 0
+
+###
+
+### [Positive][Customers] limit=2 keeps the first two by last name (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{Tag}}&limit=2
+
+?? status == 200
+?? js response.parsedBody.length == 2
+?? js (response.parsedBody[1].id == custB.id) == true
+
+###
+
+### [Positive][Customers] limit=0 is clamped up to one row (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{Tag}}&limit=0
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] A negative limit is clamped up to one row (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{Tag}}&limit=-3
+
+?? status == 200
+?? js response.parsedBody.length == 1
+
+###
+
+### [Positive][Customers] Lookup by the first name in lower case (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=fb{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custB.id) == true
+
+###
+
+### [Positive][Customers] Lookup by the middle name (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=Ma{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Lookup by "first last" (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=Fc{{Tag}}%20Lc{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custC.id) == true
+
+###
+
+### [Positive][Customers] Lookup by "first middle last" (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=Fa{{Tag}}%20Ma{{Tag}}%20La{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Lookup by the plate as written (200 expected, the owner)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=nx-{{Digits}}
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Lookup by the plate typed without its dashes (200 expected, the owner)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=nx{{Digits}}a
+
+?? status == 200
+?? js response.parsedBody.length == 1
+?? js (response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] No match gives an empty list (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=nomatch{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+###
+
+### [Positive][Customers] A 300-character name gives an empty list, never an error (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name={{'Q'.repeat(300)}}
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+###
+
+### [Positive][Customers] A percent sign is a literal, not a wildcard (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=%25
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+###
+
+### [Negative][Customers] Lookup by a blank name (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=%20%20
+
+?? status == 422
+?? js (response.parsedBody.detail === "Name is required.") == true
+
+###
+
+### [Negative][Customers] Lookup without the name parameter (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name
+
+?? status == 422
+?? js (response.parsedBody.detail === "Name is required.") == true
+
+###
+
+### [Cleanup][Customers] Delete customer A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer B (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer C (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custC.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

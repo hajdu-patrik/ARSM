@@ -171,7 +171,7 @@ public sealed class SessionRevocationPersistenceTests
 
         Assert.True(restarted.IsRevoked(person.Id, oldToken));
         Assert.False(restarted.IsRevoked(person.Id, cutoff));
-        Assert.Equal(cutoff, restarted.IssueTimeUtc(person.Id, DateTime.UtcNow));
+        Assert.Equal(cutoff, restarted.IssueTimeUtc(person.Id, cutoff.AddSeconds(-1)));
     }
 
     [Fact]

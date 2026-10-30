@@ -1,0 +1,149 @@
+# GET /api/customers/by-email (scheduler lookup): the email is trimmed and lower-cased before the match, a mechanic's
+# email resolves too, and an unreadable email is 422 while a well-formed unknown one is 404. One disposable customer.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+@CustomerEmail = lookup.email.{{RunId}}@example.test
+@LongEmail = {{'l'.repeat(40)}}@{{'d'.repeat(63)}}.{{'e'.repeat(45)}}.test
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create the disposable customer (201 expected)
+# @name lookupCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fe{{Tag}}", "middleName": null, "lastName": "Le{{Tag}}", "email": "{{CustomerEmail}}", "phoneNumber": "+3630{{Digits}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give the customer one vehicle (201 expected)
+# @name lookupVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{lookupCustomer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "LE-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0821", "brand": "Ford", "model": "Focus", "year": 2017, "mileageKm": 123456, "enginePowerKw": 92, "drivetrainType": "Hybrid" }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Lookup by the exact email (200 expected, customer and vehicle fields)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{CustomerEmail}}
+
+?? status == 200
+?? js (response.parsedBody.id == lookupCustomer.id) == true
+?? js response.parsedBody.firstName == Fe{{Tag}}
+?? js (response.parsedBody.middleName === null) == true
+?? js response.parsedBody.lastName == Le{{Tag}}
+?? js (response.parsedBody.email == CustomerEmail) == true
+?? js response.parsedBody.phoneNumber == +3630{{Digits}}
+?? js response.parsedBody.vehicles.length == 1
+?? js (Object.keys(response.parsedBody.vehicles[0]).sort().join(',') === 'brand,drivetrainType,enginePowerKw,id,licensePlate,mileageKm,model,vin,year') == true
+?? js (response.parsedBody.vehicles[0].id == lookupVehicle.id) == true
+?? js response.parsedBody.vehicles[0].licensePlate == LE-{{Digits}}
+?? js response.parsedBody.vehicles[0].vin == TST{{RunId.toString().slice(-10)}}0821
+?? js response.parsedBody.vehicles[0].brand == Ford
+?? js response.parsedBody.vehicles[0].model == Focus
+?? js response.parsedBody.vehicles[0].year == 2017
+?? js response.parsedBody.vehicles[0].mileageKm == 123456
+?? js response.parsedBody.vehicles[0].enginePowerKw == 92
+?? js response.parsedBody.vehicles[0].drivetrainType == Hybrid
+
+###
+
+### [Positive][Customers] Lookup with upper case and surrounding spaces (200 expected, same customer)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20{{CustomerEmail.toUpperCase()}}%20
+
+?? status == 200
+?? js (response.parsedBody.id == lookupCustomer.id) == true
+?? js (response.parsedBody.email == CustomerEmail) == true
+
+###
+
+### [Positive][Customers] A mechanic's email resolves too (200 expected)
+# Either the mechanic identity with no vehicles or the linked customer record, depending on whether intake created it.
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{NonAdminEmail}}
+
+?? status == 200
+?? js (response.parsedBody.id > 0) == true
+?? js (Array.isArray(response.parsedBody.vehicles)) == true
+
+###
+
+### [Negative][Customers] Lookup by a malformed email (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=not-an-email
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] Lookup by a blank email (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=%20%20
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] Lookup by a display-name address (422 expected, only the bare address is accepted)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=Joe%20%3Cjoe%40example.test%3E
+
+?? status == 422
+?? js (response.parsedBody.detail === "Email must be a valid email address.") == true
+
+###
+
+### [Negative][Customers] Lookup by a well-formed unknown email (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=unknown.lookup.{{RunId}}@example.test
+
+?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
+
+###
+
+### [Negative][Customers] Lookup by a well-formed email over 150 characters (404 expected, never an error)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email={{LongEmail}}
+
+?? status == 404
+
+###
+
+### [Cleanup][Customers] Delete the disposable customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{lookupCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

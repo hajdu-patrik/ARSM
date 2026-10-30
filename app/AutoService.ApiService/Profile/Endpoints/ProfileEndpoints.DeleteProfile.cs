@@ -1,4 +1,5 @@
 using AutoService.ApiService.Auth.Endpoints;
+using AutoService.ApiService.Admin;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Security;
@@ -66,6 +67,12 @@ public static partial class ProfileEndpoints
             });
         }
 
+        var invariantViolation = await AdminEndpoints.ValidateMechanicDeletionInvariantsAsync(person.Id, db, cancellationToken);
+        if (invariantViolation is not null)
+        {
+            return invariantViolation;
+        }
+
         var deleteResult = await db.ExecuteInTransactionAsync(
             (transaction, token) => DeleteAccountAsync(person.Id, identityUser.Id, userManager, db, transaction, token),
             cancellationToken);
@@ -98,6 +105,12 @@ public static partial class ProfileEndpoints
         IDbContextTransaction transaction,
         CancellationToken cancellationToken)
     {
+        var invariantViolation = await AdminEndpoints.ValidateMechanicDeletionInvariantsAsync(personId, db, cancellationToken);
+        if (invariantViolation is not null)
+        {
+            return invariantViolation;
+        }
+
         await db.People.Where(p => p.Id == personId).ExecuteDeleteAsync(cancellationToken);
 
         var identityUser = await userManager.FindByIdAsync(identityUserId);

@@ -1,0 +1,131 @@
+# An expired Sent quote (valid for 3 seconds, waited out) can only be revived with a future date (D22/D23): a date that is later
+# than the old one but still past is refused, a future one clears the expiry. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.revive.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0738
+
+### [Setup][QuoteRevive] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteRevive] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteRevive", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteRevive] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QRV-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteRevive] Create the quote that expires, valid for 3 seconds (201 expected)
+# @name expiring
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Revive {{RunId}}", "validUntil": "{{new Date(Date.now() + 3000).toISOString()}}" }
+
+?? status == 201
+
+### [Setup][QuoteRevive] Give it a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Revive line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{expiring.version}} }
+
+?? status == 201
+
+### [Setup][QuoteRevive] Send it (200 expected, no-op mail sender in the test environment)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 200
+
+### [Positive][QuoteRevive] After the 3 seconds the list row and the detail both say expired (200 expected)
+{{
+  const waitMs = new Date(expiring.validUntil).getTime() - Date.now() + 500;
+  if (waitMs > 0) { await new Promise(resolve => setTimeout(resolve, waitMs)); }
+}}
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&expired=true
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === expiring.id && response.parsedBody.items[0].isExpired === true && response.parsedBody.items[0].status === "Sent") == true
+
+### [Negative][QuoteRevive] A date later than the old one but still in the past is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "{{new Date(new Date(expiring.validUntil).getTime() + 100).toISOString()}}", "version": {{sent.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes ValidUntil cannot be in the past
+
+### [Positive][QuoteRevive] A future date revives it (200 expected, no longer expired, still Sent)
+# @name revived
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2099-01-01T00:00:00", "version": {{sent.version}} }
+
+?? status == 200
+?? js (response.parsedBody.isExpired === false && response.parsedBody.status === "Sent" && response.parsedBody.validUntil.startsWith("2099-01-01T00:00:00")) == true
+
+### [Positive][QuoteRevive] The list agrees: nothing is expired any more (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&expired=true
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 0) == true
+
+### [Positive][QuoteRevive] The revived quote is back in the active list with its new version (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}&expired=false
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === expiring.id && response.parsedBody.items[0].isExpired === false && response.parsedBody.items[0].version === revived.version) == true
+
+### [Cleanup][QuoteRevive] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

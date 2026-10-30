@@ -1,0 +1,166 @@
+# GET /api/customers/by-license-plate: the plate is trimmed, upper-cased and white-space collapsed; the owner comes back with
+# all vehicles by plate and matchedVehicleId. The full plate rules: vehicles/create-validation-formats.http.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create the disposable owner (201 expected)
+# @name plateOwner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fp{{Tag}}", "middleName": null, "lastName": "Lp{{Tag}}", "email": "lookup.plate.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create the vehicle with the spaced plate first (201 expected)
+# @name spacedVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{plateOwner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "LQ {{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0831", "brand": "Opel", "model": "Astra", "year": 2015, "mileageKm": 99000, "enginePowerKw": 81, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create the vehicle with the hyphenated plate (201 expected)
+# @name hyphenVehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{plateOwner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "LP-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0832", "brand": "Opel", "model": "Corsa", "year": 2016, "mileageKm": 77000, "enginePowerKw": 66, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Lookup by the exact plate (200 expected, owner, both vehicles by plate, matched id)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=LP-{{Digits}}
+
+?? status == 200
+?? js (response.parsedBody.id == plateOwner.id) == true
+?? js response.parsedBody.email == lookup.plate.{{RunId}}@example.test
+?? js (response.parsedBody.matchedVehicleId == hyphenVehicle.id) == true
+?? js response.parsedBody.vehicles.length == 2
+?? js (response.parsedBody.vehicles[0].id == hyphenVehicle.id) == true
+?? js response.parsedBody.vehicles[0].vin == TST{{RunId.toString().slice(-10)}}0832
+?? js response.parsedBody.vehicles[0].enginePowerKw == 66
+?? js response.parsedBody.vehicles[0].drivetrainType == Petrol
+?? js (response.parsedBody.vehicles[1].id == spacedVehicle.id) == true
+
+###
+
+### [Positive][Customers] Lookup with lower case, outer spaces and a doubled inner space (200 expected, the spaced plate)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=%20lq%20%20{{Digits}}%20
+
+?? status == 200
+?? js (response.parsedBody.id == plateOwner.id) == true
+?? js (response.parsedBody.matchedVehicleId == spacedVehicle.id) == true
+
+###
+
+### [Negative][Customers] Lookup by a blank plate (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=%20%20
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate is required.") == true
+
+###
+
+### [Negative][Customers] Lookup without the plate parameter (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate
+
+?? status == 422
+?? js (response.parsedBody.detail === "LicensePlate is required.") == true
+
+###
+
+### [Negative][Customers] Lookup by a one-character plate (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=A
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must be between 2 and 20 characters.") == true
+
+###
+
+### [Negative][Customers] Lookup by a 21-character plate (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate={{'A1'.repeat(10)}}1
+
+?? status == 422
+?? js (response.parsedBody.detail === "License plate must be between 2 and 20 characters.") == true
+
+###
+
+### [Negative][Customers] Lookup by a plate with an unsupported character (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=AB%40123
+
+?? status == 422
+?? js (response.parsedBody.detail.includes('unsupported characters')) == true
+
+###
+
+### [Negative][Customers] Lookup by a plate in a non-European script (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=%D8%A7%D8%A8-123
+
+?? status == 422
+?? js (response.parsedBody.detail.includes('non-European letters')) == true
+
+###
+
+### [Negative][Customers] Lookup by a plate without a digit (422 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=ABCDEF
+
+?? status == 422
+?? js (response.parsedBody.detail.includes('at least one digit')) == true
+
+###
+
+### [Negative][Customers] Lookup by a valid but unknown plate (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-license-plate?licensePlate=NOPE-{{Digits}}
+
+?? status == 404
+?? js (response.parsedBody.detail === "Vehicle not found.") == true
+
+###
+
+### [Cleanup][Customers] Delete the disposable owner (204 expected, both vehicles go with it)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{plateOwner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -1,0 +1,147 @@
+# POST /api/customers uniqueness: email and phone are unique across all people after normalization, the email is checked
+# first; the 409 carries its reason in `detail` and a refused create leaves no row behind. Names are not unique.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+@BaseEmail = create.conflict.{{RunId}}@example.test
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create the base customer holding the email and the phone (201 expected)
+# @name baseCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Base", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "{{BaseEmail}}", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 201
+
+###
+
+### [Negative][Customers] The same email again (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Second", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "{{BaseEmail}}", "phoneNumber": null }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Negative][Customers] The same email in upper case with spaces (409 expected, compared after normalization)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Second", "middleName": null, "lastName": "Holder-{{Tag}}", "email": " {{BaseEmail.toUpperCase()}} ", "phoneNumber": null }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Negative][Customers] The same phone written in national format (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Second", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "create.conflict.phone.{{RunId}}@example.test", "phoneNumber": "06 70 {{Digits}}" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this phone number already exists.") == true
+
+###
+
+### [Negative][Customers] Email and phone both taken (409 expected, the email is reported first)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Second", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "{{BaseEmail}}", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Negative][Customers] A mechanic's email is taken too (409 expected, uniqueness spans all people)
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Second", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "{{AdminEmail}}", "phoneNumber": null }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Positive][Customers] The same names with another email and no phone are fine (201 expected, names are not unique)
+# @name twinCustomer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Base", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "create.conflict.twin.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Only the base customer and its twin exist, the refused creates left nothing (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search={{Tag}}&pageSize=10
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Cleanup][Customers] Delete the base customer (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{baseCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete the twin (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{twinCustomer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

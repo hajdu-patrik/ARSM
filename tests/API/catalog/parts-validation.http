@@ -1,14 +1,12 @@
+# POST /api/parts input rules: required number and name, number at most 40, name at most 120, price 0..100,000,000, VAT
+# 5/18/27 (422, reason in `detail`; exact limits pass). More: parts-vat-rates.http, parts-conflicts.http.
+
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
-@ValidPartNumber = ZZV{{RunId}}A
-@FixturePartNumber = OLF-1001
-@LowercaseFixturePartNumber = olf-1001
-@NonExistentPartId = 999999999
-@OverLengthPartNumber = P9999999999999999999999999999999999999999
-@OverLengthName = N999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+@Key = ZZV{{RunId}}
 
 ### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
@@ -16,16 +14,12 @@ Origin: {{WebUI_Origin}}
 
 ###
 
-### [Setup][Parts] Login as admin for validation tests
-# @name csrfSource1
+### [Setup][Parts] Login as admin (200 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -35,180 +29,174 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Parts] Create part with missing part number (422 expected)
+### [Negative][Parts] Empty part number (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "",
-  "name": "Valid Name",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "", "name": "Valid Name", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "PartNumber and Name are required.") == true
 
 ###
 
-### [Negative][Parts] Create part with missing name (422 expected)
+### [Negative][Parts] Whitespace-only name (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "   ", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "PartNumber and Name are required.") == true
 
 ###
 
-### [Negative][Parts] Create part with part number over 40 characters (422 expected)
+### [Negative][Parts] Part number of 41 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{OverLengthPartNumber}}",
-  "name": "Valid Name",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{'P'.repeat(41)}}", "name": "Valid Name", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "PartNumber must be at most 40 characters.") == true
 
 ###
 
-### [Negative][Parts] Create part with name over 120 characters (422 expected)
+### [Negative][Parts] Name of 121 characters (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "{{OverLengthName}}",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "{{'N'.repeat(121)}}", "netUnitPrice": 100, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Name must be at most 120 characters.") == true
 
 ###
 
-### [Negative][Parts] Create part with negative net unit price (422 expected)
+### [Negative][Parts] Negative net price (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "Valid Name",
-  "netUnitPrice": -1,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "Valid Name", "netUnitPrice": -0.01, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][Parts] Create part with net unit price over 100000000 (422 expected)
+### [Negative][Parts] Net price over 100,000,000 (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "Valid Name",
-  "netUnitPrice": 100000000.01,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "Valid Name", "netUnitPrice": 100000000.01, "vatRatePercent": 27 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][Parts] Create part with unsupported VAT rate (422 expected)
+### [Negative][Parts] Unsupported VAT rate 10 (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "Valid Name",
-  "netUnitPrice": 100,
-  "vatRatePercent": 10
-}
+{ "partNumber": "{{Key}}", "name": "Valid Name", "netUnitPrice": 100, "vatRatePercent": 10 }
 
 ?? status == 422
+?? js (response.parsedBody.detail === "VAT rate must be 5, 18, or 27.") == true
 
 ###
 
-### [Negative][Parts] Create part with duplicate part number matching the shared fixture key (created by tests/API/_setup) (409 expected)
+### [Negative][Parts] A bad price and a bad VAT together (422 expected, the price is reported first)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{FixturePartNumber}}",
-  "name": "Duplicate Check",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "Valid Name", "netUnitPrice": -1, "vatRatePercent": 10 }
 
-?? status == 409
+?? status == 422
+?? js (response.parsedBody.detail === "Amount must be at least 0 and at most 100,000,000.") == true
 
 ###
 
-### [Negative][Parts] Lowercase part number normalizes and collides with existing uppercase key (409 expected)
+### [Negative][Parts] A non-numeric price fails model binding (400 expected, never a server error)
 POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{LowercaseFixturePartNumber}}",
-  "name": "Duplicate Lowercase Check",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27
-}
+{ "partNumber": "{{Key}}", "name": "Valid Name", "netUnitPrice": "abc", "vatRatePercent": 27 }
 
-?? status == 409
+?? status == 400
 
 ###
 
-### [Negative][Parts] Update non-existent part (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentPartId}}
+### [Positive][Parts] The lower limits pass: price 0, a 40-character number, a 120-character name (201 expected)
+# @name lowest
+POST {{AutoService_ApiService_HostAddress}}/api/parts
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "partNumber": "{{ValidPartNumber}}",
-  "name": "Ghost Update",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": 1
-}
+{ "partNumber": "{{Key}}{{'L'.repeat(40 - Key.length)}}", "name": "{{'N'.repeat(120)}}", "netUnitPrice": 0, "vatRatePercent": 5 }
 
-?? status == 404
+?? status == 201
+?? js response.parsedBody.partNumber.length == 40
+?? js response.parsedBody.name.length == 120
+?? js response.parsedBody.netUnitPrice == 0
+?? js response.parsedBody.grossUnitPrice == 0
 
 ###
 
-### [Negative][Parts] Delete non-existent part (404 expected)
-DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{NonExistentPartId}}
+### [Positive][Parts] The upper limit passes: price 100,000,000 (201 expected, gross 127,000,000.00)
+# @name highest
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}H", "name": "Highest Price", "netUnitPrice": 100000000, "vatRatePercent": 27 }
+
+?? status == 201
+?? js response.parsedBody.netUnitPrice == 100000000
+?? js response.parsedBody.grossUnitPrice == 127000000
+
+###
+
+### [Positive][Parts] None of the refused requests created a row (200 expected, only the two boundary parts exist)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 2
+
+###
+
+### [Cleanup][Parts] Delete the lowest-limit part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{lowest.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 
-?? status == 404
+?? status == 204
+
+###
+
+### [Cleanup][Parts] Delete the highest-limit part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{highest.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

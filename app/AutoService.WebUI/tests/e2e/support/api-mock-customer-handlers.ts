@@ -1,9 +1,10 @@
 import type { Route } from '@playwright/test';
-import type { CreateVehicleRequest } from '../../../src/types/customers/customers.types';
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
-import { createVehicle, getLookupName } from './api-mock-data';
+import { getLookupName } from './api-mock-data';
+import { handleCreateCustomer, handleDeleteCustomer, handleUpdateCustomer } from './api-mock-customer-mutations';
+import { handleCreateVehicle, handleDeleteVehicle, handleUpdateVehicle } from './api-mock-vehicle-mutations';
 import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson } from './api-mock-response';
 
@@ -35,6 +36,22 @@ export async function tryHandleCustomerRoute(
         || compareText(left.firstName, right.firstName)
         || left.id - right.id,
     });
+    return true;
+  }
+
+  if (path === '/api/customers' && method === 'POST') {
+    await handleCreateCustomer(route, state);
+    return true;
+  }
+
+  const customerMatch = /^\/api\/customers\/(\d+)$/.exec(path);
+  if (customerMatch && method === 'PUT') {
+    await handleUpdateCustomer(route, state, Number(customerMatch[1]));
+    return true;
+  }
+
+  if (customerMatch && method === 'DELETE') {
+    await handleDeleteCustomer(route, state, options, Number(customerMatch[1]));
     return true;
   }
 
@@ -83,9 +100,7 @@ async function tryHandleCustomerNestedRoute(
   }
 
   if (customerVehiclesMatch && method === 'POST') {
-    const customerId = Number(customerVehiclesMatch[1]);
-    const createdVehicle = createVehicle(state, customerId, route.request().postDataJSON() as CreateVehicleRequest);
-    await fulfillJson(route, createdVehicle, 201);
+    await handleCreateVehicle(route, state, Number(customerVehiclesMatch[1]));
     return true;
   }
 
@@ -112,6 +127,16 @@ async function tryHandleCustomerNestedRoute(
     }
 
     await fulfillJson(route, vehicle);
+    return true;
+  }
+
+  if (vehicleMatch && method === 'PUT') {
+    await handleUpdateVehicle(route, state, Number(vehicleMatch[1]));
+    return true;
+  }
+
+  if (vehicleMatch && method === 'DELETE') {
+    await handleDeleteVehicle(route, state, options, Number(vehicleMatch[1]));
     return true;
   }
 

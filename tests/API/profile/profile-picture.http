@@ -1,5 +1,5 @@
-# No picture ever gets uploaded here, so every check proves the no-picture-yet / never-304 paths only;
-# the genuine ETag-match round trip is covered by profile-picture-upload-check.py - see tests/CLAUDE.md.
+# The no-picture state of the picture routes and their authorization; each session deletes its own picture first (200 even
+# when none exists). Uploads and ETag/304: profile-picture-upload-check.py; the stream: profile-picture-updates-check.py.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -21,10 +21,7 @@ POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -34,7 +31,7 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Profile] Logout admin before the non-admin mechanic session
+### [Setup][Profile] Logout admin before the non-admin mechanic session (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -43,16 +40,13 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Login as non-admin mechanic, capture their own person id
+### [Setup][Profile] Login as the plain mechanic, capture their own person id
 # @name nonAdminPictureLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{NonAdminEmail}}",
-  "password": "{{NonAdminPassword}}"
-}
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -62,103 +56,61 @@ Content-Type: application/json
 
 ###
 
-### [Positive][Profile] Get own profile picture (200/304 if a picture exists, 404 if none)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+### [Positive][Profile] Delete the own picture, which answers 200 whether or not one exists (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
 
-?? status != 401
-?? status != 403
-?? status < 500
+?? status == 200
+?? js (response.parsedBody.message === "Profile picture removed.") == true
 
 ###
 
-### [Positive][Profile] Conditional get own profile picture with a non-matching ETag
-# Never 304 here: the placeholder If-None-Match value cannot match a real stored ETag, and when no
-# picture exists the handler returns 404 before If-None-Match is even read.
+### [Positive][Profile] The profile reports no picture (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js response.parsedBody.hasProfilePicture == false
+
+###
+
+### [Negative][Profile] Get own picture while none is stored (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+?? status == 404
+
+###
+
+### [Negative][Profile] A conditional get of a missing picture is still 404, never 304 (404 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 If-None-Match: "no-picture-uploaded-by-this-file"
 
-?? status != 304
-?? status != 401
-?? status != 403
-?? status < 500
+?? status == 404
 
 ###
 
-### [Negative][Profile] Non-admin cannot get the admin's profile picture by person id (403 expected)
+### [Negative][Profile] Get own picture through the id route while none is stored (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
+
+?? status == 404
+
+###
+
+### [Negative][Profile] A plain mechanic cannot get the admin's picture by person id (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{adminPictureLogin.personId}}
 
 ?? status == 403
 
 ###
 
-### [Setup][Profile] Logout non-admin before admin picture checks
-POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 204
-
-###
-
-### [Setup][Profile] Login as admin for person-id picture checks
-# @name Login
-POST {{AutoService_ApiService_HostAddress}}/api/auth/login
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
-
-{{
-  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
-}}
-
-?? status == 200
-
-###
-
-### [Positive][Profile] Admin can get the mechanic's profile picture by person id (200/304 if a picture exists, 404 if none)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
-
-?? status != 401
-?? status != 403
-?? status < 500
-
-###
-
-### [Positive][Profile] Admin conditional get with a non-matching ETag (never 304, see file header)
-GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
-If-None-Match: "no-picture-uploaded-by-this-file"
-
-?? status != 304
-?? status != 401
-?? status != 403
-?? status < 500
-
-###
-
-### [Negative][Profile] Get profile picture for non-existent person id (404 expected)
+### [Negative][Profile] The id route answers 403 for a plain mechanic even for an id that does not exist (403 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPersonId}}
 
-?? status == 404
+?? status == 403
 
 ###
 
-### [Manual][Profile] Open realtime profile picture updates stream (authorized SSE)
-# SSE streams never complete a normal HTTP response, so this is not automated; verify manually by
-# opening GET .../profile/picture/updates and confirming a "profile-picture-updated" event on change.
-
-###
-
-### [Note][Profile] Multipart upload edge checks are automated by the local test runner
-# python scripts/run-local-test-suite.py http runs profile-picture-upload-check.py after HTTPYAC for
-# the multipart upload, magic-byte and stored-ETag checks this file skips - see tests/CLAUDE.md.
-
-###
-
-### [Positive][Profile] Remove own (admin) profile picture (200 expected)
+### [Positive][Profile] Deleting again is idempotent (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -167,7 +119,71 @@ X-CSRF-Token: {{CsrfToken}}
 
 ###
 
-### [Setup][Profile] Logout before unauthenticated picture checks
+### [Setup][Profile] Logout the plain mechanic before the admin picture checks (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Profile] Login as admin for the person-id picture checks
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][Profile] Delete the admin's own picture, so the checks below start without one (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200
+?? js (response.parsedBody.message === "Profile picture removed.") == true
+
+###
+
+### [Negative][Profile] The admin may ask for a mechanic's picture by id, which has none (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
+
+?? status == 404
+
+###
+
+### [Negative][Profile] A conditional admin get of a mechanic without a picture is 404, never 304 (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{nonAdminPictureLogin.personId}}
+If-None-Match: "no-picture-uploaded-by-this-file"
+
+?? status == 404
+
+###
+
+### [Negative][Profile] The admin gets 404 for a person id that does not exist (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/{{NonExistentPersonId}}
+
+?? status == 404
+
+###
+
+### [Negative][Profile] The admin's own picture is missing too (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
+
+?? status == 404
+
+###
+
+### [Setup][Profile] Logout before the unauthenticated picture checks (204 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -186,8 +202,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture
 
 ### [Negative][Profile] Unauthenticated get profile picture by person id (401 expected)
 # @no-cookie-jar
-# Any integer id works: the group's RequireAuthorization answers 401 before the handler loads the person,
-# and a fixed id keeps this check independent of whether an earlier login in this file succeeded.
+# Any integer id works: the group's RequireAuthorization answers 401 before the handler loads the person.
 GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/999999
 
 ?? status == 401
@@ -197,6 +212,15 @@ GET {{AutoService_ApiService_HostAddress}}/api/profile/picture/999999
 ### [Negative][Profile] Unauthenticated delete profile picture (401 expected)
 # @no-cookie-jar
 DELETE {{AutoService_ApiService_HostAddress}}/api/profile/picture
+Origin: {{WebUI_Origin}}
+
+?? status == 401
+
+###
+
+### [Negative][Profile] Unauthenticated picture upload (401 expected)
+# @no-cookie-jar
+PUT {{AutoService_ApiService_HostAddress}}/api/profile/picture
 Origin: {{WebUI_Origin}}
 
 ?? status == 401

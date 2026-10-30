@@ -85,6 +85,20 @@ export async function tryHandleAdminRoute(
   return false;
 }
 
+/** The ASP.NET Identity policy of the API (8 characters, non-alphanumeric, digit, lower, upper) with its default
+ * descriptions, keyed by error code in the order Identity reports them. */
+function identityPasswordErrors(password: string): Record<string, string[]> {
+  const rules: readonly (readonly [code: string, description: string, fails: boolean])[] = [
+    ['PasswordTooShort', 'Passwords must be at least 8 characters.', password.length < 8],
+    ['PasswordRequiresNonAlphanumeric', 'Passwords must have at least one non alphanumeric character.', !/[^A-Za-z0-9]/.test(password)],
+    ['PasswordRequiresDigit', "Passwords must have at least one digit ('0'-'9').", !/\d/.test(password)],
+    ['PasswordRequiresLower', "Passwords must have at least one lowercase ('a'-'z').", !/[a-z]/.test(password)],
+    ['PasswordRequiresUpper', "Passwords must have at least one uppercase ('A'-'Z').", !/[A-Z]/.test(password)],
+  ];
+
+  return Object.fromEntries(rules.filter(([, , fails]) => fails).map(([code, description]): [string, string[]] => [code, [description]]));
+}
+
 /** `POST /api/admin/mechanics/{id}/password-reset`: 404 for an unknown mechanic, 403 for an admin, 400 with the
  * Identity policy codes for a weak password, else 200 with `emailSent`. */
 async function handlePasswordReset(route: Route, state: MockApiState, personId: number): Promise<void> {
@@ -100,13 +114,9 @@ async function handlePasswordReset(route: Route, state: MockApiState, personId: 
   }
 
   const { temporaryPassword = '' } = route.request().postDataJSON() as { temporaryPassword?: string };
-  if (temporaryPassword.length < 8) {
-    await fulfillJson(route, { errors: { PasswordTooShort: ['Passwords must be at least 8 characters.'] } }, 400);
-    return;
-  }
-
-  if (!/[A-Z]/.test(temporaryPassword)) {
-    await fulfillJson(route, { errors: { PasswordRequiresUpper: ["Passwords must have at least one uppercase ('A'-'Z')."] } }, 400);
+  const errors = identityPasswordErrors(temporaryPassword);
+  if (Object.keys(errors).length > 0) {
+    await fulfillJson(route, { errors }, 400);
     return;
   }
 

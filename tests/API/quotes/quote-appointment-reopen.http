@@ -1,0 +1,135 @@
+# The lock follows the appointment state: cancelling it locks its draft quote, reopening it (Cancelled to InProgress) unlocks
+# the quote again. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.reopen.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0743
+
+### [Setup][QuoteReopen] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteReopen] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteReopen", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteReopen] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QRO-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteReopen] Create the appointment (201 expected, admin assigned, InProgress)
+# @name appointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Quote reopen fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][QuoteReopen] Create the draft quote linked to the appointment (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Reopen Quote {{RunId}}", "appointmentId": {{appointment.id}} }
+
+?? status == 201
+?? js (response.parsedBody.isLocked === false) == true
+
+### [Setup][QuoteReopen] Cancel the appointment (200 expected)
+# @name cancelled
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Cancelled", "version": {{appointment.version}} }
+
+?? status == 200
+
+### [Negative][QuoteReopen] The quote is locked while the appointment is cancelled (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Locked edit", "notes": null, "version": {{quote.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_locked_appointment_cancelled
+
+### [Positive][QuoteReopen] Reopen the appointment (200 expected, Cancelled to InProgress)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{appointment.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "InProgress", "version": {{cancelled.version}} }
+
+?? status == 200
+
+### [Positive][QuoteReopen] The quote reports no lock any more (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.isLocked === false && response.parsedBody.lockReason == null && response.parsedBody.canDelete === true) == true
+
+### [Positive][QuoteReopen] The header can be edited again (200 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Reopen Quote {{RunId}} edited", "notes": null, "version": {{quote.version}} }
+
+?? status == 200
+?? js (response.parsedBody.title === `Reopen Quote ${RunId} edited`) == true
+
+### [Positive][QuoteReopen] A new quote can be linked to the reopened appointment again (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Reopen Second {{RunId}}", "appointmentId": {{appointment.id}} }
+
+?? status == 201
+
+### [Cleanup][QuoteReopen] Delete the disposable customer, cascading vehicle, appointment and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

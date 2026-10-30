@@ -1,0 +1,196 @@
+# Quote lines are snapshots (D4/D5/D40): a catalog price, name or VAT change leaves existing lines alone, an update without
+# override re-snapshots, a line can switch kind, and deleting the catalog row keeps the line. Disposable customer and catalog rows.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.snapshot.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0726
+
+### [Setup][QuoteSnapshot] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteSnapshot] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteSnapshot", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QSN-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Create the disposable part, 1234 net at 27% (201 expected)
+# @name part
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "ZZS{{RunId}}A", "name": "Quote Snapshot Part", "netUnitPrice": 1234, "vatRatePercent": 27 }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Create the disposable labor type, 8000 net per hour at 18% (201 expected)
+# @name labor
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "ZZS{{RunId}}A", "name": "Quote Snapshot Labor", "hourlyNetRate": 8000, "vatRatePercent": 18 }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Create the draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Quote Snapshot {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Add the catalog part line, quantity 2 (201 expected)
+# @name partLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{part.id}}, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][QuoteSnapshot] Add the catalog labor line, quantity 1 (201 expected)
+# @name laborLine
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "laborTypeId": {{labor.id}}, "version": {{partLine.version}} }
+
+?? status == 201
+
+### [Positive][QuoteSnapshot] Change the catalog part's name, price and VAT (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{part.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "ZZS{{RunId}}A", "name": "Quote Snapshot Part Renamed", "netUnitPrice": 2000, "vatRatePercent": 18, "version": {{part.version}} }
+
+?? status == 204
+
+### [Positive][QuoteSnapshot] The existing line kept its old snapshot and the totals did not move (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines[0].description === "Quote Snapshot Part" && response.parsedBody.lines[0].netUnitPrice === 1234 && response.parsedBody.lines[0].vatRatePercent === 27 && response.parsedBody.lines[0].netAmount === 2468) == true
+?? js (response.parsedBody.totalNet === 10468 && response.parsedBody.totalVat === 2106.36 && response.parsedBody.totalGross === 12574.36 && response.parsedBody.version === laborLine.version) == true
+
+### [Positive][QuoteSnapshot] Updating the line without overrides takes the current catalog values (200 expected)
+# @name resnapshot
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{partLine.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{part.id}}, "version": {{laborLine.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines[0].id === partLine.lines[0].id && response.parsedBody.lines[0].sortOrder === 1 && response.parsedBody.lines[0].description === "Quote Snapshot Part Renamed" && response.parsedBody.lines[0].netUnitPrice === 2000 && response.parsedBody.lines[0].vatRatePercent === 18) == true
+?? js (response.parsedBody.lines[0].netAmount === 4000 && response.parsedBody.lines[0].vatAmount === 720 && response.parsedBody.lines[0].grossAmount === 4720) == true
+?? js (response.parsedBody.lines[1].netUnitPrice === 8000 && response.parsedBody.totalNet === 12000 && response.parsedBody.totalVat === 2160 && response.parsedBody.totalGross === 14160) == true
+
+### [Positive][QuoteSnapshot] A labor line can become a part line (200 expected, the labor reference is cleared)
+# @name switched
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{laborLine.lines[1].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{part.id}}, "version": {{resnapshot.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines[1].lineKind === "Part" && response.parsedBody.lines[1].partId === part.id && response.parsedBody.lines[1].laborTypeId == null && response.parsedBody.lines[1].sortOrder === 2) == true
+?? js (response.parsedBody.lines[1].description === "Quote Snapshot Part Renamed" && response.parsedBody.lines[1].netAmount === 2000 && response.parsedBody.lines[1].vatAmount === 360 && response.parsedBody.lines[1].grossAmount === 2360) == true
+?? js (response.parsedBody.totalNet === 6000 && response.parsedBody.totalVat === 1080 && response.parsedBody.totalGross === 7080) == true
+
+### [Positive][QuoteSnapshot] Delete the catalog part (204 expected, the quote lines stay)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{part.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Positive][QuoteSnapshot] Both lines kept their snapshot and lost only the reference, D4 SetNull (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 2 && response.parsedBody.lines.every(l => l.partId == null && l.description === "Quote Snapshot Part Renamed" && l.netUnitPrice === 2000 && l.vatRatePercent === 18)) == true
+?? js (response.parsedBody.totalNet === 6000 && response.parsedBody.totalGross === 7080 && response.parsedBody.version === switched.version) == true
+
+### [Negative][QuoteSnapshot] Referencing the deleted part again is a 404 (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{partLine.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "partId": {{part.id}}, "version": {{switched.version}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Part not found
+
+### [Positive][QuoteSnapshot] An orphaned line can still be edited by hand (200 expected, no catalog needed)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{partLine.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Edited by hand", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{switched.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines[0].description === "Edited by hand" && response.parsedBody.lines[0].partId == null && response.parsedBody.lines[0].grossAmount === 127) == true
+
+### [Cleanup][QuoteSnapshot] Delete the disposable labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{labor.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][QuoteSnapshot] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

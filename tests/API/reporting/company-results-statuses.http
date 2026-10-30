@@ -1,0 +1,191 @@
+# The other status rows: a draft counts only as a draft, a rejected quote moves the rejected row (net 100, gross 127) and a sent
+# one the pending row (net 10, gross 11.80, valid 30 days). Deltas against baselines, so other data cancels out.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@ThisYear = {{new Date().getUTCFullYear()}}
+@ThisMonth = {{new Date().getUTCMonth() + 1}}
+
+### [Setup][Reporting] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Reporting] Login as admin, who also passes MechanicOnly (200 expected)
+# @name csrfSource1
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
+# @name anchorQuotes
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+
+{{
+  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Baseline year report before any draft exists (200 expected)
+# @name baseDraftless
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Create the draft that gets rejected (201 expected)
+# @name quoteB
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Company result rejected {{RunId}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Reporting] Add its line, 1 x 100 at 27% (201 expected)
+# @name lineB
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteB.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Rejected part", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quoteB.version}} }
+
+?? status == 201
+
+###
+
+### [Setup][Reporting] Create the draft that stays pending (201 expected)
+# @name quoteD
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Company result pending {{RunId}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Reporting] Add its line, 1 x 10 at 18% (201 expected)
+# @name lineD
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteD.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Pending part", "netUnitPrice": 10, "vatRatePercent": 18, "version": {{quoteD.version}} }
+
+?? status == 201
+
+###
+
+### [Positive][Reporting] Two new drafts raise only the draft count (200 expected)
+# @name baseYear
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
+
+?? status == 200
+?? js (response.parsedBody.draftQuoteCount - baseDraftless.draftQuoteCount == 2) == true
+?? js (response.parsedBody.accepted.quoteCount == baseDraftless.accepted.quoteCount && response.parsedBody.pending.quoteCount == baseDraftless.pending.quoteCount && response.parsedBody.rejected.quoteCount == baseDraftless.rejected.quoteCount) == true
+
+###
+
+### [Setup][Reporting] Baseline month report (200 expected)
+# @name baseMonth
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}&month={{ThisMonth}}
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Send the quote that gets rejected (200 expected)
+# @name sentB
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteB.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{lineB.version}} }
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Reject it (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteB.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Rejected", "version": {{sentB.version}} }
+
+?? status == 200
+
+###
+
+### [Setup][Reporting] Send the quote that stays pending (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quoteD.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{lineD.version}} }
+
+?? status == 200
+?? js response.parsedBody.isExpired == false
+
+###
+
+### [Positive][Reporting] Year report: rejected and pending rows moved by exactly one quote, drafts left, accepted and expired untouched (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
+
+?? status == 200
+?? js (response.parsedBody.draftQuoteCount - baseYear.draftQuoteCount == -2) == true
+?? js (response.parsedBody.rejected.quoteCount - baseYear.rejected.quoteCount == 1) == true
+?? js (Math.round((response.parsedBody.rejected.net - baseYear.rejected.net) * 100) == 10000 && Math.round((response.parsedBody.rejected.gross - baseYear.rejected.gross) * 100) == 12700) == true
+?? js (response.parsedBody.pending.quoteCount - baseYear.pending.quoteCount == 1) == true
+?? js (Math.round((response.parsedBody.pending.net - baseYear.pending.net) * 100) == 1000 && Math.round((response.parsedBody.pending.gross - baseYear.pending.gross) * 100) == 1180) == true
+?? js (response.parsedBody.accepted.quoteCount == baseYear.accepted.quoteCount && response.parsedBody.expired.quoteCount == baseYear.expired.quoteCount) == true
+?? js (JSON.stringify(response.parsedBody.acceptedVatBreakdown) == JSON.stringify(baseYear.acceptedVatBreakdown)) == true
+
+###
+
+### [Positive][Reporting] Month report: the same rows move in the creation month (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}&month={{ThisMonth}}
+
+?? status == 200
+?? js (response.parsedBody.draftQuoteCount - baseMonth.draftQuoteCount == -2) == true
+?? js (response.parsedBody.rejected.quoteCount - baseMonth.rejected.quoteCount == 1 && response.parsedBody.pending.quoteCount - baseMonth.pending.quoteCount == 1) == true
+?? js (response.parsedBody.accepted.quoteCount == baseMonth.accepted.quoteCount && response.parsedBody.months[0].acceptedQuoteCount == baseMonth.months[0].acceptedQuoteCount) == true
+
+###
+
+### [Setup][Reporting] Logout admin (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

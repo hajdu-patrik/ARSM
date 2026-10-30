@@ -94,4 +94,77 @@ test.describe('Error route edge cases', () => {
       expect(foreignRequests).toEqual([]);
     });
   }
+
+  test('moves a signed-in user to the scheduler by itself after the countdown', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.notfound-countdown@example.test',
+      isAuthenticated: true,
+    });
+
+    await page.goto('/non-existent-edge-route');
+    await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+    await expect(page.getByText('Redirect in')).toBeVisible();
+
+    await expect(page).toHaveURL(/\/$/, { timeout: 7000 });
+    await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
+  });
+
+  test('offers the login page to a signed-out visitor and goes there at once on click', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: false, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.notfound-login@example.test',
+      isAuthenticated: false,
+    });
+
+    await page.goto('/non-existent-edge-route');
+    await page.getByRole('button', { name: 'Go to login' }).click();
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('button', { name: 'Go to scheduler' })).toHaveCount(0);
+  });
+
+  test('the reload button of the server-error page returns to the requested page at once', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.server-error-cta@example.test',
+      isAuthenticated: true,
+    });
+
+    await page.goto('/500?returnTo=%2Fquotes');
+    await expect(page.getByRole('heading', { name: 'Server error' })).toBeVisible();
+    await expect(page.getByText('Reload in')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Reload page' }).click();
+
+    await expect(page).toHaveURL(/\/quotes$/);
+    await expect(page.getByTestId('quotes-search-input')).toBeVisible();
+  });
+
+  test('a server-error return target that is the error page itself reloads /500 instead of looping through it', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: false, language: 'en' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.server-error-self@example.test',
+      isAuthenticated: false,
+    });
+
+    await page.goto('/500?returnTo=%2F500%3FreturnTo%3D%252Fquotes');
+    await page.getByRole('button', { name: 'Reload page' }).click();
+
+    await expect(page).toHaveURL(/\/500\?returnTo=%2F500%3FreturnTo%3D%252Fquotes$/);
+    await expect(page.getByRole('heading', { name: 'Server error' })).toBeVisible();
+  });
+
+  test('shows the not-found page in Hungarian with the Hungarian sign-in offer', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: false, language: 'hu' });
+    await installApiMocks(page, {
+      profileEmail: 'edge.notfound-hu@example.test',
+      isAuthenticated: false,
+    });
+
+    await page.goto('/non-existent-edge-route');
+
+    await expect(page.getByRole('heading', { name: 'Oldal nem található' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ugrás a bejelentkezéshez' })).toBeVisible();
+  });
 });

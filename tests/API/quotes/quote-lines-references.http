@@ -1,0 +1,201 @@
+# Catalog references and line addressing of /api/quotes/{id}/lines: kind and reference must agree (D4/D5), unknown part or
+# labor type is 404, a line id of another quote is 404. Disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.linerefs.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0729
+@MissingId = 999999999
+
+### [Setup][LineRefs] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][LineRefs] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteLineRefs", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][LineRefs] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QLF-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][LineRefs] Create the first draft quote (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Line Refs One {{RunId}}" }
+
+?? status == 201
+
+### [Setup][LineRefs] Add its seed line (201 expected)
+# @name seed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][LineRefs] Create the second draft quote (201 expected)
+# @name other
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Line Refs Two {{RunId}}" }
+
+?? status == 201
+
+### [Setup][LineRefs] Add its seed line (201 expected)
+# @name otherSeed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{other.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Other seed line", "netUnitPrice": 200, "vatRatePercent": 27, "version": {{other.version}} }
+
+?? status == 201
+
+### [Negative][LineRefs] A part line must not reference a labor type (422 expected, D4/D5)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "laborTypeId": {{MissingId}}, "description": "Mixed", "netUnitPrice": 1, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes A part line cannot reference a labor type
+
+### [Negative][LineRefs] A labor line must not reference a part (422 expected, D4/D5)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "partId": {{MissingId}}, "description": "Mixed", "netUnitPrice": 1, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes A labor line cannot reference a part
+
+### [Negative][LineRefs] An unknown part id is a 404 (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{MissingId}}, "version": {{seed.version}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Part not found
+
+### [Negative][LineRefs] An unknown labor type id is a 404 (404 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1, "laborTypeId": {{MissingId}}, "version": {{seed.version}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Labor type not found
+
+### [Negative][LineRefs] Updating with an unknown part id is a 404 too (404 expected, add and update share the lookup)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "partId": {{MissingId}}, "version": {{seed.version}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Part not found
+
+### [Negative][LineRefs] Updating an unknown line is a 404 (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{MissingId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Ghost", "netUnitPrice": 1, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 404
+?? js response.parsedBody.detail includes Quote line not found
+
+### [Negative][LineRefs] Deleting an unknown line is a 404 (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{MissingId}}?version={{seed.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.detail includes Quote line not found
+
+### [Negative][LineRefs] A line of another quote cannot be updated through this one (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{otherSeed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 9, "description": "Hijacked", "netUnitPrice": 1, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 404
+
+### [Negative][LineRefs] A line of another quote cannot be deleted through this one (404 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{otherSeed.lines[0].id}}?version={{seed.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+
+### [Positive][LineRefs] Both quotes are untouched (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{other.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].description === "Other seed line" && response.parsedBody.lines[0].quantity === 1 && response.parsedBody.version === otherSeed.version) == true
+
+### [Positive][LineRefs] The first quote still holds only its seed line (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].description === "Seed line" && response.parsedBody.version === seed.version) == true
+
+### [Cleanup][LineRefs] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

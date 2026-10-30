@@ -1,22 +1,22 @@
-# Split out of quotes-validation.http to keep both files under the 250-line
-# limit once real status assertions were added to every block.
+# PUT /api/quotes/{id}/valid-until (D22/D23): a past date is refused in every status, a draft takes any future date, a sent
+# quote only a strictly later one, offsets are stored as UTC. Decided quotes are in quote-*-terminal.http. Disposable customer.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.validity.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0736
+@MissingId = 999999999
 
-### [Setup][QuotesValidityMatrix] Login as admin (MechanicOnly prerequisite)
-# @name csrfSource1
+### [Setup][QuoteValidity] Login as admin (200 expected)
+# @name adminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
@@ -24,144 +24,160 @@ Content-Type: application/json
 
 ?? status == 200
 
-###
-
-### [Setup][QuotesValidityMatrix] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# Vehicle ids depend on the local DB's insert history, so the anchor vehicle is resolved via the fixture anchor
-# quote's stable title (created by tests/API/_setup) instead of a literal id that would 404 on another machine.
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
-
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
-
-?? status == 200
-
-###
-
-### [Setup][QuotesValidityMatrix] Create a draft quote to drive the ValidUntil status matrix (201 expected)
-# @name sentQuote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+### [Setup][QuoteValidity] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "ValidUntil Matrix Quote {{RunId}}"
-}
+{ "firstName": "QuoteValidity", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
-###
-
-### [Setup][QuotesValidityMatrix] Add a line so the quote can be sent (201 expected)
-# @name sentQuoteLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/lines
+### [Setup][QuoteValidity] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "lineKind": "Part",
-  "quantity": 1,
-  "description": "ValidUntil matrix fixture line",
-  "netUnitPrice": 100,
-  "vatRatePercent": 27,
-  "version": {{sentQuote.version}}
-}
+{ "licensePlate": "QVY-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
-###
-
-### [Setup][QuotesValidityMatrix] Transition to Sent (200 expected)
-# @name sentQuoteSent
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+### [Setup][QuoteValidity] Create the draft quote (201 expected)
+# @name draft
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Sent",
-  "version": {{sentQuoteLine.version}}
-}
+{ "title": "Validity Draft {{RunId}}" }
 
-?? status == 200
+?? status == 201
 
-###
-
-### [Negative][QuotesValidityMatrix] Editing the Title of a Sent quote is rejected (409 expected, Draft-only lock)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}
+### [Negative][QuoteValidity] A past date on a draft is refused (422 expected, D22)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}/valid-until
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "title": "Should not apply",
-  "version": {{sentQuoteSent.version}}
-}
-
-?? status == 409
-
-###
-
-### [Positive][QuotesValidityMatrix] Extending a Sent quote's ValidUntil to a later date succeeds (200 expected, D23)
-# @name sentQuoteExtended
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "validUntil": "2031-01-01T00:00:00",
-  "version": {{sentQuoteSent.version}}
-}
-
-?? status == 200
-
-###
-
-### [Negative][QuotesValidityMatrix] Moving a Sent quote's ValidUntil earlier is rejected (422 expected, Sent only allows extension)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{
-  "validUntil": "2030-01-01T00:00:00",
-  "version": {{sentQuoteExtended.version}}
-}
+{ "validUntil": "2020-01-01T00:00:00", "version": {{draft.version}} }
 
 ?? status == 422
+?? js response.parsedBody.detail includes ValidUntil cannot be in the past
 
-###
-
-### [Setup][QuotesValidityMatrix] Transition to Accepted (200 expected)
-# @name sentQuoteAccepted
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/status
+### [Positive][QuoteValidity] A date with an offset is stored as UTC (200 expected, 12:00 at +02:00 is 10:00Z)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}/valid-until
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "status": "Accepted",
-  "version": {{sentQuoteExtended.version}}
-}
+{ "validUntil": "2099-03-01T12:00:00+02:00", "version": {{draft.version}} }
+
+?? status == 200
+?? js (response.parsedBody.validUntil.startsWith("2099-03-01T10:00:00")) == true
+
+### [Negative][QuoteValidity] An unknown quote is a 404 (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{MissingId}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2099-01-01T00:00:00", "version": 1 }
+
+?? status == 404
+?? js response.parsedBody.detail includes Quote not found
+
+### [Setup][QuoteValidity] Create the quote that gets sent (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Validity Sent {{RunId}}" }
+
+?? status == 201
+
+### [Setup][QuoteValidity] Add a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Validity line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Setup][QuoteValidity] Send the quote (200 expected, no-op mail sender in the test environment)
+# @name sent
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
 
 ?? status == 200
 
-###
-
-### [Negative][QuotesValidityMatrix] Editing an Accepted quote's ValidUntil is rejected (409 expected, decided quotes are locked)
-PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{sentQuote.id}}/valid-until
+### [Positive][QuoteValidity] Extending a sent quote to a later date works (200 expected, D23, still Sent)
+# @name extended
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "validUntil": "2032-01-01T00:00:00",
-  "version": {{sentQuoteAccepted.version}}
-}
+{ "validUntil": "2099-01-01T00:00:00", "version": {{sent.version}} }
 
-?? status == 409
+?? status == 200
+?? js (response.parsedBody.validUntil.startsWith("2099-01-01T00:00:00") && response.parsedBody.status === "Sent" && response.parsedBody.version !== sent.version && Math.abs(new Date(response.parsedBody.sentAt) - new Date(sent.sentAt)) < 1000) == true
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.title === sent.title && response.parsedBody.isExpired === false) == true
+
+### [Negative][QuoteValidity] Moving a sent quote's date earlier is refused (422 expected, only extension)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2098-01-01T00:00:00", "version": {{extended.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes can only be extended to a later date while the quote is sent
+
+### [Negative][QuoteValidity] Repeating the current date is not an extension (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "{{extended.validUntil}}", "version": {{extended.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes can only be extended to a later date while the quote is sent
+
+### [Negative][QuoteValidity] A past date on a sent quote is refused (422 expected, the past rule comes first)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2020-01-01T00:00:00", "version": {{extended.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes ValidUntil cannot be in the past
+
+### [Positive][QuoteValidity] The refused changes left the extended date in place (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.validUntil.startsWith("2099-01-01T00:00:00") && response.parsedBody.version === extended.version) == true
+
+### [Cleanup][QuoteValidity] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

@@ -59,6 +59,29 @@ def assert_validate_status(client: HttpClient, step: str, expected: int, results
     assert_status(step, status, {expected}, results)
 
 
+def assert_gated(client: HttpClient, path: str, step: str, results: list[StepResult]) -> None:
+    """Asserts a route answers 403 password_change_required to a session still on a temporary password."""
+    status, body = client.request_json("GET", path)
+    assert_status(step, status, {403}, results)
+    gate_code = json.loads(body or "{}").get("code")
+    assert_condition(f"{step}-names-the-reason", gate_code == "password_change_required", f"gate code was {gate_code!r}.", results)
+
+
+def check_forced_change_gate(session: HttpClient, results: list[StepResult]) -> None:
+    """The gate closes every route but validate, refresh, logout and change-password, and refreshing does not lift it."""
+    assert_gated(session, "/api/customers", "gated-until-password-change", results)
+    assert_gated(session, "/api/profile", "profile-gated-until-password-change", results)
+
+    status, body = session.request_json("GET", VALIDATE_PATH)
+    assert_status("validate-stays-reachable-while-gated", status, {200}, results)
+    flagged = json.loads(body or "{}").get("mustChangePassword")
+    assert_condition("validate-reports-the-flag", flagged is True, f"mustChangePassword was {flagged!r}.", results)
+
+    status, _ = session.request_json("POST", "/api/auth/refresh")
+    assert_status("refresh-stays-reachable-while-gated", status, {204}, results)
+    assert_gated(session, "/api/customers", "still-gated-after-refresh", results)
+
+
 def check_password_change_reset_and_delete(
     base_url: str, origin: str, admin: HttpClient, passwords: tuple[str, str], results: list[StepResult], created: list[int],
 ) -> None:
@@ -77,6 +100,8 @@ def check_password_change_reset_and_delete(
 
     change_password(session_a, password, other_password, "change-password-in-session-a", results)
     assert_validate_status(session_b, "other-session-ended-by-password-change", 401, results)
+    status, _ = session_b.request_json("POST", "/api/auth/refresh")
+    assert_status("other-session-cannot-refresh-after-password-change", status, {401}, results)
     assert_validate_status(session_a, "changing-session-survives", 200, results)
 
     session_c, _ = sign_in(base_url, origin, Credentials(credentials.email, other_password), "login-with-new-password", results)
@@ -89,10 +114,7 @@ def check_password_change_reset_and_delete(
 
     session_d, flagged = sign_in(base_url, origin, credentials, "login-with-temporary-password", results)
     assert_condition("temporary-login-is-flagged", flagged.get("mustChangePassword") is True, f"login body: {flagged}", results)
-    status, body = session_d.request_json("GET", "/api/customers")
-    assert_status("gated-until-password-change", status, {403}, results)
-    gate_code = json.loads(body or "{}").get("code")
-    assert_condition("gate-names-the-reason", gate_code == "password_change_required", f"gate code was {gate_code!r}.", results)
+    check_forced_change_gate(session_d, results)
     change_password(session_d, password, other_password, "change-temporary-password", results)
     status, _ = session_d.request_json("GET", "/api/customers")
     assert_status("ungated-after-password-change", status, {200}, results)

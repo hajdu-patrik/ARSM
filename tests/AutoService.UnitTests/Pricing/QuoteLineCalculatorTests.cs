@@ -42,4 +42,24 @@ public sealed class QuoteLineCalculatorTests
 
         Assert.Equal(new QuoteLineAmounts(expectedNet, expectedVat, expectedGross), amounts);
     }
+
+    [Theory]
+    [InlineData(1.5, 10.10, 27)]
+    [InlineData(0.25, 999.99, 18)]
+    [InlineData(10000, 100000000, 27)]
+    [InlineData(3, 0.01, 5)]
+    public void Calculate_keeps_gross_equal_to_net_plus_vat(decimal quantity, decimal netUnitPrice, int vatRatePercent)
+    {
+        var amounts = QuoteLineCalculator.Calculate(quantity, netUnitPrice, vatRatePercent);
+
+        Assert.Equal(amounts.NetAmount + amounts.VatAmount, amounts.GrossAmount);
+    }
+
+    [Fact]
+    public void Calculate_handles_the_largest_allowed_quantity_and_price_without_overflow()
+    {
+        var amounts = QuoteLineCalculator.Calculate(10_000m, 100_000_000m, 27);
+
+        Assert.Equal(new QuoteLineAmounts(1_000_000_000_000m, 270_000_000_000m, 1_270_000_000_000m), amounts);
+    }
 }

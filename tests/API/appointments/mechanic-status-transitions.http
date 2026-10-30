@@ -1,5 +1,5 @@
-# UpdateStatusAsync has no admin bypass, so the appointment comes from intake (auto-assigns the caller); Completed is terminal, so
-# its disposable customer is deleted at the end. Siblings (file-size limit): -authz.http (non-assigned 403), -reopen.http.
+# Status PUT as the assigned plain mechanic (intake assigns the caller): no-op, case-insensitive names, Cancelled stamps
+# and the invalid values. Completed and reopen: appointment-lifecycle.http, -reopen.http; non-assigned 403: appointment-edit-access.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -8,14 +8,13 @@
 @NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
 @NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
 @RunId = {{$timestamp}}
-@FixtureCustomerEmail = status.transitions.{{RunId}}@example.test
-@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0705
+@CustomerEmail = status.transitions.{{RunId}}@example.test
 
 ### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
-### [Setup][Appointments] Login as non-admin mechanic (session prerequisite, 200 expected)
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
 # @name nonAdminLogin
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
@@ -29,16 +28,6 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Setup][Appointments] Resolve the fixture part OLF-1001 for the quote line (200 expected)
-# @name fixturePart
-GET {{AutoService_ApiService_HostAddress}}/api/parts?search=OLF-1001&pageSize=500
-
-{{
-  exports.PartId = fixturePart.items.find(p => p.partNumber === 'OLF-1001').id;
-}}
-
-?? status == 200
-
 ### [Setup][Appointments] Create the disposable customer (201 expected)
 # @name customer
 POST {{AutoService_ApiService_HostAddress}}/api/customers
@@ -46,7 +35,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "firstName": "Status", "middleName": null, "lastName": "Transitions", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+{ "firstName": "Status", "middleName": null, "lastName": "Transitions", "email": "{{CustomerEmail}}", "phoneNumber": null }
 
 ?? status == 201
 
@@ -57,7 +46,7 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "licensePlate": "MST-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+{ "licensePlate": "MST-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}0705", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
 
 ?? status == 201
 
@@ -68,12 +57,11 @@ Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "customerEmail": "{{FixtureCustomerEmail}}", "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-19T09:00:00", "dueDateTime": "2026-04-20T09:00:00", "taskDescription": "Status-transitions fixture: main appointment" }
+{ "customerEmail": "{{CustomerEmail}}", "vehicleId": {{vehicle.id}}, "scheduledDate": "2026-04-19T09:00:00", "dueDateTime": "2026-04-20T09:00:00", "taskDescription": "Status-transitions fixture" }
 
 ?? status == 201
 
-### [Positive][Appointments] Update appointment status to InProgress (200 expected, no-op since intake already sets it)
-# @name inProgressAppt
+### [Positive][Appointments] InProgress on an InProgress appointment is a no-op that keeps the version (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -82,84 +70,75 @@ Content-Type: application/json
 { "status": "InProgress", "version": {{apptCreate.version}} }
 
 ?? status == 200
+?? js response.parsedBody.status == InProgress
+?? js (response.parsedBody.version == apptCreate.version) == true
 
-### [Setup][Appointments] Create a draft quote linked to the appointment (201 expected)
-# @name quote
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "title": "Status transitions quote {{RunId}}", "appointmentId": {{apptCreate.id}} }
-
-?? status == 201
-
-### [Setup][Appointments] Add the catalog part line so the quote can be sent (201 expected)
-# @name quoteLine
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "lineKind": "Part", "quantity": 1, "partId": {{PartId}}, "version": {{quote.version}} }
-
-?? status == 201
-
-### [Setup][Appointments] Send the quote (200 expected, no-op mail sender in the test environment)
-# @name quoteSent
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "Sent", "version": {{quoteLine.version}} }
-
-?? status == 200
-
-### [Setup][Appointments] Accept the quote, so the appointment may be completed (200 expected)
-POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-Content-Type: application/json
-
-{ "status": "Accepted", "version": {{quoteSent.version}} }
-
-?? status == 200
-
-### [Positive][Appointments] Update appointment status to Completed (200 expected)
-# Response includes completedAt (DateTime) and canceledAt (null).
-# @name completedAppt
+### [Positive][Appointments] The status name is case-insensitive and Cancelled stamps canceledAt (200 expected)
+# @name cancelledAppt
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Completed", "version": {{inProgressAppt.version}} }
+{ "status": "cancelled", "version": {{apptCreate.version}} }
 
 ?? status == 200
+?? js response.parsedBody.status == Cancelled
+?? js (response.parsedBody.canceledAt != null) == true
+?? js (response.parsedBody.completedAt == null) == true
+?? js response.parsedBody.canComplete == false
+?? js response.parsedBody.canLinkQuote == false
+?? js response.parsedBody.canDelete == true
+?? js (response.parsedBody.version != apptCreate.version) == true
 
-### [Negative][Appointments] Claim completed appointment is rejected (422 expected)
-# Self-claim is only allowed for InProgress appointments.
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/claim
-Origin: {{WebUI_Origin}}
-X-CSRF-Token: {{CsrfToken}}
-
-?? status == 422
-?? js response.parsedBody.code == appointment_completed
-
-### [Negative][Appointments] Update appointment status with invalid value (400 expected)
-# Valid statuses are: InProgress, Completed, Cancelled. "Scheduled" is no longer valid.
+### [Positive][Appointments] Cancelled on a Cancelled appointment is a no-op that keeps the stamp (200 expected)
 PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{ "status": "Scheduled", "version": {{completedAppt.version}} }
+{ "status": "Cancelled", "version": {{cancelledAppt.version}} }
+
+?? status == 200
+?? js (response.parsedBody.canceledAt != null) == true
+?? js (response.parsedBody.version == cancelledAppt.version) == true
+
+### [Negative][Appointments] An unknown status name is refused (400, invalid_status)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Scheduled", "version": {{cancelledAppt.version}} }
 
 ?? status == 400
+?? js response.parsedBody.code == invalid_status
+?? js response.parsedBody.error includes InProgress, Completed, Cancelled
 
-### [Negative][Appointments] Update non-existent appointment status (404 expected)
-PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999/status
+### [Negative][Appointments] A missing status is refused (400, invalid_status)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "version": {{cancelledAppt.version}} }
+
+?? status == 400
+?? js response.parsedBody.code == invalid_status
+
+### [Negative][Appointments] An empty status is refused (400, invalid_status)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "", "version": {{cancelledAppt.version}} }
+
+?? status == 400
+?? js response.parsedBody.code == invalid_status
+
+### [Negative][Appointments] An unknown appointment is refused (404, appointment_not_found)
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/99999999/status
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -167,6 +146,25 @@ Content-Type: application/json
 { "status": "InProgress", "version": 1 }
 
 ?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+### [Positive][Appointments] The refused changes left the appointment Cancelled (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+
+?? status == 200
+?? js (response.parsedBody.find(a => a.id == apptCreate.id).status == "Cancelled") == true
+
+### [Negative][Appointments] A numeric status outside the enum is refused, not stored (400, invalid_status)
+# "99" parses as a number but names no status, so it must be rejected like an unknown name.
+PUT {{AutoService_ApiService_HostAddress}}/api/appointments/{{apptCreate.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "99", "version": {{cancelledAppt.version}} }
+
+?? status == 400
+?? js response.parsedBody.code == invalid_status
 
 ### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
 # @name adminLogin
@@ -182,7 +180,7 @@ Content-Type: application/json
 
 ?? status == 200
 
-### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle, appointment and quote (204 expected)
+### [Cleanup][Appointments] Delete the disposable customer, cascading its vehicle and appointment (204 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

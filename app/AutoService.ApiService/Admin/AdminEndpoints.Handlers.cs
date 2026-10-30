@@ -190,7 +190,7 @@ public static partial class AdminEndpoints
     }
 
     /** Validates that deleting a mechanic would not leave the shop without mechanics or leave an appointment without any assigned mechanic. */
-    private static async Task<IResult?> ValidateMechanicDeletionInvariantsAsync(
+    internal static async Task<IResult?> ValidateMechanicDeletionInvariantsAsync(
         int mechanicId,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)

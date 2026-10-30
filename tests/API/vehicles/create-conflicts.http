@@ -1,0 +1,168 @@
+# POST /api/customers/{id}/vehicles uniqueness: plate and VIN are unique across all customers after normalization, the
+# plate is checked first; the 409 carries its reason in `detail` and a refused create writes nothing.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}13
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create owner 1 (201 expected)
+# @name owner1
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "OwnerOne", "email": "vehicles.conflict.one.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create owner 2 (201 expected)
+# @name owner2
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "OwnerTwo", "email": "vehicles.conflict.two.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the vehicle that holds the plate and the VIN (201 expected)
+# @name holder
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CF-{{Digits}}", "vin": "{{Vin}}01", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Negative][Vehicles] The same plate on another customer (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CF-{{Digits}}", "vin": "{{Vin}}02", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+###
+
+### [Negative][Vehicles] The same plate in lower case with outer spaces on the same customer (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "  cf-{{Digits}} ", "vin": "{{Vin}}03", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+###
+
+### [Negative][Vehicles] The same VIN written in lower case (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CG-{{Digits}}", "vin": "{{Vin.toLowerCase()}}01", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this VIN already exists.") == true
+
+###
+
+### [Negative][Vehicles] Plate and VIN both taken (409 expected, the plate is reported first)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CF-{{Digits}}", "vin": "{{Vin}}01", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 0, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A vehicle with this license plate already exists.") == true
+
+###
+
+### [Positive][Vehicles] Owner 2 still has no vehicle, owner 1 still has one (200 expected, the refused creates wrote nothing)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][Vehicles] Owner 1 keeps its single vehicle (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}/vehicles
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == holder.id) == true
+
+###
+
+### [Positive][Vehicles] Same brand, model and year with its own plate and VIN is fine (201 expected)
+# @name twin
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "CG-{{Digits}}", "vin": "{{Vin}}04", "brand": "Volkswagen", "model": "Golf", "year": 2018, "mileageKm": 124500, "enginePowerKw": 81, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Cleanup][Vehicles] Delete owner 1 (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner1.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Vehicles] Delete owner 2 (204 expected, the twin goes with it)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner2.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

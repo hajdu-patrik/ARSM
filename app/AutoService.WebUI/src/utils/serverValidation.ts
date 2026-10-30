@@ -111,6 +111,10 @@ const COMMON_VALIDATION_RULES: readonly ValidationMessageRule[] = [
 /** Password-policy rules, checked in order once the message mentions a password. */
 const PASSWORD_VALIDATION_RULES: readonly ValidationMessageRule[] = [
   {
+    suffix: 'passwordMissingSpecial',
+    isMatch: (message) => containsAny(message, ['non alphanumeric', 'special character', 'special']),
+  },
+  {
     suffix: 'passwordTooShort',
     isMatch: (message) => message.includes('at least') && (message.includes('character') || message.includes('length')),
   },
@@ -125,10 +129,6 @@ const PASSWORD_VALIDATION_RULES: readonly ValidationMessageRule[] = [
   {
     suffix: 'passwordMissingDigit',
     isMatch: (message) => containsAny(message, ['digit', 'number', 'numeric']),
-  },
-  {
-    suffix: 'passwordMissingSpecial',
-    isMatch: (message) => containsAny(message, ['non alphanumeric', 'special character', 'special']),
   },
   {
     suffix: 'passwordTooWeak',

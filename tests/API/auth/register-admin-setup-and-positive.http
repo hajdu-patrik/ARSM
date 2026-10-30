@@ -1,14 +1,11 @@
-# Verified against AuthEndpoints.Register.cs: AdminOnly policy answers 401 unauthenticated, 403 non-admin
-# (see register-validation-and-nonadmin-authz.http), 200 for admin. Self-contained: registers/deletes its own matrix users; extended phone matrix is the sibling register-admin-positive-phone-matrix.http.
+# Register success contract for an admin: the response, case-insensitive enums, accented names, and the new mechanic's own
+# profile. Authz is register-authz.http, the phone matrix register-admin-positive-phone-matrix.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
 @TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
-
-
-# Dedicated matrix users
 @MatrixRunSuffix = {{$timestamp}}
 # Phone digits derived from this run's id so registrations never collide with another file or an
 # earlier, aborted run (the unique-phone constraint would answer 400 instead of 200).
@@ -16,53 +13,24 @@
 @MatrixEmailOnly = matrix.email.only.{{MatrixRunSuffix}}@example.test
 @MatrixEmailWithPhone = matrix.phone.user.{{MatrixRunSuffix}}@example.test
 
+
 ### [Setup][Auth] Clear any session cookie left by a previous file (204 or 401, not asserted)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
 Origin: {{WebUI_Origin}}
 
 ###
 
-### [Negative][Register] Unauthenticated registration (AdminOnly policy -> 401 expected)
-# @no-cookie-jar
-POST {{AutoService_ApiService_HostAddress}}/api/auth/register
-Origin: {{WebUI_Origin}}
-Content-Type: application/json
-
-{
-  "firstName": "Blocked",
-  "lastName": "Unauth",
-  "email": "blocked.unauth.{{MatrixRunSuffix}}@example.test",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine"]
-}
-
-?? status == 401
-
-###
-
-### [Setup][Admin Session] Login as admin before register matrix (200 expected)
+### [Setup][Admin Session] Login as admin (200 expected)
 # @name Login
 POST {{AutoService_ApiService_HostAddress}}/api/auth/login
 Origin: {{WebUI_Origin}}
 Content-Type: application/json
 
-{
-  "email": "{{AdminEmail}}",
-  "password": "{{AdminPassword}}"
-}
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
 
 {{
   exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
 }}
-
-?? status == 200
-
-###
-
-### [Positive][Admin Session] Validate authenticated admin session (200 expected, IsAdmin=true, MustChangePassword=false)
-GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ?? status == 200
 ?? js response.parsedBody.isAdmin == true
@@ -70,44 +38,107 @@ GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
 
 ###
 
-### [Positive][Register][Admin] Email-only mechanic registration (200 expected)
+### [Positive][Admin Session] Validate echoes the admin's own session facts (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/auth/validate
+
+?? status == 200
+?? js response.parsedBody.isAdmin == true
+?? js response.parsedBody.mustChangePassword == false
+?? js (response.parsedBody.personId == Login.personId) == true
+
+###
+
+### [Positive][Register][Admin] Email-only mechanic: 200 with the personId, lower-case personType and email (200 expected)
 # @name regEmailOnly
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Matrix",
-  "lastName": "EmailOnly",
-  "email": "{{MatrixEmailOnly}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Matrix", "lastName": "EmailOnly", "email": "{{MatrixEmailOnly}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine", "Brakes"] }
 
 ?? status == 200
+?? js (response.parsedBody.personId > 0) == true
+?? js response.parsedBody.personType == mechanic
+?? js (response.parsedBody.email.startsWith("matrix.email.only.")) == true
 
 ###
 
-### [Positive][Register][Admin] Mechanic registration with phone (spaced 06 format) (200 expected)
+### [Positive][Register][Admin] Enums are case-insensitive; accented hyphenated names and a spaced 06 phone are accepted (200 expected)
 # @name regPhoneUser
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
 
-{
-  "firstName": "Matrix",
-  "lastName": "PhoneUser",
-  "email": "{{MatrixEmailWithPhone}}",
-  "password": "{{TestPassword}}",
-  "personType": "Mechanic",
-  "phoneNumber": "06 30 8{{PhoneTail}}",
-  "specialization": "GasolineAndDiesel",
-  "expertise": ["Engine", "Brakes"]
-}
+{ "firstName": "Árpád-Béla", "middleName": "Zoltán", "lastName": "Kovács-Nagy", "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}", "personType": "mechanic", "phoneNumber": "06 30 8{{PhoneTail}}", "specialization": "gasolineanddiesel", "expertise": ["engine", "BRAKES"] }
+
+?? status == 200
+?? js response.parsedBody.personType == mechanic
+
+###
+
+### [Setup][Admin Session] Logout admin before the new mechanic signs in (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Positive][Register] The new mechanic logs in as a plain, unflagged account (200 expected)
+# @name newMechanicLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{MatrixEmailWithPhone}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+?? js response.parsedBody.isAdmin == false
+?? js response.parsedBody.mustChangePassword == false
+?? js (response.parsedBody.personId == regPhoneUser.personId) == true
+
+###
+
+### [Positive][Register] The stored profile holds the trimmed names and the canonical E.164 phone (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/profile
+
+?? status == 200
+?? js response.parsedBody.personType == mechanic
+?? js response.parsedBody.firstName == Árpád-Béla
+?? js response.parsedBody.middleName == Zoltán
+?? js response.parsedBody.lastName == Kovács-Nagy
+?? js (/^\+36308[0-9]{6}$/.test(response.parsedBody.phoneNumber)) == true
+?? js response.parsedBody.hasProfilePicture == false
+
+###
+
+### [Setup][Cleanup] Logout the new mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Setup][Cleanup] Login as admin again to delete the matrix mechanics (200 expected)
+# @name Login
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
 
 ?? status == 200
 

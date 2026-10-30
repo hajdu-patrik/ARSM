@@ -1,0 +1,241 @@
+# GET /api/appointments (month window) and /today: month edges, ordering, defaults, invalid ranges and the item shape.
+# Fixtures sit in March/April 2099 plus "now" on a disposable customer, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@NonAdminEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@NonAdminPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@CustomerEmail = list.queries.{{RunId}}@example.test
+@Vin = TST{{RunId.toString().slice(-10)}}1101
+
+### [Setup][Appointments] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+### [Setup][Appointments] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Appointments] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "List", "middleName": null, "lastName": "Queries", "email": "{{CustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][Appointments] Create the customer's vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "LQ-{{RunId}}", "vin": "{{Vin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment on the first day of March 2099 (201 expected)
+# @name apptEarly
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2099-03-01T08:00:00", "taskDescription": "List queries early March", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment in the last minutes of March 2099 (201 expected)
+# @name apptMarchEnd
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2099-03-31T23:30:00", "taskDescription": "List queries end of March", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment at the first instant of April 2099 (201 expected)
+# @name apptAprilStart
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "2099-04-01T00:00:00", "taskDescription": "List queries start of April", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Setup][Appointments] Appointment scheduled right now, for the today and default-month reads (201 expected)
+# @name apptNow
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{vehicle.id}}, "scheduledDate": "{{new Date().toISOString()}}", "taskDescription": "List queries now", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+### [Positive][Appointments] March 2099 holds the two March rows in scheduled order and not the April one (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2099&month=3
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptEarly.id) && response.parsedBody.some(a => a.id == apptMarchEnd.id)) == true
+?? js (response.parsedBody.some(a => a.id == apptAprilStart.id)) == false
+?? js (response.parsedBody.findIndex(a => a.id == apptEarly.id) < response.parsedBody.findIndex(a => a.id == apptMarchEnd.id)) == true
+
+### [Positive][Appointments] April 2099 starts at the first instant of the month (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2099&month=4
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptAprilStart.id)) == true
+?? js (response.parsedBody.some(a => a.id == apptMarchEnd.id)) == false
+
+### [Positive][Appointments] A listed item carries the full appointment shape (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2099&month=3
+
+?? status == 200
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).status == "InProgress") == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).taskDescription == "List queries end of March") == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).vehicle.id == vehicle.id) == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).vehicle.customerId == customer.id) == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).mechanics.length == 1) == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).mechanics[0].id == adminLogin.personId) == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).version == apptMarchEnd.version) == true
+?? js (response.parsedBody.find(a => a.id == apptMarchEnd.id).canDelete == true) == true
+
+### [Positive][Appointments] An empty month answers an empty array (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2099&month=12
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+### [Positive][Appointments] Year and month at the accepted bounds answer 200
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2000&month=1
+
+?? status == 200
+
+### [Positive][Appointments] The upper bound 2100-12 answers 200
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2100&month=12
+
+?? status == 200
+
+### [Positive][Appointments] Without parameters the current UTC month is listed (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptNow.id)) == true
+
+### [Positive][Appointments] A year alone keeps the current month (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year={{new Date().getUTCFullYear()}}
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptNow.id)) == true
+
+### [Positive][Appointments] A month alone keeps the current year (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?month={{new Date().getUTCMonth() + 1}}
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptNow.id)) == true
+
+### [Positive][Appointments] Today lists the appointment scheduled now and none from 2099 (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptNow.id)) == true
+?? js (response.parsedBody.some(a => a.id == apptMarchEnd.id)) == false
+
+### [Negative][Appointments] Year below 2000 is refused (400, invalid_date_range)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=1999&month=4
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+### [Negative][Appointments] Year above 2100 is refused (400, invalid_date_range)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2101&month=4
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+### [Negative][Appointments] Month 0 is refused (400, invalid_date_range)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=0
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+### [Negative][Appointments] Month 13 is refused (400, invalid_date_range)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2026&month=13
+
+?? status == 400
+?? js response.parsedBody.code == invalid_date_range
+
+### [Negative][Appointments] A non-numeric year is refused (400 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=abc&month=4
+
+?? status == 400
+
+### [Setup][Appointments] Login as the plain mechanic (200 expected)
+# @name nonAdminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{NonAdminEmail}}", "password": "{{NonAdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Positive][Appointments] A plain mechanic reads every appointment of the month, assigned or not (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments?year=2099&month=3
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptMarchEnd.id)) == true
+
+### [Positive][Appointments] A plain mechanic reads today's list (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/appointments/today
+
+?? status == 200
+?? js (response.parsedBody.some(a => a.id == apptNow.id)) == true
+
+### [Cleanup][Appointments] Login as admin to delete the disposable customer (200 expected)
+# @name adminCleanupLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Cleanup][Appointments] Delete the customer, cascading vehicle and appointments (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

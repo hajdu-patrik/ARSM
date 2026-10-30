@@ -128,6 +128,18 @@ Content-Type: application/json
 
 ###
 
+### [Positive][Register][Admin] Every shape was stored as one canonical E.164 number, the email trimmed and lower-cased (200 expected)
+# @name matrixMechanics
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?page=1&pageSize=500
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.personId == regLocalPhone.personId && /^\+36301[0-9]{6}$/.test(m.phoneNumber))) == true
+?? js (response.parsedBody.items.some(m => m.personId == regBudapest.personId && /^\+3612[0-9]{6}$/.test(m.phoneNumber))) == true
+?? js (response.parsedBody.items.some(m => m.personId == regEuPhone.personId && /^\+491511[0-9]{7}$/.test(m.phoneNumber))) == true
+?? js (response.parsedBody.items.some(m => m.personId == regWhitespace.personId && /^\+36309[0-9]{6}$/.test(m.phoneNumber) && m.email.startsWith("matrix.whitespace.user.") && m.email == m.email.toLowerCase())) == true
+
+###
+
 ### [Setup][Cleanup] Delete the local-phone matrix mechanic (200 expected)
 DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{regLocalPhone.personId}}
 Origin: {{WebUI_Origin}}

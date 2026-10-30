@@ -1,0 +1,139 @@
+# Deleting a vehicle cascades to its appointments and the quotes on it, and leaves the owner and the owner's other
+# vehicles alone. The owner, vehicles, appointment and quote below are all disposable, so no shared fixture is touched.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Digits = {{RunId.toString().slice(-7)}}
+@Vin = TST{{RunId.toString().slice(-10)}}18
+
+### [Setup][Vehicles] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Vehicles] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Vehicles] Create the owner (201 expected)
+# @name owner
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Vehicle", "middleName": null, "lastName": "Cascade", "email": "vehicles.cascade.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the vehicle to delete (201 expected)
+# @name doomed
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VC-{{Digits}}", "vin": "{{Vin}}01", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create the vehicle that must survive (201 expected)
+# @name survivor
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "VS-{{Digits}}", "vin": "{{Vin}}02", "brand": "Skoda", "model": "Fabia", "year": 2019, "mileageKm": 91500, "enginePowerKw": 70, "drivetrainType": "Diesel" }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Book an appointment for the doomed vehicle (201 expected)
+# @name doomedAppointment
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}/appointments
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "vehicleId": {{doomed.id}}, "scheduledDate": "2026-04-18T10:30:00", "taskDescription": "Vehicle delete cascade fixture", "mechanicIds": [{{adminLogin.personId}}] }
+
+?? status == 201
+
+###
+
+### [Setup][Vehicles] Create a quote linked to that appointment (201 expected)
+# @name doomedQuote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{doomed.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Vehicle delete cascade quote", "appointmentId": {{doomedAppointment.id}} }
+
+?? status == 201
+
+###
+
+### [Positive][Vehicles] Delete the vehicle (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/vehicles/{{doomed.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Negative][Vehicles] The appointment is gone (404 expected, appointment_not_found)
+DELETE {{AutoService_ApiService_HostAddress}}/api/appointments/{{doomedAppointment.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 404
+?? js response.parsedBody.code == appointment_not_found
+
+###
+
+### [Negative][Vehicles] The quote is gone (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{doomedQuote.id}}
+
+?? status == 404
+
+###
+
+### [Positive][Vehicles] The owner and the other vehicle remain (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+
+?? status == 200
+?? js response.parsedBody.vehicles.length == 1
+?? js (response.parsedBody.vehicles[0].id == survivor.id) == true
+
+###
+
+### [Cleanup][Vehicles] Delete the owner (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owner.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

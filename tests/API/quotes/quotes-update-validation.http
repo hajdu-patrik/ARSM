@@ -1,0 +1,187 @@
+# PUT /api/quotes/{id} validation (title, notes, version, unknown quote), the 404 answers of the read routes and the
+# status filter of the list. Disposable customer and vehicle, deleted at the end (cascade).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.update.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0724
+@Title120 = {{'t'.repeat(120)}}
+@Title121 = {{'t'.repeat(121)}}
+@Notes1000 = {{'n'.repeat(1000)}}
+@Notes1001 = {{'n'.repeat(1001)}}
+@MissingId = 999999999
+
+### [Setup][QuoteUpdate] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteUpdate] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteUpdate", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteUpdate] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QUP-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteUpdate] Create the draft the edits target (201 expected)
+# @name draft
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Update Validation {{RunId}}", "notes": "Original notes" }
+
+?? status == 201
+
+### [Negative][QuoteUpdate] A blank title is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "  ", "notes": null, "version": {{draft.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Title cannot be empty
+
+### [Negative][QuoteUpdate] A 121-character title is refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "{{Title121}}", "notes": null, "version": {{draft.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Title must be at most 120 characters
+
+### [Negative][QuoteUpdate] 1001-character notes are refused (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Update Validation {{RunId}}", "notes": "{{Notes1001}}", "version": {{draft.version}} }
+
+?? status == 422
+?? js response.parsedBody.detail includes Notes must be at most 1000 characters
+
+### [Negative][QuoteUpdate] No version is refused (422 expected, "Version is required.", D38)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Update Validation {{RunId}} No Version" }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Negative][QuoteUpdate] Version 0 is refused like a missing one (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Update Validation {{RunId}} Zero", "version": 0 }
+
+?? status == 422
+?? js response.parsedBody.detail includes Version is required
+
+### [Positive][QuoteUpdate] The refused edits changed nothing (200 expected, same title, notes and version)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+
+?? status == 200
+?? js (response.parsedBody.title === draft.title && response.parsedBody.notes === "Original notes" && response.parsedBody.version === draft.version) == true
+
+### [Positive][QuoteUpdate] A 120-character title with 1000-character notes is accepted (200 expected, both boundaries)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{draft.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "{{Title120}}", "notes": "{{Notes1000}}", "version": {{draft.version}} }
+
+?? status == 200
+?? js (response.parsedBody.title.length === 120 && response.parsedBody.notes.length === 1000) == true
+
+### [Negative][QuoteUpdate] Updating an unknown quote is a 404 (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{MissingId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Ghost {{RunId}}", "version": 1 }
+
+?? status == 404
+?? js response.parsedBody.detail includes Quote not found
+
+### [Negative][QuoteUpdate] Reading an unknown quote is a 404 (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{MissingId}}
+
+?? status == 404
+?? js response.parsedBody.detail includes Quote not found
+
+### [Negative][QuoteUpdate] Listing the quotes of an unknown vehicle is a 404 (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/vehicles/{{MissingId}}/quotes
+
+?? status == 404
+?? js response.parsedBody.detail includes Vehicle not found
+
+### [Negative][QuoteUpdate] A status filter outside the four statuses is refused (422 expected, D43: Expired is computed)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=Expired
+
+?? status == 422
+?? js response.parsedBody.detail includes Draft, Sent, Accepted, Rejected
+
+### [Negative][QuoteUpdate] A numeric status filter that names no member is refused (422 expected, "9" is not one of the four)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=9
+
+?? status == 422
+
+### [Positive][QuoteUpdate] The status filter ignores case (200 expected, the one draft of the vehicle)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?status=draft&vehicleId={{vehicle.id}}
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === draft.id && response.parsedBody.items[0].status === "Draft") == true
+
+### [Positive][QuoteUpdate] A vehicle id without quotes lists an empty page (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{MissingId}}
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 0 && response.parsedBody.items.length === 0) == true
+
+### [Cleanup][QuoteUpdate] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

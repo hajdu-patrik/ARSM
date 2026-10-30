@@ -1,20 +1,25 @@
--- AI policy: use ai_agent_test_user for AI-assisted checks and run SELECT queries only.
--- Never run INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE/DROP/GRANT/REVOKE via AI SQL tooling.
+-- AutoService DB - revokedjwttokens, the access-token denylist written on logout and session revocation.
+-- Assertion idiom: a violation makes the closing cast fail; every check passes on an empty database.
 
--- 9. JWT DENYLIST (revokedjwttokens) — after logout, the access token jti appears here until expiry.
---    Expected before any logout has happened: 0 rows.
-SELECT rjt."Id",
-    rjt."JwtId",
-       rjt."ExpiresAtUtc",
-       rjt."RevokedAtUtc",
-       (rjt."ExpiresAtUtc" > NOW()) AS is_still_within_token_lifetime
-FROM revokedjwttokens rjt
-ORDER BY rjt."RevokedAtUtc" DESC;
+-- 1. A denylisted jti is a non-blank identifier without surrounding whitespace (unique via IX_revokedjwttokens_JwtId).
+SELECT 'jwt_denylist_jti_format' AS check_name,
+       CASE WHEN COUNT(*) = 0 THEN 'ok'
+            ELSE concat('FAIL jwt_denylist_jti_format: ', COUNT(*), ' row(s), e.g. id ', MIN(v.detail))::int::text END AS check_result
+FROM (
+    SELECT rjt."Id"::text AS detail
+    FROM revokedjwttokens rjt
+    WHERE btrim(rjt."JwtId") = ''
+       OR rjt."JwtId" <> btrim(rjt."JwtId")
+) v;
 
 
--- 10. JWT DENYLIST SUMMARY — count by expiry state
---     Use after a logout to confirm the denylisted token was recorded.
-SELECT COUNT(*) AS total_denylisted,
-       COUNT(*) FILTER (WHERE "ExpiresAtUtc" > NOW()) AS still_active_tokens,
-       COUNT(*) FILTER (WHERE "ExpiresAtUtc" <= NOW()) AS expired_tokens
-FROM revokedjwttokens;
+-- 2. TokenDenylistService never stores an already-expired token: the row's expiry lies after its revocation
+--    (5 s of slack for the clock read between the expiry test and the insert).
+SELECT 'jwt_denylist_expiry_after_revocation' AS check_name,
+       CASE WHEN COUNT(*) = 0 THEN 'ok'
+            ELSE concat('FAIL jwt_denylist_expiry_after_revocation: ', COUNT(*), ' row(s), e.g. id ', MIN(v.detail))::int::text END AS check_result
+FROM (
+    SELECT rjt."Id"::text AS detail
+    FROM revokedjwttokens rjt
+    WHERE rjt."ExpiresAtUtc" < rjt."RevokedAtUtc" - interval '5 seconds'
+) v;

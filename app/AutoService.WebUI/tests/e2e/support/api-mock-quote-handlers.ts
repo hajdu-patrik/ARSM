@@ -18,6 +18,7 @@ import {
   toQuoteListItemResponse,
 } from './api-mock-quote-support';
 import { handleAddQuoteLine, handleDeleteQuoteLine, handleUpdateQuoteLine } from './api-mock-quote-lines';
+import { handleQuotePdf } from './api-mock-quote-pdf';
 import {
   handleChangeQuoteStatus,
   handleExtendQuoteValidity,
@@ -27,8 +28,8 @@ import {
 /** Stored statuses the list accepts as a filter (Expired is computed, never stored). */
 const QUOTE_STORED_STATUSES: readonly string[] = ['draft', 'sent', 'accepted', 'rejected'];
 
-/** Matches `/api/quotes/{id}` and its `/lines`, `/status` and `/valid-until` sub-routes. */
-const QUOTE_RESOURCE_PATTERN = /^\/api\/quotes\/(\d+)(\/lines(?:\/(\d+))?|\/status|\/valid-until)?$/;
+/** Matches `/api/quotes/{id}` and its `/lines`, `/status`, `/valid-until` and `/pdf` sub-routes. */
+const QUOTE_RESOURCE_PATTERN = /^\/api\/quotes\/(\d+)(\/lines(?:\/(\d+))?|\/status|\/valid-until|\/pdf)?$/;
 
 /** Dispatches `/api/quotes` and `/api/vehicles/{id}/quotes` mock requests. */
 export async function tryHandleQuoteRoute(
@@ -113,6 +114,11 @@ async function handleQuoteResourceRoute(
 
   if (segment?.startsWith('/lines')) {
     return handleQuoteLineRoute(route, method, state, quote, quoteMatch[3], version);
+  }
+
+  if (segment === '/pdf' && method === 'GET') {
+    await handleQuotePdf(route, state, quote.id);
+    return true;
   }
 
   if (segment === '/status' && method === 'POST') {

@@ -1,0 +1,170 @@
+# The quote routes are MechanicOnly, not AdminOnly: a plain mechanic creates, edits, prices, sends, prints and deletes quotes,
+# and is recorded as the creator. The admin only prepares and removes the disposable customer.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@MechanicEmail = {{$processEnv ARSM_TEST_MECHANIC_EMAIL}}
+@MechanicPassword = {{$processEnv ARSM_TEST_MECHANIC_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.mechanic.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0742
+
+### [Setup][QuoteMechanic] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][QuoteMechanic] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "QuoteMechanic", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][QuoteMechanic] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QMC-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][QuoteMechanic] Login as the plain mechanic (200 expected, replaces the admin session)
+# @name mechanicLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{MechanicEmail}}", "password": "{{MechanicPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Positive][QuoteMechanic] A mechanic creates a quote (201 expected, recorded as its creator)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Mechanic Quote {{RunId}}" }
+
+?? status == 201
+?? js (response.parsedBody.createdByMechanic.id === mechanicLogin.personId && response.parsedBody.createdByMechanic.id !== adminLogin.personId && response.parsedBody.status === "Draft") == true
+
+### [Positive][QuoteMechanic] The mechanic reads the quote, the list and the vehicle's quotes (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes?vehicleId={{vehicle.id}}
+
+?? status == 200
+?? js (response.parsedBody.totalCount === 1 && response.parsedBody.items[0].id === quote.id && response.parsedBody.items[0].createdByMechanic.id === mechanicLogin.personId) == true
+
+### [Positive][QuoteMechanic] The mechanic edits the header (200 expected)
+# @name edited
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Mechanic Quote {{RunId}} edited", "notes": "By the mechanic", "version": {{quote.version}} }
+
+?? status == 200
+?? js (response.parsedBody.title === `Mechanic Quote ${RunId} edited` && response.parsedBody.notes === "By the mechanic") == true
+
+### [Positive][QuoteMechanic] The mechanic adds a line (201 expected)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2, "description": "Mechanic line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{edited.version}} }
+
+?? status == 201
+?? js (response.parsedBody.totalNet === 200 && response.parsedBody.totalGross === 254) == true
+
+### [Positive][QuoteMechanic] The mechanic extends the validity (200 expected)
+# @name extended
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2099-01-01T00:00:00", "version": {{line.version}} }
+
+?? status == 200
+
+### [Positive][QuoteMechanic] The mechanic prints the PDF (200 expected, application/pdf)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/pdf
+
+?? status == 200
+?? js (response.headers["content-type"].startsWith("application/pdf")) == true
+
+### [Positive][QuoteMechanic] The mechanic sends the quote (200 expected, no-op mail sender in the test environment)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{extended.version}} }
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent") == true
+
+### [Positive][QuoteMechanic] The mechanic creates a scrap draft (201 expected)
+# @name scrap
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Mechanic Scrap {{RunId}}" }
+
+?? status == 201
+
+### [Positive][QuoteMechanic] Delete the scrap draft (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{scrap.id}}?version={{scrap.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][QuoteMechanic] Login as admin again to remove the customer (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Cleanup][QuoteMechanic] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

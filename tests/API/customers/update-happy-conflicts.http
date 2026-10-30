@@ -1,0 +1,233 @@
+# PUT /api/customers/{id}: replaces all five fields (204) like create normalizes; own email and phone never conflict, another
+# person's do (409); a refused update changes nothing. A is edited, B holds what A tries to take.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+@Digits = {{RunId.toString().slice(-7)}}
+@GhostCustomerId = 999999999
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create customer A (201 expected)
+# @name custA
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Anna", "middleName": null, "lastName": "Toth-{{Tag}}", "email": "update.happy.a.{{RunId}}@example.test", "phoneNumber": "+3620{{Digits}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer B holding another email and phone (201 expected)
+# @name custB
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bela", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "update.happy.b.{{RunId}}@example.test", "phoneNumber": "+3630{{Digits}}" }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Give A one vehicle (201 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "UH-{{Digits}}", "vin": "TST{{RunId.toString().slice(-10)}}0851", "brand": "Seat", "model": "Leon", "year": 2018, "mileageKm": 80000, "enginePowerKw": 85, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Update every field with padded and differently formatted input (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": " Béla ", "middleName": null, "lastName": " Szabó-{{Tag}} ", "email": " Update.Happy.A2.{{RunId}}@Example.Test ", "phoneNumber": "06 70 {{Digits}}" }
+
+?? status == 204
+
+###
+
+### [Positive][Customers] The update persisted normalized (200 expected, same id, vehicle untouched)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+
+?? status == 200
+?? js (response.parsedBody.id == custA.id) == true
+?? js response.parsedBody.firstName == Béla
+?? js (response.parsedBody.middleName === null) == true
+?? js response.parsedBody.lastName == Szabó-{{Tag}}
+?? js response.parsedBody.email == update.happy.a2.{{RunId}}@example.test
+?? js response.parsedBody.phoneNumber == +3670{{Digits}}
+?? js response.parsedBody.vehicles.length == 1
+
+###
+
+### [Positive][Customers] Sending the same email and phone again is no conflict with itself (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Béla", "middleName": null, "lastName": "Szabó-{{Tag}}", "email": "update.happy.a2.{{RunId}}@example.test", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 204
+
+###
+
+### [Negative][Customers] Taking B's email in upper case (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Béla", "middleName": null, "lastName": "Szabó-{{Tag}}", "email": "UPDATE.HAPPY.B.{{RunId}}@EXAMPLE.TEST", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Negative][Customers] Taking B's phone in national format (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Béla", "middleName": null, "lastName": "Szabó-{{Tag}}", "email": "update.happy.a2.{{RunId}}@example.test", "phoneNumber": "06 30 {{Digits}}" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this phone number already exists.") == true
+
+###
+
+### [Negative][Customers] Taking a mechanic's email (409 expected, uniqueness spans all people)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Béla", "middleName": null, "lastName": "Szabó-{{Tag}}", "email": "{{AdminEmail}}", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 409
+?? js (response.parsedBody.detail === "A person with this email already exists.") == true
+
+###
+
+### [Positive][Customers] The refused updates changed nothing (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+
+?? status == 200
+?? js response.parsedBody.email == update.happy.a2.{{RunId}}@example.test
+?? js response.parsedBody.phoneNumber == +3670{{Digits}}
+
+###
+
+### [Positive][Customers] Add a middle name and clear the phone (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Béla", "middleName": "Mária", "lastName": "Szabó-{{Tag}}", "email": "update.happy.a2.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 204
+
+###
+
+### [Positive][Customers] The middle name is set and the phone is gone (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+
+?? status == 200
+?? js response.parsedBody.middleName == Mária
+?? js (response.parsedBody.phoneNumber === null) == true
+
+###
+
+### [Negative][Customers] The old email no longer finds the customer (404 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=update.happy.a.{{RunId}}@example.test
+
+?? status == 404
+
+###
+
+### [Positive][Customers] The new email finds the customer (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-email?email=update.happy.a2.{{RunId}}@example.test
+
+?? status == 200
+?? js (response.parsedBody.id == custA.id) == true
+
+###
+
+### [Positive][Customers] B can take the phone A released, the old email of A is free too (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{custB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Bela", "middleName": null, "lastName": "Holder-{{Tag}}", "email": "update.happy.a.{{RunId}}@example.test", "phoneNumber": "+3670{{Digits}}" }
+
+?? status == 204
+
+###
+
+### [Negative][Customers] Update a missing customer (404 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{GhostCustomerId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Ghost", "middleName": null, "lastName": "Customer", "email": "update.ghost.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 404
+?? js (response.parsedBody.detail === "Customer not found.") == true
+
+###
+
+### [Cleanup][Customers] Delete customer A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer B (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custB.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
