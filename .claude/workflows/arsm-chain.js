@@ -470,7 +470,7 @@ proofs.forEach(({ proof }) => proof?.filesChanged.forEach((f) => changed.add(nor
 if (proofs.length) gate = await runGate()
 if (!gate?.passed) return { status: 'gate-failed', gate, plan, packages, applied, docs, cleanup, proofs, calls: ran, tokensSpent: budget.spent() }
 const files = [...changed]
-const proofIn = (re) => proofs.some(({ proof }) => re.test(proof?.testFile ?? ''))
+const proofIn = (re) => proofs.some(({ proof }) => re.test(normPath(proof?.testFile ?? '')))
 const suiteOpts = (agentType, label) => ({ agentType, phase: 'Test', label, schema: TEST_SCHEMA })
 const FIX_TESTS = ' Fix a test that is wrong, never weaken one to pass; report an application defect in `failures`, you do not edit application code.'
 const tests = []
