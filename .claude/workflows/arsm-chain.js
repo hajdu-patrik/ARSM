@@ -140,24 +140,12 @@ const IMPL_SCHEMA = {
   },
   required: ['summary', 'filesChanged', 'openQuestions', 'handoffs', 'bugsFound'],
 }
-const UNTRACKED_SCHEMA = { type: 'object', properties: { untracked: STR_LIST }, required: ['untracked'] }
-const CLEANUP_SCHEMA = {
-  type: 'object',
-  properties: { summary: { type: 'string' }, deleted: STR_LIST, unusedCandidates: STR_LIST },
-  required: ['summary', 'deleted', 'unusedCandidates'],
-}
-const REVIEW_SCHEMA = {
-  type: 'object',
-  properties: { summary: { type: 'string' }, filesChanged: STR_LIST, findings: STR_LIST, bugsFound: BUGS },
-  required: ['summary', 'filesChanged', 'findings', 'bugsFound'],
-}
+const UNTRACKED_SCHEMA = { type: 'object', properties: { repoRoot: { type: 'string' }, untracked: STR_LIST }, required: ['repoRoot', 'untracked'] }
+const CLEANUP_SCHEMA = { type: 'object', properties: { summary: { type: 'string' }, deleted: STR_LIST, unusedCandidates: STR_LIST }, required: ['summary', 'deleted', 'unusedCandidates'] }
+const REVIEW_SCHEMA = { type: 'object', properties: { summary: { type: 'string' }, filesChanged: STR_LIST, findings: STR_LIST, bugsFound: BUGS }, required: ['summary', 'filesChanged', 'findings', 'bugsFound'] }
 const PROOF_SCHEMA = { type: 'object', properties: { testFile: { type: 'string' }, filesChanged: STR_LIST, passesWithFix: { type: 'boolean' }, failsWithoutFix: { type: 'boolean' }, note: { type: 'string' } }, required: ['testFile', 'filesChanged', 'passesWithFix', 'failsWithoutFix', 'note'] }
 const TEST_SCHEMA = { type: 'object', properties: { passed: { type: 'boolean' }, summary: { type: 'string' }, filesChanged: STR_LIST, failures: STR_LIST }, required: ['passed', 'summary', 'filesChanged', 'failures'] }
-const GATE_SCHEMA = {
-  type: 'object',
-  properties: { passed: { type: 'boolean' }, failures: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, detail: STR_LIST }, required: ['stage', 'detail'] } } },
-  required: ['passed', 'failures'],
-}
+const GATE_SCHEMA = { type: 'object', properties: { passed: { type: 'boolean' }, failures: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, detail: STR_LIST }, required: ['stage', 'detail'] } } }, required: ['passed', 'failures'] }
 
 phase('Plan')
 const ROUTING_RULES =
@@ -202,9 +190,21 @@ if (!plan) throw new Error('The orchestrator returned no plan.')
 if (plan.questions.length) return { status: 'needs-user', questions: plan.questions, plan, calls: ran, tokensSpent: budget.spent() }
 if (!plan.packages.length) throw new Error('The orchestrator returned no work packages.')
 
+const stepRoutes = Object.fromEntries(Object.keys(STEP_ROUTES).map((k) => [k, resolveRoute(plan.steps?.[k], k)]))
+// Untracked files that exist before any package runs belong to the user; the cleanup never touches them.
+const baseline = await run('gate', stepRoutes.gate, 'Return the output of `git rev-parse --show-toplevel` as `repoRoot`. Then run ' +
+  '`git status --porcelain --untracked-files=all` from the repository root and return the paths of the untracked (`??`) entries verbatim. Change nothing.',
+  { phase: 'Plan', label: 'baseline', schema: UNTRACKED_SCHEMA })
+const repoRoot = (baseline?.repoRoot ?? '').trim().replaceAll('\\', '/').replace(/\/+$/, '')
+if (!repoRoot) log('Repository root unknown: absolute paths stay as reported, so ownership and the UI audit can miss them.')
+// Agents spell the root E:\..., e:/... or /e/..., so the comparison folds the drive form and the case.
+const foldRoot = (p) => p.replace(/^\/([a-zA-Z])(?=\/)/, '$1:').toLowerCase()
+
 // Unique ids, normalized ownership, then a stable topological order: every dependency points to an earlier package.
 const normPath = (p) => {
   let path = p.replaceAll('\\', '/')
+  const inRepo = repoRoot && path.charAt(repoRoot.length) === '/' && foldRoot(path.slice(0, repoRoot.length)) === foldRoot(repoRoot)
+  if (inRepo) path = path.slice(repoRoot.length + 1)
   const glob = path.search(/[*?[{]/)
   if (glob >= 0) path = path.slice(0, glob)
   while (path.endsWith('/')) path = path.slice(0, -1)
@@ -247,7 +247,6 @@ log(`Difficulty router ${routerDifficulty ?? '-'}, orchestrator ${planDifficulty
   `${ordered.length} package(s), at most ${cap} implementing at once.`)
 if (ordered.length > cap) log(`${ordered.length - cap} package(s) wait for a free slot.`)
 
-const stepRoutes = Object.fromEntries(Object.keys(STEP_ROUTES).map((k) => [k, resolveRoute(plan.steps?.[k], k)]))
 const label = (r) => `${r.model}/${r.effort}${r.source === 'router' ? '' : ` (${r.source})`}`
 log(`Models (trirouter): plan ${label(planRoute)}; ` + ordered.map((p) => `${p.id} ${label(p.routes.implement)}`).join(', ') +
   `; review ${label(stepRoutes.review)}, gate ${label(stepRoutes.gate)}, test ${label(stepRoutes.test)}, fix ${label(stepRoutes.fix)}.`)
@@ -274,9 +273,6 @@ const bugs = [] // defects the run found by itself: each one needs a regression 
 const track = (result) => { if (result) { result.filesChanged.forEach((f) => changed.add(normPath(f))); bugs.push(...(result.bugsFound ?? [])) } }
 
 // implement + per-package review
-// Untracked files that exist before any package runs belong to the user; the cleanup never touches them.
-const baseline = await run('gate', stepRoutes.gate, 'Run `git status --porcelain --untracked-files=all` from the repository root and return the paths of ' +
-  'the untracked (`??`) entries verbatim. Change nothing.', { phase: 'Plan', label: 'baseline', schema: UNTRACKED_SCHEMA })
 const preexisting = (baseline?.untracked ?? []).map(normPath)
 
 phase('Implement')
@@ -304,6 +300,9 @@ const runPackage = async (p) => {
   if (!impl || impl.openQuestions.length) return { p, impl }
   const source = impl.filesChanged.filter((f) => /\.(cs|ts|tsx)$/.test(f))
   const ui = impl.filesChanged.filter((f) => normPath(f).startsWith(WEBUI_PREFIX))
+  if (!source.length) log(`Package ${p.id}: coding-principles review skipped, no .cs, .ts or .tsx file reported.`)
+  const auditSkipped = p.area !== 'frontend' || (plan.uiChange && ui.length) ? null : plan.uiChange ? `no reported file under ${WEBUI_PREFIX}` : 'plan.uiChange is false'
+  if (auditSkipped) log(`Package ${p.id}: ui-ux audit skipped, ${auditSkipped}.`)
   const [principles, audit] = await parallel([
     () => source.length ? run('review', p.routes.review, reviewPrompt('Apply naming, SOLID/OOP and the comment rule (every comment at most 2 lines, doc comments included); ' +
       'size limits are checked by scripts/validate.py, not by you.', source),
@@ -317,7 +316,7 @@ const runPackage = async (p) => {
       { agentType: agentOf(p.area, p.owns), phase: 'Review', label: `fix:${p.id}:ui-ux`, schema: IMPL_SCHEMA }))
     : null
   track(uiFix)
-  return { p, impl, review: [principles, audit].filter(Boolean), uiFix }
+  return { p, impl, review: [principles, audit].filter(Boolean), uiFix, auditSkipped }
 }
 // A package starts once its dependencies are implemented and reviewed; the rest start at once.
 const runs = []
@@ -461,7 +460,6 @@ phase('Test')
 const provePrompt = (bug) => `The run found and fixed this defect itself, so a regression test must prove the fix (root CLAUDE.md):\n${JSON.stringify(bug)}\n` +
   'Reuse an existing test only if it really fails without the fix; otherwise add one at the lowest layer that observes the defect, per tests/CLAUDE.md. ' +
   `Run it with the fix (must pass) and without it: xUnit and Playwright in a temporary \`git worktree\` of ${baseRef} with the test copied in, removed afterwards, ` + // Playwright needs its own PORT and PLAYWRIGHT_BASE_URL there, else it reuses the fixed dev server
-
   'never by reverting the working tree. Suites that need the API stack run in the next step: set failsWithoutFix false and say why in `note`; do the same for a defect this run introduced itself.\n\n' + HOUSE_RULES
 const proofs = []
 for (const bug of bugs) {

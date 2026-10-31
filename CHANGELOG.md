@@ -67,6 +67,11 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `arsm-chain` silently skipped the `ui-ux-style-profile` audit when an implementer reported absolute paths (2026-10-31).
+  `normPath` now strips the repository root, which the baseline step reads from `git rev-parse --show-toplevel`, so the audit,
+  package ownership, failure routing and the cleanup's deliverable list all see repository-relative paths. A skipped review now
+  logs its reason, and a frontend package's skipped audit is also reported as `auditSkipped` in the run result.
+  - _Dev time: ~6m wall-clock. cost: not measured._
 - Azure deployments failed at random with `ServerIsBusy` (2026-10-28). `main.bicep` wrote the PostgreSQL server's
   children (`azure.extensions`, the `AllowAzureServices` firewall rule, `AutoServiceDb`) in parallel, and a Flexible Server
   takes one write at a time; they now run in a `dependsOn` chain (`az bicep build` clean). The guide's Operations section
