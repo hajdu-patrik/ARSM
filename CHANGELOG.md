@@ -75,6 +75,13 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `deploy/azure/main.bicep` no longer prints the BCP318 "may be null" warnings for the conditionally deployed container apps
+  (2026-10-31); outputs, resources and both deploy phases behave as before.
+  - _Dev time: ~19m wall-clock (one arsm-chain run plus the pre-push gate, 2026-10-31 14:23 to 14:42 +01:00, shared by both fixes). Cost: ~$1.1-2.1 output-token-only estimate (107k output tokens, sonnet packages, opus routing; excludes input tokens and cache, so a lower bound)._
+- `typescript-eslint` packages locked at 8.72.0 (plus `ignore` 7.0.14 and `eslint` 10.13.0 as resolved by npm) so `npm audit fix`
+  in the `scripts/validate.py` security stage no longer rewrites `package-lock.json` and dirties the tree (2026-10-31); 8.72.1 was
+  younger than the 7-day guard, `package.json` and `.npmrc` unchanged.
+  - _Dev time: ~19m wall-clock (one arsm-chain run plus the pre-push gate, 2026-10-31 14:23 to 14:42 +01:00, shared by both fixes). Cost: ~$1.1-2.1 output-token-only estimate (107k output tokens, sonnet packages, opus routing; excludes input tokens and cache, so a lower bound)._
 - `follow-redirects` 1.16.1 to 1.16.2 for the high advisory GHSA-mrwp-f3q8-3g9p (2026-10-31), lock file only. The fix was younger than
   the 7-day `min-release-age` guard, so the owner approved a one-off `--min-release-age=0` for this package; `.npmrc` is unchanged.
   - _Dev time: ~25m wall-clock. cost: not measured._

@@ -474,12 +474,12 @@ module budget 'budget.bicep' = if (!empty(alertEmail) && monthlyBudgetAmount > 0
 output publicUrl string = effectivePublicUrl
 
 @description('Default Container Apps host name of the web app (CNAME target for a custom domain).')
-output webDefaultHost string = deployApps ? webApp.properties.configuration.ingress.fqdn : ''
+output webDefaultHost string = deployApps ? webApp!.properties.configuration.ingress.fqdn : ''
 
 @description('Static inbound IP of the Container Apps environment (A record of the apex domain).')
 output environmentStaticIp string = containerEnv.properties.staticIp
 
 @description('Value of the asuid TXT record that proves ownership of the custom domain.')
-output customDomainVerificationId string = deployApps ? webApp.properties.customDomainVerificationId : ''
+output customDomainVerificationId string = deployApps ? webApp!.properties.customDomainVerificationId : ''
 
 output postgresHost string = postgres.outputs.fullyQualifiedDomainName
