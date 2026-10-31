@@ -73,7 +73,7 @@ All names live in `src/utils/browserStorageKeys.ts`; access goes through `safeSt
 - The customer expander (`customer-expand-<id>`) carries `aria-expanded` and `aria-controls` pointing at the details region.
 - The customer search field uses `filterNameSearchInput` (spaces and apostrophes allowed, digits still dropped); the create/edit forms keep `filterNameInput`.
 - Repair history and appointment dates render through `formatShortDateTime`; the mileage through `formatQuantity`.
-- Scheduler intake supports email, exact plate, and name multi-result lookup.
+- Scheduler intake supports email, exact plate, and name multi-result lookup; with the plate filter the results list shows vehicles (`PlateLookupResults`) and pages through `useLookupResultsPage`.
 - Scheduler and customer reads keep query-cache stale times, visible-tab background refresh, and mutation invalidation behavior aligned with `src/services/cache`.
 - Live update channels are built with `createLiveUpdateChannel` (`src/services/live`), which owns the SSE connection lifecycle, reference counting, auth-aware reconnect and logout teardown. A channel only supplies its URL, SSE event name, DOM event name and payload parser; do not hand-roll a second EventSource. The stream reconnects with exponential backoff and jitter (nominal 2 s doubling to 30 s, reset when a stream opens). The session is refreshed first only when the browser closed the stream (the server rejected it), never for a dropped or unreachable stream.
 - The scheduler subscribes to `/api/appointments/updates` while mounted and refreshes the current view on each event, rather than patching local state, because an appointment can move between months.

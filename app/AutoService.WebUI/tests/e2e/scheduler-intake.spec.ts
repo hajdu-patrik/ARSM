@@ -18,14 +18,27 @@ test.describe('Scheduler intake customer lookup', () => {
     const dialog = await schedulerPage.openIntakeForCurrentDay();
 
     await schedulerPage.searchByLicensePlate('NXE-441');
-    // One result reads in the singular; the two name matches below read in the plural.
-    await expect(dialog.getByText('1 matching customer', { exact: true })).toBeVisible();
+    // The plate filter lists vehicles; the two name matches below list customers in the plural.
+    await expect(dialog.getByText('1 matching vehicle', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('Volkswagen Golf', { exact: true })).toBeVisible();
     await dialog.getByRole('button', { name: 'Select' }).first().click();
 
     await expect(dialog.getByText('Existing customer selected')).toBeVisible();
     await expect(dialog.getByText('anna.kovacs@example.test')).toBeVisible();
     await expectDropdownValue(page, 'scheduler-intake-existing-vehicle', '1001');
     await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toContainText('NXE-441 - Volkswagen Golf (2018)');
+  });
+
+  test('preselects the vehicle of the chosen plate row, not the first vehicle of its owner', async ({ page }) => {
+    const schedulerPage = new SchedulerPage(page);
+    await schedulerPage.goto();
+    const dialog = await schedulerPage.openIntakeForCurrentDay();
+
+    await schedulerPage.searchByLicensePlate('PHE-220');
+    await expect(dialog.getByText('1 matching vehicle', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Select' }).first().click();
+
+    await expect(dialog.getByTestId('scheduler-intake-existing-vehicle')).toContainText('PHE-220');
   });
 
   test('creates an intake for an existing vehicle and adds it to the monthly list', async ({ page }) => {

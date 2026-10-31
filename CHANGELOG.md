@@ -8,6 +8,14 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 
 ## [Unreleased]
 
+### Changed
+- Scheduler intake customer lookup: with the License plate filter active, the results list shows vehicles instead of
+  customers, one row per matching vehicle (plate with the match highlighted, brand and model, owner name) under a
+  "<n> matching vehicles" title; Select picks the owner customer and preselects the vehicle of the chosen row, and the
+  view after selection is unchanged. The Customer name results are unchanged. The five-per-page paging is shared by
+  both lists.
+  _Dev time: ~15 min wall-clock. ~$0.28-0.41 (all sonnet, output-token-only estimate, a lower bound, not a bill)._
+
 ### Added
 - Known defects of the audit fixed and test gaps closed (2026-10-30).
   - A sole mechanic refused on self-delete gets a dedicated toast (`toast.profileDeleteSoleMechanic`) instead of the generic failure.

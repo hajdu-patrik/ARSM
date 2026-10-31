@@ -1,8 +1,9 @@
-import { memo, useId, useState } from 'react';
+import { memo, useId } from 'react';
 import { UserCheck, UserPlus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { HighlightedText } from '../../../../components/common/HighlightedText';
 import { Pagination } from '../../../../components/common/Pagination';
+import { getLookupCustomerName } from './lookupCustomerName';
 import type { SchedulerCustomerLookupDto } from '../../../../types/scheduler/scheduler.types';
 import {
 	compactInputSurfaceClass,
@@ -21,12 +22,10 @@ import {
 } from '../../../../utils/formStyles';
 import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
 import type { LookupMode } from './SchedulerIntakeModal.types';
+import { LOOKUP_RESULTS_PAGE_SIZE, useLookupResultsPage } from './useLookupResultsPage';
 
 /** Hint shown under every lookup miss; it is the same for both lookup fields. */
 const LOOKUP_NO_MATCH_HINT_KEY = 'scheduler.intake.lookupNoCreateHint';
-
-/** Name suggestions shown per page. */
-const NAME_RESULTS_PAGE_SIZE = 5;
 
 interface LookupInputProps {
 	readonly licensePlateLookup: string;
@@ -142,11 +141,7 @@ export const NameLookupResults = memo(function NameLookupResults({
 	translate,
 	onSelect,
 }: NameLookupResultsProps) {
-	// The page belongs to the result set it was chosen in: a new set starts at page 1.
-	const [pageState, setPageState] = useState({ page: 1, results });
-	const totalPages = Math.max(1, Math.ceil(results.length / NAME_RESULTS_PAGE_SIZE));
-	const page = pageState.results === results ? Math.min(pageState.page, totalPages) : 1;
-	const pageResults = results.slice((page - 1) * NAME_RESULTS_PAGE_SIZE, page * NAME_RESULTS_PAGE_SIZE);
+	const { page, pageResults, setPage } = useLookupResultsPage(results);
 
 	return (
 		<div className={`fade-in-up space-y-2 px-3.5 py-2.5 ${compactPrimaryValueTextClass} ${compactInputSurfaceClass}`}>
@@ -186,10 +181,8 @@ export const NameLookupResults = memo(function NameLookupResults({
 				compact
 				page={page}
 				totalCount={results.length}
-				pageSize={NAME_RESULTS_PAGE_SIZE}
-				onPageChange={(nextPage) => {
-					setPageState({ page: nextPage, results });
-				}}
+				pageSize={LOOKUP_RESULTS_PAGE_SIZE}
+				onPageChange={setPage}
 				testIdPrefix="intake-suggestions-pagination"
 			/>
 		</div>
@@ -228,11 +221,4 @@ function getLookupNoMatchTitleKey(lookupMode: LookupMode): string {
 		default:
 			return 'scheduler.intake.customerNotFound';
 	}
-}
-
-/** Joins the non-blank first, middle and last name parts of a lookup result. */
-function getLookupCustomerName(customer: SchedulerCustomerLookupDto): string {
-	return [customer.firstName, customer.middleName, customer.lastName]
-		.filter((part): part is string => Boolean(part && part.trim().length > 0))
-		.join(' ');
 }

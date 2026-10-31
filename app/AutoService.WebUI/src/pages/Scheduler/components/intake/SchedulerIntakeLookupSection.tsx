@@ -13,6 +13,7 @@ import {
 	LookupNoMatch,
 	NameLookupResults,
 } from './SchedulerIntakeLookupSection.parts';
+import { PlateLookupResults } from './PlateLookupResults';
 
 interface SchedulerIntakeLookupProps {
 	readonly lookupMode: LookupMode;
@@ -76,12 +77,21 @@ export const SchedulerIntakeLookupSection = memo(function SchedulerIntakeLookupS
 			)}
 
 			{lookupState === 'name-results' && (
-				<NameLookupResults
-					results={nameLookupResults}
-					query={nameLookup}
-					translate={translate}
-					onSelect={onSelectNameLookupResult}
-				/>
+				lookupMode === 'licensePlate' ? (
+					<PlateLookupResults
+						results={nameLookupResults}
+						query={licensePlateLookup}
+						translate={translate}
+						onSelect={onSelectNameLookupResult}
+					/>
+				) : (
+					<NameLookupResults
+						results={nameLookupResults}
+						query={nameLookup}
+						translate={translate}
+						onSelect={onSelectNameLookupResult}
+					/>
+				)
 			)}
 
 			{lookupState === 'not-found' && (
