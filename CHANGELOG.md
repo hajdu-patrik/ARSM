@@ -75,6 +75,9 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- The CI `e2e-playwright` job limit rose from 30 to 45 minutes (2026-11-01): the suite takes 26-28 minutes, and one run was cancelled at the
+  old limit with no test failure.
+  - _Dev time: ~2m wall-clock to commit-ready, plus the pre-push gate. cost: not measured._
 - `deploy/azure/main.bicep` no longer prints the BCP318 "may be null" warnings for the conditionally deployed container apps
   (2026-10-31); outputs, resources and both deploy phases behave as before.
   - _Dev time: ~19m wall-clock (one arsm-chain run plus the pre-push gate, 2026-10-31 14:23 to 14:42 +01:00, shared by both fixes). Cost: ~$1.1-2.1 output-token-only estimate (107k output tokens, sonnet packages, opus routing; excludes input tokens and cache, so a lower bound)._

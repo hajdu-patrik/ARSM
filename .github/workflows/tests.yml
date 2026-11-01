@@ -21,7 +21,7 @@ jobs:
   # so no backend or secret is needed and the API URL below is never contacted.
   e2e-playwright:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: app/AutoService.WebUI
