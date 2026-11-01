@@ -27,6 +27,11 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   _Dev time: ~15 min wall-clock. ~$0.28-0.41 (all sonnet, output-token-only estimate, a lower bound, not a bill)._
 
 ### Added
+- Dependabot (2026-11-01). `.github/dependabot.yml` watches NuGet, npm, GitHub Actions and Docker monthly with a 7-day
+  cooldown: minor and patch grouped per ecosystem, majors on their own, at most 2 open PRs each, the Node and .NET runtime
+  majors ignored. Aspire and `MessagePack` stay manual because of the per-RID AppHost lock files, and the root
+  `dotnet-tools.json` because Dependabot does not read it. Dependabot alerts and security updates are on.
+  _Dev time: ~10 min wall-clock. cost: not measured._
 - Known defects of the audit fixed and test gaps closed (2026-10-30).
   - A sole mechanic refused on self-delete gets a dedicated toast (`toast.profileDeleteSoleMechanic`) instead of the generic failure.
   - The registration 400 no longer leaks the framework suffix ` (Parameter '...')` (`RegistrationRefusedException`).
