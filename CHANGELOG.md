@@ -9,6 +9,11 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- CI runtime cut with no coverage loss (2026-11-01). The E2E job runs on 3 workers instead of 1, the same count as the
+  pre-push gate, and each heavy job runs only when its paths changed since the last commit that workflow passed on
+  (`scripts/ci-changes.py`, new `changes` job in `tests.yml` and `dotnet.yml`). `repo-gate` still runs on every push;
+  a cancelled or failed run stays covered by the next one, and any path without a rule runs every job.
+  _Dev time: ~15 min wall-clock. cost: not measured._
 - Scheduler intake customer lookup: with the License plate filter active, the results list shows vehicles instead of
   customers, one row per matching vehicle (plate with the match highlighted, brand and model, owner name) under a
   "<n> matching vehicles" title; Select picks the owner customer and preselects the vehicle of the chosen row, and the

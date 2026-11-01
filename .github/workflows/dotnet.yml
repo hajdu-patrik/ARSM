@@ -17,6 +17,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides which jobs below this push needs; the base is the last commit this workflow passed on,
+  # so a change whose run was cancelled or failed is still covered by the next run.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      webui: ${{ steps.diff.outputs.webui }}
+      backend: ${{ steps.diff.outputs.backend }}
+      api_suites: ${{ steps.diff.outputs.api_suites }}
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        filter: blob:none
+
+    - name: Select the jobs for the diff
+      id: diff
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        base="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dotnet.yml/runs?branch=main&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""' || true)"
+        python3 scripts/ci-changes.py --base "$base" | tee -a "$GITHUB_OUTPUT"
+
   # Repository-wide size and no-shadow checks and the scripts test suite; build and lint run in the jobs below.
   repo-gate:
     runs-on: ubuntu-latest
@@ -36,6 +63,8 @@ jobs:
       run: python -m unittest discover -s tests/Scripts
 
   backend-build:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,6 +103,8 @@ jobs:
         ! grep -qi 'has the following vulnerable packages' vuln-report.txt
 
   frontend-build:
+    needs: changes
+    if: needs.changes.outputs.webui == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:

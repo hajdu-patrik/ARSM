@@ -72,7 +72,8 @@
   deterministic, takes seconds, and costs no tokens.
 - Every push must pass `python scripts/pre-push.py` via the `.githooks/pre-push` hook before CI runs.
   Install it once with `git config core.hooksPath .githooks`; `git push --no-verify` is an exception
-  only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
+  only. The CI repo gate is `python scripts/validate.py --all --skip-build`; it runs on every push, the heavy CI
+  jobs only on the paths `scripts/ci-changes.py` maps to them.
 - Skipping the workflow never waives Decision Ownership, Security and Secrets, Engineering
   Guardrails, Core Invariants, or Version Control Attribution. Those apply to every task.
 

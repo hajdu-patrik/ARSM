@@ -195,7 +195,7 @@ The development stack started by the AppHost cannot be shared this way: the dev 
 
 NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
 
-GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux (`ubuntu-latest`) and runs the repository gate (`python scripts/validate.py --all --skip-build`) in its `repo-gate` job; `.github/workflows/tests.yml` runs the Playwright suite against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials.
+GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux (`ubuntu-latest`) and runs the repository gate (`python scripts/validate.py --all --skip-build`) in its `repo-gate` job; `.github/workflows/tests.yml` runs the Playwright suite against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials. Both workflows start with a `changes` job (`scripts/ci-changes.py`): `repo-gate` runs on every push, the other jobs only when the diff since the last commit that workflow passed on touches their paths.
 
 Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest` to the Linux act container so `act -j backend-build`, `act -j frontend-build` and `act -j repo-gate` run locally.
 

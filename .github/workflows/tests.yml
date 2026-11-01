@@ -17,9 +17,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides which jobs below this push needs; the base is the last commit this workflow passed on,
+  # so a change whose run was cancelled or failed is still covered by the next run.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      webui: ${{ steps.diff.outputs.webui }}
+      backend: ${{ steps.diff.outputs.backend }}
+      api_suites: ${{ steps.diff.outputs.api_suites }}
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        filter: blob:none
+
+    - name: Select the jobs for the diff
+      id: diff
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        base="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?branch=main&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""' || true)"
+        python3 scripts/ci-changes.py --base "$base" | tee -a "$GITHUB_OUTPUT"
+
   # Playwright E2E on the Vite dev server; tests/e2e/support/api-mocks.ts answers every /api/** call,
   # so no backend or secret is needed and the API URL below is never contacted.
   e2e-playwright:
+    needs: changes
+    if: needs.changes.outputs.webui == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -28,6 +57,7 @@ jobs:
     env:
       CI: "true"
       PORT: "5173"
+      PLAYWRIGHT_WORKERS: "3"
       VITE_API_URL: https://localhost:5200
       VITE_SITE_URL: https://localhost:5173
 
@@ -71,6 +101,8 @@ jobs:
   # HTTP and SQL suites against PostgreSQL + RustFS containers and the API (Development) on an empty database:
   # a per-run admin is bootstrapped, the _setup step creates the fixtures, and every credential is generated per run and masked.
   api-http-sql:
+    needs: changes
+    if: needs.changes.outputs.api_suites == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

@@ -83,6 +83,11 @@
   usage. Never printed: secret values (loaded values, Postgres URIs and secret-shaped assignments are masked in
   every line); az receives them only through the child process environment, docker and git never do, and the
   temp directory is removed in a `finally` block. Nothing deletes Azure resources.
+- `ci-changes.py`: the `changes` job of both CI workflows. Prints `webui`, `backend` and `api_suites` as `GITHUB_OUTPUT`
+  lines for the diff from `--base` to HEAD; `repo-gate` needs none of them. The base is the last commit that workflow
+  passed on, so a change whose run was cancelled or failed is still covered. Markdown, `docs/`, `deploy/`, `.claude/`,
+  `.vscode/`, `.githooks/` and `tests/Scripts/` need no heavy job, a path without a rule needs all of them, and an empty
+  or unknown base runs every job. A new top-level path therefore stays safe until it gets a rule in `PREFIX_GROUPS`.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
   changed specs, and the specs that import a changed page object); any file outside those rules selects
   the full suite. Prints the selection, or runs it through the canonical runner with `--run`. A new spec
