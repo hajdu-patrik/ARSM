@@ -79,7 +79,8 @@
 
 - Use `python scripts/run-local-test-suite.py [all|playwright|http|sql]`.
 - Runner child commands default to a 300-second timeout; use `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` only for slower local runs.
-- Playwright runs with 3 workers by default, and `tests.yml` sets the same `PLAYWRIGHT_WORKERS` (without it the config uses 1). For a change, prefer
+- Playwright runs with 3 workers by default on the Vite dev server. CI runs the same specs on the production bundle through
+  `vite preview` with 4 workers (`PLAYWRIGHT_WEB_SERVER_COMMAND` and `PLAYWRIGHT_WORKERS` in `tests.yml`), so the real CSP applies there. For a change, prefer
   `python scripts/select-e2e-specs.py --run`: it runs only the specs the diff affects through the runner
   and falls back to the full suite for any shared file.
 - `python scripts/pre-push.py` (pre-push hook, installed with `git config core.hooksPath .githooks`) runs the HTTP and SQL suites through this runner on a disposable stack; `git push --no-verify` is an exception only.

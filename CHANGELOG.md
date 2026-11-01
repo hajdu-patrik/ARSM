@@ -9,6 +9,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- CI E2E on the production bundle (2026-11-01). The `e2e-playwright` job builds with `vite build` and runs the specs
+  through `vite preview` with 4 workers, so the real CSP and Trusted Types apply; a local run and the pre-push gate
+  stay on the Vite dev server with 3 workers. Trial on 4 cores: 15.9 minutes before, 7.9 after, all 629 specs passing.
+  _Dev time: ~6 min wall-clock. cost: not measured._
 - CI runtime cut with no coverage loss (2026-11-01). The E2E job runs on 3 workers instead of 1, the same count as the
   pre-push gate, and each heavy job runs only when its paths changed since the last commit that workflow passed on
   (`scripts/ci-changes.py`, new `changes` job in `tests.yml` and `dotnet.yml`). `repo-gate` still runs on every push;

@@ -44,8 +44,8 @@ jobs:
         base="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?branch=main&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""' || true)"
         python3 scripts/ci-changes.py --base "$base" | tee -a "$GITHUB_OUTPUT"
 
-  # Playwright E2E on the Vite dev server; tests/e2e/support/api-mocks.ts answers every /api/** call,
-  # so no backend or secret is needed and the API URL below is never contacted.
+  # Playwright E2E on the production bundle through vite preview; tests/e2e/support/api-mocks.ts answers
+  # every /api/** call, so no backend or secret is needed and the API URL below is never contacted.
   e2e-playwright:
     needs: changes
     if: needs.changes.outputs.webui == 'true'
@@ -57,7 +57,8 @@ jobs:
     env:
       CI: "true"
       PORT: "5173"
-      PLAYWRIGHT_WORKERS: "3"
+      PLAYWRIGHT_WORKERS: "4"
+      PLAYWRIGHT_WEB_SERVER_COMMAND: npm run preview -- --port 5173 --strictPort
       VITE_API_URL: https://localhost:5200
       VITE_SITE_URL: https://localhost:5173
 
@@ -84,6 +85,10 @@ jobs:
 
     - name: Install Playwright Chromium
       run: npx playwright install --with-deps chromium
+
+    # Only the bundler: the frontend-build job of the .NET workflow does the type-check.
+    - name: Build the production bundle
+      run: npx vite build
 
     - name: Run E2E suite
       run: npm run e2e

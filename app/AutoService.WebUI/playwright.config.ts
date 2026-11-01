@@ -39,7 +39,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
+    /* CI serves the production bundle; a local run stays on the dev server. */
+    command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ?? 'npm run dev',
     url: baseURL,
     ignoreHTTPSErrors: true,
     reuseExistingServer: !isCi || forceReuseExistingServer,
