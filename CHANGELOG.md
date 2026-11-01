@@ -13,7 +13,8 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   pre-push gate, and each heavy job runs only when its paths changed since the last commit that workflow passed on
   (`scripts/ci-changes.py`, new `changes` job in `tests.yml` and `dotnet.yml`). `repo-gate` still runs on every push;
   a cancelled or failed run stays covered by the next one, and any path without a rule runs every job.
-  _Dev time: ~15 min wall-clock. cost: not measured._
+  Measured on a full run: the E2E step fell from 24.9 to 17.1 minutes, the two workflows from 31.7 to 22.9 job-minutes.
+  _Dev time: ~50 min wall-clock. cost: not measured._
 - Scheduler intake customer lookup: with the License plate filter active, the results list shows vehicles instead of
   customers, one row per matching vehicle (plate with the match highlighted, brand and model, owner name) under a
   "<n> matching vehicles" title; Select picks the owner customer and preselects the vehicle of the chosen row, and the
