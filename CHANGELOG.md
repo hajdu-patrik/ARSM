@@ -128,6 +128,12 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `@rolldown/plugin-babel` 0.3.0 -> 0.2.4 (2026-11-05, owner decision). The 0.3.0 of the earlier takeover of Dependabot PR #29 was
+  outside the peer range of `@vitejs/plugin-react` 6.1.2 (`^0.1.7 || ^0.2.0`), so a plain `npm install` failed with ERESOLVE and
+  `npm ls` flagged it invalid, while `npm ci` passed. 0.2.4 is the newest 0.2.x; `vite.config.ts` is unchanged, `npm ls` is clean again
+  and the production build passes. `@vitejs/plugin-react` 6.2.1 widens the range to 0.3 and turns 7 days old on 2026-11-09, when the
+  intake may move both.
+  _Dev time: ~3 min wall-clock. cost: not measured._
 - `teszt.arsm.hu` builds its images from the deployed commit only (2026-11-05): `deploy/local-test/deploy.py` no
   longer copies the clone's working-tree `deploy/` folder over the `git archive`, which let a lagging clone ship a
   stale `web.Dockerfile` (the nginx 1.31 bump of PR #25 deployed as 1.30.6). Proven by
