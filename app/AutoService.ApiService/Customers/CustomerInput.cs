@@ -59,6 +59,8 @@ internal readonly record struct CustomerInput(
 
     internal FullName ToFullName() => new(FirstName.Trim(), ContactNormalization.NormalizeOptional(MiddleName), LastName.Trim());
 
+    internal const string EmailTakenDetail = "A person with this email already exists.";
+
     /** The 409 detail when another person already holds the email or, checked second, the phone. */
     internal static async Task<string?> FindContactConflictAsync(
         AutoServiceDbContext db,
@@ -75,7 +77,7 @@ internal readonly record struct CustomerInput(
 
         if (await others.AnyAsync(p => p.Email == normalizedEmail, cancellationToken))
         {
-            return "A person with this email already exists.";
+            return EmailTakenDetail;
         }
 
         return normalizedPhone is not null && await others.AnyAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken)

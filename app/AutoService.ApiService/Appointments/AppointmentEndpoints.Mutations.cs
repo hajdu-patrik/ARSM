@@ -36,7 +36,12 @@ public static partial class AppointmentEndpoints
         }
 
         return await AssignMechanicAsync(
-            id, mechanic, "Claim", "already_claimed", requireInProgress: true, db, logger, broadcaster, cancellationToken);
+            id,
+            new MechanicAssignment(mechanic, "Claim", "already_claimed", RequireInProgress: true, Results.Unauthorized()),
+            db,
+            logger,
+            broadcaster,
+            cancellationToken);
     }
 
     private static async Task<IResult> UnclaimAsync(
@@ -76,7 +81,13 @@ public static partial class AppointmentEndpoints
         }
 
         return await AssignMechanicAsync(
-            id, mechanic, "AdminAssign", "already_assigned", requireInProgress: false, db, logger, broadcaster, cancellationToken);
+            id,
+            new MechanicAssignment(
+                mechanic, "AdminAssign", "already_assigned", RequireInProgress: false, Results.NotFound(new { code = "mechanic_not_found" })),
+            db,
+            logger,
+            broadcaster,
+            cancellationToken);
     }
 
     private static Task<IResult> AdminUnassignAsync(
@@ -95,18 +106,25 @@ public static partial class AppointmentEndpoints
             broadcaster,
             cancellationToken);
 
-    /** Shared by claim and admin assign: open appointment, not yet assigned; a unique-violation race reads as the same 409. */
+    /** One claim or admin assign: the mechanic, the log name, the 409 code and the answer for a mechanic deleted meanwhile. */
+    private sealed record MechanicAssignment(
+        Mechanic Mechanic,
+        string Operation,
+        string AlreadyAssignedCode,
+        bool RequireInProgress,
+        IResult MechanicMissing);
+
+    /** Shared by claim and admin assign: a unique-violation race reads as the same 409, a lost delete race as the sequential 404. */
     private static async Task<IResult> AssignMechanicAsync(
         int id,
-        Mechanic mechanic,
-        string operation,
-        string alreadyAssignedCode,
-        bool requireInProgress,
+        MechanicAssignment assignment,
         AutoServiceDbContext db,
         ILogger logger,
         IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
+        var (mechanic, operation, alreadyAssignedCode, requireInProgress, mechanicMissing) = assignment;
+
         var appointment = await LoadAppointmentAsync(db, id, cancellationToken);
         if (appointment is null)
         {
@@ -143,6 +161,24 @@ public static partial class AppointmentEndpoints
             logger.LogInformation(
                 "{Operation} conflict from race condition on appointment {AppointmentId} for mechanic {MechanicId}.", operation, id, mechanic.Id);
             return Results.Conflict(new { code = alreadyAssignedCode });
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })
+        {
+            // The join-row insert lost against a parallel delete of the mechanic or the appointment: answer as a repeat would.
+            db.ChangeTracker.Clear();
+            if (!await db.Mechanics.AnyAsync(m => m.Id == mechanic.Id, cancellationToken))
+            {
+                logger.LogInformation("{Operation} lost a race: mechanic {MechanicId} was deleted.", operation, mechanic.Id);
+                return mechanicMissing;
+            }
+
+            if (await db.Appointments.AnyAsync(a => a.Id == id, cancellationToken))
+            {
+                throw;
+            }
+
+            logger.LogInformation("{Operation} lost a race: appointment {AppointmentId} was deleted.", operation, id);
+            return AppointmentNotFound();
         }
 
         logger.LogInformation(

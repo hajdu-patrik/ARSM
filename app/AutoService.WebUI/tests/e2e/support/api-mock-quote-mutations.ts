@@ -12,6 +12,7 @@ import {
   applyQuoteWrite,
   rejectLockedAppointment,
   rejectQuoteVersion,
+  rejectUndeliverableAddress,
   replaceQuote,
   sortedQuotes,
   toQuoteDetailResponse,
@@ -95,7 +96,7 @@ export async function handleVehicleQuoteRoute(
   return true;
 }
 
-/** Applies a status transition, enforcing the state machine and the send rule. */
+/** Applies a status transition in the API's check order: transition, version, lines, validity, stale version, address. */
 export async function handleChangeQuoteStatus(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<void> {
   const payload = route.request().postDataJSON() as ChangeQuoteStatusRequest;
 
@@ -111,12 +112,26 @@ export async function handleChangeQuoteStatus(route: Route, state: MockApiState,
     return;
   }
 
-  if (await rejectQuoteVersion(route, quote, payload.version)) {
+  if (!payload.version) {
+    await fulfillJson(route, { detail: 'Version is required.' }, 422);
     return;
   }
 
   if (payload.status === 'Sent' && quote.lines.length === 0) {
     await fulfillJson(route, { detail: 'A quote must have at least one line before it can be sent.' }, 409);
+    return;
+  }
+
+  if (payload.status === 'Sent' && new Date(quote.validUntil).getTime() < Date.now()) {
+    await fulfillJson(route, { code: 'quote_valid_until_passed' }, 422);
+    return;
+  }
+
+  if (await rejectQuoteVersion(route, quote, payload.version)) {
+    return;
+  }
+
+  if (payload.status === 'Sent' && await rejectUndeliverableAddress(route, state, quote)) {
     return;
   }
 

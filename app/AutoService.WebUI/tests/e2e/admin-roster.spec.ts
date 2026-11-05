@@ -3,6 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AdminPage } from './pages/admin.page';
 import { fulfillJson } from './support/api-mock-response';
+import { recordGetRequests } from './support/request-log';
 import { MOCK_MECHANIC_IDS, type MockApiState } from './support/test-data';
 import { errorToastMessage, toastMessage } from './support/toast';
 
@@ -158,6 +159,7 @@ test.describe('Delete mechanic', () => {
     { status: 403, detail: 'Forbidden', message: 'You do not have permission to delete this mechanic.' },
     { status: 409, detail: 'Conflict', message: 'Deletion failed due to a conflict. Please try again.' },
     { status: 404, detail: 'Mechanic not found.', message: 'Failed to delete mechanic.' },
+    { status: 500, detail: 'The linked account could not be deleted.', message: 'Failed to delete linked account. Please try again later.' },
   ] as const;
 
   for (const { status, detail, message } of REFUSALS) {
@@ -176,6 +178,25 @@ test.describe('Delete mechanic', () => {
       await expect(errorToastMessage(page, message)).toBeVisible();
       await expect(dialog).toBeVisible();
       await expect(adminPage.rosterRow(ZED_A)).toBeVisible();
+      await expect(page).toHaveURL(/\/admin\/register$/);
     });
   }
+
+  test('makes the scheduler read its months again when it is opened after a deletion', async ({ page }) => {
+    const monthReads = recordGetRequests(page, '/api/appointments');
+    const { adminPage } = await AdminPage.open(page, { prepare: seedZeds });
+    const sidebar = page.locator('aside:visible');
+    await sidebar.getByRole('link', { name: 'Scheduler', exact: true }).click();
+    await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
+    await expect.poll(() => monthReads.length).toBeGreaterThan(0);
+    await sidebar.getByRole('link', { name: 'Admin', exact: true }).click();
+
+    await adminPage.rosterRow(ZED_A).getByRole('button', { name: DELETE }).click();
+    await page.getByRole('dialog', { name: 'Confirm mechanic deletion' }).getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(toastMessage(page, 'Mechanic "zed.a@example.test" deleted successfully.')).toBeVisible();
+    const readsBeforeReturn = monthReads.length;
+    await sidebar.getByRole('link', { name: 'Scheduler', exact: true }).click();
+
+    await expect.poll(() => monthReads.length).toBeGreaterThan(readsBeforeReturn);
+  });
 });

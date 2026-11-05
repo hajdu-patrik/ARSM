@@ -25,6 +25,7 @@ interface UseProfilePictureSettingsParams {
   showErrorToast: (message: string, options?: Record<string, string | number>) => void;
 }
 
+/** Owns picture selection, the crop step and the upload and removal mutations. */
 export function useProfilePictureSettings({
   profile,
   showSuccessToast,
@@ -32,6 +33,7 @@ export function useProfilePictureSettings({
 }: UseProfilePictureSettingsParams) {
   const { storePictureState, invalidateRoster } = useProfileCache();
   const [pictureKey, setPictureKey] = useState(0);
+  const [pictureVersion, setPictureVersion] = useState(() => Date.now());
   const [pictureSource, setPictureSource] = useState<string | null>(null);
   const [pendingPictureFileName, setPendingPictureFileName] = useState<string | null>(null);
   const [isPictureRemoveConfirmOpen, setIsPictureRemoveConfirmOpen] = useState(false);
@@ -46,6 +48,7 @@ export function useProfilePictureSettings({
     storePictureState(hasProfilePicture);
     invalidateRoster();
     setPictureKey((previousKey) => previousKey + 1);
+    setPictureVersion(Date.now());
 
     if (profile) {
       emitProfilePictureUpdated({ personId: profile.personId, hasProfilePicture });
@@ -147,6 +150,7 @@ export function useProfilePictureSettings({
   return {
     isUploadingPicture,
     pictureKey,
+    pictureVersion,
     pictureSource,
     isPictureRemoveConfirmOpen,
     setIsPictureRemoveConfirmOpen,

@@ -42,7 +42,7 @@ function showLoginFailure(showErrorToast: ShowErrorToast, error: LoginError, met
     return;
   }
 
-  if (error.key === 'login.attemptsExceededWithDuration') {
+  if (error.key === 'common.validation.attemptsExceededWithDuration') {
     showErrorToast(error.key, { minutes: error.minutes, count: error.minutes });
     return;
   }

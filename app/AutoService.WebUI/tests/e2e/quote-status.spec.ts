@@ -3,6 +3,7 @@ import { CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 import { signInWithMocks } from './support/sign-in';
+import { toastMessage } from './support/toast';
 
 test.describe('Quotes - status flow', () => {
   // Tall enough that the page-sized quote list shows every fixture row at once.
@@ -123,5 +124,33 @@ test.describe('Quotes - status flow', () => {
 
     await expect(quotesPage.rows()).toHaveCount(2);
     await expect(quotesPage.row('ARSM-2026-0001')).toHaveCount(0);
+  });
+
+  test('accepting a quote makes the scheduler read its months again when it is opened', async ({ page }) => {
+    const monthReads: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (request.method() === 'GET' && url.pathname === '/api/appointments') {
+        monthReads.push(url.search);
+      }
+    });
+    await signInWithMocks(page);
+    await expect.poll(() => monthReads.length).toBeGreaterThanOrEqual(3);
+
+    const sidebar = page.locator('aside:visible');
+    await sidebar.getByRole('link', { name: 'Quotes', exact: true }).click();
+    const quotesPage = new QuotesPage(page);
+    await expect(quotesPage.searchInput()).toBeVisible();
+    await quotesPage.openQuote('ARSM-2026-0002');
+    await page.getByTestId('quote-accept-button').click();
+    await expect(toastMessage(page, 'Quote marked as accepted.')).toBeVisible();
+    await quotesPage.closeEditorButton().click();
+
+    // The cached months are younger than their one-minute stale time: only the accept can make them stale.
+    const readsBeforeOpening = monthReads.length;
+    await sidebar.getByRole('link', { name: 'Scheduler', exact: true }).click();
+    await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
+
+    await expect.poll(() => monthReads.length).toBeGreaterThan(readsBeforeOpening);
   });
 });

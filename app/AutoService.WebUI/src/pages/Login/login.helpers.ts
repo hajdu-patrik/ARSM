@@ -1,7 +1,8 @@
 /** Login parsing and error-resolution helpers: normalizes identifiers, maps backend/transport failures to i18n keys. */
 
-import { isAxiosError, type AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { logError } from '../../utils/devLog';
+import { resolveAttemptsExceededMessage, type AttemptsExceededMessage } from '../../utils/lockoutWait';
 
 interface ApiErrorPayload {
   readonly code?: string;
@@ -9,7 +10,6 @@ interface ApiErrorPayload {
   readonly detail?: string;
   readonly message?: string;
   readonly error?: string;
-  readonly retryAfterSeconds?: number;
 }
 
 export type LoginError =
@@ -18,8 +18,7 @@ export type LoginError =
   | { key: 'login.identifierNotFound' }
   | { key: 'login.serverError500' }
   | { key: 'login.databaseUnavailable' }
-  | { key: 'login.attemptsExceededWithDuration'; minutes: number }
-  | { key: 'login.attemptsExceeded' }
+  | AttemptsExceededMessage
   | { key: 'login.error' };
 
 /** Why an identifier is refused: left empty, the wrong shape, or typed into the other login method. */
@@ -151,49 +150,6 @@ export function hasLoginFieldErrors(errors: LoginFieldErrors): boolean {
   return errors.identifier !== undefined || errors.password !== undefined;
 }
 
-/** Seconds until the next attempt, from the payload or the `Retry-After` header (seconds or date), else null. */
-function parseRetryAfterSeconds(err: AxiosError<ApiErrorPayload>): number | null {
-  const body = err.response?.data;
-  const payloadRetryAfter = body?.retryAfterSeconds;
-  if (typeof payloadRetryAfter === 'number' && Number.isFinite(payloadRetryAfter) && payloadRetryAfter > 0) {
-    return Math.floor(payloadRetryAfter);
-  }
-
-  // Axios types a header lookup as `any`; unknown makes the typeof checks below do the narrowing.
-  const retryAfterHeader: unknown = err.response?.headers['retry-after'];
-
-  if (typeof retryAfterHeader === 'string') {
-    const parsedSeconds = Number.parseInt(retryAfterHeader, 10);
-    if (!Number.isNaN(parsedSeconds) && parsedSeconds > 0) {
-      return parsedSeconds;
-    }
-
-    const parsedDate = Date.parse(retryAfterHeader);
-    if (!Number.isNaN(parsedDate)) {
-      const deltaSeconds = Math.ceil((parsedDate - Date.now()) / 1000);
-      if (deltaSeconds > 0) {
-        return deltaSeconds;
-      }
-    }
-  }
-
-  return null;
-}
-
-/** The lockout error, carrying the wait in whole minutes (at least one) when the server named it. */
-function toAttemptsExceededError(retryAfterSeconds: number | null): LoginError {
-  if (retryAfterSeconds === null) {
-    return { key: 'login.attemptsExceeded' };
-  }
-
-  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
-
-  return {
-    key: 'login.attemptsExceededWithDuration',
-    minutes,
-  };
-}
-
 function includesAny(haystack: string, needles: readonly string[]): boolean {
   return needles.some((needle) => haystack.includes(needle));
 }
@@ -228,7 +184,7 @@ export function resolveLoginError(err: unknown): LoginError {
   const normalizedErrorText = buildNormalizedErrorText(responseData, err.message);
 
   if (status === 429 || includesAny(normalizedErrorText, ['too many attempts', 'rate limit'])) {
-    return toAttemptsExceededError(parseRetryAfterSeconds(err));
+    return resolveAttemptsExceededMessage(err);
   }
 
   if (status === 500 || normalizedErrorText.includes('500')) {

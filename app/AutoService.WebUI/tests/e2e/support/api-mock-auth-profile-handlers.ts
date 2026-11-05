@@ -39,7 +39,7 @@ export async function tryHandleAuthRoute(
       await handleAuthValidate(route, state, options);
       return true;
     case 'POST /api/auth/refresh':
-      await handleAuthRefresh(route, state, options);
+      await handleAuthRefresh(route, options);
       return true;
     case 'POST /api/auth/logout':
       await fulfillNoContent(route);
@@ -87,17 +87,14 @@ async function handleAuthRegister(
   await fulfillJson(route, { personId: createdMechanic.personId, personType: 'mechanic', email: createdMechanic.email }, 201);
 }
 
-async function handleAuthRefresh(
-  route: Route,
-  state: MockApiState,
-  options: InstallApiMockOptions,
-): Promise<void> {
-  if (options.refreshShouldFail) {
+/** `POST /api/auth/refresh`: 204 with the rotated cookies while the session is valid, else 401. */
+async function handleAuthRefresh(route: Route, options: InstallApiMockOptions): Promise<void> {
+  if (options.refreshShouldFail || !isAuthenticated(options)) {
     await fulfillJson(route, { detail: 'Unauthorized' }, 401);
     return;
   }
 
-  await handleAuthValidate(route, state, options);
+  await fulfillNoContent(route);
 }
 
 async function handleAuthValidate(

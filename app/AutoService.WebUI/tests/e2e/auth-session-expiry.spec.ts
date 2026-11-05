@@ -1,5 +1,5 @@
-/** Session edge cases beyond the refresh-and-retry of a read: a failing session check at start-up keeps the hint
- * and detours through /500, a refused write is retried once after the refresh, and a failing logout still signs out. */
+/** Session edge cases: the start-up validate (one refresh on 401, the login page when the refresh is rejected, the
+ * /500 detour when the server fails), the refresh-and-retry of a refused write and a failing logout. */
 import { expect, test } from '@playwright/test';
 import { openSettings } from './pages/settings.page';
 import { installApiMocks } from './support/api-mocks';
@@ -35,6 +35,54 @@ test.describe('Session check at start-up', () => {
 
     await expect(page).toHaveURL(/\/500\?returnTo=%2Fquotes$/);
     expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBe('1');
+  });
+
+  test('an expired access cookie at start-up is refreshed once and the page opens', async ({ page }) => {
+    const routeCallLog: string[] = [];
+    await primeBrowserState(page, { sessionHint: true });
+    await installApiMocks(page, {
+      profileEmail: 'validate.expired@example.test',
+      routeCallLog,
+      unauthorizedOnceRouteKeys: ['GET /api/auth/validate'],
+    });
+
+    await page.goto('/customers');
+
+    await expect(page.getByTestId('customers-search-input')).toBeVisible();
+    await expect(page).toHaveURL(/\/customers$/);
+    expect(routeCallLog.filter((routeKey) => routeKey === 'POST /api/auth/refresh')).toHaveLength(1);
+    expect(routeCallLog.filter((routeKey) => routeKey === 'GET /api/auth/validate')).toHaveLength(2);
+    expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBe('1');
+  });
+
+  test('a refused validate whose refresh also fails ends at the login page without the hint', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true });
+    await installApiMocks(page, {
+      profileEmail: 'validate.revoked@example.test',
+      refreshShouldFail: true,
+      unauthorizedOnceRouteKeys: ['GET /api/auth/validate'],
+    });
+
+    await page.goto('/customers');
+
+    await expect(page).toHaveURL(/\/login$/);
+    expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBeNull();
+  });
+
+  test('a refused validate whose refresh fails for a passing reason takes the /500 detour and keeps the hint', async ({ page }) => {
+    await primeBrowserState(page, { sessionHint: true });
+    await installApiMocks(page, {
+      profileEmail: 'validate.refresh-down@example.test',
+      routeFailures: { 'POST /api/auth/refresh': { status: 503, body: {} } },
+      unauthorizedOnceRouteKeys: ['GET /api/auth/validate'],
+    });
+
+    await page.goto('/customers');
+
+    await expect(page).toHaveURL(/\/500\?returnTo=%2Fcustomers$/);
+    expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBe('1');
+    await expect(page).toHaveURL(/\/customers$/, { timeout: 8000 });
+    await expect(page.getByTestId('customers-search-input')).toBeVisible();
   });
 
   test('without a session hint no session check is sent at all', async ({ page }) => {

@@ -1,6 +1,8 @@
 /** Error mapping of a rejected password change: the server's field errors or its single detail, as message keys. */
 
 import { isAxiosError } from 'axios';
+import { hasErrorCode } from '../services/http/error-code';
+import { resolveAttemptsExceededMessage } from './lockoutWait';
 import {
   extractServerFieldErrors,
   hasServerFieldErrors,
@@ -11,6 +13,17 @@ import {
 
 /** Generic failure message, used for a server message that has no mapping. */
 const PASSWORD_CHANGE_FAILED_KEY = 'toast.passwordChangeFailed';
+
+/** Toast key and values of a 429 lockout_active answer (the wait named when known), else null. */
+export function extractLockoutToast(err: unknown): { key: string; values: Record<string, number> } | null {
+  if (!hasErrorCode(err, 429, 'lockout_active')) {
+    return null;
+  }
+
+  const message = resolveAttemptsExceededMessage(err);
+  const minutes = 'minutes' in message ? message.minutes : 0;
+  return { key: message.key, values: 'minutes' in message ? { minutes, count: minutes } : {} };
+}
 
 /** Normalizes password-related server field errors, routing unknown keys to NewPassword. */
 function mapPasswordErrors(errors: ServerFieldErrors): ServerFieldErrors {

@@ -100,7 +100,10 @@ export const quoteService = {
 
   /** Downloads the quote as a PDF blob; the file name comes from Content-Disposition, or null if unparsable. */
   async downloadPdf(id: number): Promise<{ blob: Blob; fileName: string | null }> {
-    const response = await apiClient.get<Blob>(`/api/quotes/${String(id)}/pdf`, { responseType: 'blob' });
+    const response = await apiClient.get<Blob>(`/api/quotes/${String(id)}/pdf`, {
+      responseType: 'blob',
+      skipErrorRedirect: true,
+    });
     const disposition: unknown = response.headers['content-disposition'];
 
     return { blob: response.data, fileName: parseContentDispositionFileName(disposition) };

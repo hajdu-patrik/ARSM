@@ -46,6 +46,24 @@ public sealed class PasswordResetMailerTests
     }
 
     [Fact]
+    public async Task SendAsync_returns_false_when_the_no_op_sender_skipped_the_mail()
+    {
+        var sender = new FakeEmailSender { Result = EmailSendResult.SkippedNoOp() };
+
+        Assert.False(await Send(Create(sender)));
+    }
+
+    [Fact]
+    public async Task SendAsync_returns_false_for_the_real_no_op_sender_and_true_for_a_real_success()
+    {
+        var noOp = new PasswordResetMailer(
+            new LoggingNoOpEmailSender(NullLogger<LoggingNoOpEmailSender>.Instance), Settings, NullLogger.Instance);
+
+        Assert.False(await Send(noOp));
+        Assert.True(await Send(Create(new FakeEmailSender { Result = EmailSendResult.Success("id-9", 200) })));
+    }
+
+    [Fact]
     public async Task SendAsync_returns_false_when_the_sender_throws()
     {
         var sender = new FakeEmailSender { ThrowOnSend = new InvalidOperationException("boom") };

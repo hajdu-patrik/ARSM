@@ -130,7 +130,10 @@ public static partial class CustomerEndpoints
                 c.Name.LastName.ToUpper().Contains(searchTerm) ||
                 (c.Name.FirstName + " " + c.Name.LastName).ToUpper().Contains(searchTerm) ||
                 (c.Name.MiddleName != null &&
-                 (c.Name.FirstName + " " + c.Name.MiddleName + " " + c.Name.LastName).ToUpper().Contains(searchTerm)))
+                 (c.Name.FirstName + " " + c.Name.MiddleName + " " + c.Name.LastName).ToUpper().Contains(searchTerm)) ||
+                (c.Name.LastName + " " + c.Name.FirstName).ToUpper().Contains(searchTerm) ||
+                (c.Name.MiddleName != null &&
+                 (c.Name.LastName + " " + c.Name.FirstName + " " + c.Name.MiddleName).ToUpper().Contains(searchTerm)))
             .Select(c => c.Id);
 
         var plateMatchedCustomerIds = db.Vehicles

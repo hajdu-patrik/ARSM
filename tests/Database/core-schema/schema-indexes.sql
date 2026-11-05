@@ -19,6 +19,8 @@ FROM (
         ('IX_people_LastName_Trgm', 'people', FALSE, 'gin', NULL, NULL),
         ('IX_people_FirstName_LastName_Trgm', 'people', FALSE, 'gin', NULL, NULL),
         ('IX_people_FirstName_MiddleName_LastName_Trgm', 'people', FALSE, 'gin', NULL, NULL),
+        ('IX_people_LastName_FirstName_Trgm', 'people', FALSE, 'gin', NULL, NULL),
+        ('IX_people_LastName_FirstName_MiddleName_Trgm', 'people', FALSE, 'gin', NULL, NULL),
         ('IX_vehicles_CustomerId', 'vehicles', FALSE, 'btree', 'CustomerId', NULL),
         ('IX_vehicles_LicensePlate', 'vehicles', TRUE, 'btree', 'LicensePlate', NULL),
         ('IX_vehicles_Vin', 'vehicles', TRUE, 'btree', 'Vin', NULL),

@@ -115,6 +115,7 @@ export const enFeature = {
       emailExists: 'A person with this email already exists.',
       phoneExists: 'A person with this phone number already exists.',
       vehicleLicensePlateExists: 'A vehicle with this license plate already exists.',
+      vehicleVinExists: 'A vehicle with this VIN already exists.',
       vehicleNumberInvalid: 'Vehicle numeric values must be valid non-negative numbers.',
     },
   },

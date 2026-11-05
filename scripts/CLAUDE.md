@@ -20,7 +20,7 @@
 
 - `run-local-test-suite.py`: canonical local test runner (`all|playwright|http|sql`). Behaviour that
   HTTPYAC cannot express is registered in `PYTHON_HTTP_CHECKS` (profile picture upload, appointment SSE,
-  quote line cap, quote PDF, quote number, refresh replay window, session revocation, profile picture live updates) rather than invoked separately; each
+  quote line cap, quote PDF, quote number, parallel write race, catalog write race, appointment race, quote accept race, mechanic removal race, live update events, refresh replay window, session revocation, profile picture live updates) rather than invoked separately; each
   entry reports under its own key in the sanitized summary. Every captured line passes the sanitizer first: loaded secret values, Postgres URIs,
   secret-shaped assignments and secret-named JSON fields (cookie, set-cookie, accessToken and friends) are
   replaced, and local paths are masked. `tests/API/_setup/*.http` runs as its own HTTPYAC command before the

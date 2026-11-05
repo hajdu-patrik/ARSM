@@ -1,0 +1,129 @@
+# Sending a Draft whose ValidUntil has passed (valid for 3 seconds, waited out) answers 422 quote_valid_until_passed before the
+# version check; the quote stays a Draft, and a future date lets the same quote go out. Disposable customer, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.sendexpired.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0747
+
+### [Setup][SendExpired] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][SendExpired] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "SendExpired", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][SendExpired] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QSE-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][SendExpired] Create the draft that expires, valid for 3 seconds (201 expected)
+# @name expiring
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "SendExpired {{RunId}}", "validUntil": "{{new Date(Date.now() + 3000).toISOString()}}" }
+
+?? status == 201
+
+### [Setup][SendExpired] Give it a line (201 expected, the version moves on)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Expiring line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{expiring.version}} }
+
+?? status == 201
+
+### [Negative][SendExpired] After the 3 seconds a stale version still answers the validity code, it is checked first (422 expected)
+{{
+  const waitMs = new Date(expiring.validUntil).getTime() - Date.now() + 500;
+  if (waitMs > 0) { await new Promise(resolve => setTimeout(resolve, waitMs)); }
+}}
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{expiring.version}} }
+
+?? status == 422
+?? js response.parsedBody.code == quote_valid_until_passed
+
+### [Negative][SendExpired] The current version answers the same code (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 422
+?? js response.parsedBody.code == quote_valid_until_passed
+
+### [Positive][SendExpired] The refused sends left the quote a Draft with its version and no SentAt (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}
+
+?? status == 200
+?? js (response.parsedBody.status === "Draft" && response.parsedBody.sentAt == null && response.parsedBody.version === line.version) == true
+
+### [Positive][SendExpired] A future validity date is accepted on the Draft (200 expected)
+# @name extended
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/valid-until
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "validUntil": "2099-01-01T00:00:00", "version": {{line.version}} }
+
+?? status == 200
+
+### [Positive][SendExpired] With the future date the same quote is sent (200 expected, Sent)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{expiring.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{extended.version}} }
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent") == true
+
+### [Cleanup][SendExpired] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

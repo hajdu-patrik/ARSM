@@ -61,6 +61,15 @@ public sealed class QuoteLineRulesTests
     }
 
     [Fact]
+    public void A_line_quantity_or_price_with_more_than_two_decimals_is_422_with_the_frozen_text()
+    {
+        ResultAssert.Problem(Basics("Part", 1.125m, out _), 422, "Quantity can have at most 2 decimal places.");
+        ResultAssert.Problem(SnapshotError("Szűrő", 10.005m, 27), 422, "Amount can have at most 2 decimal places.");
+        Assert.Null(Basics("Part", 1.12m, out _));
+        Assert.Null(SnapshotError("Szűrő", 10.01m, 27));
+    }
+
+    [Fact]
     public void GetLineKindIntegrityError_accepts_matching_and_catalog_free_lines()
     {
         Assert.Null(Integrity(QuoteLineKind.Part, 4, null));

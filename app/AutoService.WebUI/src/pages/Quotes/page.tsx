@@ -19,6 +19,7 @@ import { QuotesToolbar } from './components/QuotesToolbar';
 import { QuoteList } from './components/QuoteList';
 import { QuoteEditorModal } from './components/QuoteEditorModal';
 import { DeleteQuoteModal } from './components/DeleteQuoteModal';
+import { QuoteCustomerEmailDialog } from './components/QuoteCustomerEmailDialog';
 
 export const QuotesPage = memo(function QuotesPage() {
   const { t, i18n } = useTranslation();
@@ -38,7 +39,7 @@ export const QuotesPage = memo(function QuotesPage() {
   const isCreateRequested = searchParams.get('new') === '1';
   const requestedVehicleId = searchParams.get('vehicleId');
   const { openCreate, openQuote } = editor;
-  const { handleDownloadPdf, openDeleteModal } = mutations;
+  const { handleDownloadPdf, isDownloadingPdf, openDeleteModal } = mutations;
 
   useEffect(() => {
     if (!isCreateRequested) {
@@ -100,6 +101,7 @@ export const QuotesPage = memo(function QuotesPage() {
           quotes={listState.quotes}
           searchQuery={listState.debouncedSearch}
           isLoading={listState.isLoading}
+          isDownloadingPdf={isDownloadingPdf}
           onOpenQuote={handleOpenQuote}
           onDownloadQuotePdf={handleDownloadPdf}
           onDeleteQuote={openDeleteModal}
@@ -129,6 +131,17 @@ export const QuotesPage = memo(function QuotesPage() {
         t={t}
         onClose={mutations.closeDeleteModal}
         onConfirm={mutations.handleDeleteQuote}
+      />
+
+      <QuoteCustomerEmailDialog
+        isOpen={mutations.isCustomerEmailDialogOpen}
+        email={mutations.customerEmail}
+        errorKey={mutations.customerEmailErrorKey}
+        isSaving={mutations.isSavingCustomerEmail}
+        t={t}
+        onEmailChange={mutations.setCustomerEmail}
+        onClose={mutations.closeCustomerEmailDialog}
+        onConfirm={mutations.handleConfirmCustomerEmail}
       />
     </div>
   );

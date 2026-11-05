@@ -8,7 +8,7 @@ namespace AutoService.ApiService.Admin;
 /** Mails the admin-set temporary password to the mechanic; a failure is logged and never thrown. */
 internal sealed class PasswordResetMailer(IEmailSender sender, EmailSettings settings, ILogger logger)
 {
-    /** Builds and sends the mail; true only when the sender reports it went out. */
+    /** Builds and sends the mail; true only when the sender reports it really went out (not the no-op sender). */
     internal async Task<bool> SendAsync(
         string email,
         string mechanicName,
@@ -28,7 +28,7 @@ internal sealed class PasswordResetMailer(IEmailSender sender, EmailSettings set
                     "Temporary password e-mail was not sent: status {StatusCode}, {Message}.", result.StatusCode, result.Message);
             }
 
-            return result.Sent;
+            return result.Sent && !result.Skipped;
         }
         catch (Exception ex)
         {

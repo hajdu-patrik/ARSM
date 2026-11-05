@@ -90,13 +90,13 @@ public static partial class ProfileEndpoints
         }
         catch
         {
-            await TryDeleteProfilePictureObjectAsync(context.Storage, objectKey, context.Logger);
+            await ProfilePictureObjectCleanup.TryDeleteAsync(context.Storage, objectKey, context.Logger);
             throw;
         }
 
         if (replacedObjectKey is not null)
         {
-            await TryDeleteProfilePictureObjectAsync(context.Storage, replacedObjectKey, context.Logger);
+            await ProfilePictureObjectCleanup.TryDeleteAsync(context.Storage, replacedObjectKey, context.Logger);
         }
 
         context.Broadcaster.Publish(new ProfilePictureUpdatedEvent(
@@ -205,7 +205,7 @@ public static partial class ProfileEndpoints
 
         if (removedObjectKey is not null)
         {
-            await TryDeleteProfilePictureObjectAsync(
+            await ProfilePictureObjectCleanup.TryDeleteAsync(
                 storage,
                 removedObjectKey,
                 loggerFactory.CreateLogger("ProfileEndpoints.DeleteProfilePicture"));
@@ -217,25 +217,5 @@ public static partial class ProfileEndpoints
             DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
 
         return Results.Ok(new { message = "Profile picture removed." });
-    }
-
-    /** Deletes a stored object without failing the caller, using an uncancellable token because this
-        also runs on the rollback path, where leaving the object orphaned would be worse than one extra call. */
-    private static async Task TryDeleteProfilePictureObjectAsync(
-        IProfilePictureStorage storage,
-        string objectKey,
-        ILogger logger)
-    {
-        try
-        {
-            await storage.DeleteAsync(objectKey, CancellationToken.None);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(
-                exception,
-                "Failed to delete profile picture object '{ObjectKey}'; it stays orphaned in the bucket.",
-                objectKey);
-        }
     }
 }

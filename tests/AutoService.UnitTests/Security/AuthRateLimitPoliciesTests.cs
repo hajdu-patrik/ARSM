@@ -75,8 +75,8 @@ public sealed class AuthRateLimitPoliciesTests
         public void Dispose() => provider.Dispose();
     }
 
-    private static LimitedRoute Login(IHostEnvironment environment)
-        => new(RateLimitPolicies.AuthLogin, "POST", LoginPath, environment);
+    private static LimitedRoute Login(IHostEnvironment environment, string path = LoginPath)
+        => new(RateLimitPolicies.AuthLogin, "POST", path, environment);
 
     private static LimitedRoute Refresh(IHostEnvironment environment)
         => new(RateLimitPolicies.AuthRefresh, "POST", RefreshPath, environment);
@@ -102,10 +102,13 @@ public sealed class AuthRateLimitPoliciesTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, statuses[10]);
     }
 
-    [Fact]
-    public async Task The_refused_login_carries_retry_after_180_and_the_login_rate_limited_body()
+    [Theory]
+    [InlineData(LoginPath)]
+    [InlineData("/api/auth/login/")]
+    [InlineData("/API/AUTH/LOGIN/")]
+    public async Task The_refused_login_carries_retry_after_180_and_the_login_rate_limited_body(string path)
     {
-        using var route = Login(FakeHostEnvironment.Production);
+        using var route = Login(FakeHostEnvironment.Production, path);
         var ip = UniqueIp();
         await route.SendManyAsync(10, ip);
 
@@ -119,10 +122,13 @@ public sealed class AuthRateLimitPoliciesTests
         Assert.Equal(180, body.GetProperty("retryAfterSeconds").GetInt32());
     }
 
-    [Fact]
-    public async Task The_login_rejection_bans_the_client_so_the_next_login_answers_login_banned()
+    [Theory]
+    [InlineData(LoginPath)]
+    [InlineData("/api/auth/login/")]
+    [InlineData("/API/AUTH/LOGIN/")]
+    public async Task The_login_rejection_bans_the_client_so_the_next_login_answers_login_banned(string path)
     {
-        using var route = Login(FakeHostEnvironment.Production);
+        using var route = Login(FakeHostEnvironment.Production, path);
         var ip = UniqueIp();
         await route.SendManyAsync(11, ip);
         var next = new NextProbe();

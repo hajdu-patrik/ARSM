@@ -9,7 +9,8 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    /** Handles POST /api/auth/logout. Revokes active refresh token session, deny-lists current access token JTI, and clears authentication cookies. */
+    /** Handles POST /api/auth/logout: revokes the refresh session, deny-lists the access JTI and clears the cookies.
+        A valid access token or an active refresh token is enough; with neither the answer is 401. */
     private static async Task<IResult> LogoutAsync(
         HttpContext httpContext,
         AutoServiceDbContext db,
@@ -20,6 +21,8 @@ public static partial class AuthEndpoints
         var logger = loggerFactory.CreateLogger("AuthEndpoints.Logout");
 
         var nowUtc = DateTime.UtcNow;
+        var isAuthenticated = httpContext.User.Identity?.IsAuthenticated == true;
+        var revokedRefreshSession = false;
 
         if (httpContext.Request.Cookies.TryGetValue(AuthCookieNames.RefreshToken, out var refreshTokenValue) &&
             !string.IsNullOrWhiteSpace(refreshTokenValue))
@@ -32,8 +35,14 @@ public static partial class AuthEndpoints
             {
                 refreshToken.Revoke(nowUtc);
                 await db.SaveChangesAsync(cancellationToken);
+                revokedRefreshSession = true;
                 logger.LogInformation("Logout revoked active refresh token for mechanic {MechanicId}.", refreshToken.MechanicId);
             }
+        }
+
+        if (!isAuthenticated && !revokedRefreshSession)
+        {
+            return Results.Unauthorized();
         }
 
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;

@@ -1,0 +1,140 @@
+# Optimistic concurrency when a line-only write leaves the quote row unchanged (description edit, 0 Ft line add, line
+# delete): a stale version is 409. A DELETE without ?version is 422, not a binding 400. Disposable customer, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.unchanged.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0745
+
+### [Setup][UnchangedRow] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][UnchangedRow] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "UnchangedRow", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][UnchangedRow] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QUR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][UnchangedRow] Create the draft quote, its version is stale once the seed line is added (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "UnchangedRow {{RunId}}" }
+
+?? status == 201
+
+### [Setup][UnchangedRow] Add the seed line (201 expected, the version moves on)
+# @name seed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.version !== quote.version) == true
+
+### [Positive][UnchangedRow] A description-only line edit with the current version goes through (200 expected, new version)
+# @name renamed
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Renamed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 200
+?? js (response.parsedBody.version !== seed.version && response.parsedBody.totalNet === 100) == true
+
+### [Negative][UnchangedRow] A description-only line edit with the replaced version is stale, though no total moves (409 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Lost update", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][UnchangedRow] Adding a 0 Ft line with the replaced version is stale (409 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Free line", "netUnitPrice": 0, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][UnchangedRow] Deleting the line with the replaced version is stale (409 expected, the line stays)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}?version={{seed.version}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 409
+?? js response.parsedBody.code == quote_version_conflict
+
+### [Negative][UnchangedRow] Deleting a line without the version parameter (422 expected, not a binding 400)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
+
+### [Negative][UnchangedRow] Deleting the quote without the version parameter (422 expected, not a binding 400)
+DELETE {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 422
+?? js (response.parsedBody.detail === "Version is required.") == true
+
+### [Positive][UnchangedRow] The refused writes kept the renamed line and its version (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.lines.length === 1 && response.parsedBody.lines[0].description === "Renamed line" && response.parsedBody.version === renamed.version) == true
+
+### [Cleanup][UnchangedRow] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

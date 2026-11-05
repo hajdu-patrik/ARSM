@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -50,18 +51,25 @@ internal sealed class QuoteNumberGenerator
     {
         var yearPrefix = $"ARSM-{DateTime.UtcNow.Year}-";
 
-        // Zero-padded to 4 digits so lexicographic order equals numeric order: ordering by
-        // QuoteNumber desc and taking the first row is the max, in one row instead of the whole year.
-        var highestQuoteNumber = await dbContext.Quotes
-            .AsNoTracking()
-            .Where(q => q.QuoteNumber.StartsWith(yearPrefix))
-            .OrderByDescending(q => q.QuoteNumber)
-            .Select(q => q.QuoteNumber)
+        var highestQuoteNumber = await HighestFirst(dbContext.Quotes.AsNoTracking().Select(q => q.QuoteNumber), yearPrefix)
             .FirstOrDefaultAsync(cancellationToken);
 
+        return FormatNext(yearPrefix, highestQuoteNumber);
+    }
+
+    /** The year's numbers, highest sequence first: the padding is 4 digits, so a longer number (10000) is the larger one
+     * and the text order only breaks ties between equal lengths; EF translates both keys to SQL. */
+    internal static IQueryable<string> HighestFirst(IQueryable<string> quoteNumbers, string yearPrefix) => quoteNumbers
+        .Where(number => number.StartsWith(yearPrefix))
+        .OrderByDescending(number => number.Length)
+        .ThenByDescending(number => number);
+
+    /** The number after the highest existing one (or the first of the year), padded to at least 4 digits. */
+    internal static string FormatNext(string yearPrefix, string? highestQuoteNumber)
+    {
         var nextSequence = highestQuoteNumber is null
             ? 1
-            : int.Parse(highestQuoteNumber[yearPrefix.Length..]) + 1;
+            : int.Parse(highestQuoteNumber[yearPrefix.Length..], CultureInfo.InvariantCulture) + 1;
 
         return $"{yearPrefix}{nextSequence:D4}";
     }

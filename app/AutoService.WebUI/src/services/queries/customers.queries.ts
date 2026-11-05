@@ -36,21 +36,21 @@ export const customersQueries = {
       CUSTOMER_REGISTRY_STALE_TIME_MS,
     ),
 
-  /** The appointment history of one customer in server order (ascending); sort locally for newest first. */
+  /** The newest 500 appointments of one customer, cached ascending; sort locally for newest first. */
   customerHistory: (scope: AuthQueryScope | null, customerId: number) =>
     scopedQueryOptions(
       scope,
       (authScope) => queryKeys.customers.customerHistory(authScope, customerId),
-      (request) => customerRegistryService.getCustomerHistory(customerId, false, request),
+      async (request) => (await customerRegistryService.getCustomerHistory(customerId, true, request)).reverse(),
       CUSTOMER_HISTORY_STALE_TIME_MS,
     ),
 
-  /** The appointment history of one vehicle in server order (ascending); sort locally for newest first. */
+  /** The newest 500 appointments of one vehicle, cached ascending; sort locally for newest first. */
   vehicleHistory: (scope: AuthQueryScope | null, vehicleId: number) =>
     scopedQueryOptions(
       scope,
       (authScope) => queryKeys.customers.vehicleHistory(authScope, vehicleId),
-      (request) => customerRegistryService.getVehicleHistory(vehicleId, false, request),
+      async (request) => (await customerRegistryService.getVehicleHistory(vehicleId, true, request)).reverse(),
       CUSTOMER_HISTORY_STALE_TIME_MS,
     ),
 };

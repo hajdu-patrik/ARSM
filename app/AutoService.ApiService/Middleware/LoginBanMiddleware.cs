@@ -14,7 +14,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase))
+        if (LoginPathMatcher.IsLoginPath(context.Request.Path))
         {
             var key = ResolveClientKey(context);
             var now = DateTimeOffset.UtcNow;
@@ -43,6 +43,7 @@ public sealed class LoginBanMiddleware(RequestDelegate next)
         await next(context);
     }
 
+    /** Bans the caller's address for the ban window; skipped when the tracked-client bound cannot be freed. */
     public static void BanClient(HttpContext context)
     {
         var key = ResolveClientKey(context);

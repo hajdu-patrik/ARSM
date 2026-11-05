@@ -108,7 +108,8 @@ def check_password_change_reset_and_delete(
     status, reset_body = admin.request_json("POST", f"{MECHANICS_PATH}/{person_id}/password-reset", {"temporaryPassword": password})
     assert_status("admin-password-reset", status, {200}, results)
     email_sent = json.loads(reset_body or "{}").get("emailSent")
-    assert_condition("admin-password-reset-reports-email-sent", isinstance(email_sent, bool), f"emailSent was {email_sent!r}.", results)
+    # The suites run without a Resend key, so the no-op sender handled the mail and the reset reports false.
+    assert_condition("admin-password-reset-reports-email-not-sent", email_sent is False, f"emailSent was {email_sent!r}.", results)
     assert_validate_status(session_c, "session-ended-by-admin-reset", 401, results)
     assert_validate_status(session_a, "changing-session-ended-by-admin-reset", 401, results)
 

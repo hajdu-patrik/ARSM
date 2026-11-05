@@ -44,6 +44,7 @@ export interface MechanicListItem {
 }
 
 export const adminService = {
+  /** Registers a mechanic via `POST /api/auth/register`. */
   async registerMechanic(request: RegisterMechanicRequest): Promise<RegisterMechanicResponse> {
     const response = await apiClient.post<RegisterMechanicResponse>('/api/auth/register', {
       personType: 'mechanic',
@@ -63,7 +64,7 @@ export const adminService = {
 
   /** Deletes a mechanic via `DELETE /api/admin/mechanics/{id}`; may 422 (invariant) or 409 (contention). */
   async deleteMechanic(personId: number): Promise<void> {
-    await apiClient.delete(`/api/admin/mechanics/${String(personId)}`);
+    await apiClient.delete(`/api/admin/mechanics/${String(personId)}`, { skipErrorRedirect: true });
   },
 
   /** Sets a temporary password via `POST /api/admin/mechanics/{id}/password-reset`; the mechanic must change it at the next login. */

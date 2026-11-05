@@ -90,6 +90,25 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- Endpoint and feature audit of 2026-11-04 fixed in full (2026-11-05): 1 high, 14 medium and 25 low findings, each with a
+  regression test (xUnit, HTTP, SQL or Playwright).
+  - Session: a reload restores the session (H1, K12); logout works with an expired access token (K2); an admin password
+    reset clears the Identity lockout (K3); a User-Agent over 512 characters is truncated instead of a 500 (L4);
+    `/api/auth/login/` gets the login limit, ban, CSRF exemption and Origin rule; the ban 429s carry CORS headers.
+  - Quotes: characters missing from Noto Sans print as `?` instead of a 500, a missing Hungarian letter stays an error (K1);
+    a line-only write with a stale version is 409 (K4); more than 2 decimals is 422 on quote lines, parts and labour
+    types (L5); sending a draft past its validity is 422 `quote_valid_until_passed` with Send disabled (L10); an empty
+    or `.local` customer address is 422 `quote_customer_email_missing` and opens a dialog that saves the address and
+    sends (K10); quote numbers continue past 9999; a parallel accept leaves one Accepted quote.
+  - Races answer like a sequential repeat instead of a 500: double deletes, claim/assign or edits against a parallel
+    delete (404), unique-key races (the sequential 409), mechanic removal never orphans an appointment (K11).
+  - Search and UI: customer and mechanic search match both name orders (K5, L7, trigram migration
+    `AddReversedNameTrigramIndexes`); intake lookup filtering (K6); the status control hidden from an unassigned admin
+    (K7); live updates after quote accept and cascading deletes (K9); VIN and plate messages under the field (L17);
+    the remaining low findings per the report.
+  _Dev time: ~4 h wall-clock (2026-11-05 10:36 to 14:46 +01:00, three arsm-chain resumes of one run plus fixes by hand).
+  Cost: ~$40-79 output-token-only estimate (3.96M output tokens, sonnet packages and reviews, opus planning; excludes
+  input tokens and cache, so a lower bound)._
 - The CI `e2e-playwright` job limit rose from 30 to 45 minutes (2026-11-01): the suite takes 26-28 minutes, and one run was cancelled at the
   old limit with no test failure.
   - _Dev time: ~2m wall-clock to commit-ready, plus the pre-push gate. cost: not measured._

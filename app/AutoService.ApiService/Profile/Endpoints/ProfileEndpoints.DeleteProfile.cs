@@ -1,5 +1,7 @@
 using AutoService.ApiService.Auth.Endpoints;
 using AutoService.ApiService.Admin;
+using AutoService.ApiService.Appointments.Realtime;
+using AutoService.ApiService.Storage;
 using AutoService.ApiService.Auth.Security;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Security;
@@ -25,6 +27,9 @@ public static partial class ProfileEndpoints
         AutoServiceDbContext db,
         ITokenDenylistService tokenDenylistService,
         ISessionRevocationService sessionRevocation,
+        IProfilePictureStorage storage,
+        IAppointmentUpdateBroadcaster broadcaster,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentPassword))
@@ -73,14 +78,20 @@ public static partial class ProfileEndpoints
             return invariantViolation;
         }
 
-        var deleteResult = await db.ExecuteInTransactionAsync(
+        var outcome = await db.ExecuteInTransactionAsync(
             (transaction, token) => DeleteAccountAsync(person.Id, identityUser.Id, userManager, db, transaction, token),
             cancellationToken);
 
-        if (deleteResult is not null)
+        if (outcome.Failure is not null)
         {
-            return deleteResult;
+            return outcome.Failure;
         }
+
+        await ProfilePictureObjectCleanup.TryDeleteAsync(
+            storage,
+            outcome.PictureObjectKey,
+            loggerFactory.CreateLogger("ProfileEndpoints.DeleteProfile"));
+        broadcaster.PublishAppointmentsChanged(outcome.AppointmentIds);
 
         var jwtId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
         var tokenExpiresAtUtc = TokenSecurity.ParseJwtExpiry(httpContext.User);
@@ -96,8 +107,9 @@ public static partial class ProfileEndpoints
         return Results.Ok(new { message = "Profile deleted successfully." });
     }
 
-    /** The retriable unit: delete the person (the cascade takes every refresh token) and the identity user, commit; null means done. */
-    private static async Task<IResult?> DeleteAccountAsync(
+    /** The retriable unit: lock like the admin delete, check the invariants, delete the person (the cascade takes every refresh
+        token) and the identity user, commit; a failure rolls back, a success returns the post-commit facts. */
+    private static async Task<MechanicDeletionOutcome> DeleteAccountAsync(
         int personId,
         string identityUserId,
         UserManager<IdentityUser> userManager,
@@ -105,11 +117,18 @@ public static partial class ProfileEndpoints
         IDbContextTransaction transaction,
         CancellationToken cancellationToken)
     {
+        var appointmentIds = await AdminEndpoints.LockMechanicForDeletionAsync(personId, db, cancellationToken);
+
         var invariantViolation = await AdminEndpoints.ValidateMechanicDeletionInvariantsAsync(personId, db, cancellationToken);
         if (invariantViolation is not null)
         {
-            return invariantViolation;
+            return MechanicDeletionOutcome.Failed(invariantViolation);
         }
+
+        var pictureObjectKey = await db.People
+            .Where(p => p.Id == personId)
+            .Select(p => p.ProfilePictureObjectKey)
+            .FirstOrDefaultAsync(cancellationToken);
 
         await db.People.Where(p => p.Id == personId).ExecuteDeleteAsync(cancellationToken);
 
@@ -119,11 +138,11 @@ public static partial class ProfileEndpoints
             var deleteIdentityResult = await userManager.DeleteAsync(identityUser);
             if (!deleteIdentityResult.Succeeded)
             {
-                return Results.ValidationProblem(deleteIdentityResult.ToValidationErrors());
+                return MechanicDeletionOutcome.Failed(Results.ValidationProblem(deleteIdentityResult.ToValidationErrors()));
             }
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return null;
+        return new MechanicDeletionOutcome(null, appointmentIds, pictureObjectKey);
     }
 }

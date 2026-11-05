@@ -20,6 +20,7 @@ import { usePasswordChangeSettings } from './hooks/usePasswordChangeSettings';
 import { useProfileFormSettings } from './hooks/useProfileFormSettings';
 import { useProfilePictureSettings } from './hooks/useProfilePictureSettings';
 
+/** Renders the Settings sections and wires each to its hook. */
 export const SettingsPage = memo(function SettingsPage() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
@@ -92,6 +93,7 @@ export const SettingsPage = memo(function SettingsPage() {
   const {
     isUploadingPicture,
     pictureKey,
+    pictureVersion,
     pictureSource,
     isPictureRemoveConfirmOpen,
     setIsPictureRemoveConfirmOpen,
@@ -144,7 +146,7 @@ export const SettingsPage = memo(function SettingsPage() {
           <section aria-label={t('settings.profilePicture')}>
             <ProfilePictureSection
               hasProfilePicture={profile.hasProfilePicture}
-              pictureUrl={profileService.getProfilePictureUrl()}
+              pictureUrl={`${profileService.getProfilePictureUrl()}?pid=${String(profile.personId)}&v=${String(pictureVersion)}`}
               initials={initials}
               fallbackColorClass={fallbackColorClass}
               pictureKey={pictureKey}

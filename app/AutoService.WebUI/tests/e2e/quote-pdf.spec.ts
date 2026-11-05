@@ -1,4 +1,4 @@
-/** Quote PDF download: from the list row and from the editor footer in every status, and the failure toast. */
+/** Quote PDF download: from the list row and from the editor footer in every status, and the failure toasts. */
 import { expect, test } from '@playwright/test';
 import { QuotesPage } from './pages/quotes.page';
 import { fulfillJson } from './support/api-mock-response';
@@ -53,4 +53,26 @@ test.describe('Quotes - PDF download', () => {
     await expect(dialog).toBeVisible();
     await expect(page.getByTestId('quote-download-pdf-button')).toBeEnabled();
   });
+
+  for (const entry of ['list row', 'editor footer'] as const) {
+    test(`a PDF answered 500 toasts the failure from the ${entry} and stays on /quotes`, async ({ page }) => {
+      await signInWithMocks(page);
+      await page.route((url) => /\/api\/quotes\/\d+\/pdf$/.test(url.pathname), (route) => fulfillJson(route, { detail: 'The PDF could not be produced.' }, 500));
+      const quotesPage = new QuotesPage(page);
+      await quotesPage.goto();
+      const downloadButton = entry === 'list row'
+        ? quotesPage.rowAction('ARSM-2026-0001', 'quote-download-button')
+        : page.getByTestId('quote-download-pdf-button');
+      if (entry === 'editor footer') {
+        await quotesPage.openQuote('ARSM-2026-0001');
+      }
+
+      await downloadButton.click();
+
+      await expect(errorToastMessage(page, 'Failed to download the quote PDF.')).toBeVisible();
+      await expect(page).toHaveURL(/\/quotes(\?|$)/);
+      await expect(quotesPage.searchInput()).toBeVisible();
+      await expect(downloadButton).toBeEnabled();
+    });
+  }
 });

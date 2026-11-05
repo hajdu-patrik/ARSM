@@ -1,0 +1,104 @@
+# GET /api/customers/by-name also matches the order the WebUI shows, "last first" and "last first middle" (case-insensitive),
+# next to "first last". Customer A has a middle name, customer C has none. Disposable customers, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Tag = {{RunId.toString().slice(-8).split('').map(d => 'ABCDEFGHIJ'[d]).join('')}}
+
+### [Setup][Customers] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Customers] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][Customers] Create customer A with a middle name (201 expected)
+# @name custA
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fa{{Tag}}", "middleName": "Ma{{Tag}}", "lastName": "La{{Tag}}", "email": "lookup.reversed.a.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Setup][Customers] Create customer C without a middle name (201 expected)
+# @name custC
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Fc{{Tag}}", "middleName": null, "lastName": "Lc{{Tag}}", "email": "lookup.reversed.c.{{RunId}}@example.test", "phoneNumber": null }
+
+?? status == 201
+
+###
+
+### [Positive][Customers] Lookup by "last first" (200 expected, customer A although it has a middle name)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=La{{Tag}}%20Fa{{Tag}}
+
+?? status == 200
+?? js (response.parsedBody.length == 1 && response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Lookup by "last first middle" in lower case (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=la{{Tag.toLowerCase()}}%20fa{{Tag.toLowerCase()}}%20ma{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js (response.parsedBody.length == 1 && response.parsedBody[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Lookup by "last first" of the customer without a middle name (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=Lc{{Tag}}%20Fc{{Tag}}
+
+?? status == 200
+?? js (response.parsedBody.length == 1 && response.parsedBody[0].id == custC.id) == true
+
+###
+
+### [Positive][Customers] "last first" of two different customers matches none (200 expected, the names are not mixed)
+GET {{AutoService_ApiService_HostAddress}}/api/customers/by-name?name=La{{Tag}}%20Fc{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.length == 0
+
+###
+
+### [Cleanup][Customers] Delete customer A (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custA.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][Customers] Delete customer C (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{custC.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

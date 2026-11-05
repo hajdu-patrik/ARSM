@@ -8,8 +8,6 @@ namespace AutoService.ApiService.Middleware;
     cookie) on unsafe API requests, right after the Origin check; login is exempt (see ApiService/CLAUDE.md). */
 public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
 {
-    private const string LoginPath = "/api/auth/login";
-
     public async Task InvokeAsync(HttpContext context)
     {
         if (!RequiresCsrfProof(context))
@@ -42,7 +40,7 @@ public sealed class CsrfDoubleSubmitMiddleware(RequestDelegate next)
     private static bool RequiresCsrfProof(HttpContext context)
     {
         return UnsafeCookieRequestClassifier.IsUnsafeCookieBearingApiRequest(context)
-            && !context.Request.Path.Equals(LoginPath, StringComparison.OrdinalIgnoreCase);
+            && !LoginPathMatcher.IsLoginPath(context.Request.Path);
     }
 
     /** Rejects a missing header or cookie, then compares both in fixed time. */

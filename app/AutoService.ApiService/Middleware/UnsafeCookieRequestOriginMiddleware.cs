@@ -5,8 +5,6 @@ namespace AutoService.ApiService.Middleware;
 /** Blocks browser-style unsafe API requests with auth cookies unless Origin matches the configured WebUI. */
 public sealed class UnsafeCookieRequestOriginMiddleware(RequestDelegate next, WebUiOriginPolicy originPolicy)
 {
-    private const string LoginPath = "/api/auth/login";
-
     /** Validates unsafe cookie-bearing API requests before the auth pipeline consumes cookies. */
     public async Task InvokeAsync(HttpContext context)
     {
@@ -38,6 +36,6 @@ public sealed class UnsafeCookieRequestOriginMiddleware(RequestDelegate next, We
     {
         return UnsafeCookieRequestClassifier.IsUnsafeCookieBearingApiRequest(context)
             || (HttpMethods.IsPost(context.Request.Method)
-                && context.Request.Path.Equals(LoginPath, StringComparison.OrdinalIgnoreCase));
+                && LoginPathMatcher.IsLoginPath(context.Request.Path));
     }
 }

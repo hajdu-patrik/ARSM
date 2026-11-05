@@ -64,6 +64,23 @@ export class QuotesPage {
     return this.page.getByRole('button', { name: /^(Close|Bezárás)$/ });
   }
 
+  /** The dialog a send refused for a missing or unusable customer address opens, named per language. */
+  customerEmailDialog(): Locator {
+    return this.page.getByRole('dialog', { name: /^(Customer e-mail address|Az ügyfél e-mail-címe)$/ });
+  }
+
+  customerEmailInput(): Locator {
+    return this.customerEmailDialog().getByTestId('quote-customer-email-input');
+  }
+
+  customerEmailConfirmButton(): Locator {
+    return this.customerEmailDialog().getByTestId('quote-customer-email-confirm-button');
+  }
+
+  customerEmailCancelButton(): Locator {
+    return this.customerEmailDialog().getByRole('button', { name: /^(Cancel|Mégse)$/ });
+  }
+
   lineRows(): Locator {
     return this.page.getByTestId('quote-line-row');
   }

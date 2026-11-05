@@ -55,6 +55,7 @@ const CATALOG_MESSAGE_FIELDS: Readonly<Record<string, CatalogFieldName>> = {
   'inventory.errors.codeExists': 'identifier',
   'inventory.errors.nameTooLong': 'name',
   'inventory.errors.invalidMoney': 'rate',
+  'common.validation.maxTwoDecimals': 'rate',
   'common.validation.invalidVatRate': 'vatRate',
 };
 
@@ -117,6 +118,10 @@ export function mapCatalogValidationMessageToKey(message: string): string {
 
   if (normalized.includes('vat rate must be')) {
     return 'common.validation.invalidVatRate';
+  }
+
+  if (normalized.includes('amount can have at most 2 decimal places')) {
+    return 'common.validation.maxTwoDecimals';
   }
 
   if (normalized.includes('amount must be at least')) {

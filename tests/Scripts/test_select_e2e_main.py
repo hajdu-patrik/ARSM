@@ -54,7 +54,7 @@ class MainTests(TempDirCase):
     def test_prints_the_sorted_selection(self) -> None:
         code, out, _, run = self.run_main(["src/pages/Settings/Page.tsx"])
         self.assertEqual(code, 0)
-        names = ("accessibility", "settings-account", "settings-company", "settings-edge", "settings-password", "settings-picture", "settings-profile")
+        names = ("accessibility", "settings-account", "settings-company", "settings-edge", "settings-lockout", "settings-password", "settings-picture", "settings-profile")
         self.assertEqual(out.split(), [f"tests/e2e/{name}.spec.ts" for name in names])
         run.assert_not_called()
 

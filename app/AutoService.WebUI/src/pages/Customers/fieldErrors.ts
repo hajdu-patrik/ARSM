@@ -50,7 +50,9 @@ export const CUSTOMER_MESSAGE_FIELDS: Readonly<Record<string, CustomerFieldName>
 /** Server conflicts carry no field name in their dictionary but concern exactly one vehicle field. */
 export const VEHICLE_MESSAGE_FIELDS: Readonly<Record<string, VehicleFieldName>> = {
   'customers.errors.vehicleLicensePlateExists': 'licensePlate',
+  'common.validation.licensePlateInvalid': 'licensePlate',
   'common.validation.vehicleVinInvalid': 'vin',
+  'customers.errors.vehicleVinExists': 'vin',
 };
 
 /** Pins the first message of every listed field to the value the field held when the form was submitted. */

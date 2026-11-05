@@ -1,9 +1,10 @@
 /** Quote validity: the separate save of a draft, the extend-only rule of a sent quote, reviving an expired
- * one, and the closed (accepted or rejected) quote where nothing can change. */
+ * one, the send refusal of a draft whose date passed, and the closed (accepted or rejected) quote. */
 import { expect, test } from '@playwright/test';
 import { QuotesPage } from './pages/quotes.page';
 import { signInWithMocks } from './support/sign-in';
-import { MOCK_QUOTE_IDS } from './support/test-data';
+import { MOCK_QUOTE_IDS, type MockApiState } from './support/test-data';
+import type { TestLanguage } from './support/browser-state';
 import { errorToastMessage, toastMessage } from './support/toast';
 
 const DRAFT_NUMBER = 'ARSM-2026-0001';
@@ -82,6 +83,61 @@ test.describe('Quotes - validity', () => {
     await quotesPage.closeEditorButton().click();
     await expect(quotesPage.statusBadge(EXPIRED_NUMBER)).toHaveText('Sent');
   });
+});
+
+/** The reason text of a passed validity date, in both languages (`quotes.errors.validUntilInPast`). */
+const VALIDITY_PASSED_TEXT: Record<TestLanguage, string> = {
+  en: 'The validity date cannot be in the past.',
+  hu: 'Az érvényességi dátum nem lehet múltbeli.',
+};
+const PASSED_VALID_UNTIL = '2020-01-01T23:59:59.000Z';
+
+/** The fixture draft quote, whose validity the test can move behind the server's back. */
+function draftOf(state: MockApiState) {
+  const quote = state.quotes.find((candidate) => candidate.id === MOCK_QUOTE_IDS.draftTimingBelt);
+  if (quote === undefined) {
+    throw new Error('The fixture draft quote is missing.');
+  }
+
+  return quote;
+}
+
+test.describe('Quotes - draft whose validity passed', () => {
+  test.use({ timezoneId: 'UTC', viewport: { width: 1280, height: 1200 } });
+
+  for (const language of ['en', 'hu'] as const) {
+    test(`${language}: Send is disabled with the validity text as its reason, and a later date enables it`, async ({ page }) => {
+      const state = await signInWithMocks(page, {}, language);
+      draftOf(state).validUntil = PASSED_VALID_UNTIL;
+      const quotesPage = new QuotesPage(page);
+      await quotesPage.goto();
+      const dialog = await quotesPage.openQuote(DRAFT_NUMBER);
+      const send = page.getByTestId('quote-send-button');
+
+      await expect(send).toBeDisabled();
+      await expect(send).toHaveAttribute('title', VALIDITY_PASSED_TEXT[language]);
+
+      await dialog.getByTestId('quote-valid-until-input').fill('2100-03-15');
+      await dialog.getByTestId('quote-save-validity-button').click();
+      await expect(send).toBeEnabled();
+      await expect(send).not.toHaveAttribute('title', VALIDITY_PASSED_TEXT[language]);
+    });
+
+    test(`${language}: a 422 quote_valid_until_passed toasts the validity text and keeps the draft`, async ({ page }) => {
+      const state = await signInWithMocks(page, {}, language);
+      const quotesPage = new QuotesPage(page);
+      await quotesPage.goto();
+      const dialog = await quotesPage.openQuote(DRAFT_NUMBER);
+      // The date lapses on the server while the editor is open, so the button was still enabled.
+      draftOf(state).validUntil = PASSED_VALID_UNTIL;
+
+      await page.getByTestId('quote-send-button').click();
+
+      await expect(errorToastMessage(page, VALIDITY_PASSED_TEXT[language])).toBeVisible();
+      await expect(dialog.getByTestId('quote-status-badge').first()).toHaveText(language === 'en' ? 'Draft' : 'Piszkozat');
+      await expect(quotesPage.customerEmailDialog()).toHaveCount(0);
+    });
+  }
 });
 
 test.describe('Quotes - closed quotes', () => {

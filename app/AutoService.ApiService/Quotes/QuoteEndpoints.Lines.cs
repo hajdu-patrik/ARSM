@@ -145,12 +145,15 @@ public static partial class QuoteEndpoints
     private static async Task<IResult> DeleteQuoteLineAsync(
         int id,
         int lineId,
-        uint version,
+        uint? version,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
+        // A missing ?version= binds to null and gets the documented 422, not a model-binding 400.
+        var submittedVersion = version ?? 0;
+
         var (quote, loadError) = await LoadDraftQuoteAsync(
-            id, version, "Lines can only be removed while the quote is a draft.", db, cancellationToken);
+            id, submittedVersion, "Lines can only be removed while the quote is a draft.", db, cancellationToken);
 
         if (loadError is not null)
         {
@@ -166,7 +169,7 @@ public static partial class QuoteEndpoints
         quote.Lines.Remove(line);
         RecomputeQuoteTotals(quote);
 
-        var saveError = await SaveWithVersionAsync(db, quote, version, cancellationToken);
+        var saveError = await SaveWithVersionAsync(db, quote, submittedVersion, cancellationToken);
         if (saveError is not null)
         {
             return saveError;

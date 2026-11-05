@@ -4,10 +4,16 @@ import { SchedulerPage } from './pages/scheduler.page';
 import { seedAppointment, todayAt } from './support/appointment-fixtures';
 import { selectDropdownOptionByLabel } from './support/dropdown';
 import { signInWithMocks } from './support/sign-in';
+import type { TestLanguage } from './support/browser-state';
 import { MOCK_MECHANIC_IDS } from './support/test-data';
 import { toastMessage } from './support/toast';
 
-const { peter, mate } = MOCK_MECHANIC_IDS;
+const { gabor, peter, mate } = MOCK_MECHANIC_IDS;
+
+const SPECIALIZATION_LABELS: readonly { language: TestLanguage; label: string }[] = [
+  { language: 'en', label: 'Petrol & diesel' },
+  { language: 'hu', label: 'Benzin és dízel' },
+];
 
 test.describe('Scheduler admin assignment', () => {
   test('offers every mechanic that is not assigned yet, adds one and removes another', async ({ page }) => {
@@ -45,6 +51,34 @@ test.describe('Scheduler admin assignment', () => {
     expect(state.appointments[0]?.mechanics.map((mechanic) => mechanic.id)).toEqual([mate]);
   });
 
+  test('keeps the Add mechanic button idle while an unassign is running', async ({ page }) => {
+    const state = await signInWithMocks(page, { isAdmin: true });
+    seedAppointment(state, { id: 6605, task: 'Unassign in flight', scheduledAt: todayAt(9), mechanicIds: [peter, mate] });
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    await page.route(/\/api\/appointments\/6605\/assign\/\d+$/, async (route) => {
+      if (route.request().method() !== 'DELETE') {
+        await route.fallback();
+        return;
+      }
+
+      await held;
+      await route.fallback();
+    });
+    const scheduler = new SchedulerPage(page);
+    await scheduler.goto();
+    const dialog = await scheduler.openFirstAppointmentDetail();
+    const addButton = dialog.getByRole('button', { name: 'Add mechanic' });
+
+    await dialog.getByRole('button', { name: 'Unassign mechanic' }).first().click();
+
+    await expect(dialog.getByRole('button', { name: 'Unassign mechanic' }).first()).toBeDisabled();
+    await expect(addButton).toHaveText('Add mechanic');
+    await expect(addButton).not.toHaveAttribute('aria-busy', 'true');
+    release();
+    await expect(toastMessage(page, 'Mechanic removed successfully.')).toBeVisible();
+  });
+
   test('says that nobody is assigned to a fresh intake', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
     seedAppointment(state, { id: 6602, task: 'Nobody yet', scheduledAt: todayAt(9) });
@@ -70,6 +104,23 @@ test.describe('Scheduler admin assignment', () => {
       await expect(dialog.getByText('Mate Szabo', { exact: true })).toBeVisible();
       await expect(dialog.getByText('Add mechanic')).toHaveCount(0);
       await expect(dialog.getByRole('button', { name: /Unassign/ })).toHaveCount(0);
+    });
+  }
+});
+
+test.describe('Scheduler assigned mechanic tags', () => {
+  for (const { language, label } of SPECIALIZATION_LABELS) {
+    test(`shows the translated specialization, never the raw name, in ${language}`, async ({ page }) => {
+      const state = await signInWithMocks(page, {}, language);
+      seedAppointment(state, { id: 6604, task: 'Tagged job', scheduledAt: todayAt(9), mechanicIds: [gabor] });
+      const scheduler = new SchedulerPage(page);
+      await scheduler.goto();
+
+      const dialog = await scheduler.openFirstAppointmentDetail();
+
+      await expect(dialog.getByText('Gabor Kovacs', { exact: true })).toBeVisible();
+      await expect(dialog.getByText(label, { exact: true })).toBeVisible();
+      await expect(dialog.getByText('GasolineAndDiesel')).toHaveCount(0);
     });
   }
 });

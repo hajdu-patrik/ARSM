@@ -7,6 +7,8 @@ import { fulfillJson } from './support/api-mock-response';
 import { signInWithMocks } from './support/sign-in';
 import { errorToastMessage } from './support/toast';
 
+const MAX_TWO_DECIMALS = 'At most 2 decimal places are allowed.';
+
 /** Per-kind labels, ids and fixture values of the second list row (the one the edit tests open). */
 interface KindCase {
   readonly kind: CatalogItemKind;
@@ -176,6 +178,27 @@ for (const catalogCase of KIND_CASES) {
       await rate.fill('6000');
       await expect(rate).not.toHaveAttribute('aria-invalid', 'true');
       await expect(dialog).toBeVisible();
+    });
+
+    test('a rate with a third decimal is refused on the rate field with the two-decimal text, and 2 decimals save', async ({ page }) => {
+      await signInWithMocks(page);
+      const catalog = new CatalogPage(page);
+      await catalog.goto(catalogCase.tab);
+      const dialog = await catalog.openCreate(catalogCase.kind);
+      const rate = dialog.getByLabel(catalogCase.rateLabel);
+
+      await fillCreateForm(dialog, catalogCase);
+      await rate.fill('10.005');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+
+      await expect(errorToastMessage(page, MAX_TWO_DECIMALS)).toBeVisible();
+      await expect(rate).toHaveAttribute('aria-invalid', 'true');
+      await expect(rate).toHaveAccessibleDescription(MAX_TWO_DECIMALS);
+
+      await rate.fill('10.01');
+      await expect(rate).not.toHaveAttribute('aria-invalid', 'true');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toHaveCount(0);
     });
 
     test('a refusal without a message shows the kind\'s generic save failure and keeps the dialog', async ({ page }) => {

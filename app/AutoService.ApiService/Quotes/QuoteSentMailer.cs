@@ -16,6 +16,12 @@ internal sealed class QuoteSentMailer(IEmailSender sender, EmailSettings setting
         CancellationToken cancellationToken)
     {
         var vehicle = quote.Vehicle;
+        if (!QuoteRecipientRules.HasDeliverableAddress(vehicle.Customer.Email))
+        {
+            logger.LogWarning("Quote e-mail was not sent: the customer has no deliverable address.");
+            return EmailSendResult.Failure(null, "The customer has no deliverable e-mail address.", false);
+        }
+
         var model = new QuoteSentEmailModel(
             vehicle.Customer.Email,
             vehicle.Customer.Name.ToString(),

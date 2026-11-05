@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { appointmentService } from '../../../services/scheduler/appointment.service';
 import type { SchedulerCustomerLookupDto } from '../../../types/scheduler/scheduler.types';
 import type { LookupMode, LookupState } from '../components/intake/SchedulerIntakeModal.types';
+import { customerMatchesLookup } from '../utils/intakeLookupMatch';
 
 interface UseSchedulerIntakeLookupParams {
   readonly onLookupReset: () => void;
@@ -13,6 +14,7 @@ interface UseSchedulerIntakeLookupParams {
 /** Typing pause before the live lookup runs. */
 const LOOKUP_DEBOUNCE_MS = 280;
 
+/** State and handlers of the intake lookup: debounced search, stale-response guard and result selection. */
 export function useSchedulerIntakeLookup({
   onLookupReset,
   onLookupFound,
@@ -93,10 +95,7 @@ export function useSchedulerIntakeLookup({
         return;
       }
 
-      const filteredResults = results.filter((result) => (
-        matchesNameFilter(result, normalizedName) &&
-        matchesLicensePlateFilter(result, normalizedPlate)
-      ));
+      const filteredResults = results.filter((result) => customerMatchesLookup(result, normalizedName, normalizedPlate));
 
       setCustomerLookup(null);
       setNameLookupResults(filteredResults);
@@ -154,27 +153,4 @@ export function useSchedulerIntakeLookup({
   ]);
 
   return { state, actions };
-}
-
-/** True when the customer's full name contains the typed name, or no name was typed. */
-function matchesNameFilter(customer: SchedulerCustomerLookupDto, normalizedName: string): boolean {
-  if (normalizedName.length === 0) {
-    return true;
-  }
-
-  const fullName = [customer.firstName, customer.middleName, customer.lastName]
-    .filter((part): part is string => Boolean(part && part.trim().length > 0))
-    .join(' ')
-    .toUpperCase();
-
-  return fullName.includes(normalizedName.toUpperCase());
-}
-
-/** True when one of the customer's plates contains the typed plate, or no plate was typed. */
-function matchesLicensePlateFilter(customer: SchedulerCustomerLookupDto, normalizedPlate: string): boolean {
-  if (normalizedPlate.length === 0) {
-    return true;
-  }
-
-  return customer.vehicles.some((vehicle) => vehicle.licensePlate.toUpperCase().includes(normalizedPlate));
 }

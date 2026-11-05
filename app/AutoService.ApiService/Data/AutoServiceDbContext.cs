@@ -110,7 +110,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
                 .HasMaxLength(64);
 
             entity.Property(x => x.CreatedByUserAgent)
-                .HasMaxLength(512);
+                .HasMaxLength(RefreshToken.MaxUserAgentLength);
 
             entity.HasIndex(x => x.TokenHash)
                 .IsUnique();

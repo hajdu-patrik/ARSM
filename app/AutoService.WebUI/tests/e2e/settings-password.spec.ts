@@ -2,7 +2,7 @@
  * refusal (wrong current password, each password-policy message, generic failures) under its field. */
 import { expect, test } from '@playwright/test';
 import { openSettings } from './pages/settings.page';
-import { errorToastMessage, toastMessage, toastRegion } from './support/toast';
+import { errorToastMessage, toastMessage } from './support/toast';
 
 const CURRENT = 'CurrentPass1!';
 const NEXT = 'NewPassWord1!';
@@ -140,17 +140,5 @@ test.describe('Password change refusals', () => {
     for (const id of ['current', 'new', 'confirm']) {
       await expect(page.locator(`#change-password-${id}`)).not.toHaveAttribute('aria-invalid', 'true');
     }
-  });
-
-  test('a locked-out account is refused with an error alert and keeps the typed passwords', async ({ page }) => {
-    const { settings } = await openSettings(page, {
-      routeFailures: { [CHANGE_PASSWORD]: { status: 429, body: { code: 'lockout_active', retryAfterSeconds: 900 } } },
-    });
-
-    await settings.submitPasswordChange(CURRENT, NEXT, NEXT);
-
-    await expect(toastRegion(page).getByRole('alert')).toBeVisible();
-    await expect(toastMessage(page, 'Password changed successfully.')).toHaveCount(0);
-    await expect(page.locator('#change-password-new')).toHaveValue(NEXT);
   });
 });

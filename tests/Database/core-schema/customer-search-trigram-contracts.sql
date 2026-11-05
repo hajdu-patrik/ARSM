@@ -1,4 +1,4 @@
--- AutoService DB - trigram search contracts of AddTrigramSearchIndexes (backs GET /api/customers/by-name).
+-- AutoService DB - trigram search contracts of AddTrigramSearchIndexes and AddReversedNameTrigramIndexes (name searches).
 -- Assertion idiom: a violation makes the closing cast fail.
 
 -- 1. The pg_trgm extension is installed: the root cause when every trigram index below is missing.
@@ -11,7 +11,7 @@ FROM (
 ) v;
 
 
--- 2. All 7 indexes stay GIN with gin_trgm_ops on the upper()/replace() expression the customer lookup repeats,
+-- 2. All 9 indexes stay GIN with gin_trgm_ops on the upper()/replace() expression the customer lookup repeats,
 --    or Postgres silently stops using them. The combined-name indexes keep the ' ' separator.
 SELECT 'trigram_index_expressions' AS check_name,
        CASE WHEN COUNT(*) = 0 THEN 'ok'
@@ -24,6 +24,8 @@ FROM (
         ('people', 'IX_people_LastName_Trgm', 'upper(', '"LastName"'),
         ('people', 'IX_people_FirstName_LastName_Trgm', '"FirstName"', ''' ''::text'),
         ('people', 'IX_people_FirstName_MiddleName_LastName_Trgm', '"MiddleName"', '"LastName"'),
+        ('people', 'IX_people_LastName_FirstName_Trgm', '"LastName"', ''' ''::text'),
+        ('people', 'IX_people_LastName_FirstName_MiddleName_Trgm', '"FirstName"', '"MiddleName"'),
         ('vehicles', 'IX_vehicles_LicensePlate_Trgm', 'upper(', '"LicensePlate"'),
         ('vehicles', 'IX_vehicles_LicensePlate_Compact_Trgm', 'replace(', '"LicensePlate"')
     ) AS e (table_name, index_name, frag1, frag2)
@@ -37,4 +39,8 @@ FROM (
        OR position('upper(' IN i.indexdef) = 0
        OR position(e.frag1 IN i.indexdef) = 0
        OR position(e.frag2 IN i.indexdef) = 0
+       OR (e.index_name = 'IX_people_LastName_FirstName_Trgm'
+           AND i.indexdef !~ '"LastName".*"FirstName"')
+       OR (e.index_name = 'IX_people_LastName_FirstName_MiddleName_Trgm'
+           AND i.indexdef !~ '"LastName".*"FirstName".*"MiddleName"')
 ) v;

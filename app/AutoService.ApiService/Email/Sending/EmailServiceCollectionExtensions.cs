@@ -13,9 +13,13 @@ public static class EmailServiceCollectionExtensions
 
         if (settings.IsConfigured)
         {
+            // A Resend POST is not idempotent: no retry, so this client alone drops the resilience pipeline.
+#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is still marked experimental in Http.Resilience.
             services
                 .AddHttpClient<IEmailSender, ResendEmailSender>()
+                .RemoveAllResilienceHandlers()
                 .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(ResendTimeoutSeconds));
+#pragma warning restore EXTEXP0001
         }
         else
         {

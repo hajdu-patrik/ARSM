@@ -25,6 +25,19 @@ export function getAdjacentMonthViews(year: number, month: number): readonly [Ca
   ];
 }
 
+/** Keeps the appointments whose local scheduled date falls in the given month; the API cuts months in UTC,
+ * so the previous-current-next window holds every candidate whatever the browser's UTC offset. */
+export function filterAppointmentsToLocalMonth(
+  appointments: readonly AppointmentDto[],
+  year: number,
+  month: number,
+): AppointmentDto[] {
+  return appointments.filter((appointment) => {
+    const scheduledDate = new Date(appointment.scheduledDate);
+    return scheduledDate.getFullYear() === year && scheduledDate.getMonth() + 1 === month;
+  });
+}
+
 /** Merges appointment groups, keeping the first occurrence of each appointment id. */
 export function mergeUniqueAppointments(...appointmentGroups: readonly (readonly AppointmentDto[])[]): AppointmentDto[] {
   const merged = new Map<number, AppointmentDto>();

@@ -66,7 +66,7 @@ class SelectSpecsTests(TempDirCase):
     def test_selections_of_several_files_are_united(self) -> None:
         self.write("route-guards.spec.ts")
         files = ["src/pages/Settings/Page.tsx", "tests/e2e/route-guards.spec.ts"]
-        self.assertEqual(select.select_specs(files), {"settings-edge", "settings-profile", "settings-password", "settings-picture", "settings-account", "settings-company", AXE, "route-guards"})
+        self.assertEqual(select.select_specs(files), {"settings-edge", "settings-profile", "settings-password", "settings-picture", "settings-account", "settings-lockout", "settings-company", AXE, "route-guards"})
 
     def test_markdown_does_not_mask_an_unmapped_file(self) -> None:
         self.assertIsNone(select.select_specs(["README.md", "package.json"]))

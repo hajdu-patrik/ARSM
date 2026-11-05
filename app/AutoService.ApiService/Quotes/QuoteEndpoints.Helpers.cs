@@ -177,7 +177,16 @@ public static partial class QuoteEndpoints
         Quote quote,
         uint version,
         CancellationToken cancellationToken)
-        => OptimisticConcurrency.SaveWithVersionAsync(db, quote, version, VersionConflictCode, cancellationToken);
+    {
+        // xmin is only checked by an UPDATE of the quote row; a line-only change (or none) would skip it, so force one.
+        var entry = db.Entry(quote);
+        if (entry.State == EntityState.Unchanged)
+        {
+            entry.Property(q => q.Title).IsModified = true;
+        }
+
+        return OptimisticConcurrency.SaveWithVersionAsync(db, quote, version, VersionConflictCode, cancellationToken);
+    }
 
     /** The navigation set every quote detail response and write handler reads. */
     private static IQueryable<Quote> IncludeDetails(IQueryable<Quote> quotes) => quotes

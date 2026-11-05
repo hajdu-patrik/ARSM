@@ -3,7 +3,7 @@ import type { CreateLaborTypeRequest, LaborTypeDto, UpdateLaborTypeRequest } fro
 import type { MockApiState } from './test-data';
 import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson, fulfillNoContent, rejectStaleVersion } from './api-mock-response';
-import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate, resolveGrossAmount } from './api-mock-catalog-pricing';
+import { catalogPriceError, resolveGrossAmount } from './api-mock-catalog-pricing';
 
 /** Dispatches `/api/labor-types` mock requests (list, get, create, update, delete); every write bumps the item's version. */
 export async function tryHandleLaborTypeRoute(route: Route, method: string, path: string, state: MockApiState): Promise<boolean> {
@@ -52,8 +52,9 @@ async function handleCreateLaborType(route: Route, state: MockApiState): Promise
     return;
   }
 
-  if (!isAllowedVatRate(vatRatePercent)) {
-    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+  const priceError = catalogPriceError(hourlyNetRate, vatRatePercent);
+  if (priceError !== null) {
+    await fulfillJson(route, { detail: priceError }, 422);
     return;
   }
 
@@ -94,12 +95,13 @@ async function handleUpdateLaborType(route: Route, state: MockApiState, id: numb
   }
 
   const payload = route.request().postDataJSON() as Omit<UpdateLaborTypeRequest, 'version'> & { version?: number };
-  if (await rejectStaleVersion(route, existing.version, payload.version, 'labor_type_version_conflict')) {
+  const priceError = catalogPriceError(payload.hourlyNetRate, payload.vatRatePercent);
+  if (priceError !== null) {
+    await fulfillJson(route, { detail: priceError }, 422);
     return;
   }
 
-  if (!isAllowedVatRate(payload.vatRatePercent)) {
-    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+  if (await rejectStaleVersion(route, existing.version, payload.version, 'labor_type_version_conflict')) {
     return;
   }
 

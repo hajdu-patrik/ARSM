@@ -1,3 +1,4 @@
+using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Identity;
@@ -41,7 +42,15 @@ public static partial class CustomerEndpoints
         var customer = new Customer(input.ToFullName(), normalizedEmail, normalizedPhone);
 
         db.Customers.Add(customer);
-        await db.SaveChangesAsync(cancellationToken);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db,
+            token => CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, null, token),
+            CustomerInput.EmailTakenDetail,
+            cancellationToken);
+        if (raceConflict is not null)
+        {
+            return raceConflict;
+        }
 
         var dto = new CustomerDto(
             customer.Id,
@@ -99,9 +108,14 @@ public static partial class CustomerEndpoints
         customer.Email = normalizedEmail;
         customer.PhoneNumber = normalizedPhone;
 
-        await db.SaveChangesAsync(cancellationToken);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db,
+            token => CustomerInput.FindContactConflictAsync(db, normalizedEmail, normalizedPhone, id, token),
+            CustomerInput.EmailTakenDetail,
+            cancellationToken,
+            ApiProblem.NotFound("Customer not found."));
 
-        return Results.NoContent();
+        return raceConflict ?? Results.NoContent();
     }
 
     private static async Task<IResult> DeleteCustomerAsync(
@@ -109,6 +123,7 @@ public static partial class CustomerEndpoints
         HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
+        IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
         var customer = await db.Customers
@@ -119,8 +134,24 @@ public static partial class CustomerEndpoints
             return ApiProblem.NotFound("Customer not found.");
         }
 
+        // The FK cascade deletes these appointments, so live subscribers are told about each one after the commit.
+        var appointmentIds = await db.Appointments
+            .Where(a => a.Vehicle.CustomerId == id)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken);
+
         db.Customers.Remove(customer);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A parallel delete removed the row first; answer like a sequential repeat.
+            return ApiProblem.NotFound("Customer not found.");
+        }
+
+        broadcaster.PublishAppointmentsChanged(appointmentIds);
 
         loggerFactory.CreateLogger("CustomerEndpoints.Delete").LogInformation(
             "Customer {CustomerId} deleted with its vehicles, appointments and quotes by admin {ActorPersonId}.",

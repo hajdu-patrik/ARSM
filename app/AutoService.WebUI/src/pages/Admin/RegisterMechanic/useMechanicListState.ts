@@ -50,6 +50,7 @@ function getDeleteErrorKey(error: unknown): string {
   return status === 500 ? 'admin.mechanicDeleteIdentityFailed' : 'admin.mechanicDeleteFailed';
 }
 
+/** Owns the roster read, search and paging, and the delete modal with its mutation. */
 export function useMechanicListState({
   showErrorToast,
   showSuccessToast,
@@ -116,6 +117,10 @@ export function useMechanicListState({
       }
 
       refreshRoster();
+      if (scope !== null) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.scheduler.root(scope) });
+      }
+
       showSuccessToast('admin.mechanicDeleted', { email: target.email });
       setDeleteTarget(null);
     },

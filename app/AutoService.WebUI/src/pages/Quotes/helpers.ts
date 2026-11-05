@@ -96,6 +96,11 @@ export function toValidUntilIso(dateInputValue: string): string {
   return new Date(`${dateInputValue}T23:59:59.000Z`).toISOString();
 }
 
+/** True when a quote's validity deadline is already behind us; the server refuses to send such a draft. */
+export function isValidityPassed(validUntil: string): boolean {
+  return new Date(validUntil) < new Date();
+}
+
 /** Builds the header form for a new draft, with the default validity window pre-filled (D22). */
 export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   const validUntil = new Date();
@@ -290,6 +295,7 @@ const QUOTE_VALIDATION_MESSAGE_RULES: ReadonlyArray<readonly [readonly string[],
   [['part not found'], 'quotes.errors.partNotFound'],
   [['labor type not found'], 'quotes.errors.laborTypeNotFound'],
   [['version is required'], 'quotes.errors.versionRequired'],
+  [['quantity can have at most 2 decimal', 'amount can have at most 2 decimal'], 'common.validation.maxTwoDecimals'],
   [['quantity must be'], 'quotes.errors.invalidQuantity'],
   [['amount must be at least'], 'quotes.errors.invalidMoney'],
   [['vat rate must be'], 'common.validation.invalidVatRate'],

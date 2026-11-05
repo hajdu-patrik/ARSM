@@ -53,13 +53,16 @@ public sealed class LoginBanMiddlewareTests
         Assert.Equal(retryAfter, body.GetProperty("retryAfterSeconds").GetInt32());
     }
 
-    [Fact]
-    public async Task The_login_path_match_ignores_case()
+    [Theory]
+    [InlineData("/API/Auth/LOGIN")]
+    [InlineData("/api/auth/login/")]
+    [InlineData("/API/AUTH/LOGIN/")]
+    public async Task The_login_path_match_ignores_case_and_a_trailing_slash(string path)
     {
         var ip = UniqueIp();
         LoginBanMiddleware.BanClient(Create("POST", "/api/auth/login", remoteIp: ip));
 
-        var (context, nextCalled) = await SendAsync("/API/Auth/LOGIN", ip);
+        var (context, nextCalled) = await SendAsync(path, ip);
 
         Assert.False(nextCalled);
         Assert.Equal(StatusCodes.Status429TooManyRequests, context.Response.StatusCode);

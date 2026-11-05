@@ -1,9 +1,9 @@
 /** Section components for the appointment detail modal body (header, due date, vehicle, task). */
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { Clock3, FileText, Pencil } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppointmentDto, AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
-import type { EditFormState } from './AppointmentDetailModal.edit';
+import { TASK_DESCRIPTION_MAX_LENGTH, type EditFormFieldErrors, type EditFormState } from './AppointmentDetailModal.edit';
 import type { DueState } from '../../utils/due-date';
 import {
   baseSectionHeadingTextClass,
@@ -22,6 +22,9 @@ import {
   toneFeedbackClasses,
 } from '../../../../utils/formStyles';
 import { formatQuantity } from '../../../../utils/number';
+import { fieldErrorA11yProps } from '../../../../utils/fieldA11y';
+import { FieldErrorText } from '../../../../components/common/FieldErrorText';
+import { toDatetimeLocalValue } from '../../utils/due-date';
 import { StatusBadge } from '../shared/StatusBadge';
 import { MechanicsSection, type MechanicOption } from './AppointmentDetailModal.mechanics';
 
@@ -30,6 +33,7 @@ interface AppointmentDetailBodyProps {
   readonly isAdmin: boolean;
   readonly isEditing: boolean;
   readonly editForm: EditFormState;
+  readonly fieldErrors: EditFormFieldErrors;
   readonly formattedDate: string;
   readonly dueDateLabel: string;
   readonly dueState: DueState;
@@ -40,6 +44,7 @@ interface AppointmentDetailBodyProps {
   readonly canUnclaim: boolean;
   readonly isClaiming: boolean;
   readonly isAssigning: boolean;
+  readonly isUnassigning: boolean;
   readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly t: TFunction;
@@ -61,6 +66,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   isAdmin,
   isEditing,
   editForm,
+  fieldErrors,
   formattedDate,
   dueDateLabel,
   dueState,
@@ -71,6 +77,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
   canUnclaim,
   isClaiming,
   isAssigning,
+  isUnassigning,
   isClosedForMechanicMutations,
   isUnclaiming,
   t,
@@ -93,6 +100,8 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
         dueDateLabel={dueDateLabel}
         isEditing={isEditing}
         dueDateTime={editForm.dueDateTime}
+        minDueDateTime={toDatetimeLocalValue(appointment.scheduledDate)}
+        errorKey={fieldErrors.dueDateTime}
         quoteId={quoteId}
         t={t}
         onOpenQuote={onOpenQuote}
@@ -110,6 +119,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
       <TaskSection
         isEditing={isEditing}
         taskDescription={editForm.taskDescription}
+        errorKey={fieldErrors.taskDescription}
         displayTask={appointment.taskDescription}
         t={t}
         onTaskChange={(value) => {
@@ -122,6 +132,7 @@ export const AppointmentDetailBody = memo(function AppointmentDetailBody({
           isAdmin={isAdmin}
           isClaiming={isClaiming}
           isAssigning={isAssigning}
+          isUnassigning={isUnassigning}
           isClosedForMechanicMutations={isClosedForMechanicMutations}
           isUnclaiming={isUnclaiming}
           availableMechanics={availableMechanics}
@@ -166,6 +177,8 @@ interface DueSectionProps {
   readonly dueDateLabel: string;
   readonly isEditing: boolean;
   readonly dueDateTime: string;
+  readonly minDueDateTime: string;
+  readonly errorKey: string | undefined;
   readonly quoteId: number | null;
   readonly t: TFunction;
   readonly onOpenQuote: () => void;
@@ -178,11 +191,15 @@ const DueSection = memo(function DueSection({
   dueDateLabel,
   isEditing,
   dueDateTime,
+  minDueDateTime,
+  errorKey,
   quoteId,
   t,
   onOpenQuote,
   onDueDateTimeChange,
 }: DueSectionProps) {
+  const errorId = useId();
+
   return (
     <div
       className={`rounded-2xl border px-4 py-3 max-[320px]:px-3 ${
@@ -229,11 +246,14 @@ const DueSection = memo(function DueSection({
             type="datetime-local"
             data-testid="appointment-detail-due-datetime"
             value={dueDateTime}
+            min={minDueDateTime}
             onChange={(event) => {
               onDueDateTimeChange(event.target.value);
             }}
             className={inputClassCompact}
+            {...fieldErrorA11yProps(errorId, errorKey)}
           />
+          <FieldErrorText id={errorId} messageKey={errorKey} />
         </label>
       )}
     </div>
@@ -350,6 +370,7 @@ const VehicleValueRow = memo(function VehicleValueRow({
 interface TaskSectionProps {
   readonly isEditing: boolean;
   readonly taskDescription: string;
+  readonly errorKey: string | undefined;
   readonly displayTask: string;
   readonly t: TFunction;
   readonly onTaskChange: (value: string) => void;
@@ -359,24 +380,33 @@ interface TaskSectionProps {
 const TaskSection = memo(function TaskSection({
   isEditing,
   taskDescription,
+  errorKey,
   displayTask,
   t,
   onTaskChange,
 }: TaskSectionProps) {
+  const headingId = useId();
+  const errorId = useId();
   return (
     <div className={schedulerDetailPanelClass}>
-      <h3 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
+      <h3 id={headingId} className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
         {t('scheduler.intake.taskDescription')}
       </h3>
       {isEditing ? (
+        <>
         <textarea
+          aria-labelledby={headingId}
+          {...fieldErrorA11yProps(errorId, errorKey)}
           value={taskDescription}
           onChange={(event) => {
             onTaskChange(event.target.value);
           }}
           rows={3}
+          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
           className={textareaClass}
         />
+        <FieldErrorText id={errorId} messageKey={errorKey} />
+        </>
       ) : (
         <p className={`break-words ${compactPrimaryValueTextClass}`}>{displayTask}</p>
       )}

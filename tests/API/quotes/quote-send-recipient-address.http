@@ -1,0 +1,150 @@
+# Send to a customer without a deliverable address: the synthetic mechanic-owner-{id}@customers.arsm.local address (intake for a
+# disposable mechanic) and any .local address answer 422 quote_customer_email_missing, a real one sends. Empty e-mail: unit-only.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@RunId = {{$timestamp}}
+@OwnerMechanicEmail = quote.recipient.owner.{{RunId}}@example.test
+@LocalEmail = quote.recipient.{{RunId}}@disposable.local
+@RealEmail = quote.recipient.real.{{RunId}}@example.test
+
+### [Setup][Recipient] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][Recipient] Register the disposable mechanic whose owned customer the intake creates (200 expected)
+# @name ownerMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Recipient", "lastName": "Owner", "email": "{{OwnerMechanicEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+### [Setup][Recipient] Intake with the mechanic's e-mail creates its owned customer and a vehicle (201 expected)
+# @name intake
+POST {{AutoService_ApiService_HostAddress}}/api/appointments/intake
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "customerEmail": "{{OwnerMechanicEmail}}", "vehicle": { "licensePlate": "QRA-{{RunId}}", "vin": "TST{{RunId.toString().slice(-10)}}0748", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }, "scheduledDate": "2026-04-22T10:00:00", "dueDateTime": "2026-04-25T15:00:00", "taskDescription": "Quote recipient address" }
+
+?? status == 201
+
+### [Setup][Recipient] The owned customer carries the synthetic .local address (200 expected)
+# @name owned
+GET {{AutoService_ApiService_HostAddress}}/api/customers/{{intake.vehicle.customerId}}
+
+?? status == 200
+?? js (response.parsedBody.email === `mechanic-owner-${ownerMechanic.personId}@customers.arsm.local`) == true
+
+### [Setup][Recipient] Create the draft quote on its vehicle (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{intake.vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "Recipient {{RunId}}" }
+
+?? status == 201
+
+### [Setup][Recipient] Add one line (201 expected, the version moves on)
+# @name line
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Recipient line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+
+### [Negative][Recipient] Sending to the synthetic .local address is refused (422 expected, code quote_customer_email_missing)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 422
+?? js response.parsedBody.code == quote_customer_email_missing
+
+### [Positive][Recipient] The refused send left the quote a Draft with its version (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.status === "Draft" && response.parsedBody.sentAt == null && response.parsedBody.version === line.version) == true
+
+### [Setup][Recipient] Give the customer another .local address (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{owned.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "{{owned.firstName}}", "middleName": null, "lastName": "{{owned.lastName}}", "email": "{{LocalEmail}}", "phoneNumber": null }
+
+?? status == 204
+
+### [Negative][Recipient] Any other .local address is refused too (422 expected, code quote_customer_email_missing)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 422
+?? js response.parsedBody.code == quote_customer_email_missing
+
+### [Positive][Recipient] A real address is saved on the customer (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/customers/{{owned.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "{{owned.firstName}}", "middleName": null, "lastName": "{{owned.lastName}}", "email": "{{RealEmail}}", "phoneNumber": null }
+
+?? status == 204
+
+### [Positive][Recipient] The same quote is now sent (200 expected, Sent with SentAt)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/status
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "status": "Sent", "version": {{line.version}} }
+
+?? status == 200
+?? js (response.parsedBody.status === "Sent" && response.parsedBody.sentAt != null) == true
+
+### [Cleanup][Recipient] Delete the owned customer, cascading vehicle, appointment and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{owned.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+### [Cleanup][Recipient] Delete the disposable mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{ownerMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

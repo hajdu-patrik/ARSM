@@ -25,10 +25,19 @@ internal static class QuoteDocumentAssets
         FontManager.RegisterFontFromEmbeddedResource(BoldFontResource);
     }
 
-    private static byte[] LoadLogo()
+    /** The bytes of every registered font face, for the glyph coverage check of QuoteDocumentText. */
+    internal static IEnumerable<byte[]> FontFaces()
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(LogoResource)
-            ?? throw new InvalidOperationException($"Embedded logo resource '{LogoResource}' was not found in the assembly.");
+        yield return LoadResource(RegularFontResource);
+        yield return LoadResource(BoldFontResource);
+    }
+
+    private static byte[] LoadLogo() => LoadResource(LogoResource);
+
+    private static byte[] LoadResource(string resourceName)
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' was not found in the assembly.");
 
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);

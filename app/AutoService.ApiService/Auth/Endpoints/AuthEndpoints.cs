@@ -30,8 +30,8 @@ public static partial class AuthEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
+        // No RequireAuthorization: an expired access cookie must not keep the refresh session alive (LogoutAsync).
         group.MapPost("/logout", LogoutAsync)
-            .RequireAuthorization()
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized);
 

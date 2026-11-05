@@ -16,6 +16,26 @@ export interface CustomerListItem {
   vehicleLicensePlates: string[];
 }
 
+/** Vehicle summary inside a customer detail. */
+interface CustomerVehicleSummary {
+  id: number;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  year: number;
+}
+
+/** One customer with a vehicle summary list, returned by `GET /api/customers/{id}`. */
+export interface CustomerWithVehiclesDto {
+  id: number;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  email: string;
+  phoneNumber: string | null;
+  vehicles: CustomerVehicleSummary[];
+}
+
 /** Request payload for creating a customer via `POST /api/customers`. */
 export interface CreateCustomerRequest {
   firstName: string;

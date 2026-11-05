@@ -79,7 +79,8 @@ public sealed class CustomerLookupMappingTests
 
     [Theory]
     [InlineData("BÉLA")]
-    [InlineData("KOVÁCS ANNA")]
+    [InlineData("ANNA BÉLA")]
+    [InlineData("KOVÁCS MÁRIA ANNA")]
     [InlineData("XYZ-999")]
     public void The_search_rejects_terms_that_match_no_name_or_plate(string term)
     {
@@ -94,5 +95,23 @@ public sealed class CustomerLookupMappingTests
         Assert.True(Matches(customer, "ANNA KOVÁCS"));
         Assert.False(Matches(customer, "ANNA MÁRIA"));
         Assert.False(Matches(customer, "ABC"));
+    }
+
+    [Theory]
+    [InlineData("KOVÁCS ANNA")]
+    [InlineData("KOVÁCS ANNA MÁRIA")]
+    [InlineData("kovács a")]
+    public void The_search_also_matches_the_last_first_order_the_webui_shows(string term)
+    {
+        Assert.True(Matches(CustomerWith("Anna", "Mária", "Kovács", "ABC-102"), term.ToUpperInvariant()));
+    }
+
+    [Fact]
+    public void The_last_first_middle_order_needs_a_middle_name_and_the_last_first_order_works_without_one()
+    {
+        var customer = CustomerWith("Anna", null, "Kovács");
+
+        Assert.True(Matches(customer, "KOVÁCS ANNA"));
+        Assert.False(Matches(customer, "KOVÁCS ANNA MÁRIA"));
     }
 }

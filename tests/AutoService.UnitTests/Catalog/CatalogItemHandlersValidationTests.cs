@@ -54,6 +54,14 @@ public sealed class CatalogItemHandlersValidationTests
         ResultAssert.Problem(await Create(Input(price: 100_000_000.01m)), 422, ValidationMessages.InvalidMoneyAmount);
     }
 
+    [Fact]
+    public async Task Create_and_update_refuse_a_price_with_more_than_two_decimals_but_the_range_message_wins()
+    {
+        ResultAssert.Problem(await Create(Input(price: 10.005m)), 422, "Amount can have at most 2 decimal places.");
+        ResultAssert.Problem(await Update(Input(price: 10.005m)), 422, "Amount can have at most 2 decimal places.");
+        ResultAssert.Problem(await Create(Input(price: -1.005m)), 422, ValidationMessages.InvalidMoneyAmount);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(19)]

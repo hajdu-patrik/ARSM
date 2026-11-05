@@ -16,7 +16,7 @@ export function useQuoteMutations({ showSuccessToast, showErrorToast, editor }: 
   const outcome = useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQuote: editor.adoptQuote });
   const header = useQuoteHeaderMutations({ editor, outcome, showErrorToast });
   const lines = useQuoteLineMutations({ editor, outcome, showErrorToast });
-  const lifecycle = useQuoteLifecycleMutations({ editor, outcome, showSuccessToast });
+  const lifecycle = useQuoteLifecycleMutations({ editor, outcome, showSuccessToast, showErrorToast });
   const pdf = useQuotePdfDownload({ showErrorToast });
 
   return { ...header, ...lines, ...lifecycle, ...pdf };

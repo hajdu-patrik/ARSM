@@ -112,10 +112,13 @@ public static partial class QuoteEndpoints
      * the version arrives as a query parameter on DELETE (D30/D38/D39). */
     private static async Task<IResult> DeleteQuoteAsync(
         int id,
-        uint version,
+        uint? version,
         AutoServiceDbContext db,
         CancellationToken cancellationToken)
     {
+        // A missing ?version= binds to null and gets the documented 422, not a model-binding 400.
+        var submittedVersion = version ?? 0;
+
         var quote = await IncludeDetails(db.Quotes)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
@@ -134,14 +137,14 @@ public static partial class QuoteEndpoints
             return ApiProblem.Conflict("Only draft quotes can be deleted.");
         }
 
-        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(version);
+        var missingVersionError = OptimisticConcurrency.GetMissingVersionError(submittedVersion);
         if (missingVersionError is not null)
         {
             return missingVersionError;
         }
 
         db.Quotes.Remove(quote);
-        var saveError = await SaveWithVersionAsync(db, quote, version, cancellationToken);
+        var saveError = await SaveWithVersionAsync(db, quote, submittedVersion, cancellationToken);
         if (saveError is not null)
         {
             return saveError;

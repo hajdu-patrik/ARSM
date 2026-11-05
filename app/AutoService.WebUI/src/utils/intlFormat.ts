@@ -42,6 +42,9 @@ const TIME_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-d
 
 const SHORT_DATE_OPTIONS: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
+/** The short date as the UTC calendar day, for stored end-of-UTC-day deadlines that must read the same in every zone. */
+const SHORT_DATE_UTC_OPTIONS: Intl.DateTimeFormatOptions = { ...SHORT_DATE_OPTIONS, timeZone: 'UTC' };
+
 const SHORT_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = { ...SHORT_DATE_OPTIONS, ...TIME_OPTIONS };
 
 const LONG_DATE_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'full' };
@@ -77,6 +80,11 @@ function formatPreset(options: Intl.DateTimeFormatOptions, value: Date | string,
 /** Short date: DD/MM/YYYY in English, `YYYY. MM. DD.` in Hungarian. */
 export function formatShortDate(value: Date | string, language: string): string {
   return formatPreset(SHORT_DATE_OPTIONS, value, language);
+}
+
+/** Short date of the UTC calendar day of the value, whatever the browser zone is. */
+export function formatShortDateUtc(value: Date | string, language: string): string {
+  return formatPreset(SHORT_DATE_UTC_OPTIONS, value, language);
 }
 
 /** Short date plus 24-hour time (HH:mm). */

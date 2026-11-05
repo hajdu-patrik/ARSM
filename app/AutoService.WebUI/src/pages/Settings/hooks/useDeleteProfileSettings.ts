@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { clearAuthSessionHint } from '../../../services/auth/session-hint';
 import { profileService } from '../../../services/profile/profile.service';
 import { CURRENT_PASSWORD_INVALID_KEY } from '../../../utils/serverValidation';
+import { extractLockoutToast } from '../../../utils/passwordChangeErrors';
 import { extractDeleteProfileErrorKey } from '../handlers';
 
 interface UseDeleteProfileSettingsParams {
@@ -43,6 +44,12 @@ export function useDeleteProfileSettings({
       void navigate('/login', { replace: true });
     },
     onError: (error) => {
+      const lockout = extractLockoutToast(error);
+      if (lockout !== null) {
+        showErrorToast(lockout.key, lockout.values);
+        return;
+      }
+
       const errorKey = extractDeleteProfileErrorKey(error) ?? 'toast.profileDeleteFailed';
 
       if (errorKey === CURRENT_PASSWORD_INVALID_KEY) {

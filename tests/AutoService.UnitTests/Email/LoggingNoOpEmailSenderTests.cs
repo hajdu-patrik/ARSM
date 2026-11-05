@@ -23,6 +23,7 @@ public sealed class LoggingNoOpEmailSenderTests
         Assert.Equal("noop", result.ProviderMessageId);
         Assert.Equal(200, result.StatusCode);
         Assert.False(result.Retryable);
+        Assert.True(result.Skipped);
     }
 
     [Theory]

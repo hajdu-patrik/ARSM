@@ -36,6 +36,6 @@ internal static class ModelTestSupport
     public static Dictionary<string, string> CheckConstraints(this IModel model)
         => model.GetEntityTypes()
             .SelectMany(entity => entity.GetCheckConstraints())
-            .GroupBy(constraint => constraint.Name)
+            .GroupBy(constraint => constraint.Name!)
             .ToDictionary(group => group.Key, group => group.First().Sql);
 }

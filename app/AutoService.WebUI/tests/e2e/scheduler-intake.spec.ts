@@ -1,9 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
+import { lookupCustomerWithVehicle } from './support/appointment-fixtures';
+import { serveLookupAnswer } from './support/appointment-route-overrides';
 import { expectDropdownValue } from './support/dropdown';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
+import { toastMessage } from './support/toast';
 
 test.describe('Scheduler intake customer lookup', () => {
   test.beforeEach(async ({ page }) => {
@@ -54,7 +58,7 @@ test.describe('Scheduler intake customer lookup', () => {
     await schedulerPage.createWithCurrentForm();
 
     await expect(schedulerPage.intakeDialog()).toHaveCount(0);
-    await expect(page.locator('output[aria-live="polite"]')).toContainText('Intake created successfully.');
+    await expect(toastMessage(page, 'Intake created successfully.')).toBeVisible();
     await expect(page.getByText(taskDescription)).toBeVisible();
     await expect(page.getByText('NXE-441').first()).toBeVisible();
     await expect(page.getByText('1 appointment', { exact: true })).toBeVisible();
@@ -91,7 +95,7 @@ test.describe('Scheduler intake new vehicle validation', () => {
 
     await schedulerPage.searchMissingEmail('new.customer@example.test');
 
-    await expect(dialog.getByText(/Ügyfél nem található|Nincs találat erre a névre/)).toBeVisible();
+    await expect(dialog.getByText('Nincs találat erre a névre')).toBeVisible();
     await expect(dialog.getByLabel('VIN')).toBeVisible();
     await expect(dialog.getByLabel('Motorteljesítmény (kW)')).toBeVisible();
     await expect(dialog.getByLabel('Hajtáslánc')).toBeVisible();
@@ -103,4 +107,43 @@ test.describe('Scheduler intake new vehicle validation', () => {
 
     await expect(page.getByText('A rendszám, VIN, márka, modell és hajtáslánc megadása kötelező.')).toBeVisible();
   });
+});
+
+test.describe('Scheduler intake lookup keeps what the server found', () => {
+  const PLATE_OWNER = lookupCustomerWithVehicle({ id: 210, firstName: 'Pal', middleName: null, lastName: 'Varga', licensePlate: 'PRB-001' });
+  const MIDDLE_NAME_OWNER = lookupCustomerWithVehicle({ id: 211, firstName: 'Zoltan', middleName: 'Bela', lastName: 'Szabo', licensePlate: 'MDL-211' });
+
+  for (const typedPlate of ['PRB001', 'PRB 001']) {
+    test(`lists the PRB-001 vehicle for the plate typed as "${typedPlate}" and offers no new customer`, async ({ page }) => {
+      await signInWithMocks(page);
+      await serveLookupAnswer(page, [PLATE_OWNER]);
+      const scheduler = new SchedulerPage(page);
+      await scheduler.goto();
+      const dialog = await scheduler.openIntakeForCurrentDay();
+
+      await scheduler.searchByLicensePlate(typedPlate);
+
+      await expect(dialog.getByText('1 matching vehicle', { exact: true })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Select' })).toHaveCount(1);
+      await expect(dialog.getByText('No customer found for this license plate')).toHaveCount(0);
+      await expect(dialog.getByTestId('scheduler-intake-customer-email')).toHaveCount(0);
+    });
+  }
+
+  for (const typedName of ['Zoltan Bela Szabo', 'Szabo Zoltan Bela']) {
+    test(`lists the customer with a middle name for the name typed as "${typedName}"`, async ({ page }) => {
+      await signInWithMocks(page);
+      await serveLookupAnswer(page, [MIDDLE_NAME_OWNER]);
+      const scheduler = new SchedulerPage(page);
+      await scheduler.goto();
+      const dialog = await scheduler.openIntakeForCurrentDay();
+
+      await scheduler.searchByName(typedName);
+
+      await expect(dialog.getByText('1 matching customer', { exact: true })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Select' })).toHaveCount(1);
+      await expect(dialog.getByText('No customers match this name')).toHaveCount(0);
+      await expect(dialog.getByTestId('scheduler-intake-customer-email')).toHaveCount(0);
+    });
+  }
 });

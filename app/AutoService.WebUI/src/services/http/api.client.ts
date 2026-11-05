@@ -10,12 +10,14 @@ import { readCsrfCookie } from './csrf-token';
 import { hasErrorCode } from './error-code';
 import { isRecord } from './record-guard';
 import type { SilentRequestOptions } from './request-options';
-import { isServerErrorStatus, redirectToServerError } from './server-error';
+import { isServerErrorStatus, isSessionRejection, redirectToServerError } from './server-error';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
     /** Opts a background/silent request out of the global server-error redirect to /500; the error still propagates. */
     skipErrorRedirect?: boolean | undefined;
+    /** Set once a request was retried after a 401; it survives axios's config merge, so the retry happens at most once. */
+    hasRetriedAfterUnauthorized?: boolean | undefined;
   }
 }
 
@@ -43,9 +45,6 @@ const PASSWORD_CHANGE_REQUIRED_CODE = 'password_change_required';
 
 /** In-flight refresh promise for single-flight deduplication within this tab. */
 let refreshPromise: Promise<void> | null = null;
-
-/** Tracks requests that have already been retried after a 401 to prevent infinite loops. */
-const retriedRequests = new WeakSet();
 
 /** Drops the password from a JSON string body; a body that is not valid JSON is discarded entirely. */
 function redactSerializedPayload(payload: string): string | undefined {
@@ -181,17 +180,22 @@ apiClient.interceptors.response.use(
     if (
       responseStatus !== 401 ||
       originalRequest === undefined ||
-      retriedRequests.has(originalRequest) ||
+      originalRequest.hasRetriedAfterUnauthorized === true ||
       isAuthExcludedPath
     ) {
       throw error;
     }
 
-    retriedRequests.add(originalRequest);
+    originalRequest.hasRetriedAfterUnauthorized = true;
 
     try {
       await refreshSession();
-    } catch {
+    } catch (refreshError) {
+      if (!isSessionRejection(refreshError)) {
+        // A transient refresh failure keeps the session; callers see it instead of a misleading 401.
+        throw refreshError;
+      }
+
       clearAuthSessionHint();
       useAuthStore.getState().clearAuth();
       throw error;

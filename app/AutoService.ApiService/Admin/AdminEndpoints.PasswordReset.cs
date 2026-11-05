@@ -62,9 +62,16 @@ public static partial class AdminEndpoints
         }
 
         var cutoffUtc = sessionRevocation.StageCutoff(mechanic);
-        await db.ExecuteInTransactionAsync(
-            (transaction, token) => SaveResetRevocationAsync(mechanic.Id, cutoffUtc, db, transaction, token),
+        var identityUserId = identityUser.Id;
+        var unitResult = await db.ExecuteInTransactionAsync(
+            (transaction, token) =>
+                SaveResetRevocationAsync(mechanic.Id, identityUserId, cutoffUtc, userManager, db, transaction, token),
             cancellationToken);
+        if (!unitResult.Succeeded)
+        {
+            return Results.ValidationProblem(unitResult.ToValidationErrors(fallbackKey: "TemporaryPassword"));
+        }
+
         sessionRevocation.ApplyRevocation(mechanic.Id, cutoffUtc);
 
         logger.LogInformation("Admin {ActorPersonId} set a temporary password for mechanic {MechanicId}; sessions revoked.", actorPersonId, mechanic.Id);
@@ -88,21 +95,43 @@ public static partial class AdminEndpoints
         return errors;
     }
 
-    /** The retriable unit: forced change flag, refresh-token revocation and the monotonic session cutoff, committed together. */
-    private static async Task<bool> SaveResetRevocationAsync(
+    /** The retriable unit: lockout clear, forced change flag, refresh-token revocation and the monotonic session cutoff,
+        committed together; a failed lockout clear rolls the unit back and is returned. */
+    private static async Task<IdentityResult> SaveResetRevocationAsync(
         int mechanicId,
+        string identityUserId,
         DateTime cutoffUtc,
+        UserManager<IdentityUser> userManager,
         AutoServiceDbContext db,
         IDbContextTransaction transaction,
         CancellationToken cancellationToken)
     {
+        // A reset is how an admin unlocks an account, so the temporary password must not meet the old lockout.
+        var identityUser = await userManager.FindByIdAsync(identityUserId);
+        if (identityUser is null)
+        {
+            return IdentityResult.Failed(new IdentityError { Code = "UserNotFound", Description = "Identity account not found." });
+        }
+
+        var lockoutResult = await userManager.SetLockoutEndDateAsync(identityUser, null);
+        if (!lockoutResult.Succeeded)
+        {
+            return lockoutResult;
+        }
+
+        var countResult = await userManager.ResetAccessFailedCountAsync(identityUser);
+        if (!countResult.Succeeded)
+        {
+            return countResult;
+        }
+
         var mechanic = await db.Mechanics.FirstAsync(m => m.Id == mechanicId, cancellationToken);
         mechanic.MustChangePassword = true;
         await RevokeActiveRefreshTokensAsync(db, mechanicId, cancellationToken);
         await db.SaveWithSessionCutoffAsync(mechanicId, cutoffUtc, cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
-        return true;
+        return IdentityResult.Success;
     }
 
     /** Marks every live refresh token of the mechanic revoked; the caller saves. */

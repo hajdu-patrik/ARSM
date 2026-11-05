@@ -12,6 +12,13 @@ const LINE_REQUEST = /\/api\/quotes\/\d+\/lines$/;
 const LINE_FIELDS_REQUIRED = 'Pick a catalogue item, or fill in the description and the net price.';
 const INVALID_QUANTITY = 'The quantity must be greater than 0 and at most 10,000.';
 const LINE_CAP = 200;
+const MAX_TWO_DECIMALS = 'At most 2 decimal places are allowed.';
+
+/** A quantity or a net price with a third decimal; the other field holds a valid value. */
+const THIRD_DECIMAL_LINES = [
+  { field: 'quantity', quantity: '1.125', netUnitPrice: '10' },
+  { field: 'net price', quantity: '1', netUnitPrice: '10.005' },
+] as const;
 
 test.describe('Quotes - line form rules', () => {
   test.use({ timezoneId: 'UTC', viewport: { width: 1280, height: 1200 } });
@@ -70,6 +77,28 @@ test.describe('Quotes - line form rules', () => {
     await expect(editor.getByTestId('quote-line-description-input')).toHaveValue('Long text');
     await expect(quotesPage.lineRows()).toHaveCount(1);
   });
+
+  for (const line of THIRD_DECIMAL_LINES) {
+    test(`a ${line.field} with a third decimal is refused with the two-decimal text and nothing is saved`, async ({ page }) => {
+      const state = await signInWithMocks(page);
+      const quotesPage = new QuotesPage(page);
+      await quotesPage.goto();
+      await quotesPage.openQuote(DRAFT_NUMBER);
+      const editor = await quotesPage.startAddLine();
+      const draftVersion = state.quotes.find((candidate) => candidate.id === MOCK_QUOTE_IDS.draftTimingBelt)?.version;
+
+      await editor.getByTestId('quote-line-description-input').fill('Washer');
+      await editor.getByTestId('quote-line-quantity-input').fill(line.quantity);
+      await editor.getByTestId('quote-line-net-price-input').fill(line.netUnitPrice);
+      await editor.getByTestId('quote-line-save-button').click();
+
+      await expect(errorToastMessage(page, MAX_TWO_DECIMALS)).toBeVisible();
+      await expect(editor.getByTestId('quote-line-quantity-input')).toHaveValue(line.quantity);
+      await expect(editor.getByTestId('quote-line-net-price-input')).toHaveValue(line.netUnitPrice);
+      await expect(quotesPage.lineRows()).toHaveCount(1);
+      expect(state.quotes.find((candidate) => candidate.id === MOCK_QUOTE_IDS.draftTimingBelt)?.version).toBe(draftVersion);
+    });
+  }
 
   test('an open add form blocks a second one until it is cancelled', async ({ page }) => {
     await signInWithMocks(page);

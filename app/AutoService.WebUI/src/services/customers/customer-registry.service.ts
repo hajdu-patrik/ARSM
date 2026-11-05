@@ -9,6 +9,7 @@ import type {
   CreateCustomerRequest,
   CreateVehicleRequest,
   CustomerListItem,
+  CustomerWithVehiclesDto,
   UpdateCustomerRequest,
   UpdateVehicleRequest,
   VehicleDetailDto,
@@ -29,8 +30,16 @@ export const customerRegistryService = {
     return response.data;
   },
 
-  async updateCustomer(id: number, request: UpdateCustomerRequest): Promise<void> {
-    await apiClient.put(`/api/customers/${String(id)}`, request);
+  /** Returns one customer with a summary of the customer's vehicles. */
+  async getCustomer(id: number, options?: SilentRequestOptions): Promise<CustomerWithVehiclesDto> {
+    const response = await apiClient.get<CustomerWithVehiclesDto>(`/api/customers/${String(id)}`, {
+      skipErrorRedirect: options?.skipErrorRedirect,
+    });
+    return response.data;
+  },
+
+  async updateCustomer(id: number, request: UpdateCustomerRequest, options?: SilentRequestOptions): Promise<void> {
+    await apiClient.put(`/api/customers/${String(id)}`, request, { skipErrorRedirect: options?.skipErrorRedirect });
   },
 
   async deleteCustomer(id: number): Promise<void> {

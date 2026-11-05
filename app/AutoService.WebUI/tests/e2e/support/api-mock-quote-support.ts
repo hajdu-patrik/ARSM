@@ -154,6 +154,26 @@ export function sortedQuotes(state: MockApiState): QuoteDetailDto[] {
   );
 }
 
+/** True when the address can receive mail: not blank and not on a `.local` domain (`Quotes/QuoteRecipientRules`). */
+export function hasDeliverableAddress(email: string | null): boolean {
+  const trimmed = email?.trim() ?? '';
+
+  return trimmed.length > 0 && !trimmed.toLowerCase().endsWith('.local');
+}
+
+/** Answers a send to a customer without a deliverable address with the 422 code; returns true when it answered. */
+export async function rejectUndeliverableAddress(route: Route, state: MockApiState, quote: QuoteDetailDto): Promise<boolean> {
+  const owner = Object.values(state.vehiclesByCustomerId).flat().find((vehicle) => vehicle.id === quote.vehicleId)?.customer;
+  const customer = state.customers.find((candidate) => candidate.id === owner?.id);
+
+  if (customer === undefined || hasDeliverableAddress(customer.email)) {
+    return false;
+  }
+
+  await fulfillJson(route, { code: 'quote_customer_email_missing' }, 422);
+  return true;
+}
+
 /** Answers a missing or stale quote version the way the API does (422 / 409 `quote_version_conflict`). */
 export function rejectQuoteVersion(route: Route, quote: QuoteDetailDto, version: number): Promise<boolean> {
   return rejectStaleVersion(route, quote.version, version, 'quote_version_conflict');

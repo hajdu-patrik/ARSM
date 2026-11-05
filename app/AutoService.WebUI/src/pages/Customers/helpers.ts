@@ -10,6 +10,7 @@ export interface VehicleNumericValues {
   readonly enginePowerKw: number;
 }
 
+/** Raw string state of the vehicle create/edit form fields. */
 export interface VehicleFormState {
   licensePlate: string;
   vin: string;
@@ -33,6 +34,7 @@ export function orderRepairHistory(appointments: AppointmentDto[], direction: So
   return direction === 'asc' ? appointments : [...appointments].reverse();
 }
 
+/** Maps a customer endpoint validation message to its i18n key. */
 export function mapCustomerValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
 
@@ -67,18 +69,27 @@ export function mapCustomerValidationMessageToKey(message: string): string {
   return 'customers.errors.saveFailed';
 }
 
+/** Maps a vehicle endpoint validation message to its i18n key. */
 export function mapVehicleValidationMessageToKey(message: string): string {
   const normalized = message.trim().toLowerCase();
-
-  if (normalized.includes('license plate format is invalid')) {
-    return 'common.validation.licensePlateInvalid';
-  }
 
   if (normalized.includes('vehicle with this license plate already exists')) {
     return 'customers.errors.vehicleLicensePlateExists';
   }
 
-  if (normalized.includes('vin')) {
+  if (normalized.includes('vehicle with this vin already exists')) {
+    return 'customers.errors.vehicleVinExists';
+  }
+
+  if (normalized.includes('license plate') || normalized.includes('licenseplate must be at most')) {
+    return 'common.validation.licensePlateInvalid';
+  }
+
+  if (normalized.includes('are required')) {
+    return 'common.validation.fieldRequired';
+  }
+
+  if (/\bvin\b/.test(normalized)) {
     return 'common.validation.vehicleVinInvalid';
   }
 
@@ -109,6 +120,7 @@ export function mapVehicleValidationMessageToKey(message: string): string {
   return 'customers.errors.vehicleSaveFailed';
 }
 
+/** Converts the vehicle form's numeric text inputs to numbers (NaN when invalid). */
 export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumericValues {
   return {
     year: Number(form.year),
@@ -117,6 +129,7 @@ export function parseVehicleNumericValues(form: VehicleFormState): VehicleNumeri
   };
 }
 
+/** Type guard for a known drivetrain value. */
 export function isDrivetrainType(value: string): value is DrivetrainType {
   return (DRIVETRAIN_TYPES as readonly string[]).includes(value);
 }

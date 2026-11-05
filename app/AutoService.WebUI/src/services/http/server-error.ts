@@ -25,6 +25,11 @@ export function isTransientRequestFailure(error: unknown): boolean {
   return isServerErrorStatus(error.response.status);
 }
 
+/** True only for a refresh answered 401 or 403, the one failure that definitively ends the session. */
+export function isSessionRejection(error: unknown): boolean {
+  return axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403);
+}
+
 /** Sends the browser to the /500 page with the current location as the return target; no-op there. */
 export function redirectToServerError(): void {
   const { pathname, search, hash } = globalThis.location;

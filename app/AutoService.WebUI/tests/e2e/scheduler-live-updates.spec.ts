@@ -13,7 +13,7 @@ import {
 import { changeTaskElsewhere } from './support/concurrent-changes';
 import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
-import type { MockApiState } from './support/test-data';
+import { MOCK_MECHANIC_IDS, type MockApiState } from './support/test-data';
 import { errorToastMessage, toastMessage } from './support/toast';
 
 interface LiveScheduler {
@@ -76,7 +76,7 @@ test.describe('Scheduler live update channel', () => {
 test.describe('Scheduler live update of an open detail dialog', () => {
   test('shows the appointment as another user changed it, and the next status change needs no retry', async ({ page }) => {
     const { state, stream, scheduler } = await openLiveScheduler(page, 0, (seedState) => {
-      seedAppointment(seedState, { id: 6351, task: 'Live detail task', scheduledAt: todayAt(9) });
+      seedAppointment(seedState, { id: 6351, task: 'Live detail task', scheduledAt: todayAt(9), mechanicIds: [MOCK_MECHANIC_IDS.admin] });
     });
     const dialog = await scheduler.openFirstAppointmentDetail();
 

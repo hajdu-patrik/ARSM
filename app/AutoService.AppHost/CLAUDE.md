@@ -22,6 +22,8 @@
 - Keep explicit Aspire secret params: `postgres-password`, `jwt-secret`, `minio-user`, `minio-password`.
 - Keep `apiservice` waiting on `minio` (`WaitFor(minio)`) and receiving `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, `ObjectStorage__SecretAccessKey`, and `ObjectStorage__AutoCreateBucket` from the `minio` resource/params.
 
+- Keep `apiservice` receiving `Cors__AllowedOrigins__0` from `webUi.GetEndpoint("https")`, so the allowed WebUI origin follows the real endpoint; there is no `WaitFor` on `webui`.
+
 - Keep `apiservice` receiving `CompanyProfile__WriteBack__EnvFilePath` (repo-root `.env`) and `CompanyProfile__WriteBack__LocalSettingsPath` (`appsettings.Local.json`), both resolved from `AppHostDirectory`; the API's company-profile write-back (see its `CLAUDE.md`) is Development only.
 
 - Keep `apiservice` receiving `DataProtection__Provider=FileSystem` and `DataProtection__KeyDirectory` (`.dataprotection-keys` under `AppHostDirectory`, resolved with `Path.GetFullPath`, gitignored); the API persists its unencrypted development DataProtection key ring there (see its `CLAUDE.md`).

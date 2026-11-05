@@ -33,6 +33,36 @@ public sealed class TokenEntityAndCleanupTests
     }
 
     [Fact]
+    public void A_user_agent_longer_than_its_column_is_cut_to_the_column_length()
+    {
+        var longAgent = new string('A', RefreshToken.MaxUserAgentLength + 88);
+
+        var token = new RefreshToken(7, "hash-1", Now, Now.AddDays(7), "sha256:ABC", longAgent);
+
+        Assert.Equal(new string('A', RefreshToken.MaxUserAgentLength), token.CreatedByUserAgent);
+        Assert.Equal(512, RefreshToken.MaxUserAgentLength);
+    }
+
+    [Fact]
+    public void A_user_agent_that_fits_or_is_missing_is_stored_unchanged()
+    {
+        var exact = new string('B', RefreshToken.MaxUserAgentLength);
+
+        Assert.Equal(exact, new RefreshToken(7, "hash-1", Now, Now.AddDays(7), "sha256:ABC", exact).CreatedByUserAgent);
+        Assert.Null(new RefreshToken(7, "hash-2", Now, Now.AddDays(7), "sha256:ABC", null).CreatedByUserAgent);
+    }
+
+    [Fact]
+    public void A_cut_never_leaves_half_of_a_surrogate_pair()
+    {
+        var agent = new string('A', RefreshToken.MaxUserAgentLength - 1) + "\U0001F642" + "tail";
+
+        var token = new RefreshToken(7, "hash-1", Now, Now.AddDays(7), "sha256:ABC", agent);
+
+        Assert.Equal(new string('A', RefreshToken.MaxUserAgentLength - 1), token.CreatedByUserAgent);
+    }
+
+    [Fact]
     public void A_new_refresh_token_is_not_revoked_and_keeps_its_binding()
     {
         var token = new RefreshToken(7, "hash-1", Now, Now.AddDays(7), "sha256:ABC", "agent");

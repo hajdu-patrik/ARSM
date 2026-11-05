@@ -22,9 +22,14 @@ const LOCK_ERROR_TOAST_KEYS: Record<string, string> = {
   quote_locked_appointment_accepted: 'quotes.errors.lockedAppointmentAccepted',
 };
 
-/** Error-code bodies the API returns when the quote e-mail failed or the customer has no address. */
+/** Error-code body the API returns (409) when the quote e-mail could not be delivered. */
 const EMAIL_FAILED_CODE = 'quote_email_failed';
-const CUSTOMER_EMAIL_MISSING_CODE = 'quote_customer_email_missing';
+
+/** Error-code body the API returns (422) when a draft's validity date has already passed. */
+const VALID_UNTIL_PASSED_CODE = 'quote_valid_until_passed';
+
+/** Error-code body the API returns (422) when the customer's e-mail address is empty or a `.local` one. */
+export const CUSTOMER_EMAIL_MISSING_CODE = 'quote_customer_email_missing';
 
 /** The lock toast key of a 409 lock answer, or undefined for any other error. */
 function resolveLockToastKey(error: unknown): string | undefined {
@@ -71,20 +76,12 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
 
     const responseData = error.response?.data;
 
-    if (isVersionConflict(error, VERSION_CONFLICT_CODE)) {
-      showErrorToast('quotes.errors.versionConflict');
+    const reloadToastKey = isVersionConflict(error, VERSION_CONFLICT_CODE)
+      ? 'quotes.errors.versionConflict'
+      : resolveLockToastKey(error);
 
-      if (quoteId !== null) {
-        await refreshOpenQuote(quoteId);
-      }
-
-      return;
-    }
-
-    const lockToastKey = resolveLockToastKey(error);
-
-    if (lockToastKey) {
-      showErrorToast(lockToastKey);
+    if (reloadToastKey) {
+      showErrorToast(reloadToastKey);
 
       if (quoteId !== null) {
         await refreshOpenQuote(quoteId);
@@ -98,7 +95,13 @@ export function useQuoteWriteOutcome({ showSuccessToast, showErrorToast, adoptQu
       return;
     }
 
-    if (hasErrorCode(error, 409, CUSTOMER_EMAIL_MISSING_CODE)) {
+    if (hasErrorCode(error, 422, VALID_UNTIL_PASSED_CODE)) {
+      showErrorToast('quotes.errors.validUntilInPast');
+      return;
+    }
+
+    // Reached only by the send after the e-mail dialog, when the typed address is unusable too (for example `.local`).
+    if (hasErrorCode(error, 422, CUSTOMER_EMAIL_MISSING_CODE)) {
       showErrorToast('quotes.errors.customerEmailMissing');
       return;
     }

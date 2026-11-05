@@ -3,7 +3,7 @@
 import type { Route } from '@playwright/test';
 import type { QuoteDetailDto, QuoteLineDto, QuoteLineRequest } from '../../../src/types/quotes/quotes.types';
 import type { MockApiState } from './test-data';
-import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate } from './api-mock-catalog-pricing';
+import { INVALID_VAT_RATE_DETAIL, isAllowedVatRate, moneyAmountError, quantityError } from './api-mock-catalog-pricing';
 import { fulfillJson } from './api-mock-response';
 import {
   applyQuoteWrite,
@@ -41,10 +41,25 @@ function resolveSnapshot(state: MockApiState, payload: QuoteLineRequest): QuoteL
   return { description, netUnitPrice, vatRatePercent };
 }
 
-/** Rejects a line snapshot whose VAT rate is not 5, 18 or 27, like the server. */
-async function rejectInvalidVat(route: Route, snapshot: QuoteLineSnapshot): Promise<boolean> {
-  if (!isAllowedVatRate(snapshot.vatRatePercent)) {
-    await fulfillJson(route, { detail: INVALID_VAT_RATE_DETAIL }, 422);
+/** Rejects a line snapshot whose price is out of range or has a third decimal, or whose VAT rate is not 5, 18 or 27. */
+async function rejectInvalidSnapshot(route: Route, snapshot: QuoteLineSnapshot): Promise<boolean> {
+  const detail = moneyAmountError(snapshot.netUnitPrice)
+    ?? (isAllowedVatRate(snapshot.vatRatePercent) ? null : INVALID_VAT_RATE_DETAIL);
+
+  if (detail !== null) {
+    await fulfillJson(route, { detail }, 422);
+    return true;
+  }
+
+  return false;
+}
+
+/** Rejects a quantity that rounds to 0, exceeds 10,000 or has a third decimal; the API checks it before the snapshot. */
+async function rejectInvalidQuantity(route: Route, quantity: number): Promise<boolean> {
+  const detail = quantityError(quantity);
+
+  if (detail !== null) {
+    await fulfillJson(route, { detail }, 422);
     return true;
   }
 
@@ -88,6 +103,10 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, quot
     return;
   }
 
+  if (await rejectInvalidQuantity(route, payload.quantity)) {
+    return;
+  }
+
   const snapshot = resolveSnapshot(state, payload);
 
   if (!snapshot) {
@@ -99,12 +118,7 @@ export async function handleAddQuoteLine(route: Route, state: MockApiState, quot
     return;
   }
 
-  if (await rejectInvalidVat(route, snapshot)) {
-    return;
-  }
-
-  if (!payload.quantity || payload.quantity <= 0) {
-    await fulfillJson(route, { detail: 'Quantity must be greater than 0 and at most 10,000.' }, 422);
+  if (await rejectInvalidSnapshot(route, snapshot)) {
     return;
   }
 
@@ -151,6 +165,10 @@ export async function handleUpdateQuoteLine(
     return;
   }
 
+  if (await rejectInvalidQuantity(route, payload.quantity)) {
+    return;
+  }
+
   const snapshot = resolveSnapshot(state, payload);
 
   if (!snapshot) {
@@ -162,7 +180,7 @@ export async function handleUpdateQuoteLine(
     return;
   }
 
-  if (await rejectInvalidVat(route, snapshot)) {
+  if (await rejectInvalidSnapshot(route, snapshot)) {
     return;
   }
 

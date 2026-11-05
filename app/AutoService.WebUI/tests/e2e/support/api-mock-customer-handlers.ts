@@ -1,12 +1,41 @@
 import type { Route } from '@playwright/test';
+import type { CustomerListItem, CustomerWithVehiclesDto } from '../../../src/types/customers/customers.types';
+import type { AppointmentDto } from '../../../src/types/scheduler/scheduler.types';
 import type { InstallApiMockOptions } from './api-mocks';
 import type { MockApiState } from './test-data';
 import { isAuthenticated } from './api-mock-authz';
 import { getLookupName } from './api-mock-data';
-import { handleCreateCustomer, handleDeleteCustomer, handleUpdateCustomer } from './api-mock-customer-mutations';
+import { CUSTOMER_NOT_FOUND, handleCreateCustomer, handleDeleteCustomer, handleUpdateCustomer } from './api-mock-customer-mutations';
 import { handleCreateVehicle, handleDeleteVehicle, handleUpdateVehicle } from './api-mock-vehicle-mutations';
 import { compareText, fulfillPaged } from './api-mock-paging';
 import { fulfillJson } from './api-mock-response';
+
+/** Row cap of a history read, like the API's `ListQueryLimits` (default and maximum 500). */
+const HISTORY_LIMIT = 500;
+
+/** Answers a history like the API: oldest first, or newest first for `descending=true`, cut to `limit` rows. */
+function historyPage(items: readonly AppointmentDto[], url: URL): AppointmentDto[] {
+  const requested = Number(url.searchParams.get('limit') ?? HISTORY_LIMIT);
+  const limit = Math.min(Math.max(Number.isFinite(requested) ? requested : HISTORY_LIMIT, 1), HISTORY_LIMIT);
+  const ordered = url.searchParams.get('descending') === 'true' ? [...items].reverse() : [...items];
+
+  return ordered.slice(0, limit);
+}
+
+/** The `GET /api/customers/{id}` body: the customer with a summary of the customer's vehicles. */
+function toCustomerWithVehicles(state: MockApiState, customer: CustomerListItem): CustomerWithVehiclesDto {
+  const vehicles = state.vehiclesByCustomerId[customer.id] ?? [];
+
+  return {
+    id: customer.id,
+    firstName: customer.firstName,
+    middleName: customer.middleName,
+    lastName: customer.lastName,
+    email: customer.email,
+    phoneNumber: customer.phoneNumber,
+    vehicles: vehicles.map(({ id, licensePlate, brand, model, year }) => ({ id, licensePlate, brand, model, year })),
+  };
+}
 
 /** Dispatches `/api/customers` lookups and the nested customer/vehicle mock routes. */
 export async function tryHandleCustomerRoute(
@@ -45,6 +74,17 @@ export async function tryHandleCustomerRoute(
   }
 
   const customerMatch = /^\/api\/customers\/(\d+)$/.exec(path);
+  if (customerMatch && method === 'GET') {
+    const customer = state.customers.find((item) => item.id === Number(customerMatch[1]));
+    if (customer === undefined) {
+      await fulfillJson(route, { detail: CUSTOMER_NOT_FOUND }, 404);
+      return true;
+    }
+
+    await fulfillJson(route, toCustomerWithVehicles(state, customer));
+    return true;
+  }
+
   if (customerMatch && method === 'PUT') {
     await handleUpdateCustomer(route, state, Number(customerMatch[1]));
     return true;
@@ -78,13 +118,14 @@ export async function tryHandleCustomerRoute(
     return true;
   }
 
-  return tryHandleCustomerNestedRoute(route, method, path, state, options);
+  return tryHandleCustomerNestedRoute(route, method, path, url, state, options);
 }
 
 async function tryHandleCustomerNestedRoute(
   route: Route,
   method: string,
   path: string,
+  url: URL,
   state: MockApiState,
   options: InstallApiMockOptions,
 ): Promise<boolean> {
@@ -112,7 +153,7 @@ async function tryHandleCustomerNestedRoute(
       return true;
     }
 
-    await fulfillJson(route, state.customerHistoryByCustomerId[customerId] ?? []);
+    await fulfillJson(route, historyPage(state.customerHistoryByCustomerId[customerId] ?? [], url));
     return true;
   }
 
@@ -148,7 +189,7 @@ async function tryHandleCustomerNestedRoute(
       return true;
     }
 
-    await fulfillJson(route, state.vehicleHistoryByVehicleId[vehicleId] ?? []);
+    await fulfillJson(route, historyPage(state.vehicleHistoryByVehicleId[vehicleId] ?? [], url));
     return true;
   }
 

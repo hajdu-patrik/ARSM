@@ -77,6 +77,33 @@ public sealed class QuoteSentMailerTests
     }
 
     [Fact]
+    public async Task SendAsync_keeps_the_no_op_outcome_as_sent()
+    {
+        var sender = new FakeEmailSender { Result = EmailSendResult.SkippedNoOp() };
+
+        var result = await Create(sender).SendAsync(BuildQuote(), Company, [1], CancellationToken.None);
+
+        Assert.True(result.Sent);
+        Assert.True(result.Skipped);
+    }
+
+    [Theory]
+    [InlineData("mechanic-owner-5@customers.arsm.local")]
+    [InlineData("x@Shop.LOCAL")]
+    [InlineData("   ")]
+    public async Task SendAsync_never_mails_an_address_that_cannot_receive_mail(string email)
+    {
+        var sender = new FakeEmailSender();
+        var quote = BuildQuote();
+        quote.Vehicle.Customer.Email = email;
+
+        var result = await Create(sender).SendAsync(quote, Company, [1], CancellationToken.None);
+
+        Assert.False(result.Sent);
+        Assert.Empty(sender.Sent);
+    }
+
+    [Fact]
     public async Task SendAsync_returns_a_failing_result_as_is()
     {
         var failure = EmailSendResult.Failure(422, "bad address", false);

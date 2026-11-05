@@ -10,12 +10,16 @@ export interface UpdateEditFormResult {
   appointment: UpdateAppointmentRequest;
 }
 
+/** Longest task description the API accepts, as in the intake task field. */
+export const TASK_DESCRIPTION_MAX_LENGTH = 200;
+
 /** Editable fields of the detail dialog, as the inputs hold them. */
 export interface EditFormState {
   dueDateTime: string;
   taskDescription: string;
 }
 
+/** Initial edit-form values taken from the appointment. */
 export function buildEditForm(appointment: AppointmentDto): EditFormState {
   return {
     dueDateTime: toDatetimeLocalValue(appointment.dueDateTime),
@@ -32,6 +36,7 @@ export function normalizeEditFieldValue(_field: keyof EditFormState, value: stri
 export function buildUpdateRequestFromEditForm(
   appointment: AppointmentDto,
   editForm: EditFormState,
+  version: number = appointment.version,
 ): { request: UpdateEditFormResult } | { errorKey: string } {
   const taskDescription = editForm.taskDescription.trim();
   if (!taskDescription) {
@@ -60,7 +65,7 @@ export function buildUpdateRequestFromEditForm(
   const appointmentRequest: UpdateAppointmentRequest = {
     dueDateTime: new Date(dueMs).toISOString(),
     taskDescription,
-    version: appointment.version,
+    version,
   };
 
   return {
@@ -68,6 +73,27 @@ export function buildUpdateRequestFromEditForm(
       appointment: appointmentRequest,
     },
   };
+}
+
+/** Message keys of the invalid edit-form fields, so each error shows under its own input. */
+export type EditFormFieldErrors = Partial<Record<keyof EditFormState, string>>;
+
+/** Field errors of the current edit form; empty while the form is valid. */
+export function getEditFormFieldErrors(appointment: AppointmentDto, editForm: EditFormState): EditFormFieldErrors {
+  const validation = buildUpdateRequestFromEditForm(appointment, editForm);
+  if (!('errorKey' in validation)) {
+    return {};
+  }
+
+  if (validation.errorKey === 'scheduler.intake.errors.taskRequired') {
+    return { taskDescription: validation.errorKey };
+  }
+
+  if (validation.errorKey === 'scheduler.intake.errors.scheduledRequired') {
+    return {};
+  }
+
+  return { dueDateTime: validation.errorKey };
 }
 
 /** True when the request changes the task text or the due moment of the appointment. */

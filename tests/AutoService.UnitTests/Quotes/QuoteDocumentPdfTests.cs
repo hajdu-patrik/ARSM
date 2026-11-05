@@ -112,6 +112,49 @@ public sealed class QuoteDocumentPdfTests
     }
 
     [Fact]
+    public void Text_with_characters_the_font_cannot_draw_still_renders()
+    {
+        var model = Model([Line("Szűrő ✓")], [Line("Munka 油", "OLAJCSERE", 1m)], notes: "Köszönjük 🙂") with { Title = "Szerviz ★" };
+        var company = Company with { Name = "Teszt ✓ Kft." };
+
+        Configure();
+        AssertValidPdf(new QuoteDocument(model, company).GeneratePdf());
+    }
+
+    [Fact]
+    public void Undrawable_characters_become_a_question_mark_while_accents_and_line_breaks_stay()
+    {
+        Configure();
+
+        Assert.Equal("Szűrő ? ? ?\nŐű x", QuoteDocumentText.Clean("Szűrő ✓ 🙂 油\nŐű x"));
+    }
+
+    [Fact]
+    public void Every_hungarian_letter_is_kept_and_a_text_without_undrawable_characters_is_unchanged()
+    {
+        Configure();
+        const string hungarian = "áéíóöőúüűÁÉÍÓÖŐÚÜŰ Árvíztűrő tükörfúrógép";
+
+        Assert.Equal(hungarian, QuoteDocumentText.Clean(hungarian));
+        Assert.Equal(string.Empty, QuoteDocumentText.Clean(string.Empty));
+    }
+
+    [Fact]
+    public void Cleaning_a_model_replaces_the_undrawable_characters_in_every_user_text()
+    {
+        Configure();
+        var model = Model([Line("Szűrő ✓")], [Line("Munka 油", "ID 🙂", 1m)], notes: "Köszönjük 🙂") with { Title = "Szerviz ★" };
+
+        var clean = QuoteDocumentText.Clean(model);
+
+        Assert.Equal("Szerviz ?", clean.Title);
+        Assert.Equal("Köszönjük ?", clean.Notes);
+        Assert.Equal("Szűrő ?", clean.PartLines[0].Description);
+        Assert.Equal("Munka ?", clean.LaborLines[0].Description);
+        Assert.Equal("ID ?", clean.LaborLines[0].Identifier);
+    }
+
+    [Fact]
     public void The_embedded_logo_is_a_png_and_the_font_family_is_noto_sans()
     {
         Assert.True(QuoteDocumentAssets.Logo.Length > 8);

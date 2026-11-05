@@ -1,0 +1,126 @@
+# Labor type hourly net rate at the numeric(18,2) precision: more than 2 decimals is refused with 422 on create and update instead of
+# being rounded on save, exactly 2 decimals (also with a trailing zero) pass. One disposable labor type, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZR{{RunId}}
+
+### [Setup][LaborTypes] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][LaborTypes] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][LaborTypes] A third decimal in the hourly rate is refused on create, the column holds 2 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Precision Labor", "hourlyNetRate": 4500.125, "vatRatePercent": 27 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Negative][LaborTypes] One thousandth is refused on create too (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Precision Labor", "hourlyNetRate": 100.001, "vatRatePercent": 27 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Negative][LaborTypes] The refused creates left no labor type behind (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][LaborTypes] Exactly 2 decimals pass, a trailing zero is not a third decimal (201 expected)
+# @name precisionLaborType
+POST {{AutoService_ApiService_HostAddress}}/api/labor-types
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Precision Labor", "hourlyNetRate": 4500.120, "vatRatePercent": 27 }
+
+?? status == 201
+?? js response.parsedBody.hourlyNetRate == 4500.12
+
+###
+
+### [Negative][LaborTypes] A third decimal is refused on update, even under the current version (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{precisionLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Precision Labor", "hourlyNetRate": 4500.129, "vatRatePercent": 27, "version": {{precisionLaborType.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Positive][LaborTypes] The refused update changed nothing (200 expected, price and version as created)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{precisionLaborType.id}}
+
+?? status == 200
+?? js (response.parsedBody.hourlyNetRate == 4500.12 && response.parsedBody.version == precisionLaborType.version) == true
+
+###
+
+### [Positive][LaborTypes] An update with exactly 2 decimals passes (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/labor-types/{{precisionLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "code": "{{Key}}", "name": "Precision Labor", "hourlyNetRate": 4500.13, "vatRatePercent": 27, "version": {{precisionLaborType.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][LaborTypes] The new price is stored (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/labor-types/{{precisionLaborType.id}}
+
+?? status == 200
+?? js response.parsedBody.hourlyNetRate == 4500.13
+
+###
+
+### [Cleanup][LaborTypes] Delete the disposable labor type (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/labor-types/{{precisionLaborType.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

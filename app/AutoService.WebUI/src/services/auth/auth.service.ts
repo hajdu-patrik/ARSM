@@ -1,12 +1,13 @@
 /** Auth service: login, logout and session restore, using a `localStorage` hint to skip cold-start validate calls. */
 
-import { apiClient } from '../http/api.client';
-import { isTransientRequestFailure, redirectToServerError } from '../http/server-error';
+import { apiClient, refreshSession } from '../http/api.client';
+import { isSessionRejection, isTransientRequestFailure, redirectToServerError } from '../http/server-error';
 import type { LoginRequest, LoginResponse, AuthUser, ValidateTokenResponse } from '../../types/auth/login.types';
 import { useAuthStore } from '../../store/auth.store';
 import { logError } from '../../utils/devLog';
 import { clearArsmQueryCache } from '../cache/queryClient';
 import { clearAuthSessionHint, hasAuthSessionHint, setAuthSessionHint } from './session-hint';
+import { requestValidate } from './validate-request';
 
 /** In-flight restore promise for single-flight deduplication. */
 let restorePromise: Promise<AuthUser | null> | null = null;
@@ -16,6 +17,7 @@ function toAuthUser({ personId, isAdmin, mustChangePassword }: ValidateTokenResp
   return { personId, isAdmin, mustChangePassword };
 }
 
+/** Stores the user as signed in and clears any previous auth error. */
 function setAuthenticatedUser(user: AuthUser): void {
   useAuthStore.setState({ user, isAuthenticated: true, error: null });
 }
@@ -25,7 +27,25 @@ function clearAuthState(): void {
   useAuthStore.getState().clearAuth();
 }
 
+/** Refreshes the session for the restore; false when it ended signed out (401 or 403) or went to /500 (anything else). */
+async function refreshForRestore(): Promise<boolean> {
+  try {
+    await refreshSession({ skipErrorRedirect: true });
+    return true;
+  } catch (error) {
+    if (isSessionRejection(error)) {
+      clearAuthSessionHint();
+      clearAuthState();
+    } else {
+      redirectToServerError();
+    }
+
+    return false;
+  }
+}
+
 export const authService = {
+  /** Logs in via `POST /api/auth/login` and stores the user and the session hint. */
   async login(request: LoginRequest): Promise<AuthUser> {
     const response = await apiClient.post<LoginResponse>('/api/auth/login', request);
     const authUser = toAuthUser(response.data);
@@ -65,10 +85,16 @@ export const authService = {
 
     restorePromise = (async () => {
       try {
-        const response = await apiClient.get<ValidateTokenResponse>('/api/auth/validate', {
-          validateStatus: (status) => status === 200 || status === 401,
-          skipErrorRedirect: true,
-        });
+        let response = await requestValidate();
+
+        if (response.status === 401) {
+          // The 10-minute access cookie may simply have expired: refresh once, then validate again.
+          if (!(await refreshForRestore())) {
+            return null;
+          }
+
+          response = await requestValidate();
+        }
 
         if (response.status === 401) {
           clearAuthSessionHint();

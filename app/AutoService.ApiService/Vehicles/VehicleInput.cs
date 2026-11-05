@@ -75,6 +75,8 @@ internal readonly record struct VehicleInput(
         vehicle.DrivetrainType = drivetrainType;
     }
 
+    internal const string PlateTakenDetail = "A vehicle with this license plate already exists.";
+
     /** The 409 detail when another vehicle already holds the plate or, checked second, the VIN. */
     internal static async Task<string?> FindUniquenessConflictAsync(
         AutoServiceDbContext db,
@@ -91,7 +93,7 @@ internal readonly record struct VehicleInput(
 
         if (await others.AnyAsync(v => v.LicensePlate == normalizedPlate, cancellationToken))
         {
-            return "A vehicle with this license plate already exists.";
+            return PlateTakenDetail;
         }
 
         return await others.AnyAsync(v => v.Vin == normalizedVin, cancellationToken)

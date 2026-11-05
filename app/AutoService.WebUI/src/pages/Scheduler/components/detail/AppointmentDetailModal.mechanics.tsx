@@ -1,3 +1,4 @@
+/** Mechanic assignment section of the appointment detail modal: assigned mechanics, claim and admin add/remove. */
 import { memo, useMemo } from 'react';
 import { LogOut, UserPlus } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -13,11 +14,19 @@ import {
   schedulerDetailRowClass,
   smallIconClass,
 } from '../../../../utils/formStyles';
+import { SPECIALIZATION_OPTIONS } from '../../../Admin/RegisterMechanic/constants';
 import { MechanicAvatar } from '../shared/MechanicAvatar';
 import { schedulerInlineClaimButtonClass, schedulerInlineUnassignButtonClass } from '../../utils/schedulerButtonStyles';
 
 /** Specialization tag: the accent pill look, with long words wrapping instead of truncating. */
 const specializationTagClass = 'min-w-0 max-w-full [overflow-wrap:anywhere] rounded-full border border-arsm-accent/25 bg-arsm-accent-wash px-2.5 py-0.5 text-xs font-semibold text-arsm-accent-vivid dark:border-arsm-accent-dark/30 dark:bg-arsm-hover-dark dark:text-arsm-accent';
+
+/** Translated specialization label; an unknown value falls back to the raw name. */
+function specializationLabel(value: string, t: TFunction): string {
+  const option = SPECIALIZATION_OPTIONS.find((candidate) => candidate.value === value);
+
+  return option ? t(option.labelKey) : value;
+}
 
 /** A mechanic the admin can add to the appointment. */
 export interface MechanicOption {
@@ -39,6 +48,7 @@ interface MechanicsSectionProps {
   readonly canClaim: boolean;
   readonly canUnclaim: boolean;
   readonly isAssigning: boolean;
+  readonly isUnassigning: boolean;
   readonly isClosedForMechanicMutations: boolean;
   readonly isUnclaiming: boolean;
   readonly availableMechanics: MechanicOption[];
@@ -60,6 +70,7 @@ export const MechanicsSection = memo(function MechanicsSection({
   canClaim,
   canUnclaim,
   isAssigning,
+  isUnassigning,
   isClosedForMechanicMutations,
   isUnclaiming,
   availableMechanics,
@@ -72,7 +83,7 @@ export const MechanicsSection = memo(function MechanicsSection({
   onAdminAssign,
   onAdminUnassign,
 }: MechanicsSectionProps) {
-  const isMechanicMutationBusy = isClaiming || isAssigning || isUnclaiming;
+  const isMechanicMutationBusy = isClaiming || isAssigning || isUnassigning || isUnclaiming;
   const mechanicOptions = useMemo(() => availableMechanics.map((mechanic) => ({
     value: String(mechanic.personId),
     label: getMechanicOptionDisplayName(mechanic),
@@ -81,9 +92,9 @@ export const MechanicsSection = memo(function MechanicsSection({
 
   return (
     <div className={schedulerDetailPanelClass}>
-      <h4 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
+      <h3 className={`mb-2 font-medium ${mutedSecondaryTextClass}`}>
         {t('scheduler.detail.mechanics')}
-      </h4>
+      </h3>
 
       {uniqueMechanics.length === 0 ? (
         <p className={`text-left italic ${mutedSecondaryTextClass}`}>
@@ -129,10 +140,10 @@ export const MechanicsSection = memo(function MechanicsSection({
 
       {isAdmin && !isClosedForMechanicMutations && (
         <div className="mt-3">
-          <h5 className={`mb-1.5 flex min-w-0 items-center gap-1 font-medium ${mutedMetaTextClass}`}>
+          <h4 className={`mb-1.5 flex min-w-0 items-center gap-1 font-medium ${mutedMetaTextClass}`}>
             <UserPlus className={smallIconClass} />
             {t('scheduler.detail.addMechanic')}
-          </h5>
+          </h4>
           <div className={equalWidthControlGroupClass}>
             <div className="min-w-0 max-w-full">
               <Dropdown
@@ -200,7 +211,7 @@ const MechanicCard = memo(function MechanicCard({
                 {mechanic.fullName}
               </span>
               <span className={specializationTagClass}>
-                {mechanic.specialization}
+                {specializationLabel(mechanic.specialization, t)}
               </span>
             </div>
           </div>

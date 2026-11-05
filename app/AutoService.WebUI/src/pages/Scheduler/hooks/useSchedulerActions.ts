@@ -6,6 +6,7 @@ import { appointmentService } from '../../../services/scheduler/appointment.serv
 import {
   findCachedAppointment,
   invalidateAppointmentReadCaches,
+  invalidateQuoteReadCaches,
   removeAppointmentFromSchedulerCache,
 } from '../../../services/cache/appointmentQueryCache';
 import { readErrorCode } from '../../../services/http/error-code';
@@ -136,6 +137,7 @@ function useEditActions() {
     mutationFn: ({ id, status, version }: StatusChange) => appointmentService.updateStatus(id, { status, version }),
     successKey: 'scheduler.statusUpdateSuccess',
     failureKey: resolveStatusErrorKey,
+    cacheOptions: () => ({ invalidateQuoteReads: true }),
   });
   const { mutateAsync: createIntake } = useAppointmentMutation({
     mutationFn: (request: SchedulerCreateIntakeRequest) => appointmentService.createIntake(request),
@@ -183,8 +185,11 @@ function useDeleteAction() {
       if (scope !== null) {
         removeAppointmentFromSchedulerCache(queryClient, scope, id);
 
-        if (snapshot !== undefined) {
-          invalidateAppointmentReadCaches(queryClient, scope, snapshot);
+        // The appointment's quotes are cascade-deleted, so the quote reads go stale even without a snapshot.
+        if (snapshot === undefined) {
+          invalidateQuoteReadCaches(queryClient, scope);
+        } else {
+          invalidateAppointmentReadCaches(queryClient, scope, snapshot, { invalidateQuoteReads: true });
         }
       }
 
@@ -198,6 +203,7 @@ function useDeleteAction() {
   return useCallback((id: number) => settle(deleteAppointment(id)), [deleteAppointment]);
 }
 
+/** Composes the assignment, edit and delete handlers of the scheduler page. */
 export function useSchedulerActions() {
   const assignmentActions = useAssignmentActions();
   const editActions = useEditActions();

@@ -75,7 +75,12 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
 
         var entity = Create(normalized);
         db.Set<TEntity>().Add(entity);
-        await db.SaveChangesAsync(cancellationToken);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db, _ => Task.FromResult<string?>(duplicateKeyDetail), duplicateKeyDetail, cancellationToken);
+        if (raceConflict is not null)
+        {
+            return raceConflict;
+        }
 
         var id = db.Entry(entity).Property<int>("Id").CurrentValue;
         return Results.Created($"{routePrefix}/{id}", ToDto(entity));
@@ -115,8 +120,16 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
 
         Apply(entity, normalized);
 
-        var saveError = await OptimisticConcurrency.SaveWithVersionAsync(db, entity, version, versionConflictCode, cancellationToken);
-        return saveError ?? Results.NoContent();
+        try
+        {
+            var saveError = await OptimisticConcurrency.SaveWithVersionAsync(db, entity, version, versionConflictCode, cancellationToken);
+            return saveError ?? Results.NoContent();
+        }
+        catch (DbUpdateException exception) when (UniqueConstraintDetection.IsUniqueConstraintViolation(exception))
+        {
+            // A parallel rename took the key after IsKeyTakenAsync: the same 409 as the pre-check.
+            return ApiProblem.Conflict(duplicateKeyDetail);
+        }
     }
 
     /** Deletes even an entry that quote lines reference: that FK is SET NULL and the lines keep their snapshot. */
@@ -129,7 +142,15 @@ internal abstract class CatalogItemHandlers<TEntity, TDto>(
         }
 
         db.Set<TEntity>().Remove(entity);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A parallel delete removed the row first; answer like a sequential repeat.
+            return ApiProblem.NotFound(notFoundDetail);
+        }
 
         return Results.NoContent();
     }

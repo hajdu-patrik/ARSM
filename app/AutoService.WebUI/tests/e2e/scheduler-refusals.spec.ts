@@ -7,7 +7,7 @@ import { signInWithMocks } from './support/sign-in';
 import { MOCK_MECHANIC_IDS } from './support/test-data';
 import { errorToastMessage, toastMessage } from './support/toast';
 
-const { peter, mate } = MOCK_MECHANIC_IDS;
+const { admin, peter, mate } = MOCK_MECHANIC_IDS;
 const APPOINTMENT_ID = 6701;
 
 interface Refusal {
@@ -17,10 +17,10 @@ interface Refusal {
   readonly message: string;
 }
 
-/** Signs in as an admin with one open appointment of Peter and Mate and opens its detail dialog. */
+/** Signs in as an admin with one open appointment of the admin, Peter and Mate and opens its detail dialog. */
 async function openDetail(page: Page): Promise<{ scheduler: SchedulerPage; dialog: Locator }> {
   const state = await signInWithMocks(page, { isAdmin: true });
-  seedAppointment(state, { id: APPOINTMENT_ID, task: 'Refusal task', scheduledAt: todayAt(9), mechanicIds: [peter, mate] });
+  seedAppointment(state, { id: APPOINTMENT_ID, task: 'Refusal task', scheduledAt: todayAt(9), mechanicIds: [admin, peter, mate] });
   const scheduler = new SchedulerPage(page);
   await scheduler.goto();
 

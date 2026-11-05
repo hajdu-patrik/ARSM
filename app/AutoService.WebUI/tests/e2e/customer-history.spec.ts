@@ -1,15 +1,34 @@
-/** Customer repair history in the details panel: sort direction, a failed read, and the appointment dialog
- * (task, status, the timestamp rows each status shows, vehicle) with its shortcut to the scheduler. */
+/** Customer and vehicle repair history in the details panel: the newest-first read behind the 500-row cap, sort
+ * direction, a failed read, and the appointment dialog (task, status, timestamps, vehicle) with its scheduler shortcut. */
 import { expect, test, type Page } from '@playwright/test';
 import type { AppointmentDto } from '../../src/types/scheduler/scheduler.types';
-import { CustomersPage } from './pages/customers.page';
-import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
+import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
+import { recordGetRequests } from './support/request-log';
+import { MOCK_CUSTOMER_IDS, MOCK_VEHICLE_IDS, type MockApiState } from './support/test-data';
 import { errorToastMessage } from './support/toast';
 
 test.use({ viewport: { width: 1280, height: 1000 } });
 
 const ANNA = MOCK_CUSTOMER_IDS.anna;
 const HISTORY_DIALOG = 'Appointment history details';
+/** One more than the API's 500-row cap, so the oldest two rows are the ones the cap cuts. */
+const OVER_CAP_COUNT = 502;
+const API_CAP = 500;
+
+/** A history of `count` appointments, oldest first, named `History job 1` (oldest) to `History job <count>` (newest). */
+function buildLongHistory(template: AppointmentDto, count: number): AppointmentDto[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...template,
+    id: 7000 + index,
+    scheduledDate: new Date(Date.UTC(2024, 0, 1 + index, 9)).toISOString(),
+    taskDescription: `History job ${String(index + 1)}`,
+  }));
+}
+
+/** The exact task text of one numbered job. */
+function job(number: number): string {
+  return `History job ${String(number)}`;
+}
 
 /** Puts an older, cancelled appointment before the fixture one, as the API returns a history: oldest first. */
 function addOlderCancelledAppointment(state: MockApiState): void {
@@ -33,6 +52,7 @@ function addOlderCancelledAppointment(state: MockApiState): void {
   history.unshift(older);
 }
 
+/** Opens the customers page with Anna's history (one extra cancelled job) expanded. */
 async function openAnnaHistory(page: Page): Promise<CustomersPage> {
   const { customersPage, state } = await CustomersPage.open(page);
   addOlderCancelledAppointment(state);
@@ -109,6 +129,55 @@ test.describe('Customer repair history', () => {
 
     await expect(dialog).toHaveCount(0);
     await customersPage.expectCustomerHistoryPanel();
+  });
+});
+
+test.describe('Repair history over the 500-row cap', () => {
+  test('the customer history asks for the newest rows and keeps both sort directions right', async ({ page }) => {
+    const { customersPage, state } = await CustomersPage.open(page);
+    const template = state.customerHistoryByCustomerId[ANNA]?.[0];
+    if (template === undefined) {
+      throw new Error('The fixture history appointment is missing.');
+    }
+    state.customerHistoryByCustomerId[ANNA] = buildLongHistory(template, OVER_CAP_COUNT);
+    const reads = recordGetRequests(page, `/api/customers/${String(ANNA)}/appointments`);
+
+    await customersPage.expandCustomer(ANNA);
+    const panel = customersPage.detailsPanel();
+    const rows = panel.getByRole('button').filter({ hasText: /History job/ });
+
+    await expect(rows).toHaveCount(API_CAP);
+    expect(reads.map((url) => url.searchParams.get('descending'))).toEqual(['true']);
+    await expect(rows.first().getByText(job(OVER_CAP_COUNT - API_CAP + 1), { exact: true })).toHaveCount(1);
+    await expect(rows.last().getByText(job(OVER_CAP_COUNT), { exact: true })).toHaveCount(1);
+    await expect(panel.getByText(job(1), { exact: true })).toHaveCount(0);
+
+    await panel.getByRole('button', { name: 'Oldest first' }).click();
+    await expect(rows.first().getByText(job(OVER_CAP_COUNT), { exact: true })).toHaveCount(1);
+    await expect(rows.last().getByText(job(OVER_CAP_COUNT - API_CAP + 1), { exact: true })).toHaveCount(1);
+  });
+
+  test('the vehicle history asks for the newest rows and keeps both sort directions right', async ({ page }) => {
+    const { customersPage, state } = await CustomersPage.open(page);
+    const template = state.vehicleHistoryByVehicleId[MOCK_VEHICLE_IDS.annaNxe441]?.[0];
+    if (template === undefined) {
+      throw new Error('The fixture vehicle history appointment is missing.');
+    }
+    state.vehicleHistoryByVehicleId[MOCK_VEHICLE_IDS.annaNxe441] = buildLongHistory(template, OVER_CAP_COUNT);
+    const reads = recordGetRequests(page, `/api/vehicles/${String(MOCK_VEHICLE_IDS.annaNxe441)}/appointments`);
+
+    await customersPage.expandCustomer(ANNA);
+    await customersPage.openVehicleDetails(ANNA, ANNA_VEHICLE_ROW.nxe441);
+    const panel = customersPage.detailsPanel();
+    const rows = panel.getByRole('button').filter({ hasText: /History job/ });
+
+    await expect(rows).toHaveCount(API_CAP);
+    expect(reads.map((url) => url.searchParams.get('descending'))).toEqual(['true']);
+    await expect(rows.first().getByText(job(OVER_CAP_COUNT - API_CAP + 1), { exact: true })).toHaveCount(1);
+    await expect(rows.last().getByText(job(OVER_CAP_COUNT), { exact: true })).toHaveCount(1);
+
+    await panel.getByRole('button', { name: 'Oldest first' }).click();
+    await expect(rows.first().getByText(job(OVER_CAP_COUNT), { exact: true })).toHaveCount(1);
   });
 });
 

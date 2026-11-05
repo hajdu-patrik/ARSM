@@ -12,6 +12,6 @@ public sealed class LoggingNoOpEmailSender(ILogger<LoggingNoOpEmailSender> logge
             EmailHeaderSanitizer.SanitizeSubject(message.Subject),
             message.Attachments.Count);
 
-        return Task.FromResult(EmailSendResult.Success("noop", 200));
+        return Task.FromResult(EmailSendResult.SkippedNoOp());
     }
 }

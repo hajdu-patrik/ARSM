@@ -1,3 +1,4 @@
+using AutoService.ApiService.Appointments.Realtime;
 using AutoService.ApiService.Normalization;
 using AutoService.ApiService.Validation;
 using AutoService.ApiService.Data;
@@ -37,22 +38,30 @@ public static partial class VehicleEndpoints
             return ApiProblem.NotFound("Customer not found.");
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var normalizedPlate, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, plateNormalized, normalizedVin, null, cancellationToken);
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, null, cancellationToken);
         if (conflict is not null)
         {
             return ApiProblem.Conflict(conflict);
         }
 
-        var vehicle = input.ToEntity(plateNormalized, normalizedVin, drivetrainType);
+        var vehicle = input.ToEntity(normalizedPlate, normalizedVin, drivetrainType);
         vehicle.CustomerId = customerId;
 
         db.Vehicles.Add(vehicle);
-        await db.SaveChangesAsync(cancellationToken);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db,
+            token => VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, null, token),
+            VehicleInput.PlateTakenDetail,
+            cancellationToken);
+        if (raceConflict is not null)
+        {
+            return raceConflict;
+        }
 
         // Load customer for response DTO.
         await db.Entry(vehicle).Reference(v => v.Customer).LoadAsync(cancellationToken);
@@ -91,21 +100,26 @@ public static partial class VehicleEndpoints
             return ApiProblem.NotFound("Vehicle not found.");
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var normalizedPlate, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
 
-        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, plateNormalized, normalizedVin, id, cancellationToken);
+        var conflict = await VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, id, cancellationToken);
         if (conflict is not null)
         {
             return ApiProblem.Conflict(conflict);
         }
 
-        input.ApplyTo(vehicle, plateNormalized, normalizedVin, drivetrainType);
-        await db.SaveChangesAsync(cancellationToken);
+        input.ApplyTo(vehicle, normalizedPlate, normalizedVin, drivetrainType);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db,
+            token => VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, id, token),
+            VehicleInput.PlateTakenDetail,
+            cancellationToken,
+            ApiProblem.NotFound("Vehicle not found."));
 
-        return Results.NoContent();
+        return raceConflict ?? Results.NoContent();
     }
 
     private static async Task<IResult> DeleteVehicleAsync(
@@ -113,6 +127,7 @@ public static partial class VehicleEndpoints
         HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
+        IAppointmentUpdateBroadcaster broadcaster,
         CancellationToken cancellationToken)
     {
         var vehicle = await db.Vehicles
@@ -123,8 +138,24 @@ public static partial class VehicleEndpoints
             return ApiProblem.NotFound("Vehicle not found.");
         }
 
+        // The FK cascade deletes these appointments, so live subscribers are told about each one after the commit.
+        var appointmentIds = await db.Appointments
+            .Where(a => a.VehicleId == id)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken);
+
         db.Vehicles.Remove(vehicle);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A parallel delete removed the row first; answer like a sequential repeat.
+            return ApiProblem.NotFound("Vehicle not found.");
+        }
+
+        broadcaster.PublishAppointmentsChanged(appointmentIds);
 
         loggerFactory.CreateLogger("VehicleEndpoints.Delete").LogInformation(
             "Vehicle {VehicleId} deleted with its appointments and quotes by admin {ActorPersonId}.",

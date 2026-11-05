@@ -14,8 +14,8 @@ internal sealed class QuoteDocument : IDocument
 
     internal QuoteDocument(QuoteDocumentModel model, CompanyProfile company)
     {
-        this.model = model;
-        this.company = company;
+        this.model = QuoteDocumentText.Clean(model);
+        this.company = QuoteDocumentText.Clean(company);
     }
 
     public void Compose(IDocumentContainer container)

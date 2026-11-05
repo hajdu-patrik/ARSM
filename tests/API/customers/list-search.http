@@ -1,4 +1,4 @@
-# GET /api/customers?search=: case-insensitive substring over names, "first last", "first middle last" and plates; the
+# GET /api/customers?search=: case-insensitive substring over names, "first [middle] last", "last first [middle]" and plates; the
 # term is trimmed and cut at 100 characters. Customer A has a middle name and a plate, D has 50-character names.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
@@ -108,6 +108,24 @@ GET {{AutoService_ApiService_HostAddress}}/api/customers?search=Fa{{Tag}}%20La{{
 
 ### [Positive][Customers] Search by "first middle last" (200 expected)
 GET {{AutoService_ApiService_HostAddress}}/api/customers?search=fa{{Tag.toLowerCase()}}%20ma{{Tag.toLowerCase()}}%20la{{Tag.toLowerCase()}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by "last first", the order the WebUI shows (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=La{{Tag}}%20Fa{{Tag}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 1
+?? js (response.parsedBody.items[0].id == custA.id) == true
+
+###
+
+### [Positive][Customers] Search by "last first middle" (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/customers?search=la{{Tag.toLowerCase()}}%20fa{{Tag.toLowerCase()}}%20ma{{Tag.toLowerCase()}}
 
 ?? status == 200
 ?? js response.parsedBody.totalCount == 1

@@ -19,9 +19,7 @@ public static partial class AppointmentEndpoints
             "Too many active appointment update subscriptions. Please retry later.",
             cancellationToken);
 
-    /** Publishes an appointment change to every live subscriber. Called from each mutation handler after its `SaveChangesAsync`, so a failed write never produces an event. */
+    /** Publishes an appointment change after the save; delegates to the shared extension. */
     private static void PublishAppointmentChanged(IAppointmentUpdateBroadcaster broadcaster, int appointmentId)
-        => broadcaster.Publish(new AppointmentUpdatedEvent(
-            appointmentId,
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+        => broadcaster.PublishAppointmentChanged(appointmentId);
 }

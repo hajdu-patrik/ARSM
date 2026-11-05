@@ -1,8 +1,9 @@
 /** Reusable SSE channel: ref-counted subscribers, lifecycle-token reconnect with exponential backoff and
  * logout teardown (see WebUI CLAUDE.md); a channel only supplies its URL, SSE event, DOM event and parser. */
 
-import axios from 'axios';
 import { refreshSession } from '../http/api.client';
+import { isSessionRejection } from '../http/server-error';
+import { requestValidate } from '../auth/validate-request';
 import { isRecord } from '../http/record-guard';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -50,6 +51,7 @@ function reconnectDelayMs(attempt: number): number {
   return nominalMs / 2 + Math.random() * (nominalMs / 2);
 }
 
+/** Creates a ref-counted SSE channel that reconnects with backoff while subscribers exist and the user is signed in. */
 export function createLiveUpdateChannel<TDetail>(
   options: LiveUpdateChannelOptions<TDetail>,
 ): LiveUpdateChannel<TDetail> {
@@ -76,6 +78,7 @@ export function createLiveUpdateChannel<TDetail>(
     return token === lifecycleToken && subscriberCount > 0 && useAuthStore.getState().isAuthenticated;
   }
 
+  /** Cancels the pending reconnect timer, if any. */
   function clearReconnectTimer(): void {
     if (reconnectTimer !== null) {
       clearTimeout(reconnectTimer);
@@ -83,6 +86,7 @@ export function createLiveUpdateChannel<TDetail>(
     }
   }
 
+  /** Closes the open stream and marks the channel disconnected. */
   function closeEventSource(): void {
     if (eventSource !== null) {
       eventSource.close();
@@ -133,9 +137,7 @@ export function createLiveUpdateChannel<TDetail>(
       await refreshSession({ skipErrorRedirect: true });
       return shouldKeepLiveUpdates(tokenAtRequest);
     } catch (error) {
-      const refreshStatus = axios.isAxiosError(error) ? error.response?.status : undefined;
-
-      if (refreshStatus === 401 || refreshStatus === 403) {
+      if (isSessionRejection(error)) {
         useAuthStore.getState().clearAuth();
         return false;
       }
@@ -144,8 +146,28 @@ export function createLiveUpdateChannel<TDetail>(
     }
   }
 
-  /** A stream the browser already closed was rejected by the server (maybe an expired session), so refresh
-   * first; a merely dropped or unreachable stream reconnects with backoff. */
+  /** True only when validate answers 401; a 200 (for example the 503 of the subscription cap) or a failed probe is no expiry. */
+  async function isSessionExpired(): Promise<boolean> {
+    try {
+      return (await requestValidate()).status === 401;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Refreshes only when the session really expired, then reconnects with the usual backoff. */
+  async function recoverRejectedStream(connectionToken: number): Promise<void> {
+    const shouldReconnect = (await isSessionExpired())
+      ? await refreshSessionIfPossible(connectionToken)
+      : shouldKeepLiveUpdates(connectionToken);
+
+    if (shouldReconnect) {
+      scheduleReconnect(connectionToken);
+    }
+  }
+
+  /** A stream the browser already closed was rejected by the server (expired session or subscription cap), so
+   * probe validate before refreshing; a merely dropped or unreachable stream reconnects with backoff. */
   function handleStreamError(source: EventSource, connectionToken: number): void {
     const wasRejectedByServer = source.readyState === source.CLOSED;
     source.close();
@@ -163,13 +185,10 @@ export function createLiveUpdateChannel<TDetail>(
       return;
     }
 
-    void refreshSessionIfPossible(connectionToken).then((shouldReconnect) => {
-      if (shouldReconnect) {
-        scheduleReconnect(connectionToken);
-      }
-    });
+    void recoverRejectedStream(connectionToken);
   }
 
+  /** Opens the SSE stream when it is wanted and none is open yet. */
   function connect(): void {
     if (!shouldKeepLiveUpdates(lifecycleToken) || eventSource !== null) {
       return;

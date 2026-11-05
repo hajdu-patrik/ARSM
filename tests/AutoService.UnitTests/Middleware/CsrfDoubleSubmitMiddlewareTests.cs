@@ -89,6 +89,8 @@ public sealed class CsrfDoubleSubmitMiddlewareTests
     [Theory]
     [InlineData("/api/auth/login")]
     [InlineData("/API/AUTH/LOGIN")]
+    [InlineData("/api/auth/login/")]
+    [InlineData("/API/AUTH/LOGIN/")]
     public async Task Login_is_exempt_even_with_cookies_and_no_header(string path)
     {
         var (_, nextCalled) = await SendAsync("POST", path, Cookies(), header: null);

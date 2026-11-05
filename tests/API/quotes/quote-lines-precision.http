@@ -1,0 +1,149 @@
+# Quote line amounts at the numeric(18,2) precision: a third decimal in quantity or price is refused with 422 on add and
+# update instead of being rounded on save; exactly 2 decimals pass. Disposable customer, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@FixtureCustomerEmail = quote.precision.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0746
+
+### [Setup][LinePrecision] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+### [Setup][LinePrecision] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "LinePrecision", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
+
+?? status == 201
+
+### [Setup][LinePrecision] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "QPR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
+
+### [Setup][LinePrecision] Create the draft quote, its version is stale once the seed line is added (201 expected)
+# @name quote
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "title": "LinePrecision {{RunId}}" }
+
+?? status == 201
+
+### [Setup][LinePrecision] Add the seed line (201 expected, the version moves on)
+# @name seed
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{quote.version}} }
+
+?? status == 201
+?? js (response.parsedBody.version !== quote.version) == true
+
+### [Negative][LinePrecision] A quantity with a third decimal is refused, the 2-decimal column would round it (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1.125, "description": "Third decimal", "netUnitPrice": 10000, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Quantity can have at most 2 decimal places.") == true
+
+### [Negative][LinePrecision] A net unit price with a third decimal is refused (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Third decimal price", "netUnitPrice": 100.005, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+### [Positive][LinePrecision] Two decimals and trailing zeros are accepted (201 expected, the stored quantity matches the amount)
+# @name twoDecimals
+POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Labor", "quantity": 1.130, "description": "Two decimals", "netUnitPrice": 10000.50, "vatRatePercent": 27, "version": {{seed.version}} }
+
+?? status == 201
+?? js (response.parsedBody.lines.some(l => l.description === "Two decimals" && l.quantity === 1.13 && l.netAmount === 11300.57)) == true
+
+### [Negative][LinePrecision] A quantity with a third decimal is refused on update (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2.505, "description": "Seed line", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{twoDecimals.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Quantity can have at most 2 decimal places.") == true
+
+### [Negative][LinePrecision] A net unit price with a third decimal is refused on update (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 1, "description": "Seed line", "netUnitPrice": 100.001, "vatRatePercent": 27, "version": {{twoDecimals.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+### [Positive][LinePrecision] The refused updates changed nothing (200 expected, version and seed line as before)
+GET {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}
+
+?? status == 200
+?? js (response.parsedBody.version === twoDecimals.version && response.parsedBody.lines.some(l => l.description === "Seed line" && l.quantity === 1 && l.netUnitPrice === 100)) == true
+
+### [Positive][LinePrecision] An update with exactly 2 decimals passes (200 expected, amounts follow the stored values)
+PUT {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines/{{seed.lines[0].id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "lineKind": "Part", "quantity": 2.50, "description": "Seed line", "netUnitPrice": 100.10, "vatRatePercent": 27, "version": {{twoDecimals.version}} }
+
+?? status == 200
+?? js (response.parsedBody.lines.some(l => l.description === "Seed line" && l.quantity === 2.5 && l.netAmount === 250.25)) == true
+
+### [Cleanup][LinePrecision] Delete the disposable customer, cascading vehicle and quote (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

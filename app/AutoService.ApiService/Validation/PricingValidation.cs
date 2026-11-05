@@ -25,7 +25,7 @@ internal static class PricingValidation
             return ValidationMessages.InvalidMoneyAmount;
         }
 
-        return null;
+        return HasMoreThanTwoDecimals(amount) ? ValidationMessages.TooManyAmountDecimals : null;
     }
 
     internal static string? GetQuantityValidationError(decimal quantity)
@@ -35,6 +35,9 @@ internal static class PricingValidation
             return ValidationMessages.InvalidQuantity;
         }
 
-        return null;
+        return HasMoreThanTwoDecimals(quantity) ? ValidationMessages.TooManyQuantityDecimals : null;
     }
+
+    /** The columns are numeric(18,2): a third decimal would be rounded away on save and disagree with the amounts. */
+    private static bool HasMoreThanTwoDecimals(decimal value) => decimal.Round(value, 2) != value;
 }

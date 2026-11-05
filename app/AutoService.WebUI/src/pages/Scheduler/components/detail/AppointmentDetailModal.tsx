@@ -100,7 +100,7 @@ function AppointmentDetailDialog({
   const showEdit = isAdmin || isAssigned;
   const canClaim = !isAdmin && !isAssigned && isInProgress;
   const canUnclaim = isAssigned && isInProgress && appointment.mechanics.length > 1;
-  const canChangeStatus = isAdmin || isAssigned;
+  const canChangeStatus = isAssigned;
 
   const assignedMechanicIds = new Set(appointment.mechanics.map((mechanic) => mechanic.id));
   const availableMechanics = allMechanics.filter((mechanic) => !assignedMechanicIds.has(mechanic.personId));
@@ -139,6 +139,7 @@ function AppointmentDetailDialog({
           isAdmin={isAdmin}
           isEditing={isEditing}
           editForm={editing.editForm}
+          fieldErrors={editing.fieldErrors}
           formattedDate={formatLongDateTime(appointment.scheduledDate, i18n.language)}
           dueDateLabel={formatDueExactDateTime(appointment.dueDateTime, i18n.language)}
           dueState={getDueState(appointment.dueDateTime, appointment.status)}
@@ -150,7 +151,8 @@ function AppointmentDetailDialog({
           canClaim={canClaim}
           canUnclaim={canUnclaim}
           isClaiming={actions.isClaiming}
-          isAssigning={actions.isAssigning}
+          isAssigning={actions.isAssigningMechanic}
+          isUnassigning={actions.isUnassigningMechanic}
           isClosedForMechanicMutations={!isInProgress}
           isUnclaiming={actions.isUnclaiming}
           t={t}

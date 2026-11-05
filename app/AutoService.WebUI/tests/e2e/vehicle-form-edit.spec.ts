@@ -1,4 +1,4 @@
-/** Edit-vehicle modal: prefilled values, what counts as a change, the PUT payload, a taken plate, a stale
+/** Edit-vehicle modal: prefilled values, what counts as a change, the PUT payload, a taken plate or VIN, a malformed plate, a stale
  * vehicle and the keyboard close with focus returning to the edit button. */
 import { expect, test, type Page } from '@playwright/test';
 import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
@@ -75,6 +75,26 @@ test.describe('Edit vehicle', () => {
     await expect(errorToastMessage(page, 'A vehicle with this license plate already exists.')).toBeVisible();
     await expect(dialog.getByLabel('License plate')).toHaveAttribute('aria-invalid', 'true');
     await expect(dialog.getByText('A vehicle with this license plate already exists.')).toBeVisible();
+  });
+
+  test('refuses the VIN of another vehicle under the VIN field', async ({ page }) => {
+    const { dialog } = await openEditGolf(page);
+    await dialog.getByLabel('VIN').fill('KMHLN4AJXPU654321');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(errorToastMessage(page, 'A vehicle with this VIN already exists.')).toBeVisible();
+    await expect(dialog.getByLabel('VIN')).toHaveAttribute('aria-invalid', 'true');
+    await expect(dialog.getByText('A vehicle with this VIN already exists.')).toBeVisible();
+    await expect(dialog.getByLabel('License plate')).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('toasts "License plate format is invalid." for a plate the server refuses as malformed', async ({ page }) => {
+    const { dialog } = await openEditGolf(page);
+    await dialog.getByLabel('License plate').fill('GOLFGTI');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(errorToastMessage(page, 'License plate format is invalid.')).toBeVisible();
+    await expect(dialog).toBeVisible();
   });
 
   test('toasts that the vehicle is gone when it was deleted meanwhile', async ({ page }) => {

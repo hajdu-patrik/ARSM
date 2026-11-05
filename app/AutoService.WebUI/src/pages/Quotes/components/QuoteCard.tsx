@@ -14,7 +14,7 @@ import {
   rowIconActionInfoClass,
   smallIconClass,
 } from '../../../utils/formStyles';
-import { formatShortDate } from '../../../utils/intlFormat';
+import { formatShortDateUtc } from '../../../utils/intlFormat';
 import { resolveQuoteDisplayStatus } from '../helpers';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
 
@@ -23,13 +23,14 @@ interface QuoteCardProps {
   readonly locale: string;
   readonly quote: QuoteListItemDto;
   readonly searchQuery: string;
+  readonly isDownloadingPdf: boolean;
   readonly onOpen: (quote: QuoteListItemDto) => void;
   readonly onDownloadPdf: (quote: QuoteListItemDto) => void;
   readonly onDelete: (quote: QuoteListItemDto) => void;
 }
 
-/** Tile layout: the status badge takes its own 44px line above the value tiles, which the row actions share. */
-const statusTileClass = '@max-4xl:order-first @max-4xl:col-span-2 @max-4xl:flex @max-4xl:min-h-11 @max-4xl:items-center';
+/** Tile layout: the status badge takes its own 44px line, its right side left free (9.25rem) for the overlaid row actions. */
+const statusTileClass = '@max-4xl:order-first @max-4xl:col-span-2 @max-4xl:flex @max-4xl:min-h-11 @max-4xl:items-center @max-4xl:pr-[9.25rem]';
 
 /** Tile layout: the title gets the full header width, so three 44px actions no longer squeeze it onto two lines. */
 const leadTileClass = '@max-4xl:col-span-2';
@@ -41,6 +42,7 @@ const actionsTileClass = '@max-4xl:col-start-2 @max-4xl:row-start-2 @max-4xl:ml-
 interface QuoteRowActionsProps {
   readonly t: TFunction;
   readonly quote: QuoteListItemDto;
+  readonly isDownloadingPdf: boolean;
   readonly onOpen: (quote: QuoteListItemDto) => void;
   readonly onDownloadPdf: (quote: QuoteListItemDto) => void;
   readonly onDelete: (quote: QuoteListItemDto) => void;
@@ -58,7 +60,7 @@ function resolveDeleteTitle(t: TFunction, quote: QuoteListItemDto): string {
 }
 
 /** Open, download and delete icon actions of one quote row. */
-function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRowActionsProps) {
+function QuoteRowActions({ t, quote, isDownloadingPdf, onOpen, onDownloadPdf, onDelete }: QuoteRowActionsProps) {
   const openLabel = t('quotes.openQuote', { quoteNumber: quote.quoteNumber });
   const downloadLabel = t('quotes.downloadPdfFor', { quoteNumber: quote.quoteNumber });
   const deleteLabel = t('quotes.deleteQuote');
@@ -81,6 +83,8 @@ function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRow
         data-testid="quote-download-button"
         type="button"
         onClick={() => { onDownloadPdf(quote); }}
+        disabled={isDownloadingPdf}
+        aria-busy={isDownloadingPdf}
         className={rowIconActionAccentClass}
         title={downloadLabel}
         aria-label={downloadLabel}
@@ -102,9 +106,9 @@ function QuoteRowActions({ t, quote, onOpen, onDownloadPdf, onDelete }: QuoteRow
   );
 }
 
-export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
+export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery, isDownloadingPdf, onOpen, onDownloadPdf, onDelete }: QuoteCardProps) {
   const licensePlate = quote.vehicle.licensePlate;
-  const validUntilText = formatShortDate(quote.validUntil, locale);
+  const validUntilText = formatShortDateUtc(quote.validUntil, locale);
   const totalNetText = formatHuf(quote.totalNet, locale);
   const totalGrossText = formatHuf(quote.totalGross, locale);
 
@@ -120,7 +124,7 @@ export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery
       )}
       actions={(
         <DataListCell column="actions" className={actionsTileClass}>
-          <QuoteRowActions t={t} quote={quote} onOpen={onOpen} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />
+          <QuoteRowActions t={t} quote={quote} isDownloadingPdf={isDownloadingPdf} onOpen={onOpen} onDownloadPdf={onDownloadPdf} onDelete={onDelete} />
         </DataListCell>
       )}
     >
@@ -128,7 +132,7 @@ export const QuoteCard = memo(function QuoteCard({ t, locale, quote, searchQuery
         <DataListText kind="identifier" title={licensePlate} className="@max-4xl:text-right @max-4xl:font-semibold"><HighlightedText text={licensePlate} query={searchQuery} /></DataListText>
       </DataListCell>
       <DataListCell column="status" className={statusTileClass}>
-        <QuoteStatusBadge status={resolveQuoteDisplayStatus(quote)} />
+        <QuoteStatusBadge status={resolveQuoteDisplayStatus(quote)} className="max-w-full overflow-hidden" />
       </DataListCell>
       <DataListCell column="validUntil" label={t('quotes.validUntil')} tile>
         <DataListText kind="date" title={validUntilText} className="@max-4xl:text-right">{validUntilText}</DataListText>

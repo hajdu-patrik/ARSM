@@ -56,7 +56,7 @@ internal static class RateLimitPolicies
     /** Only the login route bans the client and explains the rejection; every other 429 stays bodiless. */
     private static async ValueTask OnLoginRejectedAsync(OnRejectedContext context, CancellationToken cancellationToken)
     {
-        if (!context.HttpContext.Request.Path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase))
+        if (!LoginPathMatcher.IsLoginPath(context.HttpContext.Request.Path))
         {
             return;
         }

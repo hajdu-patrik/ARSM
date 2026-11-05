@@ -1,7 +1,7 @@
 /** Profile picture on Settings: the client refuses a wrong type, a size over 4 MB and an oversized image before
  * any upload, a valid one is cropped and sent as WebP, and removal is confirmed first. */
-import { expect, test } from '@playwright/test';
-import { openSettings } from './pages/settings.page';
+import { expect, test, type Page } from '@playwright/test';
+import { openSettings, type SettingsPage } from './pages/settings.page';
 import { APP_ICON_PNG, fakeImage, pngHeaderOnly, type UploadFile } from './support/picture-files';
 import { errorToastMessage, toastMessage } from './support/toast';
 
@@ -22,6 +22,13 @@ const REFUSED_PICTURES: readonly RefusedPicture[] = [
   { title: 'a PNG wider than 8192 px', file: { name: 'wide.png', mimeType: 'image/png', buffer: pngHeaderOnly(9000, 10) }, toast: /Each side may be at most 8192 px/ },
   { title: 'a PNG over 20 megapixels', file: { name: 'large.png', mimeType: 'image/png', buffer: pngHeaderOnly(8000, 4000) }, toast: /at most 20 megapixels/ },
 ];
+
+/** Picks the app icon, crops and uploads it, and waits for the success toast. */
+async function uploadPicture(page: Page, settings: SettingsPage): Promise<void> {
+  await settings.fileInput.setInputFiles(APP_ICON_PNG);
+  await page.getByRole('dialog', { name: 'Crop profile picture' }).getByRole('button', { name: 'Crop & upload' }).click();
+  await expect(toastMessage(page, 'Profile picture updated successfully.')).toBeVisible();
+}
 
 test.describe('Profile picture refusals', () => {
   for (const refused of REFUSED_PICTURES) {
@@ -136,5 +143,32 @@ test.describe('Profile picture upload and removal', () => {
 
     await expect(errorToastMessage(page, 'Failed to remove profile picture.')).toBeVisible();
     await expect(settings.pictureSection.getByRole('button', { name: 'Remove' })).toBeVisible();
+  });
+});
+
+test.describe('Profile picture URL version', () => {
+  test('a new upload and an upload after a removal each load the picture under a new version query', async ({ page }) => {
+    const { settings, state } = await openSettings(page);
+    state.profile.hasProfilePicture = true;
+    await page.reload();
+    const picture = settings.pictureImage();
+    await expect(picture).toBeVisible();
+    const initialSource = await picture.getAttribute('src');
+    expect(initialSource).toMatch(/\/api\/profile\/picture\?pid=\d+&v=\d+$/);
+
+    await uploadPicture(page, settings);
+    await expect(picture).not.toHaveAttribute('src', initialSource ?? '');
+    const uploadedSource = await picture.getAttribute('src');
+    expect(uploadedSource).toMatch(/\/api\/profile\/picture\?pid=\d+&v=\d+$/);
+
+    await settings.pictureSection.getByRole('button', { name: 'Remove' }).click();
+    await settings.confirmDialog('Confirm picture removal').getByRole('button', { name: 'Remove picture' }).click();
+    await expect(picture).toHaveCount(0);
+    await uploadPicture(page, settings);
+
+    await expect(picture).toBeVisible();
+    await expect(picture).not.toHaveAttribute('src', uploadedSource ?? '');
+    const sources = [initialSource, uploadedSource, await picture.getAttribute('src')];
+    expect(new Set(sources).size).toBe(3);
   });
 });

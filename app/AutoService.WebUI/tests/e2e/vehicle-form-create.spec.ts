@@ -10,6 +10,8 @@ test.use({ viewport: { width: 1280, height: 1000 } });
 
 const ANNA = MOCK_CUSTOMER_IDS.anna;
 const PLATE_TAKEN = 'A vehicle with this license plate already exists.';
+const VIN_TAKEN = 'A vehicle with this VIN already exists.';
+const PLATE_INVALID = 'License plate format is invalid.';
 
 async function openCreateDialog(page: Page) {
   const { customersPage, state } = await CustomersPage.open(page);
@@ -86,13 +88,28 @@ test.describe('Create vehicle', () => {
     await expect(customersPage.vehicleDialog('Create vehicle')).toHaveCount(0);
   });
 
-  test('marks the VIN field when the VIN already belongs to another vehicle', async ({ page }) => {
+  test('refuses the VIN of another vehicle under the VIN field, and the error clears on edit', async ({ page }) => {
     const { customersPage, dialog } = await openCreateDialog(page);
     await customersPage.fillVehicle(dialog, { ...ELECTRIC_AUDI, vin: 'WVWZZZAUZJW123456' });
     await dialog.getByRole('button', { name: 'Save' }).click();
 
+    await expect(errorToastMessage(page, VIN_TAKEN)).toBeVisible();
     await expect(dialog.getByLabel('VIN')).toHaveAttribute('aria-invalid', 'true');
+    await expect(dialog.getByText(VIN_TAKEN)).toBeVisible();
+    await expect(dialog.getByText('VIN must be a valid 17-character identifier.')).toHaveCount(0);
     await expect(dialog.getByLabel('License plate')).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByLabel('VIN').fill('WAUZZZF43MA123457');
+    await expect(dialog.getByText(VIN_TAKEN)).toHaveCount(0);
+  });
+
+  test('toasts "License plate format is invalid." for a plate the server refuses as malformed', async ({ page }) => {
+    const { customersPage, dialog } = await openCreateDialog(page);
+    await customersPage.fillVehicle(dialog, { ...ELECTRIC_AUDI, licensePlate: 'EVTABC' });
+    await dialog.getByRole('button', { name: 'Save' }).click();
+
+    await expect(errorToastMessage(page, PLATE_INVALID)).toBeVisible();
     await expect(dialog).toBeVisible();
   });
 
@@ -128,5 +145,26 @@ test.describe('Create vehicle', () => {
 
     await expect(errorToastMessage(page, 'Customer not found.')).toBeVisible();
     await expect(dialog).toBeVisible();
+  });
+
+  test('words the taken VIN in Hungarian under the VIN field', async ({ page }) => {
+    const { customersPage } = await CustomersPage.open(page, {}, 'hu');
+    await customersPage.expandCustomer(ANNA);
+    await customersPage.customerCard(ANNA).getByRole('button', { name: 'Jármű létrehozása' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Jármű létrehozása' });
+
+    await dialog.getByLabel('Rendszám').fill(ELECTRIC_AUDI.licensePlate);
+    await dialog.getByLabel('VIN').fill('WVWZZZAUZJW123456');
+    await dialog.getByLabel('Márka').fill(ELECTRIC_AUDI.brand);
+    await dialog.getByLabel('Modell').fill(ELECTRIC_AUDI.model);
+    await dialog.getByLabel('Évjárat').fill(ELECTRIC_AUDI.year);
+    await dialog.getByLabel('Futásteljesítmény (km)').fill(ELECTRIC_AUDI.mileageKm);
+    await dialog.getByLabel('Motorteljesítmény (kW)').fill(ELECTRIC_AUDI.enginePowerKw);
+    await selectDropdownOptionByLabel(page, dialog.getByLabel('Hajtáslánc'), 'Elektromos');
+    await dialog.getByRole('button', { name: 'Mentés' }).click();
+
+    await expect(dialog.getByText('Ez a VIN már szerepel a rendszerben.')).toBeVisible();
+    await expect(dialog.getByLabel('VIN')).toHaveAttribute('aria-invalid', 'true');
+    await expect(errorToastMessage(page, 'Ez a VIN már szerepel a rendszerben.')).toBeVisible();
   });
 });

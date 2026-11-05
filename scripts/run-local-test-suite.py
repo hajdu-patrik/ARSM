@@ -53,6 +53,42 @@ PYTHON_HTTP_CHECKS = (
         "Quote number check",
     ),
     (
+        "parallelWriteRaceCheck",
+        "http-parallel-write-race-check",
+        "tests/API/authz/parallel-write-race-check.py",
+        "Parallel write race check",
+    ),
+    (
+        "catalogWriteRaceCheck",
+        "http-catalog-write-race-check",
+        "tests/API/authz/catalog-write-race-check.py",
+        "Catalog write race check",
+    ),
+    (
+        "appointmentRaceCheck",
+        "http-appointment-race-check",
+        "tests/API/authz/appointment-race-check.py",
+        "Appointment race check",
+    ),
+    (
+        "quoteAcceptRaceCheck",
+        "http-quote-accept-race-check",
+        "tests/API/authz/quote-accept-race-check.py",
+        "Quote accept race check",
+    ),
+    (
+        "mechanicRemovalRaceCheck",
+        "http-mechanic-removal-race-check",
+        "tests/API/authz/mechanic-removal-race-check.py",
+        "Mechanic removal race check",
+    ),
+    (
+        "liveUpdateEventsCheck",
+        "http-live-update-events-check",
+        "tests/API/authz/live-update-events-check.py",
+        "Live update events check",
+    ),
+    (
         "refreshReuseCheck",
         "http-refresh-reuse-check",
         "tests/API/auth/refresh-reuse-check.py",

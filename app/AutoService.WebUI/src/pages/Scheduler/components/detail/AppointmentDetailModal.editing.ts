@@ -13,6 +13,7 @@ import {
   buildUpdateRequestFromEditForm,
   buildUpdatedAppointmentSnapshot,
   canSaveEditForm,
+  getEditFormFieldErrors,
   hasAppointmentEditChanges,
   normalizeEditFieldValue,
 } from './AppointmentDetailModal.edit';
@@ -32,9 +33,17 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditFormState>(() => buildEditForm(appointment));
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
+  const [startVersion, setStartVersion] = useState(appointment.version);
+  const [conflictedVersion, setConflictedVersion] = useState<number | null>(null);
+  // After a failed save the reloaded version becomes the baseline; the typed values stay.
+  const baseVersion =
+    conflictedVersion !== null && appointment.version !== conflictedVersion ? appointment.version : startVersion;
 
   const { isPending: isSaving, mutate: runSave } = useMutation({
     mutationFn: (request: UpdateAppointmentRequest) => onUpdate(appointment.id, request),
+    onError: (_error, request) => {
+      setConflictedVersion(request.version);
+    },
     onSuccess: (_result, request) => {
       setIsSaveConfirmOpen(false);
       setIsEditing(false);
@@ -42,10 +51,13 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
     },
   });
 
+  const fieldErrors = getEditFormFieldErrors(appointment, editForm);
   const isSaveEnabled = isEditing && canSaveEditForm(appointment, editForm);
 
   const startEditing = useCallback(() => {
     setEditForm(buildEditForm(appointment));
+    setStartVersion(appointment.version);
+    setConflictedVersion(null);
     setIsEditing(true);
   }, [appointment]);
 
@@ -84,7 +96,7 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
   }, [exitEditing, isEditing, isSaving]);
 
   const confirmSave = useCallback(() => {
-    const validation = buildUpdateRequestFromEditForm(appointment, editForm);
+    const validation = buildUpdateRequestFromEditForm(appointment, editForm, baseVersion);
     if ('errorKey' in validation) {
       showErrorToast(validation.errorKey);
       return;
@@ -97,11 +109,12 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
     }
 
     runSave(validation.request.appointment);
-  }, [appointment, editForm, exitEditing, runSave, showErrorToast]);
+  }, [appointment, baseVersion, editForm, exitEditing, runSave, showErrorToast]);
 
   return {
     isEditing,
     editForm,
+    fieldErrors,
     isSaving,
     isSaveEnabled,
     isSaveConfirmOpen,

@@ -49,5 +49,23 @@ export function useQuoteCache() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.companyResults.root(scope) });
   }, [queryClient, scope]);
 
-  return { storeQuote, removeQuote, refreshQuote, invalidateReport };
+  /** Marks the scheduler caches stale: an accepted quote changes its appointment's quote flags. */
+  const invalidateScheduler = useCallback(() => {
+    if (scope === null) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.scheduler.root(scope) });
+  }, [queryClient, scope]);
+
+  /** Marks the customer registry caches stale, e.g. after a quote dialog corrected a customer's e-mail address. */
+  const invalidateCustomers = useCallback(() => {
+    if (scope === null) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.customers.root(scope) });
+  }, [queryClient, scope]);
+
+  return { storeQuote, removeQuote, refreshQuote, invalidateReport, invalidateScheduler, invalidateCustomers };
 }

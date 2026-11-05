@@ -7,6 +7,8 @@ import { queryKeys, type AuthQueryScope } from './queryKeys';
 /** Options that control which related read caches are invalidated after an appointment mutation. */
 export interface AppointmentMutationCacheOptions {
   readonly invalidateCustomerRegistry?: boolean;
+  /** Set when the mutation changes quote lock flags or report figures, or deletes the appointment's quotes. */
+  readonly invalidateQuoteReads?: boolean;
 }
 
 /** Sorts appointments by scheduled date while preserving immutable cache updates. */
@@ -16,6 +18,7 @@ function sortAppointments(appointments: AppointmentDto[]): AppointmentDto[] {
   ));
 }
 
+/** Replaces or adds an appointment in a list and keeps it sorted by scheduled date. */
 function upsertAppointment(appointments: AppointmentDto[], updated: AppointmentDto): AppointmentDto[] {
   const withoutUpdated = appointments.filter((appointment) => appointment.id !== updated.id);
   return sortAppointments([...withoutUpdated, updated]);
@@ -31,6 +34,7 @@ function getAppointmentLocalMonth(appointment: AppointmentDto): { year: number; 
   };
 }
 
+/** True when the trailing year and month segments of a scheduler month key equal the given month. */
 function queryKeyMonthMatches(queryKey: QueryKey, year: number, month: number): boolean {
   const keyYear = queryKey.at(-2);
   const keyMonth = queryKey.at(-1);
@@ -96,6 +100,12 @@ export function findCachedAppointment(
   return undefined;
 }
 
+/** Invalidates the Quotes and Company results reads, which an appointment delete or status change makes stale. */
+export function invalidateQuoteReadCaches(queryClient: QueryClient, authScope: AuthQueryScope): void {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.quotes.root(authScope) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.companyResults.root(authScope) });
+}
+
 /** Invalidates scheduler and appointment-history reads affected by an appointment mutation. */
 export function invalidateAppointmentReadCaches(
   queryClient: QueryClient,
@@ -115,5 +125,9 @@ export function invalidateAppointmentReadCaches(
 
   if (options.invalidateCustomerRegistry) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.customers.root(authScope) });
+  }
+
+  if (options.invalidateQuoteReads) {
+    invalidateQuoteReadCaches(queryClient, authScope);
   }
 }

@@ -72,6 +72,10 @@ var webUi = builder.AddJavaScriptApp("webui", "../AutoService.WebUI", "dev")
                    .WithHttpsEndpoint(targetPort: webUiPort, port: webUiPort, env: "PORT", isProxied: false)
                    .WithExternalHttpEndpoints();
 
+// The API allows exactly the WebUI endpoint as CORS/Origin source; a late call, so the webui declaration
+// can follow the apiservice one, and no WaitFor, because webui already waits for apiservice.
+apiService.WithEnvironment("Cors__AllowedOrigins__0", webUi.GetEndpoint("https"));
+
 builder.Build().Run();
 
 /** Reads a required integer port from AppHost configuration and fails fast on invalid values. */

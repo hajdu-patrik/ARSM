@@ -112,7 +112,7 @@ public static partial class AppointmentEndpoints
             return ApiProblem.Unprocessable(fieldError);
         }
 
-        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var plateNormalized, out var plateValidationError))
+        if (!LicensePlateNormalization.TryNormalizeEuropeanLicensePlate(input.LicensePlate, out var normalizedPlate, out var plateValidationError))
         {
             return ApiProblem.Unprocessable(plateValidationError);
         }
@@ -128,16 +128,26 @@ public static partial class AppointmentEndpoints
         }
 
         var conflict = await VehicleInput.FindUniquenessConflictAsync(
-            db, plateNormalized, normalizedVin, appointment.VehicleId, cancellationToken);
+            db, normalizedPlate, normalizedVin, appointment.VehicleId, cancellationToken);
         if (conflict is not null)
         {
             logger.LogInformation("Appointment vehicle update failed on appointment {AppointmentId}: {Conflict}", id, conflict);
             return ApiProblem.Conflict(conflict);
         }
 
-        input.ApplyTo(appointment.Vehicle, plateNormalized, normalizedVin, drivetrainType);
+        var vehicleId = appointment.VehicleId;
+        input.ApplyTo(appointment.Vehicle, normalizedPlate, normalizedVin, drivetrainType);
 
-        await db.SaveChangesAsync(cancellationToken);
+        var raceConflict = await UniqueConstraintDetection.SaveOrConflictAsync(
+            db,
+            token => VehicleInput.FindUniquenessConflictAsync(db, normalizedPlate, normalizedVin, vehicleId, token),
+            VehicleInput.PlateTakenDetail,
+            cancellationToken,
+            AppointmentNotFound());
+        if (raceConflict is not null)
+        {
+            return raceConflict;
+        }
 
         logger.LogInformation("Appointment {AppointmentId} vehicle updated by mechanic {MechanicId}. IsAdmin: {IsAdmin}.", id, mechanicId, isAdmin);
 

@@ -1,0 +1,154 @@
+# A User-Agent over the 512-character storage limit is truncated, never a 500: login, refresh and change-password answer
+# 200, 204 and 200 with a 600-character agent, and the new password works afterwards. Disposable mechanic only (prefix ua.long.).
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@TestPassword = {{$processEnv ARSM_TEST_PASSWORD}}
+@NewPassword = {{$processEnv ARSM_TEST_MECHANIC_NEW_PASSWORD}}
+@RunId = {{$timestamp}}
+@LongAgentEmail = ua.long.{{RunId}}@example.test
+@LongUserAgent = {{'ARSM-long-agent/'.padEnd(600, 'x')}}
+
+### [Setup][LongAgent] Clear any session cookie left by a previous file (204, 401 or 403, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][LongAgent] Login as admin (200 expected)
+# @name adminLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Setup][LongAgent] Register the disposable mechanic (200 expected)
+# @name longAgentMechanic
+POST {{AutoService_ApiService_HostAddress}}/api/auth/register
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "firstName": "Long", "lastName": "Agent", "email": "{{LongAgentEmail}}", "password": "{{TestPassword}}", "personType": "Mechanic", "specialization": "GasolineAndDiesel", "expertise": ["Engine"] }
+
+?? status == 200
+
+###
+
+### [Positive][LongAgent] Login with a 600-character User-Agent (200 expected, not 500)
+# @name longAgentLogin
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+User-Agent: {{LongUserAgent}}
+Content-Type: application/json
+
+{ "email": "{{LongAgentEmail}}", "password": "{{TestPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+?? js (response.parsedBody.personId == longAgentMechanic.personId) == true
+
+###
+
+### [Positive][LongAgent] Refresh with a 600-character User-Agent (204 expected, not 500)
+# @name longAgentRefresh
+POST {{AutoService_ApiService_HostAddress}}/api/auth/refresh
+Origin: {{WebUI_Origin}}
+User-Agent: {{LongUserAgent}}
+X-CSRF-Token: {{CsrfToken}}
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 204
+
+###
+
+### [Positive][LongAgent] Change the password with a 600-character User-Agent (200 expected, not 500)
+# @name longAgentChange
+POST {{AutoService_ApiService_HostAddress}}/api/profile/change-password
+Origin: {{WebUI_Origin}}
+User-Agent: {{LongUserAgent}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "currentPassword": "{{TestPassword}}", "newPassword": "{{NewPassword}}", "confirmNewPassword": "{{NewPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Positive][LongAgent] The new password logs in (200 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LongAgentEmail}}", "password": "{{NewPassword}}" }
+
+?? status == 200
+
+###
+
+### [Negative][LongAgent] The old password no longer logs in (401 expected)
+# @no-cookie-jar
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{LongAgentEmail}}", "password": "{{TestPassword}}" }
+
+?? status == 401
+
+###
+
+### [Setup][LongAgent] Logout the mechanic (204 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
+
+###
+
+### [Cleanup][LongAgent] Login as admin again to delete the disposable mechanic (200 expected)
+# @name adminLoginAgain
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Cleanup][LongAgent] Delete the disposable mechanic (200 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/admin/mechanics/{{longAgentMechanic.personId}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 200

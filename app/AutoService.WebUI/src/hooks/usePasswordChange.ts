@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { profileService } from '../services/profile/profile.service';
 import type { ChangePasswordRequest } from '../types/profile/profile.types';
-import { extractPasswordChangeErrors } from '../utils/passwordChangeErrors';
+import { extractLockoutToast, extractPasswordChangeErrors } from '../utils/passwordChangeErrors';
 import {
   NO_PASSWORD_FIELD_ERRORS,
   pickPasswordFieldErrors,
@@ -22,6 +22,7 @@ export interface UsePasswordChangeParams {
   readonly onChanged?: (() => void) | undefined;
 }
 
+/** Owns the password fields, their server errors and the change mutation. */
 export function usePasswordChange({ showSuccessToast, showErrorToast, onChanged }: UsePasswordChangeParams) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -29,6 +30,12 @@ export function usePasswordChange({ showSuccessToast, showErrorToast, onChanged 
   const [fieldErrors, setFieldErrors] = useState<PasswordFieldErrors>(NO_PASSWORD_FIELD_ERRORS);
 
   const handlePasswordChangeFailure = useCallback((error: unknown) => {
+    const lockout = extractLockoutToast(error);
+    if (lockout !== null) {
+      showErrorToast(lockout.key, lockout.values);
+      return;
+    }
+
     const serverErrors = extractPasswordChangeErrors(error);
     if (serverErrors === null) {
       showErrorToast('toast.passwordChangeFailed');

@@ -1,0 +1,126 @@
+# Part net price at the numeric(18,2) precision: more than 2 decimals is refused with 422 on create and update instead of
+# being rounded on save, exactly 2 decimals (also with a trailing zero) pass. One disposable part, deleted at the end.
+
+@AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
+@WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
+@AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
+@AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
+@RunId = {{$timestamp}}
+@Key = ZZP{{RunId}}
+
+### [Setup][Parts] Clear any session cookie left by a previous file (204 or 401, not asserted)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/logout
+Origin: {{WebUI_Origin}}
+
+###
+
+### [Setup][Parts] Login as admin (200 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/auth/login
+Origin: {{WebUI_Origin}}
+Content-Type: application/json
+
+{ "email": "{{AdminEmail}}", "password": "{{AdminPassword}}" }
+
+{{
+  exports.CsrfToken = response.headers['set-cookie']?.find(c => c.startsWith('__Host-arsm-csrf-token='))?.match(/^__Host-arsm-csrf-token=([^;]+)/)?.[1];
+}}
+
+?? status == 200
+
+###
+
+### [Negative][Parts] A third decimal in the net price is refused on create, the column holds 2 (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Precision Part", "netUnitPrice": 4500.125, "vatRatePercent": 27 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Negative][Parts] One thousandth is refused on create too (422 expected)
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Precision Part", "netUnitPrice": 100.001, "vatRatePercent": 27 }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Negative][Parts] The refused creates left no part behind (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts?search={{Key}}
+
+?? status == 200
+?? js response.parsedBody.totalCount == 0
+
+###
+
+### [Positive][Parts] Exactly 2 decimals pass, a trailing zero is not a third decimal (201 expected)
+# @name precisionPart
+POST {{AutoService_ApiService_HostAddress}}/api/parts
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Precision Part", "netUnitPrice": 4500.120, "vatRatePercent": 27 }
+
+?? status == 201
+?? js response.parsedBody.netUnitPrice == 4500.12
+
+###
+
+### [Negative][Parts] A third decimal is refused on update, even under the current version (422 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{precisionPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Precision Part", "netUnitPrice": 4500.129, "vatRatePercent": 27, "version": {{precisionPart.version}} }
+
+?? status == 422
+?? js (response.parsedBody.detail === "Amount can have at most 2 decimal places.") == true
+
+###
+
+### [Positive][Parts] The refused update changed nothing (200 expected, price and version as created)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{precisionPart.id}}
+
+?? status == 200
+?? js (response.parsedBody.netUnitPrice == 4500.12 && response.parsedBody.version == precisionPart.version) == true
+
+###
+
+### [Positive][Parts] An update with exactly 2 decimals passes (204 expected)
+PUT {{AutoService_ApiService_HostAddress}}/api/parts/{{precisionPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "partNumber": "{{Key}}", "name": "Precision Part", "netUnitPrice": 4500.13, "vatRatePercent": 27, "version": {{precisionPart.version}} }
+
+?? status == 204
+
+###
+
+### [Positive][Parts] The new price is stored (200 expected)
+GET {{AutoService_ApiService_HostAddress}}/api/parts/{{precisionPart.id}}
+
+?? status == 200
+?? js response.parsedBody.netUnitPrice == 4500.13
+
+###
+
+### [Cleanup][Parts] Delete the disposable part (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/parts/{{precisionPart.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204

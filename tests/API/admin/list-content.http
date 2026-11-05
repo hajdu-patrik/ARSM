@@ -91,6 +91,30 @@ GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=alpha%20li
 
 ###
 
+### [Positive][AdminList] Search by "first middle last", the roster's display order (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=alpha%20zeta%20listorder
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail) && !response.parsedBody.items.some(m => m.email == BetaEmail)) == true
+
+###
+
+### [Positive][AdminList] Search by "last first" (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=listorder%20alpha
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail) && !response.parsedBody.items.some(m => m.email == BetaEmail)) == true
+
+###
+
+### [Positive][AdminList] Search by "last first middle" (200 expected, Alpha without Beta)
+GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=listorder%20alpha%20zeta
+
+?? status == 200
+?? js (response.parsedBody.items.some(m => m.email == AlphaEmail) && !response.parsedBody.items.some(m => m.email == BetaEmail)) == true
+
+###
+
 ### [Positive][AdminList] Search by middle name (200 expected, Alpha without Beta)
 GET {{AutoService_ApiService_HostAddress}}/api/admin/mechanics?search=zeta
 

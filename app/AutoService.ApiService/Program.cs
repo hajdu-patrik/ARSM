@@ -189,7 +189,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Le
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("WebUIPolicy", corsPolicyBuilder =>
+    options.AddPolicy(EarlyPipelineExtensions.WebUiCorsPolicyName, corsPolicyBuilder =>
     {
         corsPolicyBuilder
             .WithOrigins(webUiOrigins)
@@ -302,24 +302,15 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-// Forwarded headers first: behind a proxy HSTS and HTTPS redirection must see the original https scheme.
-app.UseForwardedHeaders();
+// Forwarded headers, HSTS, HTTPS redirection, compression, security headers, CORS, login ban (see the extension).
+app.UseArsmEarlyPipeline(app.Environment.IsDevelopment());
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
-else
-{
-    app.UseHsts();
-}
 
-app.UseHttpsRedirection();
-app.UseResponseCompression();
-app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseMiddleware<LoginBanMiddleware>();
-app.UseCors("WebUIPolicy");
 app.UseMiddleware<UnsafeCookieRequestOriginMiddleware>();
 app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 app.UseMiddleware<AuditAccessDeniedMiddleware>();

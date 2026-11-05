@@ -2,6 +2,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 using AutoService.ApiService.Http;
 using AutoService.ApiService.Quotes;
 using AutoService.UnitTests.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -74,20 +75,25 @@ public sealed class QuoteStatusTransitionTests
     [Fact]
     public void ConflictWithCode_answers_409_with_the_code_body()
     {
-        var result = PrivateStatic.Call<Microsoft.AspNetCore.Http.IResult>(typeof(QuoteEndpoints), "ConflictWithCode", "quote_email_failed");
+        var result = PrivateStatic.Call<IResult>(typeof(QuoteEndpoints), "ConflictWithCode", "quote_email_failed");
 
         var json = Assert.IsType<JsonHttpResult<ErrorCodeResponse>>(result);
         Assert.Equal(409, json.StatusCode);
         Assert.Equal("quote_email_failed", json.Value!.Code);
     }
 
+    private static async Task<IResult> ChangeStatusAsync(string status)
+    {
+        object?[] args = [1, new QuoteEndpoints.ChangeQuoteStatusRequest(status, 1), null, null, null, NullLoggerFactory.Instance, null, null, null, CancellationToken.None];
+
+        return await (Task<IResult>)PrivateStatic.Run(typeof(QuoteEndpoints), "ChangeQuoteStatusAsync", args)!;
+    }
+
     [Fact]
     public async Task A_numeric_status_is_rejected_like_an_unknown_name_before_any_lookup()
     {
         // Enum.TryParse takes "7" as an undefined QuoteStatus; the request should be a 422 like any unknown name.
-        object?[] args = [1, new QuoteEndpoints.ChangeQuoteStatusRequest("7", 1), null, null, null, NullLoggerFactory.Instance, null, null, CancellationToken.None];
-
-        var result = await (Task<Microsoft.AspNetCore.Http.IResult>)PrivateStatic.Run(typeof(QuoteEndpoints), "ChangeQuoteStatusAsync", args)!;
+        var result = await ChangeStatusAsync("7");
 
         Assert.Equal(422, ResultAssert.StatusOf(result));
     }
@@ -95,9 +101,7 @@ public sealed class QuoteStatusTransitionTests
     [Fact]
     public async Task An_unknown_status_name_is_a_422_before_any_lookup()
     {
-        object?[] args = [1, new QuoteEndpoints.ChangeQuoteStatusRequest("Archived", 1), null, null, null, NullLoggerFactory.Instance, null, null, CancellationToken.None];
-
-        var result = await (Task<Microsoft.AspNetCore.Http.IResult>)PrivateStatic.Run(typeof(QuoteEndpoints), "ChangeQuoteStatusAsync", args)!;
+        var result = await ChangeStatusAsync("Archived");
 
         ResultAssert.Problem(result, 422, "Status must be one of: Draft, Sent, Accepted, Rejected.");
     }

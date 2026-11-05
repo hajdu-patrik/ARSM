@@ -1,10 +1,9 @@
 /** Builders for the appointments and dates the scheduler specs seed into the mock state. */
-import type { AppointmentDto, AppointmentStatus } from '../../../src/types/scheduler/scheduler.types';
+import type { AppointmentDto, AppointmentStatus, SchedulerCustomerLookupDto } from '../../../src/types/scheduler/scheduler.types';
 import type { MockApiState } from './test-data';
 import { MOCK_CUSTOMER_IDS } from './test-data.constants';
 
-const HOUR_MS = 60 * 60 * 1000;
-
+export const HOUR_MS = 60 * 60 * 1000;
 export const DAY_MS = 24 * HOUR_MS;
 
 /** One mechanic as the API lists it on an appointment. */
@@ -114,4 +113,36 @@ export function toDatetimeLocalValue(date: Date): string {
   const pad = (value: number): string => String(value).padStart(2, '0');
 
   return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** What a spec chooses about a customer the intake lookup answers with. */
+export interface LookupCustomerSeed {
+  readonly id: number;
+  readonly firstName: string;
+  readonly middleName: string | null;
+  readonly lastName: string;
+  readonly licensePlate: string;
+}
+
+/** A customer as `GET /api/customers/by-name` answers it, owning one vehicle with the given plate. */
+export function lookupCustomerWithVehicle(seed: LookupCustomerSeed): SchedulerCustomerLookupDto {
+  return {
+    id: seed.id,
+    firstName: seed.firstName,
+    middleName: seed.middleName,
+    lastName: seed.lastName,
+    email: `lookup.${String(seed.id)}@example.test`,
+    phoneNumber: null,
+    vehicles: [{
+      id: seed.id * 10,
+      licensePlate: seed.licensePlate,
+      vin: `WVWZZZAUZJW${String(seed.id).padStart(6, '0')}`,
+      brand: 'Skoda',
+      model: 'Fabia',
+      year: 2020,
+      mileageKm: 15000,
+      enginePowerKw: 90,
+      drivetrainType: 'Petrol',
+    }],
+  };
 }

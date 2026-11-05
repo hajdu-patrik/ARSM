@@ -1,13 +1,12 @@
 /** The appointment detail dialog: what it shows, the edit mode with its save rules and payload, and the status confirmation. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { SchedulerPage } from './pages/scheduler.page';
-import { DAY_MS, seedAppointment, toDatetimeLocalValue, todayAt } from './support/appointment-fixtures';
+import { DAY_MS, HOUR_MS, seedAppointment, toDatetimeLocalValue, todayAt } from './support/appointment-fixtures';
 import { recordRequestBodies } from './support/appointment-route-overrides';
 import { signInWithMocks } from './support/sign-in';
-import type { MockApiState } from './support/test-data';
+import { MOCK_MECHANIC_IDS, type MockApiState } from './support/test-data';
 import { toastMessage } from './support/toast';
 
-const HOUR_MS = 60 * 60 * 1000;
 const SCHEDULED_AT = todayAt(9);
 const DUE_AT = new Date(SCHEDULED_AT.getTime() + 2 * DAY_MS);
 const APPOINTMENT_PATH = /^\/api\/appointments\/\d+$/;
@@ -18,10 +17,10 @@ interface UpdateBody {
   readonly version: number;
 }
 
-/** Signs in as an admin with one open appointment and opens its detail dialog. */
+/** Signs in as an admin who is assigned to one open appointment and opens its detail dialog. */
 async function openDetail(page: Page): Promise<{ state: MockApiState; scheduler: SchedulerPage; dialog: Locator }> {
   const state = await signInWithMocks(page, { isAdmin: true });
-  seedAppointment(state, { id: 6901, task: 'Detail task', scheduledAt: SCHEDULED_AT, dueAt: DUE_AT });
+  seedAppointment(state, { id: 6901, task: 'Detail task', scheduledAt: SCHEDULED_AT, dueAt: DUE_AT, mechanicIds: [MOCK_MECHANIC_IDS.admin] });
   const scheduler = new SchedulerPage(page);
   await scheduler.goto();
 
@@ -131,6 +130,18 @@ test.describe('Scheduler detail edit', () => {
     await expect(page.getByRole('dialog', { name: 'Confirm save' })).toHaveCount(0);
     expect(bodies).toHaveLength(0);
     expect(state.appointments[0]?.taskDescription).toBe('Detail task');
+  });
+
+  test('takes at most 200 characters of the task, as the API does', async ({ page }) => {
+    const { dialog } = await openDetail(page);
+    const task = dialog.locator('textarea');
+    await dialog.getByTestId('appointment-detail-edit').click();
+
+    await expect(task).toHaveAttribute('maxlength', '200');
+    await task.fill('');
+    await task.pressSequentially('x'.repeat(205));
+
+    await expect(task).toHaveValue('x'.repeat(200));
   });
 });
 

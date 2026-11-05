@@ -16,6 +16,7 @@ import {
 	mutedMetaTextClass,
 	referenceChipPrimaryWrapButtonClass,
 } from '../../../../utils/formStyles';
+import { plateMatchesLookup } from '../../utils/intakeLookupMatch';
 import { getLookupCustomerName } from './lookupCustomerName';
 import { LOOKUP_RESULTS_PAGE_SIZE, useLookupResultsPage } from './useLookupResultsPage';
 
@@ -32,7 +33,7 @@ interface PlateLookupResultsProps {
 	readonly onSelect: (customer: SchedulerCustomerLookupDto) => void;
 }
 
-/** Lists one row per vehicle whose plate contains the typed plate; Select picks the owner with that vehicle. */
+/** Lists one row per vehicle whose plate contains the typed plate (spaces and hyphens ignored); Select picks its owner. */
 export const PlateLookupResults = memo(function PlateLookupResults({
 	results,
 	query,
@@ -41,7 +42,7 @@ export const PlateLookupResults = memo(function PlateLookupResults({
 }: PlateLookupResultsProps) {
 	const normalizedQuery = query.trim().toUpperCase();
 	const rows = useMemo<PlateLookupRow[]>(() => results.flatMap((owner) => owner.vehicles
-		.filter((vehicle) => vehicle.licensePlate.toUpperCase().includes(normalizedQuery))
+		.filter((vehicle) => plateMatchesLookup(vehicle.licensePlate, normalizedQuery))
 		.map((vehicle) => ({ vehicle, owner }))), [normalizedQuery, results]);
 	const { page, pageResults, setPage } = useLookupResultsPage(rows);
 

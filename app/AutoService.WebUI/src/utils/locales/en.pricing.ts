@@ -144,6 +144,12 @@ export const enPricing = {
       delete: 'Delete line',
       save: 'Save line',
     },
+    customerEmailDialog: {
+      title: 'Customer e-mail address',
+      description: 'The customer has no usable e-mail address on file, so the quote cannot be e-mailed. Enter the address: it is saved to the customer and the quote is sent to it.',
+      confirm: 'Save and send',
+      confirming: 'Sending...',
+    },
     toasts: {
       quoteCreated: 'Draft quote created successfully.',
       quoteUpdated: 'Quote updated successfully.',

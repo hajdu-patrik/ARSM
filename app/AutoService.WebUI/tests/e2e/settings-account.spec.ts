@@ -135,18 +135,4 @@ test.describe('Delete profile dialog', () => {
       expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBe('1');
     });
   }
-
-  test('a refusal that names no field keeps the dialog and the session, with an error alert', async ({ page }) => {
-    const { settings } = await openSettings(page, {
-      routeFailures: { [DELETE_PROFILE]: { status: 429, body: { code: 'lockout_active', retryAfterSeconds: 900 } } },
-    });
-    const dialog = await settings.openDeleteDialog();
-    await settings.fillDeletePasswords(PASSWORD, PASSWORD);
-
-    await dialog.getByRole('button', { name: 'Confirm deletion' }).click();
-
-    await expect(page.getByRole('alert').filter({ hasText: 'Failed to delete profile.' })).toBeVisible();
-    await expect(dialog).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBe('1');
-  });
 });

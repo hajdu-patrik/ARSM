@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Replays issued cookies: a rotated refresh cookie inside the 30 s window is tolerated, but nothing works after logout."""
+"""Replays issued cookies: a rotated refresh cookie inside the 30 s window is tolerated, but nothing works after logout,
+also when the logout carried only the refresh and CSRF cookies."""
 
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ from http_check_support import (  # noqa: E402
 # The replay after the 30 s window (401, chain revoked) is a known gap: it would need a 30 s wait.
 REFRESH_PATH = "/api/auth/refresh"
 VALIDATE_PATH = "/api/auth/validate"
+LOGOUT_PATH = "/api/auth/logout"
 ACCESS_COOKIE_NAME = "__Host-arsm-access-token"
 
 
@@ -67,6 +69,30 @@ def check_replay_after_logout(
     assert_status("stale-cookie-without-live-successor-is-reuse", status, {401}, results)
 
 
+def check_logout_without_access_cookie(base_url: str, origin: str, results: list[StepResult]) -> None:
+    """A logout that carries only the refresh and CSRF cookies (access cookie expired) still ends the session."""
+    other, _ = sign_in(base_url, origin, read_admin_credentials(), "login-second-session", results)
+    refresh, csrf = other.cookie_value(REFRESH_COOKIE_NAME), other.cookie_value(CSRF_COOKIE_NAME)
+    status, _ = HttpClient(base_url, origin).request_headers(
+        "POST",
+        LOGOUT_PATH,
+        {"Cookie": f"{REFRESH_COOKIE_NAME}={refresh}; {CSRF_COOKIE_NAME}={csrf}", CSRF_HEADER_NAME: csrf or ""},
+    )
+    assert_status("logout-without-access-cookie", status, {204}, results)
+
+    # One client for both calls: a wrongly accepted refresh would put a new access cookie into its jar.
+    replayer = HttpClient(base_url, origin)
+    status, _ = replayer.request_headers(
+        "POST",
+        REFRESH_PATH,
+        {"Cookie": f"{REFRESH_COOKIE_NAME}={refresh}; {CSRF_COOKIE_NAME}={csrf}", CSRF_HEADER_NAME: csrf or ""},
+    )
+    assert_status("refresh-after-access-less-logout-is-revoked", status, {401}, results)
+
+    status, _ = replayer.request_json("GET", "/api/profile")
+    assert_status("profile-after-access-less-logout-is-refused", status, {401}, results)
+
+
 def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
     """Rotates a session once, replays the old cookies, logs out, and replays everything again."""
     client, _ = sign_in(base_url, origin, read_admin_credentials(), "login", results)
@@ -107,6 +133,7 @@ def run_checks(base_url: str, origin: str, results: list[StepResult]) -> None:
     status, _ = client.request_json("POST", "/api/auth/logout")
     assert_status("logout", status, {204}, results)
     check_replay_after_logout(base_url, origin, session, results)
+    check_logout_without_access_cookie(base_url, origin, results)
 
 
 if __name__ == "__main__":

@@ -66,11 +66,14 @@ public sealed class UnsafeCookieRequestOriginMiddlewareTests
         Assert.False(nextCalled);
     }
 
-    [Fact]
-    public async Task A_login_post_without_cookies_still_needs_the_allowed_origin()
+    [Theory]
+    [InlineData("/api/auth/login")]
+    [InlineData("/api/auth/login/")]
+    [InlineData("/API/AUTH/LOGIN/")]
+    public async Task A_login_post_without_cookies_still_needs_the_allowed_origin(string path)
     {
-        var (blocked, blockedNext) = await SendAsync("POST", "/api/auth/login", cookies: null, "https://evil.example.test");
-        var (_, allowedNext) = await SendAsync("POST", "/api/auth/login", cookies: null, AllowedOrigin);
+        var (blocked, blockedNext) = await SendAsync("POST", path, cookies: null, "https://evil.example.test");
+        var (_, allowedNext) = await SendAsync("POST", path, cookies: null, AllowedOrigin);
 
         Assert.False(blockedNext);
         Assert.Equal(StatusCodes.Status403Forbidden, blocked.Response.StatusCode);

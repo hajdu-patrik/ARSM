@@ -144,6 +144,12 @@ export const huPricing = {
       delete: 'Tétel törlése',
       save: 'Tétel mentése',
     },
+    customerEmailDialog: {
+      title: 'Az ügyfél e-mail-címe',
+      description: 'Az ügyfélnek nincs használható e-mail-címe, ezért az árajánlat nem küldhető el e-mailben. Adja meg a címet: az ügyfélhez mentjük, és az árajánlat erre a címre megy ki.',
+      confirm: 'Mentés és küldés',
+      confirming: 'Küldés...',
+    },
     toasts: {
       quoteCreated: 'Piszkozat sikeresen létrehozva.',
       quoteUpdated: 'Árajánlat sikeresen frissítve.',

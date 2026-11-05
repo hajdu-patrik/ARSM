@@ -26,6 +26,13 @@ export function useAppointmentDetailActions({
   const [isClaimConfirmOpen, setIsClaimConfirmOpen] = useState(false);
   const [isUnclaimConfirmOpen, setIsUnclaimConfirmOpen] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<AppointmentStatus | null>(null);
+  const [startedStatusVersion, setStartedStatusVersion] = useState(appointmentVersion);
+  const [conflictedStatusVersion, setConflictedStatusVersion] = useState<number | null>(null);
+  // After a failed change the reloaded version becomes the baseline of the open confirmation.
+  const statusVersion =
+    conflictedStatusVersion !== null && appointmentVersion !== conflictedStatusVersion
+      ? appointmentVersion
+      : startedStatusVersion;
   const [selectedNewMechanicId, setSelectedNewMechanicId] = useState('');
 
   const { isPending: isClaiming, mutate: runClaim } = useMutation({
@@ -41,7 +48,10 @@ export function useAppointmentDetailActions({
     },
   });
   const { isPending: isUpdatingStatus, mutate: runStatusChange } = useMutation({
-    mutationFn: (status: AppointmentStatus) => onStatusChange(appointmentId, status, appointmentVersion),
+    mutationFn: (status: AppointmentStatus) => onStatusChange(appointmentId, status, statusVersion),
+    onError: () => {
+      setConflictedStatusVersion(statusVersion);
+    },
     onSuccess: () => {
       setPendingStatusChange(null);
     },
@@ -85,8 +95,10 @@ export function useAppointmentDetailActions({
   }, [runUnclaim]);
 
   const requestStatusChange = useCallback((status: AppointmentStatus) => {
+    setStartedStatusVersion(appointmentVersion);
+    setConflictedStatusVersion(null);
     setPendingStatusChange(status);
-  }, []);
+  }, [appointmentVersion]);
 
   const closeStatusConfirm = useCallback(() => {
     if (!isUpdatingStatus) {
@@ -110,7 +122,8 @@ export function useAppointmentDetailActions({
     isClaiming,
     isUnclaiming,
     isUpdatingStatus,
-    isAssigning: isAssigningMechanic || isUnassigningMechanic,
+    isAssigningMechanic,
+    isUnassigningMechanic,
     isClaimConfirmOpen,
     isUnclaimConfirmOpen,
     pendingStatusChange,

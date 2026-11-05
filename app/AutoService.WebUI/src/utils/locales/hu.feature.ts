@@ -115,6 +115,7 @@ export const huFeature = {
       emailExists: 'Már létezik személy ezzel az e-mail-címmel.',
       phoneExists: 'Már létezik személy ezzel a telefonszámmal.',
       vehicleLicensePlateExists: 'Ez a rendszám már szerepel a rendszerben.',
+      vehicleVinExists: 'Ez a VIN már szerepel a rendszerben.',
       vehicleNumberInvalid: 'A jármű számértékei legyenek érvényes, nem negatív számok.',
     },
   },

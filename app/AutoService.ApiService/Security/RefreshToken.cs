@@ -1,9 +1,13 @@
 using AutoService.ApiService.Domain;
+
 namespace AutoService.ApiService.Security;
 
 /** Persisted refresh token session for cookie-based authentication. Only hashed token values are stored. */
 public sealed class RefreshToken
 {
+    /** Column length of CreatedByUserAgent; a longer client header is cut to fit instead of failing the save. */
+    public const int MaxUserAgentLength = 512;
+
     public int Id { get; private set; }
 
     public int MechanicId { get; private set; }
@@ -39,7 +43,19 @@ public sealed class RefreshToken
         CreatedAtUtc = createdAtUtc;
         ExpiresAtUtc = expiresAtUtc;
         CreatedByIpAddress = createdByIpAddress;
-        CreatedByUserAgent = createdByUserAgent;
+        CreatedByUserAgent = TruncateUserAgent(createdByUserAgent);
+    }
+
+    /** Cuts to the column length without leaving half of a surrogate pair, which Npgsql would refuse to encode. */
+    private static string? TruncateUserAgent(string? userAgent)
+    {
+        if (userAgent is not { Length: > MaxUserAgentLength })
+        {
+            return userAgent;
+        }
+
+        var length = char.IsHighSurrogate(userAgent[MaxUserAgentLength - 1]) ? MaxUserAgentLength - 1 : MaxUserAgentLength;
+        return userAgent[..length];
     }
 
     public void Revoke(DateTime revokedAtUtc, string? replacedByTokenHash = null)

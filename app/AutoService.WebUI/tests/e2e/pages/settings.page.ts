@@ -10,6 +10,12 @@ const DELETE_LABELS: Record<TestLanguage, { section: string; dialog: string; con
   hu: { section: 'Profil törlése', dialog: 'Profil törlésének megerősítése', confirm: 'Törlés megerősítése' },
 };
 
+/** Accessible names of the change-password section and its confirmation dialog per language. */
+const PASSWORD_LABELS: Record<TestLanguage, { section: string; dialog: string }> = {
+  en: { section: 'Change password', dialog: 'Confirm password change' },
+  hu: { section: 'Jelszó módosítása', dialog: 'Jelszóváltoztatás megerősítése' },
+};
+
 /** The Settings page: its sections, the profile fields and the password and delete flows. */
 export class SettingsPage {
   readonly firstName: Locator;
@@ -37,7 +43,7 @@ export class SettingsPage {
     this.pictureSection = page.getByRole('region', { name: 'Profile picture' });
     this.personalSection = page.getByRole('region', { name: 'Personal information' });
     this.companySection = page.getByRole('region', { name: 'Company data' });
-    this.passwordSection = page.getByRole('region', { name: 'Change password' });
+    this.passwordSection = page.getByRole('region', { name: PASSWORD_LABELS[language].section });
     this.deleteSection = page.getByRole('region', { name: DELETE_LABELS[language].section });
   }
 
@@ -63,14 +69,20 @@ export class SettingsPage {
   }
 
   changePasswordButton(): Locator {
-    return this.passwordSection.getByRole('button', { name: 'Change password' });
+    return this.passwordSection.getByRole('button', { name: PASSWORD_LABELS[this.language].section });
   }
 
   /** Requests the password change and confirms it in the dialog. */
   async submitPasswordChange(current: string, next: string, confirm: string): Promise<void> {
     await this.fillPasswords(current, next, confirm);
     await this.changePasswordButton().click();
-    await this.confirmDialog('Confirm password change').getByRole('button', { name: 'Change password' }).click();
+    const labels = PASSWORD_LABELS[this.language];
+    await this.confirmDialog(labels.dialog).getByRole('button', { name: labels.section }).click();
+  }
+
+  /** The profile picture image of the picture section (absent while the initials are shown). */
+  pictureImage(): Locator {
+    return this.pictureSection.getByRole('img', { name: 'Profile picture' });
   }
 
   /** Opens the delete-profile dialog and returns it. */

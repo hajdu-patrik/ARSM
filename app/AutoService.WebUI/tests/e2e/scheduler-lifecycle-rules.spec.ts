@@ -3,12 +3,14 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { SchedulerPage } from './pages/scheduler.page';
 import { seedAppointment } from './support/appointment-fixtures';
 import { signInWithMocks } from './support/sign-in';
-import { MOCK_QUOTE_IDS } from './support/test-data';
+import { MOCK_MECHANIC_IDS, MOCK_QUOTE_IDS } from './support/test-data';
 import type { MockApiState } from './support/test-data';
 import { toastMessage } from './support/toast';
 
 const LIFECYCLE_APPOINTMENT_ID = 6201;
 const ACCEPTED_QUOTE_ID = 7201;
+// The admin is assigned, because only an assigned mechanic is offered the status control.
+const ASSIGNED_ADMIN = [MOCK_MECHANIC_IDS.admin];
 
 /** Adds an accepted quote linked to the lifecycle appointment, cloned from the fixture draft quote. */
 function addAcceptedQuote(state: MockApiState): void {
@@ -43,7 +45,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('Completed is not offered without an accepted quote and the reason is shown', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress' });
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress', mechanicIds: ASSIGNED_ADMIN });
     const dialog = await openDetail(page);
 
     await expect(dialog.getByTestId('appointment-detail-complete-hint')).toBeVisible();
@@ -56,7 +58,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('Completed is offered once an accepted quote exists, and completing it works', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress' });
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'InProgress', mechanicIds: ASSIGNED_ADMIN });
     addAcceptedQuote(state);
     const schedulerPage = new SchedulerPage(page);
     const dialog = await openDetail(page);
@@ -76,7 +78,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('a Completed appointment has no status control and no delete button', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Completed' });
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Completed', mechanicIds: ASSIGNED_ADMIN });
     addAcceptedQuote(state);
     const dialog = await openDetail(page);
 
@@ -87,7 +89,7 @@ test.describe('Scheduler - appointment lifecycle rules', () => {
 
   test('a Cancelled appointment can be moved back to in progress', async ({ page }) => {
     const state = await signInWithMocks(page, { isAdmin: true });
-    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Cancelled' });
+    seedAppointment(state, { id: LIFECYCLE_APPOINTMENT_ID, status: 'Cancelled', mechanicIds: ASSIGNED_ADMIN });
     const schedulerPage = new SchedulerPage(page);
     await openDetail(page);
 

@@ -2,6 +2,7 @@
 import { expect, type Page } from '@playwright/test';
 import { withLifecycleFlags } from './api-mock-data';
 import { corsHeaders, fulfillJson } from './api-mock-response';
+import type { SchedulerCustomerLookupDto } from '../../../src/types/scheduler/scheduler.types';
 import type { MockApiState } from './test-data';
 
 const UPDATES_PATH = '/api/appointments/updates';
@@ -15,8 +16,14 @@ function matchesPath(matcher: PathMatcher, pathname: string): boolean {
   return typeof matcher === 'string' ? pathname === matcher : matcher.test(pathname);
 }
 
-/** Answers the month reads with the appointments of that local month only, like the API (the default mock returns all). */
-export async function serveAppointmentsByMonth(page: Page, state: MockApiState): Promise<void> {
+/** Year and month (1 to 12) an appointment's scheduled instant falls in. */
+type MonthOf = (scheduledAt: Date) => { year: number; month: number };
+
+const localMonthOf: MonthOf = (scheduledAt) => ({ year: scheduledAt.getFullYear(), month: scheduledAt.getMonth() + 1 });
+const utcMonthOf: MonthOf = (scheduledAt) => ({ year: scheduledAt.getUTCFullYear(), month: scheduledAt.getUTCMonth() + 1 });
+
+/** Answers the month reads with the appointments whose month, by `monthOf`, is the requested one. */
+async function serveMonthReads(page: Page, state: MockApiState, monthOf: MonthOf): Promise<void> {
   await page.route((url) => url.pathname === '/api/appointments', async (route) => {
     if (route.request().method() !== 'GET') {
       await route.fallback();
@@ -27,11 +34,33 @@ export async function serveAppointmentsByMonth(page: Page, state: MockApiState):
     const year = Number(params.get('year'));
     const month = Number(params.get('month'));
     const inMonth = state.appointments.filter((appointment) => {
-      const scheduledAt = new Date(appointment.scheduledDate);
-      return scheduledAt.getFullYear() === year && scheduledAt.getMonth() + 1 === month;
+      const placed = monthOf(new Date(appointment.scheduledDate));
+      return placed.year === year && placed.month === month;
     });
 
     await fulfillJson(route, inMonth.map((appointment) => withLifecycleFlags(state, appointment)));
+  });
+}
+
+/** Answers the month reads with the appointments of that local month only (the default mock returns all). */
+export function serveAppointmentsByMonth(page: Page, state: MockApiState): Promise<void> {
+  return serveMonthReads(page, state, localMonthOf);
+}
+
+/** Answers the month reads like the API: an appointment belongs to the UTC month of its scheduled instant. */
+export function serveAppointmentsByUtcMonth(page: Page, state: MockApiState): Promise<void> {
+  return serveMonthReads(page, state, utcMonthOf);
+}
+
+/** Makes `GET /api/customers/by-name` answer these customers whatever was typed, as the server's own matching decides. */
+export async function serveLookupAnswer(page: Page, customers: readonly SchedulerCustomerLookupDto[]): Promise<void> {
+  await page.route((url) => url.pathname === '/api/customers/by-name', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+
+    await fulfillJson(route, customers);
   });
 }
 

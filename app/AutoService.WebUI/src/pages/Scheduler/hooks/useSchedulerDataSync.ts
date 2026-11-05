@@ -16,6 +16,7 @@ import { isScheduledToday } from '../utils/scheduler-datetime';
 import { foldReadStatus, isInitialLoading, type ReadStatus } from './readStatus';
 import {
   EMPTY_APPOINTMENTS,
+  filterAppointmentsToLocalMonth,
   getAdjacentMonthViews,
   getMonthViewOfDate,
   mergeUniqueAppointments,
@@ -33,6 +34,7 @@ interface UseSchedulerDataSyncArgs {
 interface SchedulerAppointments {
   /** Appointments scheduled for today, found in the loaded months. */
   readonly todayAppointments: AppointmentDto[];
+  /** Appointments whose local scheduled date is in the viewed month, taken from the loaded month window. */
   readonly monthAppointments: AppointmentDto[];
   /** Appointments of the calendar grid: the viewed month plus its leading and trailing overflow days. */
   readonly calendarAppointments: AppointmentDto[];
@@ -84,6 +86,10 @@ export function useSchedulerDataSync({
     () => mergeUniqueAppointments(previousMonth, currentMonth, nextMonth),
     [previousMonth, currentMonth, nextMonth],
   );
+  const monthAppointments = useMemo(
+    () => filterAppointmentsToLocalMonth(calendarAppointments, calendarYear, calendarMonth),
+    [calendarAppointments, calendarYear, calendarMonth],
+  );
   const todayAppointments = useMemo(
     () => mergeUniqueAppointments(calendarAppointments, todayMonth).filter(isScheduledToday),
     [calendarAppointments, todayMonth],
@@ -103,7 +109,7 @@ export function useSchedulerDataSync({
 
   return {
     todayAppointments,
-    monthAppointments: currentMonth,
+    monthAppointments,
     calendarAppointments,
     isLoadingMonth: monthReads.some(isInitialLoading),
   };
