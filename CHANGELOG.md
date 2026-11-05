@@ -128,6 +128,13 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `minimatch` 10.2.6 -> 11.0.3 under `eslint`, `@eslint/config-array` and `@typescript-eslint/typescript-estree` for Dependabot alert #2
+  (GHSA-g3hv-75wg-m249, medium, development scope; 2026-11-05, owner decision). All three parents pin `^10` and 10.x has no patched
+  release, so the WebUI `package.json` gets three scoped `overrides` entries next to the jsx-a11y one; a global override would break
+  `eslint-plugin-jsx-a11y`, which needs minimatch 3 and keeps 3.1.5. minimatch 11 brings in `@isaacs/nonrecursive-glob-match`; the three
+  parents only call `new Minimatch(...)`, not the APIs 11.0 removed. `npm ls` is clean, `npm audit` reports 0 vulnerabilities, and
+  `tsc -b`, `eslint .` and the production build pass.
+  _Dev time: ~6 min wall-clock. cost: not measured._
 - `@rolldown/plugin-babel` 0.3.0 -> 0.2.4 (2026-11-05, owner decision). The 0.3.0 of the earlier takeover of Dependabot PR #29 was
   outside the peer range of `@vitejs/plugin-react` 6.1.2 (`^0.1.7 || ^0.2.0`), so a plain `npm install` failed with ERESOLVE and
   `npm ls` flagged it invalid, while `npm ci` passed. 0.2.4 is the newest 0.2.x; `vite.config.ts` is unchanged, `npm ls` is clean again
