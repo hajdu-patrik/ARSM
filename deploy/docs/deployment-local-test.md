@@ -46,8 +46,8 @@ messages it used to write with `--logfile`, in its text format.
 Auto-deploy: `deploy.py` fetches `origin/main` of the repository (`ARSM_REPO` in `tunnel.env`).
 When the commit differs from `deployed-sha.txt` and both GitHub Actions push workflows (`.NET`,
 `Tests`) are green for it (public API, no token), it takes a `pg_dump` backup, builds the API and
-web images from that commit (`git archive`, plus the repository's `deploy/` folder and the local,
-gitignored `/.dockerignore`), recreates `arsm-tunnel-api` and `arsm-tunnel-web`, waits until `/` and
+web images from that commit (`git archive`, plus only the clone's local, gitignored `/.dockerignore`; the
+`deploy/` files come from the commit, never from the clone's working tree, which may lag behind), recreates `arsm-tunnel-api` and `arsm-tunnel-web`, waits until `/` and
 `/alive` answer 200, records the commit and prunes the replaced images. A red commit is never
 deployed (logged once in `deploy.log`), a pending one waits. Manual runs, in the kit folder:
 

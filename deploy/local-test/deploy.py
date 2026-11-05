@@ -169,7 +169,7 @@ def build_images(repo, sha, public_url):
         context = workdir / "src"
         context.mkdir()
         run(["tar", "-xf", str(archive), "-C", str(context)])
-        shutil.copytree(repo / "deploy", context / "deploy", dirs_exist_ok=True)
+        # Only the gitignored allow-list comes from the clone; deploy/ is in the commit, a lagging clone's copy is stale.
         shutil.copy2(repo / ".dockerignore", context / ".dockerignore")
         run(["docker", "build", "-q", "-f", "deploy/api.Dockerfile", "-t", "arsm-tunnel-api", "."], cwd=context)
         run(["docker", "build", "-q", "-f", "deploy/web.Dockerfile", "--build-arg", f"PUBLIC_URL={public_url}",

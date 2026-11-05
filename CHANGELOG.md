@@ -112,6 +112,11 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `teszt.arsm.hu` builds its images from the deployed commit only (2026-11-05): `deploy/local-test/deploy.py` no
+  longer copies the clone's working-tree `deploy/` folder over the `git archive`, which let a lagging clone ship a
+  stale `web.Dockerfile` (the nginx 1.31 bump of PR #25 deployed as 1.30.6). Proven by
+  `tests/Scripts/test_local_test_build_images.py`, which fails on the old code.
+  _Dev time: ~15 min wall-clock. cost: not measured._
 - Endpoint and feature audit of 2026-11-04 fixed in full (2026-11-05): 1 high, 14 medium and 25 low findings, each with a
   regression test (xUnit, HTTP, SQL or Playwright).
   - Session: a reload restores the session (H1, K12); logout works with an expired access token (K2); an admin password
