@@ -1,6 +1,8 @@
-# Monthly, morning Budapest time. The PRs are never merged here: the daily arsm-dependabot-intake task redoes each bump on
-# main as an owner commit and closes the PR (root CLAUDE.md, Branches); that push auto-deploys the test instance.
-# Minor and patch are grouped per ecosystem, a major is its own PR. Security updates ignore the schedule, limit and cooldown.
+# No pull request opens (owner, 2026-11-05): every entry has `open-pull-requests-limit: 0` and security updates are off.
+# The daily arsm-dependabot-intake task finds the updates itself and lands them on main (root CLAUDE.md, Branches).
+
+# The entries below stay as the record of that task's policy: ignore rules, 7-day cooldown, minor and patch grouped per
+# ecosystem, a major on its own. The monthly schedule is kept as the record only, the task runs daily.
 
 version: 2
 updates:
@@ -12,7 +14,7 @@ updates:
       interval: monthly
       time: "07:00"
       timezone: Europe/Budapest
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     # Same age rule as `.npmrc` and the dependency-upgrade skill.
     cooldown:
       default-days: 7
@@ -42,7 +44,7 @@ updates:
       interval: monthly
       time: "07:00"
       timezone: Europe/Budapest
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     # `.npmrc` resolves nothing younger than 7 days, so a shorter cooldown would only fail the lock file update.
     cooldown:
       default-days: 7
@@ -64,14 +66,14 @@ updates:
       - dependency-name: "@typescript/*"
         update-types: ["version-update:semver-major"]
 
-  # The workflows pin major tags (`@v7`), so in practice this entry opens major PRs only.
+  # The workflows pin major tags (`@v7`), so in practice only a newer major tag counts as an update.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
       time: "07:00"
       timezone: Europe/Budapest
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
     groups:
@@ -91,7 +93,7 @@ updates:
       interval: monthly
       time: "07:00"
       timezone: Europe/Budapest
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
     groups:

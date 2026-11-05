@@ -97,9 +97,10 @@ azokra az útvonalakra, amelyeket a változás érint. A tesztjelentések szűrt
    megáll, és a régi verzió szolgál tovább. Ellenőrzés: `curl -sS -o /dev/null -w "%{http_code}\n" https://arsm.hu/alive`
    (token nélkül a kapu 401-et ad), utána bejelentkezés és egy árajánlat-PDF letöltése.
 
-A függőségfrissítések ugyanezt az utat járják: a Dependabot csak PR-t nyit, a napi helyi ütemezett feladat
-(`arsm-dependabot-intake`, `.claude/skills/dependabot-intake/SKILL.md`) pedig minden frissítést saját commitként újra
-elvégez a `main`-en, pusholja (így a `teszt.arsm.hu`-ra kerül), és lezárja a PR-t; élesbe csak a következő kiadással jut.
+A függőségfrissítések ugyanezt az utat járják, pull request nélkül: a Dependabot csak riasztást ad, a napi helyi
+ütemezett feladat (`arsm-dependabot-intake`, `.claude/skills/dependabot-intake/SKILL.md`) pedig először ezeket javítja,
+az elavult csomagokat maga keresi meg, minden frissítést saját commitként a `main`-re tesz és pusholja (így a
+`teszt.arsm.hu`-ra kerül); élesbe csak a következő kiadással jut.
 
 Részletek: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) (a tesztpéldány be- és
 kikapcsolása, mentések) és [deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md) (a `.env` kulcsai, első

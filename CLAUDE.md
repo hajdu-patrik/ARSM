@@ -173,11 +173,14 @@
 - The remote holds only `main`. Never push a work, backup or scratch branch:
   work happens on a local branch, lands on `main` as owner commits through the pre-push gate, and the local
   branch is deleted right after.
-- Dependency updates: Dependabot (`.github/dependabot.yml`) only proposes; its PRs are never merged on GitHub, because
-  the merge commit would not be the owner's (user decision, 2026-11-05). The daily local scheduled task
-  `arsm-dependabot-intake` runs `.claude/skills/dependabot-intake/SKILL.md`: on a clean `main` it redoes each PR's bump
-  with the repo tooling (dependency-upgrade rules), lands it on `main` as an owner commit through the pre-push gate, then
-  closes the PR and deletes its branch; a failed bump leaves the PR open. Other updates run on explicit request the same way.
+- Dependency updates: no pull request opens in this repository (user decision, 2026-11-05): every entry of
+  `.github/dependabot.yml` has `open-pull-requests-limit: 0` and Dependabot security updates are off, so nothing is merged
+  on GitHub (the merge commit would not be the owner's). The daily local scheduled task `arsm-dependabot-intake` runs
+  `.claude/skills/dependabot-intake/SKILL.md`: on a clean `main` it fixes the open Dependabot alerts first, then finds the
+  outdated NuGet and npm packages, Actions tags and Docker base images itself (the rules of `dependabot.yml` and the
+  dependency-upgrade skill) and lands each fix or bump on `main` as an owner commit through the pre-push gate; a leftover
+  Dependabot PR is taken over the same way and closed with its branch. A failed or flagged update stays open and is
+  reported. Other updates run on explicit request the same way.
 - Before deleting a branch, take over anything still useful from it into `main`; never merge back content
   that was removed on purpose.
 

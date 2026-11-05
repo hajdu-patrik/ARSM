@@ -9,6 +9,14 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Dependabot opens no pull request any more (2026-11-05, owner decision). Every entry of `.github/dependabot.yml` has
+  `open-pull-requests-limit: 0` (schedule, cooldown, groups and ignore rules stay as the record of the policy) and the
+  daily `arsm-dependabot-intake` routine no longer waits for PRs: on a clean `main` it fixes the open Dependabot alerts
+  first, finds the outdated NuGet and npm packages, GitHub Actions tags and Docker base images itself under the same rules
+  (ignore list, 7-day age, the dependency-upgrade special cases), lands each fix or bump as a small owner commit through
+  the pre-push gate and still takes over a leftover PR. The root `CLAUDE.md` branch rule and both READMEs say so, and the
+  skill names this checkout's real path.
+  _Dev time: ~20 min wall-clock. cost: not measured._
 - The web image's nginx base moves from the 1.30 stable to the 1.31 mainline line (`nginxinc/nginx-unprivileged`
   1.30-alpine -> 1.31-alpine, today 1.31.7, which carries the October 2026 security fixes), taking over Dependabot PR #25
   (2026-11-05, owner decision).
