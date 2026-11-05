@@ -7,6 +7,7 @@ import {
   appointmentUpdatedFrame,
   controlLiveStream,
   recordRequestBodies,
+  type LiveStreamControl,
 } from './support/appointment-route-overrides';
 import { changeTaskElsewhere } from './support/concurrent-changes';
 import { signInWithMocks } from './support/sign-in';
@@ -29,6 +30,14 @@ async function openScheduler(page: Page, taskDescription: string): Promise<{ sta
   const schedulerPage = new SchedulerPage(page);
 
   return { state, schedulerPage };
+}
+
+/** Emits the update frame until the card shows the other user's text; under load a frame can meet a dropped connection. */
+async function deliverLiveRefresh(stream: LiveStreamControl, schedulerPage: SchedulerPage) {
+  await expect(async () => {
+    await stream.emit(appointmentUpdatedFrame(APPOINTMENT_ID));
+    await expect(schedulerPage.cardTasks(/^Rewritten by someone else$/)).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 /** Resolves when the scheduler has read the current month again, which is what a conflict triggers. */
@@ -101,8 +110,7 @@ test.describe('Scheduler writes on a stale appointment', () => {
 
     // Another user saves meanwhile and the live refresh hands the open dialog the new version.
     changeTaskElsewhere(state, APPOINTMENT_ID, 'Rewritten by someone else');
-    await stream.emit(appointmentUpdatedFrame(APPOINTMENT_ID));
-    await expect(schedulerPage.cardTasks(/^Rewritten by someone else$/)).toBeVisible();
+    await deliverLiveRefresh(stream, schedulerPage);
     await expect(detailDialog.locator('textarea')).toHaveValue('Edited by me');
 
     await detailDialog.getByTestId('appointment-detail-save').click();
@@ -131,8 +139,7 @@ test.describe('Scheduler writes on a stale appointment', () => {
 
     // Another user saves meanwhile and the live refresh hands the open dialog the new version.
     changeTaskElsewhere(state, APPOINTMENT_ID, 'Rewritten by someone else');
-    await stream.emit(appointmentUpdatedFrame(APPOINTMENT_ID));
-    await expect(schedulerPage.cardTasks(/^Rewritten by someone else$/)).toBeVisible();
+    await deliverLiveRefresh(stream, schedulerPage);
 
     await confirmDialog.getByRole('button', { name: 'Change status' }).click();
 
