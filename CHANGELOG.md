@@ -9,6 +9,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- The web image's nginx base moves from the 1.30 stable to the 1.31 mainline line (`nginxinc/nginx-unprivileged`
+  1.30-alpine -> 1.31-alpine, today 1.31.7, which carries the October 2026 security fixes), taking over Dependabot PR #25
+  (2026-11-05, owner decision).
+  _Dev time: ~5 min wall-clock. cost: not measured._
 - WebUI npm minor and patch bumps, taking over Dependabot PR #29 (2026-11-05): `@tanstack/react-query` and
   `-persist-client` 5.105.0, `axios` 1.21.0, `i18next` 26.5.11, `lucide-react` 1.64.0, `react`/`react-dom` 19.3.1,
   `react-i18next` 17.1.9, `react-router` 8.5.1, `zustand` 5.0.16, `@axe-core/playwright` 4.14.0, `@playwright/test`

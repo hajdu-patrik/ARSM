@@ -18,7 +18,7 @@ RUN node extract-csp.mjs dist/index.html > csp.conf
 
 # Unprivileged image (runs as uid 101, listens on 8080); /etc/nginx/templates is rendered with the
 # environment (PORT, API_UPSTREAM) at start-up.
-FROM nginxinc/nginx-unprivileged:1.30-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY deploy/nginx/static-headers.conf /etc/nginx/snippets/static-headers.conf
 COPY deploy/nginx/api-proxy.conf /etc/nginx/snippets/api-proxy.conf
