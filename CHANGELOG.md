@@ -9,6 +9,9 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- `Microsoft.NET.Test.Sdk` 17.14.1 -> 18.11.0 (major) in the unit test project, taking over Dependabot PR #28
+  (2026-11-05); all 1392 unit tests pass unchanged.
+  _Dev time: ~2 min wall-clock. cost: not measured._
 - NuGet minor and patch bumps, taking over Dependabot PR #27 (2026-11-05): `AWSSDK.S3` 4.0.104.7, the ASP.NET Core and
   EF Core packages 10.0.14, `Scalar.AspNetCore` 2.18.5, the five `OpenTelemetry.*` packages of ServiceDefaults 1.20.1 and
   `xunit.runner.visualstudio` 3.1.5; the local `dotnet-ef` tool follows EF Core to 10.0.14.
