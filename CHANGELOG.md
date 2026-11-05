@@ -9,6 +9,9 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- `xunit.runner.visualstudio` 3.1.5 -> 4.0.1 (major) in the unit test project, found by the dependabot-intake routine
+  (2026-11-05); the 4.x runner still runs xUnit.net v2 tests and all 1392 unit tests pass unchanged.
+  _Dev time: ~1 min wall-clock. cost: not measured._
 - NuGet minor and patch bumps found by the dependabot-intake routine (2026-11-05): `libphonenumber-csharp` 9.0.41 -> 9.0.42,
   `SkiaSharp` and `SkiaSharp.NativeAssets.Linux.NoDependencies` 4.153.1 -> 4.154.0 (the bundled Skia moves to m154); NuGet
   regenerates the lock files of the API and the unit test project.
