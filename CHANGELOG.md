@@ -9,6 +9,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- NuGet minor and patch bumps found by the dependabot-intake routine (2026-11-05): `libphonenumber-csharp` 9.0.41 -> 9.0.42,
+  `SkiaSharp` and `SkiaSharp.NativeAssets.Linux.NoDependencies` 4.153.1 -> 4.154.0 (the bundled Skia moves to m154); NuGet
+  regenerates the lock files of the API and the unit test project.
+  _Dev time: ~2 min wall-clock. cost: not measured._
 - Dependabot opens no pull request any more (2026-11-05, owner decision). Every entry of `.github/dependabot.yml` has
   `open-pull-requests-limit: 0` (schedule, cooldown, groups and ignore rules stay as the record of the policy) and the
   daily `arsm-dependabot-intake` routine no longer waits for PRs: on a clean `main` it fixes the open Dependabot alerts
