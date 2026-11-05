@@ -26,6 +26,8 @@ on `main` as owner commits.
 - Never deploy production (`arsm.hu`); a push to `main` only updates `teszt.arsm.hu`, which is intended.
 - Commits: the repository owner is the only author, no `Co-Authored-By`, `Claude-Session` or "generated with" line,
   never `--author`, never a change to `user.name`/`user.email`, never `git push --no-verify`.
+- Never force a result: no `npm install --force` or `--legacy-peer-deps`, no `npm audit fix --force`. A resolution conflict
+  (ERESOLVE), even one `main` already has, is a failure to report.
 - Never read or print `.env`, `.secrets`, `tests/.env` or the local `.mcp.json` files.
 - Temporary files only in the scratchpad or the OS temp directory.
 
@@ -58,8 +60,9 @@ on `main` as owner commits.
    of a candidate is the newest stable release that is at least 7 days old (publish date from the registry):
    - NuGet, in `app`: `dotnet list package --outdated` (`--highest-minor` shows what stays inside the current major); the
      publish date is `catalogEntry.published` in the NuGet registration API.
-   - npm, in `app/AutoService.WebUI`: `npm outdated --json` and `npm view <package> time --json`; `typescript` (the
-     TypeScript 6 alias) and `@typescript/native` (TypeScript 7) are two separate lines.
+   - npm, in `app/AutoService.WebUI`: `npm outdated --json` (it hides releases younger than 7 days, `min-release-age`) and
+     `npm view <package> time --json` for the publish dates; `typescript` (the TypeScript 6 alias) and
+     `@typescript/native` (TypeScript 7) are two separate lines.
    - GitHub Actions: every `uses: <owner>/<repo>@v<major>` in `.github/workflows/*.yml`; the newest release is
      `gh api repos/<owner>/<repo>/releases/latest`; only a newer major tag is a candidate, and the tag must point at a
      release that is at least 7 days old.
@@ -102,8 +105,9 @@ An alert fix, a group or a legacy PR, one at a time, in this order:
    patch group is retried once without the one package the failure clearly names, which is reported as failed.
 4. Add one `CHANGELOG.md` entry under `[Unreleased]` (`### Changed` for a bump), naming the packages with their old and new
    versions, ending with `_Dev time: ~<measured duration> wall-clock. cost: not measured._` (the time since step 1).
-5. Commit (the body says what moved, how it was found and that validate passed) and `git push origin main`. The pre-push
-   gate runs every stage; it needs Docker Desktop. If the push is refused, undo the local commit with
+5. Commit (`git add -u`: the build also rewrites the lock file of a project that references the changed one; the body says
+   what moved, how it was found and that validate passed) and `git push origin main`. The pre-push gate runs every stage; it
+   needs Docker Desktop. If the push is refused, undo the local commit with
    `git reset --hard origin/main` (allowed only because the preconditions found a clean tree) and report it as failed.
    After an Actions bump also report the CI run of that commit (`gh run list --commit <sha>`,
    `gh run watch <id> --exit-status`); a red run is reported, never reverted on your own.

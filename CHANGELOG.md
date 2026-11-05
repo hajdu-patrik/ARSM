@@ -22,8 +22,9 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
   first, finds the outdated NuGet and npm packages, GitHub Actions tags and Docker base images itself under the same rules
   (ignore list, 7-day age, the dependency-upgrade special cases), lands each fix or bump as a small owner commit through
   the pre-push gate and still takes over a leftover PR. The root `CLAUDE.md` branch rule and both READMEs say so, and the
-  skill names this checkout's real path.
-  _Dev time: ~20 min wall-clock. cost: not measured._
+  skill names this checkout's real path. Its first real run (the two entries above) added two rules: no forced npm
+  install (`--force`, `--legacy-peer-deps`), and every lock file the build rewrites is committed with the bump.
+  _Dev time: ~40 min wall-clock, the three pre-push gates included. cost: not measured._
 - The web image's nginx base moves from the 1.30 stable to the 1.31 mainline line (`nginxinc/nginx-unprivileged`
   1.30-alpine -> 1.31-alpine, today 1.31.7, which carries the October 2026 security fixes), taking over Dependabot PR #25
   (2026-11-05, owner decision).
