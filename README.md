@@ -1,299 +1,124 @@
 # ARSM - Appointment and Resource Scheduling Management
 
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/Language-C%23_14-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=flat&logo=vite&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
-![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
 
-ARSM is a workshop scheduling and operations app for auto service teams. It helps mechanics and admins organize appointments, claim work, and track repair progress in one responsive dashboard.
+ARSM is a workshop scheduling and operations app for auto service teams: mechanics and admins
+organize appointments, claim work, price jobs and send quotes in one responsive dashboard.
 
-## Language
+Hungarian version: [README(HU).md](README(HU).md)
 
-- English: this file
-- Hungarian: [README(HU).md](README(HU).md)
+## Features
 
-## Key Features
+- Appointment intake, monthly calendar and day view, claim/assign flows, live updates (SSE)
+- Customers and vehicles with repair history
+- Parts and labour catalog with VAT-aware net/gross prices
+- Quotes per vehicle: part and labour lines, Draft -> Sent -> Accepted/Rejected, PDF, e-mail to the customer
+- Company results by year and month
+- Mechanic and admin roles, admin password reset, account lockout, CSRF and rate limits
 
-- Appointment intake and workshop scheduling
-- Claim and unclaim flows for mechanics
-- Real-time status updates across active jobs
-- Monthly calendar view plus selected-day summary
-- Role-aware behavior for mechanic and admin users
-- Parts and labor pricing catalog with VAT-aware net/gross rates
-- Price quotes per vehicle, with part/labor lines, a status lifecycle, and PDF export
-- Company results reporting by year and month
-
-## Technology Stack
+## Technology
 
 | Layer | Technologies |
 | ----- | ------------ |
-| Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
+| Backend | .NET 10, ASP.NET Core, EF Core, ASP.NET Core Identity, JWT cookies, QuestPDF |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Database | PostgreSQL |
-| Orchestration | .NET Aspire (`AutoService.AppHost`) |
+| Data | PostgreSQL (18 locally, 17 in production), S3-compatible object store (RustFS locally, Azure Blob in production) |
+| Orchestration | .NET Aspire (`app/AutoService.AppHost`) |
 
-## Repository Layout
+## Repository layout
 
-- `app/AutoService.ApiService`: API endpoints, domain model, EF Core, authentication
-- `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orchestration (PostgreSQL + RustFS + ApiService + WebUI)
-- `app/AutoService.ServiceDefaults`: shared service defaults and resilience setup
-- `tests/API`: HTTP endpoint test suites (`.http`)
-- `tests/Database`: SQL validation suites (`.sql`, read-only policy)
-- `tests/AutoService.UnitTests`: xUnit tests of the pricing calculators and the session cutoffs (`dotnet test`)
-- `docs`: written deliverables (the AI documents in English and Hungarian, the laboratory report), as `docx` and `pdf`
-- `scripts`: automation (local test runner, `validate.py` gate, pre-push gate, `deploy-azure.py`)
-- `deploy`: deployment kits: the Azure production kit (`deploy/azure`, images, `deploy/gate` token gate) and the local test instance kit (`deploy/local-test`); guides in `deploy/docs`
+| Path | Content |
+| ---- | ------- |
+| `app/AutoService.ApiService` | API, domain model, EF Core, authentication |
+| `app/AutoService.WebUI` | React frontend and its Playwright E2E tests |
+| `app/AutoService.AppHost`, `app/AutoService.ServiceDefaults` | Aspire orchestration and shared service defaults |
+| `tests` | HTTP (`tests/API`), SQL (`tests/Database`), xUnit (`tests/AutoService.UnitTests`) and script tests |
+| `scripts` | `validate.py` gate, `pre-push.py`, local test runner, `deploy-azure.py` |
+| `deploy` | Azure production kit, local test instance kit, token gate; guides in `deploy/docs` |
 
----
+## Run locally
 
-## Quick Start (Recommended)
+Prerequisites: .NET 10 SDK, Node.js 24+, Python 3.11+, Docker Desktop.
 
-### Prerequisites
-
-- .NET 10 SDK
-- Node.js 24+ with npm (CI pins Node 26)
-- Python 3.11+ for the local test runner
-- Docker Desktop running locally (required for the PostgreSQL and RustFS containers via AppHost)
-
-### 1) Create local API settings
-
-Use the committed template to create your local, gitignored API config:
-
-```powershell
-Copy-Item app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
-```
-
-or
-
-```bash
-cp app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
-```
-
-Then update placeholder values in `appsettings.Local.json`, especially:
-
-- `JwtSettings.Secret`
-- `ConnectionStrings.AutoServiceDb`
-- `Bootstrap.Admin.*` (optional: creates the first admin on an empty database; the API seeds no data, so a fresh database has no accounts, customers, vehicles or catalog rows)
-- `CompanyProfile.*` (name, address, postal code, city, tax number, phone, email)
-
-`CompanyProfile` is the workshop identity printed on the quote PDF letterhead. It lives in the
-database (single-row `companyprofiles` table) and an Admin edits it in the WebUI Settings page
-(`GET`/`PUT /api/admin/company-profile`). The configuration section is only a one-time seed: on
-startup, when the table has no row, it is filled from `CompanyProfile.*` / `CompanyProfile__*`;
-once a row exists the configuration is ignored. While the table and the configuration are both
-empty (or a field is missing or a placeholder) the API refuses to start. Real company data stays
-out of the repository; use the gitignored local file or `CompanyProfile__*` environment variables.
-
-The quote PDF embeds Noto Sans (SIL Open Font License 1.1, licence text in
-`app/AutoService.ApiService/Assets/Fonts/OFL.txt`) so Hungarian accents render in containers that
-ship no fonts.
-
-### 2) Restore tools and install frontend dependencies
+1. Copy `app/AutoService.ApiService/appsettings.Local.template.json` to `appsettings.Local.json` (gitignored) and fill in
+   `JwtSettings.Secret`, `ConnectionStrings.AutoServiceDb`, `CompanyProfile.*` (quote letterhead seed) and optionally
+   `Bootstrap.Admin.*` (first admin on an empty database; the API seeds no other data).
+2. Set the object store secrets once:
+   `dotnet user-secrets set "Parameters:minio-user" "<user>"` and `"Parameters:minio-password" "<password>"` in `app/AutoService.AppHost`.
+3. Install and start:
 
 ```bash
 dotnet tool restore --tool-manifest dotnet-tools.json
-cd app/AutoService.WebUI
-npm install
-cd ../..
+cd app/AutoService.WebUI && npm install && cd ../..
+cd app && dotnet run --project AutoService.AppHost
 ```
 
-### 3) Run the full local stack
+The AppHost starts PostgreSQL, RustFS, the API and the Vite dev server with `VITE_API_URL` injected.
 
-```bash
-cd app
-dotnet run --project AutoService.AppHost
-```
+## Checks and tests
 
-AppHost starts and wires:
-
-- PostgreSQL
-- RustFS, the local S3-compatible object store for profile pictures (it replaced MinIO, whose images were withdrawn in 2026-09; the resource keeps the `minio` name) (API on `Ports:MinioApi`, web console on `Ports:MinioConsole`)
-- `AutoService.ApiService`, which receives `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId`, and `ObjectStorage__SecretAccessKey` from the `minio` (RustFS) resource
-- `AutoService.WebUI` development server with `VITE_API_URL` injected from the API endpoint
-
-The object store needs two Aspire secret parameters (named `minio-*` for compatibility). Set them once per machine:
-
-```bash
-cd app/AutoService.AppHost
-dotnet user-secrets set "Parameters:minio-user" "<local-minio-user>"
-dotnet user-secrets set "Parameters:minio-password" "<local-minio-password>"
-```
-
-Hosted environments point `ObjectStorage__ServiceUrl` at the real S3-compatible endpoint instead,
-keep `ObjectStorage:AutoCreateBucket` disabled, and provision the private bucket up front. Azure Blob
-Storage is supported as well (`ObjectStorage__Provider=AzureBlob`): the API authenticates with a user-assigned
-managed identity (`ObjectStorage__ServiceUrl` is the blob account endpoint, `ObjectStorage__ManagedIdentityClientId`
-the identity's client id), which the Azure kit grants Storage Blob Data Contributor on the picture container only,
-so no storage account key is in any app secret.
-
-Cloudflare R2 additionally needs `ObjectStorage:DisablePayloadSigning` and
-`ObjectStorage:DisableDefaultChecksumValidation` set to `true`: R2 does not support the streaming
-SigV4 implementation or the CRC32 checksum that AWSSDK.S3 v4 sends by default, and uploads fail
-without them. RustFS (like MinIO before it) keeps both `false`.
-
-## Fixed Public Test Hostname (Cloudflare Named Tunnel)
-
-A Cloudflare named tunnel exposes the same reverse-proxy setup on a fixed hostname of your own domain. The URL is stable, so the WebUI is built once. It is for testing only, never for production.
-
-This project's own instances: production is `https://arsm.hu` on Azure ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); the local test instance `https://teszt.arsm.hu` is this setup with auto-deploy and a token gate, kit in [deploy/local-test](deploy/local-test), currently on. How it works and how to turn it on and off: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md).
-
-### Requirements
-
-The development stack started by the AppHost cannot be shared this way: the dev WebUI calls the API at its local `VITE_API_URL` (a `localhost` address), which a remote browser cannot reach. Share a setup where the built WebUI and the API answer on one origin:
-
-- a reverse proxy serves the production build of the WebUI and forwards `/api` to the ApiService, and the tunnel points at that proxy (`<proxy port>`);
-- the WebUI is built with `VITE_API_URL` and `VITE_SITE_URL` set to `https://<hostname>`; the build pins that origin in the Content-Security-Policy `connect-src`;
-- the API lists `https://<hostname>` in `Cors:AllowedOrigins` (cookie-bearing mutations from any other `Origin` are rejected) and trusts the proxy through `ForwardedHeaders:KnownProxies` or `ForwardedHeaders:KnownNetworks`, so it sees the original `https` scheme that the `__Host-` session cookies need.
-
-### Steps
-
-1. Create a Cloudflare account and add `<domain>` (Free plan). Check that the imported DNS records, including MX and SPF, survived.
-2. At the registrar, switch the nameservers to the two Cloudflare ones and wait until the zone is Active (minutes to hours; resolvers may disagree meanwhile).
-3. Run `cloudflared tunnel login`. It creates the origin certificate `~/.cloudflared/cert.pem`, which is scoped to one zone. When several domains are used on one machine, keep one certificate per zone and pass `--origincert <file>`; otherwise `route dns` puts the record into the wrong zone.
-4. Create the tunnel: `cloudflared tunnel create --credentials-file <path> <tunnel-name>`. Keep the credentials file private.
-5. Point the hostname at it: `cloudflared tunnel route dns <tunnel-name> <hostname>`.
-6. Write a config file and check it with `cloudflared tunnel --config <file> ingress validate`:
-
-   ```yaml
-   tunnel: <tunnel-name>
-   credentials-file: <path>
-   ingress:
-     - hostname: <hostname>
-       service: http://127.0.0.1:<proxy port>
-     - service: http_status:404
-   ```
-
-7. Run the tunnel: `cloudflared tunnel --no-autoupdate --config <file> run`.
-8. Build the WebUI with `VITE_API_URL` and `VITE_SITE_URL` set to `https://<hostname>` and set `Cors:AllowedOrigins` to the same value (see Requirements). This is needed only once: the URL is fixed, so a restart needs no rebuild.
-9. Accounts: on an empty database the first admin can be created from the `Bootstrap:Admin` configuration (`Email`, `Password`, `FirstName`, `LastName`, `Specialization`, `Expertise` array; optional `MiddleName`, `PhoneNumber`; environment form `Bootstrap__Admin__*`). It runs only while no admin exists, never touches existing accounts, and the `Bootstrap__Admin__Password` setting should be removed once the admin exists. Further users are registered in the app by the admin; share each user's credentials privately.
-10. Optional autostart on Windows: register a scheduled task that runs the command of step 7 at logon (`Register-ScheduledTask` with an interactive logon, wrapped in `conhost.exe --headless` so no console window opens, and restart on failure; no administrator rights needed), or run `cloudflared service install` (needs an administrator shell).
-
-### Limits
-
-| Limit | Detail |
-| ----- | ------ |
-| Availability | The link works only while your machine, Docker and `cloudflared` are running. |
-| Access | Anyone who has the link can reach the app's sign-in page. |
-| Stopping | Stop the tunnel and the link stops working. Never kill every `cloudflared.exe` when other tunnels run on the machine; stop only this one. |
-
-## Useful Commands
-
-| Task | Command |
+| What | Command |
 | ---- | ------- |
-| Build AppHost | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
-| Build frontend | `cd app/AutoService.WebUI && npm run build` |
-| Lint frontend | `cd app/AutoService.WebUI && npm run lint` |
-| Run all local tests | `python scripts/run-local-test-suite.py` |
-| Run selected local tests | `python scripts/run-local-test-suite.py playwright http sql` |
-| Install the pre-push hook (once) | `git config core.hooksPath .githooks` |
-| Run the pre-push gate | `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <stage>]` |
+| Fast gate on the changed files (type check, lint, build, size limits, no-shadow rule) | `python scripts/validate.py` |
+| Pre-push gate, the same stages as CI (install once: `git config core.hooksPath .githooks`) | `python scripts/pre-push.py` |
+| Local suites against a running AppHost | `python scripts/run-local-test-suite.py [playwright\|http\|sql]` |
+| Unit tests | `dotnet test` in `app/` |
 
-NuGet restore is lock-file based: `app/Directory.Build.props` enables locked restores, AppHost keeps RID-specific lock files for Aspire Dashboard/DCP packages on Linux and macOS, and CI runs `dotnet restore --locked-mode`.
+Every push runs the pre-push gate; GitHub Actions repeats it (`.github/workflows/`), running the heavy jobs only for
+the paths a change touches. Test reports go to `tests/.artifacts/` in sanitized form.
 
-GitHub Actions: `.github/workflows/dotnet.yml` builds and checks backend and frontend on Linux (`ubuntu-latest`) and runs the repository gate (`python scripts/validate.py --all --skip-build`) in its `repo-gate` job; `.github/workflows/tests.yml` runs the Playwright suite on the production bundle against the mocked API and the HTTP and SQL suites against PostgreSQL and RustFS containers with per-run generated credentials. Both workflows start with a `changes` job (`scripts/ci-changes.py`): `repo-gate` runs on every push, the other jobs only when the diff since the last commit that workflow passed on touches their paths.
+## Environments and releases
 
-Local GitHub Actions smoke checks use [.actrc](.actrc), which maps `ubuntu-latest` to the Linux act container so `act -j backend-build`, `act -j frontend-build` and `act -j repo-gate` run locally.
+| | `https://teszt.arsm.hu` (test) | `https://arsm.hu` (production) |
+| --- | --- | --- |
+| Runs on | The owner's Windows machine, Docker containers behind a Cloudflare tunnel | Azure Container Apps, PostgreSQL Flexible Server, Blob Storage |
+| Updated | Automatically from every new `origin/main` commit | Manually, from a commit you choose |
+| Data | Its own test database (daily `pg_dump` backups) | Separate production database |
+| Access | Token gate (`GATE_TOKEN`) | Token gate sidecar (`ARSM_PROD_GATE_TOKEN`, a different token) |
 
-## Running Tests
+How a change goes out:
 
-Use the Python runner from repository root. It loads `.secrets` and `tests/.env`, runs selected suites, and writes a sanitized summary to `tests/.artifacts/test-suite-summary.json`.
-Each child command has a 300-second timeout by default; set `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` for slower local runs.
+1. **Develop and check.** Work on a local branch, run `python scripts/validate.py`, add a `CHANGELOG.md` entry, then
+   bring the commit onto `main`. The remote holds only `main`.
+2. **Push = test release.** `git push origin main` first runs the pre-push gate (validate, backend, frontend, E2E, HTTP
+   and SQL suites on throwaway containers). Once pushed, the scheduled task of the test kit (`deploy/local-test/deploy.py`,
+   every 5 minutes) sees the new commit, backs up the test database, builds the API and web images from that commit
+   (`git archive`), recreates the two app containers and waits until `/` and `/alive` answer. The API applies new
+   migrations at startup, so `teszt.arsm.hu` runs the new version within a few minutes.
+3. **Production release.** After checking it on `teszt.arsm.hu`, run from the clone that holds the production `.env`
+   (`az login` first): `python scripts/deploy-azure.py release --commit <sha>`. It builds and pushes the three images
+   tagged with the commit, runs the `arsm-migrate` job (migrations and the `arsm_app` role) and only after it succeeds
+   rolls `arsm-api` and `arsm-web` to new revisions. A failed migration stops the release with the old version still
+   serving. Check with `curl -sS -o /dev/null -w "%{http_code}\n" https://arsm.hu/alive` (401 from the gate without the
+   token), then sign in and try a quote PDF.
 
-```bash
-python scripts/run-local-test-suite.py
-```
+Dependency updates follow the same path: Dependabot only opens PRs, and the daily local scheduled task
+`arsm-dependabot-intake` (`.claude/skills/dependabot-intake/SKILL.md`) redoes each bump on `main` as an owner commit,
+pushes it (so it reaches `teszt.arsm.hu`) and closes the PR; production still gets it only with the next release.
 
-Run one or more suites by name:
+Details: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) (turning the test instance on
+and off, backups) and [deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md) (the `.env` keys, first-time
+setup, alerts, operations).
 
-```bash
-python scripts/run-local-test-suite.py playwright
-python scripts/run-local-test-suite.py http sql
-```
+## Configuration and secrets
 
-Suite targets:
+- Secrets never go into git: API settings in `appsettings.Local.json`, test values in `tests/.env` and `.secrets`,
+  deployment and MCP values in the root `.env`; each has a tracked template (`*.template.json`, `*.example`).
+- Production requires real `AllowedHosts` and `Cors:AllowedOrigins`, HTTPS and `Deployment:RateLimiterTopology=SingleInstance`
+  (rate limits, login bans and session cutoffs are in-process).
+- AI SQL tooling uses the read-only `ai_agent_test_user` (`SELECT` only).
 
-- `playwright`: runs the WebUI Playwright E2E suite (`PORT=5173` default).
-- `http`: runs `tests/API/_setup` first (test-account and fixture provisioning), then all `tests/API/**/*.http` suites through HTTPYAC.
-- `sql`: runs all `tests/Database/**/*.sql` files against the running PostgreSQL container with the read-only SQL user.
+## AI-assisted development
 
-The backend unit tests (`tests/AutoService.UnitTests`, xUnit: the pricing calculators and the session cutoffs) need no stack: `dotnet test` in `app/` runs them, as the pre-push gate and CI do.
-
-The Python automation scripts have a stdlib unittest suite in `tests/Scripts`, run with `python -m unittest discover -s tests/Scripts` from the repository root; `python scripts/pre-push.py` (backend stage) and the `repo-gate` job of `.github/workflows/dotnet.yml` run it automatically.
-
-Before full-suite runs, start Aspire in another terminal:
-
-```bash
-cd app
-dotnet run --project AutoService.AppHost
-```
-
-Reports under `tests/.artifacts/` are gitignored and intended to remain sanitized for local debugging and AI review.
-
-### Pre-push Gate
-
-Every push runs `python scripts/pre-push.py` through the tracked `.githooks/pre-push` hook; enable it once with `git config core.hooksPath .githooks`. It mirrors CI (stages `validate`, `backend`, `frontend`, `e2e`, `api-suites`, fail fast) and runs the HTTP and SQL suites on throwaway `arsm-prepush-postgres` and `arsm-prepush-s3` containers with your local secrets, removing them afterwards. The gate uses its own ports (PostgreSQL 15432, RustFS 19000, API 15200), so a running Aspire stack can stay up; trust the ASP.NET development certificate once (`dotnet dev-certs https --trust`) because the HTTP checks verify TLS. `--skip-e2e`, `--skip-api-suites` and `--only <stage>` are for local debugging; `git push --no-verify` is an exception only. The CI repo gate is `python scripts/validate.py --all --skip-build`.
-
-### AI Test Workflow
-
-For full-test investigation, AI agents should run:
-
-```bash
-python scripts/run-local-test-suite.py
-```
-
-Then inspect `tests/.artifacts/test-suite-summary.json` and act in the matching layer (add missing coverage, fix stale tests, or investigate failures). Agents must not publish raw `.env` values, `.secrets` contents, connection strings, cookies, tokens, absolute local paths, or raw tool logs.
-
-## Configuration and Secrets
-
-- Never commit secrets, passwords, or local connection strings.
-- Backend local secrets belong in `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
-- WebUI local env values belong in `app/AutoService.WebUI/.env.development` (template: `app/AutoService.WebUI/.env.development.template`).
-- API test runtime values belong in `tests/.env` (template: `tests/.env.example`).
-  - `ARSM_TEST_WEBUI_ORIGIN` must match a configured `Cors:AllowedOrigins` value because cookie-auth unsafe HTTP tests send an `Origin` header.
-  - `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD` are the first admin from `Bootstrap:Admin`; `ARSM_TEST_CUSTOMER_EMAIL` is the fixture customer that `tests/API/_setup/ensure-test-fixtures.http` creates, together with its vehicles, a catalog part and labor type and an anchor quote, on an empty database.
-- Playwright runtime secrets and the read-only SQL connection string belong in `.secrets` at repository root (gitignored; template: `.secrets.example`); local E2E runs also set non-secret `PORT=5173` for Vite serve mode.
-- MCP local runtime configs are `.claude/.mcp.json` and `.vscode/mcp.json` (both gitignored), created from `.claude/.mcp.template.json` and `.vscode/mcp.template.json`.
-- The MCP read-only PostgreSQL URI belongs in `.env` at repository root (gitignored; template: `.env.example`); the tracked MCP templates reference it as `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}`, while the local gitignored MCP configs hold the resolved URI.
-- MCP templates stay portable placeholder files; local gitignored MCP profiles may hold the concrete read-only PostgreSQL URI for `ai_agent_test_user`.
-
-## Deployment Security Notes
-
-- Vite/Aspire WebUI hosting is local-development only. The Vite dev server binds to `localhost` by default; use `VITE_DEV_HOST` only for an explicit local LAN/container debugging opt-in.
-- Production API hosting must configure `AllowedHosts` and `Cors:AllowedOrigins` with real non-localhost hosts. Non-Development startup rejects wildcard, localhost, non-HTTPS, malformed, or path-bearing WebUI origins.
-- Auth rate limits, login bans, the warmed token denylist and the session cutoffs are process-local. Non-Development deployments must set `Deployment:RateLimiterTopology=SingleInstance` only when exactly one ApiService instance is running; use distributed implementations before scaling out.
-- The production WebUI static host or reverse proxy must enforce security headers because Vite is not the release server. Required headers include `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` or equivalent frame protection, and `Strict-Transport-Security` when TLS terminates there.
-- The production WebUI static host should also enforce cache headers: `index.html` is not cached, Vite `assets/` files (content-hashed) are cached for one year with `immutable`, public images/icons are cached for 30 days with ETag revalidation, and the manifest and `robots.txt` use a shorter one-day cache.
-
-## Contributor Notes (AI Workflow)
-
-- The agent workflow is the saved `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): an orchestrator
-  plan that splits the task into work packages with disjoint owned paths (skipped for trivial single-area
-  tasks), models and efforts routed per package and step by the trirouter (any of haiku, sonnet, opus,
-  fable; a documented fallback applies only when a router result is missing), packages implemented in parallel (up to 8 at once, scaled
-  by difficulty), each package reviewed as soon as it finishes (coding principles, UI/UX audit), docs sync
-  beside one deterministic gate, then targeted tests.
-- `frontend` applies the `ui-ux-style-profile` policy itself; the profile audits the diff afterwards.
-- `python scripts/validate.py` is the gate: type check, lint, build, size limits and the no-shadow rule
-  (Tailwind `ring-*` counts as a shadow) on the changed files, plus security remediation (`npm audit fix`,
-  `npm audit signatures`, vulnerable .NET packages) when a package manifest changes.
-- `python scripts/select-e2e-specs.py --run` runs only the Playwright specs affected by the diff.
-- Detailed policy files:
-  - Root: `CLAUDE.md`
-  - Area-specific rules: `app/*/CLAUDE.md`, `tests/CLAUDE.md`, `scripts/CLAUDE.md`, `deploy/CLAUDE.md`
-
-## SQL Read-Only Policy for AI Validation
-
-- Dedicated AI SQL account: `ai_agent_test_user`
-- Allowed statements: `SELECT` only
-- Disallowed through AI tooling: `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`
+The repository is developed with Claude Code. The rules are in `CLAUDE.md` and the area `CLAUDE.md` files; larger tasks
+run through the `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): an orchestrator splits the task into work
+packages, agents implement and review them in parallel on models picked by the trirouter, then the `validate.py` gate
+and the tests matching the diff run.
 
 ## License
 
-This repository is not MIT-licensed.
-
-See [LICENSE.md](LICENSE.md) for the Custom Copyright Notice and Academic Use Policy.
+This repository is not MIT-licensed. See [LICENSE.md](LICENSE.md) for the Custom Copyright Notice and Academic Use Policy.

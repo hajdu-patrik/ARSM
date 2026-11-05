@@ -9,6 +9,11 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Dependabot PRs are taken over onto `main` (2026-11-05): a daily local scheduled task runs the new
+  `.claude/skills/dependabot-intake` skill, which redoes each bump with the repo tooling as an owner commit, pushes it
+  through the pre-push gate and closes the PR with its branch; the root `CLAUDE.md` branch rule says so. `README.md` and
+  `README(HU).md` are cut to the essentials and explain how a change reaches `teszt.arsm.hu` and `arsm.hu`.
+  _Dev time: ~30 min wall-clock. cost: not measured._
 - CI E2E on the production bundle (2026-11-01). The `e2e-playwright` job builds with `vite build` and runs the specs
   through `vite preview` with 4 workers, so the real CSP and Trusted Types apply; a local run and the pre-push gate
   stay on the Vite dev server with 3 workers. Trial on 4 cores: 15.9 minutes before, 7.9 after, all 629 specs passing.

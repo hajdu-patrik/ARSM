@@ -173,8 +173,11 @@
 - The remote holds only `main`. Never push a work, backup or scratch branch:
   work happens on a local branch, lands on `main` as owner commits through the pre-push gate, and the local
   branch is deleted right after.
-- Dependency updates run only on explicit request, with no update bot: bump, regenerate the lock files with the
-  repo tooling, and land the result on `main` as owner commits through the pre-push gate.
+- Dependency updates: Dependabot (`.github/dependabot.yml`) only proposes; its PRs are never merged on GitHub, because
+  the merge commit would not be the owner's (user decision, 2026-11-05). The daily local scheduled task
+  `arsm-dependabot-intake` runs `.claude/skills/dependabot-intake/SKILL.md`: on a clean `main` it redoes each PR's bump
+  with the repo tooling (dependency-upgrade rules), lands it on `main` as an owner commit through the pre-push gate, then
+  closes the PR and deletes its branch; a failed bump leaves the PR open. Other updates run on explicit request the same way.
 - Before deleting a branch, take over anything still useful from it into `main`; never merge back content
   that was removed on purpose.
 

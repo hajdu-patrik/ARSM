@@ -1,4 +1,5 @@
-# Monthly, morning Budapest time: a merge to main auto-deploys the test instance and a WebUI PR runs the whole E2E suite.
+# Monthly, morning Budapest time. The PRs are never merged here: the daily arsm-dependabot-intake task redoes each bump on
+# main as an owner commit and closes the PR (root CLAUDE.md, Branches); that push auto-deploys the test instance.
 # Minor and patch are grouped per ecosystem, a major is its own PR. Security updates ignore the schedule, limit and cooldown.
 
 version: 2

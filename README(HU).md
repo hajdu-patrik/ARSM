@@ -1,297 +1,126 @@
 # ARSM - Appointment and Resource Scheduling Management
 
 ![.NET](https://img.shields.io/badge/Backend-.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/Language-C%23_14-239120?style=flat&logo=csharp&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=flat&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=flat&logo=vite&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
 ![Aspire](https://img.shields.io/badge/Orchestration-.NET_Aspire-512BD4?style=flat&logo=dotnet&logoColor=white)
-![EF Core](https://img.shields.io/badge/ORM-EF_Core-512BD4?style=flat&logo=nuget&logoColor=white)
 
-Az ARSM egy autószervizeknek készült műhelyütemező és napi működést támogató alkalmazás. Segít a szerelőknek és adminoknak az időpontok kezelésében, a munkák felvételében, és a javítási folyamat követésében egy reszponzív felületen.
+Az ARSM autószervizeknek készült ütemező és műhelykezelő alkalmazás: a szerelők és az adminok egy reszponzív
+felületen kezelik az időpontokat, vállalják a munkákat, áraznak és árajánlatot küldenek.
 
-## Nyelv
+English version: [README.md](README.md)
 
-- Magyar: ez a fájl
-- Angol: [README.md](README.md)
+## Funkciók
 
-## Fő funkciók
+- Időpont-felvétel, havi naptár és napi nézet, munka vállalása és kiosztása, élő frissítés (SSE)
+- Ügyfelek és járművek javítási előzményekkel
+- Alkatrész- és munkadíj-katalógus ÁFA-tudatos nettó és bruttó árral
+- Árajánlat járművenként: alkatrész- és munkadíjtételek, Piszkozat -> Elküldve -> Elfogadva/Elutasítva, PDF, e-mail az ügyfélnek
+- Cégeredmény évre és hónapra
+- Szerelő és admin szerepkör, admin jelszó-visszaállítás, fiókzárolás, CSRF-védelem és kéréskorlátok
 
-- Időpontfelvétel és műhelyszintű ütemezés
-- Szabad munkák felvétele és leadása szerelői oldalon
-- Állapotfrissítés aktív munkákhoz
-- Havi naptárnézet és kijelölt napi összegzés
-- Szerepkör-alapú működés (szerelő és admin)
-- Alkatrész- és munkatípus-törzs ÁFA-alapú nettó/bruttó árakkal
-- Járművenkénti árajánlatok alkatrész- és munkatételekkel, állapot-életciklussal és PDF exporttal
-- Cégeredmény kimutatás év és hónap szerint
-
-## Technológiai stack
+## Technológia
 
 | Réteg | Technológiák |
 | ----- | ------------ |
-| Backend | .NET 10, ASP.NET Core Web API, EF Core, ASP.NET Core Identity, JWT |
+| Backend | .NET 10, ASP.NET Core, EF Core, ASP.NET Core Identity, JWT sütik, QuestPDF |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Adatbázis | PostgreSQL |
-| Orkesztráció | .NET Aspire (`AutoService.AppHost`) |
+| Adatok | PostgreSQL (helyben 18, élesben 17), S3-kompatibilis objektumtár (helyben RustFS, élesben Azure Blob) |
+| Orkesztráció | .NET Aspire (`app/AutoService.AppHost`) |
 
-## Repozitórium felépítése
+## A repó felépítése
 
-- `app/AutoService.ApiService`: API endpointok, domain modell, EF Core, hitelesítés
-- `app/AutoService.WebUI`: React frontend
-- `app/AutoService.AppHost`: Aspire orkesztráció (PostgreSQL + RustFS + ApiService + WebUI)
-- `app/AutoService.ServiceDefaults`: közös service defaultok és resilience beállítások
-- `tests/API`: HTTP endpoint tesztek (`.http`)
-- `tests/Database`: SQL validációs lekérdezések (`.sql`, csak olvasási policy)
-- `tests/AutoService.UnitTests`: xUnit tesztek az árazási kalkulátorokhoz és a session-lezárásokhoz (`dotnet test`)
-- `docs`: írásos beadandók (a mesterséges intelligenciás dokumentumok angolul és magyarul, a laborbeszámoló), `docx` és `pdf` formátumban
-- `scripts`: automatizálás (lokális tesztfuttató, `validate.py` kapu, pre-push kapu, `deploy-azure.py`)
-- `deploy`: deployment készletek: az Azure éles készlet (`deploy/azure`, image-ek, `deploy/gate` tokenes kapu) és a lokális tesztpéldány készlete (`deploy/local-test`); útmutatók a `deploy/docs` mappában
+| Útvonal | Tartalom |
+| ------- | -------- |
+| `app/AutoService.ApiService` | API, doménmodell, EF Core, hitelesítés |
+| `app/AutoService.WebUI` | React frontend és a Playwright E2E tesztjei |
+| `app/AutoService.AppHost`, `app/AutoService.ServiceDefaults` | Aspire orkesztráció és közös szolgáltatás-alapbeállítások |
+| `tests` | HTTP- (`tests/API`), SQL- (`tests/Database`), xUnit- (`tests/AutoService.UnitTests`) és szkripttesztek |
+| `scripts` | `validate.py` kapu, `pre-push.py`, helyi tesztfuttató, `deploy-azure.py` |
+| `deploy` | Az Azure éles csomag, a helyi tesztpéldány csomagja, a tokenkapu; leírások a `deploy/docs` mappában |
 
-## Gyors indítás (ajánlott)
+## Helyi futtatás
 
-### Előfeltételek
+Előfeltételek: .NET 10 SDK, Node.js 24+, Python 3.11+, Docker Desktop.
 
-- .NET 10 SDK
-- Node.js 24+ és npm (a CI Node 26-ra van rögzítve)
-- Python 3.11+ a lokális tesztfuttatóhoz
-- Futó Docker Desktop (az AppHost PostgreSQL és RustFS konténert indít)
-
-### 1) Lokális API beállítás létrehozása
-
-A commitolt sablonból hozd létre a lokális, gitignored API konfigurációt:
-
-```powershell
-Copy-Item app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
-```
-
-vagy
-
-```bash
-cp app/AutoService.ApiService/appsettings.Local.template.json app/AutoService.ApiService/appsettings.Local.json
-```
-
-Ezután töltsd ki a helyőrző értékeket az `appsettings.Local.json` fájlban, különösen:
-
-- `JwtSettings.Secret`
-- `ConnectionStrings.AutoServiceDb`
-- `Bootstrap.Admin.*` (opcionális: üres adatbázison létrehozza az első admint; az API nem tölt fel adatot, ezért a friss adatbázisban nincs fiók, ügyfél, jármű vagy katalógussor)
-- `CompanyProfile.*` (név, cím, irányítószám, város, adószám, telefon, e-mail)
-
-A `CompanyProfile` a szerviz azonosító adata, amit az ajánlat PDF fejléce kinyomtat. Az adatbázisban él
-(egysoros `companyprofiles` tábla), és Adminként a WebUI Beállítások oldalán szerkeszthető
-(`GET`/`PUT /api/admin/company-profile`). A konfigurációs szekció csak egyszeri kezdőérték: induláskor,
-ha a táblában nincs sor, a `CompanyProfile.*` / `CompanyProfile__*` értékekből töltődik fel; ha már van
-sor, a konfigurációt figyelmen kívül hagyja. Amíg a tábla és a konfiguráció is üres (vagy egy mező
-hiányzik, illetve helyőrző), az API nem indul el. Valódi cégadat nem kerül a repóba; a gitignore-olt
-lokális fájl vagy a `CompanyProfile__*` környezeti változók valók erre.
-
-Az ajánlat PDF beágyazott Noto Sans betűtípust használ (SIL Open Font License 1.1, a licencszöveg az
-`app/AutoService.ApiService/Assets/Fonts/OFL.txt` fájlban), hogy a magyar ékezetek olyan konténerben is
-helyesen jelenjenek meg, amelyben nincs telepített font.
-
-### 2) Eszközök visszaállítása és frontend függőségek telepítése
+1. Másold az `app/AutoService.ApiService/appsettings.Local.template.json` fájlt `appsettings.Local.json` néven (gitignore-olt),
+   és töltsd ki: `JwtSettings.Secret`, `ConnectionStrings.AutoServiceDb`, `CompanyProfile.*` (az árajánlat fejlécének
+   kezdőértéke), opcionálisan `Bootstrap.Admin.*` (az első admin üres adatbázison; más adatot az API nem tölt be).
+2. Az objektumtár titkait egyszer kell beállítani az `app/AutoService.AppHost` mappában:
+   `dotnet user-secrets set "Parameters:minio-user" "<felhasználó>"` és `"Parameters:minio-password" "<jelszó>"`.
+3. Telepítés és indítás:
 
 ```bash
 dotnet tool restore --tool-manifest dotnet-tools.json
-cd app/AutoService.WebUI
-npm install
-cd ../..
+cd app/AutoService.WebUI && npm install && cd ../..
+cd app && dotnet run --project AutoService.AppHost
 ```
 
-### 3) Teljes lokális stack indítása
+Az AppHost elindítja a PostgreSQL-t, a RustFS-t, az API-t és a Vite fejlesztői szervert a beinjektált `VITE_API_URL`-lel.
 
-```bash
-cd app
-dotnet run --project AutoService.AppHost
-```
+## Ellenőrzések és tesztek
 
-Az AppHost elindítja és összeköti:
+| Mit | Parancs |
+| --- | ------- |
+| Gyors kapu a módosított fájlokon (típusellenőrzés, lint, build, méretkorlátok, árnyékmentesség) | `python scripts/validate.py` |
+| Push előtti kapu, a CI-vel azonos lépések (telepítés egyszer: `git config core.hooksPath .githooks`) | `python scripts/pre-push.py` |
+| Helyi tesztcsomagok futó AppHost ellen | `python scripts/run-local-test-suite.py [playwright\|http\|sql]` |
+| Unit tesztek | `dotnet test` az `app/` mappában |
 
-- PostgreSQL
-- RustFS, a profilképek lokális S3-kompatibilis objektumtárolója (a MinIO-t váltotta, amelynek image-eit 2026-09-ben kivonták; az erőforrás neve `minio` maradt) (API a `Ports:MinioApi`, webkonzol a `Ports:MinioConsole` porton)
-- `AutoService.ApiService`, amely a `minio` (RustFS) erőforrástól kapja az `ObjectStorage__ServiceUrl`, `ObjectStorage__AccessKeyId` és `ObjectStorage__SecretAccessKey` értékeket
-- `AutoService.WebUI` fejlesztői szerver (`VITE_API_URL` automatikus injektálással)
+Minden push lefuttatja a push előtti kaput; a GitHub Actions megismétli (`.github/workflows/`), a nehéz jobokat csak
+azokra az útvonalakra, amelyeket a változás érint. A tesztjelentések szűrt formában a `tests/.artifacts/` mappába kerülnek.
 
-Az objektumtároló két Aspire secret paramétert igényel (kompatibilitás miatt `minio-*` névvel). Gépenként egyszer állítsd be:
+## Környezetek és kiadás
 
-```bash
-cd app/AutoService.AppHost
-dotnet user-secrets set "Parameters:minio-user" "<lokalis-minio-felhasznalo>"
-dotnet user-secrets set "Parameters:minio-password" "<lokalis-minio-jelszo>"
-```
+| | `https://teszt.arsm.hu` (teszt) | `https://arsm.hu` (éles) |
+| --- | --- | --- |
+| Hol fut | A tulajdonos Windows-gépén, Docker-konténerekben, Cloudflare-alagút mögött | Azure Container Apps, PostgreSQL Flexible Server, Blob Storage |
+| Frissítés | Automatikusan, minden új `origin/main` commitból | Kézzel, egy kiválasztott commitból |
+| Adatok | Saját tesztadatbázis (napi `pg_dump` mentés) | Külön éles adatbázis |
+| Hozzáférés | Tokenkapu (`GATE_TOKEN`) | Tokenkapu oldalkonténerként (`ARSM_PROD_GATE_TOKEN`, másik token) |
 
-Hosztolt környezetben az `ObjectStorage__ServiceUrl` a valódi S3-kompatibilis végpontra mutat,
-az `ObjectStorage:AutoCreateBucket` marad kikapcsolva, a privát bucketet pedig előre létre kell hozni. Az
-Azure Blob Storage is támogatott (`ObjectStorage__Provider=AzureBlob`): az API felhasználó által hozzárendelt
-felügyelt identitással (managed identity) hitelesít (`ObjectStorage__ServiceUrl` a blob fiók végpontja,
-`ObjectStorage__ManagedIdentityClientId` az identitás client id-ja), amelynek az Azure készlet csak a profilkép-konténerre
-ad Storage Blob Data Contributor szerepet, így tárfiókkulcs egyetlen alkalmazás-secretben sincs.
+Így jut ki egy változás:
 
-A Cloudflare R2-höz ezen felül az `ObjectStorage:DisablePayloadSigning` és az
-`ObjectStorage:DisableDefaultChecksumValidation` értékét is `true`-ra kell állítani: az R2 nem
-támogatja az AWSSDK.S3 v4 alapértelmezett streaming SigV4 aláírását és CRC32 ellenőrzőösszegét,
-ezek nélkül a feltöltés hibára fut. RustFS (és korábban MinIO) esetén mindkettő `false` marad.
+1. **Fejlesztés és ellenőrzés.** Helyi ágon dolgozol, lefuttatod a `python scripts/validate.py`-t, beírod a
+   `CHANGELOG.md` bejegyzést, majd a commit a `main`-re kerül. A távoli repóban csak a `main` létezik.
+2. **Push = tesztkiadás.** A `git push origin main` előbb lefuttatja a push előtti kaput (validate, backend, frontend,
+   E2E, HTTP- és SQL-tesztek eldobható konténereken). A push után a tesztcsomag ütemezett feladata
+   (`deploy/local-test/deploy.py`, 5 percenként) észreveszi az új commitot, menti a tesztadatbázist, a commitból
+   (`git archive`) megépíti az API- és a webes képet, újraindítja a két alkalmazáskonténert, és megvárja, hogy a `/` és
+   az `/alive` válaszoljon. Az új migrációkat az API induláskor alkalmazza, így pár percen belül az új verzió fut a
+   `teszt.arsm.hu`-n.
+3. **Éles kiadás.** Ha a `teszt.arsm.hu`-n minden rendben, abból a klónból, amelyben az éles `.env` van (előtte
+   `az login`): `python scripts/deploy-azure.py release --commit <sha>`. Megépíti és feltölti a commit szerint
+   címkézett három képet, lefuttatja az `arsm-migrate` jobot (migrációk és az `arsm_app` szerepkör), és csak ennek
+   sikere után állítja át az `arsm-api` és `arsm-web` alkalmazást új revízióra. Ha a migráció elbukik, a kiadás
+   megáll, és a régi verzió szolgál tovább. Ellenőrzés: `curl -sS -o /dev/null -w "%{http_code}\n" https://arsm.hu/alive`
+   (token nélkül a kapu 401-et ad), utána bejelentkezés és egy árajánlat-PDF letöltése.
 
-## Fix nyilvános teszt hosztnév (Cloudflare named tunnel)
+A függőségfrissítések ugyanezt az utat járják: a Dependabot csak PR-t nyit, a napi helyi ütemezett feladat
+(`arsm-dependabot-intake`, `.claude/skills/dependabot-intake/SKILL.md`) pedig minden frissítést saját commitként újra
+elvégez a `main`-en, pusholja (így a `teszt.arsm.hu`-ra kerül), és lezárja a PR-t; élesbe csak a következő kiadással jut.
 
-A Cloudflare named tunnel ugyanazt a reverse proxy felállást a saját domained egy fix hosztnevén teszi elérhetővé. Az URL állandó, így a WebUI-t elég egyszer buildelni. Csak tesztelésre való, éles üzemre soha.
+Részletek: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) (a tesztpéldány be- és
+kikapcsolása, mentések) és [deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md) (a `.env` kulcsai, első
+beállítás, riasztások, üzemeltetés).
 
-A projekt saját példányai: az éles a `https://arsm.hu` az Azure-on ([deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md)); a lokális tesztpéldány, a `https://teszt.arsm.hu` ez a felállás automatikus deployjal és tokenes kapuval, a készlete a [deploy/local-test](deploy/local-test) mappában van, jelenleg be van kapcsolva. A működését, valamint a be- és kikapcsolását a [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) írja le.
+## Konfiguráció és titkok
 
-### Feltételek
+- Titok nem kerül gitbe: az API-beállítások az `appsettings.Local.json`-ban, a tesztértékek a `tests/.env`-ben és a
+  `.secrets`-ben, a telepítési és MCP-értékek a gyökér `.env`-ben vannak; mindegyikhez van követett sablon
+  (`*.template.json`, `*.example`).
+- Élesben kötelező a valódi `AllowedHosts` és `Cors:AllowedOrigins`, a HTTPS és a `Deployment:RateLimiterTopology=SingleInstance`
+  (a kéréskorlátok, a kitiltások és a munkamenet-határidők folyamaton belüliek).
+- Az AI SQL-eszközei a csak olvasó `ai_agent_test_user` felhasználót használják (csak `SELECT`).
 
-Az AppHost által indított fejlesztői stack így nem osztható meg: a fejlesztői WebUI az API-t a helyi `VITE_API_URL` címen (`localhost`) hívja, amit egy távoli böngésző nem ér el. Olyan felállást oszd meg, ahol a buildelt WebUI és az API egy originen válaszol:
+## MI-támogatott fejlesztés
 
-- egy reverse proxy szolgálja ki a WebUI production buildjét, és a `/api` kéréseket továbbítja az ApiService-nek; a tunnel erre a proxyra mutat (`<proxy port>`);
-- a WebUI-t úgy buildeld, hogy a `VITE_API_URL` és a `VITE_SITE_URL` `https://<hostname>` legyen; a build ezt az origint rögzíti a Content-Security-Policy `connect-src` részében;
-- az API `Cors:AllowedOrigins` listájában szerepeljen a `https://<hostname>` (más `Origin`-ről érkező, cookie-t hordozó módosító kéréseket elutasít), és a proxyt a `ForwardedHeaders:KnownProxies` vagy a `ForwardedHeaders:KnownNetworks` beállítással fogadja el, hogy lássa az eredeti `https` sémát, amit a `__Host-` session cookie-k megkövetelnek.
-
-### Lépések
-
-1. Hozz létre Cloudflare-fiókot, és add hozzá a `<domain>` domaint (Free csomag). Ellenőrizd, hogy az importált DNS rekordok, az MX és az SPF is megvannak.
-2. A regisztrárnál állítsd át a névszervereket a két Cloudflare névszerverre, és várj, amíg a zóna Active lesz (percek vagy órák; közben a resolverek eltérhetnek).
-3. Futtasd: `cloudflared tunnel login`. Létrehozza a `~/.cloudflared/cert.pem` origin tanúsítványt, ami egy zónára szól. Ha egy gépen több domaint használsz, zónánként tarts egy tanúsítványt, és add meg: `--origincert <file>`; különben a `route dns` rossz zónába teszi a rekordot.
-4. Hozd létre a tunnelt: `cloudflared tunnel create --credentials-file <path> <tunnel-name>`. A credentials fájlt tartsd privátban.
-5. Irányítsd rá a hosztnevet: `cloudflared tunnel route dns <tunnel-name> <hostname>`.
-6. Írj konfigurációs fájlt, és ellenőrizd: `cloudflared tunnel --config <file> ingress validate`:
-
-   ```yaml
-   tunnel: <tunnel-name>
-   credentials-file: <path>
-   ingress:
-     - hostname: <hostname>
-       service: http://127.0.0.1:<proxy port>
-     - service: http_status:404
-   ```
-
-7. Indítsd a tunnelt: `cloudflared tunnel --no-autoupdate --config <file> run`.
-8. Buildeld a WebUI-t úgy, hogy a `VITE_API_URL` és a `VITE_SITE_URL` `https://<hostname>` legyen, és ugyanezt állítsd be a `Cors:AllowedOrigins`-ban (lásd Feltételek). Ez csak egyszer kell: az URL fix, ezért újraindításkor nem kell újrabuildelni.
-9. Fiókok: üres adatbázison az első admin a `Bootstrap:Admin` konfigurációból hozható létre (`Email`, `Password`, `FirstName`, `LastName`, `Specialization`, `Expertise` tömb; opcionális `MiddleName`, `PhoneNumber`; környezeti változóként `Bootstrap__Admin__*`). Csak akkor fut, ha még nincs admin, meglévő fiókhoz nem nyúl, és a `Bootstrap__Admin__Password` beállítást az admin létrejötte után érdemes eltávolítani. A további felhasználókat az admin regisztrálja az alkalmazásban; mindenkinek a saját belépési adatait add át privát csatornán.
-10. Opcionális automatikus indítás Windowson: regisztrálj ütemezett feladatot, ami bejelentkezéskor lefuttatja a 7. lépés parancsát (`Register-ScheduledTask` interaktív bejelentkezéssel, `conhost.exe --headless` alatt, hogy ne nyíljon konzolablak, és újraindítással hiba esetén; rendszergazdai jog nem kell), vagy futtasd a `cloudflared service install` parancsot (rendszergazdai shell kell).
-
-### Korlátok
-
-| Korlát | Részletek |
-| ------ | --------- |
-| Elérhetőség | A link csak addig működik, amíg a géped, a Docker és a `cloudflared` fut. |
-| Hozzáférés | Akinél megvan a link, eléri az alkalmazás bejelentkező oldalát. |
-| Leállítás | Állítsd le a tunnelt, és a link megszűnik. Soha ne állítsd le az összes `cloudflared.exe` folyamatot, ha a gépen más tunnelek is futnak; csak ezt állítsd le. |
-
-## Hasznos parancsok
-
-| Feladat | Parancs |
-| ------- | ------- |
-| AppHost build | `dotnet build app/AutoService.AppHost/AutoService.AppHost.csproj --verbosity minimal` |
-| Frontend build | `cd app/AutoService.WebUI && npm run build` |
-| Frontend lint | `cd app/AutoService.WebUI && npm run lint` |
-| Összes lokális teszt futtatása | `python scripts/run-local-test-suite.py` |
-| Kiválasztott lokális tesztek futtatása | `python scripts/run-local-test-suite.py playwright http sql` |
-| Pre-push hook telepítése (egyszer) | `git config core.hooksPath .githooks` |
-| Pre-push kapu futtatása | `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <stage>]` |
-
-A NuGet restore lock-file alapú: az `app/Directory.Build.props` bekapcsolja a locked restore-t, az AppHost Linux és macOS alatt RID-specifikus lock fájlokat használ az Aspire Dashboard/DCP csomagokhoz, a CI pedig `dotnet restore --locked-mode` módban fut.
-
-GitHub Actions: a `.github/workflows/dotnet.yml` Linuxon (`ubuntu-latest`) buildeli és ellenőrzi a backendet és a frontendet, a `repo-gate` jobban pedig lefuttatja a repó kapuját (`python scripts/validate.py --all --skip-build`); a `.github/workflows/tests.yml` a Playwright suite-ot a production bundle-ön, mockolt API-val, a HTTP és SQL suite-okat PostgreSQL és RustFS konténerekkel, futásonként generált titkokkal futtatja. Mindkét workflow egy `changes` jobbal indul (`scripts/ci-changes.py`): a `repo-gate` minden pushra fut, a többi job csak akkor, ha a workflow utolsó sikeres commitja óta változtak az útvonalai.
-
-A lokális GitHub Actions smoke ellenőrzésekhez a [.actrc](.actrc) tartozik: az `ubuntu-latest` címkét Linux act konténerre mapeli, így az `act -j backend-build`, az `act -j frontend-build` és az `act -j repo-gate` lokálisan is lefut.
-
-## Tesztek futtatása
-
-A Python futtatót a repository gyökeréből indítsd. Betölti a `.secrets` és `tests/.env` fájlokat, lefuttatja a kért suite-okat, és maszkolt összefoglalót ír ide: `tests/.artifacts/test-suite-summary.json`.
-Minden alparancs alapértelmezett timeoutja 300 másodperc; lassabb lokális futtatáshoz az `ARSM_TEST_COMMAND_TIMEOUT_SECONDS` állítható.
-
-```bash
-python scripts/run-local-test-suite.py
-```
-
-Egy vagy több suite külön is futtatható:
-
-```bash
-python scripts/run-local-test-suite.py playwright
-python scripts/run-local-test-suite.py http sql
-```
-
-Suite célok:
-
-- `playwright`: futtatja a WebUI Playwright E2E suite-ot (`PORT=5173` alapérték).
-- `http`: először a `tests/API/_setup` fájlokat futtatja (tesztfiók- és fixture-létrehozás), utána az összes `tests/API/**/*.http` suite-ot HTTPYAC-kel.
-- `sql`: futtatja az összes `tests/Database/**/*.sql` fájlt a futó PostgreSQL konténeren, read-only SQL felhasználóval.
-
-A backend unit tesztekhez (`tests/AutoService.UnitTests`, xUnit: az árazási kalkulátorok és a session-lezárások) nem kell futó stack: az `app/` mappában a `dotnet test` futtatja őket, ahogy a pre-push kapu és a CI is.
-
-A Python automatizálási szkriptekhez a `tests/Scripts` mappában stdlib unittest csomag tartozik, a repository gyökeréből a `python -m unittest discover -s tests/Scripts` paranccsal futtatható; a `python scripts/pre-push.py` (backend szakasz) és a `.github/workflows/dotnet.yml` `repo-gate` jobja automatikusan futtatja.
-
-Teljes suite futtatás előtt indítsd el az Aspire stacket egy másik terminálban:
-
-```bash
-cd app
-dotnet run --project AutoService.AppHost
-```
-
-A `tests/.artifacts/` alatti generált riportok gitignore alatt vannak, és lokális hibakereséshez/AI review-hoz csak maszkolt összefoglalóként szolgálnak.
-
-### Pre-push kapu
-
-Minden push lefuttatja a `python scripts/pre-push.py` parancsot a tracked `.githooks/pre-push` hookon keresztül; egyszer kapcsold be: `git config core.hooksPath .githooks`. A CI-t tükrözi (`validate`, `backend`, `frontend`, `e2e`, `api-suites` lépések, az első hibánál megáll), a HTTP és SQL suite-okat eldobható `arsm-prepush-postgres` és `arsm-prepush-s3` konténereken futtatja a lokális titkokkal, majd törli őket. A kapu saját portokat használ (PostgreSQL 15432, RustFS 19000, API 15200), így a futó Aspire stack maradhat; egyszer bízz meg az ASP.NET fejlesztői tanúsítványban (`dotnet dev-certs https --trust`), mert a HTTP ellenőrzések a TLS-t is ellenőrzik. A `--skip-e2e`, `--skip-api-suites` és `--only <stage>` lokális hibakereséshez való; a `git push --no-verify` csak kivétel. A CI repo kapuja a `python scripts/validate.py --all --skip-build`.
-
-### AI teszt workflow
-
-Teljes tesztvizsgálatnál az AI agent ezt futtassa:
-
-```bash
-python scripts/run-local-test-suite.py
-```
-
-Ezután a `tests/.artifacts/test-suite-summary.json` fájlt vizsgálja, és a megfelelő rétegben lépjen tovább (hiányzó teszt, elavult teszt, hibás viselkedés vizsgálata). Agent nem publikálhat nyers `.env` értékeket, `.secrets` tartalmat, connection stringet, cookie-t, tokent, abszolút lokális útvonalat vagy nyers tool logot.
-
-## Konfiguráció és titokkezelés
-
-- Titkokat, jelszavakat, lokális connection stringeket ne commitolj.
-- Backend lokális titkok: `app/AutoService.ApiService/appsettings.Local.json` (gitignored).
-- Frontend lokális env értékek: `app/AutoService.WebUI/.env.development` (sablon: `app/AutoService.WebUI/.env.development.template`).
-- API teszt futtatási értékek: `tests/.env` (sablon: `tests/.env.example`).
-  - Az `ARSM_TEST_WEBUI_ORIGIN` értékének egyeznie kell egy `Cors:AllowedOrigins` beállítással, mert a cookie-alapú unsafe HTTP tesztek `Origin` fejlécet küldenek.
-  - Az `ARSM_TEST_ADMIN_EMAIL` / `ARSM_TEST_ADMIN_PASSWORD` a `Bootstrap:Admin` első adminja; az `ARSM_TEST_CUSTOMER_EMAIL` a fixture ügyfél, amelyet a `tests/API/_setup/ensure-test-fixtures.http` hoz létre üres adatbázison a járműveivel, egy katalógus alkatrésszel és munkadíjjal, valamint egy horgony árajánlattal együtt.
-- Playwright futtatási titkok és a read-only SQL connection string: repo gyökérbeli `.secrets` (gitignored; sablon: `.secrets.example`); lokális E2E futtatásnál a nem titkos `PORT=5173` is szükséges a Vite serve mód miatt.
-- MCP lokális runtime configok: `.claude/.mcp.json` és `.vscode/mcp.json` (mindkettő gitignored), a `.claude/.mcp.template.json` és `.vscode/mcp.template.json` sablonokból.
-- Az MCP read-only PostgreSQL URI a repo gyökérbeli `.env` fájlban van (gitignored; sablon: `.env.example`); a trackelt MCP sablonok `${env:ARSM_MCP_POSTGRES_CONNECTION_STRING}` formában hivatkoznak rá, a lokális gitignore-olt MCP configok pedig a feloldott URI-t tartalmazzák.
-- Az MCP sablonok hordozható placeholder fájlok maradnak; a gitignore-olt lokális MCP profilok tartalmazhatják az `ai_agent_test_user` konkrét read-only PostgreSQL URI-ját.
-
-## Deployment biztonsági megjegyzések
-
-- A Vite/Aspire WebUI hosting csak lokális fejlesztésre szolgál. A Vite dev szerver alapból `localhost` címre bindol; `VITE_DEV_HOST` csak tudatos lokális LAN/konténeres hibakeresési opt-in legyen.
-- Production API hostingnál az `AllowedHosts` és `Cors:AllowedOrigins` valós, nem localhost hostokra legyen állítva. Non-Development induláskor a wildcard, localhost, nem HTTPS, hibás vagy path-ot tartalmazó WebUI origin elutasításra kerül.
-- Az auth rate limitek, a login ban állapot, a memóriába melegített token denylist és a munkamenet-cutoffok processzen belüliek. Non-Development deploymentben a `Deployment:RateLimiterTopology=SingleInstance` csak akkor állítható be, ha pontosan egy ApiService példány fut; skálázás előtt elosztott megvalósítás kell.
-- A production WebUI static hostnak vagy reverse proxy-nak kell érvényesítenie a biztonsági fejléceket, mert a Vite nem release szerver. Kötelező fejlécek: `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors` vagy ezzel egyenértékű frame protection, és `Strict-Transport-Security`, ha ott terminálódik a TLS.
-- A production WebUI static hostnak cache fejléceket is érvényesítenie kell. Az `index.html` nem cache-elődik, a (tartalom-hash-elt) Vite `assets/` fájlok egyéves `immutable` cache-t kapnak, a public képek/ikonok 30 napos cache-t és ETag revalidációt kapnak, a manifest és a `robots.txt` pedig rövidebb, egynapos cache-t használ.
-
-## Fejlesztői megjegyzések (AI workflow)
-
-- Az agent workflow a mentett `arsm-chain` workflow (`.claude/workflows/arsm-chain.js`): orchestrator terv,
-  amely a feladatot diszjunkt fájltulajdonú munkacsomagokra bontja (triviális, egyterületes feladatnál
-  kimarad), csomagonként és lépésenként a trirouter által választott modell és effort (haiku, sonnet, opus vagy
-  fable; csak hiányzó router-eredménynél lép életbe a dokumentált tartalék), párhuzamos implementáció (nehézségtől függően
-  egyszerre legfeljebb 8 csomag), minden csomag reviewja rögtön a befejezése után (kódolási elvek, UI/UX
-  audit), dokumentáció-szinkron az egyetlen determinisztikus kapu mellett, végül célzott tesztek.
-- A `frontend` maga alkalmazza a `ui-ux-style-profile` szabályait; a profil utána a diffet auditálja.
-- A kapu a `python scripts/validate.py`: típusellenőrzés, lint, build, mérethatárok és a no-shadow szabály
-  (a Tailwind `ring-*` is árnyéknak számít) a módosított fájlokon, valamint security remediation
-  (`npm audit fix`, `npm audit signatures`, sérülékeny .NET csomagok), ha csomagmanifest változott.
-- A `python scripts/select-e2e-specs.py --run` csak a diff által érintett Playwright speceket futtatja.
-- Részletes policy fájlok:
-  - Gyökér: `CLAUDE.md`
-  - Területi szabályok: `app/*/CLAUDE.md`, `tests/CLAUDE.md`, `scripts/CLAUDE.md`, `deploy/CLAUDE.md`
-
-## SQL csak olvasható policy MI validációhoz
-
-- Dedikált AI SQL felhasználó: `ai_agent_test_user`
-- Engedélyezett SQL: `SELECT`
-- Tiltott AI toolingból: `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `ALTER`, `CREATE`, `DROP`, `GRANT`, `REVOKE`
+A repót Claude Code-dal fejlesztjük. A szabályok a `CLAUDE.md` és a területi `CLAUDE.md` fájlokban vannak; a nagyobb
+feladatok az `arsm-chain` munkafolyamaton (`.claude/workflows/arsm-chain.js`) futnak: egy orchestrator munkacsomagokra
+bontja a feladatot, az ágensek párhuzamosan implementálják és átnézik őket a trirouter által választott modelleken,
+majd lefut a `validate.py` kapu és a diffhez illő tesztek.
 
 ## Licenc
 
-Ez a repository nem MIT licencű.
-
-Részletek: [LICENSE.md](LICENSE.md) (Custom Copyright Notice and Academic Use Policy).
+A repó nem MIT-licences. Lásd [LICENSE.md](LICENSE.md): egyedi szerzői jogi nyilatkozat és akadémiai felhasználási szabályzat.
