@@ -9,6 +9,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- NuGet minor and patch bumps, taking over Dependabot PR #27 (2026-11-05): `AWSSDK.S3` 4.0.104.7, the ASP.NET Core and
+  EF Core packages 10.0.14, `Scalar.AspNetCore` 2.18.5, the five `OpenTelemetry.*` packages of ServiceDefaults 1.20.1 and
+  `xunit.runner.visualstudio` 3.1.5; the local `dotnet-ef` tool follows EF Core to 10.0.14.
+  _Dev time: ~4 min wall-clock. cost: not measured._
 - Dependabot PRs are taken over onto `main` (2026-11-05): a daily local scheduled task runs the new
   `.claude/skills/dependabot-intake` skill, which redoes each bump with the repo tooling as an owner commit, pushes it
   through the pre-push gate and closes the PR with its branch; the root `CLAUDE.md` branch rule says so. `README.md` and
