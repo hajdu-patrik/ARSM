@@ -11,11 +11,12 @@ import { consumeSkipLoadingSplashOnNextBoot } from '../utils/serverErrorRecovery
 import { removeLoginShell } from '../utils/loginShell';
 import { readStorage, writeStorage } from '../utils/safeStorage';
 import { SPLASH_FIRST_SHOWN_KEY } from '../utils/browserStorageKeys';
+import { wasEntryModuleFetchedFresh } from '../utils/entryModuleTiming';
 
 /** Anti-flash minimum: a splash that is up for less than this would only flicker on a fast load. */
 const SPLASH_MIN_VISIBLE_MS = 250;
 
-/** Minimum for the very first splash in this browser, so the branded intro is seen once ever. */
+/** Minimum for the branded intro: the very first splash in this browser and a load that bypassed the cache. */
 const FIRST_LOAD_SPLASH_MIN_VISIBLE_MS = 2500;
 
 /** Whether this boot shows the splash: not right after a server-error retry, and only on an app route. */
@@ -33,7 +34,9 @@ function resolveSplashMinVisibleMs(): number | null {
     return null;
   }
 
-  return readStorage('local', SPLASH_FIRST_SHOWN_KEY) === null
+  const isFirstLoad = readStorage('local', SPLASH_FIRST_SHOWN_KEY) === null;
+
+  return isFirstLoad || wasEntryModuleFetchedFresh()
     ? FIRST_LOAD_SPLASH_MIN_VISIBLE_MS
     : SPLASH_MIN_VISIBLE_MS;
 }
@@ -50,9 +53,9 @@ function useSplashVisible(isAppReady: boolean): boolean {
       return;
     }
 
-    writeStorage('local', SPLASH_FIRST_SHOWN_KEY, '1');
-
+    // The flag is saved only once the full minimum was shown, so a load cut short stays a first load.
     const timer = setTimeout(() => {
+      writeStorage('local', SPLASH_FIRST_SHOWN_KEY, '1');
       setHasMinimumPassed(true);
     }, minVisibleMs);
 

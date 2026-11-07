@@ -6,6 +6,7 @@ import {
   PREF_THEME_KEY,
   SPLASH_FIRST_SHOWN_KEY,
 } from '../../../src/utils/browserStorageKeys';
+import { emulateWarmCache } from './warm-cache';
 
 export type TestLanguage = 'en' | 'hu';
 export type TestTheme = 'light' | 'dark';
@@ -18,17 +19,24 @@ interface PrimeBrowserStateOptions {
   readonly sidebarCollapsed?: boolean;
   /** Default true: the browser counts as past its first splash, so loads keep the 250 ms minimum. Pass false to test the first load. */
   readonly splashShown?: boolean;
+  /** Default true: the app's entry module looks cached, as on a normal reload. Pass false for a cold cache (hard reload, cleared cache). */
+  readonly warmCache?: boolean;
 }
 
-/** Marks the browser as past its first splash, so a spec is not slowed by the 2500 ms intro. */
-export async function seedSplashShown(page: Page): Promise<void> {
+async function seedSplashShownFlag(page: Page): Promise<void> {
   await page.addInitScript((key: string) => {
     localStorage.setItem(key, '1');
   }, SPLASH_FIRST_SHOWN_KEY);
 }
 
+/** Marks the browser as past its first splash with a warm cache, so a spec is not slowed by the 2500 ms intro. */
+export async function seedSplashShown(page: Page): Promise<void> {
+  await seedSplashShownFlag(page);
+  await emulateWarmCache(page);
+}
+
 /** Preloads deterministic browser state before the app boots: language, theme, sidebar state,
- * the session hint that makes the app restore a session, and the splash-shown flag. */
+ * the session hint that makes the app restore a session, the splash-shown flag and the warm-cache emulation. */
 export async function primeBrowserState(page: Page, options: PrimeBrowserStateOptions = {}): Promise<void> {
   const {
     language = 'en',
@@ -36,10 +44,15 @@ export async function primeBrowserState(page: Page, options: PrimeBrowserStateOp
     sessionHint = false,
     sidebarCollapsed = false,
     splashShown = true,
+    warmCache = true,
   } = options;
 
   if (splashShown) {
-    await seedSplashShown(page);
+    await seedSplashShownFlag(page);
+  }
+
+  if (warmCache) {
+    await emulateWarmCache(page);
   }
 
   await page.addInitScript((state: {
