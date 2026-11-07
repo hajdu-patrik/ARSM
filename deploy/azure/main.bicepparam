@@ -41,6 +41,6 @@ param companyTaxNumber = readEnvironmentVariable('ARSM_COMPANY_TAX_NUMBER')
 param companyPhoneNumber = readEnvironmentVariable('ARSM_COMPANY_PHONE')
 param companyEmail = readEnvironmentVariable('ARSM_COMPANY_EMAIL')
 
-param resendApiKey = readEnvironmentVariable('ARSM_RESEND_API_KEY')
 param mailFrom = readEnvironmentVariable('ARSM_MAIL_FROM')
 param mailReplyTo = readEnvironmentVariable('ARSM_MAIL_REPLY_TO')
+param mailDomainLinked = bool(readEnvironmentVariable('ARSM_MAIL_DOMAIN_LINKED', 'false'))

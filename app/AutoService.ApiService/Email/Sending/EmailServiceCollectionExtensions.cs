@@ -1,11 +1,15 @@
+using Azure.Communication.Email;
+using Azure.Core;
+using Azure.Identity;
+
 namespace AutoService.ApiService.Email.Sending;
 
 /** Registers the e-mail settings and the sender. */
 public static class EmailServiceCollectionExtensions
 {
-    public const int ResendTimeoutSeconds = 15;
+    public const int SendTimeoutSeconds = 15;
 
-    // Strategy via IEmailSender: the no-op or the Resend sender is chosen once, at composition.
+    // Strategy via IEmailSender: the no-op or the Communication Services sender is chosen once, at composition.
     public static IServiceCollection AddArsmEmail(this IServiceCollection services, IConfiguration configuration)
     {
         var settings = EmailSettingsResolver.Resolve(configuration);
@@ -13,13 +17,8 @@ public static class EmailServiceCollectionExtensions
 
         if (settings.IsConfigured)
         {
-            // A Resend POST is not idempotent: no retry, so this client alone drops the resilience pipeline.
-#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is still marked experimental in Http.Resilience.
-            services
-                .AddHttpClient<IEmailSender, ResendEmailSender>()
-                .RemoveAllResilienceHandlers()
-                .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(ResendTimeoutSeconds));
-#pragma warning restore EXTEXP0001
+            services.AddSingleton(_ => CreateClient(settings));
+            services.AddSingleton<IEmailSender, AzureCommunicationEmailSender>();
         }
         else
         {
@@ -28,4 +27,20 @@ public static class EmailServiceCollectionExtensions
 
         return services;
     }
+
+    /** A send is not idempotent, so the client makes exactly one attempt within the timeout. */
+    internal static EmailClientOptions CreateOptions()
+    {
+        var options = new EmailClientOptions();
+        options.Retry.MaxRetries = 0;
+        options.Retry.Mode = RetryMode.Fixed;
+        options.Retry.NetworkTimeout = TimeSpan.FromSeconds(SendTimeoutSeconds);
+        return options;
+    }
+
+    private static EmailClient CreateClient(EmailSettings settings) =>
+        new(
+            new Uri(settings.Endpoint!),
+            new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(settings.ManagedIdentityClientId!)),
+            CreateOptions());
 }

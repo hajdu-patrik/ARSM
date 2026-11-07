@@ -43,12 +43,11 @@ param postgresAppPassword string
 @description('JWT signing secret, at least 32 bytes, no template markers.')
 param jwtSecret string
 
-@secure()
-@description('Resend sending key.')
-param resendApiKey string
-
-@description('Sender of the transactional e-mails: display name and address.')
+@description('Sender of the transactional e-mails: an address or Display Name <address> on the verified mail domain.')
 param mailFrom string
+
+@description('True once the mail domain DNS records are verified; until then the API keeps its no-op sender.')
+param mailDomainLinked bool = false
 
 @description('Reply-to address of the transactional e-mails.')
 param mailReplyTo string
@@ -242,6 +241,17 @@ module dataProtection 'dataprotection.bicep' = {
   }
 }
 
+// Transactional mail through Communication Services, sent as the pull identity (email.bicep).
+module email 'email.bicep' = {
+  name: '${namePrefix}-email'
+  params: {
+    namePrefix: namePrefix
+    mailFrom: mailFrom
+    senderPrincipalId: pullIdentity.properties.principalId
+    linkDomain: mailDomainLinked
+  }
+}
+
 // Runs --migrate-database as the administrator; deploy-azure.py starts it and waits before any app revision changes.
 module migrationJob 'migration-job.bicep' = {
   name: '${namePrefix}-migration-job'
@@ -293,7 +303,6 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
         }
         { name: 'jwt-secret', value: jwtSecret }
         { name: 'bootstrap-admin-password', value: bootstrapAdminPassword }
-        { name: 'resend-api-key', value: resendApiKey }
       ]
     }
     template: {
@@ -333,8 +342,9 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'CompanyProfile__TaxNumber', value: companyTaxNumber }
             { name: 'CompanyProfile__PhoneNumber', value: companyPhoneNumber }
             { name: 'CompanyProfile__Email', value: companyEmail }
-            { name: 'Email__ResendApiKey', secretRef: 'resend-api-key' }
-            { name: 'Email__From', value: mailFrom }
+            { name: 'Email__Endpoint', value: email.outputs.endpoint }
+            { name: 'Email__ManagedIdentityClientId', value: pullIdentity.properties.clientId }
+            { name: 'Email__From', value: email.outputs.senderAddress }
             { name: 'Email__ReplyTo', value: mailReplyTo }
             { name: 'Email__PublicUrl', value: effectivePublicUrl }
             { name: 'Bootstrap__Admin__Email', value: bootstrapAdminEmail }
@@ -483,3 +493,6 @@ output environmentStaticIp string = containerEnv.properties.staticIp
 output customDomainVerificationId string = deployApps ? webApp!.properties.customDomainVerificationId : ''
 
 output postgresHost string = postgres.outputs.fullyQualifiedDomainName
+
+@description('DNS records the mail domain needs before verification (see deployment-azure.md).')
+output mailDomainRecords object = email.outputs.verificationRecords

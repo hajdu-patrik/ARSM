@@ -16,8 +16,14 @@
 - Secrets never enter the tree: the real values live in the gitignored root `.env`, and only `*.example`
   placeholders of the kit's secret files are tracked (`local-test/.gitignore` keeps its real `*.env`, tunnel
   credentials, certificates, backups and logs out).
-- Mail (Resend) reaches the API as `Email__*` settings from `main.bicep` (secret `resend-api-key`, params in
-  `main.bicepparam`), fed by the root `.env` keys `ARSM_RESEND_API_KEY`, `ARSM_MAIL_FROM`, `ARSM_MAIL_REPLY_TO`.
+- Mail goes through Azure Communication Services (`azure/email.bicep`: Email Communication Services with the sender's
+  own domain, data location Europe, no engagement tracking, a Communication Services resource and a send-only custom
+  role for the pull identity, so there is no mail key or secret). `main.bicep` passes `Email__Endpoint`,
+  `Email__ManagedIdentityClientId`, `Email__From` (the plain address), `Email__ReplyTo` and `Email__PublicUrl`; the root
+  `.env` keys are `ARSM_MAIL_FROM` (address or `Display Name <address>`, its domain is the mail domain),
+  `ARSM_MAIL_REPLY_TO` and `ARSM_MAIL_DOMAIN_LINKED` (default `false`: the endpoint stays empty and the API keeps its
+  no-op sender until the domain's DNS records are verified; section 6 of `docs/deployment-azure.md`). The test
+  instance and development send no mail.
 - The two gate tokens differ: `GATE_TOKEN` (teszt) and `ARSM_PROD_GATE_TOKEN` (production).
 - One host name serves the WebUI and the API because the CSRF cookie is host-only: the API has no public ingress,
   Nginx is the single entry and the gate sits in front of it.

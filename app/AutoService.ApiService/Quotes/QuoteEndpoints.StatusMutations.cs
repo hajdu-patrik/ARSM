@@ -150,7 +150,7 @@ public static partial class QuoteEndpoints
     }
 
     /** Draft->Sent: the preconditions in contract order, then the permit, render and mail (user decision 2026-10-23:
-     * the mail goes out before the save, so Sent is only stored after Resend accepted it). Returns the error result or null. */
+     * the mail goes out before the save, so Sent is only stored after the mail service accepted it). Returns the error result or null. */
     private static async Task<IResult?> SendQuoteAsync(
         Quote quote,
         uint version,

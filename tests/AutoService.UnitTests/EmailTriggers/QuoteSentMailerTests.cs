@@ -12,7 +12,7 @@ namespace AutoService.UnitTests.EmailTriggers;
 public sealed class QuoteSentMailerTests
 {
     private static readonly EmailSettings Settings =
-        new("re_test", "ARSM <info@example.test>", "info@example.test", "https://example.test");
+        new("https://arsm-mail.europe.communication.azure.com", "11111111-2222-3333-4444-555555555555", "info@example.test", "info@example.test", "https://example.test");
 
     private static readonly CompanyProfile Company =
         new("Test Kft.", "Fo utca 1.", "1111", "Budapest", "11111111-1-11", "+36 1 111 1111", "info@example.test");

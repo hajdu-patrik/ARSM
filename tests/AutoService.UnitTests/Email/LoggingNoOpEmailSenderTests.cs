@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AutoService.UnitTests.Email;
 
-/** The no-op sender answers Sent, and the composition picks it only without a Resend key. */
+/** The no-op sender answers Sent, and the composition picks it only without a mail endpoint. */
 public sealed class LoggingNoOpEmailSenderTests
 {
     private static readonly EmailMessage Message = new(
@@ -30,9 +30,9 @@ public sealed class LoggingNoOpEmailSenderTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task AddArsmEmail_without_a_key_resolves_the_noop_sender(string? key)
+    public async Task AddArsmEmail_without_an_endpoint_resolves_the_noop_sender(string? endpoint)
     {
-        var provider = BuildProvider(new Dictionary<string, string?> { ["Email:ResendApiKey"] = key });
+        var provider = BuildProvider(new Dictionary<string, string?> { ["Email:Endpoint"] = endpoint });
 
         var sender = provider.GetRequiredService<IEmailSender>();
         var result = await sender.SendAsync(Message, CancellationToken.None);
@@ -43,17 +43,18 @@ public sealed class LoggingNoOpEmailSenderTests
     }
 
     [Fact]
-    public void AddArsmEmail_with_a_key_resolves_the_resend_sender()
+    public void AddArsmEmail_with_an_endpoint_resolves_the_communication_services_sender()
     {
         var provider = BuildProvider(new Dictionary<string, string?>
         {
-            ["Email:ResendApiKey"] = "re_unit_test_key",
-            ["Email:From"] = "ARSM <info@arsm.hu>",
+            ["Email:Endpoint"] = "https://arsm-mail.europe.communication.azure.com",
+            ["Email:ManagedIdentityClientId"] = "11111111-2222-3333-4444-555555555555",
+            ["Email:From"] = "info@arsm.hu",
             ["Email:ReplyTo"] = "info@arsm.hu",
             ["Email:PublicUrl"] = "https://arsm.hu",
         });
 
-        Assert.IsType<ResendEmailSender>(provider.GetRequiredService<IEmailSender>());
+        Assert.IsType<AzureCommunicationEmailSender>(provider.GetRequiredService<IEmailSender>());
         Assert.True(provider.GetRequiredService<EmailSettings>().IsConfigured);
     }
 

@@ -66,7 +66,7 @@
   Subcommands: `check` (validates the keys, min lengths, https public URL, enum names read from the C# files,
   distinctness from the teszt `GATE_TOKEN` (the prod admin may reuse the dev `ADMIN_*` login), the whole-number keys
   `ARSM_MONTHLY_BUDGET` (default 0 = no budget, above 0 needs `ARSM_ALERT_EMAIL`) and `ARSM_LOG_DAILY_QUOTA_GB`,
-  `ARSM_POSTGRES_APP_PASSWORD` (required, secret, the Postgres password rules, must differ from `ARSM_POSTGRES_PASSWORD`), the mail keys `ARSM_RESEND_API_KEY` (`re_` prefix, 20+ characters, never echoed), `ARSM_MAIL_FROM` (address or `Name <address>`) and `ARSM_MAIL_REPLY_TO`, the az/docker/git
+  `ARSM_POSTGRES_APP_PASSWORD` (required, secret, the Postgres password rules, must differ from `ARSM_POSTGRES_PASSWORD`), the mail keys `ARSM_MAIL_FROM` (address or `Name <address>`) and `ARSM_MAIL_REPLY_TO`, the optional `ARSM_MAIL_DOMAIN_LINKED` (`true`/`false`, default `false`, lower-cased for Bicep like the always-on flags), the az/docker/git
   tools, and one read-only `az provider show` per provider, always `Microsoft.KeyVault` (the DataProtection key vault) and,
   with `ARSM_ALERT_EMAIL` set, the guard-rail providers (`Microsoft.Insights`, plus `Microsoft.Consumption` for a budget);
   it only warns and is skipped without `az login`),

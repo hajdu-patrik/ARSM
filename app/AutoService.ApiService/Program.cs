@@ -223,7 +223,7 @@ builder.Services.AddSingleton<ICompanyProfileWriteBack, CompanyProfileWriteBack>
 builder.Services.AddSingleton<IProfilePictureProcessor, SkiaProfilePictureProcessor>();
 builder.Services.AddProfilePictureObjectStorage(builder.Configuration);
 builder.Services.AddArsmDataProtection(builder.Configuration);
-// Resend sender when Email:ResendApiKey is set, otherwise a logging no-op (dev, CI, unit tests).
+// Communication Services sender when Email:Endpoint is set, otherwise a logging no-op (dev, test instance, CI, unit tests).
 builder.Services.AddArsmEmail(builder.Configuration);
 builder.Services.AddHostedService<ExpiredTokenCleanupService>();
 // Options emitted by app.UseHsts(); preload stays off so no host is committed to browser preload lists.

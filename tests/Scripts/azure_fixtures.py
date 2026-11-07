@@ -44,7 +44,6 @@ def valid_env() -> dict[str, str]:
         "ARSM_COMPANY_TAX_NUMBER": "00000000-0-00",
         "ARSM_COMPANY_PHONE": "+3610000000",
         "ARSM_COMPANY_EMAIL": "info@example.test",
-        "ARSM_RESEND_API_KEY": "re_" + uuid.uuid4().hex[:20],
         "ARSM_MAIL_FROM": "ARSM <noreply@example.test>",
         "ARSM_MAIL_REPLY_TO": "reply@example.test",
     }

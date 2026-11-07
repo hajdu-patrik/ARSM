@@ -103,8 +103,7 @@ Required:
 | `ARSM_COMPANY_TAX_NUMBER` | Letterhead: tax number. |
 | `ARSM_COMPANY_PHONE` | Letterhead: phone number. |
 | `ARSM_COMPANY_EMAIL` | Letterhead: e-mail address. |
-| `ARSM_RESEND_API_KEY` | Resend sending key of the verified `arsm.hu` domain (region eu-west-1). Never printed. |
-| `ARSM_MAIL_FROM` | Display name and address of the sender, for example `ARSM <info@arsm.hu>`. |
+| `ARSM_MAIL_FROM` | Sender of the transactional mail, an address or `Display Name <address>`, for example `ARSM <info@arsm.hu>`. Its domain becomes the Communication Services mail domain and its local part the sender username. |
 | `ARSM_MAIL_REPLY_TO` | Reply address, `info@arsm.hu`, which Cloudflare Email Routing forwards. DNS is not managed by this kit. |
 
 Optional:
@@ -117,6 +116,7 @@ Optional:
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |
 | `ARSM_ALERT_EMAIL` | Address for the alert and budget mails (see Guard rails in section 8). Empty (default): no action group, alert rule or budget is created. |
 | `ARSM_MONTHLY_BUDGET` | Monthly budget of the resource group in the subscription currency, a whole number, default `0` (no budget). Above 0 it mails at 50, 80 and 100 percent of the amount and needs `ARSM_ALERT_EMAIL`. Microsoft lists the Azure for Students offer (MS-AZR-0170P) as not supported by Cost Management, where budgets live, so keep `0` on a student subscription. |
+| `ARSM_MAIL_DOMAIN_LINKED` | Default `false`: the mail domain is created but not linked, `Email__Endpoint` stays empty and the API logs mails instead of sending them. Set `true` once the domain's DNS records are verified ("Sending mail" below). |
 | `ARSM_LOG_DAILY_QUOTA_GB` | Daily ingestion cap of the Log Analytics workspace in GB, a whole number from 1, default `1`. Always applied, with or without an alert address. |
 | `ARSM_PROD_ADMIN_MIDDLE_NAME` | Middle name of the bootstrap admin. |
 | `ARSM_PROD_ADMIN_PHONE` | Phone number of the bootstrap admin. |
@@ -189,6 +189,26 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
 13. Add the tester account in the Admin menu of the app.
 14. Hand the tester the URL `https://arsm.hu`, the gate token (`ARSM_PROD_GATE_TOKEN`) and the
     login of the account from step 13, over separate channels.
+
+### Sending mail
+
+The API sends through Azure Communication Services as the pull identity (`email.bicep`): no key and no
+secret exist. `infra` creates the Email Communication Services resource (data location Europe), the
+mail domain from `ARSM_MAIL_FROM` with engagement tracking off, its sender username, the Communication
+Services resource and the custom role `ARSM Email Sender (<resource group>)` with the three send actions
+Microsoft documents, assigned to the pull identity on that resource only.
+
+1. Run `infra` with `ARSM_MAIL_DOMAIN_LINKED=false` (the default). The deployment output
+   `mailDomainRecords` lists the Domain (TXT), SPF (TXT), DKIM and DKIM2 (CNAME) records.
+2. Add them in Cloudflare (DNS only). The domain keeps a single SPF record: add
+   `include:spf.protection.outlook.com` to the existing one instead of a second `v=spf1` record.
+3. Verify each record type: `az communication email domain initiate-verification --resource-group
+   <rg> --email-service-name arsm-email --domain-name <domain> --verification-type <Domain|SPF|DKIM|DKIM2>`
+   (the `communication` CLI extension), until `az communication email domain show` reports them `Verified`.
+4. Set `ARSM_MAIL_DOMAIN_LINKED=true` in `.env` and run `infra` again: the domain is linked and the
+   API gets `Email__Endpoint`. Send one quote to your own address to check it.
+
+Development and the local test instance pass no `Email__Endpoint`, so they never send mail.
 
 ### Rotating the gate token
 

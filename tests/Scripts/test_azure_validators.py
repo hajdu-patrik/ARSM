@@ -84,10 +84,6 @@ class SecretRuleTests(CheckCase):
         self.accepts(v.check_gate_token, "x" * 32)
         self.rejects(v.check_gate_token, "x" * 31, "")
 
-    def test_resend_api_key(self) -> None:
-        self.accepts(v.check_resend_api_key, "re_" + "x" * 17, "re_" + "x" * 40)
-        self.rejects(v.check_resend_api_key, "re_" + "x" * 16, "xx_" + "x" * 30, "x" * 30)
-
 
 class MailTests(CheckCase):
     def test_email(self) -> None:

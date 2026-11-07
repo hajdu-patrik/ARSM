@@ -28,7 +28,7 @@
 
 - Keep `apiservice` receiving `DataProtection__Provider=FileSystem` and `DataProtection__KeyDirectory` (`.dataprotection-keys` under `AppHostDirectory`, resolved with `Path.GetFullPath`, gitignored); the API persists its unencrypted development DataProtection key ring there (see its `CLAUDE.md`).
 
-- Keep `apiservice` receiving `Email__ResendApiKey`, `Email__From`, `Email__ReplyTo` (read from the repo-root `.env` keys `ARSM_RESEND_API_KEY`, `ARSM_MAIL_FROM`, `ARSM_MAIL_REPLY_TO` via `RootEnvFile`, blank when absent so the API uses its logging no-op sender) and `Email__PublicUrl` (from `WebUi:SiteUrl`).
+- Pass no `Email__*` setting to `apiservice`: without `Email__Endpoint` the API uses its logging no-op sender, so development never sends real mail (owner decision 2026-11-07; production mail goes through Azure Communication Services, see `deploy/CLAUDE.md`).
 
 ## Runtime Anchors
 

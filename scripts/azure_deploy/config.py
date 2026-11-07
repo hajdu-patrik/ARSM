@@ -84,7 +84,7 @@ class DeployConfig:
         env["ARSM_ACR_NAME"] = self.acr_name
         for kind, reference in self.image_names(tag).items():
             env[f"ARSM_{kind.upper()}_IMAGE"] = reference
-        for key in ("ARSM_API_ALWAYS_ON", "ARSM_WEB_ALWAYS_ON"):
+        for key in ("ARSM_API_ALWAYS_ON", "ARSM_WEB_ALWAYS_ON", "ARSM_MAIL_DOMAIN_LINKED"):
             env[key] = self.values[key].lower()
         return env
 

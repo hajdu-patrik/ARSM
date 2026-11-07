@@ -9,6 +9,28 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Transactional mail moves from Resend to Azure Communication Services (2026-11-07, owner decision): the Resend team was
+  shared with another project, so its 100-per-day and 3,000-per-month free quota and its sender reputation were shared too,
+  and a second free Resend team or account is not allowed (paid feature; the acceptable use policy forbids extra accounts to
+  get around quotas).
+  - `Email/Sending/AzureCommunicationEmailSender` sends with the `Azure.Communication.Email` 1.1.0 `EmailClient` as the
+    API's managed identity (`SendAsync(WaitUntil.Started)`, one attempt, 15 s network timeout); `ResendEmailSender` and its
+    tests are gone. `EmailSettings` is `Endpoint`, `ManagedIdentityClientId`, `From` (one plain address), `ReplyTo`,
+    `PublicUrl`; a blank endpoint keeps the logging no-op sender.
+  - A recipient on a domain reserved by RFC 2606/6761 (`.test`, `.example`, `.invalid`, `.localhost`, `example.com/.net/.org`)
+    is never sent to (`ReservedMailDomains`): the test fixtures' `@example.test` addresses can no longer bounce from the
+    real domain, whatever environment they run against.
+  - Development and the local test instance send no mail: the AppHost and `deploy/local-test/api.env.example` pass no
+    `Email__*` setting (owner decision); the unused `RootEnvFile` reader is removed.
+  - Azure kit: `deploy/azure/email.bicep` creates Email Communication Services (data location Europe) with the sender's
+    domain from `ARSM_MAIL_FROM`, tracking off, the sender username with its display name, the Communication Services
+    resource and a send-only custom role for the pull identity (no key, no secret). `ARSM_RESEND_API_KEY` and the
+    `resend-api-key` secret are gone; the new optional `ARSM_MAIL_DOMAIN_LINKED` (default `false`) links the domain once its
+    DNS records are verified (`docs/deployment-azure.md`, "Sending mail").
+  - Unit tests: `Email/AzureCommunicationEmailSenderTests` (mapping, header sanitizing, reserved and unsafe recipients,
+    failure classification, the single attempt), `Email/ReservedMailDomainsTests`, the settings resolver and composition.
+  - The Resend account itself: the `arsm.hu` domain's TLS mode was set to Enforced while it still sent ARSM mail.
+  - _Dev time: ~17m wall-clock (2026-11-07 21:47 to 22:04 +01:00). cost: not measured._
 - `xunit.runner.visualstudio` 3.1.5 -> 4.0.1 (major) in the unit test project, found by the dependabot-intake routine
   (2026-11-05); the 4.x runner still runs xUnit.net v2 tests and all 1392 unit tests pass unchanged.
   _Dev time: ~1 min wall-clock. cost: not measured._
