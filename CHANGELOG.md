@@ -150,6 +150,11 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- `deploy-azure.py` images no longer fail with `git archive exited with code 141` (2026-11-07): `tarfile` stops reading at the
+  tar end marker, so closing the pipe while git was still writing its record padding killed git with SIGPIPE. `azure_deploy/archive.py`
+  now drains the rest of the stream before closing it; `test_azure_images.py` proves it with a padded stream (32768 bytes left
+  unread before the fix).
+  _Dev time: ~4m wall-clock (2026-11-07 22:09 to 22:13 +01:00). cost: not measured._
 - `minimatch` 10.2.6 -> 11.0.3 under `eslint`, `@eslint/config-array` and `@typescript-eslint/typescript-estree` for Dependabot alert #2
   (GHSA-g3hv-75wg-m249, medium, development scope; 2026-11-05, owner decision). All three parents pin `^10` and 10.x has no patched
   release, so the WebUI `package.json` gets three scoped `overrides` entries next to the jsx-a11y one; a global override would break

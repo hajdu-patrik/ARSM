@@ -30,9 +30,20 @@ def tar_bytes() -> bytes:
     return buffer.getvalue()
 
 
+class TrackedStream(io.BytesIO):
+    """Remembers how much of the stream was read when it was closed."""
+
+    unread_at_close = -1
+
+    def close(self) -> None:
+        if not self.closed:
+            self.unread_at_close = len(self.getbuffer()) - self.tell()
+        super().close()
+
+
 class FakeGit:
     def __init__(self, payload: bytes, code: int = 0) -> None:
-        self.stdout, self.returncode, self.killed = io.BytesIO(payload), code, False
+        self.stdout, self.returncode, self.killed = TrackedStream(payload), code, False
 
     def kill(self) -> None:
         self.killed = True
@@ -111,6 +122,11 @@ class ExportedCommitTests(TempDirCase):
     def test_extract_unpacks_the_tar_stream(self) -> None:
         self.extract(FakeGit(tar_bytes()))
         self.assertEqual((self.tmp / "deploy" / "file.txt").read_bytes(), b"hi")
+
+    def test_extract_reads_the_padding_after_the_end_marker_so_git_never_gets_sigpipe(self) -> None:
+        process = FakeGit(tar_bytes() + bytes(64 * 512))
+        self.extract(process)
+        self.assertEqual(process.stdout.unread_at_close, 0)
 
     def test_extract_reports_a_broken_stream_and_kills_git(self) -> None:
         process = FakeGit(b"this is not a tar stream")

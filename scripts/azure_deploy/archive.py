@@ -63,6 +63,9 @@ def _extract(commit_sha: str, destination: Path) -> None:
     try:
         with tarfile.open(fileobj=process.stdout, mode="r|") as archive:
             archive.extractall(destination, filter="data")
+        # tarfile stops at the end marker; drain git's record padding so closing the pipe never SIGPIPEs it (exit 141).
+        while process.stdout.read(65536):
+            pass
     except (tarfile.TarError, OSError) as error:
         process.kill()
         raise StepFailure(f"Could not extract the git archive ({type(error).__name__}).") from error
