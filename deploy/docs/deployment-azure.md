@@ -201,12 +201,19 @@ Microsoft documents, assigned to the pull identity on that resource only.
 1. Run `infra` with `ARSM_MAIL_DOMAIN_LINKED=false` (the default). The deployment output
    `mailDomainRecords` lists the Domain (TXT), SPF (TXT), DKIM and DKIM2 (CNAME) records.
 2. Add them in Cloudflare (DNS only). The domain keeps a single SPF record: add
-   `include:spf.protection.outlook.com` to the existing one instead of a second `v=spf1` record.
+   `include:spf.protection.outlook.com` to the existing one instead of a second `v=spf1` record, and end
+   it with `-all`; with `~all` the SPF check fails with `DnsRecordsNotMatched`. For arsm.hu (Cloudflare
+   Email Routing receives the mail) that is
+   `v=spf1 include:_spf.mx.cloudflare.net include:spf.protection.outlook.com -all`.
 3. Verify each record type: `az communication email domain initiate-verification --resource-group
    <rg> --email-service-name arsm-email --domain-name <domain> --verification-type <Domain|SPF|DKIM|DKIM2>`
    (the `communication` CLI extension), until `az communication email domain show` reports them `Verified`.
+   A check started right after a DNS edit can read the old cached record (5 minutes with TTL Auto); start
+   it again after that.
 4. Set `ARSM_MAIL_DOMAIN_LINKED=true` in `.env` and run `infra` again: the domain is linked and the
-   API gets `Email__Endpoint`. Send one quote to your own address to check it.
+   API gets `Email__Endpoint`. Linking needs all four records `Verified`; before that phase 1 stops with
+   `DomainValidationError` and leaves the running apps unchanged. Send one quote to your own address to
+   check it.
 
 Development and the local test instance pass no `Email__Endpoint`, so they never send mail.
 

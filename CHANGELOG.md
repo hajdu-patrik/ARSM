@@ -29,7 +29,10 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
     DNS records are verified (`docs/deployment-azure.md`, "Sending mail").
   - Unit tests: `Email/AzureCommunicationEmailSenderTests` (mapping, header sanitizing, reserved and unsafe recipients,
     failure classification, the single attempt), `Email/ReservedMailDomainsTests`, the settings resolver and composition.
-  - The Resend account itself: the `arsm.hu` domain's TLS mode was set to Enforced while it still sent ARSM mail.
+  - The Resend account itself: the `arsm.hu` domain's TLS mode was set to Enforced while it still sent ARSM mail; after the
+    switch its `arsm.hu` domain and API key were deleted, and the Resend DNS records left the zone.
+  - The rollout showed that the SPF check of Communication Services accepts only a record ending in `-all`; the
+    "Sending mail" steps of `docs/deployment-azure.md` now say so, with the cached-record retry and the link precondition.
   - _Dev time: ~17m wall-clock (2026-11-07 21:47 to 22:04 +01:00). cost: not measured._
 - `xunit.runner.visualstudio` 3.1.5 -> 4.0.1 (major) in the unit test project, found by the dependabot-intake routine
   (2026-11-05); the 4.x runner still runs xUnit.net v2 tests and all 1392 unit tests pass unchanged.
