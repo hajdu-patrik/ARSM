@@ -96,10 +96,7 @@ How a change goes out:
    serving. Check with `curl -sS -o /dev/null -w "%{http_code}\n" https://arsm.hu/alive` (401 from the gate without the
    token), then sign in and try a quote PDF.
 
-Dependency updates follow the same path, with no pull request at all: Dependabot only raises alerts, and the daily local
-scheduled task `arsm-dependabot-intake` (`.claude/skills/dependabot-intake/SKILL.md`) fixes those first, finds the
-outdated packages itself, lands each update on `main` as an owner commit and pushes it (so it reaches `teszt.arsm.hu`);
-production still gets it only with the next release.
+Dependencies are updated by hand following `.claude/skills/dependency-upgrade/SKILL.md`, along the same path.
 
 Details: [deploy/docs/deployment-local-test.md](deploy/docs/deployment-local-test.md) (turning the test instance on
 and off, backups) and [deploy/docs/deployment-azure.md](deploy/docs/deployment-azure.md) (the `.env` keys, first-time

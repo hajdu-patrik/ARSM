@@ -9,6 +9,11 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Dependabot is retired (2026-11-11, owner decision): `.github/dependabot.yml` and the `.claude/skills/dependabot-intake`
+  skill are gone, the daily local `arsm-dependabot-intake` scheduled task is deleted, and the repository's Dependabot alerts
+  are switched off on GitHub (security updates were already off). Dependencies are updated by hand following
+  `.claude/skills/dependency-upgrade/SKILL.md`; the root `CLAUDE.md` (Branches), `README.md` and `README(HU).md` say so.
+  _Dev time: ~3 min wall-clock (2026-11-11 10:42 to 10:45 +01:00). cost: not measured._
 - Transactional mail moves from Resend to Azure Communication Services (2026-11-07, owner decision): the Resend team was
   shared with another project, so its 100-per-day and 3,000-per-month free quota and its sender reputation were shared too,
   and a second free Resend team or account is not allowed (paid feature; the acceptable use policy forbids extra accounts to
