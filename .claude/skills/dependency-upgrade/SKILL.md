@@ -24,6 +24,24 @@ scope (user decision, 2026-10-11). Nothing is upgraded without a web check of th
 - Do not hard-code version numbers into notes or scripts; always read the current value from the repo
   and the latest stable value from the registry.
 
+## Grouping and held majors (taken over from the retired `.github/dependabot.yml`, 2026-11-11)
+
+- Cooldown: the 7-day age rule above holds for every ecosystem (NuGet, npm, GitHub Actions, Docker, tools).
+- Grouping: minor and patch updates form one group per ecosystem (NuGet, npm, GitHub Actions, Docker). Every
+  major is its own group.
+- Aspire is always its own group, never mixed into the NuGet minor-and-patch group: `Aspire.AppHost.Sdk`, every
+  `Aspire.Hosting.*` package and `aspire.cli` move together to one version, and all four AppHost lock files are
+  regenerated in the same change. `MessagePack` is only a transitive pin over Aspire: it moves with Aspire and is
+  dropped once Aspire itself ships a fixed version.
+- Majors that follow the .NET major (the `net10.0` target): `Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore.*`,
+  `Microsoft.Extensions.*`, `Npgsql.*` and the Docker `dotnet/*` images. They take a new major only together with a
+  .NET major upgrade, never on their own.
+- Majors that follow the Node major (Node 26 in CI and Docker): `@types/node` and the Docker `node` image. They take a
+  new major only together with a Node major upgrade, never on their own.
+- `@babel/core` stays on major 7 for the React Compiler (`app/AutoService.WebUI/CLAUDE.md`).
+- `typescript` and `@typescript/*` majors move only by hand along the "TypeScript side by side" rule below.
+- GitHub Actions are pinned to major tags (`@v7`), so for them only a newer major tag counts as an update.
+
 ## Scope and where each version lives
 
 | Area | Files | Find the latest stable |

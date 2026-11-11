@@ -9,6 +9,17 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Aspire 13.6.1 -> 13.6.5 (2026-11-11, security fix): `Aspire.Hosting.AppHost` and `Aspire.Hosting` below 13.6.5 are hit by
+  GHSA-f7vh-h5g3-7jrh (CVE-2026-120006, high, dashboard cookie disclosure to a linked service) and `aspire.cli` below 13.6.5 by
+  GHSA-m63f-xhvm-6mv5 and GHSA-q6jf-24jf-m3cg (both high). The AppHost SDK, `Aspire.Hosting.JavaScript`,
+  `Aspire.Hosting.PostgreSQL` and the local `aspire.cli` tool move to 13.6.5, the lowest fixed release (a patch, no major), and
+  all four AppHost lock files are regenerated. 13.6.5 is younger than the 7-day age rule (published 2026-11-10); the owner
+  asked for it as a security fix. Aspire 13.6.5 itself pulls `MessagePack` 2.5.307, so the AppHost's transitive pin is removed.
+- The rules of the retired `.github/dependabot.yml` live on in `.claude/skills/dependency-upgrade/SKILL.md` ("Grouping and held
+  majors"): the 7-day cooldown for every ecosystem, minor and patch grouped per ecosystem with each major on its own, Aspire as
+  its own group with `MessagePack`, the majors that follow the .NET and the Node major, `@babel/core` on 7, the TypeScript
+  lines moved by hand, and the GitHub Actions major tags.
+  _Dev time: ~5 min wall-clock (2026-11-11 10:59 to 11:04 +01:00). cost: not measured._
 - Dependabot is retired (2026-11-11, owner decision): `.github/dependabot.yml` and the `.claude/skills/dependabot-intake`
   skill are gone, the daily local `arsm-dependabot-intake` scheduled task is deleted, and the repository's Dependabot alerts
   are switched off on GitHub (security updates were already off). Dependencies are updated by hand following
