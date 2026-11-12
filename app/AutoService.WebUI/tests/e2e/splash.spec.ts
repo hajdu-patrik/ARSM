@@ -82,6 +82,28 @@ for (const motion of MOTION_PREFERENCES) {
   });
 }
 
+/** The splash keyframes that must run on every load, whatever the motion preference (owner decision, 2026-11-12). */
+const SPLASH_ANIMATION_NAMES = ['logo-spin-variable', 'shape-left-in', 'shape-bottom-right-in', 'shape-top-right-in'];
+
+test.describe('Loading splash animation', () => {
+  for (const motion of MOTION_PREFERENCES) {
+    test(`runs the logo and shape animations (reduced motion: ${motion})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: motion });
+      await primeBrowserState(page, { sessionHint: true, splashShown: false });
+      await installApiMocks(page, { profileEmail: 'route.check@example.test', isAuthenticated: true, isAdmin: true });
+
+      await page.goto(CUSTOMERS_ROUTE.path);
+      await expect(page.locator('#root .arsm-loading-logo-halo')).toBeVisible();
+
+      const running = await page.evaluate(() => document.getAnimations()
+        .filter((animation) => animation.playState === 'running')
+        .map((animation) => (animation instanceof CSSAnimation ? animation.animationName : '')));
+
+      expect(running, 'the splash stood still').toEqual(expect.arrayContaining(SPLASH_ANIMATION_NAMES));
+    });
+  }
+});
+
 test.describe('Loading splash minimum per browser', () => {
   test('only the first load ever holds the splash for 2500 ms; a reload and a new tab use the short minimum', async ({ page }) => {
     // No splash-shown flag: the browser is fresh, and the app sets the flag itself once it showed the splash.

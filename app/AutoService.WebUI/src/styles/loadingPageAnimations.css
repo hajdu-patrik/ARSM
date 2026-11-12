@@ -131,21 +131,4 @@
   }
 }
 
-/* Reduced motion: animations off, so the splash shows its resting frame (shapes at their end pose,
-   orb and logo static). Timing and dismissal are untouched. */
-@media (prefers-reduced-motion: reduce) {
-  .logo-spin,
-  .shape-left,
-  .shape-bottom-right,
-  .shape-top-right,
-  .mobile-orb {
-    animation: none;
-    will-change: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) and (max-width: 320px) {
-  .logo-spin {
-    transform: scale(0.96);
-  }
-}
+/* No prefers-reduced-motion rule here: the splash animates for everyone (owner decision, 2026-11-12). */

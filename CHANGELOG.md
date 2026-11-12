@@ -169,6 +169,13 @@ _Dev time: ~53m wall-clock (2026-10-29 10:23 to 11:16 +01:00, one arsm-chain run
 _Dev time: ~24m wall-clock (2026-10-28 16:22 to 16:46 +01:00, one arsm-chain run with one sonnet package, finished by hand: a missing comma fixed, gate, full E2E). Cost: ~$6.4-12.8 output-token-only estimate (640k output tokens, sonnet package and reviews, opus routing; excludes input tokens and cache, so a lower bound)._
 
 ### Fixed
+- The loading splash animates again for users whose system asks for reduced motion (2026-11-12, owner decision), for
+  example with Windows "Animation effects" off: the logo spin and the shape fly-ins stood still, so the 2.5 s first-load
+  and Ctrl+F5 splash looked frozen. The `prefers-reduced-motion` blocks that the 2026-10 pentest follow-up re-added to
+  `src/styles/loadingPageAnimations.css` are removed again, and the WebUI `CLAUDE.md` now forbids that rule. The new
+  `Loading splash animation` tests in `tests/e2e/splash.spec.ts` check that the four keyframes run with and without reduced
+  motion; the reduce case fails on the base commit and passes with the fix (checked in a temporary worktree).
+  _Dev time: ~9 min wall-clock (2026-11-12 18:02 to 18:11 +01:00). cost: not measured._
 - The long first-load splash (about 2.5 s) now follows two rules. It shows on the first opening in a browser: the "splash shown" flag is saved only after the full minimum was shown, so a cut-short first load stays a first load. It also shows on a hard reload that bypasses the browser cache (Ctrl+Shift+R, Ctrl+F5, cleared cache), detected from the Resource Timing entry of the app's entry module (`transferSize > encodedBodySize`) in `src/utils/entryModuleTiming.ts`. A normal reload (F5) and a new tab keep the 250 ms splash. Side effect: the first load after a new deployment (new hashed bundle) also gets the long splash. `tests/e2e/splash-first-load.spec.ts` and `support/warm-cache.ts` cover the cut-short load, normal vs hard reload, cold cache and the missing-timing fallback. The cut-short, hard-reload and cold-cache specs fail on the base commit and pass with the fix (checked in a temporary worktree).
   _Dev time: ~21m wall-clock (2026-11-08 00:23 to 00:44 +01:00, two arsm-chain runs, the first stopped on the per-tab question, finished by hand: one lint fix, gate, full E2E). Cost: ~$4.2 output-token-only estimate (422k output tokens, every routed call on sonnet; excludes input tokens and cache, so a lower bound)._
 - `deploy-azure.py` images no longer fail with `git archive exited with code 141` (2026-11-07): `tarfile` stops reading at the
