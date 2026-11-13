@@ -9,6 +9,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- The removed test host names are gone from the current docs and the kit (2026-11-13): the test subdomains no longer
+  exist, so `README.md`, `README(HU).md`, `CLAUDE.md`, `deploy/CLAUDE.md`, `deployment-azure.md` (section 2 now covers
+  `arsm.hu` only) and `deployment-local-test.md` drop them, and the kit's `setup.ps1` default host and `kit.psd1` health
+  URL use the placeholder `teszt.example.com`. The mentions of the owner's other test kit are removed as well.
+  Earlier changelog entries keep their history.
+  _Dev time: ~2 min wall-clock (2026-11-13 19:47 to 19:48 +01:00). cost: not measured._
 - The local test instance `teszt.arsm.hu` is removed (2026-11-13, owner decision: too many resources for the current
   phase). Following section 8 of `deploy/docs/deployment-local-test.md`, its containers, volumes, network, images, the three
   scheduled tasks, the Cloudflare tunnel `arsm-teszt` with its DNS record and the kit folder with its `pg_dump` backups are

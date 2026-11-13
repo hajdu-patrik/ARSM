@@ -47,18 +47,18 @@ account key sits in any app secret. For the DataProtection key ring it holds `St
 `dataprotection-keys` container only and `Key Vault Crypto Service Encryption User` on the vault key only (see the
 DataProtection keys bullet in section 8).
 
-## 2. teszt.arsm.hu versus arsm.hu
+## 2. arsm.hu
 
-| | `teszt.arsm.hu` | `arsm.hu` |
-| --- | --- | --- |
-| Role | Pre-release view where you experiment | Production, the live version handed to the tester |
-| Runs on | Your machine behind a Cloudflare tunnel (local test instance, removed on 2026-11-13) | Azure Container Apps |
-| Deployed | Automatically from `main` by `deploy/local-test/deploy.py` | Manually, from a commit you choose, with `deploy-azure.py` |
-| Database | The local test database on your machine | A new empty Flexible Server database with only the bootstrap admin |
-| Protection | Token gate on the tunnel (`GATE_TOKEN` in `.env`) | The same gate as a sidecar, token `ARSM_PROD_GATE_TOKEN` |
+| | `arsm.hu` |
+| --- | --- |
+| Role | Production, the live version handed to the tester |
+| Runs on | Azure Container Apps |
+| Deployed | Manually, from a commit you choose, with `deploy-azure.py` |
+| Database | A new empty Flexible Server database with only the bootstrap admin |
+| Protection | The token gate as a sidecar, token `ARSM_PROD_GATE_TOKEN` |
 
-The two tokens must differ. `teszt.arsm.hu` is not touched by anything in this document; it is
-described, with how to turn it on and off, in [deployment-local-test.md](deployment-local-test.md).
+The local test instance was removed on 2026-11-13; nothing in this document touches its kit, which
+[deployment-local-test.md](deployment-local-test.md) describes. Its `GATE_TOKEN` must differ from `ARSM_PROD_GATE_TOKEN`.
 
 ## 3. Client IP chain
 

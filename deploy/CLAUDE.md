@@ -11,8 +11,8 @@
 - Production (`arsm.hu`) is deployed by the owner by hand, from a committed sha; nothing deploys it automatically.
   Agent sessions run the Azure steps of `deploy-azure.py` (`registry`, `images`, `infra`, `bind-domain`, `release`)
   only when the owner explicitly permits it in that same message; otherwise at most `check` and `--dry-run` (owner
-  decision, 2026-10-29). `teszt.arsm.hu`, the auto-deployed test
-  instance, was removed on 2026-11-13 (owner decision); only its kit remains.
+  decision, 2026-10-29). The auto-deployed local test
+  instance was removed on 2026-11-13 (owner decision); only its kit remains.
 - Images are built from a `git archive` of the commit, so only committed files reach them.
 - Secrets never enter the tree: the real values live in the gitignored root `.env`, and only `*.example`
   placeholders of the kit's secret files are tracked (`local-test/.gitignore` keeps its real `*.env`, tunnel

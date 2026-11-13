@@ -1,7 +1,7 @@
-# ARSM - Local test instance (teszt.arsm.hu)
+# ARSM - Local test instance
 
 The local test instance (formerly "mini-prod") runs the app on the developer's Windows machine and
-publishes it at `https://teszt.arsm.hu` through a Cloudflare named tunnel, behind the token gate.
+publishes it on a public host name (placeholder `teszt.example.com`, set with `setup.ps1 -HostName`) through a Cloudflare named tunnel, behind the token gate.
 Production is `https://arsm.hu` on Azure ([deployment-azure.md](deployment-azure.md)); the two
 instances share no database, storage or token.
 
@@ -24,9 +24,8 @@ Browser --https--> Cloudflare --> cloudflared (tunnel arsm-teszt, cloudflared.ym
           --> arsm-tunnel-rustfs (S3 store for profile pictures, volume arsm-tunnel-rustfs)
 ```
 
-The kit has the same structure as the owner's other local test kit (MaKoncert): `README.txt`,
-`setup.ps1`, `run.cmd`, `teszt.ps1` with `kit.psd1`, the deploy script and `logs\`; only the app
-runtime differs (here Docker containers).
+The kit holds `README.txt`, `setup.ps1`, `run.cmd`, `teszt.ps1` with `kit.psd1`, the deploy script
+and `logs\`; the app itself runs in Docker containers.
 
 | Piece | Where | Notes |
 | --- | --- | --- |
@@ -73,7 +72,7 @@ replace), and every rewrite is logged in `deploy.log` (`kit: updated <file> from
 
 - Gate restart: when a gate file changed, `deploy.py` stops only the `node.exe` process whose command
   line runs the kit's own `gate.mjs` (full path, via `Get-CimInstance Win32_Process`; other node
-  processes such as the MaKoncert kit's are never touched), and `run.cmd` starts the new code 3 seconds
+  processes are never touched), and `run.cmd` starts the new code 3 seconds
   later. `gate-restart.txt` marks a restart that is still due, so a failed one is retried on the next run.
 - Manual only: `run.cmd` (running supervisors read it by byte offset), `teszt.ps1`, `setup.ps1`,
   `kit.psd1` (they register or switch the tasks), `README.txt` and every secret or env file are never
@@ -101,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.arsm\tunnel\teszt.ps
 It sets the containers to restart `unless-stopped` and starts `arsm-tunnel-postgres` and
 `arsm-tunnel-rustfs`, then `arsm-tunnel-api` and `arsm-tunnel-web`, waits until
 `http://127.0.0.1:18080/alive` answers 200, enables and starts the gate and tunnel tasks, enables the
-deploy task, and waits for `http://127.0.0.1:18081/alive` (200) and `https://teszt.arsm.hu/` (401 = up,
+deploy task, and waits for `http://127.0.0.1:18081/alive` (200) and `https://teszt.example.com/` (401 = up,
 gate closed without the token). The switch is persistent: from then on the instance also comes back
 after a logon, a reboot or a Docker restart, until `teszt.ps1 off`. The deploy task catches up with
 the newest green `main` commit on its next run (a backup is taken first).
@@ -132,9 +131,9 @@ To pause only the auto-deploy: `Disable-ScheduledTask -TaskPath '\Automations\' 
 
 - Token: `GATE_TOKEN` in the repository-root `.env` (gitignored), at least 32 characters, different
   from the production `ARSM_PROD_GATE_TOKEN`. `setup.ps1` generates one when it is missing.
-- Access: open `https://teszt.arsm.hu/?access=<token>` once per browser (or use the form on the gate
+- Access: open `https://teszt.example.com/?access=<token>` once per browser (or use the form on the gate
   page); it sets the `__Host-arsm_gate` cookie for 30 days. Print the link in PowerShell from the
-  repository root: `"https://teszt.arsm.hu/?access=" + (Select-String .env '^GATE_TOKEN=(.+)$').Matches[0].Groups[1].Value`.
+  repository root: `"https://teszt.example.com/?access=" + (Select-String .env '^GATE_TOKEN=(.+)$').Matches[0].Groups[1].Value`.
 - Rotation: write a new value (or delete the line and re-run the setup); every older cookie stops
   working at once. Without a usable token the gate answers 503.
 - Limits: 5 wrong tokens per IP per 15 minutes (in memory, per client only, no global limit), then 429.
@@ -176,7 +175,7 @@ Git, a clone of this repository with its local `/.dockerignore` (the build-conte
    turns the kit off while it works, creates the tunnel when `<tunnel>.json` is missing, (re)points the
    DNS record at it, writes and validates `cloudflared.yml`, saves `ARSM_REPO` and `PUBLIC_URL` in
    `tunnel.env` (running `deploy.py --force` when the URL changed), ensures `GATE_TOKEN` and `gate.env`,
-   registers the three tasks in `\Automations\` (disabled; same settings as the MaKoncert kit), removes
+   registers the three tasks in `\Automations\` (disabled), removes
    tasks with the pre-2026-10-20 names (`ARSM teszt gate`, `ARSM teszt tunnel`, `ARSM mini-prod deploy`
    in the root folder; one registered from an elevated shell needs an elevated
    `Unregister-ScheduledTask`), runs `teszt.ps1 on` (or `teszt.ps1 off` with `-Off`) and prints the

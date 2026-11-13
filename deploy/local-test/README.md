@@ -1,4 +1,4 @@
-# Local test instance kit (teszt.arsm.hu)
+# Local test instance kit
 
 Tracked, secret-free copy of the kit that runs the local test instance on the developer machine
 (working copy: `%USERPROFILE%\.arsm\tunnel`). How it works, how to turn it on and off, backups and

@@ -9,7 +9,7 @@
 - Tests: `tests` (the HTTP and SQL suites, the Python checks and the xUnit project `tests/AutoService.UnitTests`)
 - Automation scripts: `scripts`
 - Deployment kits: `deploy` (Azure production `https://arsm.hu`: `deploy/docs/deployment-azure.md`; local test
-  instance `https://teszt.arsm.hu`, kit `deploy/local-test`, removed on 2026-11-13 and kept only as a kit: `deploy/docs/deployment-local-test.md`).
+  instance, kit `deploy/local-test`, removed on 2026-11-13 and kept only as a kit: `deploy/docs/deployment-local-test.md`).
   Only placeholder `*.example` templates of the kit's secret files are tracked.
 
 ## Model Selection (Auto)

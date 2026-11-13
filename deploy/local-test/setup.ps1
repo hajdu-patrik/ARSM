@@ -1,7 +1,7 @@
 # ARSM teszt: idempotent one-command setup (tunnel, DNS, gate token, tasks, auto-deploy), no admin needed; ends with teszt.ps1 on (-Off: off).
 # powershell -ExecutionPolicy Bypass -File <kit>\setup.ps1 [-Off] [-RepoPath <repo>] [-HostName <host>] [-TunnelName <name>] [-OriginCert <pem>]
 param(
-    [string]$HostName = "teszt.arsm.hu",
+    [string]$HostName = "teszt.example.com",
     [string]$TunnelName = "arsm-teszt",
     [string]$OriginCert = "$env:USERPROFILE\.cloudflared\cert-arsm.pem",
     [string]$RepoPath = "",
@@ -10,7 +10,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $Here = $PSScriptRoot
-$Run = Join-Path $Here "run.cmd"   # cmd supervisor (~4 MB each), the same as in the MaKoncert kit
+$Run = Join-Path $Here "run.cmd"   # cmd supervisor (~4 MB each)
 $Switch = Join-Path $Here "teszt.ps1"
 $Cloudflared = Join-Path $Here "bin\cloudflared.exe"
 $Config = Join-Path $Here "cloudflared.yml"
@@ -226,7 +226,7 @@ function Show-LoginLink {
 }
 
 $Repo = Resolve-RepoPath
-# GATE_TOKEN lives in the project's gitignored root .env (like MaKoncert's app\web\.env).
+# GATE_TOKEN lives in the project's gitignored root .env.
 $GateEnvFile = Join-Path $Repo ".env"
 Wait-Docker
 if (Get-ScheduledTask -TaskPath $TaskPath -TaskName $Tasks.gate -ErrorAction SilentlyContinue) { Invoke-Switch "off" }

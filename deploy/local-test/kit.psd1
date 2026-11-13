@@ -21,6 +21,6 @@
     Health     = @(
         @{ Url = 'http://127.0.0.1:18080/alive'; Expect = 200; What = 'web + api containers'; BeforeTasks = $true }
         @{ Url = 'http://127.0.0.1:18081/alive'; Expect = 200; What = 'gate -> web' }
-        @{ Url = 'https://teszt.arsm.hu/'; Expect = 401; What = 'tunnel (401 = gate closed without the token)' }
+        @{ Url = 'https://teszt.example.com/'; Expect = 401; What = 'tunnel (401 = gate closed without the token)' }
     )
 }
