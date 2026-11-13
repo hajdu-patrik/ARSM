@@ -11,8 +11,8 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ### Changed
 - The local test instance `teszt.arsm.hu` is removed (2026-11-13, owner decision: too many resources for the current
   phase). Following section 8 of `deploy/docs/deployment-local-test.md`, its containers, volumes, network, images, the three
-  scheduled tasks and the Cloudflare tunnel `arsm-teszt` are deleted; the kit folder with its `pg_dump` backups stays on the
-  machine and `deploy/local-test` stays in the repository for a later setup. The guide, `CLAUDE.md`, `deploy/CLAUDE.md`,
+  scheduled tasks, the Cloudflare tunnel `arsm-teszt` with its DNS record and the kit folder with its `pg_dump` backups are
+  deleted; `deploy/local-test` stays in the repository for a later setup from scratch. The guide, `CLAUDE.md`, `deploy/CLAUDE.md`,
   `deployment-azure.md`, `README.md` and `README(HU).md` describe the new state.
   _Dev time: ~3 min wall-clock (2026-11-13 19:22 to 19:25 +01:00). cost: not measured._
 - Aspire 13.6.1 -> 13.6.5 (2026-11-11, security fix): `Aspire.Hosting.AppHost` and `Aspire.Hosting` below 13.6.5 are hit by

@@ -10,9 +10,9 @@ instances share no database, storage or token.
 **Removed on 2026-11-13** (owner decision: it used too many resources for the current phase; it ran from 2026-10-23,
 deploying every new `origin/main` commit). Section 8 was carried out: the four containers, the three volumes, the
 `arsm-tunnel-net` network, the `arsm-tunnel-api`/`-web` images, the three scheduled tasks and the Cloudflare tunnel
-`arsm-teszt` (with its credentials file) are gone. The kit folder `%USERPROFILE%\.arsm\tunnel` is kept with its secret
-files, logs and the `pg_dump` backups, the only remaining copy of the test data. To bring it back, follow section 7:
-`setup.ps1` creates a new tunnel, re-points the DNS record and redeploys onto an empty database.
+`arsm-teszt` with its DNS record are gone, and so is the kit folder `%USERPROFILE%\.arsm\tunnel` with its secret files,
+logs and `pg_dump` backups, so no test data is left. To bring it back, follow section 7 from scratch: a new kit folder,
+a new tunnel and DNS record, and a first deploy onto an empty database.
 
 ## 2. How it works
 
