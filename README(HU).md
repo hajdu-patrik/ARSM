@@ -73,7 +73,11 @@ azokra az útvonalakra, amelyeket a változás érint. A tesztjelentések szűrt
 
 ## Környezetek és kiadás
 
-| | `https://teszt.arsm.hu` (teszt) | `https://arsm.hu` (éles) |
+A `teszt.arsm.hu` tesztpéldányt 2026-11-13-án erőforrás-takarékosságból eltávolítottuk; a csomagja a
+`deploy/local-test` mappában marad, újbóli felállítását a `deploy/docs/deployment-local-test.md` írja le. Addig az
+alábbi 2. lépés a pusszal véget ér.
+
+| | `https://teszt.arsm.hu` (teszt, eltávolítva) | `https://arsm.hu` (éles) |
 | --- | --- | --- |
 | Hol fut | A tulajdonos Windows-gépén, Docker-konténerekben, Cloudflare-alagút mögött | Azure Container Apps, PostgreSQL Flexible Server, Blob Storage |
 | Frissítés | Automatikusan, minden új `origin/main` commitból | Kézzel, egy kiválasztott commitból |
@@ -90,7 +94,7 @@ azokra az útvonalakra, amelyeket a változás érint. A tesztjelentések szűrt
    (`git archive`) megépíti az API- és a webes képet, újraindítja a két alkalmazáskonténert, és megvárja, hogy a `/` és
    az `/alive` válaszoljon. Az új migrációkat az API induláskor alkalmazza, így pár percen belül az új verzió fut a
    `teszt.arsm.hu`-n.
-3. **Éles kiadás.** Ha a `teszt.arsm.hu`-n minden rendben, abból a klónból, amelyben az éles `.env` van (előtte
+3. **Éles kiadás.** Ha minden rendben (amíg fut, a `teszt.arsm.hu`-n ellenőrizve), abból a klónból, amelyben az éles `.env` van (előtte
    `az login`): `python scripts/deploy-azure.py release --commit <sha>`. Megépíti és feltölti a commit szerint
    címkézett három képet, lefuttatja az `arsm-migrate` jobot (migrációk és az `arsm_app` szerepkör), és csak ennek
    sikere után állítja át az `arsm-api` és `arsm-web` alkalmazást új revízióra. Ha a migráció elbukik, a kiadás

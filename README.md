@@ -73,7 +73,10 @@ the paths a change touches. Test reports go to `tests/.artifacts/` in sanitized 
 
 ## Environments and releases
 
-| | `https://teszt.arsm.hu` (test) | `https://arsm.hu` (production) |
+The test instance `teszt.arsm.hu` was removed on 2026-11-13 to save resources; its kit stays in `deploy/local-test`
+and `deploy/docs/deployment-local-test.md` describes how to set it up again. Until then step 2 below ends with the push.
+
+| | `https://teszt.arsm.hu` (test, removed) | `https://arsm.hu` (production) |
 | --- | --- | --- |
 | Runs on | The owner's Windows machine, Docker containers behind a Cloudflare tunnel | Azure Container Apps, PostgreSQL Flexible Server, Blob Storage |
 | Updated | Automatically from every new `origin/main` commit | Manually, from a commit you choose |
@@ -89,7 +92,7 @@ How a change goes out:
    every 5 minutes) sees the new commit, backs up the test database, builds the API and web images from that commit
    (`git archive`), recreates the two app containers and waits until `/` and `/alive` answer. The API applies new
    migrations at startup, so `teszt.arsm.hu` runs the new version within a few minutes.
-3. **Production release.** After checking it on `teszt.arsm.hu`, run from the clone that holds the production `.env`
+3. **Production release.** After checking it (on `teszt.arsm.hu` while it runs), run from the clone that holds the production `.env`
    (`az login` first): `python scripts/deploy-azure.py release --commit <sha>`. It builds and pushes the three images
    tagged with the commit, runs the `arsm-migrate` job (migrations and the `arsm_app` role) and only after it succeeds
    rolls `arsm-api` and `arsm-web` to new revisions. A failed migration stops the release with the old version still

@@ -52,7 +52,7 @@ DataProtection keys bullet in section 8).
 | | `teszt.arsm.hu` | `arsm.hu` |
 | --- | --- | --- |
 | Role | Pre-release view where you experiment | Production, the live version handed to the tester |
-| Runs on | Your machine behind a Cloudflare tunnel (local test instance, currently off) | Azure Container Apps |
+| Runs on | Your machine behind a Cloudflare tunnel (local test instance, removed on 2026-11-13) | Azure Container Apps |
 | Deployed | Automatically from `main` by `deploy/local-test/deploy.py` | Manually, from a commit you choose, with `deploy-azure.py` |
 | Database | The local test database on your machine | A new empty Flexible Server database with only the bootstrap admin |
 | Protection | Token gate on the tunnel (`GATE_TOKEN` in `.env`) | The same gate as a sidecar, token `ARSM_PROD_GATE_TOKEN` |

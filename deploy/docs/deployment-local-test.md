@@ -7,12 +7,12 @@ instances share no database, storage or token.
 
 ## 1. Current state
 
-**On since 2026-10-23** (owner decision; it was off from 2026-10-20 after production moved to Azure). The deploy task
-runs `deploy.py --ignore-ci` every 5 minutes, so every new `origin/main` commit is deployed without waiting for CI; the
-repository's pre-push gate is the check. `teszt.ps1 off` (section 4) disables the three scheduled tasks, stops the gate,
-tunnel and the four containers (restart policy `no`) and keeps the Docker volumes (`arsm-tunnel-pgdata`,
-`arsm-tunnel-rustfs`, `arsm-tunnel-dpkeys`), the `pg_dump` backups, the Cloudflare tunnel `arsm-teszt` and its DNS
-record; while off, `teszt.arsm.hu` answers with a Cloudflare tunnel error page (530 / error 1033). Section 3 turns it on.
+**Removed on 2026-11-13** (owner decision: it used too many resources for the current phase; it ran from 2026-10-23,
+deploying every new `origin/main` commit). Section 8 was carried out: the four containers, the three volumes, the
+`arsm-tunnel-net` network, the `arsm-tunnel-api`/`-web` images, the three scheduled tasks and the Cloudflare tunnel
+`arsm-teszt` (with its credentials file) are gone. The kit folder `%USERPROFILE%\.arsm\tunnel` is kept with its secret
+files, logs and the `pg_dump` backups, the only remaining copy of the test data. To bring it back, follow section 7:
+`setup.ps1` creates a new tunnel, re-points the DNS record and redeploys onto an empty database.
 
 ## 2. How it works
 
