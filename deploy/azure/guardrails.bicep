@@ -104,7 +104,7 @@ resource apiRestartAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
-// Both log rules are stateless (autoMitigate false) and summarize to one row per evaluation, so each 5-minute
+// Both log rules are stateless (autoMitigate false) and summarize to one row per evaluation, so each 15-minute
 // window with matching lines fires one alert and one mail (count, first three lines) and nothing resolves.
 resource apiLogErrorAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' = {
   name: '${namePrefix}-api-errors'
@@ -112,12 +112,12 @@ resource apiLogErrorAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' = 
   kind: 'LogAlert'
   properties: {
     displayName: '${namePrefix}-api-errors'
-    description: 'ERROR: the API logged at Error or Critical level (fail:/crit: console lines) within 5 minutes.'
+    description: 'ERROR: the API logged at Error or Critical level (fail:/crit: console lines) within 15 minutes.'
     severity: 1
     enabled: true
     scopes: [ workspaceId ]
-    evaluationFrequency: 'PT5M'
-    windowSize: 'PT5M'
+    evaluationFrequency: 'PT15M'
+    windowSize: 'PT15M'
     autoMitigate: false
     // Both rules: ContainerAppConsoleLogs_CL exists only after the first ingestion, so creation skips the query check.
     skipQueryValidation: true
@@ -144,12 +144,12 @@ resource apiLogWarningAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' 
   kind: 'LogAlert'
   properties: {
     displayName: '${namePrefix}-api-warnings'
-    description: 'WARNING: the API logged at Warning level (warn: console lines) within 5 minutes.'
+    description: 'WARNING: the API logged at Warning level (warn: console lines) within 15 minutes.'
     severity: 3
     enabled: true
     scopes: [ workspaceId ]
-    evaluationFrequency: 'PT5M'
-    windowSize: 'PT5M'
+    evaluationFrequency: 'PT15M'
+    windowSize: 'PT15M'
     autoMitigate: false
     skipQueryValidation: true
     criteria: {

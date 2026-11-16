@@ -106,4 +106,24 @@ public sealed class TokenEntityAndCleanupTests
         Assert.Equal(0, scopes.Created);
         Assert.Empty(log.Entries);
     }
+
+    [Fact]
+    public async Task The_first_cleanup_runs_a_minute_after_start_and_then_hourly()
+    {
+        // An API that scales to zero after a few idle minutes would never reach a first pass an hour away.
+        var clock = new ManualTimeProvider();
+        var scopes = new ThrowingScopeFactory(new InvalidOperationException("cleanup ran"));
+        var log = new RecordingLogger<ExpiredTokenCleanupService>();
+        using var service = new ExpiredTokenCleanupService(scopes, log, clock);
+
+        await service.StartAsync(CancellationToken.None);
+        await clock.WaitForTimersAsync(1);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await log.WaitForFirstAsync();
+        await clock.WaitForTimersAsync(2);
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.Equal(1, scopes.Created);
+        Assert.Equal([TimeSpan.FromMinutes(1), TimeSpan.FromHours(1)], clock.DueTimes);
+    }
 }

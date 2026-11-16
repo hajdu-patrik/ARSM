@@ -6,17 +6,24 @@ namespace AutoService.ApiService.Security;
 /** Background service that periodically removes expired refresh tokens (revoked or not) and expired JWT denylist entries to prevent unbounded table growth. */
 internal sealed class ExpiredTokenCleanupService(
     IServiceScopeFactory scopeFactory,
-    ILogger<ExpiredTokenCleanupService> logger) : BackgroundService
+    ILogger<ExpiredTokenCleanupService> logger,
+    TimeProvider? timeProvider = null) : BackgroundService
 {
-    private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
+    // The first pass comes soon after start: an API that scales to zero rarely lives a full interval.
+    internal static readonly TimeSpan FirstCleanupDelay = TimeSpan.FromMinutes(1);
+    internal static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
+
+    private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var delay = FirstCleanupDelay;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await Task.Delay(CleanupInterval, stoppingToken);
+                await Task.Delay(delay, clock, stoppingToken);
+                delay = CleanupInterval;
                 await CleanupAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

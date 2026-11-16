@@ -358,9 +358,9 @@ deletes nothing, so remove the existing budget, action group and alert rules in 
   startup warnings still fire; on 30 days of production logs only the old DataProtection warnings would have. The
   API image runs ASP.NET Core's default
   simple console formatter (no JSON formatter is configured), which prefixes every record with its level. Both are
-  checked every 5 minutes over the last 5 minutes and fire when the count is above 0. The query returns one row per
+  checked every 15 minutes over the last 15 minutes (owner decision 2026-11-16, a lower log alert fee) and fire when the count is above 0. The query returns one row per
   evaluation (`LineCount` and a `Sample` of the first three matching lines, at most 500 characters), and the rules are
-  stateless (`autoMitigate: false`), so every 5-minute window with matching lines sends exactly one mail however many
+  stateless (`autoMitigate: false`), so every 15-minute window with matching lines sends exactly one mail however many
   different messages it holds, and no resolve mail follows. The rule name in the mail subject tells which one fired;
   the mail shows the count as the metric value, the sample as a dimension and a link to the matching log search.
   The simple formatter writes the message on the row after the `fail: <category>[<event id>]` line, so the sample

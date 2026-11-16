@@ -9,6 +9,13 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Lower Azure cost (2026-11-16, owner decision): the production API scales to zero when idle (`ARSM_API_ALWAYS_ON=false` in
+  the root `.env`; the kit default stays `true`), and the two log alert rules `arsm-api-errors` and `arsm-api-warnings` run
+  every 15 minutes over a 15-minute window instead of every 5 (`deploy/azure/guardrails.bicep`, a lower log alert fee).
+  `ExpiredTokenCleanupService` now makes its first pass one minute after start, then hourly: with the API scaling to zero
+  it rarely lived the full hour that preceded the first pass, so expired tokens were never pruned (regression test in
+  `Security/TokenEntityAndCleanupTests`, failing with the old one-hour first delay).
+  _Dev time: ~10 min wall-clock (2026-11-16 ~10:02 to 10:12 +01:00, start approximate). cost: not measured._
 - The removed test host names are gone from the current docs and the kit (2026-11-13): the test subdomains no longer
   exist, so `README.md`, `README(HU).md`, `CLAUDE.md`, `deploy/CLAUDE.md`, `deployment-azure.md` (section 2 now covers
   `arsm.hu` only) and `deployment-local-test.md` drop them, and the kit's `setup.ps1` default host and `kit.psd1` health
